@@ -16899,6 +16899,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipRemindersOfferTitle => 'Reminders and briefings';
+
+  @override
+  String relationshipNextMeetingAt(String time) {
+    return 'Next: $time';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

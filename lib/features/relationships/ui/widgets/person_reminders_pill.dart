@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -33,27 +32,27 @@ class PersonRemindersPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final quiet = tokens.colors.text.mediumEmphasis;
     final cadence = relationshipCadenceLabel(
       context,
       relationshipShownCadenceDays(relationship.data.checkInCadenceDays),
     );
-    // One node that says what the pill is and that it acts: the bell and the
-    // chevron are decoration to a screen reader.
+    // One node that says what the control is and that it acts: the bell and
+    // the chevron are decoration to a screen reader.
+    //
+    // A button, not a tag: it is pressed, and it sits in one row with Call,
+    // Message and Email, so it wears their component and height rather than
+    // a read-only fact's shape (design panel 2026-10-15).
     return Semantics(
       button: true,
       label: context.messages.relationshipRemindersPillSemantics(cadence),
       excludeSemantics: true,
-      child: DsPill(
+      child: DesignSystemButton(
         key: const ValueKey('person-pill-reminders'),
-        variant: DsPillVariant.filled,
-        shape: DsPillShape.tag,
-        leading: Icon(LottiIcons.notification, size: IconSizes.s, color: quiet),
-        trailing: Icon(LottiIcons.chevronDown, size: IconSizes.s, color: quiet),
-        labelColor: quiet,
         label: cadence,
-        onTap: () => showPersonRemindersSheet(
+        leadingIcon: LottiIcons.notification,
+        trailingIcon: LottiIcons.chevronDown,
+        variant: DesignSystemButtonVariant.secondary,
+        onPressed: () => showPersonRemindersSheet(
           context: context,
           relationship: relationship,
         ),

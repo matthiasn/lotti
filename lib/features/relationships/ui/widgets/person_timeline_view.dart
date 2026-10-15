@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
@@ -330,8 +329,17 @@ class PersonTimelineRow extends StatelessWidget {
       ),
     };
 
+    final overdue = switch (item) {
+      TimelineTask(open: true, due: final due?) => due.isBefore(
+        DateTime(now.year, now.month, now.day),
+      ),
+      _ => false,
+    };
+    final metaInk = overdue
+        ? tokens.colors.alert.warning.ink
+        : tokens.colors.text.mediumEmphasis;
     final metaStyle = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
+      color: metaInk,
     );
     final text = row.text;
     return DesignSystemTimelineRow(
@@ -348,7 +356,7 @@ class PersonTimelineRow extends StatelessWidget {
         style: relationshipTimestampStyle(
           tokens,
           base: tokens.typography.styles.others.caption,
-          color: tokens.colors.text.mediumEmphasis,
+          color: metaInk,
         ),
         tailStyle: metaStyle,
       ),
@@ -551,39 +559,58 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
         ? const <TimelineNote>[]
         : (_expanded || widget.compact ? pinned : pinned.take(_folded))
               .toList();
-    final toggle = DesignSystemButton(
-      key: const ValueKey('person-about-toggle'),
-      label: folded
-          ? messages.relationshipAboutPinnedCount(pinned.length)
-          : _expanded
-          ? messages.relationshipAboutShowLess
-          : messages.relationshipAboutShowAll(pinned.length),
-      trailingIcon: folded ? LottiIcons.expand : null,
-      variant: DesignSystemButtonVariant.tertiary,
-      size: DesignSystemButtonSize.dense,
-      onPressed: () => setState(() => _expanded = !_expanded),
-    );
+    final title = messages.relationshipAboutTitle(widget.personName);
+    if (folded) {
+      // One row: the heading, the first note's opening and the chevron — the
+      // whole row opens it.
+      return DsQuietInk(
+        key: const ValueKey('person-about'),
+        onTap: () => setState(() => _expanded = true),
+        builder: (context, highlighted) => Semantics(
+          button: true,
+          label:
+              '$title · ${messages.relationshipAboutPinnedCount(pinned.length)}',
+          excludeSemantics: true,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            child: Row(
+              key: const ValueKey('person-about-toggle'),
+              children: [
+                Text(
+                  title,
+                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    pinned.first.note.entryText?.plainText.trim() ?? '',
+                    key: const ValueKey('person-about-preview'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: bodyStyle.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  LottiIcons.expand,
+                  size: IconSizes.s,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Column(
       key: const ValueKey('person-about'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        PersonCardHeader(
-          title: messages.relationshipAboutTitle(widget.personName),
-          trailing: widget.compact || pinned.length > _folded ? toggle : null,
-        ),
-        if (folded)
-          Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step1),
-            child: Text(
-              pinned.first.note.entryText?.plainText.trim() ?? '',
-              key: const ValueKey('person-about-preview'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: bodyStyle.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ),
+        PersonCardHeader(title: title),
         for (final note in shown)
           DsQuietInk(
             key: ValueKey('person-about-${note.id}'),
@@ -599,6 +626,16 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
                     : bodyStyle,
               ),
             ),
+          ),
+        if (widget.compact || pinned.length > _folded)
+          personDisclosure(
+            context,
+            key: const ValueKey('person-about-toggle'),
+            open: _expanded,
+            label: _expanded
+                ? messages.relationshipAboutShowLess
+                : messages.relationshipAboutShowAll(pinned.length),
+            onPressed: () => setState(() => _expanded = !_expanded),
           ),
       ],
     );

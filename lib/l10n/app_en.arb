@@ -10155,5 +10155,14 @@
   "relationshipRemindersOfferTitle": "Reminders and briefings",
   "@relationshipRemindersOfferTitle": {
     "description": "Title of the card offering to turn on reminders and the briefing agent for a person."
+  },
+  "relationshipNextMeetingAt": "Next: {time}",
+  "@relationshipNextMeetingAt": {
+    "description": "The next booked meeting when its title no longer fits on the line.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

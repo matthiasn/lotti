@@ -17052,4 +17052,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipRemindersOfferTitle => 'Reminders and briefings';
+
+  @override
+  String relationshipNextMeetingAt(String time) {
+    return 'Next: $time';
+  }
 }

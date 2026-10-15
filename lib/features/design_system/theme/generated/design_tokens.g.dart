@@ -66,7 +66,7 @@ const DsTokens dsTokensLight = DsTokens(
       level03: Color(0x61000000),
     ),
     aiCard: DsColorsAiCard(
-      background: Color(0xFFE1EEF7),
+      background: Color(0xFFECE9FB),
       backgroundRaised: Color(0xFFFFFFFF),
       row: Color(0xB3FFFFFF),
       border: Color(0x385A4BD1),
@@ -485,9 +485,9 @@ const DsTokens dsTokensDark = DsTokens(
       level03: Color(0x61FFFFFF),
     ),
     aiCard: DsColorsAiCard(
-      background: Color(0xFF0E1A22),
-      backgroundRaised: Color(0xFF14222C),
-      row: Color(0xB80E1A22),
+      background: Color(0xFF15132A),
+      backgroundRaised: Color(0xFF1D1A36),
+      row: Color(0xB815132A),
       border: Color(0x24A99BFF),
       borderSoft: Color(0x1AA99BFF),
       accent: Color(0xFFA99BFF),

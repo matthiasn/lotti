@@ -21,11 +21,12 @@ const kDetailContentMaxWidth = 960.0;
 
 /// The reading measure for running prose inside a wide column — a timeline
 /// row's words, a note: about 70 characters of body text, where the eye
-/// still finds the start of the next line. [kDetailContentMaxWidth] caps a
+/// still finds the start of the next line — 600 sets bodyMedium at about
+/// 70 characters. [kDetailContentMaxWidth] caps a
 /// page; this caps a paragraph on it, so a desktop pane no longer sets a
 /// check-in's note in 100-character lines (design panel 2026-10-15, product
 /// owner approved).
-const kProseMeasureWidth = 680.0;
+const kProseMeasureWidth = 600.0;
 
 /// The reading measure for a detail column made of *worded action rows* rather
 /// than prose — a short list where each row is a few words with a leading glyph

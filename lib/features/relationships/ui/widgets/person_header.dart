@@ -772,7 +772,10 @@ List<Widget> personHeaderPills(
   final meetingBooked =
       nextMeetingAt != null && pill.kind == PeopleCadencePillKind.overdue;
   final pills = <Widget>[
-    if (!meetingBooked) relationshipCadencePill(context, item),
+    // Not enrolled: the page's offer card says so and offers the fix; a
+    // pill here said *No reminders* a second time.
+    if (!meetingBooked && pill.kind != PeopleCadencePillKind.notEnrolled)
+      relationshipCadencePill(context, item),
     // `isEnrolled`, not the raw flag: a dormant or archived person keeps
     // `important` while the runtime clears their reminders.
     if (isEnrolled(item.relationship))

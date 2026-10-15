@@ -8,11 +8,17 @@ import '../../../mocks/mocks.dart';
 /// Overrides [personTimelineRepositoryProvider] with a repository whose
 /// people hold [entries] on their timeline — none by default — for the
 /// widget tests that render a person's state but are not about the
-/// timeline itself.
-Override personTimelineOverride({List<JournalEntity> entries = const []}) {
+/// timeline itself. With [personId], only that person holds them.
+Override personTimelineOverride({
+  List<JournalEntity> entries = const [],
+  String? personId,
+}) {
   final repository = MockPersonTimelineRepository();
-  when(
-    () => repository.getTimelineEntries(any()),
-  ).thenAnswer((_) async => entries);
+  when(() => repository.getTimelineEntries(any())).thenAnswer(
+    (call) async =>
+        personId == null || call.positionalArguments.single == personId
+        ? entries
+        : const [],
+  );
   return personTimelineRepositoryProvider.overrideWithValue(repository);
 }

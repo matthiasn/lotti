@@ -886,7 +886,7 @@ void main() {
     List<JournalEntity>? timeline,
   }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
-    personTimelineOverride(entries: timeline ?? pipTimeline),
+    personTimelineOverride(entries: timeline ?? pipTimeline, personId: _pipId),
     // The check-in page's crumb reads the person's category from here, as
     // production's bootstrap wires it.
     entitiesCacheServiceProvider.overrideWithValue(

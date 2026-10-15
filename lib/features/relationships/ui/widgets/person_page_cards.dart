@@ -1,5 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -89,10 +90,19 @@ class PersonCardHeader extends StatelessWidget {
 /// [compact] (a phone) shows the first note and folds the second behind a
 /// disclosure, so the person's history reaches the first screen.
 class NextTimeLead extends StatefulWidget {
-  const NextTimeLead({required this.source, this.compact = false, super.key});
+  const NextTimeLead({
+    required this.source,
+    this.compact = false,
+    this.onOpenSource,
+    super.key,
+  });
 
   final CheckInEntry? source;
   final bool compact;
+
+  /// Opens the check-in the notes are from; the provenance line is then a
+  /// way into it.
+  final VoidCallback? onOpenSource;
 
   /// The newest of [checkIns] (newest first) that carries next-time notes.
   static CheckInEntry? sourceOf(List<CheckInEntry> checkIns) {
@@ -118,8 +128,9 @@ class NextTimeLead extends StatefulWidget {
       _attentionOf(latest) != null || _avoidOf(latest) != null;
 
   /// The line naming the check-in [source] is from — *From your check-in on
-  /// Sat 1 Aug* — for the heading's caption slot: inside the page, undated
-  /// notes would read as written after a conversation they predate.
+  /// Sat 1 Aug* — set on the notes it describes, not on the section heading,
+  /// which also holds the next meeting: undated notes would read as written
+  /// after a conversation they predate.
   static Widget provenanceOf(BuildContext context, CheckInEntry source) {
     final tokens = context.designTokens;
     final day = relationshipDayLabelOf(context, source.meta.dateFrom);
@@ -164,25 +175,54 @@ class _NextTimeLeadState extends State<NextTimeLead> {
         ),
     ];
     final folded = widget.compact && !_expanded && facts.length > 1;
+    final provenance = NextTimeLead.provenanceOf(context, from);
+    final open = widget.onOpenSource;
     return Column(
       key: const ValueKey('person-next-time'),
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (open == null)
+          provenance
+        else
+          DsQuietInk(
+            key: const ValueKey('person-next-time-open'),
+            onTap: open,
+            builder: (context, highlighted) => provenance,
+          ),
+        SizedBox(height: context.designTokens.spacing.step2),
         NextTimeFacts(facts: folded ? facts.take(1).toList() : facts),
         if (widget.compact && facts.length > 1)
-          DesignSystemButton(
+          personDisclosure(
+            context,
             key: const ValueKey('person-next-time-toggle'),
+            open: !folded,
             label: folded
                 ? messages.relationshipNextTimeShowAvoid
                 : messages.relationshipAboutShowLess,
-            trailingIcon: folded ? LottiIcons.expand : LottiIcons.chevronUp,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.dense,
-            alignsLabelToLeadingEdge: true,
             onPressed: () => setState(() => _expanded = !_expanded),
           ),
       ],
     );
   }
 }
+
+/// The person page's one disclosure: a quiet line led by its chevron, the
+/// way the briefing's *Read more* is drawn, so every "there is more here"
+/// on the page looks and reads the same (design panel 2026-10-15). Quiet,
+/// not teal: opening a fold is not an action on the person.
+Widget personDisclosure(
+  BuildContext context, {
+  required String label,
+  required bool open,
+  required VoidCallback onPressed,
+  Key? key,
+}) => DesignSystemButton(
+  key: key,
+  label: label,
+  leadingIcon: open ? LottiIcons.chevronUp : LottiIcons.expand,
+  variant: DesignSystemButtonVariant.quiet,
+  size: DesignSystemButtonSize.dense,
+  alignsLabelToLeadingEdge: true,
+  onPressed: onPressed,
+);

@@ -345,9 +345,6 @@ class _RelationshipDetailsPageState
         PersonCardHeader(
           key: const ValueKey('person-before-you-talk'),
           title: context.messages.relationshipBeforeYouTalkTitle,
-          caption: hasNotes
-              ? NextTimeLead.provenanceOf(context, nextTime!)
-              : null,
         ),
         SizedBox(height: tokens.spacing.step3),
       ],
@@ -356,7 +353,11 @@ class _RelationshipDetailsPageState
         SizedBox(height: tokens.spacing.step4),
       ],
       if (hasNotes) ...[
-        NextTimeLead(source: nextTime, compact: compact),
+        NextTimeLead(
+          source: nextTime,
+          compact: compact,
+          onOpenSource: () => actions.openCheckIn(nextTime!),
+        ),
         SizedBox(height: tokens.spacing.step4),
       ],
       // Always present: an unenrolled person gets the offer that explains
@@ -536,8 +537,8 @@ class _NextMeetingLine extends StatelessWidget {
     final style = tokens.typography.styles.body.bodyMedium.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
-    // One line, whatever fits: the day and time first shed the time, then
-    // the title — when it is, is the fact the line exists for.
+    // One line, whatever fits: the title gives way before the time — when
+    // it is, is the fact the line exists for.
     return Row(
       key: const ValueKey('person-next-meeting'),
       children: [
@@ -554,11 +555,15 @@ class _NextMeetingLine extends StatelessWidget {
                 title,
                 relationshipTimestampLabelOf(context, start, now: now),
               ),
+              // The weekday alone is enough for a meeting this close.
               messages.relationshipNextMeeting(
                 title,
-                relationshipDayLabelOf(context, start),
+                '${relationshipWeekdayLabelOf(context, start)} '
+                '${relationshipTimeLabel(start)}',
               ),
-              relationshipTimestampLabelOf(context, start, now: now),
+              messages.relationshipNextMeetingAt(
+                relationshipTimestampLabelOf(context, start, now: now),
+              ),
             ],
             style: style,
           ),

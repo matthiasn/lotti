@@ -538,24 +538,32 @@ class _NotEnrolledCard extends StatelessWidget {
           // heading into. An unexplained disclaimer in the one place it is
           // about to stop applying is worse than none; what the agent
           // sends belongs somewhere it can actually be explained.
-          _AgentCardFooter(
-            plain: true,
-            action: paused
-                ? null
-                : DesignSystemButton(
-                    key: const ValueKey('relationship-agent-mark-important'),
-                    tapTargetSize: MaterialTapTargetSize.padded,
-                    // Named with the same verb the state uses: the band,
-                    // the pill and the summary all say *enrolled*, so the
-                    // control that ends *Not enrolled* says it too.
-                    label: messages.relationshipAgentEnrolPerson(
-                      data.nickname ?? data.title,
-                    ),
-                    leadingIcon: LottiIcons.notification,
-                    isLoading: marking,
-                    onPressed: marking ? null : onMarkImportant,
+          // The offer's one action inside the card, under the choice it
+          // applies — a footer band of its own made the offer the tallest
+          // block on a page with nothing to brief yet.
+          if (!paused)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.cardPadding,
+                0,
+                tokens.spacing.cardPadding,
+                tokens.spacing.cardPadding,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: DesignSystemButton(
+                  key: const ValueKey('relationship-agent-mark-important'),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  // Named with the same verb the state uses.
+                  label: messages.relationshipAgentEnrolPerson(
+                    data.nickname ?? data.title,
                   ),
-          ),
+                  leadingIcon: LottiIcons.notification,
+                  isLoading: marking,
+                  onPressed: marking ? null : onMarkImportant,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -767,17 +775,12 @@ class _AgentCardFooter extends StatelessWidget {
     required this.action,
     this.leading,
     this.identity,
-    this.plain = false,
   });
 
   /// The secondary, text-only action on the leading edge.
   final Widget? leading;
   final Widget? action;
   final Widget? identity;
-
-  /// The unenrolled card is not an AI surface: its band is the section
-  /// card's own tint rather than the AI footer wash.
-  final bool plain;
 
   @override
   Widget build(BuildContext context) {
@@ -786,25 +789,14 @@ class _AgentCardFooter extends StatelessWidget {
         MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
     final ai = tokens.colors.aiCard;
 
-    // The plain band is a faint neutral wash over the card surface — the
-    // tint alpha the tone-tinted fills use, in ink rather than an accent —
-    // so it reads as the footer of a quiet card, not as a raised block.
-    final plainWash = Color.alphaBlend(
-      tokens.colors.text.highEmphasis.withValues(alpha: SurfaceAlphas.tint),
-      tokens.colors.background.level02,
-    );
     return Container(
       key: const ValueKey('relationship-agent-footer'),
       // Full width regardless of what sits inside: a footer with only the
       // model row (the running face) must still wash the whole card.
       width: double.infinity,
       decoration: BoxDecoration(
-        color: plain ? plainWash : ai.footerWash,
-        border: Border(
-          top: BorderSide(
-            color: plain ? tokens.colors.decorative.level01 : ai.borderSoft,
-          ),
-        ),
+        color: ai.footerWash,
+        border: Border(top: BorderSide(color: ai.borderSoft)),
       ),
       // A step more above than below when the model row closes the card;
       // with nothing under the action row the inset is symmetric.

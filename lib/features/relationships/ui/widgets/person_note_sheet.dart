@@ -132,7 +132,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
             key: const ValueKey('person-note-text'),
             controller: _text,
             hintText: messages.relationshipNoteHint,
-          errorText: _failed ? messages.relationshipNoteSaveFailed : null,
+            errorText: _failed ? messages.relationshipNoteSaveFailed : null,
             minLines: 4,
             growWithContent: true,
             semanticsLabel: messages.relationshipNoteSheetTitle(

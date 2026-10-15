@@ -28180,6 +28180,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminders and briefings'**
   String get relationshipRemindersOfferTitle;
+
+  /// The next booked meeting when its title no longer fits on the line.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {time}'**
+  String relationshipNextMeetingAt(String time);
 }
 
 class _AppLocalizationsDelegate
