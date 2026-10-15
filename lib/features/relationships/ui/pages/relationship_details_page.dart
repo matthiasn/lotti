@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -256,6 +257,7 @@ class _RelationshipDetailsPageState
     final tasks = PersonTaskActions(
       relationshipId: relationshipId,
       linkedTaskIds: {for (final task in detail.linkedTasks) task.meta.id},
+      personName: personName,
       categoryId: categoryId,
     );
     final actions = (
@@ -316,23 +318,34 @@ class _RelationshipDetailsPageState
         bottomGap: tokens.spacing.sectionGap,
       ),
     ];
-    final briefing = <Widget>[
+    final nextTime = NextTimeLead.sourceOf(checkIns);
+    // What to know before you talk: the user's own notes for next time, on
+    // the page itself — never under the agent's tint, so their words read
+    // as theirs — then the agent's briefing, then what they pinned About
+    // the person.
+    List<Widget> briefing({required bool compact}) => [
+      PersonCardHeader(
+        key: const ValueKey('person-before-you-talk'),
+        title: context.messages.relationshipBeforeYouTalkTitle,
+      ),
+      SizedBox(height: tokens.spacing.step3),
+      if (NextTimeLead.hasContent(nextTime)) ...[
+        NextTimeLead(source: nextTime),
+        SizedBox(height: tokens.spacing.step4),
+      ],
       // Always present: an unenrolled person gets the offer that explains
-      // what reminders turn on. The user's own notes for next time lead it
-      // either way — they are what this page is opened for in the minute
-      // before a call.
-      RelationshipBriefingCard(
-        relationship: relationship,
-        checkIns: checkIns,
-        lead: NextTimeLead.hasContent(NextTimeLead.sourceOf(checkIns))
-            ? NextTimeLead(source: NextTimeLead.sourceOf(checkIns))
-            : null,
-      ),
-      PersonAboutSection(
-        personName: personName,
-        pinned: timeline.pinned,
-        onOpen: actions.openNote,
-      ),
+      // what reminders turn on.
+      RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),
+      if (timeline.pinned.isNotEmpty) ...[
+        gap,
+        PersonAboutSection(
+          personName: personName,
+          pinned: timeline.pinned,
+          onOpen: actions.openNote,
+          compact: compact,
+        ),
+      ],
+      gap,
     ];
 
     return Scaffold(
@@ -346,7 +359,6 @@ class _RelationshipDetailsPageState
         onSpeak: () => unawaited(
           _openComposer(context, latest: latest, startSpeaking: true),
         ),
-        onLogCheckIn: () => unawaited(_openComposer(context, latest: latest)),
         onAdd: () => unawaited(create()),
       ),
       // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it reads
@@ -355,84 +367,107 @@ class _RelationshipDetailsPageState
       // not the window.
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final insets = detailContentInsets(
-            context,
-            availableWidth: constraints.maxWidth,
-          );
           final bottomInset = MediaQuery.paddingOf(context).bottom;
-          final timelineSliver = PersonTimelineSliver(
-            timeline: timeline,
-            personName: personName,
-            filter: _filter,
-            onFilter: (filter) => setState(() => _filter = filter),
-            actions: actions,
-            now: now,
-          );
-          // A pane as wide as a desktop window gets two columns: the
-          // timeline, and beside it what to know before you talk, which
-          // then stays next to the history instead of above it. Flex shares
-          // of the one reading column, so no width of its own is invented.
+          // A pane as wide as a desktop window gets a rail: what to know
+          // before you talk stays beside the history, scrolling on its own,
+          // instead of above it and gone once the reader scrolls (design
+          // panel 2026-10-15). Flex shares of the pane, so no width of its
+          // own is invented.
           final wide = constraints.maxWidth >= kDesktopBreakpoint;
-          return CustomScrollView(
-            slivers: [
-              PersonHeroAppBar(
-                relationship: relationship,
-                contentInset: insets.left,
-                onBack: () => _back(context),
-                // Desktop: the side sheet over this page. A phone pushes
-                // the conversation as its own page.
-                onTalkToAgent: () => isDesktopLayout(context)
-                    ? showRelationshipChatSheet(
-                        context,
-                        relationshipId: relationshipId,
-                      )
-                    : beamToNamed('/people/$relationshipId/chat'),
-                onDelete: () => _handleDelete(context, relationship),
-                hasAgent: hasAgent,
-                onAvatarTap: () => showPersonAvatarSheet(
-                  context: context,
+          Widget page(BoxConstraints constraints) {
+            final insets = detailContentInsets(
+              context,
+              availableWidth: constraints.maxWidth,
+            );
+            final rowInset = tokens.spacing.step3;
+            return CustomScrollView(
+              slivers: [
+                PersonHeroAppBar(
                   relationship: relationship,
+                  contentInset: insets.left,
+                  onBack: () => _back(context),
+                  // Desktop: the side sheet over this page. A phone pushes
+                  // the conversation as its own page.
+                  onTalkToAgent: () => isDesktopLayout(context)
+                      ? showRelationshipChatSheet(
+                          context,
+                          relationshipId: relationshipId,
+                        )
+                      : beamToNamed('/people/$relationshipId/chat'),
+                  onDelete: () => _handleDelete(context, relationship),
+                  hasAgent: hasAgent,
+                  onAvatarTap: () => showPersonAvatarSheet(
+                    context: context,
+                    relationship: relationship,
+                  ),
+                ),
+                SliverPadding(
+                  padding: insets,
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      ...whoBlock,
+                      if (!wide) ...briefing(compact: true),
+                    ]),
+                  ),
+                ),
+                // The timeline grows without bound and renders lazily in its
+                // own sliver. It is outdented by its rows' own inset, so a
+                // row's tile sits on the page's text edge and its hover fill
+                // reaches into the gutter.
+                SliverPadding(
+                  padding: insets.copyWith(
+                    left: math.max(0, insets.left - rowInset),
+                    right: math.max(0, insets.right - rowInset),
+                  ),
+                  sliver: PersonTimelineSliver(
+                    timeline: timeline,
+                    personName: personName,
+                    filter: _filter,
+                    onFilter: (filter) => setState(() => _filter = filter),
+                    actions: actions,
+                    now: now,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: bottomInset + tokens.spacing.sectionGap,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          if (!wide) return page(constraints);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => page(constraints),
                 ),
               ),
-              SliverPadding(
-                padding: insets,
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    ...whoBlock,
-                    if (!wide) ...briefing,
-                  ]),
-                ),
-              ),
-              // The timeline grows without bound and renders lazily in its
-              // own sliver, on the same reading column.
-              SliverPadding(
-                padding: insets,
-                sliver: wide
-                    ? SliverCrossAxisGroup(
-                        slivers: [
-                          SliverCrossAxisExpanded(
-                            flex: 3,
-                            sliver: timelineSliver,
-                          ),
-                          SliverCrossAxisExpanded(
-                            flex: 2,
-                            sliver: SliverPadding(
-                              padding: EdgeInsets.only(
-                                left: tokens.spacing.sectionGap,
-                              ),
-                              sliver: SliverList(
-                                key: const ValueKey('person-rail'),
-                                delegate: SliverChildListDelegate(briefing),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : timelineSliver,
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: bottomInset + tokens.spacing.sectionGap,
+              Expanded(
+                flex: 2,
+                child: DecoratedBox(
+                  key: const ValueKey('person-rail'),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: tokens.colors.decorative.level01),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step6,
+                      MediaQuery.paddingOf(context).top + tokens.spacing.step6,
+                      tokens.spacing.step6,
+                      bottomInset + tokens.spacing.sectionGap,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: briefing(compact: false),
+                    ),
+                  ),
                 ),
               ),
             ],

@@ -7752,7 +7752,7 @@
     "description": "Toast shown when the linked contact held nothing the person did not already have"
   },
   "relationshipCreateTitle": "Add person",
-  "relationshipDaysOver": "{count, plural, =1{1 day over} other{{count} days over}}",
+  "relationshipDaysOver": "{count, plural, =1{1 day overdue} other{{count} days overdue}}",
   "@relationshipDaysOver": {
     "placeholders": {
       "count": {
@@ -7781,7 +7781,7 @@
       }
     }
   },
-  "relationshipDueSince": "Due since {day} · {count, plural, =1{1 day over} other{{count} days over}}",
+  "relationshipDueSince": "Due since {day} · {count, plural, =1{1 day overdue} other{{count} days overdue}}",
   "@relationshipDueSince": {
     "placeholders": {
       "day": {
@@ -10075,7 +10075,7 @@
       }
     }
   },
-  "relationshipCreateTask": "Create a task for {name}",
+  "relationshipCreateTask": "Add a task for {name}",
   "@relationshipCreateTask": {
     "placeholders": {
       "name": {
@@ -10117,6 +10117,22 @@
       },
       "label": {
         "type": "String"
+      }
+    }
+  },
+  "relationshipAddAction": "Add",
+  "@relationshipAddAction": {
+    "description": "Label of the person page's create button (a note, a task, photos, a check-in)."
+  },
+  "relationshipTimelineTitle": "Timeline",
+  "@relationshipTimelineTitle": {
+    "description": "Heading over a person's chronological timeline."
+  },
+  "relationshipAboutPinnedCount": "{count, plural, =1{1 note} other{{count} notes}}",
+  "@relationshipAboutPinnedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   }

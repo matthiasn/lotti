@@ -1,28 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/service/contact_launcher.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
-import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
-import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
-
-/// Nothing is launchable: the channel rows render, the action buttons do
-/// not, and the card's own content is what the tests see.
-class _NoLauncher implements ContactLauncher {
-  @override
-  Future<bool> canLaunch(ContactChannel channel, ContactAction action) async =>
-      false;
-
-  @override
-  Future<bool> launch(ContactChannel channel, ContactAction action) async =>
-      false;
-}
 
 void main() {
   final at = DateTime(2026, 8, 13, 10, 30);
@@ -70,13 +54,13 @@ void main() {
     });
   });
 
-  group('NextTimeCard', () {
+  group('NextTimeLead', () {
     test('hasContent is false for no check-in or blank guidance', () {
-      expect(NextTimeCard.hasContent(null), isFalse);
-      expect(NextTimeCard.hasContent(checkIn()), isFalse);
-      expect(NextTimeCard.hasContent(checkIn(attention: '  ')), isFalse);
-      expect(NextTimeCard.hasContent(checkIn(attention: 'The move')), isTrue);
-      expect(NextTimeCard.hasContent(checkIn(avoid: 'The coffee')), isTrue);
+      expect(NextTimeLead.hasContent(null), isFalse);
+      expect(NextTimeLead.hasContent(checkIn()), isFalse);
+      expect(NextTimeLead.hasContent(checkIn(attention: '  ')), isFalse);
+      expect(NextTimeLead.hasContent(checkIn(attention: 'The move')), isTrue);
+      expect(NextTimeLead.hasContent(checkIn(avoid: 'The coffee')), isTrue);
     });
 
     test('sourceOf is the newest check-in that has notes — a quick check-in '
@@ -85,84 +69,65 @@ void main() {
       final withNotes = checkIn(id: 'older', attention: 'The move');
       final oldest = checkIn(id: 'oldest', avoid: 'Politics');
 
-      expect(NextTimeCard.sourceOf([quick, withNotes, oldest]), withNotes);
-      expect(NextTimeCard.sourceOf([quick]), isNull);
-      expect(NextTimeCard.sourceOf(const []), isNull);
+      expect(NextTimeLead.sourceOf([quick, withNotes, oldest]), withNotes);
+      expect(NextTimeLead.sourceOf([quick]), isNull);
+      expect(NextTimeLead.sourceOf(const []), isNull);
     });
 
-    testWidgets('notes from an earlier check-in say which one, the date in '
-        'mono; notes from the newest carry no date', (tester) async {
+    // Inside the agent's card, undated and unattributed notes would read as
+    // the agent's: the caption says whose they are and from which day.
+    testWidgets("says the notes are the user's own and which day they are "
+        'from, the date in the timestamp style', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          NextTimeCard(
-            source: checkIn(attention: 'The move'),
-            fromEarlier: true,
-          ),
+          NextTimeLead(source: checkIn(attention: 'The move')),
         ),
       );
 
       final line = tester.widget<RelationshipLineWithDate>(
         find.byKey(const ValueKey('person-next-time-from')),
       );
-      expect(line.text, 'From your check-in on Thu 13 Aug');
+      expect(line.text, 'Your notes · Thu 13 Aug');
       expect(line.date, 'Thu 13 Aug');
+    });
 
+    testWidgets('renders nothing when the source carries no guidance', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(NextTimeLead(source: checkIn())),
+      );
+
+      expect(find.byKey(const ValueKey('person-next-time')), findsNothing);
+    });
+
+    testWidgets('shows both facts with their captions, and no card or title '
+        'of its own — it leads the briefing card', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          NextTimeCard(source: checkIn(attention: 'The move')),
-        ),
-      );
-      expect(
-        find.byKey(const ValueKey('person-next-time-from')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('renders nothing when the latest check-in carries no '
-        'guidance — the page skips the gap on the same rule', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(NextTimeCard(source: checkIn())),
-      );
-
-      expect(find.byKey(const ValueKey('person-next-time-card')), findsNothing);
-    });
-
-    testWidgets(
-      'shows both tiles with their captions, and no date of its own',
-      (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            NextTimeCard(
-              source: checkIn(
-                attention: 'Ask how the fitting went.',
-                avoid: 'The coffee incident.',
-              ),
+          NextTimeLead(
+            source: checkIn(
+              attention: 'Ask how the fitting went.',
+              avoid: 'The coffee incident.',
             ),
           ),
-        );
+        ),
+      );
 
-        expect(find.text('Next time'), findsOneWidget);
-        expect(find.text('Pay attention to'), findsOneWidget);
-        expect(find.text('Ask how the fitting went.'), findsOneWidget);
-        expect(find.text('Better to avoid'), findsOneWidget);
-        expect(find.text('The coffee incident.'), findsOneWidget);
-        // The trailing stamp is the check-in's own day and time.
-        // The card carries no date of its own. It used to head itself with
-        // the timestamp of the *last* check-in, unlabelled, beside a title
-        // that reads as a future intention — so its one date named the
-        // opposite of what the card is about.
-        expect(find.textContaining('10:30'), findsNothing);
-      },
-    );
+      expect(find.text('Pay attention to'), findsOneWidget);
+      expect(find.text('Ask how the fitting went.'), findsOneWidget);
+      expect(find.text('Better to avoid'), findsOneWidget);
+      expect(find.text('The coffee incident.'), findsOneWidget);
+      expect(find.text('Next time'), findsNothing);
+      expect(find.byType(DesignSystemSectionCard), findsNothing);
+    });
 
-    testWidgets('a single field renders alone, untrimmed content trimmed', (
+    testWidgets('a single field renders alone, its words trimmed', (
       tester,
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          NextTimeCard(source: checkIn(avoid: '  Politics.  ')),
+          NextTimeLead(source: checkIn(avoid: '  Politics.  ')),
         ),
       );
 
@@ -172,54 +137,6 @@ void main() {
       );
       expect(find.byKey(const ValueKey('person-next-time-avoid')), findsOne);
       expect(find.text('Politics.'), findsOneWidget);
-    });
-  });
-
-  group('ReachCard', () {
-    Future<void> pump(WidgetTester tester, List<ContactChannel> channels) =>
-        tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ReachCard(relationshipId: 'rel-1', channels: channels),
-            overrides: [
-              contactLauncherProvider.overrideWithValue(_NoLauncher()),
-            ],
-          ),
-        );
-
-    testWidgets('renders nothing for a person without channels', (
-      tester,
-    ) async {
-      await pump(tester, const []);
-
-      expect(find.byKey(const ValueKey('person-reach-card')), findsNothing);
-    });
-
-    testWidgets('names the section, states the privacy line and lists every '
-        'channel with value and label', (tester) async {
-      await pump(tester, const [
-        ContactChannel(
-          type: ContactChannelType.email,
-          value: 'anna@example.com',
-          label: 'Personal',
-        ),
-        ContactChannel(type: ContactChannelType.mobile, value: '+49 151 1'),
-      ]);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Reach'), findsOneWidget);
-      expect(
-        find.text('Stays on this device · never shared with the AI'),
-        findsOneWidget,
-      );
-      expect(find.text('anna@example.com'), findsOneWidget);
-      expect(find.text('Personal'), findsOneWidget);
-      expect(find.text('+49 151 1'), findsOneWidget);
-      // A channel without a label falls back to its localized type name.
-      expect(find.text('Mobile'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
-      expect(find.byIcon(LottiIcons.phone), findsOneWidget);
-      // Every row carries the quick actions, which decide for themselves.
-      expect(find.byType(ContactQuickActions), findsNWidgets(2));
     });
   });
 }

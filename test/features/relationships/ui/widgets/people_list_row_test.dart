@@ -234,13 +234,13 @@ void main() {
   });
 
   group('the pill tells the truth about the cadence', () {
-    testWidgets('lapsed: days over, warning-tinted — never "Due Sun"', (
+    testWidgets('lapsed: days overdue, warning-tinted — never "Due Sun"', (
       tester,
     ) async {
-      // Weekly, last contact 3 Aug 09:00 → due 10 Aug → 3 days over on the 13th.
+      // Weekly, last contact 3 Aug 09:00 → due 10 Aug → 3 days overdue on the 13th.
       await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
 
-      expect(find.text('3 days over'), findsOneWidget);
+      expect(find.text('3 days overdue'), findsOneWidget);
       expect(find.textContaining('Due '), findsNothing);
       final pill = tester.widget<DsPill>(
         find.byKey(const ValueKey('people-row-pill-overdue')),
@@ -307,7 +307,7 @@ void main() {
       // words again, so the row drops it.
       expect(find.text('No reminders'), findsNothing);
       expect(find.byType(PeopleCadencePillWidget), findsNothing);
-      expect(find.textContaining('days over'), findsNothing);
+      expect(find.textContaining('days overdue'), findsNothing);
       // The stored setting is still what the line names.
       expect(
         find.text('Call · Mon 3 Aug 09:00 · Weekly', findRichText: true),

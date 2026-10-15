@@ -90,8 +90,8 @@ void main() {
     expect(find.byKey(const ValueKey('timeline-row-rail')), findsNothing);
   });
 
-  testWidgets('the rail starts below the tile and runs to the bottom of the '
-      'row, through the body and footer', (tester) async {
+  testWidgets('the rail starts just below the tile and runs on past the '
+      "row's bottom to just above where the next tile sits", (tester) async {
     await pumpRow(
       tester,
       body: const Text('A body long enough to make the row tall.'),
@@ -103,8 +103,14 @@ void main() {
     );
     final tile = tester.getRect(find.byType(DesignSystemTimelineTile));
     final row = tester.getRect(find.byType(DesignSystemTimelineRow));
-    expect(rail.top, greaterThan(tile.bottom));
-    expect(rail.bottom, row.bottom);
+    final spacing = dsTokensDark.spacing;
+    // The same step1 gap above and below every tile: the next row's tile
+    // sits its own step3 inset below this row's bottom.
+    expect(rail.top - tile.bottom, closeTo(spacing.step1, 0.5));
+    expect(
+      row.bottom + spacing.step3 - rail.bottom,
+      closeTo(spacing.step1, 0.5),
+    );
     expect(rail.center.dx, closeTo(tile.center.dx, 0.5));
   });
 

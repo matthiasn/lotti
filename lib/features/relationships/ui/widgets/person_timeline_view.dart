@@ -3,14 +3,18 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/ui/shared/ds_choice_pills.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:material_ui/material_ui.dart';
@@ -130,31 +134,38 @@ class PersonTimelineSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
+    // The sliver is outdented by the rows' own inset (see the page), so a
+    // row's tile — and the hover fill behind it — reaches the page's text
+    // edge; the heading and the empty state take that inset back.
+    final inset = EdgeInsets.symmetric(horizontal: tokens.spacing.step3);
+    final heading = Padding(
+      key: const ValueKey('person-timeline-heading'),
+      padding: inset,
+      child: PersonCardHeader(title: messages.relationshipTimelineTitle),
+    );
     if (timeline.itemCount == 0) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          key: const ValueKey('person-timeline-empty'),
-          padding: EdgeInsets.all(tokens.spacing.step3),
-          child: Text(
-            context.messages.relationshipTimelineEmpty(personName),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+      return SliverList.list(
+        children: [
+          heading,
+          Padding(
+            padding: inset.copyWith(top: tokens.spacing.step4),
+            child: DesignSystemEmptyState(
+              key: const ValueKey('person-timeline-empty'),
+              icon: LottiIcons.timeline,
+              hint: messages.relationshipTimelineEmpty(personName),
             ),
           ),
-        ),
+        ],
       );
     }
 
     final slots = <Widget Function(BuildContext)>[
+      (context) => heading,
       if (timeline.itemCount >= personTimelineFiltersFrom)
         (context) => Padding(
           key: const ValueKey('person-timeline-filter'),
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step3,
-            0,
-            tokens.spacing.step3,
-            tokens.spacing.step2,
-          ),
+          padding: inset.copyWith(top: tokens.spacing.step3),
           child: DsChoicePills<PersonTimelineFilter>(
             value: filter,
             values: PersonTimelineFilter.values,
@@ -275,7 +286,7 @@ class PersonTimelineRow extends StatelessWidget {
         tail: const <String>[],
         text: null,
         pending: false,
-        footer: _PhotoStrip(photos: row.photos),
+        footer: _PhotoStrip(photos: row.photos, onOpen: actions.openEntry),
         onTap: () => actions.openEntry(row.photos.first),
       ),
       final TimelineTask row => (
@@ -317,12 +328,13 @@ class PersonTimelineRow extends StatelessWidget {
     final text = row.text;
     return DesignSystemTimelineRow(
       leading: DesignSystemTimelineTile(icon: row.icon),
-      // Widest first, shedding a whole segment at a time: the time and the
-      // kind survive every width.
+      // Widest first, shedding one segment at a time from the end — what the
+      // check-in holds before how long it lasted — so a phone keeps a call's
+      // length; the time and the kind survive every width.
       meta: DsTieredText(
         tiers: [
-          [row.time, row.kind, ...row.tail].join(' · '),
-          if (row.tail.isNotEmpty) '${row.time} · ${row.kind}',
+          for (var keep = row.tail.length; keep >= 0; keep--)
+            [row.time, row.kind, ...row.tail.take(keep)].join(' · '),
           row.time,
         ],
         style: relationshipTimestampStyle(
@@ -423,31 +435,57 @@ class _CheckInFooter extends StatelessWidget {
   }
 }
 
-/// A day's photos as a strip of thumbnails, at most four and a count.
+/// A day's photos as a strip of thumbnails — each opens its own photo — at
+/// most four, the last saying how many more there are.
 class _PhotoStrip extends StatelessWidget {
-  const _PhotoStrip({required this.photos});
+  const _PhotoStrip({required this.photos, required this.onOpen});
 
   final List<JournalImage> photos;
+  final void Function(JournalEntity photo) onOpen;
 
   static const _shown = 4;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final size = tokens.spacing.step10;
+    const size = ControlSizes.mediaThumbnail;
+    final more = photos.length - _shown;
+    final shown = photos.take(_shown).toList();
     return Wrap(
       spacing: tokens.spacing.step2,
       runSpacing: tokens.spacing.step2,
       children: [
-        for (final photo in photos.take(_shown))
-          ClipRRect(
-            borderRadius: BorderRadius.circular(tokens.radii.s),
-            child: SizedBox.square(
-              dimension: size,
-              child: CardImageWidget(
-                journalImage: photo,
-                height: size.round(),
-                fit: BoxFit.cover,
+        for (final (index, photo) in shown.indexed)
+          GestureDetector(
+            key: ValueKey('person-timeline-photo-${photo.meta.id}'),
+            onTap: () => onOpen(photo),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              child: SizedBox.square(
+                dimension: size,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CardImageWidget(
+                      journalImage: photo,
+                      height: size.round(),
+                      fit: BoxFit.cover,
+                    ),
+                    if (more > 0 && index == shown.length - 1)
+                      // Chrome over a photograph: the photo-neutral glass,
+                      // legible on any picture in either theme.
+                      ColoredBox(
+                        color: PhotoNeutralGlass.fill,
+                        child: Center(
+                          child: Text(
+                            '+$more',
+                            style: tokens.typography.styles.subtitle.subtitle2
+                                .copyWith(color: PhotoNeutralGlass.glyph),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -457,20 +495,26 @@ class _PhotoStrip extends StatelessWidget {
 }
 
 /// The notes the user pinned about a person — where you met, what they love
-/// — under *About {name}*, newest first. Three show; the rest fold behind
-/// *Show all*. Renders nothing when nothing is pinned: the empty state lives
-/// on the timeline, which teaches how to add one.
+/// — under *About {name}*, newest first.
+///
+/// [compact] (a phone) folds it to one line — the heading, how many notes,
+/// and the first one's opening — so the timeline reaches the first screen;
+/// opening it shows every note. Otherwise three show and the rest fold
+/// behind *Show all*. Renders nothing when nothing is pinned: the empty
+/// state lives on the timeline, which teaches how to add one.
 class PersonAboutSection extends StatefulWidget {
   const PersonAboutSection({
     required this.personName,
     required this.pinned,
     required this.onOpen,
+    this.compact = false,
     super.key,
   });
 
   final String personName;
   final List<TimelineNote> pinned;
   final void Function(JournalEntry note) onOpen;
+  final bool compact;
 
   @override
   State<PersonAboutSection> createState() => _PersonAboutSectionState();
@@ -486,46 +530,62 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
     if (pinned.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final messages = context.messages;
-    final shown = _expanded ? pinned : pinned.take(_folded).toList();
+    final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    final folded = widget.compact && !_expanded;
+    final shown = folded
+        ? const <TimelineNote>[]
+        : (_expanded || widget.compact ? pinned : pinned.take(_folded))
+              .toList();
+    final toggle = DesignSystemButton(
+      key: const ValueKey('person-about-toggle'),
+      label: folded
+          ? messages.relationshipAboutPinnedCount(pinned.length)
+          : _expanded
+          ? messages.relationshipAboutShowLess
+          : messages.relationshipAboutShowAll(pinned.length),
+      trailingIcon: folded ? LottiIcons.expand : null,
+      variant: DesignSystemButtonVariant.tertiary,
+      size: DesignSystemButtonSize.dense,
+      onPressed: () => setState(() => _expanded = !_expanded),
+    );
     return Column(
       key: const ValueKey('person-about'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DesignSystemTimelineSectionHeader(
-          label: messages.relationshipAboutTitle(widget.personName),
+        PersonCardHeader(
+          title: messages.relationshipAboutTitle(widget.personName),
+          trailing: widget.compact || pinned.length > _folded ? toggle : null,
         ),
-        for (final note in shown)
-          Semantics(
-            button: true,
-            child: InkWell(
-              key: ValueKey('person-about-${note.id}'),
-              borderRadius: BorderRadius.circular(tokens.radii.m),
-              onTap: () => widget.onOpen(note.note),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step3,
-                  vertical: tokens.spacing.step2,
-                ),
-                child: Text(
-                  note.note.entryText?.plainText.trim() ?? '',
-                  maxLines: _expanded ? null : 3,
-                  overflow: _expanded ? null : TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
+        if (folded)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step1),
+            child: Text(
+              pinned.first.note.entryText?.plainText.trim() ?? '',
+              key: const ValueKey('person-about-preview'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: bodyStyle.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),
-        if (pinned.length > _folded)
-          DesignSystemButton(
-            key: const ValueKey('person-about-toggle'),
-            label: _expanded
-                ? messages.relationshipAboutShowLess
-                : messages.relationshipAboutShowAll(pinned.length),
-            variant: DesignSystemButtonVariant.tertiary,
-            alignsLabelToLeadingEdge: true,
-            onPressed: () => setState(() => _expanded = !_expanded),
+        for (final note in shown)
+          DsQuietInk(
+            key: ValueKey('person-about-${note.id}'),
+            onTap: () => widget.onOpen(note.note),
+            builder: (context, highlighted) => Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+              child: Text(
+                note.note.entryText?.plainText.trim() ?? '',
+                style: highlighted
+                    ? bodyStyle.copyWith(
+                        color: tokens.colors.interactive.enabled,
+                      )
+                    : bodyStyle,
+              ),
+            ),
           ),
       ],
     );

@@ -63,9 +63,9 @@ class DesignSystemTimelineTile extends StatelessWidget {
 /// One row of a timeline: a tile on a vertical rail, then a meta line, the
 /// body and an optional footer, with an optional trailing control.
 ///
-/// The rail runs from below the tile to the bottom of the row, so stacked
-/// rows read as one continuous line through time; [last] ends it, at the
-/// end of a section. Rows sit on the page itself — no card, no divider —
+/// The rail runs from just below the tile to just above the next row's
+/// tile, so stacked rows read as one continuous line through time; [last]
+/// ends it, at the end of a section. Rows sit on the page itself — no card, no divider —
 /// which is what lets a timeline be the page rather than one more box on it.
 ///
 /// [semanticsLabel] is required and must not be blank: a row is often only
@@ -173,14 +173,19 @@ class DesignSystemTimelineRow extends StatelessWidget {
       ),
     );
 
+    // The rail leaves the tile a `step1` below it and runs on past this
+    // row's bottom, through the next row's top inset, to `step1` above the
+    // next tile — one continuous line through a section, with the same gap
+    // at either end of every tile.
     final row = Stack(
+      clipBehavior: Clip.none,
       children: [
         if (!last)
           Positioned(
             key: const ValueKey('timeline-row-rail'),
             left: railLeft,
             top: spacing.step3 + tile + spacing.step1,
-            bottom: 0,
+            bottom: spacing.step1 - spacing.step3,
             width: BorderWidths.hairline,
             child: ColoredBox(color: tokens.colors.decorative.level01),
           ),

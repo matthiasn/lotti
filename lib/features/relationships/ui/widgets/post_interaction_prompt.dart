@@ -130,12 +130,11 @@ class PostInteractionPrompt extends ConsumerStatefulWidget {
 
   final double bottomGap;
 
-  /// The wash behind the offer: the interactive accent at the tint alpha
-  /// over the card surface, the recipe every tone-tinted fill uses.
-  static Color washColor(DsTokens tokens) => Color.alphaBlend(
-    tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.tint),
-    tokens.colors.background.level02,
-  );
+  /// The offer's surface: the raised card level, neutral. It used to wash
+  /// the interactive accent, which made the whole card read as a button or
+  /// as the agent's — teal is for what can be pressed, and here that is the
+  /// primary *Yes, log it* alone (design panel 2026-10-15).
+  static Color washColor(DsTokens tokens) => tokens.colors.background.level02;
 
   @override
   ConsumerState<PostInteractionPrompt> createState() =>
@@ -228,10 +227,14 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     if (_pending == null || _busy) return;
     setState(() => _busy = true);
     try {
+      // Straight into the recorder: right after a call, speaking is the
+      // quickest way to say what it was about, and the composer around it
+      // already holds the channel, the start and the minutes.
       await openCheckInForPerson(
         context: context,
         ref: ref,
         relationshipId: widget.relationshipId,
+        startSpeaking: true,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -276,15 +279,12 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = tokens.colors.interactive.enabled;
     return Container(
       key: const ValueKey('person-post-call-offer'),
       decoration: BoxDecoration(
         color: PostInteractionPrompt.washColor(tokens),
         borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(
-          color: accent.withValues(alpha: SurfaceAlphas.washChip),
-        ),
+        border: Border.all(color: tokens.colors.decorative.level01),
       ),
       padding: EdgeInsets.all(tokens.spacing.cardPadding),
       child: Column(
@@ -297,14 +297,14 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
                 width: tokens.spacing.step8,
                 height: tokens.spacing.step8,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: SurfaceAlphas.washChip),
+                  color: tokens.colors.background.level03,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Icon(
                   checkInInteractionIcon(pending.interactionType),
                   size: IconSizes.m,
-                  color: accent,
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
               SizedBox(width: tokens.spacing.step4),
@@ -339,17 +339,19 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
             mainAxisAlignment: MainAxisAlignment.end,
             spacing: tokens.spacing.step2,
             children: [
+              // Quiet: declining writes nothing and loses nothing, and it
+              // must never out-shout the offer it declines.
               DesignSystemButton(
                 label: messages.relationshipPostCallDismiss,
-                variant: DesignSystemButtonVariant.tertiary,
+                variant: DesignSystemButtonVariant.quiet,
                 onPressed: _busy ? null : () => unawaited(_dismiss()),
               ),
-              // Secondary: the page's bar already carries the one filled
-              // *Log check-in*, which opens this same prefilled composer.
+              // The primary: this card exists for the minute after a call,
+              // and logging it is what that minute is for.
               DesignSystemButton(
                 key: const ValueKey('person-post-call-yes'),
                 label: messages.relationshipPostCallYes,
-                variant: DesignSystemButtonVariant.secondary,
+                leadingIcon: LottiIcons.mic,
                 onPressed: _busy ? null : () => unawaited(_logCheckIn()),
               ),
             ],

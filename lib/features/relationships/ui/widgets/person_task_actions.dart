@@ -26,6 +26,7 @@ class PersonTaskActions {
   const PersonTaskActions({
     required this.relationshipId,
     required this.linkedTaskIds,
+    required this.personName,
     this.categoryId,
   });
 
@@ -33,6 +34,10 @@ class PersonTaskActions {
 
   /// The tasks already linked, which the picker does not offer again.
   final Set<String> linkedTaskIds;
+
+  /// The person's short name, for the picker's title — the same words as
+  /// the create menu's row that opens it.
+  final String personName;
 
   /// The person's category, inherited by a task created from their picker so
   /// it lands in the same life area the person does.
@@ -145,7 +150,7 @@ class PersonTaskActions {
 
     await ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.relationshipLinkTaskButton,
+      title: context.messages.relationshipCreateTask(personName),
       padding: EdgeInsets.zero,
       builder: (modalContext) => Column(
         mainAxisSize: MainAxisSize.min,

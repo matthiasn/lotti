@@ -244,7 +244,7 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
-/// The truthful cadence pill: warning-tinted `{n} days over` when the cadence
+/// The truthful cadence pill: warning-tinted `{n} days overdue` when the cadence
 /// lapsed, and a quiet read-out otherwise (`Due Thu`, `On track`,
 /// `Not enrolled`, `Dormant`, `Archived`).
 class PeopleCadencePillWidget extends StatelessWidget {

@@ -12673,8 +12673,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days over',
-      one: '1 day over',
+      other: '$count days overdue',
+      one: '1 day overdue',
     );
     return '$_temp0';
   }
@@ -12702,8 +12702,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count days over',
-      one: '1 day over',
+      other: '$count days overdue',
+      one: '1 day overdue',
     );
     return 'Due since $day · $_temp0';
   }
@@ -16835,7 +16835,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String relationshipCreateTask(String name) {
-    return 'Create a task for $name';
+    return 'Add a task for $name';
   }
 
   @override
@@ -16870,6 +16870,23 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String relationshipCallConfirmChannel(String value, String label) {
     return '$value · $label';
+  }
+
+  @override
+  String get relationshipAddAction => 'Add';
+
+  @override
+  String get relationshipTimelineTitle => 'Timeline';
+
+  @override
+  String relationshipAboutPinnedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
   }
 }
 

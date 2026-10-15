@@ -16988,7 +16988,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relationshipCreateTask(String name) {
-    return 'Create a task for $name';
+    return 'Add a task for $name';
   }
 
   @override
@@ -17023,5 +17023,22 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipCallConfirmChannel(String value, String label) {
     return '$value · $label';
+  }
+
+  @override
+  String get relationshipAddAction => 'Add';
+
+  @override
+  String get relationshipTimelineTitle => 'Timeline';
+
+  @override
+  String relationshipAboutPinnedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notes',
+      one: '1 note',
+    );
+    return '$_temp0';
   }
 }

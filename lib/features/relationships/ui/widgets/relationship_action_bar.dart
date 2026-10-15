@@ -10,12 +10,11 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// * **Speak** — the filled pill, and the app's mic: talk about this person
 ///   right after you talked *to* them.
-/// * **Log check-in** — a round glass control for the typed check-in, for
-///   when talking is not an option.
-/// * **+** — the create menu: a note, a task, photos, a check-in. Its own
-///   glyph, never a second `⋯`: the hero's `⋯` already means "manage this
-///   person", and two kebabs with different scopes on one screen made the
-///   reader guess which was which.
+/// * **+ Add** — the create menu: a note, a task, photos, a typed check-in.
+///   Labelled, and its own glyph, never a second `⋯`: the hero's `⋯` already
+///   means "manage this person". A third, unlabelled disc for the typed
+///   check-in made the reader guess which of three ways in was the right
+///   one (design panel 2026-10-15, round 1); it is one row of this menu.
 ///
 /// Calling moved out of the bar into the labelled contact row under the
 /// name, behind a confirmation: in the bar, an unlabelled handset beside the
@@ -26,14 +25,12 @@ import 'package:material_ui/material_ui.dart';
 class RelationshipActionBar extends StatelessWidget {
   const RelationshipActionBar({
     required this.onSpeak,
-    required this.onLogCheckIn,
     required this.onAdd,
     required this.personName,
     super.key,
   });
 
   final VoidCallback onSpeak;
-  final VoidCallback onLogCheckIn;
   final VoidCallback onAdd;
 
   /// The person's short name, for the + control's accessible name.
@@ -79,19 +76,14 @@ class RelationshipActionBar extends StatelessWidget {
                   foregroundColor: tokens.colors.text.onInteractiveAlert,
                   onTap: onSpeak,
                 ),
-                DsGlassRoundButton(
-                  key: const ValueKey('person-action-log-check-in'),
-                  icon: LottiIcons.forum,
-                  semanticLabel: messages.relationshipLogCheckIn,
-                  onPressed: onLogCheckIn,
-                ),
-                DsGlassRoundButton(
+                DsGlassPill(
                   key: const ValueKey('person-action-add'),
+                  label: messages.relationshipAddAction,
                   icon: LottiIcons.add,
                   semanticLabel: messages.relationshipAddToTimeline(
                     personName,
                   ),
-                  onPressed: onAdd,
+                  onTap: onAdd,
                 ),
               ],
             ),

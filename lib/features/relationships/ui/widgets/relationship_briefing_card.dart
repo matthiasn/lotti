@@ -70,7 +70,6 @@ class _AgentCard extends StatelessWidget {
     required this.onOpenInternals,
     required this.onBrief,
     required this.onChooseModel,
-    this.lead,
   });
 
   final RelationshipAgentCardState state;
@@ -93,7 +92,6 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback onOpenInternals;
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
-  final Widget? lead;
 
   /// The faces that ask nothing of the reader: a current briefing, and one
   /// being written. Their upkeep — update, activity, model — waits behind
@@ -480,15 +478,6 @@ class _AgentCard extends StatelessWidget {
           trailing: _calm ? _menu(context, messages) : _pill(context, messages),
           onTap: onOpenInternals,
         ),
-        if (lead case final lead?) _BriefingLead(child: lead),
-        // The band above says "Strained"; this says why. The contract has
-        // always required it — "One sentence tracing the band to specific
-        // check-in evidence" — and the workflow has always stored it, but
-        // no widget read it, so a verdict on a person arrived with no way
-        // to check it. It sits with the band rather than behind the
-        // disclosure: an unexplained verdict is not a summary.
-        if (state == RelationshipAgentCardState.current && health != null)
-          _BandRationale(text: health!.rationale, color: ai.metaText),
         if (body != null)
           Padding(
             // No bottom inset under TldrBody: its disclosure row carries the
@@ -502,6 +491,14 @@ class _AgentCard extends StatelessWidget {
             ),
             child: body,
           ),
+        // Why the band says what it says, under the summary it qualifies and
+        // only once the reader opened the briefing: collapsed, the summary is
+        // the 10-second read, and the evidence line above it pushed that read
+        // down. In the body ink — it is content, not metadata.
+        if (state == RelationshipAgentCardState.current &&
+            health != null &&
+            expanded)
+          _BandRationale(text: health!.rationale, color: ai.bodyText),
         RelationshipSuggestionsBand(
           relationshipId: item.relationship.id,
           checkIns: checkIns,

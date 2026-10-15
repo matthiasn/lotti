@@ -21094,7 +21094,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipDaysOver.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 day over} other{{count} days over}}'**
+  /// **'{count, plural, =1{1 day overdue} other{{count} days overdue}}'**
   String relationshipDaysOver(int count);
 
   /// No description provided for @relationshipDeleteConfirmMessage.
@@ -21124,7 +21124,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipDueSince.
   ///
   /// In en, this message translates to:
-  /// **'Due since {day} · {count, plural, =1{1 day over} other{{count} days over}}'**
+  /// **'Due since {day} · {count, plural, =1{1 day overdue} other{{count} days overdue}}'**
   String relationshipDueSince(String day, int count);
 
   /// No description provided for @relationshipDueToday.
@@ -28088,7 +28088,7 @@ abstract class AppLocalizations {
   /// No description provided for @relationshipCreateTask.
   ///
   /// In en, this message translates to:
-  /// **'Create a task for {name}'**
+  /// **'Add a task for {name}'**
   String relationshipCreateTask(String name);
 
   /// No description provided for @relationshipAddPhotos.
@@ -28144,6 +28144,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value} · {label}'**
   String relationshipCallConfirmChannel(String value, String label);
+
+  /// Label of the person page's create button (a note, a task, photos, a check-in).
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get relationshipAddAction;
+
+  /// Heading over a person's chronological timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get relationshipTimelineTitle;
+
+  /// No description provided for @relationshipAboutPinnedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
+  String relationshipAboutPinnedCount(int count);
 }
 
 class _AppLocalizationsDelegate

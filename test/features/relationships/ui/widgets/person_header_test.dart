@@ -924,7 +924,7 @@ void main() {
       final tokens = tester
           .element(find.byType(PersonHeaderBlock))
           .designTokens;
-      expect(due.label, 'Due since Sat · 5 days over');
+      expect(due.label, 'Due since Sat · 5 days overdue');
       expect(due.variant, DsPillVariant.tinted);
       expect(due.color, tokens.colors.alert.warning.defaultColor);
       expect(find.byKey(const ValueKey('person-pill-next-due')), findsNothing);

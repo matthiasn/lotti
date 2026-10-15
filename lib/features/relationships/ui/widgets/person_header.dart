@@ -6,9 +6,9 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/agents/ui/agent_menu_items.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -85,7 +85,11 @@ class PersonHeroAppBar extends StatelessWidget {
   /// The wash band's extent below the toolbar: the avatar overlaps its lower
   /// edge by half its diameter, so the band has to be tall enough to read
   /// as a band rather than a stripe.
-  static double bandExtent(DsTokens tokens) => tokens.spacing.step12;
+  ///
+  /// `step10`, not the `step12` it was: on a phone the band and the
+  /// banner over it spent the first screen before any of the person's
+  /// history (design panel 2026-10-15).
+  static double bandExtent(DsTokens tokens) => tokens.spacing.step10;
 
   /// The avatar diameter; half of it hangs below the hero.
   static const double avatarSize = ControlSizes.avatarHero;
@@ -134,7 +138,6 @@ class PersonHeroAppBar extends StatelessWidget {
   Widget _build(BuildContext context, {required ResolvedJournalImage? banner}) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final desktop = isDesktopLayout(context);
     // Over a photograph the chrome goes photo-neutral: the theme's ink is
     // near-black in the light theme and would vanish on a picture.
     final onPhoto = banner != null;
@@ -185,34 +188,14 @@ class PersonHeroAppBar extends StatelessWidget {
         // bubble above "No agent for this person" offered a conversation
         // with something that does not exist.
         if (hasAgent) ...[
-          if (desktop)
-            AgentChatButton(
-              key: const ValueKey('person-talk-to-agent'),
-              onPressed: onTalkToAgent,
-            )
-          else
-            GlassActionButton(
-              key: const ValueKey('person-talk-to-agent'),
-              tooltip: messages.goalChatTalkToAgent,
-              semanticLabel: messages.goalChatTalkToAgent,
-              fill: glassFill,
-              onTap: onTalkToAgent,
-              child: Icon(LottiIcons.aiSpark, size: IconSizes.l, color: ink),
-            ),
+          // Labelled on every width: a bare sparkle on a phone left the
+          // reader to guess what it opened.
+          AgentChatButton(
+            key: const ValueKey('person-talk-to-agent'),
+            onPressed: onTalkToAgent,
+          ),
           SizedBox(width: tokens.spacing.step2),
         ],
-        GlassActionButton(
-          key: const ValueKey('person-edit'),
-          tooltip: messages.relationshipEditTitle,
-          semanticLabel: messages.relationshipEditTitle,
-          fill: glassFill,
-          onTap: () => showRelationshipEditModal(
-            context: context,
-            relationship: relationship,
-          ),
-          child: Icon(LottiIcons.edit, size: IconSizes.l, color: ink),
-        ),
-        SizedBox(width: tokens.spacing.step2),
         PersonMenuButton(
           relationship: relationship,
           onDelete: onDelete,
@@ -489,10 +472,11 @@ class _PersonHeroDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_PersonHeroDelegate oldDelegate) => true;
 }
 
-/// What the hero's kebab offers: the contact-link intents where there is an
-/// address book (ADR 0041), and delete — which says it takes the check-ins
-/// with it.
+/// What the hero's kebab offers: editing the person, the contact-link
+/// intents where there is an address book (ADR 0041), the agent's internals,
+/// and delete — which says it takes the check-ins with it.
 enum PersonMenuAction {
+  edit,
   internals,
   linkContact,
   refreshContact,
@@ -541,74 +525,101 @@ class PersonMenuButton extends ConsumerWidget {
           ref.watch(contactRefKeyProvider).value,
         );
 
-    return PopupMenuButton<PersonMenuAction>(
+    void run(PersonMenuAction action) => unawaited(switch (action) {
+      PersonMenuAction.edit => showRelationshipEditModal(
+        context: context,
+        relationship: relationship,
+      ),
+      // The person's agent, in the side sheet over this page: its reports,
+      // conversations and what it has cost — never a trip to Settings.
+      PersonMenuAction.internals => AgentInternalsPanel.show(
+        context: context,
+        agentId: relationshipAgentIdFor(relationship.id),
+        agentName: null,
+      ),
+      PersonMenuAction.linkContact ||
+      PersonMenuAction.relinkContact => runContactLinkAction(
+        context,
+        ref,
+        (controller) => controller.linkContact(relationship),
+      ),
+      PersonMenuAction.refreshContact => runContactLinkAction(
+        context,
+        ref,
+        (controller) => controller.refreshFromContact(relationship),
+      ),
+      PersonMenuAction.delete => onDelete(),
+    });
+
+    DesignSystemContextMenuItem item(
+      PersonMenuAction action,
+      IconData icon,
+      String label, {
+      bool destructive = false,
+    }) => DesignSystemContextMenuItem(
+      key: ValueKey('person-menu-${action.name}'),
+      icon: icon,
+      label: label,
+      isDestructive: destructive,
+      onTap: () => run(action),
+    );
+
+    // The design system's menu, under the same glass disc the hero's other
+    // controls wear — the person's own actions, then the agent's, delete
+    // last.
+    return DesignSystemContextMenuAnchor(
       key: const ValueKey('person-menu'),
-      tooltip: messages.relationshipMoreActions,
-      style: fill == null ? null : IconButton.styleFrom(backgroundColor: fill),
-      icon: Icon(LottiIcons.moreVertical, color: triggerInk),
-      onSelected: (action) => unawaited(switch (action) {
-        // The person's agent, in the side sheet over this page: its reports,
-        // conversations and what it has cost — never a trip to Settings.
-        PersonMenuAction.internals => AgentInternalsPanel.show(
-          context: context,
-          agentId: relationshipAgentIdFor(relationship.id),
-          agentName: null,
+      semanticsLabel: messages.relationshipMoreActions,
+      items: [
+        item(
+          PersonMenuAction.edit,
+          LottiIcons.edit,
+          messages.relationshipEditTitle,
         ),
-        PersonMenuAction.linkContact ||
-        PersonMenuAction.relinkContact => runContactLinkAction(
-          context,
-          ref,
-          (controller) => controller.linkContact(relationship),
-        ),
-        PersonMenuAction.refreshContact => runContactLinkAction(
-          context,
-          ref,
-          (controller) => controller.refreshFromContact(relationship),
-        ),
-        PersonMenuAction.delete => onDelete(),
-      }),
-      // The shared agent-surface menu: the person's own actions, then the
-      // agent's, delete at the bottom — the same order and rows as the goal
-      // page's menu.
-      itemBuilder: (context) => [
         if (contactsSupported && !linked)
-          agentMenuItem(
-            context: context,
-            value: PersonMenuAction.linkContact,
-            icon: LottiIcons.findPerson,
-            label: messages.relationshipLinkContact,
+          item(
+            PersonMenuAction.linkContact,
+            LottiIcons.findPerson,
+            messages.relationshipLinkContact,
           ),
         if (linked) ...[
-          agentMenuItem(
-            context: context,
-            value: PersonMenuAction.refreshContact,
-            icon: LottiIcons.contactCard,
-            label: messages.relationshipUpdateFromContact,
+          item(
+            PersonMenuAction.refreshContact,
+            LottiIcons.contactCard,
+            messages.relationshipUpdateFromContact,
           ),
-          agentMenuItem(
-            context: context,
-            value: PersonMenuAction.relinkContact,
-            icon: LottiIcons.findPerson,
-            label: messages.relationshipRelinkContact,
+          item(
+            PersonMenuAction.relinkContact,
+            LottiIcons.findPerson,
+            messages.relationshipRelinkContact,
           ),
         ],
-        if (contactsSupported) const PopupMenuDivider(),
-        if (hasAgent) ...[
-          agentInternalsMenuItem(
-            context: context,
-            value: PersonMenuAction.internals,
-            key: const ValueKey('person-menu-internals'),
+        if (hasAgent)
+          item(
+            PersonMenuAction.internals,
+            LottiIcons.list,
+            messages.aiInternalsTitle,
           ),
-          const PopupMenuDivider(),
-        ],
-        agentMenuItem(
-          context: context,
-          value: PersonMenuAction.delete,
-          icon: LottiIcons.delete,
-          label: messages.deleteButton,
+        item(
+          PersonMenuAction.delete,
+          LottiIcons.delete,
+          messages.deleteButton,
           destructive: true,
         ),
       ],
+      builder: (context, {required toggle, required isOpen}) =>
+          GlassActionButton(
+            key: const ValueKey('person-menu-trigger'),
+            tooltip: messages.relationshipMoreActions,
+            semanticLabel: messages.relationshipMoreActions,
+            fill: fill,
+            onTap: toggle,
+            child: Icon(
+              LottiIcons.moreVertical,
+              size: IconSizes.l,
+              color: triggerInk,
+            ),
+          ),
     );
   }
 }
@@ -755,7 +766,7 @@ List<Widget> personHeaderPills(
 
 /// The cadence fact as one pill, from the list model's own rules so the
 /// header and the list never disagree about *due*: a warning-tinted `Due
-/// since {day} · {n} days over` when lapsed, `On track` while enrolled — the
+/// since {day} · {n} days overdue` when lapsed, `On track` while enrolled — the
 /// interval itself is [PersonRemindersPill]'s — and the status word for
 /// everyone else.
 ///

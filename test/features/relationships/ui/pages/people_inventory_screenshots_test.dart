@@ -3039,7 +3039,7 @@ void main() {
 
     expect(find.byType(PeopleListRow), findsNWidgets(listItems.length));
     expect(
-      find.text('5 days over'),
+      find.text('5 days overdue'),
       findsOneWidget,
       reason: 'an overdue person never reads as "Due <weekday>"',
     );

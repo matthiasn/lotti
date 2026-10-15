@@ -4,8 +4,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// The one way this feature draws "the cadence has lapsed".
 ///
-/// Two widgets say it — the People row's trailing pill (`5 days over`) and
-/// the person header's cadence pill (`Due since Sat · 5 days over`). They
+/// Two widgets say it — the People row's trailing pill (`5 days overdue`) and
+/// the person header's cadence pill (`Due since Sat · 5 days overdue`). They
 /// read the same model and differ only in how much of it they spell out, so
 /// they must not differ in how they *encode* it. They did: the row grew a
 /// warning glyph and the header kept a bare tint, which on the dark ground
