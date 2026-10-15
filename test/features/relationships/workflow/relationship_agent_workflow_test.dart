@@ -443,6 +443,53 @@ void main() {
     expect(facts, contains('photo: Pip at the launch pad.'));
   });
 
+  // A person with many photos on their timeline: the FACTS carry the newest
+  // few, so only those are looked up.
+  test('descriptions are read for the timeline photos the FACTS carry, not '
+      'for every photo the person has', () async {
+    stubGlmResolution();
+    const many = relationshipTimelineMediaLookback + 3;
+    when(
+      () => relationshipRepository.getAllTimelineEntries(any()),
+    ).thenAnswer(
+      (_) async => [
+        for (var i = 0; i < many; i++)
+          testImageEntry.copyWith(
+            meta: testImageEntry.meta.copyWith(
+              id: 'photo-$i',
+              dateFrom: DateTime(2026, 8, 1 + i),
+            ),
+          ),
+      ],
+    );
+    conversationRepository
+      ..maxDelegateCalls = 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async => null;
+
+    await run(tokens: {relationshipReportRefreshTriggerToken});
+
+    final asked =
+        verify(
+              () => relationshipRepository.getImageDescriptions(captureAny()),
+            ).captured.single
+            as Set<String>;
+    expect(asked, {
+      for (var i = many - relationshipTimelineMediaLookback; i < many; i++)
+        'photo-$i',
+    });
+  });
+
   // The usage session behind this: the user corrected a misheard name in a
   // check-in, and the agent kept nothing of it for its next wake.
   test('a grievance recorded in one wake is read back by the next', () async {

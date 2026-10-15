@@ -258,11 +258,13 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     final timelineEntries = await _relationshipRepository.getAllTimelineEntries(
       relationshipId,
     );
+    // Descriptions for the photos the FACTS block carries, and no more: a
+    // person with hundreds of linked photos is sent five of them.
     final imageDescriptions = await _relationshipRepository
         .getImageDescriptions({
           for (final entry in [
             ...checkInEntries.values.expand((e) => e),
-            ...timelineEntries,
+            ...relationshipTimelineMedia(timelineEntries),
           ])
             if (entry is JournalImage) entry.id,
         });

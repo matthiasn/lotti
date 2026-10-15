@@ -229,6 +229,59 @@ void main() {
       expect(upcoming, isNot(contains('Coffee past')));
       expect(upcoming, isNot(contains('Coffee beyond')));
     });
+
+    test('at most the soonest few meetings go out, and the rest are counted '
+        'rather than listed', () {
+      const extra = 2;
+      final facts = render(
+        timeline: [
+          for (var i = 0; i < relationshipUpcomingMeetingLookback + extra; i++)
+            meeting('m$i', now.add(Duration(days: i + 1))),
+        ],
+      );
+
+      final upcoming = section(facts, 'UPCOMING MEETINGS');
+      final lines = upcoming.split('\n').where((l) => l.startsWith('- '));
+      expect(lines.length, relationshipUpcomingMeetingLookback + 1);
+      expect(upcoming, contains('Coffee m0 '));
+      expect(upcoming, isNot(contains('Coffee m6 ')));
+      expect(lines.last, '- and $extra later');
+    });
+
+    test('a meeting is placed by the instant its stored offset names: one '
+        'written three hours east, an hour ahead on its own clock, has '
+        'already begun here', () {
+      final here = now.toUtc();
+      // The writer's wall clock: an hour after this moment's UTC reading,
+      // three hours east of UTC — two hours ago as an instant.
+      final stored = DateTime(
+        here.year,
+        here.month,
+        here.day,
+        here.hour + 1,
+        here.minute,
+      );
+      final east = JournalEntity.event(
+        meta:
+            meta(
+              'east',
+              dateFrom: stored,
+            ).copyWith(
+              dateTo: stored.add(const Duration(hours: 1)),
+              utcOffset: 180,
+            ),
+        data: const EventData(
+          title: 'Coffee east',
+          stars: 0,
+          status: EventStatus.planned,
+        ),
+      );
+
+      final upcoming = section(render(timeline: [east]), 'UPCOMING MEETINGS');
+
+      expect(upcoming, isNot(contains('Coffee east')));
+      expect(upcoming, contains('- none'));
+    });
   });
 
   group('check-in entries', () {

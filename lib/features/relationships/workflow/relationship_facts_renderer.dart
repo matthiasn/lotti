@@ -41,6 +41,25 @@ const relationshipTimelineMediaLookback = 5;
 /// How far ahead the FACTS block looks for meetings with the person.
 const relationshipUpcomingMeetingDays = 30;
 
+/// How many of the soonest meetings in that window the FACTS block carries;
+/// a dense calendar must not crowd out the evidence the briefing is for.
+const relationshipUpcomingMeetingLookback = 5;
+
+/// The voice notes and photos on a person's timeline the FACTS block
+/// carries: the newest [relationshipTimelineMediaLookback] of each, newest
+/// first. The workflow reads descriptions for these photos only, so the
+/// lookup stays as small as what the briefing is sent.
+List<JournalEntity> relationshipTimelineMedia(List<JournalEntity> entries) {
+  int newestFirst(JournalEntity a, JournalEntity b) =>
+      b.meta.dateFrom.compareTo(a.meta.dateFrom);
+  List<JournalEntity> newest<T extends JournalEntity>() =>
+      (entries.whereType<T>().toList()..sort(newestFirst))
+          .take(relationshipTimelineMediaLookback)
+          .toList();
+  return [...newest<JournalAudio>(), ...newest<JournalImage>()]
+    ..sort(newestFirst);
+}
+
 /// The health bands one wake may publish, and the newest user-set sentiment
 /// they derive from.
 typedef RelationshipHealthBandConstraint = ({
@@ -361,36 +380,36 @@ class RelationshipFactsRenderer {
       );
     }
 
-    List<JournalEntity> newest<T extends JournalEntity>() =>
-        (entries.whereType<T>().toList()..sort(newestFirst))
-            .take(relationshipTimelineMediaLookback)
-            .toList();
-    final media = [...newest<JournalAudio>(), ...newest<JournalImage>()]
-      ..sort(newestFirst);
+    final media = relationshipTimelineMedia(entries);
     buffer.writeln('VOICE NOTES AND PHOTOS (newest first):');
     if (media.isEmpty) buffer.writeln('- none');
     for (final entry in media) {
       buffer.writeln('- ${_entryLine(entry, imageDescriptions)}');
     }
 
-    final horizon = now.add(
+    // Instants rebuilt with each meeting's stored offset (ADR 0114): a
+    // meeting written on a device in another zone is ahead or behind by the
+    // same instant on every device.
+    DateTime startOf(JournalEvent e) =>
+        relationshipStoredInstant(e.meta.dateFrom, e.meta.utcOffset);
+    final from = now.toUtc();
+    final horizon = from.add(
       const Duration(days: relationshipUpcomingMeetingDays),
     );
-    final meetings =
+    final ahead =
         entries
             .whereType<JournalEvent>()
             .where(
-              (e) =>
-                  e.meta.dateFrom.isAfter(now) &&
-                  e.meta.dateFrom.isBefore(horizon),
+              (e) => startOf(e).isAfter(from) && startOf(e).isBefore(horizon),
             )
             .toList()
-          ..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+          ..sort((a, b) => startOf(a).compareTo(startOf(b)));
+    final meetings = ahead.take(relationshipUpcomingMeetingLookback);
     buffer.writeln(
       'UPCOMING MEETINGS (next $relationshipUpcomingMeetingDays days, '
-      'soonest first):',
+      'soonest first, at most $relationshipUpcomingMeetingLookback):',
     );
-    if (meetings.isEmpty) buffer.writeln('- none');
+    if (ahead.isEmpty) buffer.writeln('- none');
     for (final meeting in meetings) {
       buffer.writeln(
         '- ${_minute(meeting.meta.dateFrom)}–'
@@ -398,6 +417,8 @@ class RelationshipFactsRenderer {
         '${meeting.data.title} [${meeting.data.status.name}]',
       );
     }
+    final omitted = ahead.length - relationshipUpcomingMeetingLookback;
+    if (omitted > 0) buffer.writeln('- and $omitted later');
   }
 
   /// Whether a banner of this agent was day-dismissed on the local
