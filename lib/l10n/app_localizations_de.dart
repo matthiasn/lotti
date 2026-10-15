@@ -3765,6 +3765,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.';
 
   @override
+  String get configFlagEnableCompanion => 'Begleiterin';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Zeigt neben der AI-Zusammenfassung eine Figur, die sie vorliest – ihr Mund folgt der Stimme. Braucht „AI-Zusammenfassung vorlesen“.';
+
+  @override
   String get configFlagEnableDailyOs => 'DailyOS aktivieren';
 
   @override

@@ -1606,6 +1606,8 @@
   "configFlagEnableAiStreamingDescription": "Transmiteți răspunsurile AI în flux pentru acțiunile legate de sarcini. Dezactivați opțiunea pentru a păstra răspunsurile în memoria tampon și a menține interfața mai fluidă.",
   "configFlagEnableAiSummaryTts": "Redare rezumate AI",
   "configFlagEnableAiSummaryTtsDescription": "Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS Supertonic instalat.",
+  "configFlagEnableCompanion": "Însoțitoare",
+  "configFlagEnableCompanionDescription": "Afișează lângă rezumatul AI un personaj care îl citește cu voce tare, cu gura în ritmul vocii. Necesită redarea rezumatelor AI.",
   "configFlagEnableDailyOs": "Activează DailyOS",
   "configFlagEnableDailyOsDescription": "Afișează DailyOS în navigarea principală.",
   "configFlagEnableDashboardsPage": "Activați pagina Tablouri de bord",

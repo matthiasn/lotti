@@ -55,6 +55,7 @@ void main() {
 
   MockIoFile preparedFile() {
     final file = MockIoFile();
+    when(() => file.path).thenReturn('/tmp/tts_clip.wav');
     when(file.existsSync).thenReturn(true);
     when(file.delete).thenAnswer((_) async => file);
     return file;
@@ -319,6 +320,7 @@ void main() {
       'a ${throws ? 'failed' : 'denied'} playback gate deletes synthesized audio without playing it',
       () async {
         final file = MockIoFile();
+        when(() => file.path).thenReturn('/tmp/tts_clip.wav');
         when(file.existsSync).thenReturn(true);
         when(file.delete).thenAnswer((_) async => file);
         final player = FakeTtsAudioPlayer();
@@ -366,6 +368,7 @@ void main() {
 
   test('stopping playback removes its temporary synthesized file', () async {
     final file = MockIoFile();
+    when(() => file.path).thenReturn('/tmp/tts_clip.wav');
     when(file.existsSync).thenReturn(true);
     when(file.delete).thenAnswer((_) async => file);
     final player = FakeTtsAudioPlayer();
@@ -385,6 +388,7 @@ void main() {
     'an already removed temporary WAV does not prevent stopping speech',
     () async {
       final file = MockIoFile();
+      when(() => file.path).thenReturn('/tmp/tts_clip.wav');
       when(file.existsSync).thenReturn(true);
       when(file.delete).thenThrow(
         const FileSystemException('Already removed', '', OSError('', 2)),
@@ -414,6 +418,7 @@ void main() {
       await getIt.unregister<DomainLogger>();
       getIt.registerSingleton<DomainLogger>(logger);
       final file = MockIoFile();
+      when(() => file.path).thenReturn('/tmp/tts_clip.wav');
       when(file.existsSync).thenReturn(true);
       when(file.delete).thenAnswer((_) async => file);
       final player = FakeTtsAudioPlayer(
@@ -451,6 +456,7 @@ void main() {
       await getIt.unregister<DomainLogger>();
       getIt.registerSingleton<DomainLogger>(logger);
       final file = MockIoFile();
+      when(() => file.path).thenReturn('/tmp/tts_clip.wav');
       when(file.existsSync).thenReturn(true);
       when(file.delete).thenThrow(
         const FileSystemException(
@@ -657,5 +663,75 @@ void main() {
       h.container.read(ttsPlaybackControllerProvider).duration,
       const Duration(seconds: 42),
     );
+  });
+
+  group('clip', () {
+    // The fake engine writes every utterance to this file.
+    const path = '/tmp/fake_tts_output.wav';
+
+    test('names the clip and its words while it plays', () async {
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player);
+
+      await controllerOf(
+        h.container,
+      ).speak(sourceId: 'task-1', text: 'Four things today.');
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.playing);
+      expect(state.clip, (path: path, text: 'Four things today.'));
+    });
+
+    test('is not named before playback starts', () async {
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player);
+
+      await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+
+      final beforePlaying = h.states.where(
+        (s) => s.status != TtsPlaybackStatus.playing,
+      );
+      expect(beforePlaying, isNotEmpty);
+      expect(beforePlaying.map((s) => s.clip), everyElement(isNull));
+    });
+
+    test('is cleared when playback completes', () async {
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player);
+
+      await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+      player.complete();
+      await pumpEventQueue();
+
+      expect(h.container.read(ttsPlaybackControllerProvider).clip, isNull);
+    });
+
+    test('is cleared when playback is stopped', () async {
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player);
+
+      await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+      await controllerOf(h.container).stop();
+
+      expect(h.container.read(ttsPlaybackControllerProvider).clip, isNull);
+    });
+
+    test('is cleared when the player fails to play the clip', () async {
+      final player = FakeTtsAudioPlayer(playError: StateError('no output'));
+      addTearDown(player.dispose);
+      final h = harness(player: player);
+
+      await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+
+      final state = h.container.read(ttsPlaybackControllerProvider);
+      expect(state.status, TtsPlaybackStatus.error);
+      expect(state.clip, isNull);
+      // It was named while playback was attempted.
+      expect(h.states.map((s) => s.clip), contains((path: path, text: 'x')));
+    });
   });
 }

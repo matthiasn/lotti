@@ -77,6 +77,7 @@ class AgentTestBench {
     this._state,
     this._enableAgents = true,
     this._enableSummaryTts = false,
+    this._enableCompanion = false,
     this._template,
     this._identity,
     this._resolvedSetup,
@@ -112,6 +113,10 @@ class AgentTestBench {
   final AgentStateEntity? _state;
   final bool _enableAgents;
   final bool _enableSummaryTts;
+
+  /// The companion's own flag. Off unless a test asks for her: her ticker
+  /// never lets `pumpAndSettle` settle.
+  final bool _enableCompanion;
   final AgentTemplateEntity? _template;
   final AgentIdentityEntity? _identity;
   final ResolvedAgentSetup? _resolvedSetup;
@@ -185,11 +190,11 @@ class AgentTestBench {
       locale: locale,
       overrides: [
         configFlagProvider.overrideWith(
-          (ref, flagName) => Stream.value(
-            flagName == enableAiSummaryTtsFlag
-                ? _enableSummaryTts
-                : _enableAgents,
-          ),
+          (ref, flagName) => Stream.value(switch (flagName) {
+            enableAiSummaryTtsFlag => _enableSummaryTts,
+            enableCompanionFlag => _enableCompanion,
+            _ => _enableAgents,
+          }),
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
         taskAgentResolvedSetupProvider.overrideWith(

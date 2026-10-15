@@ -3789,6 +3789,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS Supertonic installé.';
 
   @override
+  String get configFlagEnableCompanion => 'Compagne';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Affiche à côté du résumé IA un personnage qui le lit à voix haute, la bouche calée sur la voix. Nécessite la lecture des résumés IA.';
+
+  @override
   String get configFlagEnableDailyOs => 'Activer DailyOS';
 
   @override

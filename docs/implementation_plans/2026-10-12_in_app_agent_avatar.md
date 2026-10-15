@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13), shown in the widgetbook only — see "Proof of concept"; delivery planned as a branch stack (2026-10-15) — see "Delivery"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branch 1 (`feat/companion-speaks`) built — see "Delivery"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -343,14 +343,15 @@ The binding everything else uses, with one real host so it is not unused code.
 
 - **Layer order.** Move `companion` to directly after `tts`; `make
   layer_check` green, no baseline entry added.
-- **`TtsPlaybackState.clipPath`.** Set when the status turns `playing`,
+- **`TtsPlaybackState.clip`.** The WAV's path and the text it was
+  synthesized from, as one record. Set when the status turns `playing`,
   cleared on stop, completion and error. Documented in the tts concept.
-- **`CompanionSpeech`** (`companion/state/`). For one `sourceId` and the
-  text the host asked to speak, it watches `ttsPlaybackControllerProvider`.
-  When that source starts playing, it reads the clip once
-  (`SpeechEnvelope.fromWav`; Supertonic writes 16-bit PCM, which `fromWav`
-  takes) and builds a `VoicedTextTrack`. If the clip cannot be read, the
-  fallback is `TextLipSync` on the text. Another source playing, or none,
+- **`CompanionSpeech`** (`companion/state/`). For one `sourceId`, it
+  watches `ttsPlaybackControllerProvider`. When that source starts playing,
+  it reads the clip once (`SpeechEnvelope.fromWav`; Supertonic writes 16-bit
+  PCM, which `fromWav` takes) and builds a `VoicedTextTrack` from it and the
+  clip's words. If the clip cannot be read, the fallback is `TextLipSync` on
+  those words. Each utterance starts a fresh `PlayheadClock`. Another source playing, or none,
   leaves her silent. It changes only when an utterance starts or ends:
   per-frame values never pass through a provider.
 - **`PlayheadClock`.** The player reports its position in coarse steps. The
@@ -358,8 +359,8 @@ The binding everything else uses, with one real host so it is not unused code.
   the playback speed, so the mouth moves every frame and still re-syncs on
   every report.
 - **`CompanionSpeaker`** (`companion/ui/`). `CompanionView` plus the
-  binding. The host gives a `sourceId`, the text, a look, a mood and a
-  framing.
+  binding. The host gives a `sourceId`, a look, a mood and a framing; the
+  words come with the clip, so they are the ones the voice was given.
 - **`CompanionFraming.torso`.** Head to hips, both hands in view.
 - **Flag `enable_companion`.** Seeded off, in the advanced group, with labels
   in every catalog. She is shown only when this flag is on and the speak
@@ -372,11 +373,11 @@ The binding everything else uses, with one real host so it is not unused code.
     unreadable clip falls back to the text; stop clears the track;
   - the clock, under `fakeAsync`;
   - the card with the flag on and off;
-  - `clipPath` across the playback states.
+  - `clip` across the playback states.
 
   Each regression test is re-run with its fix reverted.
 - **Docs:** the companion README and concept (the binding, with a diagram),
-  the tts concept (`clipPath`), and the layer-order rationale. No changelog
+  the tts concept (`clip`), and the layer-order rationale. No changelog
   fragment, because the flag is off.
 
 **Commit:** `feat(companion): she speaks the task summary, her mouth on the on-device voice`

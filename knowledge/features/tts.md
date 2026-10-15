@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-09-11
+    last_modified: 2026-10-15
 ---
 
 On-device text-to-speech that reads a task's AI **TL;DR** or a saved query
@@ -118,3 +118,16 @@ stateDiagram-v2
   stopped --> synthesizing: Speak
   error --> synthesizing: Retry
 ```
+
+# Who else listens to an utterance
+
+`TtsPlaybackState` is the one thing a surface reads about an utterance: its
+status, its `sourceId`, the playhead `position`, and — while it is `playing`,
+and only then — `clip`, the WAV being played together with the text it was
+synthesized from. The two travel as one record, so a reader never pairs a clip
+with words the screen shows now but the voice was never given. The
+[companion](companion.md) reads that clip once to shape her mouth and follows
+`position` each frame. The voice imports nothing of hers. `clip` is cleared on
+stop, completion and error, because the file is deleted then, and a reader
+that gets there late finds no file — the companion falls back to the words
+alone.

@@ -1827,6 +1827,8 @@
   "configFlagEnableAiStreamingDescription": "Transmita respostas de IA para ações relacionadas a tarefas. Desligue para armazenar respostas em buffer e manter a IU mais suave.",
   "configFlagEnableAiSummaryTts": "Reprodução de resumo de IA",
   "configFlagEnableAiSummaryTtsDescription": "Mostre o botão de conversão de texto em fala local nos resumos de IA de tarefas. Requer um modelo Supertonic TTS instalado.",
+  "configFlagEnableCompanion": "Companheira",
+  "configFlagEnableCompanionDescription": "Mostra ao lado do resumo de IA uma personagem que o lê em voz alta, com a boca no ritmo da voz. Precisa da reprodução de resumo de IA.",
   "configFlagEnableDailyOs": "Ativar DailyOS",
   "configFlagEnableDailyOsDescription": "Mostrar o DailyOS na navegação principal.",
   "configFlagEnableDashboardsPage": "Ativar página Painéis",

@@ -1606,6 +1606,8 @@
   "configFlagEnableAiStreamingDescription": "Diffuser les réponses IA pour les actions liées aux tâches. Désactivez pour mettre les réponses en mémoire tampon et conserver une interface plus fluide.",
   "configFlagEnableAiSummaryTts": "Lecture des résumés IA",
   "configFlagEnableAiSummaryTtsDescription": "Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS Supertonic installé.",
+  "configFlagEnableCompanion": "Compagne",
+  "configFlagEnableCompanionDescription": "Affiche à côté du résumé IA un personnage qui le lit à voix haute, la bouche calée sur la voix. Nécessite la lecture des résumés IA.",
   "configFlagEnableDailyOs": "Activer DailyOS",
   "configFlagEnableDailyOsDescription": "Afficher DailyOS dans la navigation principale.",
   "configFlagEnableDashboardsPage": "Activer la page Tableaux de bord",

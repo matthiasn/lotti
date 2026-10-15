@@ -14,6 +14,10 @@ enum CompanionFraming {
   /// Head to toe.
   full(Rect.fromLTRB(-160, -470, 160, 15)),
 
+  /// Head to just below the hips, wide enough for her hands at rest and in
+  /// every gesture: how the app shows her, never with her legs.
+  torso(Rect.fromLTRB(-160, -485, 160, -150)),
+
   /// Head, shoulders and the hands when they come up: the size for a chat.
   bust(Rect.fromLTRB(-115, -452, 115, -222));
 
@@ -21,6 +25,10 @@ enum CompanionFraming {
 
   /// The part of character space that is fitted into the view.
   final Rect window;
+
+  /// Width over height of [window]: a box of this shape shows the framing
+  /// with no empty margin.
+  double get aspectRatio => window.width / window.height;
 }
 
 /// Paints one [pose] of the companion in [look], fitting [framing]'s window

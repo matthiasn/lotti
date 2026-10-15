@@ -8,7 +8,8 @@
 /// Beyond the core matrix it also renders the states that stress the card's
 /// lower half: the narrowest supported phone, German at large text scale, and
 /// the header hover — driven with a real mouse pointer, because `tester.tap`
-/// never fires `InkWell.onHover`.
+/// never fires `InkWell.onHover` — and the card with the companion beside the
+/// summary (`enable_companion`).
 ///
 /// PNGs are written to `LOTTI_SCREENSHOT_DIR`. When only
 /// `LOTTI_CAPTURE_SCREENSHOTS=true` is set, they are written to
@@ -187,6 +188,7 @@ Future<void> _capture(
   _Hover hover = _Hover.none,
   Locale? locale,
   TextScaler textScaler = TextScaler.noScaling,
+  bool companion = false,
   String? nameSuffix,
 }) async {
   // The toggle and entrance widgets are stateful. Explicitly unmount the
@@ -232,6 +234,7 @@ Future<void> _capture(
           template: _template(),
           resolvedSetup: _resolvedSetup,
           enableSummaryTts: true,
+          enableCompanion: companion,
           isRunning: mode == _Mode.running,
           mediaQueryData: MediaQueryData(
             size: device.size,
@@ -356,5 +359,25 @@ void main() {
         nameSuffix: 'hover-header',
       );
     });
+  });
+
+  // The companion beside the summary, on the out-of-date state the core
+  // matrix leads with, so each capture pairs with its `manual` twin.
+  group('companion', () {
+    for (final device in [desktopDevice, proDevice, miniDevice]) {
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final theme = brightness == Brightness.dark ? 'dark' : 'light';
+        testWidgets('${device.name} manual companion $theme', (tester) async {
+          await _capture(
+            tester,
+            device: device,
+            brightness: brightness,
+            mode: _Mode.manual,
+            companion: true,
+            nameSuffix: 'companion',
+          );
+        });
+      }
+    }
   });
 }

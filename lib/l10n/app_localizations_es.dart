@@ -3780,6 +3780,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de Supertonic instalado.';
 
   @override
+  String get configFlagEnableCompanion => 'Compañera';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Muestra junto al resumen de IA un personaje que lo lee en voz alta, con la boca al ritmo de la voz. Necesita la reproducción de resúmenes de IA.';
+
+  @override
   String get configFlagEnableDailyOs => 'Habilitar DailyOS';
 
   @override

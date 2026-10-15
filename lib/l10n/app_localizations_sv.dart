@@ -3741,6 +3741,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa den lokala text-till-tal-knappen på sammanfattningar av uppgift-AI. Kräver en installerad Supertonic TTS-modell.';
 
   @override
+  String get configFlagEnableCompanion => 'Följeslagare';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Visa en figur bredvid AI-sammanfattningen som läser upp den, med munnen i takt med rösten. Kräver AI-sammanfattningsuppspelning.';
+
+  @override
   String get configFlagEnableDailyOs => 'Aktivera DailyOS';
 
   @override

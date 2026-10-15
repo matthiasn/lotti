@@ -1,9 +1,12 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/companion/animation/companion_animator.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/rig/rig_frame.dart';
 
 import '../companion_test_utils.dart';
 
@@ -33,6 +36,57 @@ void main() {
       final w = CompanionFraming.bust.window;
       expect(w.width, w.height);
     });
+
+    test("the aspect ratio is the window's width over its height", () {
+      for (final framing in CompanionFraming.values) {
+        final w = framing.window;
+        expect(framing.aspectRatio, closeTo(w.width / w.height, 1e-12));
+      }
+      expect(CompanionFraming.bust.aspectRatio, 1);
+    });
+  });
+
+  group('torso framing', () {
+    const torso = CompanionFraming.torso;
+
+    test('ends above her feet: the legs are never in it', () {
+      // The ankles stand 20 above the floor; the shins reach up from there.
+      expect(torso.window.bottom, lessThan(pelvisY + 40));
+      expect(torso.window.bottom, lessThan(-20 - shin));
+    });
+
+    test('keeps her head in, as the full framing does', () {
+      expect(
+        torso.window.top,
+        lessThanOrEqualTo(CompanionFraming.full.window.top),
+      );
+    });
+
+    // A hand is drawn around its wrist; this is room for the palm and fingers.
+    const handReach = 25.0;
+
+    for (final gesture in <GestureName?>[null, ...GestureName.values]) {
+      test(
+        'keeps both hands in view ${gesture == null ? 'at rest' : 'in ${gesture.name}'}',
+        () {
+          final animator = CompanionAnimator(seed: 3);
+          if (gesture != null) animator.play(gesture);
+          // Six seconds covers every gesture's phases and its settle.
+          for (var i = 0; i < 6 * 60; i++) {
+            final pose = animator.step(1 / 60);
+            final frame = RigFrame(pose);
+            for (final (arm, side) in [(pose.left, -1), (pose.right, 1)]) {
+              final wrist = frame.armSpine(arm, side).last;
+              expect(
+                torso.window.deflate(handReach).contains(wrist),
+                isTrue,
+                reason: 'wrist $wrist at ${i / 60}s',
+              );
+            }
+          }
+        },
+      );
+    }
   });
 
   test('paints her head to toe, in the look it is given', () async {

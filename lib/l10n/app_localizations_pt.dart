@@ -3774,6 +3774,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostre o botão de conversão de texto em fala local nos resumos de IA de tarefas. Requer um modelo Supertonic TTS instalado.';
 
   @override
+  String get configFlagEnableCompanion => 'Companheira';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Mostra ao lado do resumo de IA uma personagem que o lê em voz alta, com a boca no ritmo da voz. Precisa da reprodução de resumo de IA.';
+
+  @override
   String get configFlagEnableDailyOs => 'Ativar DailyOS';
 
   @override

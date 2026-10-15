@@ -70,6 +70,7 @@ void main() {
         enableTooltipFlag: true,
         enableAiStreamingFlag: true,
         enableAiSummaryTtsFlag: false,
+        enableCompanionFlag: false,
         enableQueryChatFlag: false,
         recordLocationFlag: false,
         resendAttachments: false,

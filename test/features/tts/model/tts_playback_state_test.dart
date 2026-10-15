@@ -11,6 +11,7 @@ void main() {
       expect(state.position, Duration.zero);
       expect(state.duration, Duration.zero);
       expect(state.errorMessage, isNull);
+      expect(state.clip, isNull);
       expect(state.isBusy, isFalse);
     });
   });
@@ -80,6 +81,41 @@ void main() {
       expect(next.sourceId, 'task-a');
       expect(next.errorMessage, 'boom');
       expect(next.position, const Duration(seconds: 1));
+    });
+  });
+
+  group('clip', () {
+    const playing = TtsPlaybackState(
+      status: TtsPlaybackStatus.playing,
+      sourceId: 'task-a',
+      clip: (path: '/tmp/clip.wav', text: 'Good morning'),
+    );
+
+    test('is kept by a copy that does not name it', () {
+      final next = playing.copyWith(position: const Duration(seconds: 2));
+      expect(next.clip, (path: '/tmp/clip.wav', text: 'Good morning'));
+    });
+
+    test('is replaced by a copy that names a new clip', () {
+      const next = (path: '/tmp/b.wav', text: 'Good night');
+      expect(playing.copyWith(clip: next).clip, next);
+    });
+
+    test('is cleared by a copy that names null', () {
+      expect(playing.copyWith(clip: null).clip, isNull);
+    });
+
+    test('takes part in equality and the hash, words included', () {
+      final otherWords = playing.copyWith(
+        clip: (path: '/tmp/clip.wav', text: 'Good night'),
+      );
+      expect(otherWords, isNot(playing));
+      expect(
+        playing
+            .copyWith(clip: (path: '/tmp/clip.wav', text: 'Good morning'))
+            .hashCode,
+        playing.hashCode,
+      );
     });
   });
 

@@ -19,7 +19,7 @@ sources:
   - id: layer-guard
     resource: ../../tool/architecture/layer_guard.dart
     title: Layer order guard
-    last_modified: 2026-10-04
+    last_modified: 2026-10-15
   - id: import-direction
     resource: ../../test/architecture/feature_import_direction_test.dart
     title: Feature import direction test
@@ -120,7 +120,9 @@ in the guard, bottom to top: a feature may import the features before it,
 never the ones after, and the order is the one that left the fewest upward
 imports when the guard was introduced, adjusted by hand where the domain
 decides (sync above the features it carries, the agent runtime above AI,
-settings above every feature whose settings pages its route table hosts).
+the companion character just above the voice she lip-syncs to and below every
+surface that shows her, settings above every feature whose settings pages its
+route table hosts).
 Three kinds of import break it:
 
 - **upward** — a file imports a feature ranked above its own, including any
