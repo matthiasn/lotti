@@ -406,7 +406,10 @@ void main() {
       );
 
       await tester.tap(find.text('Yes, log it'));
-      await tester.pumpAndSettle();
+      // The live recorder animates for as long as it runs: frames, not a
+      // settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(recorder.recordCalls.map((c) => c.linkedId), ['rel-1']);
     });
