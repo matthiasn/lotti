@@ -334,8 +334,9 @@ a task, and greets a new user. Everything after makes her a product.
   she needs from higher up (the chosen character, branch 5) is handed down
   by inversion, not imported.
 - **The voice stays ignorant of her.** `tts` never imports `companion`.
-  `TtsPlaybackState` gains one field, the path of the clip being played; the
-  companion reads the clip itself and builds the mouth from it.
+  `TtsPlaybackState` gains one field, the clip being played (its WAV and
+  the words it was made from); the companion reads the clip itself and
+  builds the mouth from it.
 
 ### 1 · `feat/companion-speaks`: her mouth on the on-device voice
 
@@ -361,12 +362,13 @@ The binding everything else uses, with one real host so it is not unused code.
 - **`CompanionSpeaker`** (`companion/ui/`). `CompanionView` plus the
   binding. The host gives a `sourceId`, a look, a mood and a framing; the
   words come with the clip, so they are the ones the voice was given.
-- **`CompanionFraming.torso`.** Head to hips, both hands in view.
+- **Framing: `CompanionFraming.full`.** Head to toe, both hands in view in
+  every gesture. Her box is `ControlSizes.companionCard` (136) high.
 - **Flag `enable_companion`.** Seeded off, in the advanced group, with labels
   in every catalog. She is shown only when this flag is on and the speak
   control is shown (`enable_ai_summary_tts` on, engine supported).
 - **First host: the AI summary card** (`agents/ui/ai_summary_card.dart`). She is
-  framed at the torso, beside the TL;DR. She speaks when its speak control
+  shown head to toe, beside the TL;DR. She speaks when its speak control
   plays, through the same `sourceId`.
 - **Tests:**
   - binding: silent for another source; the clip becomes a track; an
@@ -377,8 +379,8 @@ The binding everything else uses, with one real host so it is not unused code.
 
   Each regression test is re-run with its fix reverted.
 - **Docs:** the companion README and concept (the binding, with a diagram),
-  the tts concept (`clip`), and the layer-order rationale. No changelog
-  fragment, because the flag is off.
+  the tts concept (`clip`), and the layer-order rationale, plus a changelog
+  fragment for the flag.
 
 **Commit:** `feat(companion): she speaks the task summary, her mouth on the on-device voice`
 
@@ -465,20 +467,25 @@ The binding everything else uses, with one real host so it is not unused code.
 
 ### Decisions (2026-10-15)
 
-- **Framing: torso and hands, never the legs.** In the app she is shown from
-  the head to just below the hips, so her hands are in view even when they
-  rest. Branch 1 adds a `CompanionFraming.torso` window for this, set by
-  rendering every gesture in the widgetbook so that no resting or raised
-  hand leaves the window. `full` stays for the widgetbook and the videos,
-  and `bust` stays for small sizes.
+- **Framing: head to toe** (revised 2026-10-15, replacing "torso and hands,
+  never the legs"). Branch 1 first shipped a `CompanionFraming.torso`
+  window, head to just below the hips. On review the owner asked for her
+  full body, so the summary card shows her in `full`, and `torso` was
+  removed because nothing else used it. A test walks every gesture through
+  its phases and checks that both wrists stay inside the `full` window.
+  `bust` stays for small sizes.
 - **Her own flag, `enable_companion`.** A demo can show her without turning
   on the voice everywhere.
 - **Naming.** The chat side pane is `QueryCompanion`. She is
   `CompanionSpeaker`, and the docs say which is which.
-- **Still open: the size of her box on the summary card and in the Day
-  header.** This is a container dimension, so it belongs in
-  `sizing_tokens.dart` as a named token, not as a number in the host. It
-  needs the owner's approval before it is added.
+- **Her box on the summary card: `ControlSizes.companionCard`.** A
+  container dimension, so a named token in `sizing_tokens.dart`, never a
+  number in the host. Approved at 96 for the torso framing, and raised to
+  136 with the move to full framing, so her face and hands still read.
+- **Still open: her size in the Day header (branch 2).** At 136 and full
+  length she is likely too tall for a header. Either a token of its own or
+  the `bust` framing at a smaller size; it needs the owner's approval before
+  it is added.
 
 ## Testing
 
