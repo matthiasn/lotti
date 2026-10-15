@@ -38,44 +38,20 @@ String _labelForAction(BuildContext context, ContactAction action) =>
       ContactAction.email => context.messages.relationshipActionEmail,
     };
 
-/// The icon a contact action wears wherever it is offered — the channel row
-/// and the page's action bar alike.
+/// The icon a contact action wears wherever it is offered.
 IconData contactActionIcon(ContactAction action) => _iconForAction(action);
 
 /// The localized label of a contact action.
 String contactActionLabel(BuildContext context, ContactAction action) =>
     _labelForAction(context, action);
 
-/// A contact channel paired with the one action the platform will service
-/// for it — what a "call them" control launches.
-typedef ReachableChannel = ({ContactChannel channel, ContactAction action});
-
-/// The first channel, in the person's own order, that the platform can
-/// actually open, paired with that action — a call on a phone, email on a
-/// desktop with a mail client, `null` where neither exists. Shared by the
-/// page's action bar and the agent card's due state, so both offer the same
-/// channel.
-Future<ReachableChannel?> firstReachableChannel(
-  ContactLauncher launcher,
-  List<ContactChannel> channels,
-) async {
-  for (final channel in channels) {
-    for (final action in contactActionsFor(channel.type)) {
-      if (await launcher.canLaunch(channel, action)) {
-        return (channel: channel, action: action);
-      }
-    }
-  }
-  return null;
-}
-
 /// Hands [channel] to the platform for [action] and, on success, writes the
 /// device-local pending-interaction marker the next resume turns into a
 /// pre-filled check-in offer (ADR 0041 D4). A launch the platform refuses
 /// writes nothing — there was no conversation to log — and says so.
 ///
-/// Shared by the channel row's buttons and the page's action bar, so both
-/// remember a placed call the same way.
+/// Shared by the person page's contact row and every other place a channel
+/// is launched, so each remembers a placed call the same way.
 Future<void> launchContactAction(
   BuildContext context,
   WidgetRef ref, {
@@ -102,105 +78,4 @@ Future<void> launchContactAction(
     relationshipId: relationshipId,
     interactionType: interactionTypeForAction(action),
   );
-}
-
-/// Call / message / email buttons for one contact channel (plan v2 phase 7
-/// item 4).
-///
-/// Only actions the platform can actually service are rendered. The check
-/// runs once per channel when the row is built rather than on press, so the
-/// user never taps a button that turns out to do nothing — a tablet with no
-/// dialer and a desktop with no mail client both simply show fewer buttons.
-///
-/// A successful launch writes the device-local pending-interaction marker,
-/// which is what lets the next resume offer a pre-filled check-in
-/// (ADR 0041 D4). A launch the platform refuses writes nothing: there was no
-/// conversation to log.
-class ContactQuickActions extends ConsumerStatefulWidget {
-  const ContactQuickActions({
-    required this.relationshipId,
-    required this.channel,
-    super.key,
-  });
-
-  final String relationshipId;
-  final ContactChannel channel;
-
-  @override
-  ConsumerState<ContactQuickActions> createState() =>
-      _ContactQuickActionsState();
-}
-
-class _ContactQuickActionsState extends ConsumerState<ContactQuickActions> {
-  /// Null until the platform has been asked; empty means "asked, nothing is
-  /// available", which renders nothing rather than a row of dead buttons.
-  Set<ContactAction>? _available;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_resolveAvailability());
-  }
-
-  @override
-  void didUpdateWidget(ContactQuickActions oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Editing the channel's value can change what it can do — a landline
-    // corrected to a mobile gains a message button.
-    if (oldWidget.channel != widget.channel) {
-      unawaited(_resolveAvailability());
-    }
-  }
-
-  Future<void> _resolveAvailability() async {
-    final launcher = ref.read(contactLauncherProvider);
-    final offered = contactActionsFor(widget.channel.type);
-    final available = <ContactAction>{};
-
-    for (final action in offered) {
-      if (await launcher.canLaunch(widget.channel, action)) {
-        available.add(action);
-      }
-    }
-
-    if (!mounted) return;
-    setState(() => _available = available);
-  }
-
-  Future<void> _handlePressed(ContactAction action) => launchContactAction(
-    context,
-    ref,
-    relationshipId: widget.relationshipId,
-    channel: widget.channel,
-    action: action,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final available = _available;
-    if (available == null || available.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    // Rendered in ContactAction declaration order so the buttons do not
-    // reshuffle between channels.
-    final actions = ContactAction.values
-        .where(available.contains)
-        .toList(growable: false);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: tokens.spacing.step1,
-      children: [
-        for (final action in actions)
-          IconButton(
-            icon: Icon(_iconForAction(action)),
-            color: tokens.colors.interactive.enabled,
-            tooltip: _labelForAction(context, action),
-            onPressed: () => unawaited(_handlePressed(action)),
-          ),
-      ],
-    );
-  }
 }

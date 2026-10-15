@@ -1,0 +1,165 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/action_modal/ds_action_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:material_ui/material_ui.dart';
+
+/// Opens the sheet for a note about [person]: a new one, or [note] to edit.
+///
+/// A note is the place for what is not a conversation — where you met, what
+/// they love, a gift idea, a grandchild's school — which before had nowhere
+/// to live but a fake check-in. *Pin to About* keeps it at the top of the
+/// person's page instead of in the timeline.
+Future<void> showPersonNoteSheet({
+  required BuildContext context,
+  required RelationshipEntry person,
+  JournalEntry? note,
+}) {
+  final name = _displayName(person);
+  // The action modal's header, so the title sits on the same rail as the
+  // field under it, like the create menu this sheet is opened from.
+  return DsActionModal.show<void>(
+    context: context,
+    title: context.messages.relationshipNoteSheetTitle(name),
+    builder: (sheetContext) => PersonNoteForm(person: person, note: note),
+  );
+}
+
+String _displayName(RelationshipEntry person) {
+  final nickname = person.data.nickname?.trim();
+  return nickname == null || nickname.isEmpty ? person.data.title : nickname;
+}
+
+/// The note sheet's body: the words, the pin, and the sheet's actions.
+class PersonNoteForm extends ConsumerStatefulWidget {
+  const PersonNoteForm({required this.person, this.note, super.key});
+
+  final RelationshipEntry person;
+
+  /// The note being edited; null for a new one.
+  final JournalEntry? note;
+
+  @override
+  ConsumerState<PersonNoteForm> createState() => _PersonNoteFormState();
+}
+
+class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
+  late final TextEditingController _text = TextEditingController(
+    text: widget.note?.entryText?.plainText ?? '',
+  );
+  late bool _pinned = widget.note?.meta.starred ?? false;
+  var _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _text.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _text
+      ..removeListener(_changed)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _changed() => setState(() {});
+
+  bool get _canSave => !_saving && _text.text.trim().isNotEmpty;
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final repository = ref.read(personTimelineRepositoryProvider);
+    final note = widget.note;
+    final saved = note == null
+        ? await repository.createNote(
+                person: widget.person,
+                text: _text.text,
+                pinned: _pinned,
+              ) !=
+              null
+        : await repository.updateNote(note, text: _text.text, pinned: _pinned);
+    if (!mounted) return;
+    if (saved) {
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _saving = false);
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.relationshipNoteSaveFailed,
+    );
+  }
+
+  Future<void> _delete(JournalEntry note) async {
+    setState(() => _saving = true);
+    await ref.read(personTimelineRepositoryProvider).deleteNote(note);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final note = widget.note;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DesignSystemTextarea(
+          key: const ValueKey('person-note-text'),
+          controller: _text,
+          hintText: messages.relationshipNoteHint,
+          minLines: 4,
+          growWithContent: true,
+          semanticsLabel: messages.relationshipNoteSheetTitle(
+            _displayName(widget.person),
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        DesignSystemToggle(
+          key: const ValueKey('person-note-pin'),
+          value: _pinned,
+          label: messages.relationshipNotePin,
+          onChanged: (value) => setState(() => _pinned = value),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        DesignSystemModalActionBar(
+          primary: DesignSystemButton(
+            key: const ValueKey('person-note-save'),
+            label: messages.saveButtonLabel,
+            size: DesignSystemButtonSize.large,
+            fullWidth: true,
+            onPressed: _canSave ? () => unawaited(_save()) : null,
+          ),
+          secondary: [
+            if (note != null)
+              DesignSystemButton(
+                key: const ValueKey('person-note-delete'),
+                label: messages.deleteButton,
+                variant: DesignSystemButtonVariant.danger,
+                onPressed: _saving ? null : () => unawaited(_delete(note)),
+              ),
+            DesignSystemButton(
+              key: const ValueKey('person-note-cancel'),
+              label: messages.cancelButton,
+              variant: DesignSystemButtonVariant.quiet,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

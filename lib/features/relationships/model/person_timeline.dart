@@ -113,8 +113,9 @@ final class TimelineMeeting extends PersonTimelineItem {
 
   /// A meeting called off is shown as such, and never as upcoming.
   bool get calledOff => switch (event.data.status) {
-    EventStatus.cancelled || EventStatus.missed || EventStatus.postponed =>
-      true,
+    EventStatus.cancelled ||
+    EventStatus.missed ||
+    EventStatus.postponed => true,
     _ => false,
   };
 
@@ -276,12 +277,11 @@ int _newestFirst(PersonTimelineItem a, PersonTimelineItem b) =>
 
 /// A meeting that has not started yet, or an open task with a due date —
 /// overdue ones included, since they are still ahead of the user.
-bool _isUpcoming(PersonTimelineItem row, DateTime now) =>
-    switch (row) {
-      TimelineMeeting() => !row.calledOff && row.at.isAfter(now),
-      TimelineTask() => row.open && row.due != null,
-      _ => false,
-    };
+bool _isUpcoming(PersonTimelineItem row, DateTime now) => switch (row) {
+  TimelineMeeting() => !row.calledOff && row.at.isAfter(now),
+  TimelineTask() => row.open && row.due != null,
+  _ => false,
+};
 
 /// Photos grouped by the calendar day they were taken on, one row each.
 Iterable<TimelinePhotos> _photosByDay(List<JournalImage> photos) {

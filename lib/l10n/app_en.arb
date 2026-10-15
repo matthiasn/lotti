@@ -9959,5 +9959,165 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip"
+  "whatsNewSkipButton": "Skip",
+  "relationshipBeforeYouTalkTitle": "Before you talk",
+  "@relationshipBeforeYouTalkTitle": {
+    "description": "Title of the person page's briefing card: the user's own notes for next time, then the agent's summary."
+  },
+  "relationshipNextTimeYourNotes": "Your notes · {day}",
+  "@relationshipNextTimeYourNotes": {
+    "description": "Caption over the user's own 'pay attention to / avoid' lines, naming the check-in they were written on.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipBriefingOptions": "Briefing options",
+  "@relationshipBriefingOptions": {
+    "description": "Tooltip of the briefing card's overflow menu."
+  },
+  "relationshipTimelineUpcoming": "Upcoming",
+  "@relationshipTimelineUpcoming": {
+    "description": "Timeline section: meetings ahead and tasks with a due date."
+  },
+  "relationshipTimelineToday": "Today",
+  "relationshipTimelineThisWeek": "This week",
+  "@relationshipTimelineThisWeek": {
+    "description": "Timeline section: the six days before today."
+  },
+  "relationshipTimelineFilterAll": "All",
+  "relationshipTimelineFilterNotes": "Notes",
+  "relationshipTimelineFilterPhotos": "Photos",
+  "relationshipTimelineFilterMeetings": "Meetings",
+  "relationshipTimelineNote": "Note",
+  "@relationshipTimelineNote": {
+    "description": "Kind label of a typed note on a person's timeline."
+  },
+  "relationshipTimelineVoiceNote": "Voice note",
+  "@relationshipTimelineVoiceNote": {
+    "description": "Kind label of a recording on a person's timeline that is not part of a check-in."
+  },
+  "relationshipTimelineTask": "Task",
+  "relationshipTimelineTaskDone": "Done",
+  "relationshipTimelineTaskOverdue": "Overdue since {day}",
+  "@relationshipTimelineTaskOverdue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineMeeting": "Meeting",
+  "relationshipTimelineMeetingCalledOff": "Called off",
+  "@relationshipTimelineMeetingCalledOff": {
+    "description": "A meeting that was cancelled, missed or postponed."
+  },
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "@relationshipTimelineRowLabel": {
+    "description": "What a screen reader says for one timeline row.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineEmpty": "Nothing here yet. Speak after you talk to {name}, or add a note, a task or photos.",
+  "@relationshipTimelineEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAboutTitle": "About {name}",
+  "@relationshipAboutTitle": {
+    "description": "Heading over the notes the user pinned about a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAboutShowAll": "Show all ({count})",
+  "@relationshipAboutShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipAboutShowLess": "Show less",
+  "relationshipSpeak": "Speak",
+  "@relationshipSpeak": {
+    "description": "Primary action on a person's page: record your thoughts about them by voice."
+  },
+  "relationshipAddToTimeline": "Add to {name}'s timeline",
+  "@relationshipAddToTimeline": {
+    "description": "Tooltip of the + button that opens the create menu.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAddNote": "Add a note about {name}",
+  "@relationshipAddNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCreateTask": "Create a task for {name}",
+  "@relationshipCreateTask": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAddPhotos": "Add photos",
+  "relationshipNoteSheetTitle": "Note about {name}",
+  "@relationshipNoteSheetTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipNoteHint": "Where you met, what they love, a gift idea…",
+  "relationshipNotePin": "Pin to About",
+  "relationshipNoteUnpin": "Unpin from About",
+  "relationshipNoteSaveFailed": "Could not save the note.",
+  "relationshipRemoveFromTimeline": "Remove from timeline",
+  "@relationshipRemoveFromTimeline": {
+    "description": "Takes an entry off a person's timeline without deleting it."
+  },
+  "relationshipCallConfirmTitle": "Call {name}?",
+  "@relationshipCallConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCallConfirmChannel": "{value} · {label}",
+  "@relationshipCallConfirmChannel": {
+    "description": "The number and its label in the call confirmation, e.g. '+1 555 0100 · Mobile'.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -2,46 +2,37 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
-import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_search_picker_body.dart';
-import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Tasks linked to this person (plan v2 phase 2 item 3 — `RelationshipLink`
-/// both ways), as one section card: a count beside the title, *Link task*
-/// in the header, one row per task with the task's status glyph and an
-/// unlink action, and the empty hint otherwise.
+/// What a person's page does with tasks (plan v2 phase 2 item 3 —
+/// `RelationshipLink` both ways): pick one to link, or create one when the
+/// search finds none, and unlink one — the jobs the person page's Tasks card
+/// used to do, now reached from the bar's create menu and from a task's row
+/// on the timeline (design panel 2026-10-15).
 ///
-/// The picker also creates the task when none exists yet, and a task created
-/// here inherits the person's category and `private` flag.
-class LinkedTasksCard extends ConsumerWidget {
-  const LinkedTasksCard({
+/// A task created here inherits the person's category and `private` flag.
+class PersonTaskActions {
+  const PersonTaskActions({
     required this.relationshipId,
-    required this.tasks,
+    required this.linkedTaskIds,
     this.categoryId,
-    super.key,
   });
 
   final String relationshipId;
-  final List<Task> tasks;
+
+  /// The tasks already linked, which the picker does not offer again.
+  final Set<String> linkedTaskIds;
 
   /// The person's category, inherited by a task created from their picker so
   /// it lands in the same life area the person does.
@@ -68,7 +59,7 @@ class LinkedTasksCard extends ConsumerWidget {
         LogDomain.general,
         error,
         stackTrace: stackTrace,
-        subDomain: 'LinkedTasksCard',
+        subDomain: 'PersonTaskActions',
         message: 'Failed to link task to relationship',
       );
       return false;
@@ -81,7 +72,7 @@ class LinkedTasksCard extends ConsumerWidget {
   /// Answering "there is no such task yet" without leaving the page: the
   /// picker offers this on a search that matches nothing, and feeds whatever
   /// comes back through its own pick callback — so creating and linking stay
-  /// the one path [_pickTask] already owns, error toast and all. The one
+  /// the one path [pickTask] already owns, error toast and all. The one
   /// case that path cannot serve is a picker dismissed mid-write, handled
   /// below.
   ///
@@ -114,7 +105,7 @@ class LinkedTasksCard extends ConsumerWidget {
         LogDomain.general,
         error,
         stackTrace: stackTrace,
-        subDomain: 'LinkedTasksCard',
+        subDomain: 'PersonTaskActions',
         message: 'Failed to create a task for the relationship',
       );
     }
@@ -146,10 +137,11 @@ class LinkedTasksCard extends ConsumerWidget {
     return null;
   }
 
-  Future<void> _pickTask(BuildContext context, WidgetRef ref) async {
+  /// Opens the task picker: link an existing task, or create one titled
+  /// after the search when none matches.
+  Future<void> pickTask(BuildContext context, WidgetRef ref) async {
     final repository = ref.read(relationshipRepositoryProvider);
     final logger = ref.read(domainLoggerProvider);
-    final linkedIds = {for (final task in tasks) task.meta.id};
 
     await ModalUtils.showSinglePageModal<void>(
       context: context,
@@ -161,7 +153,7 @@ class LinkedTasksCard extends ConsumerWidget {
         children: [
           Flexible(
             child: TaskSearchPickerBody(
-              excludeIds: {relationshipId, ...linkedIds},
+              excludeIds: {relationshipId, ...linkedTaskIds},
               onCreateTask: (title) => _createTask(
                 pageContext: context,
                 modalContext: modalContext,
@@ -192,7 +184,8 @@ class LinkedTasksCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _unlinkTask(
+  /// Unlinks [task] from the person after asking, leaving the task itself.
+  Future<void> unlinkTask(
     BuildContext context,
     WidgetRef ref,
     Task task,
@@ -224,7 +217,7 @@ class LinkedTasksCard extends ConsumerWidget {
         LogDomain.general,
         error,
         stackTrace: stackTrace,
-        subDomain: 'LinkedTasksCard',
+        subDomain: 'PersonTaskActions',
         message: 'Failed to unlink task from relationship',
       );
       if (context.mounted) {
@@ -234,72 +227,5 @@ class LinkedTasksCard extends ConsumerWidget {
         );
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final highlightedTasks = ref.watch(relationshipTaskHighlightProvider);
-    final tokens = context.designTokens;
-    final messages = context.messages;
-
-    return DesignSystemSectionCard(
-      key: const ValueKey('person-tasks-card'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PersonCardHeader(
-            title: messages.relationshipLinkedTasksLabel,
-            count: tasks.isEmpty ? null : tasks.length,
-            trailing: DesignSystemInlineAction(
-              key: const ValueKey('person-link-task'),
-              label: messages.relationshipLinkTaskButton,
-              semanticsLabel: messages.relationshipLinkTaskButton,
-              leadingIcon: LottiIcons.link,
-              onTap: () => _pickTask(context, ref),
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          if (tasks.isEmpty)
-            Text(
-              messages.relationshipNoLinkedTasks,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            )
-          else
-            for (final task in tasks)
-              DesignSystemListItem(
-                key: ValueKey('person-task-${task.meta.id}'),
-                activated: highlightedTasks.contains(task.id),
-                size: DesignSystemListItemSize.small,
-                title: task.data.title.isEmpty
-                    ? messages.taskUntitled
-                    : task.data.title,
-                subtitle: taskLabelFromStatusString(
-                  task.data.status.toDbString,
-                  context,
-                ),
-                subtitleEmphasis: tokens.colors.text.lowEmphasis,
-                leading: StatusGlyph(
-                  status: task.data.status,
-                  tooltip: taskLabelFromStatusString(
-                    task.data.status.toDbString,
-                    context,
-                  ),
-                ),
-                trailingExtra: IconButton(
-                  tooltip: messages.unlinkTaskTitle,
-                  onPressed: () => _unlinkTask(context, ref, task),
-                  icon: Icon(
-                    LottiIcons.linkOff,
-                    size: IconSizes.m,
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-                onTap: () => beamToNamed('/tasks/${task.meta.id}'),
-              ),
-        ],
-      ),
-    );
   }
 }

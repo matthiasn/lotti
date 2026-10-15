@@ -16741,6 +16741,136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get relationshipBeforeYouTalkTitle => 'Before you talk';
+
+  @override
+  String relationshipNextTimeYourNotes(String day) {
+    return 'Your notes · $day';
+  }
+
+  @override
+  String get relationshipBriefingOptions => 'Briefing options';
+
+  @override
+  String get relationshipTimelineUpcoming => 'Upcoming';
+
+  @override
+  String get relationshipTimelineToday => 'Today';
+
+  @override
+  String get relationshipTimelineThisWeek => 'This week';
+
+  @override
+  String get relationshipTimelineFilterAll => 'All';
+
+  @override
+  String get relationshipTimelineFilterNotes => 'Notes';
+
+  @override
+  String get relationshipTimelineFilterPhotos => 'Photos';
+
+  @override
+  String get relationshipTimelineFilterMeetings => 'Meetings';
+
+  @override
+  String get relationshipTimelineNote => 'Note';
+
+  @override
+  String get relationshipTimelineVoiceNote => 'Voice note';
+
+  @override
+  String get relationshipTimelineTask => 'Task';
+
+  @override
+  String get relationshipTimelineTaskDone => 'Done';
+
+  @override
+  String relationshipTimelineTaskOverdue(String day) {
+    return 'Overdue since $day';
+  }
+
+  @override
+  String get relationshipTimelineMeeting => 'Meeting';
+
+  @override
+  String get relationshipTimelineMeetingCalledOff => 'Called off';
+
+  @override
+  String relationshipTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
+  String relationshipTimelineEmpty(String name) {
+    return 'Nothing here yet. Speak after you talk to $name, or add a note, a task or photos.';
+  }
+
+  @override
+  String relationshipAboutTitle(String name) {
+    return 'About $name';
+  }
+
+  @override
+  String relationshipAboutShowAll(int count) {
+    return 'Show all ($count)';
+  }
+
+  @override
+  String get relationshipAboutShowLess => 'Show less';
+
+  @override
+  String get relationshipSpeak => 'Speak';
+
+  @override
+  String relationshipAddToTimeline(String name) {
+    return 'Add to $name\'s timeline';
+  }
+
+  @override
+  String relationshipAddNote(String name) {
+    return 'Add a note about $name';
+  }
+
+  @override
+  String relationshipCreateTask(String name) {
+    return 'Create a task for $name';
+  }
+
+  @override
+  String get relationshipAddPhotos => 'Add photos';
+
+  @override
+  String relationshipNoteSheetTitle(String name) {
+    return 'Note about $name';
+  }
+
+  @override
+  String get relationshipNoteHint =>
+      'Where you met, what they love, a gift idea…';
+
+  @override
+  String get relationshipNotePin => 'Pin to About';
+
+  @override
+  String get relationshipNoteUnpin => 'Unpin from About';
+
+  @override
+  String get relationshipNoteSaveFailed => 'Could not save the note.';
+
+  @override
+  String get relationshipRemoveFromTimeline => 'Remove from timeline';
+
+  @override
+  String relationshipCallConfirmTitle(String name) {
+    return 'Call $name?';
+  }
+
+  @override
+  String relationshipCallConfirmChannel(String value, String label) {
+    return '$value · $label';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

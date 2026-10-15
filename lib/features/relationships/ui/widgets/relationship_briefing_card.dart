@@ -21,6 +21,8 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -68,6 +70,7 @@ class _AgentCard extends StatelessWidget {
     required this.onOpenInternals,
     required this.onBrief,
     required this.onChooseModel,
+    this.lead,
   });
 
   final RelationshipAgentCardState state;
@@ -90,6 +93,64 @@ class _AgentCard extends StatelessWidget {
   final VoidCallback onOpenInternals;
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
+  final Widget? lead;
+
+  /// The faces that ask nothing of the reader: a current briefing, and one
+  /// being written. Their upkeep — update, activity, model — waits behind
+  /// the header's menu instead of a footer, so the card reads as what to
+  /// bring up rather than as the agent's control panel.
+  bool get _calm =>
+      state == RelationshipAgentCardState.current ||
+      state == RelationshipAgentCardState.running;
+
+  /// The header's menu on the calm faces. Its heading names the model and
+  /// the provider that would write an update, and what this agent has used
+  /// so far, so *Update now* never sends anything the reader has not been
+  /// shown (ADR 0061) — the disclosure the footer's model row made before.
+  Widget _menu(BuildContext context, AppLocalizations messages) {
+    final route = identityData.currentRoute;
+    final tokens = totalTokens > 0
+        ? messages.agentConversationTokenCount(
+            NumberFormat.compact(
+              locale: Localizations.localeOf(context).toString(),
+            ).format(totalTokens),
+          )
+        : null;
+    final heading = [
+      if (route != null)
+        formatInferenceRouteIdentity(
+          route,
+          viaLabel: messages.taskAgentRouteVia,
+        ),
+      ?tokens,
+    ].join(' · ');
+    return DesignSystemContextMenuButton(
+      key: const ValueKey('relationship-briefing-menu'),
+      tooltip: messages.relationshipBriefingOptions,
+      header: heading.isEmpty ? null : heading,
+      items: [
+        if (state == RelationshipAgentCardState.current)
+          DesignSystemContextMenuItem(
+            key: const ValueKey('relationship-brief-me'),
+            label: messages.taskAgentUpdateNow,
+            icon: LottiIcons.refresh,
+            onTap: onBrief,
+          ),
+        DesignSystemContextMenuItem(
+          key: const ValueKey('relationship-agent-see-activity'),
+          label: messages.relationshipAgentSeeActivity,
+          icon: LottiIcons.list,
+          onTap: onOpenInternals,
+        ),
+        DesignSystemContextMenuItem(
+          key: const ValueKey('relationship-agent-choose-model'),
+          label: messages.inferenceProfileChooseModelTitle,
+          icon: LottiIcons.aiSpark,
+          onTap: onChooseModel,
+        ),
+      ],
+    );
+  }
 
   /// The header's status line: what the agent is doing, or when the
   /// briefing was written and the band it read, in that state's colour.
@@ -416,9 +477,10 @@ class _AgentCard extends StatelessWidget {
       children: [
         _BriefingHeader(
           status: _status(context, messages),
-          trailing: _pill(context, messages),
+          trailing: _calm ? _menu(context, messages) : _pill(context, messages),
           onTap: onOpenInternals,
         ),
+        if (lead case final lead?) _BriefingLead(child: lead),
         // The band above says "Strained"; this says why. The contract has
         // always required it — "One sentence tracing the band to specific
         // check-in evidence" — and the workflow has always stored it, but
@@ -445,30 +507,40 @@ class _AgentCard extends StatelessWidget {
           checkIns: checkIns,
           showHistory: expanded,
         ),
-        _AgentCardFooter(
-          leading: footer.leading,
-          action: footer.action,
-          identity: TaskAgentIdentityRegion(
-            data: identityData,
-            onSetupTap: onChooseModel,
-            // This row is the disclosure a briefing starts on (ADR 0061):
-            // no width or text size may shed the provider from it.
-            alwaysNameProvider: true,
-            trailingMeta: totalTokens > 0
-                ? messages.agentConversationTokenCount(
-                    NumberFormat.compact(
-                      locale: Localizations.localeOf(context).toString(),
-                    ).format(totalTokens),
-                  )
-                : null,
+        if (!_calm)
+          _AgentCardFooter(
+            leading: footer.leading,
+            action: footer.action,
+            identity: TaskAgentIdentityRegion(
+              data: identityData,
+              onSetupTap: onChooseModel,
+              // This row is the disclosure a briefing starts on (ADR 0061):
+              // no width or text size may shed the provider from it.
+              alwaysNameProvider: true,
+              trailingMeta: totalTokens > 0
+                  ? messages.agentConversationTokenCount(
+                      NumberFormat.compact(
+                        locale: Localizations.localeOf(context).toString(),
+                      ).format(totalTokens),
+                    )
+                  : null,
+            ),
+          )
+        else
+          SizedBox(height: tokens.spacing.step3),
+        if (showsSources)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              0,
+              tokens.spacing.cardPadding,
+              tokens.spacing.step4,
+            ),
+            child: _MetaLine(
+              label: messages.relationshipAgentSources(checkInCount),
+              color: ai.metaText,
+            ),
           ),
-          meta: showsSources
-              ? _MetaLine(
-                  label: messages.relationshipAgentSources(checkInCount),
-                  color: ai.metaText,
-                )
-              : null,
-        ),
       ],
     );
   }

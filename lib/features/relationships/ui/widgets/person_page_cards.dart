@@ -1,11 +1,7 @@
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
-import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
-import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -74,62 +70,27 @@ class PersonCardHeader extends StatelessWidget {
   }
 }
 
-/// The filled circle behind a leading glyph on a person-page row — the
-/// check-in log's interaction icon and the Reach card's channel icon are the
-/// same object and now the same widget.
-///
-/// Sized from [ControlSizes.iconChip], not `spacing.step8`. The two are both
-/// 40 today, but one describes a thing on the screen and the other describes
-/// a gap between things, and they retune independently.
-class PersonLeadingGlyph extends StatelessWidget {
-  const PersonLeadingGlyph({required this.icon, super.key});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      width: ControlSizes.iconChip,
-      height: ControlSizes.iconChip,
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level03,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Icon(
-        icon,
-        size: IconSizes.m,
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}
-
-/// The "Next time" card (design 2026-09-06 Q9): what the user last asked
-/// themselves to bring up, and what to leave alone — the one thing worth
-/// reading before the next call, sourced from their own words, never from
-/// the agent. Renders nothing when [source] carries neither.
+/// The user's own notes for next time, at the head of *Before you talk*
+/// (design panel 2026-10-15): what they last asked themselves to bring up,
+/// and what to leave alone — sourced from their own words, never from the
+/// agent, and so set above the agent's summary rather than in a card of
+/// their own that said the same thing again. Renders nothing when [source]
+/// carries neither.
 ///
 /// [source] is the newest check-in that *has* such notes ([sourceOf]), not
 /// simply the newest check-in. The two fields sit under the composer's
 /// *More*, so a ten-second check-in leaves them blank — and blank there
 /// means "I did not get to it", not "forget what I wrote last time". Reading
 /// only the newest check-in made the quickest way to log a conversation
-/// erase the notes this card exists to keep.
-class NextTimeCard extends StatelessWidget {
-  const NextTimeCard({
-    required this.source,
-    this.fromEarlier = false,
-    super.key,
-  });
+/// erase the notes this block exists to keep.
+///
+/// The caption always says whose words these are and which day they are
+/// from: inside the agent's card, undated and unattributed, they would read
+/// as the agent's.
+class NextTimeLead extends StatelessWidget {
+  const NextTimeLead({required this.source, super.key});
 
   final CheckInEntry? source;
-
-  /// Whether [source] is older than the person's newest check-in. The card
-  /// then says which check-in the notes are from: undated, they would read
-  /// as written after a conversation they predate.
-  final bool fromEarlier;
 
   /// The newest of [checkIns] (newest first) that carries next-time notes.
   static CheckInEntry? sourceOf(List<CheckInEntry> checkIns) {
@@ -150,8 +111,7 @@ class NextTimeCard extends StatelessWidget {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
-  /// Whether the card would render anything for [latest] — exposed so the
-  /// page can decide on the gap after it with the same rule the card uses.
+  /// Whether the block would render anything for [latest].
   static bool hasContent(CheckInEntry? latest) =>
       _attentionOf(latest) != null || _avoidOf(latest) != null;
 
@@ -165,145 +125,39 @@ class NextTimeCard extends StatelessWidget {
     if (from == null || (attention == null && avoid == null)) {
       return const SizedBox.shrink();
     }
+    final day = relationshipDayLabelOf(context, from.meta.dateFrom);
 
-    return DesignSystemSectionCard(
-      key: const ValueKey('person-next-time-card'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // No date in this header. It used to carry the timestamp of the
-          // *last* check-in, unlabelled, beside a title that reads as a
-          // future intention — so the one date on the card named the
-          // opposite of what the card is about. Notes from the newest
-          // check-in need none; older ones get the labelled line below.
-          PersonCardHeader(title: messages.relationshipNextTimeTitle),
-          if (fromEarlier) ...[
-            SizedBox(height: tokens.spacing.step1),
-            RelationshipLineWithDate(
-              key: const ValueKey('person-next-time-from'),
-              text: messages.relationshipNextTimeFromEarlier(
-                relationshipDayLabelOf(context, from.meta.dateFrom),
+    return Column(
+      key: const ValueKey('person-next-time'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RelationshipLineWithDate(
+          key: const ValueKey('person-next-time-from'),
+          text: messages.relationshipNextTimeYourNotes(day),
+          date: day,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        NextTimeFacts(
+          facts: [
+            if (attention != null)
+              (
+                caption: messages.relationshipPayAttentionTo,
+                text: attention,
+                key: const ValueKey('person-next-time-attention'),
               ),
-              date: relationshipDayLabelOf(context, from.meta.dateFrom),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+            if (avoid != null)
+              (
+                caption: messages.checkInAvoidLabel,
+                text: avoid,
+                key: const ValueKey('person-next-time-avoid'),
               ),
-            ),
           ],
-          SizedBox(height: tokens.spacing.step4),
-          // Flat, the way the check-in page sets the same notes: a framed
-          // tile made the page's quietest content its tallest block and gave
-          // it the lift of something pressable, which it is not.
-          NextTimeFacts(
-            facts: [
-              if (attention != null)
-                (
-                  caption: messages.relationshipPayAttentionTo,
-                  text: attention,
-                  key: const ValueKey('person-next-time-attention'),
-                ),
-              if (avoid != null)
-                (
-                  caption: messages.checkInAvoidLabel,
-                  text: avoid,
-                  key: const ValueKey('person-next-time-avoid'),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The "Reach" card: the person's contact channels with the actions the
-/// device can service, under the privacy line the feature stands on — the
-/// channels stay on the device and never enter AI context (ADR 0041 §5).
-/// Renders nothing for a person without channels.
-class ReachCard extends StatelessWidget {
-  const ReachCard({
-    required this.relationshipId,
-    required this.channels,
-    super.key,
-  });
-
-  final String relationshipId;
-  final List<ContactChannel> channels;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    if (channels.isEmpty) return const SizedBox.shrink();
-
-    return DesignSystemSectionCard(
-      key: const ValueKey('person-reach-card'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PersonCardHeader(title: messages.relationshipReachTitle),
-          SizedBox(height: tokens.spacing.step1),
-          Text(
-            messages.relationshipReachPrivacy,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (final channel in channels)
-            _ReachRow(relationshipId: relationshipId, channel: channel),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReachRow extends StatelessWidget {
-  const _ReachRow({required this.relationshipId, required this.channel});
-
-  final String relationshipId;
-  final ContactChannel channel;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final label = channel.label;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Row(
-        children: [
-          PersonLeadingGlyph(icon: contactChannelTypeIcon(channel.type)),
-          SizedBox(width: tokens.spacing.step4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  channel.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                Text(
-                  label == null || label.isEmpty
-                      ? contactChannelTypeLabel(context, channel.type)
-                      : label,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          // Renders nothing until the platform confirms it can service an
-          // action, and nothing at all for a channel with no launchable
-          // scheme (plan v2 phase 7 item 4).
-          ContactQuickActions(relationshipId: relationshipId, channel: channel),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

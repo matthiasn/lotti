@@ -132,8 +132,15 @@ class RelationshipBriefingCard extends ConsumerStatefulWidget {
   const RelationshipBriefingCard({
     required this.relationship,
     required this.checkIns,
+    this.lead,
     super.key,
   });
+
+  /// What the card opens with, under its title and above anything the agent
+  /// wrote: the user's own notes for next time (design panel 2026-10-15).
+  /// The card stays *Before you talk* in every state, so those notes have
+  /// one home whether or not the person has an agent.
+  final Widget? lead;
 
   final RelationshipEntry relationship;
 
@@ -360,6 +367,7 @@ class _RelationshipBriefingCardState
         cadenceDays: _shownEnrolCadenceDays,
         onCadenceSelected: (days) => setState(() => _enrolCadenceDays = days),
         onMarkImportant: data.important ? null : _markImportant,
+        lead: widget.lead,
       );
     }
 
@@ -423,6 +431,7 @@ class _RelationshipBriefingCardState
         entityId: relationship.meta.id,
         agentId: agentId,
       ),
+      lead: widget.lead,
     );
   }
 }
@@ -439,10 +448,14 @@ class _NotEnrolledCard extends StatelessWidget {
     required this.cadenceDays,
     required this.onCadenceSelected,
     required this.onMarkImportant,
+    this.lead,
   });
 
   final RelationshipListItem item;
   final bool marking;
+
+  /// The user's own notes for next time, above the offer.
+  final Widget? lead;
 
   /// The interval the enrol button will store, shown as the selected pill.
   final int cadenceDays;
@@ -480,6 +493,7 @@ class _NotEnrolledCard extends StatelessWidget {
               color: tokens.colors.text.lowEmphasis,
             ),
           ),
+          if (lead case final lead?) _BriefingLead(child: lead),
           Padding(
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.cardPadding,
@@ -589,13 +603,36 @@ class _BriefingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final messages = context.messages;
     return TldrHeader(
-      title: messages.relationshipBriefingTitle,
+      title: messages.relationshipBeforeYouTalkTitle,
       agentName: null,
       subtitle: status,
       plain: plain,
       trailing: trailing,
       icon: icon,
       onAgentTap: plain ? null : onTap,
+    );
+  }
+}
+
+/// The lead's place in the card: on the card's content column, set off
+/// from what follows by the gap the body sections keep.
+class _BriefingLead extends StatelessWidget {
+  const _BriefingLead({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      key: const ValueKey('relationship-briefing-lead'),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.cardPadding,
+        0,
+        tokens.spacing.cardPadding,
+        tokens.spacing.step5,
+      ),
+      child: child,
     );
   }
 }
@@ -764,7 +801,6 @@ class _AgentCardFooter extends StatelessWidget {
     required this.action,
     this.leading,
     this.identity,
-    this.meta,
     this.plain = false,
   });
 
@@ -772,7 +808,6 @@ class _AgentCardFooter extends StatelessWidget {
   final Widget? leading;
   final Widget? action;
   final Widget? identity;
-  final Widget? meta;
 
   /// The unenrolled card is not an AI surface: its band is the section
   /// card's own tint rather than the AI footer wash.
@@ -805,15 +840,13 @@ class _AgentCardFooter extends StatelessWidget {
           ),
         ),
       ),
-      // A step more above than below when meta rows close the card; with
-      // nothing under the action row the inset is symmetric.
+      // A step more above than below when the model row closes the card;
+      // with nothing under the action row the inset is symmetric.
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
         tokens.spacing.cardPadding,
-        identity == null && meta == null
-            ? tokens.spacing.step4
-            : tokens.spacing.step3,
+        identity == null ? tokens.spacing.step4 : tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,11 +890,9 @@ class _AgentCardFooter extends StatelessWidget {
             ),
           // A designed gap under the action row: the 48pt floor gives no
           // slack once a large-text pill outgrows it.
-          if ((leading != null || action != null) &&
-              (identity != null || meta != null))
+          if ((leading != null || action != null) && identity != null)
             SizedBox(height: tokens.spacing.step3),
           ?identity,
-          ?meta,
         ],
       ),
     );

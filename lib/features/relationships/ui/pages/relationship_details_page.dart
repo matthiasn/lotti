@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -9,23 +10,29 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_ins_card.dart';
-import 'package:lotti/features/relationships/ui/widgets/linked_tasks_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_create_menu.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_note_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_task_actions.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -33,24 +40,38 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One person's page (design 2026-09-06 §2–3), a sibling of the task page:
-/// the cover-style hero with the header actions, the header block with the
-/// cadence fact as its pill, then the section cards in the design's order —
-/// Briefing · Next time · Check-ins · Reach · Tasks — above the sticky
-/// action bar (Log check-in · mic · the actionable channel). The health
-/// band belongs to the briefing card, which dates it.
+/// One person's page (design panel 2026-10-15): who they are, what to know
+/// before you talk, and everything that happened and will happen, in time
+/// order — one story rather than a stack of cards.
 ///
-/// On the desktop split the same page fills the detail pane, with every
-/// section on one centred reading column. Deleting cascades through the
-/// repository, the agent and the reminder (the same three legs as before).
-class RelationshipDetailsPage extends ConsumerWidget {
+/// The hero and the header block with the cadence pills, the person's
+/// labelled ways to reach them, then *Before you talk* — the user's own
+/// notes for next time over the agent's briefing — then the notes pinned
+/// *About* them, then their timeline (ADR 0138): check-ins, notes, voice
+/// notes, photos, tasks and meetings on one rail. The sticky bar captures —
+/// *Speak*, *Log check-in*, and **+** for everything else.
+///
+/// On the desktop split the same page fills the detail pane, on one centred
+/// reading column. Deleting cascades through the repository, the agent and
+/// the reminder (the same three legs as before).
+class RelationshipDetailsPage extends ConsumerStatefulWidget {
   const RelationshipDetailsPage({required this.relationshipId, super.key});
 
   final String relationshipId;
 
+  @override
+  ConsumerState<RelationshipDetailsPage> createState() =>
+      _RelationshipDetailsPageState();
+}
+
+class _RelationshipDetailsPageState
+    extends ConsumerState<RelationshipDetailsPage> {
+  PersonTimelineFilter _filter = PersonTimelineFilter.all;
+
+  String get relationshipId => widget.relationshipId;
+
   Future<void> _handleDelete(
     BuildContext context,
-    WidgetRef ref,
     RelationshipEntry relationship,
   ) async {
     final confirmed = await showConfirmationModal(
@@ -137,8 +158,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
   /// from *In person*: for someone you phone every week, the chip is then
   /// already right.
   Future<void> _openComposer(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required CheckInEntry? latest,
     bool startSpeaking = false,
   }) async {
@@ -160,7 +180,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final detailAsync = ref.watch(
       relationshipDetailControllerProvider(relationshipId),
@@ -221,21 +241,98 @@ class RelationshipDetailsPage extends ConsumerWidget {
     final hasAgent = identity == null
         ? isEnrolled(relationship)
         : usableRelationshipAgent(identity) != null;
-    final nextTimeSource = NextTimeCard.sourceOf(checkIns);
-    final sections = <Widget>[
+    final personName = data.nickname?.trim().isNotEmpty ?? false
+        ? data.nickname!.trim()
+        : data.title;
+    final now = clock.now();
+    final timeline = buildPersonTimeline(
+      now: now,
+      checkIns: checkIns,
+      entries: detail.timelineEntries,
+      tasks: detail.linkedTasks,
+      checkInEntries: detail.checkInEntries,
+      filter: _filter,
+    );
+    final tasks = PersonTaskActions(
+      relationshipId: relationshipId,
+      linkedTaskIds: {for (final task in detail.linkedTasks) task.meta.id},
+      categoryId: categoryId,
+    );
+    final actions = (
+      openCheckIn: (CheckInEntry checkIn) => beamToNamed(
+        '/people/$relationshipId/check-ins/${checkIn.meta.id}',
+      ),
+      openNote: (JournalEntry note) => showPersonNoteSheet(
+        context: context,
+        person: relationship,
+        note: note,
+      ),
+      openEntry: (JournalEntity entry) =>
+          beamToNamed('/journal/${entry.meta.id}'),
+      openTask: (Task task) => beamToNamed('/tasks/${task.meta.id}'),
+      unlinkTask: (Task task) => tasks.unlinkTask(context, ref, task),
+    );
+
+    Future<void> create() async {
+      final choice = await showPersonCreateMenu(
+        context: context,
+        personName: personName,
+      );
+      if (choice == null || !context.mounted) return;
+      switch (choice) {
+        case PersonCreateChoice.note:
+          await showPersonNoteSheet(context: context, person: relationship);
+        case PersonCreateChoice.task:
+          await tasks.pickTask(context, ref);
+        case PersonCreateChoice.photos:
+          await importImagesForPlatform(
+            context,
+            linkedId: relationshipId,
+            categoryId: categoryId,
+            analysisTrigger: ref.read(personPhotoTimelineTriggerProvider),
+          );
+        case PersonCreateChoice.checkIn:
+          await _openComposer(context, latest: latest);
+      }
+    }
+
+    final gap = SizedBox(height: tokens.spacing.sectionGap);
+    final whoBlock = <Widget>[
       PersonHeaderBlock(item: item, categoryName: categoryName),
-      // The user's own notes for next time come first: they are what this
-      // page is opened for in the minute before a call, they are short, and
-      // under the briefing — a card with a summary, a footer and a model row
-      // — they sat below the first screen on a phone.
-      if (nextTimeSource != null)
-        NextTimeCard(
-          source: nextTimeSource,
-          fromEarlier: nextTimeSource.meta.id != latest?.meta.id,
-        ),
-      // Always present: an unenrolled person gets the card that explains
-      // what *important* turns on, with the switch as its action.
-      RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),
+      SizedBox(height: tokens.spacing.step4),
+      PersonContactRow(relationship: relationship),
+      gap,
+      // Under the person's name: the reminder the user just tapped says it
+      // is paused, and until when.
+      PausedReminderCallout(
+        relationshipId: relationshipId,
+        bottomGap: tokens.spacing.sectionGap,
+      ),
+      // Renders nothing until the user comes back from a call placed on
+      // this page; then it is the most time-sensitive thing here, so it
+      // sits where they land.
+      PostInteractionPrompt(
+        relationshipId: relationshipId,
+        bottomGap: tokens.spacing.sectionGap,
+      ),
+    ];
+    final briefing = <Widget>[
+      // Always present: an unenrolled person gets the offer that explains
+      // what reminders turn on. The user's own notes for next time lead it
+      // either way — they are what this page is opened for in the minute
+      // before a call.
+      RelationshipBriefingCard(
+        relationship: relationship,
+        checkIns: checkIns,
+        lead: NextTimeLead.hasContent(NextTimeLead.sourceOf(checkIns))
+            ? NextTimeLead(source: NextTimeLead.sourceOf(checkIns))
+            : null,
+      ),
+      PersonAboutSection(
+        personName: personName,
+        pinned: timeline.pinned,
+        onOpen: actions.openNote,
+      ),
     ];
 
     return Scaffold(
@@ -245,13 +342,12 @@ class RelationshipDetailsPage extends ConsumerWidget {
       // body's bottom inset, consumed by the trailing spacer below.
       extendBody: true,
       bottomNavigationBar: RelationshipActionBar(
-        relationship: relationship,
-        onLogCheckIn: () => unawaited(
-          _openComposer(context, ref, latest: latest),
-        ),
+        personName: personName,
         onSpeak: () => unawaited(
-          _openComposer(context, ref, latest: latest, startSpeaking: true),
+          _openComposer(context, latest: latest, startSpeaking: true),
         ),
+        onLogCheckIn: () => unawaited(_openComposer(context, latest: latest)),
+        onAdd: () => unawaited(create()),
       ),
       // A LayoutBuilder for two reasons: MediaQuery.paddingOf below it reads
       // the Scaffold-modified value, and the column is centred within the
@@ -259,15 +355,24 @@ class RelationshipDetailsPage extends ConsumerWidget {
       // not the window.
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Every section — and the check-in log, which is a sliver and so
-          // cannot sit inside `DetailContentWidth` — on the one reading
-          // column that widget gives boxed content.
           final insets = detailContentInsets(
             context,
             availableWidth: constraints.maxWidth,
           );
           final bottomInset = MediaQuery.paddingOf(context).bottom;
-          final gap = SizedBox(height: tokens.spacing.sectionGap);
+          final timelineSliver = PersonTimelineSliver(
+            timeline: timeline,
+            personName: personName,
+            filter: _filter,
+            onFilter: (filter) => setState(() => _filter = filter),
+            actions: actions,
+            now: now,
+          );
+          // A pane as wide as a desktop window gets two columns: the
+          // timeline, and beside it what to know before you talk, which
+          // then stays next to the history instead of above it. Flex shares
+          // of the one reading column, so no width of its own is invented.
+          final wide = constraints.maxWidth >= kDesktopBreakpoint;
           return CustomScrollView(
             slivers: [
               PersonHeroAppBar(
@@ -282,7 +387,7 @@ class RelationshipDetailsPage extends ConsumerWidget {
                         relationshipId: relationshipId,
                       )
                     : beamToNamed('/people/$relationshipId/chat'),
-                onDelete: () => _handleDelete(context, ref, relationship),
+                onDelete: () => _handleDelete(context, relationship),
                 hasAgent: hasAgent,
                 onAvatarTap: () => showPersonAvatarSheet(
                   context: context,
@@ -293,61 +398,41 @@ class RelationshipDetailsPage extends ConsumerWidget {
                 padding: insets,
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    for (final (index, section) in sections.indexed) ...[
-                      section,
-                      gap,
-                      // Under the person's name: the reminder the user just
-                      // tapped says it is paused, and until when.
-                      if (index == 0) ...[
-                        PausedReminderCallout(
-                          relationshipId: relationshipId,
-                          bottomGap: tokens.spacing.sectionGap,
-                        ),
-                        // Renders nothing until the user comes back from a
-                        // call placed on this page; then it is the most
-                        // time-sensitive thing here, so it sits where they
-                        // land — under the name, not below a briefing and a
-                        // screen of notes they would have to scroll past.
-                        PostInteractionPrompt(
-                          relationshipId: relationshipId,
-                          bottomGap: tokens.spacing.sectionGap,
-                        ),
-                      ],
-                    ],
+                    ...whoBlock,
+                    if (!wide) ...briefing,
                   ]),
                 ),
               ),
-              // The log grows without bound and renders lazily in its own
-              // sliver, inside the card decoration the boxed sections wear.
+              // The timeline grows without bound and renders lazily in its
+              // own sliver, on the same reading column.
               SliverPadding(
                 padding: insets,
-                sliver: CheckInsCardSliver(
-                  checkIns: checkIns,
-                  entries: detail.checkInEntries,
-                  onOpen: (checkIn) => beamToNamed(
-                    '/people/$relationshipId/check-ins/${checkIn.meta.id}',
-                  ),
-                ),
+                sliver: wide
+                    ? SliverCrossAxisGroup(
+                        slivers: [
+                          SliverCrossAxisExpanded(
+                            flex: 3,
+                            sliver: timelineSliver,
+                          ),
+                          SliverCrossAxisExpanded(
+                            flex: 2,
+                            sliver: SliverPadding(
+                              padding: EdgeInsets.only(
+                                left: tokens.spacing.sectionGap,
+                              ),
+                              sliver: SliverList(
+                                key: const ValueKey('person-rail'),
+                                delegate: SliverChildListDelegate(briefing),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : timelineSliver,
               ),
-              SliverPadding(
-                padding: insets,
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    gap,
-                    if (data.contactChannels.isNotEmpty) ...[
-                      ReachCard(
-                        relationshipId: relationshipId,
-                        channels: data.contactChannels,
-                      ),
-                      gap,
-                    ],
-                    LinkedTasksCard(
-                      relationshipId: relationshipId,
-                      tasks: detail.linkedTasks,
-                      categoryId: categoryId,
-                    ),
-                    SizedBox(height: bottomInset + tokens.spacing.sectionGap),
-                  ]),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: bottomInset + tokens.spacing.sectionGap,
                 ),
               ),
             ],

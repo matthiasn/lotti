@@ -40,6 +40,8 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -472,7 +474,12 @@ void main() {
     entryText: narrative == null ? null : EntryText(plainText: narrative),
   );
 
-  Task task(String id, String title, {TaskStatus? status}) =>
+  Task task(
+    String id,
+    String title, {
+    TaskStatus? status,
+    DateTime? due,
+  }) =>
       JournalEntity.task(
             meta: meta(id),
             data: TaskData(
@@ -487,6 +494,7 @@ void main() {
               dateTo: _now,
               statusHistory: const [],
               title: title,
+              due: due,
             ),
           )
           as Task;
@@ -585,11 +593,85 @@ void main() {
     'check-pip-1': [pipPendingTake],
   };
   final pipTasks = [
-    task('task-krill', 'Send Pip the krill contract draft'),
+    task(
+      'task-krill',
+      'Send Pip the krill contract draft',
+      due: DateTime(2026, 8, 28),
+    ),
     task(
       'task-pad',
       'Book the pad-3 walkthrough',
       status: TaskStatus.done(id: 'ts-done', createdAt: _now, utcOffset: 0),
+    ),
+  ];
+
+  // Pip's timeline beyond check-ins and tasks (ADR 0138): two notes pinned
+  // under About, a loose note, a voice note, a day's photos, and the coffee
+  // planned for Sunday.
+  Metadata timelineMeta(String id, DateTime at, {bool pinned = false}) =>
+      Metadata(
+        id: id,
+        createdAt: at,
+        updatedAt: at,
+        dateFrom: at,
+        dateTo: at,
+        categoryId: _categoryId,
+        starred: pinned,
+      );
+  final pipTimeline = <JournalEntity>[
+    JournalEntity.journalEntry(
+      meta: timelineMeta('pip-about-met', DateTime(2025, 3, 2), pinned: true),
+      entryText: const EntryText(
+        plainText:
+            'Met at the ice summit on station 3. Runs the launch crew and '
+            'hates calls before ten.',
+      ),
+    ),
+    JournalEntity.journalEntry(
+      meta: timelineMeta('pip-about-gift', DateTime(2026, 6, 4), pinned: true),
+      entryText: const EntryText(
+        plainText: 'Gift idea: a thermal scarf in launch-crew teal.',
+      ),
+    ),
+    JournalEntity.journalEntry(
+      meta: timelineMeta('pip-note-sled', DateTime(2026, 8, 11, 8, 30)),
+      entryText: const EntryText(
+        plainText: "Ask how Tilly's sled race went — Pip was coaching.",
+      ),
+    ),
+    testAudioEntry.copyWith(
+      meta: timelineMeta('pip-voice-note', DateTime(2026, 8, 12, 19, 10)),
+      data: testAudioEntry.data.copyWith(
+        duration: const Duration(minutes: 1, seconds: 4),
+      ),
+      entryText: const EntryText(
+        plainText:
+            'Pip mentioned the crew wants a proper send-off after the '
+            'launch. Worth offering to organise it.',
+      ),
+    ),
+    buildJournalImage(
+      id: 'pip-photo-garden-1',
+      imageFile: 'pip-banner.png',
+    ).copyWith(
+      meta: timelineMeta('pip-photo-garden-1', DateTime(2026, 7, 24, 10)),
+    ),
+    buildJournalImage(
+      id: 'pip-photo-garden-2',
+      imageFile: 'pip.png',
+    ).copyWith(
+      meta: timelineMeta('pip-photo-garden-2', DateTime(2026, 7, 24, 11)),
+    ),
+    JournalEntity.event(
+      meta: timelineMeta(
+        'pip-coffee',
+        DateTime(2026, 8, 16, 15),
+      ).copyWith(dateTo: DateTime(2026, 8, 16, 17)),
+      data: const EventData(
+        title: 'Coffee at the ice garden',
+        stars: 0,
+        status: EventStatus.planned,
+      ),
     ),
   ];
 
@@ -801,9 +883,10 @@ void main() {
     PendingInteraction? pending,
     List<ImportedContact> contacts = const [],
     AudioRecorderController Function()? recorder,
+    List<JournalEntity>? timeline,
   }) => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(repository),
-    personTimelineOverride(),
+    personTimelineOverride(entries: timeline ?? pipTimeline),
     // The check-in page's crumb reads the person's category from here, as
     // production's bootstrap wires it.
     entitiesCacheServiceProvider.overrideWithValue(
@@ -938,6 +1021,18 @@ void main() {
         ),
         context,
       );
+      // The timeline's photo strip: each thumbnail at the strip's size, the
+      // key `CardImageWidget` builds.
+      for (final photo in pipTimeline.whereType<JournalImage>()) {
+        await precacheImage(
+          cappedFileImage(
+            getFullImagePath(photo),
+            size: dsTokensDark.spacing.step10.roundToDouble(),
+            devicePixelRatio: devicePixelRatio,
+          ),
+          context,
+        );
+      }
     });
   }
 
@@ -1299,76 +1394,162 @@ void main() {
     );
   });
 
-  testWidgets('mobile person page, scrolled to Reach and Tasks — dark', (
-    tester,
-  ) async {
-    await pumpSurface(
-      tester,
-      home: const RelationshipDetailsPage(relationshipId: _pipId),
-      device: proDevice,
-      brightness: Brightness.dark,
-      overrides: personOverrides(
-        report: briefing(),
-        state: makeTestState(agentId: agentId),
-      ),
-    );
-
+  Future<void> scrollToRow(WidgetTester tester, String id) async {
+    final row = find.byKey(ValueKey('person-timeline-row-$id'));
     await tester.scrollUntilVisible(
-      find.text('Send Pip the krill contract draft'),
-      400,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text('pip@frostbeak.example'),
-      findsOneWidget,
-      reason: 'the Reach card lists the channels behind the privacy line',
-    );
-    await captureScreenshot(
-      tester,
-      'person_page_reach_tasks_mobile_dark',
-      subdir: _subdir,
-    );
-  });
-
-  testWidgets('mobile person page, scrolled to the check-ins — dark', (
-    tester,
-  ) async {
-    await pumpSurface(
-      tester,
-      home: const RelationshipDetailsPage(relationshipId: _pipId),
-      device: proDevice,
-      brightness: Brightness.dark,
-      overrides: personOverrides(
-        report: briefing(),
-        state: makeTestState(agentId: agentId),
-      ),
-    );
-
-    final firstRow = find.byKey(const ValueKey('check-in-row-check-pip-3'));
-    await tester.scrollUntilVisible(
-      firstRow,
+      row,
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await Scrollable.ensureVisible(
-      tester.element(firstRow),
-      alignment: 0.12,
+    await Scrollable.ensureVisible(tester.element(row), alignment: 0.15);
+    await tester.pumpAndSettle();
+  }
+
+  // The timeline is the page (ADR 0138): what is ahead, then today, this
+  // week and the months before, on one rail.
+  for (final (name, rowId) in [
+    ('person_timeline_mobile_dark', 'task-krill'),
+    ('person_timeline_older_mobile_dark', 'check-pip-3'),
+  ]) {
+    testWidgets('mobile person page, the timeline at $rowId — dark', (
+      tester,
+    ) async {
+      await pumpSurface(
+        tester,
+        home: const RelationshipDetailsPage(relationshipId: _pipId),
+        device: proDevice,
+        brightness: Brightness.dark,
+        overrides: personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+      );
+      await scrollToRow(tester, rowId);
+
+      expect(
+        find.byKey(ValueKey('person-timeline-row-$rowId')),
+        findsOneWidget,
+      );
+      await captureScreenshot(tester, name, subdir: _subdir);
+    });
+  }
+
+  testWidgets('mobile person page, About and the timeline — dark', (
+    tester,
+  ) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _pipId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(
+        report: briefing(),
+        state: makeTestState(agentId: agentId),
+      ),
     );
+    final about = find.byKey(const ValueKey('person-about'));
+    await tester.scrollUntilVisible(
+      about,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await Scrollable.ensureVisible(tester.element(about), alignment: 0.05);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('person-check-ins-card')), findsOneWidget);
+    expect(find.textContaining('thermal scarf'), findsOneWidget);
     await captureScreenshot(
       tester,
-      'person_check_ins_mobile_dark',
+      'person_about_mobile_dark',
       subdir: _subdir,
     );
   });
 
-  // The log's rows are the Tasks list's grouped rows: hovered, the fill
-  // spans the row and the divider beside it gives way.
-  testWidgets('desktop person page, a check-in hovered — dark', (
+  testWidgets('mobile person page, an empty timeline — dark', (tester) async {
+    await pumpSurface(
+      tester,
+      home: const RelationshipDetailsPage(relationshipId: _hanaId),
+      device: proDevice,
+      brightness: Brightness.dark,
+      overrides: personOverrides(timeline: const []),
+    );
+    final empty = find.byKey(const ValueKey('person-timeline-empty'));
+    await tester.scrollUntilVisible(
+      empty,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await captureScreenshot(
+      tester,
+      'person_timeline_empty_mobile_dark',
+      subdir: _subdir,
+    );
+  });
+
+  for (final (device, suffix) in [
+    (proDevice, 'mobile'),
+    (desktopDevice, 'desktop'),
+  ]) {
+    testWidgets('$suffix person page, the create menu — dark', (tester) async {
+      await pumpSurface(
+        tester,
+        home: const RelationshipDetailsPage(relationshipId: _pipId),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('person-action-add')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('person-create-note')),
+        findsOneWidget,
+      );
+      await captureScreenshot(
+        tester,
+        'person_create_menu_${suffix}_dark',
+        subdir: _subdir,
+      );
+    });
+
+    testWidgets('$suffix person page, a new note — dark', (tester) async {
+      await pumpSurface(
+        tester,
+        home: const RelationshipDetailsPage(relationshipId: _pipId),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('person-action-add')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('person-create-note')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-note-text')),
+          matching: find.byType(EditableText),
+        ),
+        'Collects antique sextants — the brass ones.',
+      );
+      await tester.pumpAndSettle();
+
+      await captureScreenshot(
+        tester,
+        'person_note_sheet_${suffix}_dark',
+        subdir: _subdir,
+      );
+    });
+  }
+
+  // The rows are the Tasks list's grouped rows: hovered, the fill spans the
+  // row.
+  testWidgets('desktop person page, a timeline row hovered — dark', (
     tester,
   ) async {
     await pumpSurface(
@@ -1381,26 +1562,16 @@ void main() {
         state: makeTestState(agentId: agentId),
       ),
     );
-    final firstRow = find.byKey(const ValueKey('check-in-row-check-pip-3'));
-    await tester.scrollUntilVisible(
-      firstRow,
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await Scrollable.ensureVisible(tester.element(firstRow), alignment: 0.12);
-    await tester.pumpAndSettle();
+    await scrollToRow(tester, 'check-pip-3');
+    final row = find.byKey(const ValueKey('person-timeline-row-check-pip-3'));
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-    await mouse.addPointer(location: tester.getCenter(firstRow));
+    await mouse.addPointer(location: tester.getCenter(row));
     addTearDown(mouse.removePointer);
     await tester.pumpAndSettle();
 
-    expect(
-      find.byKey(const ValueKey('check-in-row-background-check-pip-3')),
-      findsOneWidget,
-    );
     await captureScreenshot(
       tester,
-      'person_check_ins_hover_desktop_dark',
+      'person_timeline_hover_desktop_dark',
       subdir: _subdir,
     );
   });

@@ -155,26 +155,50 @@ class PersonTimelineRepository {
       ),
     );
     if (!(await _persistenceLogic.createDbEntity(note) ?? false)) return null;
+    final written = note as JournalEntry;
     if (await addToTimeline(personId: person.meta.id, entryId: note.meta.id)) {
-      return note as JournalEntry;
+      return written;
     }
-    await _persistenceLogic.updateDbEntity(
-      note.copyWith(
-        meta: await _persistenceLogic.updateMetadata(
-          note.meta,
-          deletedAt: clock.now(),
-        ),
-      ),
-    );
+    await deleteNote(written);
     return null;
   }
 
   /// Pins [note] under the person's *About*, or unpins it.
-  Future<bool> setPinned(JournalEntry note, {required bool pinned}) async {
+  Future<bool> setPinned(JournalEntry note, {required bool pinned}) =>
+      updateNote(
+        note,
+        text: note.entryText?.plainText ?? '',
+        pinned: pinned,
+      );
+
+  /// Saves new words for [note], and whether it is pinned. Blank words are
+  /// refused: a note emptied in its sheet is deleted there, not saved blank.
+  Future<bool> updateNote(
+    JournalEntry note, {
+    required String text,
+    required bool pinned,
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    final result = await _persistenceLogic.updateDbEntity(
+      note.copyWith(
+        entryText: EntryText(plainText: trimmed),
+        meta: await _persistenceLogic.updateMetadata(
+          note.meta.copyWith(starred: pinned),
+        ),
+      ),
+    );
+    return result ?? false;
+  }
+
+  /// Deletes [note]. Its timeline link is left to the generic delete model,
+  /// whose readers already skip a deleted target.
+  Future<bool> deleteNote(JournalEntry note) async {
     final result = await _persistenceLogic.updateDbEntity(
       note.copyWith(
         meta: await _persistenceLogic.updateMetadata(
-          note.meta.copyWith(starred: pinned),
+          note.meta,
+          deletedAt: clock.now(),
         ),
       ),
     );
