@@ -200,8 +200,6 @@ class _GoalActionsMenuButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final danger = tokens.colors.alert.error.ink;
     return PopupMenuButton<_GoalDetailMenuAction>(
       icon: const Icon(LottiIcons.moreVertical),
       onSelected: (action) async {
@@ -239,77 +237,45 @@ class _GoalActionsMenuButton extends ConsumerWidget {
             await _confirmAndDelete(context, ref);
         }
       },
+      // The shared agent-surface menu: the goal's own action, then the
+      // agent's, internals last among them, delete at the bottom — the same
+      // order and rows as the person page's menu.
       itemBuilder: (context) => [
-        if (canEdit)
-          PopupMenuItem<_GoalDetailMenuAction>(
+        if (canEdit) ...[
+          agentMenuItem(
+            context: context,
             value: _GoalDetailMenuAction.edit,
-            child: Row(
-              children: [
-                const Icon(LottiIcons.edit),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    context.messages.goalFormEditTitle,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+            icon: LottiIcons.edit,
+            label: context.messages.goalFormEditTitle,
           ),
+          const PopupMenuDivider(),
+        ],
         if (onUpdateRead != null)
-          PopupMenuItem<_GoalDetailMenuAction>(
+          agentMenuItem(
+            context: context,
             value: _GoalDetailMenuAction.updateRead,
-            child: Row(
-              children: [
-                const Icon(LottiIcons.refresh),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Text(
-                    context.messages.taskAgentUpdateNow,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+            icon: LottiIcons.refresh,
+            label: context.messages.taskAgentUpdateNow,
           ),
         if (automaticUpdatesEnabled != null)
-          CheckedPopupMenuItem<_GoalDetailMenuAction>(
+          agentToggleMenuItem(
+            context: context,
             value: _GoalDetailMenuAction.automaticUpdates,
+            label: context.messages.taskAgentAutomaticUpdatesLabel,
             checked: automaticUpdatesEnabled!,
-            child: Text(
-              context.messages.taskAgentAutomaticUpdatesLabel,
-              overflow: TextOverflow.ellipsis,
-            ),
           ),
-        PopupMenuItem<_GoalDetailMenuAction>(
+        agentInternalsMenuItem(
+          context: context,
           value: _GoalDetailMenuAction.internals,
-          child: Row(
-            children: [
-              const Icon(LottiIcons.tune),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  context.messages.aiCardOpenAgentInternals,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
+          key: const ValueKey('goal-menu-internals'),
         ),
-        PopupMenuItem<_GoalDetailMenuAction>(
+        const PopupMenuDivider(),
+        agentMenuItem(
+          context: context,
           value: _GoalDetailMenuAction.delete,
-          child: Row(
-            children: [
-              Icon(LottiIcons.delete, color: danger),
-              SizedBox(width: tokens.spacing.step3),
-              Text(
-                context.messages.goalDeleteMenuItem,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: danger,
-                ),
-              ),
-            ],
-          ),
+          icon: LottiIcons.delete,
+          label: context.messages.goalDeleteMenuItem,
+          destructive: true,
         ),
       ],
     );
