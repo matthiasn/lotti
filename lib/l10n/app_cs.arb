@@ -1442,7 +1442,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Zavřít",
   "checkInDurationChip": "Délka",
   "checkInDurationChipSemantics": "Délka: {duration}. Změnit",
   "checkInDurationQuickPickHint": "Klepni na délku a uloží se, nebo otoč kolečkem.",
@@ -1465,28 +1464,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "příště",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "příště poznamenáno",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "témata",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 téma} few{{count} témata} other{{count} témat}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Více",
   "checkInNarrativeHint": "O čem jste mluvili? Stačí jeden řádek.",
   "checkInNoDuration": "Bez délky",
   "checkInOpenSettingsButton": "Otevřít nastavení",
@@ -4760,15 +4737,21 @@
   "referenceImageSelectionSubtitle": "Vyber až {maxImages} obrázků, které pomohou AI určit vizuální styl",
   "referenceImageSelectionTitle": "Vyber referenční obrázky",
   "referenceImageSkip": "Přeskočit",
+  "relationshipAboutShowAll": "Zobrazit vše ({count})",
+  "relationshipAboutShowLess": "Zobrazit méně",
+  "relationshipAboutTitle": "O osobě {name}",
   "relationshipActionCall": "Zavolat",
   "relationshipActionEmail": "E-mail",
   "relationshipActionFailed": "Nic v tomto zařízení to nedokáže otevřít",
   "relationshipActionMessage": "Zpráva",
+  "relationshipAddAction": "Přidat",
   "relationshipAddChannelButton": "Přidat kontakt",
   "relationshipAddChannelFromContacts": "nebo z kontaktů",
+  "relationshipAddNote": "Přidat poznámku o osobě {name}",
+  "relationshipAddPhotos": "Přidat fotky",
+  "relationshipAddToTimeline": "Přidat na časovou osu: {name}",
   "relationshipAgentAsOfBand": "{band} · aktualizováno {age}",
   "relationshipAgentBriefNow": "Vytvořit briefing teď",
-  "relationshipAgentCall": "Zavolat {name}",
   "relationshipAgentFailedBody": "Poskytovatel vrátil chybu dřív, než se briefing napsal. Tvoje check-iny zůstaly beze změny.",
   "relationshipAgentFailedNoModel": "Pro briefingy není nastaven žádný model. Vyber ho v Nastavení AI › Agenti. Podrobnosti najdeš na kartě Aktivita.",
   "relationshipAgentFailedPlain": "Poslední běh selhal",
@@ -4781,7 +4764,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 návrh} few{{count} návrhy} other{{count} návrhů}}",
   "relationshipAgentSeeActivity": "Zobrazit aktivitu",
   "relationshipAgentSources": "Zdroje: {count, plural, =1{1 check-in} few{{count} check-iny} other{{count} check-inů}} · kontaktní kanály se nikdy neposílají",
   "relationshipAgentTryAgain": "Zkusit znovu",
@@ -4789,7 +4771,9 @@
   "relationshipAgentWatchingNextLook": "Agent sleduje · příště {day}",
   "relationshipAgentWriting": "Píše se briefing…",
   "relationshipBannerSemanticLabel": "Banner vztahu s {personName}",
+  "relationshipBeforeYouTalkTitle": "Než si promluvíte",
   "relationshipBriefingAge": "{days, plural, =1{1 den starý} few{{days} dny starý} other{{days} dní starý}}",
+  "relationshipBriefingOptions": "Možnosti briefingu",
   "relationshipBriefingRequestFailed": "Briefing se nepodařilo vyžádat.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Každý den} few{Každé {days} dny} other{Každých {days} dní}}",
@@ -4802,6 +4786,7 @@
   "relationshipCadencePromptLabel": "Jak často?",
   "relationshipCadenceQuarterly": "Každé čtvrtletí",
   "relationshipCadenceWeekly": "Každý týden",
+  "relationshipCallConfirmTitle": "Zavolat osobě {name}?",
   "relationshipChatAgentName": "Briefingový agent",
   "relationshipChatAgentSubtitle": "Zná tvé check-iny, ne kontaktní údaje",
   "relationshipChatAgentTitle": "{name} · briefingový agent",
@@ -4812,10 +4797,8 @@
   "relationshipCheckInAddComment": "Přidat komentář",
   "relationshipCheckInAddPhoto": "Fotka",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 komentář} few{{count} komentáře} other{{count} komentářů}}",
-  "relationshipCheckInCommentHint": "Přidej komentář…",
   "relationshipCheckInEmpty": "Zatím nic. Přidej komentář, nahrávku nebo fotku.",
   "relationshipCheckInGone": "Tento check-in už neexistuje.",
-  "relationshipCheckInNoteLabel": "Poznamenáno při zápisu",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 fotka} few{{count} fotky} other{{count} fotek}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 nahrávka} few{{count} nahrávky} other{{count} nahrávek}}",
   "relationshipCheckInReminderBody": "Dobrá chvíle se ozvat.",
@@ -4829,15 +4812,11 @@
   },
   "relationshipCheckInsLabel": "Záznamy kontaktů",
   "relationshipCheckInTitle": "Kontakt s {name}",
-  "relationshipContactCardAction": "Vizitka",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Kontaktní údaje",
   "relationshipContactLinked": "Kontaktní údaje zkopírovány",
   "relationshipContactLinkFailed": "Kontaktní údaje se nepodařilo uložit",
   "relationshipContactMissing": "Tento kontakt v tomto zařízení není",
   "relationshipContactNoChanges": "Není co nového zkopírovat",
+  "relationshipCreateTask": "Přidat úkol pro osobu {name}",
   "relationshipCreateTitle": "Přidat osobu",
   "relationshipDaysOver": "{count, plural, =1{1 den po termínu} few{{count} dny po termínu} other{{count} dní po termínu}}",
   "@relationshipDaysOver": {
@@ -4947,7 +4926,6 @@
   },
   "relationshipLinkContact": "Propojit kontakt",
   "relationshipLinkedTasksLabel": "Úkoly",
-  "relationshipLinkTaskButton": "Propojit úkol",
   "relationshipLogCheckIn": "Zaznamenat kontakt",
   "relationshipMoreActions": "Další akce",
   "relationshipNameLabel": "Jméno",
@@ -4960,12 +4938,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Příští schůzka",
   "relationshipNextTimeFromEarlier": "Z tvého check-inu {day}",
   "relationshipNextTimeTitle": "Příště",
   "relationshipNicknameLabel": "Přezdívka",
-  "relationshipNoCheckIns": "Zatím žádné záznamy — přidej první po dalším rozhovoru.",
-  "relationshipNoLinkedTasks": "Zatím žádné propojené úkoly.",
+  "relationshipNoteHint": "Kde jste se poznali, co má rád, nápad na dárek…",
   "relationshipNotEnrolled": "Bez připomínek",
+  "relationshipNotePin": "Připnout k sekci O osobě",
+  "relationshipNoteSaveFailed": "Poznámku se nepodařilo uložit.",
+  "relationshipNoteSheetTitle": "Poznámka o osobě {name}",
   "relationshipNotFound": "Tahle osoba už není sledovaná.",
   "relationshipPayAttentionTo": "Dávej pozor na",
   "relationshipPhotoAddBanner": "Přidat banner",
@@ -4984,7 +4965,7 @@
   "relationshipPhotoSheetTitle": "Fotka – {name}",
   "relationshipPostCallAskCall": "Podařilo se ti zastihnout {name}?",
   "relationshipPostCallAskMessage": "Odešla tvoje zpráva pro {name}?",
-  "relationshipPostCallDismiss": "Zavřít",
+  "relationshipPostCallDismiss": "Teď ne",
   "relationshipPostCallMeta": "začátek v {time} · {minutes, plural, =0{necelá minuta} =1{asi 1 min} other{asi {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5001,11 +4982,11 @@
   "relationshipProposalEvidence": "Z kontaktu dne {date}",
   "relationshipProposalUndoFailed": "Akci se nepodařilo vrátit. Úkol se možná změnil.",
   "relationshipReachPrivacy": "Zůstává v tomto zařízení · nikdy se nesdílí s AI",
-  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Propojit jiný kontakt",
   "relationshipReminderPausedBody": "Pak se vrátí, pokud předtím nezaznamenáš kontakt.",
   "relationshipReminderPausedTitle": "Připomínka pozastavena do {time}",
   "relationshipReminderSnoozeLonger": "Odložit na déle",
+  "relationshipRemindersOfferTitle": "Připomínky a briefingy",
   "relationshipRemindersPillSemantics": "Připomínky: {cadence}. Klepnutím změníš.",
   "relationshipRemindersSheetTitle": "Připomínky",
   "relationshipRemindersSwitchLabel": "Připomínej mi, ať zůstaneme v kontaktu",
@@ -5013,6 +4994,7 @@
   "relationshipsEmptyState": "Přidej lidi, se kterými chceš zůstat v kontaktu.",
   "relationshipsGroupDue": "Na řadě",
   "relationshipsPageTitle": "Lidé",
+  "relationshipSpeak": "Mluvit",
   "relationshipsSelectPersonHint": "Vyber osobu a zobrazí se její stránka.",
   "relationshipsSummaryDueNow": "Teď na řadě",
   "relationshipsSummaryEnrolled": "/ {count} s připomínkami",
@@ -5083,9 +5065,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Zatím tu nic není. Promluv po rozhovoru s {name}, nebo přidej poznámku, úkol či fotky.",
+  "relationshipTimelineFilterAll": "Vše",
+  "relationshipTimelineFilterMeetings": "Schůzky",
+  "relationshipTimelineFilterNotes": "Poznámky",
+  "relationshipTimelineFilterPhotos": "Fotky",
+  "relationshipTimelineMeeting": "Schůzka",
+  "relationshipTimelineMeetingCalledOff": "Zrušeno",
+  "relationshipTimelineNote": "Poznámka",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Úkol",
+  "relationshipTimelineTaskDoneAt": "Hotovo {time}",
+  "relationshipTimelineTaskOverdue": "Po termínu od {day}",
+  "relationshipTimelineThisWeek": "Tento týden",
+  "relationshipTimelineTitle": "Časová osa",
+  "relationshipTimelineToday": "Dnes",
+  "relationshipTimelineUpcoming": "Nadcházející",
+  "relationshipTimelineVoiceNote": "Hlasová poznámka",
   "relationshipTimestampToday": "Dnes",
   "relationshipTimestampYesterday": "Včera",
-  "relationshipTrackingSinceLabel": "Sledováno od {date}",
+  "relationshipTurnOnReminders": "Zapnout připomínky",
   "relationshipTurnRemindersOff": "Vypnout připomínky",
   "relationshipUpdateFromContact": "Aktualizovat z kontaktu",
   "saveButton": "Uložit",

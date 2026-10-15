@@ -5598,12 +5598,6 @@ abstract class AppLocalizations {
   /// **'The audio is deleted. Your check-in stays open.'**
   String get checkInDiscardRecordingBody;
 
-  /// No description provided for @checkInDismissButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss'**
-  String get checkInDismissButton;
-
   /// No description provided for @checkInDurationChip.
   ///
   /// In en, this message translates to:
@@ -5699,36 +5693,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Feeling'**
   String get checkInMoreCaptionFeeling;
-
-  /// Folded More row caption segment while nothing is noted for next time.
-  ///
-  /// In en, this message translates to:
-  /// **'next time'**
-  String get checkInMoreCaptionNextTime;
-
-  /// Folded More row caption segment once something is noted for next time.
-  ///
-  /// In en, this message translates to:
-  /// **'next time noted'**
-  String get checkInMoreCaptionNextTimeSet;
-
-  /// Folded More row caption segment while no topics are entered.
-  ///
-  /// In en, this message translates to:
-  /// **'topics'**
-  String get checkInMoreCaptionTopics;
-
-  /// Folded More row caption segment: how many topics are entered.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 topic} other{{count} topics}}'**
-  String checkInMoreCaptionTopicsCount(int count);
-
-  /// No description provided for @checkInMoreSection.
-  ///
-  /// In en, this message translates to:
-  /// **'More'**
-  String get checkInMoreSection;
 
   /// No description provided for @checkInNarrativeHint.
   ///
@@ -20707,6 +20671,24 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get referenceImageSkip;
 
+  /// No description provided for @relationshipAboutShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all ({count})'**
+  String relationshipAboutShowAll(int count);
+
+  /// No description provided for @relationshipAboutShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get relationshipAboutShowLess;
+
+  /// Heading over the notes the user pinned about a person.
+  ///
+  /// In en, this message translates to:
+  /// **'About {name}'**
+  String relationshipAboutTitle(String name);
+
   /// Tooltip on the button that dials a contact channel
   ///
   /// In en, this message translates to:
@@ -20731,6 +20713,12 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get relationshipActionMessage;
 
+  /// Label of the person page's create button (a note, a task, photos, a check-in).
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get relationshipAddAction;
+
   /// No description provided for @relationshipAddChannelButton.
   ///
   /// In en, this message translates to:
@@ -20743,6 +20731,24 @@ abstract class AppLocalizations {
   /// **'or from contacts'**
   String get relationshipAddChannelFromContacts;
 
+  /// No description provided for @relationshipAddNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note about {name}'**
+  String relationshipAddNote(String name);
+
+  /// No description provided for @relationshipAddPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos'**
+  String get relationshipAddPhotos;
+
+  /// Tooltip of the + button that opens the create menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {name}\'s timeline'**
+  String relationshipAddToTimeline(String name);
+
   /// No description provided for @relationshipAgentAsOfBand.
   ///
   /// In en, this message translates to:
@@ -20754,12 +20760,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Brief now'**
   String get relationshipAgentBriefNow;
-
-  /// No description provided for @relationshipAgentCall.
-  ///
-  /// In en, this message translates to:
-  /// **'Call {name}'**
-  String relationshipAgentCall(String name);
 
   /// No description provided for @relationshipAgentFailedBody.
   ///
@@ -20815,12 +20815,6 @@ abstract class AppLocalizations {
   /// **'Briefings pause while this person is dormant or archived.'**
   String get relationshipAgentPausedBody;
 
-  /// No description provided for @relationshipAgentProposedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 proposed} other{{count} proposed}}'**
-  String relationshipAgentProposedCount(int count);
-
   /// No description provided for @relationshipAgentSeeActivity.
   ///
   /// In en, this message translates to:
@@ -20863,11 +20857,23 @@ abstract class AppLocalizations {
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
 
+  /// Title of the person page's briefing card: the user's own notes for next time, then the agent's summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Before you talk'**
+  String get relationshipBeforeYouTalkTitle;
+
   /// No description provided for @relationshipBriefingAge.
   ///
   /// In en, this message translates to:
   /// **'{days, plural, =1{1 day old} other{{days} days old}}'**
   String relationshipBriefingAge(int days);
+
+  /// Tooltip of the briefing card's overflow menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Briefing options'**
+  String get relationshipBriefingOptions;
 
   /// No description provided for @relationshipBriefingRequestFailed.
   ///
@@ -20922,6 +20928,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Weekly'**
   String get relationshipCadenceWeekly;
+
+  /// No description provided for @relationshipCallConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {name}?'**
+  String relationshipCallConfirmTitle(String name);
 
   /// No description provided for @relationshipChatAgentName.
   ///
@@ -20983,12 +20995,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 comment} other{{count} comments}}'**
   String relationshipCheckInCommentCount(int count);
 
-  /// No description provided for @relationshipCheckInCommentHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a comment…'**
-  String get relationshipCheckInCommentHint;
-
   /// No description provided for @relationshipCheckInEmpty.
   ///
   /// In en, this message translates to:
@@ -21000,12 +21006,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This check-in no longer exists.'**
   String get relationshipCheckInGone;
-
-  /// No description provided for @relationshipCheckInNoteLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Noted when it was logged'**
-  String get relationshipCheckInNoteLabel;
 
   /// No description provided for @relationshipCheckInPhotoCount.
   ///
@@ -21043,18 +21043,6 @@ abstract class AppLocalizations {
   /// **'Check-in with {name}'**
   String relationshipCheckInTitle(String name);
 
-  /// Relationships redesign label.
-  ///
-  /// In en, this message translates to:
-  /// **'Contact card'**
-  String get relationshipContactCardAction;
-
-  /// No description provided for @relationshipContactChannelsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Contact channels'**
-  String get relationshipContactChannelsLabel;
-
   /// Toast confirming contact channels were copied onto the person
   ///
   /// In en, this message translates to:
@@ -21078,6 +21066,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing new to copy'**
   String get relationshipContactNoChanges;
+
+  /// No description provided for @relationshipCreateTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task for {name}'**
+  String relationshipCreateTask(String name);
 
   /// No description provided for @relationshipCreateTitle.
   ///
@@ -21385,12 +21379,6 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get relationshipLinkedTasksLabel;
 
-  /// No description provided for @relationshipLinkTaskButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Link task'**
-  String get relationshipLinkTaskButton;
-
   /// No description provided for @relationshipLogCheckIn.
   ///
   /// In en, this message translates to:
@@ -21421,6 +21409,12 @@ abstract class AppLocalizations {
   /// **'Next due {day}'**
   String relationshipNextDueOn(String day);
 
+  /// Label over the next booked meeting with a person, at the head of Before you talk on the person page.
+  ///
+  /// In en, this message translates to:
+  /// **'Next meeting'**
+  String get relationshipNextMeetingLabel;
+
   /// Caption under the Next time card title when the notes come from a check-in older than the newest one; day is a short date such as Sat 1 Aug.
   ///
   /// In en, this message translates to:
@@ -21439,23 +21433,35 @@ abstract class AppLocalizations {
   /// **'Nickname'**
   String get relationshipNicknameLabel;
 
-  /// No description provided for @relationshipNoCheckIns.
+  /// No description provided for @relationshipNoteHint.
   ///
   /// In en, this message translates to:
-  /// **'No check-ins yet — log one after you next talk.'**
-  String get relationshipNoCheckIns;
-
-  /// No description provided for @relationshipNoLinkedTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'No tasks linked yet.'**
-  String get relationshipNoLinkedTasks;
+  /// **'Where you met, what they love, a gift idea…'**
+  String get relationshipNoteHint;
 
   /// No description provided for @relationshipNotEnrolled.
   ///
   /// In en, this message translates to:
   /// **'No reminders'**
   String get relationshipNotEnrolled;
+
+  /// No description provided for @relationshipNotePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin to About'**
+  String get relationshipNotePin;
+
+  /// No description provided for @relationshipNoteSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the note.'**
+  String get relationshipNoteSaveFailed;
+
+  /// No description provided for @relationshipNoteSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Note about {name}'**
+  String relationshipNoteSheetTitle(String name);
 
   /// No description provided for @relationshipNotFound.
   ///
@@ -21607,12 +21613,6 @@ abstract class AppLocalizations {
   /// **'Stays on this device · never shared with the AI'**
   String get relationshipReachPrivacy;
 
-  /// No description provided for @relationshipReachTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Reach'**
-  String get relationshipReachTitle;
-
   /// Menu action that replaces the OS contact a person is linked to
   ///
   /// In en, this message translates to:
@@ -21636,6 +21636,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Snooze longer'**
   String get relationshipReminderSnoozeLonger;
+
+  /// Title of the card offering to turn on reminders and the briefing agent for a person.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders and briefings'**
+  String get relationshipRemindersOfferTitle;
 
   /// Screen-reader label of the tappable reminders pill in the person header; cadence is the interval, e.g. Weekly.
   ///
@@ -21678,6 +21684,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'People'**
   String get relationshipsPageTitle;
+
+  /// Primary action on a person's page: record your thoughts about them by voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak'**
+  String get relationshipSpeak;
 
   /// No description provided for @relationshipsSelectPersonHint.
   ///
@@ -21779,6 +21791,108 @@ abstract class AppLocalizations {
   /// **'{type} · {time}'**
   String relationshipStatusLineContactedNoCadence(String type, String time);
 
+  /// No description provided for @relationshipTimelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Speak after you talk to {name}, or add a note, a task or photos.'**
+  String relationshipTimelineEmpty(String name);
+
+  /// No description provided for @relationshipTimelineFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get relationshipTimelineFilterAll;
+
+  /// No description provided for @relationshipTimelineFilterMeetings.
+  ///
+  /// In en, this message translates to:
+  /// **'Meetings'**
+  String get relationshipTimelineFilterMeetings;
+
+  /// No description provided for @relationshipTimelineFilterNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get relationshipTimelineFilterNotes;
+
+  /// No description provided for @relationshipTimelineFilterPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get relationshipTimelineFilterPhotos;
+
+  /// No description provided for @relationshipTimelineMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting'**
+  String get relationshipTimelineMeeting;
+
+  /// A meeting that was cancelled, missed or postponed.
+  ///
+  /// In en, this message translates to:
+  /// **'Called off'**
+  String get relationshipTimelineMeetingCalledOff;
+
+  /// Kind label of a typed note on a person's timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get relationshipTimelineNote;
+
+  /// What a screen reader says for one timeline row.
+  ///
+  /// In en, this message translates to:
+  /// **'{kind}, {time}. {text}'**
+  String relationshipTimelineRowLabel(String kind, String time, String text);
+
+  /// No description provided for @relationshipTimelineTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get relationshipTimelineTask;
+
+  /// Meta line of a finished task on a person's timeline: when it was done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done {time}'**
+  String relationshipTimelineTaskDoneAt(String time);
+
+  /// No description provided for @relationshipTimelineTaskOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue since {day}'**
+  String relationshipTimelineTaskOverdue(String day);
+
+  /// Timeline section: the six days before today.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get relationshipTimelineThisWeek;
+
+  /// Heading over a person's chronological timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get relationshipTimelineTitle;
+
+  /// No description provided for @relationshipTimelineToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get relationshipTimelineToday;
+
+  /// Timeline section: meetings ahead and tasks with a due date.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get relationshipTimelineUpcoming;
+
+  /// Kind label of a recording on a person's timeline that is not part of a check-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get relationshipTimelineVoiceNote;
+
   /// The relative day word in a relationship timestamp, e.g. "Today 14:20".
   ///
   /// In en, this message translates to:
@@ -21791,11 +21905,11 @@ abstract class AppLocalizations {
   /// **'Yesterday'**
   String get relationshipTimestampYesterday;
 
-  /// No description provided for @relationshipTrackingSinceLabel.
+  /// Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval.
   ///
   /// In en, this message translates to:
-  /// **'Tracking since {date}'**
-  String relationshipTrackingSinceLabel(String date);
+  /// **'Turn on reminders'**
+  String get relationshipTurnOnReminders;
 
   /// Button in the reminders sheet that turns reminders off for this person.
   ///
@@ -27928,252 +28042,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Title of the person page's briefing card: the user's own notes for next time, then the agent's summary.
-  ///
-  /// In en, this message translates to:
-  /// **'Before you talk'**
-  String get relationshipBeforeYouTalkTitle;
-
-  /// Caption over the user's own 'pay attention to / avoid' lines, naming the check-in they were written on.
-  ///
-  /// In en, this message translates to:
-  /// **'Your notes · {day}'**
-  String relationshipNextTimeYourNotes(String day);
-
-  /// Tooltip of the briefing card's overflow menu.
-  ///
-  /// In en, this message translates to:
-  /// **'Briefing options'**
-  String get relationshipBriefingOptions;
-
-  /// Timeline section: meetings ahead and tasks with a due date.
-  ///
-  /// In en, this message translates to:
-  /// **'Upcoming'**
-  String get relationshipTimelineUpcoming;
-
-  /// No description provided for @relationshipTimelineToday.
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get relationshipTimelineToday;
-
-  /// Timeline section: the six days before today.
-  ///
-  /// In en, this message translates to:
-  /// **'This week'**
-  String get relationshipTimelineThisWeek;
-
-  /// No description provided for @relationshipTimelineFilterAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get relationshipTimelineFilterAll;
-
-  /// No description provided for @relationshipTimelineFilterNotes.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes'**
-  String get relationshipTimelineFilterNotes;
-
-  /// No description provided for @relationshipTimelineFilterPhotos.
-  ///
-  /// In en, this message translates to:
-  /// **'Photos'**
-  String get relationshipTimelineFilterPhotos;
-
-  /// No description provided for @relationshipTimelineFilterMeetings.
-  ///
-  /// In en, this message translates to:
-  /// **'Meetings'**
-  String get relationshipTimelineFilterMeetings;
-
-  /// Kind label of a typed note on a person's timeline.
-  ///
-  /// In en, this message translates to:
-  /// **'Note'**
-  String get relationshipTimelineNote;
-
-  /// Kind label of a recording on a person's timeline that is not part of a check-in.
-  ///
-  /// In en, this message translates to:
-  /// **'Voice note'**
-  String get relationshipTimelineVoiceNote;
-
-  /// No description provided for @relationshipTimelineTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Task'**
-  String get relationshipTimelineTask;
-
-  /// No description provided for @relationshipTimelineTaskOverdue.
-  ///
-  /// In en, this message translates to:
-  /// **'Overdue since {day}'**
-  String relationshipTimelineTaskOverdue(String day);
-
-  /// No description provided for @relationshipTimelineMeeting.
-  ///
-  /// In en, this message translates to:
-  /// **'Meeting'**
-  String get relationshipTimelineMeeting;
-
-  /// A meeting that was cancelled, missed or postponed.
-  ///
-  /// In en, this message translates to:
-  /// **'Called off'**
-  String get relationshipTimelineMeetingCalledOff;
-
-  /// What a screen reader says for one timeline row.
-  ///
-  /// In en, this message translates to:
-  /// **'{kind}, {time}. {text}'**
-  String relationshipTimelineRowLabel(String kind, String time, String text);
-
-  /// No description provided for @relationshipTimelineEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing here yet. Speak after you talk to {name}, or add a note, a task or photos.'**
-  String relationshipTimelineEmpty(String name);
-
-  /// Heading over the notes the user pinned about a person.
-  ///
-  /// In en, this message translates to:
-  /// **'About {name}'**
-  String relationshipAboutTitle(String name);
-
-  /// No description provided for @relationshipAboutShowAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Show all ({count})'**
-  String relationshipAboutShowAll(int count);
-
-  /// No description provided for @relationshipAboutShowLess.
-  ///
-  /// In en, this message translates to:
-  /// **'Show less'**
-  String get relationshipAboutShowLess;
-
-  /// Primary action on a person's page: record your thoughts about them by voice.
-  ///
-  /// In en, this message translates to:
-  /// **'Speak'**
-  String get relationshipSpeak;
-
-  /// Tooltip of the + button that opens the create menu.
-  ///
-  /// In en, this message translates to:
-  /// **'Add to {name}\'s timeline'**
-  String relationshipAddToTimeline(String name);
-
-  /// No description provided for @relationshipAddNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a note about {name}'**
-  String relationshipAddNote(String name);
-
-  /// No description provided for @relationshipCreateTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Add a task for {name}'**
-  String relationshipCreateTask(String name);
-
-  /// No description provided for @relationshipAddPhotos.
-  ///
-  /// In en, this message translates to:
-  /// **'Add photos'**
-  String get relationshipAddPhotos;
-
-  /// No description provided for @relationshipNoteSheetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Note about {name}'**
-  String relationshipNoteSheetTitle(String name);
-
-  /// No description provided for @relationshipNoteHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Where you met, what they love, a gift idea…'**
-  String get relationshipNoteHint;
-
-  /// No description provided for @relationshipNotePin.
-  ///
-  /// In en, this message translates to:
-  /// **'Pin to About'**
-  String get relationshipNotePin;
-
-  /// No description provided for @relationshipNoteUnpin.
-  ///
-  /// In en, this message translates to:
-  /// **'Unpin from About'**
-  String get relationshipNoteUnpin;
-
-  /// No description provided for @relationshipNoteSaveFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not save the note.'**
-  String get relationshipNoteSaveFailed;
-
-  /// Takes an entry off a person's timeline without deleting it.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove from timeline'**
-  String get relationshipRemoveFromTimeline;
-
-  /// No description provided for @relationshipCallConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Call {name}?'**
-  String relationshipCallConfirmTitle(String name);
-
-  /// The number and its label in the call confirmation, e.g. '+1 555 0100 · Mobile'.
-  ///
-  /// In en, this message translates to:
-  /// **'{value} · {label}'**
-  String relationshipCallConfirmChannel(String value, String label);
-
-  /// Label of the person page's create button (a note, a task, photos, a check-in).
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get relationshipAddAction;
-
-  /// Heading over a person's chronological timeline.
-  ///
-  /// In en, this message translates to:
-  /// **'Timeline'**
-  String get relationshipTimelineTitle;
-
-  /// No description provided for @relationshipAboutPinnedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 note} other{{count} notes}}'**
-  String relationshipAboutPinnedCount(int count);
-
-  /// Title of the card offering to turn on reminders and the briefing agent for a person.
-  ///
-  /// In en, this message translates to:
-  /// **'Reminders and briefings'**
-  String get relationshipRemindersOfferTitle;
-
-  /// Label over the next booked meeting with a person, at the head of Before you talk on the person page.
-  ///
-  /// In en, this message translates to:
-  /// **'Next meeting'**
-  String get relationshipNextMeetingLabel;
-
-  /// Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn on reminders'**
-  String get relationshipTurnOnReminders;
-
-  /// Meta line of a finished task on a person's timeline: when it was done.
-  ///
-  /// In en, this message translates to:
-  /// **'Done {time}'**
-  String relationshipTimelineTaskDoneAt(String time);
 }
 
 class _AppLocalizationsDelegate

@@ -1657,7 +1657,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Stäng",
   "checkInDurationChip": "Längd",
   "checkInDurationChipSemantics": "Längd: {duration}. Ändra",
   "checkInDurationQuickPickHint": "Tryck på en längd för att spara den, eller snurra på hjulet.",
@@ -1680,28 +1679,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "nästa gång",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "nästa gång noterat",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "ämnen",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 ämne} other{{count} ämnen}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Mer",
   "checkInNarrativeHint": "Vad pratade ni om? En rad räcker.",
   "checkInNoDuration": "Ingen längd",
   "checkInOpenSettingsButton": "Öppna inställningar",
@@ -5363,15 +5340,21 @@
   "referenceImageSelectionSubtitle": "Välj upp till {maxImages} bilder för att styra AI:ns visuella stil",
   "referenceImageSelectionTitle": "Välj referensbilder",
   "referenceImageSkip": "Hoppa över",
+  "relationshipAboutShowAll": "Visa alla ({count})",
+  "relationshipAboutShowLess": "Visa färre",
+  "relationshipAboutTitle": "Om {name}",
   "relationshipActionCall": "Ring",
   "relationshipActionEmail": "E-post",
   "relationshipActionFailed": "Inget på den här enheten kan öppna det",
   "relationshipActionMessage": "Meddelande",
+  "relationshipAddAction": "Lägg till",
   "relationshipAddChannelButton": "Lägg till kontaktuppgift",
   "relationshipAddChannelFromContacts": "eller från kontakter",
+  "relationshipAddNote": "Lägg till en anteckning om {name}",
+  "relationshipAddPhotos": "Lägg till foton",
+  "relationshipAddToTimeline": "Lägg till i {name}s tidslinje",
   "relationshipAgentAsOfBand": "{band} · uppdaterad {age}",
   "relationshipAgentBriefNow": "Briefa nu",
-  "relationshipAgentCall": "Ring {name}",
   "relationshipAgentFailedBody": "Leverantören svarade med ett fel innan briefingen skrevs. Dina avstämningar är oförändrade.",
   "relationshipAgentFailedNoModel": "Ingen modell är inställd för briefingar. Välj en under AI-inställningar › Agenter. Detaljer finns under fliken Aktivitet.",
   "relationshipAgentFailedPlain": "Senaste körningen misslyckades",
@@ -5384,7 +5367,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefingar pausas så länge personen är vilande eller arkiverad.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 förslag} other{{count} förslag}}",
   "relationshipAgentSeeActivity": "Visa aktivitet",
   "relationshipAgentSources": "Källor: {count, plural, =1{1 avstämning} other{{count} avstämningar}} · kontaktkanaler skickas aldrig",
   "relationshipAgentTryAgain": "Försök igen",
@@ -5392,7 +5374,9 @@
   "relationshipAgentWatchingNextLook": "Agenten håller koll · nästa titt {day}",
   "relationshipAgentWriting": "Skriver briefingen…",
   "relationshipBannerSemanticLabel": "Relationsbanner för {personName}",
+  "relationshipBeforeYouTalkTitle": "Innan ni pratar",
   "relationshipBriefingAge": "{days, plural, =1{1 dag gammal} other{{days} dagar gammal}}",
+  "relationshipBriefingOptions": "Briefingalternativ",
   "relationshipBriefingRequestFailed": "Det gick inte att begära briefingen.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Varje dag} other{Var {days}:e dag}}",
@@ -5405,6 +5389,7 @@
   "relationshipCadencePromptLabel": "Hur ofta?",
   "relationshipCadenceQuarterly": "Varje kvartal",
   "relationshipCadenceWeekly": "Varje vecka",
+  "relationshipCallConfirmTitle": "Ringa {name}?",
   "relationshipChatAgentName": "Briefingagent",
   "relationshipChatAgentSubtitle": "Känner dina avstämningar, inte kontaktvägarna",
   "relationshipChatAgentTitle": "{name} · briefingagent",
@@ -5415,10 +5400,8 @@
   "relationshipCheckInAddComment": "Lägg till kommentar",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
-  "relationshipCheckInCommentHint": "Lägg till en kommentar…",
   "relationshipCheckInEmpty": "Inget tillagt än. Lägg till en kommentar, en inspelning eller ett foto.",
   "relationshipCheckInGone": "Den här avstämningen finns inte längre.",
-  "relationshipCheckInNoteLabel": "Antecknat vid avstämningen",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 foto} other{{count} foton}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 inspelning} other{{count} inspelningar}}",
   "relationshipCheckInReminderBody": "Ett bra tillfälle att höra av dig.",
@@ -5432,15 +5415,11 @@
   },
   "relationshipCheckInsLabel": "Avstämningar",
   "relationshipCheckInTitle": "Avstämning med {name}",
-  "relationshipContactCardAction": "Kontaktkort",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Kontaktuppgifter",
   "relationshipContactLinked": "Kontaktuppgifter kopierade",
   "relationshipContactLinkFailed": "Kunde inte spara kontaktuppgifterna",
   "relationshipContactMissing": "Den kontakten finns inte på den här enheten",
   "relationshipContactNoChanges": "Inget nytt att kopiera",
+  "relationshipCreateTask": "Lägg till en uppgift för {name}",
   "relationshipCreateTitle": "Lägg till person",
   "relationshipDaysOver": "{count, plural, =1{försenad med 1 dag} other{försenad med {count} dagar}}",
   "@relationshipDaysOver": {
@@ -5550,7 +5529,6 @@
   },
   "relationshipLinkContact": "Länka kontakt",
   "relationshipLinkedTasksLabel": "Uppgifter",
-  "relationshipLinkTaskButton": "Länka uppgift",
   "relationshipLogCheckIn": "Logga avstämning",
   "relationshipMoreActions": "Fler åtgärder",
   "relationshipNameLabel": "Namn",
@@ -5563,12 +5541,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Nästa möte",
   "relationshipNextTimeFromEarlier": "Från din avstämning {day}",
   "relationshipNextTimeTitle": "Nästa gång",
   "relationshipNicknameLabel": "Smeknamn",
-  "relationshipNoCheckIns": "Inga avstämningar än — logga en efter ert nästa samtal.",
-  "relationshipNoLinkedTasks": "Inga uppgifter länkade än.",
+  "relationshipNoteHint": "Var ni träffades, vad de älskar, en presentidé …",
   "relationshipNotEnrolled": "Utan påminnelser",
+  "relationshipNotePin": "Fäst under Om",
+  "relationshipNoteSaveFailed": "Anteckningen kunde inte sparas.",
+  "relationshipNoteSheetTitle": "Anteckning om {name}",
   "relationshipNotFound": "Den här personen följs inte längre.",
   "relationshipPayAttentionTo": "Var uppmärksam på",
   "relationshipPhotoAddBanner": "Lägg till banner",
@@ -5587,7 +5568,7 @@
   "relationshipPhotoSheetTitle": "Foto på {name}",
   "relationshipPostCallAskCall": "Fick du tag på {name}?",
   "relationshipPostCallAskMessage": "Skrev du till {name}?",
-  "relationshipPostCallDismiss": "Avfärda",
+  "relationshipPostCallDismiss": "Inte den här gången",
   "relationshipPostCallMeta": "började kl. {time} · {minutes, plural, =0{under en minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5604,11 +5585,11 @@
   "relationshipProposalEvidence": "Från avstämningen den {date}",
   "relationshipProposalUndoFailed": "Kunde inte ångra. Uppgiften kan ha ändrats.",
   "relationshipReachPrivacy": "Stannar på den här enheten · delas aldrig med AI:n",
-  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Länka en annan kontakt",
   "relationshipReminderPausedBody": "Den kommer tillbaka då, om du inte loggar en avstämning innan.",
   "relationshipReminderPausedTitle": "Påminnelsen pausad till {time}",
   "relationshipReminderSnoozeLonger": "Snooza längre",
+  "relationshipRemindersOfferTitle": "Påminnelser och briefingar",
   "relationshipRemindersPillSemantics": "Påminnelser: {cadence}. Tryck för att ändra.",
   "relationshipRemindersSheetTitle": "Påminnelser",
   "relationshipRemindersSwitchLabel": "Påminn mig om att hålla kontakten",
@@ -5616,6 +5597,7 @@
   "relationshipsEmptyState": "Lägg till människorna du vill hålla kontakten med.",
   "relationshipsGroupDue": "Dags",
   "relationshipsPageTitle": "Personer",
+  "relationshipSpeak": "Prata",
   "relationshipsSelectPersonHint": "Välj en person för att se deras sida.",
   "relationshipsSummaryDueNow": "Dags nu",
   "relationshipsSummaryEnrolled": "/ {count} med påminnelser",
@@ -5686,9 +5668,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Inget här än. Prata efter ditt samtal med {name}, eller lägg till en anteckning, en uppgift eller foton.",
+  "relationshipTimelineFilterAll": "Alla",
+  "relationshipTimelineFilterMeetings": "Möten",
+  "relationshipTimelineFilterNotes": "Anteckningar",
+  "relationshipTimelineFilterPhotos": "Foton",
+  "relationshipTimelineMeeting": "Möte",
+  "relationshipTimelineMeetingCalledOff": "Inställt",
+  "relationshipTimelineNote": "Anteckning",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Uppgift",
+  "relationshipTimelineTaskDoneAt": "Klar {time}",
+  "relationshipTimelineTaskOverdue": "Försenad sedan {day}",
+  "relationshipTimelineThisWeek": "Den här veckan",
+  "relationshipTimelineTitle": "Tidslinje",
+  "relationshipTimelineToday": "I dag",
+  "relationshipTimelineUpcoming": "Kommande",
+  "relationshipTimelineVoiceNote": "Röstanteckning",
   "relationshipTimestampToday": "Idag",
   "relationshipTimestampYesterday": "Igår",
-  "relationshipTrackingSinceLabel": "Följs sedan {date}",
+  "relationshipTurnOnReminders": "Slå på påminnelser",
   "relationshipTurnRemindersOff": "Stäng av påminnelser",
   "relationshipUpdateFromContact": "Uppdatera från kontakt",
   "saveButton": "Spara",

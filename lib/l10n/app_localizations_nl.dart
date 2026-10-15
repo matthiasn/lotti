@@ -3338,9 +3338,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'De audio wordt verwijderd. Je check-in blijft open.';
 
   @override
-  String get checkInDismissButton => 'Sluiten';
-
-  @override
   String get checkInDurationChip => 'Duur';
 
   @override
@@ -3395,29 +3392,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInMoreCaptionFeeling => 'Gevoel';
-
-  @override
-  String get checkInMoreCaptionNextTime => 'volgende keer';
-
-  @override
-  String get checkInMoreCaptionNextTimeSet => 'volgende keer genoteerd';
-
-  @override
-  String get checkInMoreCaptionTopics => 'onderwerpen';
-
-  @override
-  String checkInMoreCaptionTopicsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count onderwerpen',
-      one: '1 onderwerp',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkInMoreSection => 'Meer';
 
   @override
   String get checkInNarrativeHint =>
@@ -12464,6 +12438,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get referenceImageSkip => 'Overslaan';
 
   @override
+  String relationshipAboutShowAll(int count) {
+    return 'Alles tonen ($count)';
+  }
+
+  @override
+  String get relationshipAboutShowLess => 'Minder tonen';
+
+  @override
+  String relationshipAboutTitle(String name) {
+    return 'Over $name';
+  }
+
+  @override
   String get relationshipActionCall => 'Bellen';
 
   @override
@@ -12476,10 +12463,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipActionMessage => 'Bericht';
 
   @override
+  String get relationshipAddAction => 'Toevoegen';
+
+  @override
   String get relationshipAddChannelButton => 'Contactgegeven toevoegen';
 
   @override
   String get relationshipAddChannelFromContacts => 'of uit contacten';
+
+  @override
+  String relationshipAddNote(String name) {
+    return 'Notitie over $name toevoegen';
+  }
+
+  @override
+  String get relationshipAddPhotos => 'Foto’s toevoegen';
+
+  @override
+  String relationshipAddToTimeline(String name) {
+    return 'Toevoegen aan de tijdlijn van $name';
+  }
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
@@ -12488,11 +12491,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipAgentBriefNow => 'Nu briefen';
-
-  @override
-  String relationshipAgentCall(String name) {
-    return '$name bellen';
-  }
 
   @override
   String get relationshipAgentFailedBody =>
@@ -12544,17 +12542,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Briefings pauzeren zolang deze persoon slapend of gearchiveerd is.';
 
   @override
-  String relationshipAgentProposedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count voorstellen',
-      one: '1 voorstel',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Activiteit bekijken';
 
   @override
@@ -12588,6 +12575,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipBeforeYouTalkTitle => 'Voordat jullie praten';
+
+  @override
   String relationshipBriefingAge(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12597,6 +12587,9 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get relationshipBriefingOptions => 'Briefingopties';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12633,6 +12626,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Wekelijks';
+
+  @override
+  String relationshipCallConfirmTitle(String name) {
+    return '$name bellen?';
+  }
 
   @override
   String get relationshipChatAgentName => 'Briefingagent';
@@ -12681,17 +12679,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipCheckInCommentHint => 'Voeg een opmerking toe…';
-
-  @override
   String get relationshipCheckInEmpty =>
       'Nog niets toegevoegd. Voeg een opmerking, een opname of een foto toe.';
 
   @override
   String get relationshipCheckInGone => 'Deze check-in bestaat niet meer.';
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Genoteerd bij het vastleggen';
 
   @override
   String relationshipCheckInPhotoCount(int count) {
@@ -12733,12 +12725,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipContactCardAction => 'Contactkaart';
-
-  @override
-  String get relationshipContactChannelsLabel => 'Contactgegevens';
-
-  @override
   String get relationshipContactLinked => 'Contactgegevens gekopieerd';
 
   @override
@@ -12751,6 +12737,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipContactNoChanges => 'Niets nieuws om te kopiëren';
+
+  @override
+  String relationshipCreateTask(String name) {
+    return 'Taak voor $name toevoegen';
+  }
 
   @override
   String get relationshipCreateTitle => 'Persoon toevoegen';
@@ -12983,9 +12974,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipLinkedTasksLabel => 'Taken';
 
   @override
-  String get relationshipLinkTaskButton => 'Taak koppelen';
-
-  @override
   String get relationshipLogCheckIn => 'Check-in vastleggen';
 
   @override
@@ -13003,6 +12991,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get relationshipNextMeetingLabel => 'Volgende afspraak';
+
+  @override
   String relationshipNextTimeFromEarlier(String day) {
     return 'Uit je check-in van $day';
   }
@@ -13014,14 +13005,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipNicknameLabel => 'Bijnaam';
 
   @override
-  String get relationshipNoCheckIns =>
-      'Nog geen check-ins — leg er een vast na jullie volgende gesprek.';
-
-  @override
-  String get relationshipNoLinkedTasks => 'Nog geen gekoppelde taken.';
+  String get relationshipNoteHint =>
+      'Waar jullie elkaar ontmoetten, waar ze van houden, een cadeau-idee…';
 
   @override
   String get relationshipNotEnrolled => 'Zonder herinneringen';
+
+  @override
+  String get relationshipNotePin => 'Vastzetten bij Over';
+
+  @override
+  String get relationshipNoteSaveFailed =>
+      'De notitie kon niet worden opgeslagen.';
+
+  @override
+  String relationshipNoteSheetTitle(String name) {
+    return 'Notitie over $name';
+  }
 
   @override
   String get relationshipNotFound =>
@@ -13086,7 +13086,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallDismiss => 'Negeren';
+  String get relationshipPostCallDismiss => 'Niet deze keer';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -13122,9 +13122,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Blijft op dit apparaat · nooit gedeeld met de AI';
 
   @override
-  String get relationshipReachTitle => 'Contact';
-
-  @override
   String get relationshipRelinkContact => 'Ander contact koppelen';
 
   @override
@@ -13138,6 +13135,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Langer snoozen';
+
+  @override
+  String get relationshipRemindersOfferTitle => 'Herinneringen en briefings';
 
   @override
   String relationshipRemindersPillSemantics(String cadence) {
@@ -13164,6 +13164,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipsPageTitle => 'Mensen';
+
+  @override
+  String get relationshipSpeak => 'Inspreken';
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -13239,15 +13242,72 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipTimelineEmpty(String name) {
+    return 'Nog niets hier. Spreek in na je gesprek met $name, of voeg een notitie, een taak of foto’s toe.';
+  }
+
+  @override
+  String get relationshipTimelineFilterAll => 'Alles';
+
+  @override
+  String get relationshipTimelineFilterMeetings => 'Afspraken';
+
+  @override
+  String get relationshipTimelineFilterNotes => 'Notities';
+
+  @override
+  String get relationshipTimelineFilterPhotos => 'Foto’s';
+
+  @override
+  String get relationshipTimelineMeeting => 'Afspraak';
+
+  @override
+  String get relationshipTimelineMeetingCalledOff => 'Afgezegd';
+
+  @override
+  String get relationshipTimelineNote => 'Notitie';
+
+  @override
+  String relationshipTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
+  String get relationshipTimelineTask => 'Taak';
+
+  @override
+  String relationshipTimelineTaskDoneAt(String time) {
+    return 'Klaar $time';
+  }
+
+  @override
+  String relationshipTimelineTaskOverdue(String day) {
+    return 'Te laat sinds $day';
+  }
+
+  @override
+  String get relationshipTimelineThisWeek => 'Deze week';
+
+  @override
+  String get relationshipTimelineTitle => 'Tijdlijn';
+
+  @override
+  String get relationshipTimelineToday => 'Vandaag';
+
+  @override
+  String get relationshipTimelineUpcoming => 'Binnenkort';
+
+  @override
+  String get relationshipTimelineVoiceNote => 'Spraaknotitie';
+
+  @override
   String get relationshipTimestampToday => 'Vandaag';
 
   @override
   String get relationshipTimestampYesterday => 'Gisteren';
 
   @override
-  String relationshipTrackingSinceLabel(String date) {
-    return 'Gevolgd sinds $date';
-  }
+  String get relationshipTurnOnReminders => 'Herinneringen aanzetten';
 
   @override
   String get relationshipTurnRemindersOff => 'Herinneringen uitzetten';
@@ -16889,162 +16949,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get relationshipBeforeYouTalkTitle => 'Before you talk';
-
-  @override
-  String relationshipNextTimeYourNotes(String day) {
-    return 'Your notes · $day';
-  }
-
-  @override
-  String get relationshipBriefingOptions => 'Briefing options';
-
-  @override
-  String get relationshipTimelineUpcoming => 'Upcoming';
-
-  @override
-  String get relationshipTimelineToday => 'Today';
-
-  @override
-  String get relationshipTimelineThisWeek => 'This week';
-
-  @override
-  String get relationshipTimelineFilterAll => 'All';
-
-  @override
-  String get relationshipTimelineFilterNotes => 'Notes';
-
-  @override
-  String get relationshipTimelineFilterPhotos => 'Photos';
-
-  @override
-  String get relationshipTimelineFilterMeetings => 'Meetings';
-
-  @override
-  String get relationshipTimelineNote => 'Note';
-
-  @override
-  String get relationshipTimelineVoiceNote => 'Voice note';
-
-  @override
-  String get relationshipTimelineTask => 'Task';
-
-  @override
-  String relationshipTimelineTaskOverdue(String day) {
-    return 'Overdue since $day';
-  }
-
-  @override
-  String get relationshipTimelineMeeting => 'Meeting';
-
-  @override
-  String get relationshipTimelineMeetingCalledOff => 'Called off';
-
-  @override
-  String relationshipTimelineRowLabel(String kind, String time, String text) {
-    return '$kind, $time. $text';
-  }
-
-  @override
-  String relationshipTimelineEmpty(String name) {
-    return 'Nothing here yet. Speak after you talk to $name, or add a note, a task or photos.';
-  }
-
-  @override
-  String relationshipAboutTitle(String name) {
-    return 'About $name';
-  }
-
-  @override
-  String relationshipAboutShowAll(int count) {
-    return 'Show all ($count)';
-  }
-
-  @override
-  String get relationshipAboutShowLess => 'Show less';
-
-  @override
-  String get relationshipSpeak => 'Speak';
-
-  @override
-  String relationshipAddToTimeline(String name) {
-    return 'Add to $name\'s timeline';
-  }
-
-  @override
-  String relationshipAddNote(String name) {
-    return 'Add a note about $name';
-  }
-
-  @override
-  String relationshipCreateTask(String name) {
-    return 'Add a task for $name';
-  }
-
-  @override
-  String get relationshipAddPhotos => 'Add photos';
-
-  @override
-  String relationshipNoteSheetTitle(String name) {
-    return 'Note about $name';
-  }
-
-  @override
-  String get relationshipNoteHint =>
-      'Where you met, what they love, a gift idea…';
-
-  @override
-  String get relationshipNotePin => 'Pin to About';
-
-  @override
-  String get relationshipNoteUnpin => 'Unpin from About';
-
-  @override
-  String get relationshipNoteSaveFailed => 'Could not save the note.';
-
-  @override
-  String get relationshipRemoveFromTimeline => 'Remove from timeline';
-
-  @override
-  String relationshipCallConfirmTitle(String name) {
-    return 'Call $name?';
-  }
-
-  @override
-  String relationshipCallConfirmChannel(String value, String label) {
-    return '$value · $label';
-  }
-
-  @override
-  String get relationshipAddAction => 'Add';
-
-  @override
-  String get relationshipTimelineTitle => 'Timeline';
-
-  @override
-  String relationshipAboutPinnedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count notes',
-      one: '1 note',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipRemindersOfferTitle => 'Reminders and briefings';
-
-  @override
-  String get relationshipNextMeetingLabel => 'Next meeting';
-
-  @override
-  String get relationshipTurnOnReminders => 'Turn on reminders';
-
-  @override
-  String relationshipTimelineTaskDoneAt(String time) {
-    return 'Done $time';
-  }
 }

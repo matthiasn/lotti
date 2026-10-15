@@ -2171,7 +2171,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Dismiss",
   "checkInDurationChip": "Duration",
   "checkInDurationChipSemantics": "Duration: {duration}. Change",
   "@checkInDurationChipSemantics": {
@@ -2208,28 +2207,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "next time",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "next time noted",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "topics",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 topic} other{{count} topics}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "More",
   "checkInNarrativeHint": "What did you talk about? One line is enough.",
   "checkInNoDuration": "No duration",
   "checkInOpenSettingsButton": "Open settings",
@@ -7502,6 +7479,24 @@
   },
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
+  "relationshipAboutShowAll": "Show all ({count})",
+  "@relationshipAboutShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipAboutShowLess": "Show less",
+  "relationshipAboutTitle": "About {name}",
+  "@relationshipAboutTitle": {
+    "description": "Heading over the notes the user pinned about a person.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipActionCall": "Call",
   "@relationshipActionCall": {
     "description": "Tooltip on the button that dials a contact channel"
@@ -7518,8 +7513,30 @@
   "@relationshipActionMessage": {
     "description": "Tooltip on the button that opens a message composer"
   },
+  "relationshipAddAction": "Add",
+  "@relationshipAddAction": {
+    "description": "Label of the person page's create button (a note, a task, photos, a check-in)."
+  },
   "relationshipAddChannelButton": "Add channel",
   "relationshipAddChannelFromContacts": "or from contacts",
+  "relationshipAddNote": "Add a note about {name}",
+  "@relationshipAddNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipAddPhotos": "Add photos",
+  "relationshipAddToTimeline": "Add to {name}'s timeline",
+  "@relationshipAddToTimeline": {
+    "description": "Tooltip of the + button that opens the create menu.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipAgentAsOfBand": "{band} · as of {age}",
   "@relationshipAgentAsOfBand": {
     "placeholders": {
@@ -7532,14 +7549,6 @@
     }
   },
   "relationshipAgentBriefNow": "Brief now",
-  "relationshipAgentCall": "Call {name}",
-  "@relationshipAgentCall": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "relationshipAgentFailedBody": "The provider returned an error before the briefing was written. Your check-ins are unchanged.",
   "relationshipAgentFailedNoModel": "No model is set up for briefings. Choose one under AI Settings › Agents. Details are in the Activity tab.",
   "relationshipAgentFailedPlain": "Last run failed",
@@ -7580,14 +7589,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefings pause while this person is dormant or archived.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 proposed} other{{count} proposed}}",
-  "@relationshipAgentProposedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "relationshipAgentSeeActivity": "See activity",
   "relationshipAgentSources": "Sources: {count, plural, =1{1 check-in} other{{count} check-ins}} · contact channels never sent",
   "@relationshipAgentSources": {
@@ -7617,6 +7618,10 @@
       }
     }
   },
+  "relationshipBeforeYouTalkTitle": "Before you talk",
+  "@relationshipBeforeYouTalkTitle": {
+    "description": "Title of the person page's briefing card: the user's own notes for next time, then the agent's summary."
+  },
   "relationshipBriefingAge": "{days, plural, =1{1 day old} other{{days} days old}}",
   "@relationshipBriefingAge": {
     "placeholders": {
@@ -7624,6 +7629,10 @@
         "type": "int"
       }
     }
+  },
+  "relationshipBriefingOptions": "Briefing options",
+  "@relationshipBriefingOptions": {
+    "description": "Tooltip of the briefing card's overflow menu."
   },
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",
@@ -7644,6 +7653,14 @@
   "relationshipCadencePromptLabel": "How often?",
   "relationshipCadenceQuarterly": "Quarterly",
   "relationshipCadenceWeekly": "Weekly",
+  "relationshipCallConfirmTitle": "Call {name}?",
+  "@relationshipCallConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipChatAgentName": "Briefing agent",
   "relationshipChatAgentSubtitle": "Knows your check-ins, not the channels",
   "relationshipChatAgentTitle": "{name} · briefing agent",
@@ -7683,10 +7700,8 @@
       }
     }
   },
-  "relationshipCheckInCommentHint": "Add a comment…",
   "relationshipCheckInEmpty": "Nothing added yet. Add a comment, a recording or a photo.",
   "relationshipCheckInGone": "This check-in no longer exists.",
-  "relationshipCheckInNoteLabel": "Noted when it was logged",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 photo} other{{count} photos}}",
   "@relationshipCheckInPhotoCount": {
     "placeholders": {
@@ -7722,11 +7737,6 @@
       }
     }
   },
-  "relationshipContactCardAction": "Contact card",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Contact channels",
   "relationshipContactLinked": "Contact details copied",
   "@relationshipContactLinked": {
     "description": "Toast confirming contact channels were copied onto the person"
@@ -7742,6 +7752,14 @@
   "relationshipContactNoChanges": "Nothing new to copy",
   "@relationshipContactNoChanges": {
     "description": "Toast shown when the linked contact held nothing the person did not already have"
+  },
+  "relationshipCreateTask": "Add a task for {name}",
+  "@relationshipCreateTask": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "relationshipCreateTitle": "Add person",
   "relationshipDaysOver": "{count, plural, =1{1 day overdue} other{{count} days overdue}}",
@@ -7947,7 +7965,6 @@
     "description": "Action that opens the OS contact picker to copy channels onto a person"
   },
   "relationshipLinkedTasksLabel": "Tasks",
-  "relationshipLinkTaskButton": "Link task",
   "relationshipLogCheckIn": "Log check-in",
   "relationshipMoreActions": "More actions",
   "@relationshipMoreActions": {
@@ -7963,6 +7980,10 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Next meeting",
+  "@relationshipNextMeetingLabel": {
+    "description": "Label over the next booked meeting with a person, at the head of Before you talk on the person page."
+  },
   "relationshipNextTimeFromEarlier": "From your check-in on {day}",
   "@relationshipNextTimeFromEarlier": {
     "description": "Caption under the Next time card title when the notes come from a check-in older than the newest one; day is a short date such as Sat 1 Aug.",
@@ -7974,9 +7995,18 @@
   },
   "relationshipNextTimeTitle": "Next time",
   "relationshipNicknameLabel": "Nickname",
-  "relationshipNoCheckIns": "No check-ins yet — log one after you next talk.",
-  "relationshipNoLinkedTasks": "No tasks linked yet.",
+  "relationshipNoteHint": "Where you met, what they love, a gift idea…",
   "relationshipNotEnrolled": "No reminders",
+  "relationshipNotePin": "Pin to About",
+  "relationshipNoteSaveFailed": "Could not save the note.",
+  "relationshipNoteSheetTitle": "Note about {name}",
+  "@relationshipNoteSheetTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipNotFound": "This person is no longer tracked.",
   "relationshipPayAttentionTo": "Pay attention to",
   "relationshipPhotoAddBanner": "Add banner",
@@ -8055,7 +8085,6 @@
   },
   "relationshipProposalUndoFailed": "Could not undo. The task may have changed.",
   "relationshipReachPrivacy": "Stays on this device · never shared with the AI",
-  "relationshipReachTitle": "Reach",
   "relationshipRelinkContact": "Link a different contact",
   "@relationshipRelinkContact": {
     "description": "Menu action that replaces the OS contact a person is linked to"
@@ -8076,6 +8105,10 @@
   "relationshipReminderSnoozeLonger": "Snooze longer",
   "@relationshipReminderSnoozeLonger": {
     "description": "Button on the paused-reminder note that opens the snooze options."
+  },
+  "relationshipRemindersOfferTitle": "Reminders and briefings",
+  "@relationshipRemindersOfferTitle": {
+    "description": "Title of the card offering to turn on reminders and the briefing agent for a person."
   },
   "relationshipRemindersPillSemantics": "Reminders: {cadence}. Tap to change.",
   "@relationshipRemindersPillSemantics": {
@@ -8101,6 +8134,10 @@
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
   "relationshipsPageTitle": "People",
+  "relationshipSpeak": "Speak",
+  "@relationshipSpeak": {
+    "description": "Primary action on a person's page: record your thoughts about them by voice."
+  },
   "relationshipsSelectPersonHint": "Select a person to see their page.",
   "relationshipsSummaryDueNow": "Due now",
   "relationshipsSummaryEnrolled": "/ {count} with reminders",
@@ -8185,6 +8222,77 @@
       }
     }
   },
+  "relationshipTimelineEmpty": "Nothing here yet. Speak after you talk to {name}, or add a note, a task or photos.",
+  "@relationshipTimelineEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineFilterAll": "All",
+  "relationshipTimelineFilterMeetings": "Meetings",
+  "relationshipTimelineFilterNotes": "Notes",
+  "relationshipTimelineFilterPhotos": "Photos",
+  "relationshipTimelineMeeting": "Meeting",
+  "relationshipTimelineMeetingCalledOff": "Called off",
+  "@relationshipTimelineMeetingCalledOff": {
+    "description": "A meeting that was cancelled, missed or postponed."
+  },
+  "relationshipTimelineNote": "Note",
+  "@relationshipTimelineNote": {
+    "description": "Kind label of a typed note on a person's timeline."
+  },
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "@relationshipTimelineRowLabel": {
+    "description": "What a screen reader says for one timeline row.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineTask": "Task",
+  "relationshipTimelineTaskDoneAt": "Done {time}",
+  "@relationshipTimelineTaskDoneAt": {
+    "description": "Meta line of a finished task on a person's timeline: when it was done.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineTaskOverdue": "Overdue since {day}",
+  "@relationshipTimelineTaskOverdue": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipTimelineThisWeek": "This week",
+  "@relationshipTimelineThisWeek": {
+    "description": "Timeline section: the six days before today."
+  },
+  "relationshipTimelineTitle": "Timeline",
+  "@relationshipTimelineTitle": {
+    "description": "Heading over a person's chronological timeline."
+  },
+  "relationshipTimelineToday": "Today",
+  "relationshipTimelineUpcoming": "Upcoming",
+  "@relationshipTimelineUpcoming": {
+    "description": "Timeline section: meetings ahead and tasks with a due date."
+  },
+  "relationshipTimelineVoiceNote": "Voice note",
+  "@relationshipTimelineVoiceNote": {
+    "description": "Kind label of a recording on a person's timeline that is not part of a check-in."
+  },
   "relationshipTimestampToday": "Today",
   "@relationshipTimestampToday": {
     "description": "The relative day word in a relationship timestamp, e.g. \"Today 14:20\"."
@@ -8193,13 +8301,9 @@
   "@relationshipTimestampYesterday": {
     "description": "The relative day word in a relationship timestamp, e.g. \"Yesterday 19:05\"."
   },
-  "relationshipTrackingSinceLabel": "Tracking since {date}",
-  "@relationshipTrackingSinceLabel": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
+  "relationshipTurnOnReminders": "Turn on reminders",
+  "@relationshipTurnOnReminders": {
+    "description": "Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval."
   },
   "relationshipTurnRemindersOff": "Turn reminders off",
   "@relationshipTurnRemindersOff": {
@@ -9951,201 +10055,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip",
-  "relationshipBeforeYouTalkTitle": "Before you talk",
-  "@relationshipBeforeYouTalkTitle": {
-    "description": "Title of the person page's briefing card: the user's own notes for next time, then the agent's summary."
-  },
-  "relationshipNextTimeYourNotes": "Your notes · {day}",
-  "@relationshipNextTimeYourNotes": {
-    "description": "Caption over the user's own 'pay attention to / avoid' lines, naming the check-in they were written on.",
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipBriefingOptions": "Briefing options",
-  "@relationshipBriefingOptions": {
-    "description": "Tooltip of the briefing card's overflow menu."
-  },
-  "relationshipTimelineUpcoming": "Upcoming",
-  "@relationshipTimelineUpcoming": {
-    "description": "Timeline section: meetings ahead and tasks with a due date."
-  },
-  "relationshipTimelineToday": "Today",
-  "relationshipTimelineThisWeek": "This week",
-  "@relationshipTimelineThisWeek": {
-    "description": "Timeline section: the six days before today."
-  },
-  "relationshipTimelineFilterAll": "All",
-  "relationshipTimelineFilterNotes": "Notes",
-  "relationshipTimelineFilterPhotos": "Photos",
-  "relationshipTimelineFilterMeetings": "Meetings",
-  "relationshipTimelineNote": "Note",
-  "@relationshipTimelineNote": {
-    "description": "Kind label of a typed note on a person's timeline."
-  },
-  "relationshipTimelineVoiceNote": "Voice note",
-  "@relationshipTimelineVoiceNote": {
-    "description": "Kind label of a recording on a person's timeline that is not part of a check-in."
-  },
-  "relationshipTimelineTask": "Task",
-  "relationshipTimelineTaskOverdue": "Overdue since {day}",
-  "@relationshipTimelineTaskOverdue": {
-    "placeholders": {
-      "day": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipTimelineMeeting": "Meeting",
-  "relationshipTimelineMeetingCalledOff": "Called off",
-  "@relationshipTimelineMeetingCalledOff": {
-    "description": "A meeting that was cancelled, missed or postponed."
-  },
-  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
-  "@relationshipTimelineRowLabel": {
-    "description": "What a screen reader says for one timeline row.",
-    "placeholders": {
-      "kind": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      },
-      "text": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipTimelineEmpty": "Nothing here yet. Speak after you talk to {name}, or add a note, a task or photos.",
-  "@relationshipTimelineEmpty": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAboutTitle": "About {name}",
-  "@relationshipAboutTitle": {
-    "description": "Heading over the notes the user pinned about a person.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAboutShowAll": "Show all ({count})",
-  "@relationshipAboutShowAll": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipAboutShowLess": "Show less",
-  "relationshipSpeak": "Speak",
-  "@relationshipSpeak": {
-    "description": "Primary action on a person's page: record your thoughts about them by voice."
-  },
-  "relationshipAddToTimeline": "Add to {name}'s timeline",
-  "@relationshipAddToTimeline": {
-    "description": "Tooltip of the + button that opens the create menu.",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAddNote": "Add a note about {name}",
-  "@relationshipAddNote": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipCreateTask": "Add a task for {name}",
-  "@relationshipCreateTask": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAddPhotos": "Add photos",
-  "relationshipNoteSheetTitle": "Note about {name}",
-  "@relationshipNoteSheetTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipNoteHint": "Where you met, what they love, a gift idea…",
-  "relationshipNotePin": "Pin to About",
-  "relationshipNoteUnpin": "Unpin from About",
-  "relationshipNoteSaveFailed": "Could not save the note.",
-  "relationshipRemoveFromTimeline": "Remove from timeline",
-  "@relationshipRemoveFromTimeline": {
-    "description": "Takes an entry off a person's timeline without deleting it."
-  },
-  "relationshipCallConfirmTitle": "Call {name}?",
-  "@relationshipCallConfirmTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipCallConfirmChannel": "{value} · {label}",
-  "@relationshipCallConfirmChannel": {
-    "description": "The number and its label in the call confirmation, e.g. '+1 555 0100 · Mobile'.",
-    "placeholders": {
-      "value": {
-        "type": "String"
-      },
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "relationshipAddAction": "Add",
-  "@relationshipAddAction": {
-    "description": "Label of the person page's create button (a note, a task, photos, a check-in)."
-  },
-  "relationshipTimelineTitle": "Timeline",
-  "@relationshipTimelineTitle": {
-    "description": "Heading over a person's chronological timeline."
-  },
-  "relationshipAboutPinnedCount": "{count, plural, =1{1 note} other{{count} notes}}",
-  "@relationshipAboutPinnedCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "relationshipRemindersOfferTitle": "Reminders and briefings",
-  "@relationshipRemindersOfferTitle": {
-    "description": "Title of the card offering to turn on reminders and the briefing agent for a person."
-  },
-  "relationshipNextMeetingLabel": "Next meeting",
-  "@relationshipNextMeetingLabel": {
-    "description": "Label over the next booked meeting with a person, at the head of Before you talk on the person page."
-  },
-  "relationshipTurnOnReminders": "Turn on reminders",
-  "@relationshipTurnOnReminders": {
-    "description": "Button on the person page's offer card that enrols the person in reminders and briefings at the chosen interval."
-  },
-  "relationshipTimelineTaskDoneAt": "Done {time}",
-  "@relationshipTimelineTaskDoneAt": {
-    "description": "Meta line of a finished task on a person's timeline: when it was done.",
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  }
+  "whatsNewSkipButton": "Skip"
 }
