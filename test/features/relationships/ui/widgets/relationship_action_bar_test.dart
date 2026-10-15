@@ -66,19 +66,21 @@ void main() {
 
   testWidgets('at a narrow width and large text the controls wrap rather '
       'than overflow', (tester) async {
-    await pump(tester, size: const Size(240, 600));
+    // The surface and the harness's own MediaQuery both narrow and large: a
+    // MediaQuery wrapped around the harness is replaced by the one it
+    // builds inside, so the text scale has to go through it.
+    const narrow = Size(240, 600);
+    setTestSurfaceSize(tester, narrow);
     await tester.pumpWidget(
-      MediaQuery(
-        data: const MediaQueryData(
-          size: Size(240, 600),
-          textScaler: TextScaler.linear(2),
+      makeTestableWidgetWithScaffold(
+        RelationshipActionBar(
+          personName: 'Pip',
+          onSpeak: () {},
+          onAdd: () {},
         ),
-        child: makeTestableWidgetWithScaffold(
-          RelationshipActionBar(
-            personName: 'Pip',
-            onSpeak: () {},
-            onAdd: () {},
-          ),
+        mediaQueryData: const MediaQueryData(
+          size: narrow,
+          textScaler: TextScaler.linear(2),
         ),
       ),
     );
