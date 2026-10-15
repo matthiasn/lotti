@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -162,9 +162,9 @@ void main() {
     test('pinned notes lead, then the newest unpinned ones, each bounded', () {
       final facts = render(
         timeline: [
-          note('n-old', DateTime(2026, 5, 1), 'Prefers tea.'),
+          note('n-old', DateTime(2026, 5), 'Prefers tea.'),
           note('n-new', DateTime(2026, 8, 10), 'Starts a new job Monday.'),
-          note('n-pin', DateTime(2025, 1, 1), 'Met at uni.', pinned: true),
+          note('n-pin', DateTime(2025), 'Met at uni.', pinned: true),
           for (var i = 0; i < relationshipNoteLookback + 3; i++)
             note('bulk-$i', DateTime(2026, 6, 1, i), 'bulk $i'),
         ],

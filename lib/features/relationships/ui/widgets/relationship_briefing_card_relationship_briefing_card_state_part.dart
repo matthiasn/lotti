@@ -479,11 +479,10 @@ class _NotEnrolledCard extends StatelessWidget {
                 : null,
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.cardPadding,
-              0,
-              tokens.spacing.cardPadding,
-              tokens.spacing.step4,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step4,
             ),
             child: Text(
               paused
@@ -503,11 +502,10 @@ class _NotEnrolledCard extends StatelessWidget {
           // and changeable — rather than a default discovered later.
           if (!paused)
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.cardPadding,
-                0,
-                tokens.spacing.cardPadding,
-                tokens.spacing.step4,
+              padding: EdgeInsets.only(
+                left: tokens.spacing.cardPadding,
+                right: tokens.spacing.cardPadding,
+                bottom: tokens.spacing.step4,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -545,11 +543,10 @@ class _NotEnrolledCard extends StatelessWidget {
           // block on a page with nothing to brief yet.
           if (!paused)
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.cardPadding,
-                0,
-                tokens.spacing.cardPadding,
-                tokens.spacing.cardPadding,
+              padding: EdgeInsets.only(
+                left: tokens.spacing.cardPadding,
+                right: tokens.spacing.cardPadding,
+                bottom: tokens.spacing.cardPadding,
               ),
               child: Align(
                 alignment: AlignmentDirectional.centerEnd,
@@ -627,11 +624,10 @@ class _BandRationale extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.cardPadding,
-        0,
-        tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+      padding: EdgeInsets.only(
+        left: tokens.spacing.cardPadding,
+        right: tokens.spacing.cardPadding,
+        bottom: tokens.spacing.step3,
       ),
       child: Text(
         text,

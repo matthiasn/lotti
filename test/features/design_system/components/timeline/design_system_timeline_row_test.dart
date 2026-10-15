@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -60,7 +59,7 @@ void main() {
     expect(longPresses, 1);
     expect(
       tester.getSemantics(find.byType(DesignSystemTimelineRow)),
-      containsSemantics(
+      isSemantics(
         label: 'Call with Pip, Saturday 1 August',
         isButton: true,
         hasTapAction: true,

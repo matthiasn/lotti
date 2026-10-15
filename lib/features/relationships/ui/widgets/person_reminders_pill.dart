@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The person's reminder interval, in every enrolled state, as the header's

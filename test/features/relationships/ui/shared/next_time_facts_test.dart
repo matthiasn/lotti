@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';

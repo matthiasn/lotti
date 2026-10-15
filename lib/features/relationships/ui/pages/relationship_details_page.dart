@@ -7,11 +7,13 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
@@ -42,8 +44,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One person's page (design panel 2026-10-15): who they are, what to know
@@ -578,8 +578,13 @@ class _NextMeetingLine extends StatelessWidget {
                     if (title.isNotEmpty) ...[
                       '$title · $when',
                       // The weekday alone is enough for a meeting this close.
-                      '$title · ${relationshipWeekdayLabelOf(context, start)} '
-                          '${relationshipTimeLabel(start)}',
+                      [
+                        title,
+                        [
+                          relationshipWeekdayLabelOf(context, start),
+                          relationshipTimeLabel(start),
+                        ].join(' '),
+                      ].join(' · '),
                     ],
                     when,
                   ],

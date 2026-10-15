@@ -16,20 +16,21 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
-import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -40,8 +41,6 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
-import 'package:lotti/features/relationships/service/contact_launcher.dart';
-import '../../helpers/fake_contact_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -51,6 +50,7 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/fake_contact_launcher.dart';
 import '../../helpers/fake_pending_interaction_store.dart';
 import '../../helpers/person_timeline_fakes.dart';
 
@@ -1236,9 +1236,7 @@ void main() {
     );
     // The bar docks under the page column, never over the rail.
     expect(
-      tester
-          .getTopRight(find.byKey(const ValueKey('person-action-add')))
-          .dx,
+      tester.getTopRight(find.byKey(const ValueKey('person-action-add'))).dx,
       lessThan(tester.getTopLeft(rail).dx),
     );
   });

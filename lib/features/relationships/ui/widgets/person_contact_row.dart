@@ -60,23 +60,32 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
   @override
   void initState() {
     super.initState();
-    unawaited(_resolve());
+    _resolve();
   }
 
   @override
   void didUpdateWidget(PersonContactRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.relationship.data.contactChannels != _channels) {
-      unawaited(_resolve());
+      _resolve();
     }
   }
 
+  /// Asks the platform which actions each channel can take. Started from
+  /// `initState` without awaiting, so it owns its errors: a channel the
+  /// platform cannot answer for is one the row does not offer.
   Future<void> _resolve() async {
     final launcher = ref.read(contactLauncherProvider);
     final reachable = <ContactAction, List<ContactChannel>>{};
     for (final channel in _channels) {
       for (final action in contactActionsFor(channel.type)) {
-        if (await launcher.canLaunch(channel, action)) {
+        bool launchable;
+        try {
+          launchable = await launcher.canLaunch(channel, action);
+        } catch (_) {
+          launchable = false;
+        }
+        if (launchable) {
           reachable.putIfAbsent(action, () => []).add(channel);
         }
       }
@@ -156,7 +165,7 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
               // Dense: the header's actions sit under the name in one row on
               // a phone, and must not outrank the section headings below.
               size: DesignSystemButtonSize.dense,
-              onPressed: () => unawaited(_pressed(action, channels)),
+              onPressed: () => _pressed(action, channels),
             ),
         ...trailing,
       ],

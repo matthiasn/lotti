@@ -341,10 +341,12 @@ void main() {
         '· 4',
       );
       final first = tester.widget<Text>(
-        find.descendant(
-          of: find.byKey(const ValueKey('person-about')),
-          matching: find.byType(Text),
-        ).at(2),
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('person-about')),
+              matching: find.byType(Text),
+            )
+            .at(2),
       );
       expect(first.maxLines, 1);
       expect(find.text('pinned 3'), findsNothing);

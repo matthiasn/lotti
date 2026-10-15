@@ -121,9 +121,12 @@ class PersonTaskActions {
     if (created == null) return null;
 
     // The same follow-up every other create flow performs, so a task created
-    // here is not the one left without its category's agent.
-    unawaited(
-      autoAssignCategoryAgentWith(agentService, created, domainLogger: logger),
+    // here is not the one left without its category's agent. Awaited: it
+    // logs its own failure, and a task is linked only once it is settled.
+    await autoAssignCategoryAgentWith(
+      agentService,
+      created,
+      domainLogger: logger,
     );
 
     if (modalContext.mounted) return created;

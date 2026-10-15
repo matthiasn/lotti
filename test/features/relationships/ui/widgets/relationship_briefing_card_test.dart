@@ -526,13 +526,17 @@ void main() {
         findsNothing,
       );
       expect(
-        tester.getTopLeft(
-          find.byKey(const ValueKey('relationship-agent-mark-important')),
-        ).dy,
+        tester
+            .getTopLeft(
+              find.byKey(const ValueKey('relationship-agent-mark-important')),
+            )
+            .dy,
         greaterThan(
-          tester.getBottomLeft(
-            find.byKey(const ValueKey('relationship-agent-enrol-cadence')),
-          ).dy,
+          tester
+              .getBottomLeft(
+                find.byKey(const ValueKey('relationship-agent-enrol-cadence')),
+              )
+              .dy,
         ),
       );
       // One noun for the enrolment axis: the band, the pill and the

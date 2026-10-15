@@ -12,6 +12,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the sheet for a note about [person]: a new one, or [note] to edit.
@@ -58,7 +60,9 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
   /// The last save failed. Said under the field, inside the sheet: a toast
   /// raised from here is hosted by the page's messenger and would render
   /// behind the sheet it explains.
-  var _failed = false;
+  /// What went wrong with the last save or delete, said under the field;
+  /// null while nothing has.
+  String? _error;
 
   @override
   void initState() {
@@ -74,37 +78,70 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
     super.dispose();
   }
 
-  void _changed() => setState(() => _failed = false);
+  void _changed() => setState(() => _error = null);
 
   bool get _canSave => !_saving && _text.text.trim().isNotEmpty;
 
+  /// Saves the note and closes the sheet; a write that fails, or throws,
+  /// keeps the sheet open on the words with the reason under them — the
+  /// button and ⌘/Ctrl+Enter start this without awaiting it, so it handles
+  /// its own errors.
   Future<void> _save() async {
+    final failed = context.messages.relationshipNoteSaveFailed;
     setState(() => _saving = true);
     final repository = ref.read(personTimelineRepositoryProvider);
     final note = widget.note;
-    final saved = note == null
-        ? await repository.createNote(
-                person: widget.person,
-                text: _text.text,
-                pinned: _pinned,
-              ) !=
-              null
-        : await repository.updateNote(note, text: _text.text, pinned: _pinned);
+    final saved = await _attempt(
+      () async => note == null
+          ? await repository.createNote(
+                  person: widget.person,
+                  text: _text.text,
+                  pinned: _pinned,
+                ) !=
+                null
+          : repository.updateNote(note, text: _text.text, pinned: _pinned),
+    );
+    _settle(saved, error: failed);
+  }
+
+  /// Deletes the note and closes the sheet, or says it could not.
+  Future<void> _delete(JournalEntry note) async {
+    final failed = context.messages.journalDeleteFailed;
+    setState(() => _saving = true);
+    final deleted = await _attempt(
+      () => ref.read(personTimelineRepositoryProvider).deleteNote(note),
+    );
+    _settle(deleted, error: failed);
+  }
+
+  /// Runs a write, reading a throw as the failure it is.
+  Future<bool> _attempt(Future<bool> Function() write) async {
+    try {
+      return await write();
+    } catch (error, stackTrace) {
+      ref
+          .read(domainLoggerProvider)
+          .error(
+            LogDomain.general,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'PersonNoteSheet',
+            message: 'Failed to write a note on the person timeline',
+          );
+      return false;
+    }
+  }
+
+  void _settle(bool done, {required String error}) {
     if (!mounted) return;
-    if (saved) {
+    if (done) {
       Navigator.of(context).pop();
       return;
     }
     setState(() {
       _saving = false;
-      _failed = true;
+      _error = error;
     });
-  }
-
-  Future<void> _delete(JournalEntry note) async {
-    setState(() => _saving = true);
-    await ref.read(personTimelineRepositoryProvider).deleteNote(note);
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -113,7 +150,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
     final messages = context.messages;
     final note = widget.note;
     void saveIfReady() {
-      if (_canSave) unawaited(_save());
+      if (_canSave) _save();
     }
 
     // ⌘/Ctrl+Enter saves, as in the check-in composer.
@@ -132,7 +169,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
             key: const ValueKey('person-note-text'),
             controller: _text,
             hintText: messages.relationshipNoteHint,
-            errorText: _failed ? messages.relationshipNoteSaveFailed : null,
+            errorText: _error,
             minLines: 4,
             growWithContent: true,
             semanticsLabel: messages.relationshipNoteSheetTitle(
@@ -153,7 +190,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
               label: messages.saveButtonLabel,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
-              onPressed: _canSave ? () => unawaited(_save()) : null,
+              onPressed: _canSave ? _save : null,
             ),
             secondary: [
               if (note != null)
@@ -161,7 +198,7 @@ class _PersonNoteFormState extends ConsumerState<PersonNoteForm> {
                   key: const ValueKey('person-note-delete'),
                   label: messages.deleteButton,
                   variant: DesignSystemButtonVariant.danger,
-                  onPressed: _saving ? null : () => unawaited(_delete(note)),
+                  onPressed: _saving ? null : () => _delete(note),
                 ),
               DesignSystemButton(
                 key: const ValueKey('person-note-cancel'),

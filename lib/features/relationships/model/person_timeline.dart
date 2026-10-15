@@ -103,9 +103,8 @@ final class TimelineTask extends PersonTimelineItem {
   /// user), an open one without at when it was written, and a closed one at
   /// when it was closed — the moment its row reports.
   @override
-  DateTime get at => open
-      ? due ?? task.meta.dateFrom
-      : task.data.status.createdAt;
+  DateTime get at =>
+      open ? due ?? task.meta.dateFrom : task.data.status.createdAt;
 }
 
 /// A meeting with the person.

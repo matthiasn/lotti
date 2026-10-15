@@ -411,7 +411,7 @@ void main() {
     // Design panel 2026-10-15: the badges' slashed zero made `10:05` in a
     // row's meta line read as a code rather than a time.
     test('sets dates without the slashed zero badges use, and without '
-        "tabular spacing — a date in a line is read, not compared", () {
+        'tabular spacing — a date in a line is read, not compared', () {
       final features = relationshipTimestampStyle(tokens).fontFeatures;
       expect(features, isNot(contains(const FontFeature.slashedZero())));
       expect(features, isNot(contains(const FontFeature.tabularFigures())));

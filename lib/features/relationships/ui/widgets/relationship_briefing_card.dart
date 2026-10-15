@@ -27,6 +27,7 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -42,7 +43,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/relative_age_label.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:material_ui/material_ui.dart';
 
 part 'relationship_briefing_card_relationship_briefing_card_state_part.dart';
@@ -484,11 +484,10 @@ class _AgentCard extends StatelessWidget {
             // No bottom inset under TldrBody: its disclosure row carries the
             // trailing gap inside its tap target. The plain-text bodies bring
             // one of their own.
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.cardPadding,
-              0,
-              tokens.spacing.cardPadding,
-              endsInBriefing ? 0 : tokens.spacing.step4,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: endsInBriefing ? 0 : tokens.spacing.step4,
             ),
             child: body,
           ),
@@ -528,11 +527,10 @@ class _AgentCard extends StatelessWidget {
           SizedBox(height: tokens.spacing.step3),
         if (showsSources)
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.cardPadding,
-              0,
-              tokens.spacing.cardPadding,
-              tokens.spacing.step4,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step4,
             ),
             child: _MetaLine(
               label: messages.relationshipAgentSources(checkInCount),
