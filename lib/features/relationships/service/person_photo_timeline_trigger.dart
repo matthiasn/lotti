@@ -38,27 +38,7 @@ class PersonPhotoTimelineTrigger extends AutomaticImageAnalysisTrigger {
   }) async {
     final personId = linkedTaskId;
     if (personId == null) return;
-    try {
-      final added = await _timeline.addToTimeline(
-        personId: personId,
-        entryId: imageEntryId,
-      );
-      if (!added) {
-        loggingService.error(
-          LogDomain.persistence,
-          'person photo timeline link rejected for $imageEntryId',
-          subDomain: 'personPhotoTimeline',
-        );
-      }
-    } catch (exception, stackTrace) {
-      // Fire-and-forget: the importer never awaits this.
-      loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'personPhotoTimeline',
-      );
-    }
+    await putOnTimeline(personId: personId, entryId: imageEntryId);
     await super.triggerAutomaticImageAnalysis(
       imageEntryId: imageEntryId,
       subjectId: personId,
@@ -72,6 +52,36 @@ class PersonPhotoTimelineTrigger extends AutomaticImageAnalysisTrigger {
       });
       if (described.isEmpty) return;
       await _timeline.touch(imageEntryId);
+    } catch (exception, stackTrace) {
+      loggingService.error(
+        LogDomain.persistence,
+        exception,
+        stackTrace: stackTrace,
+        subDomain: 'personPhotoTimeline',
+      );
+    }
+  }
+
+  /// Puts the photo [entryId] on [personId]'s timeline — for one this import
+  /// created, and for one the journal already held, which the import links
+  /// rather than creates. A refused link is logged, and so is one that
+  /// throws: the importer goes on to the next picture either way.
+  Future<void> putOnTimeline({
+    required String personId,
+    required String entryId,
+  }) async {
+    try {
+      final added = await _timeline.addToTimeline(
+        personId: personId,
+        entryId: entryId,
+      );
+      if (!added) {
+        loggingService.error(
+          LogDomain.persistence,
+          'person photo timeline link rejected for $entryId',
+          subDomain: 'personPhotoTimeline',
+        );
+      }
     } catch (exception, stackTrace) {
       loggingService.error(
         LogDomain.persistence,

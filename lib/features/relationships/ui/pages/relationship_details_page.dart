@@ -17,7 +17,6 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
-import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -309,17 +308,19 @@ class _RelationshipDetailsPageState
         case PersonCreateChoice.task:
           await tasks.pickTask(context, ref);
         case PersonCreateChoice.photos:
+          final trigger = ref.read(personPhotoTimelineTriggerProvider);
           await importImagesForPlatform(
             context,
             linkedId: relationshipId,
             categoryId: categoryId,
-            analysisTrigger: ref.read(personPhotoTimelineTriggerProvider),
+            analysisTrigger: trigger,
             // A photo the journal already holds is linked, not created, so
-            // the trigger above never puts it on the timeline.
-            onExisting: (entryId) => ref
-                .read(personTimelineRepositoryProvider)
-                .addToTimeline(personId: relationshipId, entryId: entryId)
-                .then((_) {}),
+            // the trigger's analysis never runs for it; it still belongs on
+            // the timeline, through the same logged link.
+            onExisting: (entryId) => trigger.putOnTimeline(
+              personId: relationshipId,
+              entryId: entryId,
+            ),
           );
         case PersonCreateChoice.checkIn:
           await _openComposer(context, latest: latest);

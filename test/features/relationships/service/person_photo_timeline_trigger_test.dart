@@ -166,6 +166,34 @@ void main() {
     ).called(1);
   });
 
+  test('a photo the journal already held goes on the timeline without being '
+      'analysed again, and a link that throws is logged, not thrown', () async {
+    await trigger().putOnTimeline(personId: 'pip', entryId: 'old-photo');
+
+    verify(
+      () => timeline.addToTimeline(personId: 'pip', entryId: 'old-photo'),
+    ).called(1);
+    verifyNever(
+      () => automation.tryAnalyzeImage(subjectId: any(named: 'subjectId')),
+    );
+
+    when(
+      () => timeline.addToTimeline(
+        personId: any(named: 'personId'),
+        entryId: any(named: 'entryId'),
+      ),
+    ).thenThrow(Exception('database locked'));
+    await trigger().putOnTimeline(personId: 'pip', entryId: 'old-photo');
+    verify(
+      () => logger.error(
+        LogDomain.persistence,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'personPhotoTimeline',
+      ),
+    ).called(1);
+  });
+
   test('does nothing for an import that names no person', () async {
     await trigger().triggerAutomaticImageAnalysis(imageEntryId: 'photo-1');
 
