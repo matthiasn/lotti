@@ -1379,6 +1379,42 @@ void main() {
         expect((await save(tester)).data.birthday, DateTime(1996, 8));
       });
 
+      testWidgets('a long date at a large text size on a narrow phone stays '
+          'inside its row', (tester) async {
+        final person = existing();
+        setTestSurfaceSize(tester, const Size(320, 2400));
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              size: Size(320, 2400),
+              textScaler: TextScaler.linear(1.6),
+            ),
+            child: buildForm(
+              initial: person.copyWith(
+                data: person.data.copyWith(birthday: DateTime(1990, 9, 30)),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        final row = tester.getRect(
+          find
+              .ancestor(
+                of: find.byKey(const ValueKey('person-form-birthday')),
+                matching: find.byType(Row),
+              )
+              .first,
+        );
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('person-form-birthday')))
+              .right,
+          lessThanOrEqualTo(row.right),
+        );
+      });
+
       testWidgets('a known one shows as its date, and Clear forgets it', (
         tester,
       ) async {

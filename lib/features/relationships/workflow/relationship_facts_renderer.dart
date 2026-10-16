@@ -168,9 +168,10 @@ class RelationshipFactsRenderer {
       }
       final month = birthday.month.toString().padLeft(2, '0');
       final day = birthday.day.toString().padLeft(2, '0');
-      buffer.writeln(
-        '- birthday: $month-$day (next in ${next.difference(today).inDays} days)',
-      );
+      // Calendar days, not elapsed hours: a spring-forward between today
+      // and the birthday is a 23-hour day, and `.inDays` would drop it.
+      final daysOff = relationshipCalendarDaysBetween(today, next);
+      buffer.writeln('- birthday: $month-$day (next in $daysOff days)');
     }
     buffer
       ..writeln('- trackingSince: ${_day(relationship.meta.dateFrom)}')

@@ -514,27 +514,31 @@ class _BirthdayRow extends StatelessWidget {
                 .copyWith(color: context.designTokens.colors.text.highEmphasis),
           ),
         ),
-        DesignSystemButton(
-          key: const ValueKey('person-form-birthday'),
-          label: birthday == null
-              ? messages.relationshipBirthdayAdd
-              : DateFormat.yMMMMd(locale).format(birthday),
-          leadingIcon: LottiIcons.calendar,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.dense,
-          onPressed: () async {
-            final now = clock.now();
-            final picked = await showDesignSystemDatePicker(
-              context: context,
-              title: messages.relationshipBirthdayLabel,
-              initialDate: birthday ?? DateTime(now.year - 30, now.month),
-              firstDate: DateTime(1900),
-              lastDate: now,
-              allowClear: birthday != null,
-            );
-            if (picked == null) return;
-            onChanged(picked.cleared ? null : picked.date);
-          },
+        // Flexible, so a long localized date on a narrow phone ellipsizes
+        // inside the button instead of pushing the row off the card.
+        Flexible(
+          child: DesignSystemButton(
+            key: const ValueKey('person-form-birthday'),
+            label: birthday == null
+                ? messages.relationshipBirthdayAdd
+                : DateFormat.yMMMMd(locale).format(birthday),
+            leadingIcon: LottiIcons.calendar,
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.dense,
+            onPressed: () async {
+              final now = clock.now();
+              final picked = await showDesignSystemDatePicker(
+                context: context,
+                title: messages.relationshipBirthdayLabel,
+                initialDate: birthday ?? DateTime(now.year - 30, now.month),
+                firstDate: DateTime(1900),
+                lastDate: now,
+                allowClear: birthday != null,
+              );
+              if (picked == null) return;
+              onChanged(picked.cleared ? null : picked.date);
+            },
+          ),
         ),
       ],
     );

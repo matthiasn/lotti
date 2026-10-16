@@ -498,6 +498,22 @@ void main() {
     expect(render(), isNot(contains('birthday')));
   });
 
+  test('the countdown counts calendar days, so a spring-forward between '
+      'today and the birthday does not shorten it', () {
+    // Europe's 2026 change falls on Sun 29 Mar: from Sat 28 Mar the 30th is
+    // two calendar days away, though a local-midnight difference is 47 h.
+    final facts = renderer.render(
+      relationship: relationship(birthday: DateTime(1990, 3, 30)),
+      derivation: derivation(),
+      checkIns: const [],
+      linkedTasks: const [],
+      previousReport: null,
+      nudges: const [],
+      now: DateTime(2026, 3, 28, 12),
+    );
+    expect(facts, contains('- birthday: 03-30 (next in 2 days)'));
+  });
+
   test('renders the person, cadence state and recency from the derivation', () {
     final facts = render(
       checkIns: [checkIn('c-1', DateTime(2026, 8, 14, 20))],
