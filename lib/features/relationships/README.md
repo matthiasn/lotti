@@ -13,7 +13,8 @@ who is due and who lapses next. Rows show the last contact and, where there
 is one, how often a reminder comes. Turning reminders on — in the person
 editor, the contact-import review or the person page's card — always shows
 how often, with monthly preselected, and stores what it shows.
-Desktop uses a list/detail split; phones open a dedicated person page.
+Desktop uses a list/detail split; phones open a dedicated person page. A
+long press on a person starts a spoken check-in without opening the page.
 
 The person page holds a header with category, name, nickname and recent
 contact, and one row of actions: call, message and email where the device
@@ -36,6 +37,7 @@ down to the avatar, which sits across its lower edge; the header's actions
 stay legible over it. Both
 pictures are managed from the person editor's Photo card — the banner is
 dragged sideways into place there — and the face from the page's avatar too.
+The editor also keeps a birthday, which the agent's briefings count down to.
 The bottom bar offers *Speak*, which opens the check-in composer already
 recording, and *+ Add*: a check-in, a note about the person (which can be
 pinned to *About*), a task, or photos.
@@ -145,8 +147,8 @@ A check-in holds its comments, recordings and photos as entries of its own;
 the text older check-ins were saved with reads as their first entry. Tapping
 a check-in opens it the way a task opens, in the task page's own header: the
 person's category and name above the title, its when, how, how long and how
-it felt as the task's read-out tags that edit in place, its topics as one
-tag, and *Edit check-in* where a task keeps *Details*; the words it was
+it felt as words with their glyphs that edit in place, its topics after
+them, and *Edit check-in* in its ⋮ menu; the words it was
 logged with under a faint rule, then its timeline, with a floating bar
 that adds a dictation, a comment or photos — and, behind its plus, the
 logbook's Add sheet for a timer, a linked task or a pasted image; its row in

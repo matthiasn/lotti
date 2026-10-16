@@ -11,16 +11,20 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
@@ -39,6 +43,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/fake_pending_interaction_store.dart';
 import '../../helpers/person_timeline_fakes.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
@@ -221,7 +226,7 @@ void main() {
       await tester.pump();
 
       // Nothing has resolved yet: the tab must not read as empty.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
       expect(
         find.text('Add the people you want to stay close to.'),
         findsNothing,
@@ -230,7 +235,7 @@ void main() {
       firstLoad.complete([item('rel-1', title: 'Anna')]);
       await tester.pumpAndSettle();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
       expect(_rowNamed('Anna'), findsOneWidget);
     },
   );
@@ -426,6 +431,53 @@ void main() {
     });
   });
 
+  testWidgets('a long press on a person opens the composer already '
+      'recording for them, without leaving the list', (tester) async {
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+      (_) async => [item('rel-1', title: 'Anna', important: true)],
+    );
+    when(
+      () => mockRepository.getRelationshipById(any()),
+    ).thenAnswer((_) async => item('rel-1', title: 'Anna').relationship);
+    when(
+      () => mockRepository.getCheckInsForRelationship(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockRepository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
+      () => mockRepository.getLinkedTasks(any()),
+    ).thenAnswer((_) async => []);
+
+    await withClock(Clock.fixed(testDate), () async {
+      await tester.pumpWidget(
+        buildPage(
+          overrides: [
+            pendingInteractionStoreProvider.overrideWithValue(
+              FakePendingInteractionStore(),
+            ),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              StubCheckInTranscriptionService(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    await tester.longPress(_rowNamed('Anna'));
+    // The live recorder animates: frames, not a settle.
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final form = tester.widget<CheckInCaptureForm>(
+      find.byType(CheckInCaptureForm),
+    );
+    expect(form.relationshipId, 'rel-1');
+    expect(form.startSpeaking, isTrue);
+  });
+
   testWidgets(
     'renders one row per relationship, with persona avatars and inline stars '
     'only for important people',
@@ -451,12 +503,9 @@ void main() {
       expect(_rowNamed('Ben'), findsOneWidget);
       // Persona avatars replace the bare person icon.
       expect(find.byType(PersonaAvatar), findsNWidgets(2));
-      // Exactly one sparkle: Anna is important, Ben is not (the star is
-      // gone — it read as a toggle it was not).
-      expect(
-        find.byKey(const ValueKey('people-row-important')),
-        findsOneWidget,
-      );
+      // No marker beside a name: the band says whether reminders are on
+      // (the star went first — it read as a toggle it was not).
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
       expect(find.byIcon(LottiIconsFilled.star), findsNothing);
       // The status line is the last contact — what, when, cadence, with
       // the mono voice on the date alone — never "Tracking since …".
@@ -486,11 +535,11 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
 
     gate.complete([item('rel-1', title: 'Anna')]);
     await tester.pumpAndSettle();
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemSpinner), findsNothing);
     expect(_rowNamed('Anna'), findsOneWidget);
   });
 
@@ -524,7 +573,7 @@ void main() {
       // Mid-refetch: the established list must stay, with no loading shell.
       expect(calls, 2);
       expect(_rowNamed('Anna'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
 
       second.complete([
         item('rel-1', title: 'Anna'),
@@ -738,7 +787,13 @@ void main() {
     // Caption, name, day — the day on its own line so it is never
     // the part that ellipses.
     expect(find.text('Next due'), findsOneWidget);
-    expect(find.text('Ben'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PeopleSummaryCard),
+        matching: find.text('Ben'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Thu 20 Aug'), findsOneWidget);
     expect(find.text('2 people without reminders'), findsOneWidget);
   });

@@ -12804,7 +12804,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipBeforeYouTalkTitle => 'Než si promluvíte';
+  String get relationshipBirthdayAdd => 'Přidat narozeniny';
+
+  @override
+  String get relationshipBirthdayLabel => 'Narozeniny';
 
   @override
   String relationshipBriefingAge(int days) {
@@ -13101,9 +13104,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantLabel => 'S připomínkami';
-
-  @override
   String relationshipImportConfirmButton(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13237,9 +13237,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String relationshipNextTimeFromEarlier(String day) {
     return 'Z tvého check-inu $day';
   }
-
-  @override
-  String get relationshipNextTimeTitle => 'Příště';
 
   @override
   String get relationshipNicknameLabel => 'Přezdívka';

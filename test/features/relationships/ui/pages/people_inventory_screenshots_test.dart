@@ -58,6 +58,7 @@ import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
@@ -2466,9 +2467,9 @@ void main() {
       // The same form with reminders switched on: the interval choice only
       // exists in this state, so a capture with the switch off cannot show
       // whether it is honest.
-      await tester.ensureVisible(find.byType(Switch));
+      await tester.ensureVisible(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       expect(_selectedPillLabels(tester), ['Monthly']);
       await tester.ensureVisible(find.text('Quarterly'));
@@ -2871,7 +2872,7 @@ void main() {
 
     // …and with reminders switched on for the first of them, which is the
     // only state the interval choice appears in.
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byType(DesignSystemToggle).first);
     await tester.pumpAndSettle();
     expect(_selectedPillLabels(tester), ['Monthly']);
     await captureScreenshot(

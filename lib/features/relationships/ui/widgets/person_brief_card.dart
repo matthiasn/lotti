@@ -28,8 +28,13 @@ class PersonBriefCard extends StatelessWidget {
     required this.now,
     this.onOpenSource,
     this.onOpenMeeting,
+    this.showProvenance = true,
     super.key,
   });
+
+  /// Whether the card says which check-in its notes are from — not on that
+  /// check-in's own page, where the answer is the page.
+  final bool showProvenance;
 
   /// The newest check-in that carries notes for next time ([sourceOf]), or
   /// null.
@@ -105,8 +110,10 @@ class PersonBriefCard extends StatelessWidget {
                 ),
               ),
             ],
-            SizedBox(height: tokens.spacing.step2),
-            _Provenance(source: source, onOpen: onOpenSource),
+            if (showProvenance) ...[
+              SizedBox(height: tokens.spacing.step2),
+              _Provenance(source: source, onOpen: onOpenSource),
+            ],
           ],
           if (meeting != null) ...[
             if (hasNotes) ...[

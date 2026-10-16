@@ -1014,6 +1014,33 @@ void main() {
       expect(textField.decoration?.isDense, isTrue);
     });
   });
+  testWidgets('multiline lets a long entry wrap, the field growing from its '
+      'usual height instead of hiding all but the end', (tester) async {
+    final controller = TextEditingController(
+      text:
+          'Sam; Luna; Lisbon; the ice garden; Pingo; the launch crew; '
+          'the krill co-op; Station 3',
+    );
+    addTearDown(controller.dispose);
+    Widget build({required bool multiline}) => makeTestableWidgetWithScaffold(
+      SizedBox(
+        width: 240,
+        child: DesignSystemTextInput(
+          controller: controller,
+          label: 'Names that come up',
+          multiline: multiline,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(build(multiline: false));
+    final single = tester.getSize(find.byType(TextField)).height;
+    expect(tester.widget<TextField>(find.byType(TextField)).maxLines, 1);
+
+    await tester.pumpWidget(build(multiline: true));
+    expect(tester.widget<TextField>(find.byType(TextField)).maxLines, isNull);
+    expect(tester.getSize(find.byType(TextField)).height, greaterThan(single));
+  });
 }
 
 Future<void> _pumpInput(

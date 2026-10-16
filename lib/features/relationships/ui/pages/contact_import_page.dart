@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
@@ -114,8 +118,9 @@ class _ContactImportPageState extends ConsumerState<ContactImportPage> {
           ],
         ),
         leading: _reviewing
-            ? IconButton(
-                icon: const Icon(LottiIcons.back),
+            ? DesignSystemIconAction(
+                icon: LottiIcons.back,
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 // Back from review returns to the selection with the choices
                 // intact, rather than dropping them.
                 onPressed: () => setState(() => _reviewing = false),
@@ -126,7 +131,7 @@ class _ContactImportPageState extends ConsumerState<ContactImportPage> {
         child: switch (state.status) {
           ContactImportStatus.idle ||
           ContactImportStatus.loading => const Center(
-            child: CircularProgressIndicator(),
+            child: DesignSystemSpinner(),
           ),
           ContactImportStatus.denied => _Message(
             body: messages.relationshipImportPermissionBody,
@@ -194,12 +199,11 @@ class _SelectStep extends ConsumerWidget {
             tokens.spacing.step5,
             tokens.spacing.step3,
           ),
-          child: TextField(
+          child: DesignSystemTextInput(
+            key: const ValueKey('contact-import-search'),
             controller: searchController,
-            decoration: InputDecoration(
-              hintText: context.messages.relationshipImportSearchHint,
-              prefixIcon: const Icon(LottiIcons.search),
-            ),
+            hintText: context.messages.relationshipImportSearchHint,
+            leadingIcon: LottiIcons.search,
             onChanged: controller.setQuery,
           ),
         ),
@@ -345,8 +349,10 @@ class _ReviewStep extends ConsumerWidget {
                                 ),
                           ),
                         ),
-                        Switch(
+                        DesignSystemToggle(
                           value: draft.important,
+                          semanticsLabel:
+                              messages.relationshipRemindersSwitchLabel,
                           onChanged: (value) => controller.setImportant(
                             contactId: draft.contact.id,
                             important: value,

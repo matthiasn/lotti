@@ -10,7 +10,6 @@ import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -74,10 +73,16 @@ void main() {
     RelationshipListItem item, {
     bool selected = false,
     VoidCallback? onTap,
+    VoidCallback? onLongPress,
   }) => withClock(Clock.fixed(now), () async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        PeopleListRow(item: item, selected: selected, onTap: onTap ?? () {}),
+        PeopleListRow(
+          item: item,
+          selected: selected,
+          onTap: onTap ?? () {},
+          onLongPress: onLongPress,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -172,63 +177,35 @@ void main() {
     );
   });
 
-  testWidgets('the sparkle marks an important person and nobody else', (
+  testWidgets('no marker beside the name — the band the row sits in says '
+      'whether reminders are on — and the name is the whole line', (
     tester,
   ) async {
     await pump(tester, item());
-    expect(find.byKey(const ValueKey('people-row-important')), findsOneWidget);
 
-    await pump(tester, item(important: false));
-    expect(find.byKey(const ValueKey('people-row-important')), findsNothing);
-  });
-
-  // It is the one thing distinguishing an enrolled person on this row, and
-  // it used to be an 8px speck — below IconSizes.xs, the smallest tier the
-  // system defines — in a colour, with nothing said about it.
-  testWidgets('the sparkle is legible, and says what it means', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
-    await pump(tester, item());
-
-    final icon = tester.widget<Icon>(
-      find.byKey(const ValueKey('people-row-important')),
-    );
-    expect(icon.size, IconSizes.xs);
-
-    final messages = tester.element(find.byType(PeopleListRow)).messages;
+    expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
     expect(
-      tester
-          .getSemantics(find.byKey(const ValueKey('people-row-important')))
-          .label,
-      contains(messages.relationshipImportantLabel),
-      reason:
-          'colour alone reaches neither a screen reader nor a '
-          'colour-blind reader',
+      tester.widget<Text>(find.byKey(const ValueKey('people-row-name'))).data,
+      'Anna',
     );
-    semantics.dispose();
   });
 
-  testWidgets('a dormant person keeps the important flag but loses the '
-      'marker — the runtime clears their reminders', (tester) async {
+  testWidgets('a long press speaks a check-in for the person, a tap opens '
+      'their page', (tester) async {
+    var taps = 0;
+    var holds = 0;
     await pump(
       tester,
-      item(
-        // ignore: avoid_redundant_argument_values
-        important: true,
-        status: RelationshipStatus.dormant(
-          id: 's',
-          createdAt: now,
-          utcOffset: 0,
-        ),
-      ),
+      item(),
+      onTap: () => taps++,
+      onLongPress: () => holds++,
     );
 
-    // The sparkle is announced as "Reminders on"; a dormant person will
-    // not get any, so claiming it here would be false in the one place a
-    // screen reader hears it.
-    expect(find.byKey(const ValueKey('people-row-important')), findsNothing);
-    expect(find.text('Dormant'), findsOneWidget);
+    await tester.longPress(find.byType(PeopleListRow));
+    await tester.tap(find.byType(PeopleListRow));
+
+    expect(holds, 1);
+    expect(taps, 1);
   });
 
   group('the pill tells the truth about the cadence', () {

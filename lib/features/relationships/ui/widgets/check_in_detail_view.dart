@@ -4,10 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -21,14 +24,13 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/check_in_photo_analysis_trigger.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
-import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_duration_picker.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_inline_recorder.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_meta_summary_line.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_pickers.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_brief_card.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -462,12 +464,21 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
       onPopInvokedWithResult: _onPopInvoked,
       child: Column(
         children: [
-          _TopBar(onBack: widget.onBack == null ? null : _back),
+          _TopBar(
+            onBack: widget.onBack == null ? null : _back,
+            // Held, as the facts are, while a take is live.
+            onEdit: checkIn == null || _recording
+                ? null
+                : () => showCheckInEditSheet(
+                    context: context,
+                    checkIn: checkIn,
+                  ),
+          ),
           Expanded(
             child: checkIn == null
                 ? Center(
                     child: detail == null && detailAsync.isLoading
-                        ? const CircularProgressIndicator()
+                        ? const DesignSystemSpinner()
                         : Text(
                             // A failed first load is an error; a person or
                             // check-in that resolved to nothing is gone.
@@ -502,7 +513,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                     onPickStart: () => _pickStart(checkIn),
                     onPickDuration: () => _pickDuration(checkIn),
                     onPickSentiment: () => _pickSentiment(checkIn),
-                    onEdit: () => showCheckInEditSheet(
+                    onEditTopics: () => showCheckInEditSheet(
                       context: context,
                       checkIn: checkIn,
                     ),
@@ -568,14 +579,17 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
   ),
 };
 
-/// The bar above the page: back to the person, the one control a task's
-/// compact bar carries on its leading edge. Edit lives at the end of the
-/// header's lane, where a task keeps its *Details*, beside the facts it
-/// edits rather than across the window from them.
+/// The bar above the page: back to the person on the leading edge and, on
+/// the trailing one, the menu that holds *Edit check-in* — a lever that sat
+/// in the facts' lane as a dashed pill read as one more empty fact (design
+/// review 2026-10-16).
 class _TopBar extends StatelessWidget {
-  const _TopBar({this.onBack});
+  const _TopBar({this.onBack, this.onEdit});
 
   final VoidCallback? onBack;
+
+  /// Null while a take is live: no sheet opens over a running recorder.
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -605,6 +619,19 @@ class _TopBar extends StatelessWidget {
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                 onPressed: onBack,
               ),
+            const Spacer(),
+            DesignSystemContextMenuButton(
+              key: const ValueKey('check-in-detail-menu'),
+              tooltip: context.messages.relationshipMoreActions,
+              items: [
+                DesignSystemContextMenuItem(
+                  key: const ValueKey('check-in-detail-edit'),
+                  label: context.messages.checkInEditTitle,
+                  icon: LottiIcons.edit,
+                  onTap: onEdit,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -630,7 +657,7 @@ class _Body extends StatelessWidget {
     required this.onPickStart,
     required this.onPickDuration,
     required this.onPickSentiment,
-    required this.onEdit,
+    required this.onEditTopics,
     this.category,
     this.onPersonTap,
     this.chipsEnabled = true,
@@ -660,7 +687,9 @@ class _Body extends StatelessWidget {
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
   final VoidCallback onPickSentiment;
-  final VoidCallback onEdit;
+
+  /// The topics fact opens the edit sheet, where topics change.
+  final VoidCallback onEditTopics;
 
   /// Whether the header's read-outs take a tap — not while a take is live.
   final bool chipsEnabled;
@@ -673,12 +702,6 @@ class _Body extends StatelessWidget {
     final messages = context.messages;
     final data = checkIn.data;
     final note = checkIn.entryText?.plainText.trim() ?? '';
-    final guidance = [
-      if (data.payAttentionTo?.trim() case final text? when text.isNotEmpty)
-        (messages.relationshipPayAttentionTo, text),
-      if (data.avoid?.trim() case final text? when text.isNotEmpty)
-        (messages.checkInAvoidLabel, text),
-    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -739,16 +762,18 @@ class _Body extends StatelessWidget {
                     onPickStart: onPickStart,
                     onPickDuration: onPickDuration,
                     onPickSentiment: onPickSentiment,
-                    onEdit: onEdit,
+                    // The topics change in the edit sheet, so their fact
+                    // opens it — the menu's *Edit check-in*, from where the
+                    // topics are read.
+                    onEdit: onEditTopics,
+                    readOut: true,
                     enabled: chipsEnabled,
                   ),
                   SizedBox(height: tokens.spacing.sectionGap),
                   // The faint rule a task draws between its identity and its
                   // body, so the two read as anchored bands.
-                  Divider(
+                  DesignSystemDivider(
                     key: const ValueKey('check-in-detail-rule'),
-                    height: 1,
-                    thickness: 1,
                     color: tokens.colors.decorative.level01,
                   ),
                   SizedBox(height: tokens.spacing.step4),
@@ -777,7 +802,23 @@ class _Body extends StatelessWidget {
             ),
             if (note.isNotEmpty || !_showsTimeline)
               SizedBox(height: tokens.spacing.step5),
-            if (guidance.isNotEmpty) _NextTimeCard(guidance: guidance),
+            // The person page's own card for the same notes: the note to bring
+            // up as its headline, what to avoid under it.
+            if (PersonBriefCard.hasContent(checkIn))
+              Padding(
+                padding: EdgeInsets.only(
+                  left: tokens.spacing.step2,
+                  right: tokens.spacing.step2,
+                  bottom: tokens.spacing.step4,
+                ),
+                child: PersonBriefCard(
+                  key: const ValueKey('check-in-detail-next-time'),
+                  source: checkIn,
+                  meeting: null,
+                  now: checkIn.meta.dateFrom,
+                  showProvenance: false,
+                ),
+              ),
             if (_showsTimeline)
               LinkedEntriesWidget(
                 checkIn,
@@ -788,45 +829,6 @@ class _Body extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-/// What to keep in mind next time, on a card of its own.
-class _NextTimeCard extends StatelessWidget {
-  const _NextTimeCard({required this.guidance});
-
-  final List<(String, String)> guidance;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DesignSystemSectionCard(
-      key: const ValueKey('check-in-detail-next-time'),
-      // The note card's and the linked cards' margin: one card edge down
-      // the page, where this card alone ran to the gutter.
-      margin: EdgeInsets.only(
-        left: tokens.spacing.step2,
-        right: tokens.spacing.step2,
-        bottom: tokens.spacing.step4,
-      ),
-      // The design system's own card inset, as every card on the person
-      // page has — one People card inset — and the person page's card
-      // header, so "Next time" sits in the same tier on both pages.
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PersonCardHeader(title: context.messages.relationshipNextTimeTitle),
-          SizedBox(height: tokens.spacing.step4),
-          // The person page's own rendering of the same notes.
-          NextTimeFacts(
-            facts: [
-              for (final (label, text) in guidance)
-                (caption: label, text: text, key: null),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

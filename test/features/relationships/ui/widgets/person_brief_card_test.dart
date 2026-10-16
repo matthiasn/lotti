@@ -61,6 +61,7 @@ void main() {
     TimelineMeeting? meeting,
     VoidCallback? onOpenSource,
     VoidCallback? onOpenMeeting,
+    bool showProvenance = true,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       PersonBriefCard(
@@ -69,6 +70,7 @@ void main() {
         now: now,
         onOpenSource: onOpenSource,
         onOpenMeeting: onOpenMeeting,
+        showProvenance: showProvenance,
       ),
     ),
   );
@@ -208,6 +210,18 @@ void main() {
 
     await tester.tap(row);
     expect(opened, 1);
+  });
+
+  testWidgets("on the check-in's own page it does not say which check-in "
+      'its notes are from — the page is the answer', (tester) async {
+    await pump(
+      tester,
+      source: checkIn(attention: 'The move'),
+      showProvenance: false,
+    );
+
+    expect(find.text('The move'), findsOneWidget);
+    expect(find.textContaining('From your check-in'), findsNothing);
   });
 
   testWidgets('a meeting alone still makes a card', (tester) async {

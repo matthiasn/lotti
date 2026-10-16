@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -314,7 +315,7 @@ void main() {
       await advanceToReview(tester);
 
       expect(find.text('Before you add them'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
+      expect(find.byType(DesignSystemToggle), findsOneWidget);
       // The subtitle says how many people this decision is about, and where
       // their numbers stay.
       expect(
@@ -345,7 +346,7 @@ void main() {
       await tester.tap(find.text('Review 2'));
       await tester.pumpAndSettle();
 
-      final switchFinder = find.byType(Switch);
+      final switchFinder = find.byType(DesignSystemToggle);
       expect(
         tester.getSemantics(switchFinder.first).label,
         contains('Ivo Brine'),
@@ -358,7 +359,9 @@ void main() {
       // The label toggles the switch it belongs to, not its neighbour.
       await tester.tap(find.text('Remind me to stay in touch').first);
       await tester.pumpAndSettle();
-      final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+      final switches = tester
+          .widgetList<DesignSystemToggle>(find.byType(DesignSystemToggle))
+          .toList();
       expect(switches.first.value, isTrue);
       expect(switches.last.value, isFalse);
     });
@@ -370,7 +373,7 @@ void main() {
       expect(find.text('How often?'), findsNothing);
       expect(find.byType(DsPill), findsNothing);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       expect(find.text('How often?'), findsOneWidget);
@@ -521,7 +524,7 @@ void main() {
     ) async {
       await advanceToReview(tester);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(DsPill, 'Every two weeks'));
       await tester.pumpAndSettle();
@@ -547,7 +550,7 @@ void main() {
     ) async {
       await advanceToReview(tester);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Add 1 person'));
       await tester.pumpAndSettle();

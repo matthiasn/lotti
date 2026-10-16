@@ -1,5 +1,6 @@
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
@@ -20,6 +21,13 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// The composer keeps `CheckInContextChips`: there the chips are the form's
 /// levers, and the round pill with its chevron is the lever grammar.
+///
+/// [readOut] is the saved check-in page's form (design review 2026-10-16):
+/// the facts as words with their glyphs — no box around each, which made the
+/// lane outweigh the title and the words it heads — each still opening its
+/// picker on a tap, and no lever, since editing lives in the page's menu. A
+/// fact not set yet stays an offer: the dashed pill is the one shape that
+/// says "nothing here yet".
 class CheckInMetaSummaryLine extends StatelessWidget {
   const CheckInMetaSummaryLine({
     required this.type,
@@ -37,8 +45,12 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     this.leverIcon = LottiIcons.edit,
     this.leverKey = const ValueKey('check-in-detail-edit'),
     this.leverExpanded,
+    this.readOut = false,
     super.key,
   });
+
+  /// Facts as plain words, no lever ([CheckInMetaSummaryLine]'s read-out).
+  final bool readOut;
 
   final CheckInInteractionType type;
 
@@ -92,10 +104,13 @@ class CheckInMetaSummaryLine extends StatelessWidget {
     // each tag's full touch target already sets wrapped rows apart.
     final lane = Wrap(
       key: const ValueKey('check-in-meta-line'),
-      spacing: tokens.spacing.step2,
+      // Read out, the facts are words: a word's gap apart, wider than the
+      // tags' own.
+      spacing: readOut ? tokens.spacing.step4 : tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _Fact(
+          readOut: readOut,
           key: const ValueKey('check-in-type'),
           semanticsLabel: messages.checkInTypeChipSemantics(typeLabel),
           icon: checkInInteractionIcon(type),
@@ -104,6 +119,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
           onTap: live(onPickType),
         ),
         _Fact(
+          readOut: readOut,
           key: const ValueKey('check-in-started'),
           semanticsLabel: messages.checkInTimeChipSemantics(startedLabel),
           icon: LottiIcons.today,
@@ -113,6 +129,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         ),
         if (hasDuration)
           _Fact(
+            readOut: readOut,
             key: const ValueKey('check-in-duration'),
             semanticsLabel: messages.checkInDurationChipSemantics(
               durationLabel,
@@ -135,6 +152,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         if (sentiment case final sentiment?)
           _SentimentFact(
             sentiment: sentiment,
+            readOut: readOut,
             onTap: live(onPickSentiment),
           )
         else
@@ -151,6 +169,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // tappable and are not.
         if (topics.isNotEmpty)
           _Fact(
+            readOut: readOut,
             key: const ValueKey('check-in-topics-tag'),
             semanticsLabel:
                 '${messages.checkInTopicsLabel}: ${topics.join(', ')}',
@@ -160,14 +179,15 @@ class CheckInMetaSummaryLine extends StatelessWidget {
           ),
         // The lane's one lever, where a task's *Details* sits: the dashed,
         // fully-rounded pill, so a fact and a control never look alike.
-        _Offer(
-          key: leverKey,
-          semanticsLabel: leverLabel ?? messages.checkInEditTitle,
-          icon: leverIcon,
-          label: leverLabel ?? messages.checkInEditTitle,
-          onTap: live(onEdit),
-          expanded: leverExpanded,
-        ),
+        if (!readOut)
+          _Offer(
+            key: leverKey,
+            semanticsLabel: leverLabel ?? messages.checkInEditTitle,
+            icon: leverIcon,
+            label: leverLabel ?? messages.checkInEditTitle,
+            onTap: live(onEdit),
+            expanded: leverExpanded,
+          ),
       ],
     );
     // Held, the whole lane fades by the low ink's own alpha, as the
@@ -199,8 +219,12 @@ class _Fact extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.emphasised = false,
+    this.readOut = false,
     super.key,
   });
+
+  /// The glyph and the word alone, no tag around them.
+  final bool readOut;
 
   final String semanticsLabel;
   final IconData icon;
@@ -216,6 +240,19 @@ class _Fact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = context.designTokens.colors.text;
+    if (readOut) {
+      return _Tappable(
+        semanticsLabel: semanticsLabel,
+        onTap: onTap,
+        child: _Words(
+          icon: icon,
+          iconColor: text.mediumEmphasis,
+          label: label,
+          labelColor: emphasised ? text.highEmphasis : text.mediumEmphasis,
+          onTap: onTap,
+        ),
+      );
+    }
     return _Tappable(
       semanticsLabel: semanticsLabel,
       onTap: onTap,
@@ -241,10 +278,15 @@ class _Fact extends StatelessWidget {
 /// a glyph in that colour, so the feeling reads by more than its tint and
 /// the face says what the word rates.
 class _SentimentFact extends StatelessWidget {
-  const _SentimentFact({required this.sentiment, required this.onTap});
+  const _SentimentFact({
+    required this.sentiment,
+    required this.onTap,
+    this.readOut = false,
+  });
 
   final CheckInSentiment sentiment;
   final VoidCallback? onTap;
+  final bool readOut;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +294,22 @@ class _SentimentFact extends StatelessWidget {
     final label = checkInSentimentLabel(context, sentiment);
     final accent = sentimentColor(tokens, sentiment);
     final glyph = sentimentGlyph(sentiment);
+    if (readOut) {
+      // Glyph and word: the colour rides the face, the word says it, so the
+      // feeling never reads by its tint alone.
+      return _Tappable(
+        key: const ValueKey('check-in-sentiment-chip'),
+        semanticsLabel: '${context.messages.checkInMoreCaptionFeeling}: $label',
+        onTap: onTap,
+        child: _Words(
+          icon: glyph,
+          iconColor: accent,
+          label: label,
+          labelColor: tokens.colors.text.highEmphasis,
+          onTap: onTap,
+        ),
+      );
+    }
     return _Tappable(
       key: const ValueKey('check-in-sentiment-chip'),
       semanticsLabel: '${context.messages.checkInMoreCaptionFeeling}: $label',
@@ -267,6 +325,52 @@ class _SentimentFact extends StatelessWidget {
         label: label,
         leading: Icon(glyph, size: kTaskChipGlyphSize, color: accent),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// A fact read out: its glyph and its word in the body size, with the quiet
+/// ink a press or a hover leaves, as every quiet door on the page has.
+class _Words extends StatelessWidget {
+  const _Words({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.labelColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final Color labelColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DsQuietInk(
+      onTap: onTap,
+      excludeFromSemantics: true,
+      builder: (BuildContext context, bool highlighted) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: IconSizes.s, color: iconColor),
+          SizedBox(width: tokens.spacing.step2),
+          // Flexible: at a large text size on a narrow phone a long fact —
+          // the topics — wraps under its glyph rather than running off.
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: highlighted
+                    ? tokens.colors.interactive.enabled
+                    : labelColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

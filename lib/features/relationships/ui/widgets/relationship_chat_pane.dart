@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
@@ -84,7 +86,7 @@ class RelationshipChatPane extends ConsumerWidget {
     final agent = usableRelationshipAgent(identityAsync.value);
 
     if (!identityAsync.hasValue && !identityAsync.hasError) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: DesignSystemSpinner());
     }
     if (agent == null) {
       return Center(child: Text(context.messages.relationshipChatUnavailable));
@@ -186,11 +188,11 @@ class RelationshipChatHeader extends StatelessWidget {
           builder: (context, constraints) => Row(
             children: [
               if (onBack != null) ...[
-                IconButton(
+                DesignSystemIconAction(
                   key: const ValueKey('person-chat-back'),
                   tooltip: MaterialLocalizations.of(context).backButtonTooltip,
                   onPressed: onBack,
-                  icon: const Icon(LottiIcons.back),
+                  icon: LottiIcons.back,
                 ),
                 SizedBox(width: tokens.spacing.step2),
               ],
@@ -248,13 +250,13 @@ class RelationshipChatHeader extends StatelessWidget {
               ],
               if (onClose != null) ...[
                 SizedBox(width: tokens.spacing.step2),
-                IconButton(
+                DesignSystemIconAction(
                   key: const ValueKey('person-chat-close'),
                   tooltip: MaterialLocalizations.of(
                     context,
                   ).closeButtonTooltip,
                   onPressed: onClose,
-                  icon: const Icon(LottiIcons.close),
+                  icon: LottiIcons.close,
                 ),
               ],
             ],
@@ -307,11 +309,11 @@ class _InternalsAction extends StatelessWidget {
             leadingIcon: LottiIcons.reasoning,
             onPressed: open,
           )
-        : IconButton(
+        : DesignSystemIconAction(
             key: const ValueKey('person-chat-internals'),
             tooltip: messages.aiInternalsTitle,
             onPressed: open,
-            icon: const Icon(LottiIcons.reasoning),
+            icon: LottiIcons.reasoning,
           );
   }
 }

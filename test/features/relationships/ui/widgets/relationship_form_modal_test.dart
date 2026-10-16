@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
@@ -17,7 +20,6 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -127,9 +129,11 @@ void main() {
   Widget buildForm({
     RelationshipEntry? initial,
     bool clipboardHasImage = false,
+    MediaQueryData? mediaQueryData,
   }) {
     final handle = RelationshipFormHandle();
     return makeTestableWidgetWithScaffold(
+      mediaQueryData: mediaQueryData,
       SingleChildScrollView(
         child: Column(
           children: [
@@ -424,8 +428,8 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).at(1), 'Sis');
-      await tester.ensureVisible(find.byType(Switch));
-      await tester.tap(find.byType(Switch));
+      await tester.ensureVisible(find.byType(DesignSystemToggle));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Every two weeks'));
       await tester.tap(find.text('Every two weeks'));
@@ -554,8 +558,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(Switch));
-      await tester.tap(find.byType(Switch));
+      await tester.ensureVisible(find.byType(DesignSystemToggle));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
@@ -620,8 +624,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Anna Example');
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(Switch));
-      await tester.tap(find.byType(Switch));
+      await tester.ensureVisible(find.byType(DesignSystemToggle));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Create'));
       await tester.tap(find.text('Create'));
@@ -639,7 +643,7 @@ void main() {
 
       // A screen reader reaching the control hears what it changes, and the
       // label toggles it.
-      final semantics = tester.getSemantics(find.byType(Switch));
+      final semantics = tester.getSemantics(find.byType(DesignSystemToggle));
       // Worded as the request it grants, so it reads true while off:
       // "Reminders on" beside an off switch announced "on … off".
       expect(semantics.label, contains('Remind me to stay in touch'));
@@ -648,7 +652,12 @@ void main() {
       await tester.tap(find.text('Remind me to stay in touch'));
       await tester.pumpAndSettle();
 
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      expect(
+        tester
+            .widget<DesignSystemToggle>(find.byType(DesignSystemToggle))
+            .value,
+        isTrue,
+      );
     });
 
     testWidgets('groups the form as Who · Important · How to reach them', (
@@ -686,7 +695,7 @@ void main() {
       expect(find.text('How often?'), findsNothing);
       expect(find.text('Weekly'), findsNothing);
 
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       expect(find.text('How often?'), findsOneWidget);
@@ -697,7 +706,7 @@ void main() {
         'is preselected and "none" is not on offer', (tester) async {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       final pills = tester.widgetList<DsPill>(find.byType(DsPill)).toList();
@@ -805,12 +814,14 @@ void main() {
       await tester.enterText(firstChannelField, 'ada@example.com');
       await tester.pumpAndSettle();
 
+      // The kind is one of the form's choice pills, as the status is.
       await tapVisible(
         tester,
-        find.byType(DropdownButtonFormField<ContactChannelType>),
+        find.descendant(
+          of: find.byKey(const ValueKey('person-form-channel-type')),
+          matching: find.text('Email'),
+        ),
       );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Email').last);
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Create'));
@@ -1131,8 +1142,8 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, 'Ben');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byType(Switch));
-    await tester.tap(find.byType(Switch));
+    await tester.ensureVisible(find.byType(DesignSystemToggle));
+    await tester.tap(find.byType(DesignSystemToggle));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Create'));
     await tester.tap(find.text('Create'));
@@ -1316,7 +1327,7 @@ void main() {
 
       final field = find.byKey(const ValueKey('person-form-known-terms'));
       expect(
-        tester.widget<LottiTextField>(field).controller.text,
+        tester.widget<DesignSystemTextInput>(field).controller!.text,
         'Wanja; Pingo',
       );
 
@@ -1331,6 +1342,112 @@ void main() {
               ).captured.single
               as RelationshipEntry;
       expect(updated.data.knownTerms, ['Wanja', 'Pingo Floe']);
+    });
+
+    group('the birthday', () {
+      Future<RelationshipEntry> save(WidgetTester tester) async {
+        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+        return verify(
+              () => mockRepository.updateRelationship(captureAny()),
+            ).captured.single
+            as RelationshipEntry;
+      }
+
+      testWidgets('is added from the calendar and saved with the person', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
+        final button = find.byKey(const ValueKey('person-form-birthday'));
+        expect(
+          tester.widget<DesignSystemButton>(button).label,
+          'Add birthday',
+        );
+
+        // The calendar opens thirty years back, on the first of this month.
+        await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+          await tapVisible(tester, button);
+          await tester.pumpAndSettle();
+        });
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<DesignSystemButton>(button).label,
+          'August 1, 1996',
+        );
+        expect((await save(tester)).data.birthday, DateTime(1996, 8));
+      });
+
+      testWidgets('a long date at a large text size on a narrow phone stays '
+          'inside its row', (tester) async {
+        final person = existing();
+        // The scale goes through the harness's own MediaQuery: one wrapped
+        // around it would be replaced by the one it builds inside.
+        setTestSurfaceSize(tester, const Size(320, 2400));
+        await tester.pumpWidget(
+          buildForm(
+            initial: person.copyWith(
+              data: person.data.copyWith(birthday: DateTime(1990, 9, 30)),
+            ),
+            mediaQueryData: const MediaQueryData(
+              size: Size(320, 2400),
+              textScaler: TextScaler.linear(1.6),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        final row = tester.getRect(
+          find
+              .ancestor(
+                of: find.byKey(const ValueKey('person-form-birthday')),
+                matching: find.byType(Row),
+              )
+              .first,
+        );
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('person-form-birthday')))
+              .right,
+          lessThanOrEqualTo(row.right),
+        );
+      });
+
+      testWidgets('a known one shows as its date, and Clear forgets it', (
+        tester,
+      ) async {
+        final person = existing();
+        await tester.pumpWidget(
+          buildForm(
+            initial: person.copyWith(
+              data: person.data.copyWith(birthday: DateTime(1990, 3, 14)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final button = find.byKey(const ValueKey('person-form-birthday'));
+        expect(
+          tester.widget<DesignSystemButton>(button).label,
+          'March 14, 1990',
+        );
+
+        await withClock(Clock.fixed(DateTime(2026, 8, 13)), () async {
+          await tapVisible(tester, button);
+          await tester.pumpAndSettle();
+        });
+        await tester.tap(find.text('Clear'));
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<DesignSystemButton>(button).label,
+          'Add birthday',
+        );
+        expect((await save(tester)).data.birthday, isNull);
+      });
     });
 
     testWidgets('a synced interval outside the presets is offered as it is '
@@ -1809,7 +1926,7 @@ void main() {
           .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
           .onChanged(null);
       await tester.pumpAndSettle();
-      await tapVisible(tester, find.byType(Switch));
+      await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -2065,7 +2182,7 @@ void main() {
       );
       expect(
         await dirtyAfter(() async {
-          await tapVisible(tester, find.byType(Switch));
+          await tapVisible(tester, find.byType(DesignSystemToggle));
         }),
         isTrue,
         reason: 'importance',

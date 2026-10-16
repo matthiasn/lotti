@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -18,10 +19,12 @@ void main() {
     CheckInSentiment? sentiment = CheckInSentiment.good,
     List<String> topics = const ['krill contract', 'launch'],
     bool enabled = true,
+    bool readOut = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         CheckInMetaSummaryLine(
+          readOut: readOut,
           type: CheckInInteractionType.call,
           startedLabel: 'Sat 1 Aug · 12:44',
           duration: duration,
@@ -263,5 +266,101 @@ void main() {
       );
     }
     semantics.dispose();
+  });
+
+  group("read out (a saved check-in's page)", () {
+    testWidgets('the facts are words with their glyphs — no tag around any — '
+        'and the lane has no lever', (tester) async {
+      await pump(tester, readOut: true);
+
+      expect(find.byType(DsPill), findsNothing);
+      for (final label in [
+        'Call',
+        'Sat 1 Aug · 12:44',
+        '11 min',
+        'Good',
+        'krill contract, launch',
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('Edit check-in'), findsNothing);
+    });
+
+    testWidgets('each fact still opens its own picker, the topics the sheet', (
+      tester,
+    ) async {
+      await pump(tester, readOut: true);
+
+      for (final key in facts) {
+        await tester.tap(find.byKey(ValueKey(key)));
+      }
+      expect(calls, ['type', 'start', 'duration', 'sentiment', 'edit']);
+    });
+
+    testWidgets('the feeling reads by glyph and word, the glyph in its '
+        "colour, the word in the fact's ink", (tester) async {
+      await pump(tester, readOut: true);
+      final tokens = tokensOf(tester);
+      final chip = find.byKey(const ValueKey('check-in-sentiment-chip'));
+
+      final icon = tester.widget<Icon>(
+        find.descendant(of: chip, matching: find.byType(Icon)),
+      );
+      expect(icon.icon, sentimentGlyph(CheckInSentiment.good));
+      expect(icon.color, sentimentColor(tokens, CheckInSentiment.good));
+      expect(
+        tester
+            .widget<Text>(
+              find.descendant(of: chip, matching: find.text('Good')),
+            )
+            .style
+            ?.color,
+        tokens.colors.text.highEmphasis,
+      );
+    });
+
+    testWidgets('a fact not set yet is still an offer — the dashed slot', (
+      tester,
+    ) async {
+      await pump(tester, readOut: true, duration: Duration.zero);
+
+      expect(
+        tag(tester, 'check-in-duration').variant,
+        DsPillVariant.muted,
+      );
+    });
+
+    testWidgets('a fact under a pointer answers in the action ink', (
+      tester,
+    ) async {
+      await pump(tester, readOut: true);
+      final call = find.text('Call');
+      expect(
+        tester.widget<Text>(call).style?.color,
+        tokensOf(tester).colors.text.highEmphasis,
+      );
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(call));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Text>(call).style?.color,
+        tokensOf(tester).colors.interactive.enabled,
+      );
+    });
+
+    testWidgets('held while a take is live, no fact takes a tap', (
+      tester,
+    ) async {
+      await pump(tester, readOut: true, enabled: false);
+
+      for (final key in facts) {
+        await tester.tap(find.byKey(ValueKey(key)), warnIfMissed: false);
+      }
+      expect(calls, isEmpty);
+    });
   });
 }

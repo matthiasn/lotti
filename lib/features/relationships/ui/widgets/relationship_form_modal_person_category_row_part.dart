@@ -449,53 +449,96 @@ class _ChannelEditorRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Four kinds: the form's own choice pills, as the status above them
+        // is chosen, rather than a Material dropdown of its own.
         Row(
           children: [
             Expanded(
-              child: DropdownButtonFormField<ContactChannelType>(
-                initialValue: draft.type,
-                items: [
-                  for (final type in ContactChannelType.values)
-                    DropdownMenuItem(
-                      value: type,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            contactChannelTypeIcon(type),
-                            size: IconSizes.xs,
-                            color: tokens.colors.text.mediumEmphasis,
-                          ),
-                          SizedBox(width: tokens.spacing.step3),
-                          Text(contactChannelTypeLabel(context, type)),
-                        ],
-                      ),
-                    ),
-                ],
-                onChanged: (type) {
-                  if (type != null) onTypeChanged(type);
-                },
+              child: DsChoicePills<ContactChannelType>(
+                key: const ValueKey('person-form-channel-type'),
+                value: draft.type,
+                values: ContactChannelType.values,
+                labelFor: (type) => contactChannelTypeLabel(context, type),
+                onSelected: onTypeChanged,
               ),
             ),
             SizedBox(width: tokens.spacing.step3),
-            IconButton(
+            DesignSystemIconAction(
+              key: const ValueKey('person-form-channel-remove'),
+              icon: LottiIcons.removeCircled,
               tooltip: messages.deleteButton,
               onPressed: onRemoved,
-              icon: const Icon(LottiIcons.removeCircled),
             ),
           ],
         ),
         SizedBox(height: tokens.spacing.step3),
-        LottiTextField(
+        DesignSystemTextInput(
+          key: ValueKey('person-form-channel-value-${draft.hashCode}'),
           controller: draft.valueController,
-          labelText: messages.contactChannelValueLabel,
+          label: messages.contactChannelValueLabel,
           keyboardType: _keyboardType,
         ),
         SizedBox(height: tokens.spacing.step3),
-        LottiTextField(
+        DesignSystemTextInput(
           controller: draft.labelController,
-          labelText: messages.contactChannelLabelLabel,
+          label: messages.contactChannelLabelLabel,
           textCapitalization: TextCapitalization.sentences,
+        ),
+      ],
+    );
+  }
+}
+
+/// The person's birthday, as a row of the *Who* card: its label, then the
+/// date — or the offer to add one — which opens the app's calendar, where a
+/// known date can also be cleared.
+class _BirthdayRow extends StatelessWidget {
+  const _BirthdayRow({required this.birthday, required this.onChanged});
+
+  final DateTime? birthday;
+  final ValueChanged<DateTime?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final birthday = this.birthday;
+    final locale = Localizations.localeOf(context).toString();
+    return Row(
+      children: [
+        Expanded(
+          // The text fields' own label style, so the row reads as one more
+          // field of the card.
+          child: Text(
+            messages.relationshipBirthdayLabel,
+            style: context.designTokens.typography.styles.subtitle.subtitle2
+                .copyWith(color: context.designTokens.colors.text.highEmphasis),
+          ),
+        ),
+        // Flexible, so a long localized date on a narrow phone ellipsizes
+        // inside the button instead of pushing the row off the card.
+        Flexible(
+          child: DesignSystemButton(
+            key: const ValueKey('person-form-birthday'),
+            label: birthday == null
+                ? messages.relationshipBirthdayAdd
+                : DateFormat.yMMMMd(locale).format(birthday),
+            leadingIcon: LottiIcons.calendar,
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.dense,
+            onPressed: () async {
+              final now = clock.now();
+              final picked = await showDesignSystemDatePicker(
+                context: context,
+                title: messages.relationshipBirthdayLabel,
+                initialDate: birthday ?? DateTime(now.year - 30, now.month),
+                firstDate: DateTime(1900),
+                lastDate: now,
+                allowClear: birthday != null,
+              );
+              if (picked == null) return;
+              onChanged(picked.cleared ? null : picked.date);
+            },
+          ),
         ),
       ],
     );
