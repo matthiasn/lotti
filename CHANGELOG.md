@@ -4,6 +4,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.56]
+
+### Added
+
+- **A companion who reads a task's AI summary aloud.** Turn on **Companion**
+  in Settings › Advanced Settings › Config Flags, with **AI summary
+  playback**, and a drawn character stands beside a task's AI summary. Press
+  the summary's read-aloud button and she speaks it with the on-device voice,
+  her mouth moving with the words and her hands with the speech. She is off
+  by default, and nothing she says or shows leaves the device.
+- **The companion greets you in onboarding.** With **Companion** on, she is the
+  welcome screen's hero, then waves you on, listens while you record your first
+  task, thinks while it is structured and celebrates when it lands. If the
+  on-device voice is already installed and **AI summary playback** is on, she
+  says each step's headline aloud; otherwise the headline on screen carries
+  the words.
+- **The companion briefs your day.** With **Companion** and **AI summary
+  playback** on, she also sits in the Daily OS Day header. Tap her and she
+  says how many blocks you have planned, what is next, the longest block and
+  how much of the day is still free, worked out from your plan on the device
+  and spoken with the on-device voice. Tap her again to stop her.
+- **Tutorial videos can have a friendly face in the corner.** Instead of a
+  voice from off-screen, a cartoon character in a round badge can now
+  explain the steps: its mouth moves with the narration, it nods and tilts
+  its head as it speaks, raises its brows for emphasis, and in a pause
+  glances at the app before turning back to you. Pip the penguin presents
+  most videos; Theo presents the onboarding video.
+
+### Changed
+
+- **A person's page is now their timeline.** Check-ins, notes, voice notes,
+  photos, tasks and meetings with someone appear together, newest first under
+  Upcoming, Today, This week and each month, and can be filtered by kind. Above
+  it, *Before you talk* gathers the next meeting, the notes you left yourself
+  for next time, the agent's briefing and what you pinned *About* the person;
+  on a wide window it sits beside the timeline instead. The bottom bar is now
+  *Speak*, which starts a check-in already recording, and *+ Add* for a
+  check-in, a note, a task or photos. Call, message and email sit in one row
+  under the name, and calling always asks first.
+- **Check-ins are found by search.** A Logbook text search now finds
+  check-ins by what was said, their topics and the notes for next time.
+  Older check-ins are found by their topics and notes once saved again, or
+  right away after *Recreate full-text index* in Settings › Maintenance.
+- **First-run setup asks one question fewer.** After connecting an AI
+  provider, onboarding now goes straight to choosing your work areas instead
+  of first asking how recording should look. Your first task records with the
+  energy orb; the analogue VU meter is still available any time under
+  Settings → Preferences → Recording Style.
+
+### Fixed
+
+- **Connecting GitHub on Linux no longer wipes your AI provider keys.** With
+  an unencrypted GNOME Keyring, saving the GitHub token (or the sync setup)
+  could leave the keyring entry blank, and the next key saved replaced every
+  other one, so providers had no key after a restart. Secrets are now stored
+  in a form the keyring keeps intact, and if the entry still comes back blank,
+  Lotti writes the keys it knows back before saving anything new.
+- **Image analysis with Kimi K3 failed on screenshots and WebP pictures.**
+  Every image was sent to the AI provider labelled as a JPEG, even when it was
+  not one — a pasted screenshot is a PNG, and pictures from a pull request or
+  the demo world are often WebP. Other models, such as GLM 5.3, ignored the
+  wrong label, but Kimi K3 on Melious rejected the request as malformed, so
+  the analysis stopped with a red error at the bottom of the task. Images are
+  now labelled with the format they actually are, so Kimi K3 analyses them
+  like any other picture.
+- **Closing a check-in after the microphone could not start asked to discard
+  nothing.** When another recording was already running, the composer still
+  treated itself as holding a draft. It now closes at once.
+
 ## [1.1.55]
 
 ### Added
