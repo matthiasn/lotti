@@ -8,7 +8,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -32,8 +31,8 @@ class PersonBriefCard extends StatelessWidget {
     super.key,
   });
 
-  /// The newest check-in that carries notes for next time
-  /// ([NextTimeLead.sourceOf]), or null.
+  /// The newest check-in that carries notes for next time ([sourceOf]), or
+  /// null.
   final CheckInEntry? source;
   final TimelineMeeting? meeting;
   final DateTime now;
@@ -122,6 +121,38 @@ class PersonBriefCard extends StatelessWidget {
     );
   }
 
+  /// The newest of [checkIns] (newest first) that carries notes for next
+  /// time — not simply the newest check-in. The two fields sit under the
+  /// composer's *More*, so a ten-second check-in leaves them blank, and blank
+  /// there means "I did not get to it", not "forget what I wrote last time".
+  static CheckInEntry? sourceOf(List<CheckInEntry> checkIns) {
+    for (final checkIn in checkIns) {
+      if (hasContent(checkIn)) return checkIn;
+    }
+    return null;
+  }
+
+  /// Whether [checkIn] carries a note to bring up or one to avoid.
+  static bool hasContent(CheckInEntry? checkIn) =>
+      _nonBlank(checkIn?.data.payAttentionTo) != null ||
+      _nonBlank(checkIn?.data.avoid) != null;
+
+  /// The line naming the check-in [source] is from — *From your check-in on
+  /// Sat 1 Aug* — set on the notes it describes: undated notes would read as
+  /// written after a conversation they predate.
+  static Widget provenanceOf(BuildContext context, CheckInEntry source) {
+    final tokens = context.designTokens;
+    final day = relationshipDayLabelOf(context, source.meta.dateFrom);
+    return RelationshipLineWithDate(
+      key: const ValueKey('person-next-time-from'),
+      text: context.messages.relationshipNextTimeFromEarlier(day),
+      date: day,
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+    );
+  }
+
   static String? _nonBlank(String? text) {
     final trimmed = text?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
@@ -138,7 +169,7 @@ class _Provenance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final open = onOpen;
-    if (open == null) return NextTimeLead.provenanceOf(context, source);
+    if (open == null) return PersonBriefCard.provenanceOf(context, source);
     return DesignSystemButton(
       key: const ValueKey('person-next-time-open'),
       label: context.messages.relationshipNextTimeFromEarlier(

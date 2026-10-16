@@ -446,13 +446,13 @@ void main() {
 
     await pumpPage(tester);
 
-    expect(find.byKey(const ValueKey('person-next-time')), findsOne);
+    expect(find.byKey(const ValueKey('person-brief')), findsOne);
     expect(find.text('Ask how the move went.'), findsOneWidget);
     expect(find.text('Older guidance.'), findsNothing);
     // The user's own notes lead the page: under the briefing they sat below
     // a phone's first screen, in the minute before a call.
     expect(
-      tester.getTopLeft(find.byKey(const ValueKey('person-next-time'))).dy,
+      tester.getTopLeft(find.byKey(const ValueKey('person-brief'))).dy,
       lessThan(
         tester
             .getTopLeft(
@@ -898,18 +898,18 @@ void main() {
       await pumpTimeline(tester);
 
       final meeting = find.byKey(const ValueKey('person-next-meeting'));
-      expect(
-        find.descendant(of: meeting, matching: find.text('Next meeting')),
-        findsOneWidget,
+      final title = find.descendant(
+        of: meeting,
+        matching: find.text('Coffee at the ice garden'),
       );
+      expect(title, findsOneWidget);
       expect(
         tester
-            .widget<DsTieredText>(
-              find.descendant(of: meeting, matching: find.byType(DsTieredText)),
+            .widget<Text>(
+              find.byKey(const ValueKey('person-next-meeting-when')),
             )
-            .tiers
-            .first,
-        'Coffee at the ice garden · Sun 16 Aug 15:00',
+            .data,
+        'Sun 16 Aug 15:00',
       );
       expect(
         tester.getTopLeft(meeting).dy,
@@ -923,14 +923,10 @@ void main() {
       );
 
       // A way into the meeting, and it says so under a pointer.
-      final line = find.descendant(
-        of: meeting,
-        matching: find.byType(DsTieredText),
-      );
       final tokens = tester.element(meeting).designTokens;
       await _hover(tester, meeting);
       expect(
-        tester.widget<DsTieredText>(line).style.color,
+        tester.widget<Text>(title).style?.color,
         tokens.colors.interactive.enabled,
       );
 
@@ -943,6 +939,9 @@ void main() {
         'in its sheet', (tester) async {
       await pumpTimeline(tester);
 
+      // On a phone About is its heading until opened.
+      await tester.tap(find.byKey(const ValueKey('person-about')));
+      await tester.pumpAndSettle();
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('person-about')),

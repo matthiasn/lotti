@@ -1457,6 +1457,9 @@ void main() {
     );
     await Scrollable.ensureVisible(tester.element(about), alignment: 0.05);
     await tester.pumpAndSettle();
+    // On a phone About is its heading until opened.
+    await tester.tap(about);
+    await tester.pumpAndSettle();
 
     expect(find.textContaining('thermal scarf'), findsOneWidget);
     await captureScreenshot(

@@ -26,7 +26,6 @@ import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart'
 import 'package:lotti/features/relationships/ui/widgets/person_create_menu.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_note_sheet.dart';
-import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_task_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
@@ -355,8 +354,8 @@ class _RelationshipDetailsPageState
         bottomGap: tokens.spacing.sectionGap,
       ),
     ];
-    final nextTime = NextTimeLead.sourceOf(checkIns);
-    final hasNotes = NextTimeLead.hasContent(nextTime);
+    final nextTime = PersonBriefCard.sourceOf(checkIns);
+    final hasNotes = PersonBriefCard.hasContent(nextTime);
     // What to know before you talk: one card whose headline is the user's
     // own note to bring up — never under the agent's tint, so their words
     // read as theirs — with what to avoid and the next meeting under it;

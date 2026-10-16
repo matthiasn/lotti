@@ -231,6 +231,7 @@ void main() {
       providers: [],
     ),
     Set<ContactAction> launchable = const {ContactAction.call},
+    bool folded = false,
   }) async {
     final launcher = _FakeContactLauncher(launchable: launchable);
     await withClock(Clock.fixed(now), () async {
@@ -241,6 +242,7 @@ void main() {
               ? RelationshipBriefingCard(
                   relationship: entry ?? relationship(),
                   checkIns: checkIns,
+                  folded: folded,
                 )
               : ValueListenableBuilder<RelationshipEntry>(
                   valueListenable: entryNotifier,
@@ -1792,6 +1794,51 @@ void main() {
         'Thriving · as of 1 h ago',
         reason: 'the status stays in the header',
       );
+    });
+  });
+
+  group("folded (a phone, the user's own notes leading)", () {
+    testWidgets('a current briefing is its header row alone — the band and '
+        'its age — and opens in place to the whole card', (tester) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        folded: true,
+      );
+
+      expect(statusText(tester), 'Thriving · as of 1 h ago');
+      expect(find.byType(AgentMarkdownView), findsNothing);
+      expect(briefingMenu, findsNothing);
+
+      await withClock(Clock.fixed(now), () async {
+        await tester.tap(
+          find.byKey(const ValueKey('relationship-briefing-open')),
+        );
+        await tester.pumpAndSettle();
+      });
+
+      expect(find.byType(AgentMarkdownView), findsOneWidget);
+      expect(find.text('Pip is in good spirits.'), findsOneWidget);
+      expect(briefingMenu, findsOneWidget);
+    });
+
+    testWidgets('a face that asks something of the reader is never folded', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        checkIns: onTrackCheckIns,
+        current: report(),
+        state: agentState(staleAt: DateTime(2026, 8, 12, 19, 6)),
+        folded: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('relationship-briefing-open')),
+        findsNothing,
+      );
+      expect(briefMe, findsOneWidget);
     });
   });
 }

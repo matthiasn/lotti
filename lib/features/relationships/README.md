@@ -18,10 +18,12 @@ Desktop uses a list/detail split; phones open a dedicated person page.
 The person page holds a header with category, name, nickname and recent
 contact, and one row of actions: call, message and email where the device
 can, and — for someone with reminders — how often they come, which one tap
-changes or turns off. *Before you talk* follows: the next meeting, the notes
-the user left for next time with a way into the check-in they came from, the
-agent's briefing, and what the user pinned *About* the person. Then the
-timeline, newest first under *Upcoming*, *Today*, *This week* and each month,
+changes or turns off. *Before you talk* follows as one card whose headline
+is the note the user left themselves to bring up, with what to avoid under it,
+a way into the check-in they came from, and the next meeting; then the
+agent's briefing and what the user pinned *About* the person — on a phone,
+when the user's own notes lead, the briefing and *About* fold to a line each
+and open in place. Then the timeline, newest first under *Upcoming*, *Today*, *This week* and each month,
 filterable by kind; a day's photos share one row. On a wide window *Before
 you talk* sits in a rail beside the timeline. The header opens the agent
 conversation, and its menu the person editor; tapping the avatar opens the

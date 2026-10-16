@@ -509,10 +509,9 @@ void main() {
       expect(opened, ['p3']);
     });
 
-    testWidgets('on a phone it shows the heading with its count and the '
-        'first note on one line, the rest behind the same disclosure', (
-      tester,
-    ) async {
+    testWidgets('on a phone it is its heading alone — the count and a '
+        'chevron — and opens in place to every note', (tester) async {
+      final handle = tester.ensureSemantics();
       await pumpAbout(tester, compact: true);
 
       expect(find.text('About Pip'), findsOneWidget);
@@ -522,21 +521,17 @@ void main() {
             .data,
         '· 4',
       );
-      final first = tester.widget<Text>(
-        find
-            .descendant(
-              of: find.byKey(const ValueKey('person-about')),
-              matching: find.byType(Text),
-            )
-            .at(2),
-      );
-      expect(first.maxLines, 1);
-      expect(find.text('pinned 3'), findsNothing);
+      expect(find.text('pinned 0'), findsNothing);
+      expect(find.bySemanticsLabel('About Pip · Show all (4)'), findsOneWidget);
 
-      await tester.tap(find.text('Show all (4)'));
+      await tester.tap(find.byKey(const ValueKey('person-about')));
       await tester.pump();
 
-      expect(find.text('pinned 3'), findsOneWidget);
+      for (var i = 0; i < 4; i++) {
+        expect(find.text('pinned $i'), findsOneWidget);
+      }
+      expect(find.text('Show less'), findsOneWidget);
+      handle.dispose();
     });
 
     testWidgets('a pinned note answers a hover in the action ink', (
