@@ -129,9 +129,11 @@ void main() {
   Widget buildForm({
     RelationshipEntry? initial,
     bool clipboardHasImage = false,
+    MediaQueryData? mediaQueryData,
   }) {
     final handle = RelationshipFormHandle();
     return makeTestableWidgetWithScaffold(
+      mediaQueryData: mediaQueryData,
       SingleChildScrollView(
         child: Column(
           children: [
@@ -1382,17 +1384,17 @@ void main() {
       testWidgets('a long date at a large text size on a narrow phone stays '
           'inside its row', (tester) async {
         final person = existing();
+        // The scale goes through the harness's own MediaQuery: one wrapped
+        // around it would be replaced by the one it builds inside.
         setTestSurfaceSize(tester, const Size(320, 2400));
         await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
+          buildForm(
+            initial: person.copyWith(
+              data: person.data.copyWith(birthday: DateTime(1990, 9, 30)),
+            ),
+            mediaQueryData: const MediaQueryData(
               size: Size(320, 2400),
               textScaler: TextScaler.linear(1.6),
-            ),
-            child: buildForm(
-              initial: person.copyWith(
-                data: person.data.copyWith(birthday: DateTime(1990, 9, 30)),
-              ),
             ),
           ),
         );
