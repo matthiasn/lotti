@@ -6,14 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
-import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
-import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
@@ -22,9 +19,9 @@ import 'package:lotti/features/relationships/service/person_photo_timeline_trigg
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
 import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
-import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_brief_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_create_menu.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
@@ -360,44 +357,37 @@ class _RelationshipDetailsPageState
     ];
     final nextTime = NextTimeLead.sourceOf(checkIns);
     final hasNotes = NextTimeLead.hasContent(nextTime);
-    // What to know before you talk: the user's own notes for next time, on
-    // the page itself — never under the agent's tint, so their words read
-    // as theirs — then the agent's briefing, then what they pinned About
-    // the person.
-    //
-    // The heading leads with the next meeting when one is booked — the moment
-    // this page is opened for — and is left out for a person with neither
-    // notes nor an agent, whose card is then only the offer to start one.
+    // What to know before you talk: one card whose headline is the user's
+    // own note to bring up — never under the agent's tint, so their words
+    // read as theirs — with what to avoid and the next meeting under it;
+    // then the agent's briefing, then what they pinned About the person.
+    final showMeeting = nextMeeting != null;
     List<Widget> briefing({required bool compact}) => [
-      if (hasNotes || nextMeeting != null || isEnrolled(relationship)) ...[
-        PersonCardHeader(
-          key: const ValueKey('person-before-you-talk'),
-          title: context.messages.relationshipBeforeYouTalkTitle,
-        ),
-        SizedBox(height: tokens.spacing.step3),
-      ],
-      // On a phone the meeting leads; on a wide pane the timeline's own
-      // Upcoming row sits right beside this rail and says it already.
-      if (nextMeeting != null && compact) ...[
-        _NextMeetingLine(
-          meeting: nextMeeting,
-          now: now,
-          onOpen: () => actions.openEntry(nextMeeting.event),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-      ],
-      if (hasNotes) ...[
-        NextTimeLead(
+      if (hasNotes || (showMeeting && compact)) ...[
+        PersonBriefCard(
           source: nextTime,
-          onOpenSource: () => actions.openCheckIn(nextTime!),
+          // On a wide pane the timeline's own Upcoming row sits right beside
+          // this rail and says it already.
+          meeting: compact ? nextMeeting : null,
+          now: now,
+          onOpenSource: hasNotes ? () => actions.openCheckIn(nextTime!) : null,
+          onOpenMeeting: nextMeeting == null
+              ? null
+              : () => actions.openEntry(nextMeeting.event),
         ),
         SizedBox(height: tokens.spacing.step4),
       ],
       // Always present: an unenrolled person gets the offer that explains
       // what reminders turn on.
-      RelationshipBriefingCard(relationship: relationship, checkIns: checkIns),
+      RelationshipBriefingCard(
+        relationship: relationship,
+        checkIns: checkIns,
+        folded: compact && hasNotes,
+      ),
+      // On a phone the folded rows under the card are one list of doors,
+      // not sections of their own: they sit a step apart, not a section gap.
       if (timeline.pinned.isNotEmpty) ...[
-        gap,
+        if (compact) SizedBox(height: tokens.spacing.step3) else gap,
         PersonAboutSection(
           personName: personName,
           pinned: timeline.pinned,
@@ -548,76 +538,6 @@ class _RelationshipDetailsPageState
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-/// The next booked meeting, as the first pair of *Before you talk*: the
-/// page's label over what it is and when, in the same grammar as the notes
-/// under it — and a way into the meeting, as its chevron says.
-class _NextMeetingLine extends StatelessWidget {
-  const _NextMeetingLine({
-    required this.meeting,
-    required this.now,
-    required this.onOpen,
-  });
-
-  final TimelineMeeting meeting;
-  final DateTime now;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final start = meeting.event.meta.dateFrom;
-    final title = meeting.event.data.title;
-    final when = relationshipTimestampLabelOf(context, start, now: now);
-    final quiet = tokens.colors.text.mediumEmphasis;
-    return DsQuietInk(
-      key: const ValueKey('person-next-meeting'),
-      onTap: onOpen,
-      builder: (BuildContext context, bool highlighted) => Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.relationshipNextMeetingLabel,
-                  style: captionLabelStyle(tokens, color: quiet),
-                ),
-                SizedBox(height: tokens.spacing.step1),
-                // One line, whatever fits: the title gives way before the
-                // time — when it is, is the fact the line exists for.
-                DsTieredText(
-                  tiers: [
-                    if (title.isNotEmpty) ...[
-                      '$title · $when',
-                      // The weekday alone is enough for a meeting this close.
-                      [
-                        title,
-                        [
-                          relationshipWeekdayLabelOf(context, start),
-                          relationshipTimeLabel(start),
-                        ].join(' '),
-                      ].join(' · '),
-                    ],
-                    when,
-                  ],
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: highlighted
-                        ? tokens.colors.interactive.enabled
-                        : tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Icon(LottiIcons.chevronRight, size: IconSizes.s, color: quiet),
-        ],
       ),
     );
   }

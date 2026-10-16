@@ -560,10 +560,38 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
     final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
-    // A phone shows the first note on one line; a wide pane the first three
-    // in full. The heading always stands on its own line, and the page's one
-    // disclosure opens the rest — the same shape as every other fold here.
-    final foldAt = widget.compact ? 1 : _folded;
+    final title = messages.relationshipAboutTitle(widget.personName);
+    // On a phone, folded, the section is its heading alone — one line that
+    // opens in place — so the page above the timeline holds one thing that
+    // leads, not another block of text.
+    if (widget.compact && !_expanded) {
+      return DsQuietInk(
+        key: const ValueKey('person-about'),
+        onTap: () => setState(() => _expanded = true),
+        builder: (context, highlighted) => Semantics(
+          button: true,
+          label: '$title · ${messages.relationshipAboutShowAll(pinned.length)}',
+          excludeSemantics: true,
+          child: Padding(
+            key: const ValueKey('person-about-toggle'),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            child: PersonCardHeader(
+              title: title,
+              count: pinned.length,
+              countKey: const ValueKey('person-about-count'),
+              trailing: Icon(
+                LottiIcons.expand,
+                size: IconSizes.s,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    // A wide pane shows the first three in full, the page's one disclosure
+    // opening the rest.
+    final foldAt = widget.compact ? 0 : _folded;
     final folded = !_expanded && pinned.length > foldAt;
     final shown = folded ? pinned.take(foldAt) : pinned;
     final oneLine = widget.compact && folded;
@@ -572,7 +600,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PersonCardHeader(
-          title: messages.relationshipAboutTitle(widget.personName),
+          title: title,
           count: pinned.length,
           countKey: const ValueKey('person-about-count'),
         ),

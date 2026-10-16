@@ -132,10 +132,19 @@ class RelationshipBriefingCard extends ConsumerStatefulWidget {
   const RelationshipBriefingCard({
     required this.relationship,
     required this.checkIns,
+    this.folded = false,
     super.key,
   });
 
   final RelationshipEntry relationship;
+
+  /// Starts a calm face — a current briefing, or one being written — as its
+  /// header row alone, opening in place on a tap. The person page asks for
+  /// it on a phone when the user's own notes already lead *Before you talk*:
+  /// the briefing's sentence then said the same thing a second time and kept
+  /// the timeline off the first screen. A face that asks something of the
+  /// reader is never folded.
+  final bool folded;
 
   /// Newest first. The latest one drives the cadence pill and names the day
   /// of the "new check-in" that made a briefing out of date; the count feeds
@@ -150,6 +159,7 @@ class RelationshipBriefingCard extends ConsumerStatefulWidget {
 class _RelationshipBriefingCardState
     extends ConsumerState<RelationshipBriefingCard> {
   bool _expanded = false;
+  bool _opened = false;
   bool _requesting = false;
   bool _marking = false;
 
@@ -414,6 +424,8 @@ class _RelationshipBriefingCardState
       identityData: identityData,
       modelMissing: modelMissing,
       expanded: _expanded,
+      folded: widget.folded && !_opened,
+      onOpen: () => setState(() => _opened = true),
       requesting: _requesting,
       onToggleExpanded: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName),

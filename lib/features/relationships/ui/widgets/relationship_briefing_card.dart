@@ -23,6 +23,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -68,6 +69,8 @@ class _AgentCard extends StatelessWidget {
     required this.expanded,
     required this.requesting,
     required this.onToggleExpanded,
+    required this.folded,
+    required this.onOpen,
     required this.onOpenInternals,
     required this.onBrief,
     required this.onChooseModel,
@@ -90,6 +93,10 @@ class _AgentCard extends StatelessWidget {
   final bool expanded;
   final bool requesting;
   final VoidCallback onToggleExpanded;
+
+  /// Whether a calm face shows its header row alone ([RelationshipBriefingCard.folded]).
+  final bool folded;
+  final VoidCallback onOpen;
   final VoidCallback onOpenInternals;
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
@@ -470,6 +477,28 @@ class _AgentCard extends StatelessWidget {
         resolveReportAdditional(current)?.trim().isNotEmpty ?? false;
     final showsSources =
         state == RelationshipAgentCardState.current && (expanded || !hasMore);
+
+    if (folded && _calm) {
+      return AgentSummaryCardSurface(
+        key: const ValueKey('relationship-briefing-card'),
+        children: [
+          DsQuietInk(
+            key: const ValueKey('relationship-briefing-open'),
+            onTap: onOpen,
+            builder: (BuildContext context, bool highlighted) =>
+                _BriefingHeader(
+                  status: _status(context, messages),
+                  trailing: Icon(
+                    LottiIcons.expand,
+                    size: IconSizes.s,
+                    color: ai.metaText,
+                  ),
+                ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+      );
+    }
 
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),
