@@ -165,7 +165,10 @@ class DsActionModalHeader extends StatelessWidget {
           _HeaderIconButton(
             icon: LottiIcons.close,
             tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            onTap: () => Navigator.of(context).pop(),
+            // `maybePop`, so a body that must not be left mid-write (a
+            // `PopScope` that cannot pop) holds the sheet, as it does
+            // against the scrim and Esc.
+            onTap: () => Navigator.of(context).maybePop(),
           ),
         ],
       ),

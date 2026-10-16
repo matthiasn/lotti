@@ -43,9 +43,13 @@ class PersonMeetingForm extends ConsumerStatefulWidget {
 
   /// When a new meeting starts until the user says otherwise: tomorrow, at
   /// the next full hour — a time that is free to move and never in the past.
+  /// Late in the evening the next full hour is already tomorrow's midnight,
+  /// and stays there rather than moving a day further.
   static DateTime defaultStart(DateTime now) {
-    final hour = now.minute == 0 ? now.hour : now.hour + 1;
-    return DateTime(now.year, now.month, now.day + 1, hour);
+    final next = nextFullHour(now);
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    if (!next.isBefore(tomorrow)) return next;
+    return DateTime(tomorrow.year, tomorrow.month, tomorrow.day, next.hour);
   }
 
   @override
@@ -150,68 +154,74 @@ class _PersonMeetingFormState extends ConsumerState<PersonMeetingForm> {
         '${relationshipDayLabelOf(context, _start)} · '
         '${relationshipTimeLabel(_start)}';
     final durationLabel = checkInDurationLabel(context, _duration);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        DesignSystemTextInput(
-          key: const ValueKey('person-meeting-title'),
-          controller: _title,
-          label: messages.relationshipMeetingTitleLabel,
-          errorText: _error,
-          textCapitalization: TextCapitalization.sentences,
-          onSubmitted: (_) {
-            if (_canSave) _save();
-          },
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        // When and how long, as the composer sets them: the same tags, each
-        // opening the same kind of picker.
-        Wrap(
-          spacing: tokens.spacing.step2,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            FactTag(
-              key: const ValueKey('person-meeting-start'),
-              semanticsLabel: messages.relationshipMeetingStartsSemantics(
-                startLabel,
-              ),
-              icon: LottiIcons.calendar,
-              label: startLabel,
-              emphasised: true,
-              onTap: _saving ? null : _pickStart,
-            ),
-            FactTag(
-              key: const ValueKey('person-meeting-duration'),
-              semanticsLabel: messages.checkInDurationChipSemantics(
-                durationLabel,
-              ),
-              icon: LottiIcons.timer,
-              label: durationLabel,
-              emphasised: true,
-              onTap: _saving ? null : _pickDuration,
-            ),
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        DesignSystemModalActionBar(
-          primary: DesignSystemButton(
-            key: const ValueKey('person-meeting-save'),
-            label: messages.relationshipMeetingSave,
-            size: DesignSystemButtonSize.large,
-            fullWidth: true,
-            onPressed: _canSave ? _save : null,
+    // While the meeting is being written the sheet holds — Cancel, the
+    // close, the scrim and Esc alike — so it never closes on a write that
+    // then lands anyway.
+    return PopScope(
+      canPop: !_saving,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DesignSystemTextInput(
+            key: const ValueKey('person-meeting-title'),
+            controller: _title,
+            label: messages.relationshipMeetingTitleLabel,
+            errorText: _error,
+            textCapitalization: TextCapitalization.sentences,
+            onSubmitted: (_) {
+              if (_canSave) _save();
+            },
           ),
-          secondary: [
-            DesignSystemButton(
-              key: const ValueKey('person-meeting-cancel'),
-              label: messages.cancelButton,
-              variant: DesignSystemButtonVariant.quiet,
-              onPressed: () => Navigator.of(context).pop(),
+          SizedBox(height: tokens.spacing.step4),
+          // When and how long, as the composer sets them: the same tags, each
+          // opening the same kind of picker.
+          Wrap(
+            spacing: tokens.spacing.step2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FactTag(
+                key: const ValueKey('person-meeting-start'),
+                semanticsLabel: messages.relationshipMeetingStartsSemantics(
+                  startLabel,
+                ),
+                icon: LottiIcons.calendar,
+                label: startLabel,
+                emphasised: true,
+                onTap: _saving ? null : _pickStart,
+              ),
+              FactTag(
+                key: const ValueKey('person-meeting-duration'),
+                semanticsLabel: messages.checkInDurationChipSemantics(
+                  durationLabel,
+                ),
+                icon: LottiIcons.timer,
+                label: durationLabel,
+                emphasised: true,
+                onTap: _saving ? null : _pickDuration,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          DesignSystemModalActionBar(
+            primary: DesignSystemButton(
+              key: const ValueKey('person-meeting-save'),
+              label: messages.relationshipMeetingSave,
+              size: DesignSystemButtonSize.large,
+              fullWidth: true,
+              onPressed: _canSave ? _save : null,
             ),
-          ],
-        ),
-      ],
+            secondary: [
+              DesignSystemButton(
+                key: const ValueKey('person-meeting-cancel'),
+                label: messages.cancelButton,
+                variant: DesignSystemButtonVariant.quiet,
+                onPressed: _saving ? null : () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

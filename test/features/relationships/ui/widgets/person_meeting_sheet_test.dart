@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -153,10 +155,18 @@ void main() {
       );
     });
 
-    test('keeps an hour already full', () {
+    test('moves an hour already full on, so it is never now', () {
       expect(
         PersonMeetingForm.defaultStart(DateTime(2026, 8, 13, 10)),
-        DateTime(2026, 8, 14, 10),
+        DateTime(2026, 8, 14, 11),
+      );
+    });
+
+    test("late in the evening it is tomorrow's midnight, not a day "
+        'further', () {
+      expect(
+        PersonMeetingForm.defaultStart(DateTime(2026, 8, 13, 23, 20)),
+        DateTime(2026, 8, 14),
       );
     });
   });
@@ -249,6 +259,37 @@ void main() {
     });
 
     expect(saved().start, DateTime(2026, 8, 16, 15, 30));
+  });
+
+  testWidgets('a time today that has already passed moves to the next full '
+      'hour — a planned meeting never lands in history', (tester) async {
+    answer(() async => planned);
+    await withClock(Clock.fixed(now), () async {
+      await open(tester);
+
+      await tester.tap(find.byKey(const ValueKey('person-meeting-start')));
+      await tester.pumpAndSettle();
+      tester
+          .widget<DesignSystemCalendarPicker>(
+            find.byType(DesignSystemCalendarPicker),
+          )
+          .onDateChanged(DateTime(2026, 8, 13));
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      tester
+          .widget<DesignSystemTimeWheel>(
+            find.byKey(const ValueKey('meeting-time-picker')),
+          )
+          .onDateTimeChanged(DateTime(2026, 8, 13, 8));
+      await tester.tap(find.byKey(const ValueKey('check-in-time-done')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thu 13 Aug · 11:00'), findsOneWidget);
+      await tapSave(tester);
+    });
+
+    expect(saved().start, DateTime(2026, 8, 13, 11));
   });
 
   testWidgets('a dismissed time keeps the picked day at the old time', (
@@ -352,6 +393,36 @@ void main() {
         message: any<String>(named: 'message'),
       ),
     ).called(1);
+  });
+
+  testWidgets('while the meeting is being written the sheet holds: Cancel '
+      'is off and the close keeps it open until the write lands', (
+    tester,
+  ) async {
+    final write = Completer<JournalEvent?>();
+    answer(() => write.future);
+    await withClock(Clock.fixed(now), () async {
+      await open(tester);
+      await tester.tap(find.byKey(const ValueKey('person-meeting-save')));
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const ValueKey('person-meeting-cancel')),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PersonMeetingForm), findsOneWidget);
+
+      write.complete(planned);
+      await tester.pumpAndSettle();
+    });
+
+    expect(find.byType(PersonMeetingForm), findsNothing);
   });
 
   testWidgets('Cancel closes the sheet without writing', (tester) async {

@@ -156,10 +156,18 @@ Future<DateTime?> pickCheckInStart({
   );
 }
 
+/// The next full hour after [now]: 14:05 → 15:00, 23:20 → 00:00 the next
+/// day. An hour already full moves on too, so the result is always ahead.
+DateTime nextFullHour(DateTime now) =>
+    DateTime(now.year, now.month, now.day, now.hour + 1);
+
 /// When a meeting starts: the day, then the time, as [pickCheckInStart]
 /// asks them — but looking ahead, from today on, since a meeting is planned
-/// rather than logged. Resolves to the new start, or null when the day was
-/// dismissed; a dismissed time keeps the picked day.
+/// rather than logged. A start that would already have passed — today at an
+/// earlier time — moves to the next full hour ([nextFullHour]), so a
+/// planned meeting never lands in the person's history. Resolves to the new
+/// start, or null when the day was dismissed; a dismissed time keeps the
+/// picked day.
 Future<DateTime?> pickMeetingStart({
   required BuildContext context,
   required DateTime initial,
@@ -176,12 +184,14 @@ Future<DateTime?> pickMeetingStart({
   );
   final picked = result?.date;
   if (!context.mounted || picked == null) return null;
-  final day = DateTime(
-    picked.year,
-    picked.month,
-    picked.day,
-    initial.hour,
-    initial.minute,
+  final day = _notInThePast(
+    DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      initial.hour,
+      initial.minute,
+    ),
   );
   final time = await _pickTime(
     context,
@@ -190,7 +200,14 @@ Future<DateTime?> pickMeetingStart({
     key: const ValueKey('meeting-time-picker'),
   );
   if (!context.mounted || time == null) return day;
-  return DateTime(day.year, day.month, day.day, time.hour, time.minute);
+  return _notInThePast(
+    DateTime(day.year, day.month, day.day, time.hour, time.minute),
+  );
+}
+
+DateTime _notInThePast(DateTime candidate) {
+  final now = clock.now();
+  return candidate.isBefore(now) ? nextFullHour(now) : candidate;
 }
 
 /// A check-in started in the past by definition: the date picker stops at
