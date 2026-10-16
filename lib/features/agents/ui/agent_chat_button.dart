@@ -15,15 +15,28 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// [label] defaults to *Talk to agent*; it ellipsizes inside the pill, with
 /// the full label kept in the tooltip and for screen readers.
+///
+/// Over a photograph the AI pair cannot be read — a soft wash and a coloured
+/// label vanish into a bright picture — so a host there passes the glass its
+/// other controls wear as [fill] and [foreground]: the pill then matches its
+/// neighbours and only the sparkle keeps the agent's hue.
 class AgentChatButton extends StatelessWidget {
   const AgentChatButton({
     required this.onPressed,
     this.label,
+    this.fill,
+    this.foreground,
     super.key,
   });
 
   final VoidCallback onPressed;
   final String? label;
+
+  /// The pill's fill instead of `aiCard.accentSoft`.
+  final Color? fill;
+
+  /// The label's ink (and the resting border's) instead of `aiCard.accent`.
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +69,16 @@ class AgentChatButton extends StatelessWidget {
               heightFactor: 1,
               child: DecoratedBox(
                 decoration: ShapeDecoration(
-                  color: ai.accentSoft,
+                  color: fill ?? ai.accentSoft,
                   shape: shape.copyWith(
                     side: BorderSide(
                       // The border firms to the full accent on hover and
                       // focus, the way the AI card's header disc answers.
-                      color: highlighted ? ai.accent : ai.border,
+                      color: highlighted
+                          ? ai.accent
+                          : fill == null
+                          ? ai.border
+                          : Colors.transparent,
                     ),
                   ),
                 ),
@@ -86,7 +103,7 @@ class AgentChatButton extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: tokens.typography.styles.subtitle.subtitle2
-                                .copyWith(color: ai.accent),
+                                .copyWith(color: foreground ?? ai.accent),
                           ),
                         ),
                       ],

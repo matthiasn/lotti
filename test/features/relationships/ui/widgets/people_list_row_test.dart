@@ -11,6 +11,7 @@ import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -95,14 +96,11 @@ void main() {
     // (`Call`, `Weekly`) keeps the line's own style. No monospace face
     // anywhere: the date is Inter like the sentence it sits in.
     final spans = _spanStyles(tester);
-    expect(
-      spans['Today 09:05']?.fontFeatures,
-      contains(const FontFeature.tabularFigures()),
-    );
+    expect(spans['Today 09:05']?.fontFeatures, dateFigureFontFeatures);
     expect(spans['Today 09:05']?.fontFamily, isNot('Inconsolata'));
     expect(
       spans['Call · ']?.fontFeatures ?? const <FontFeature>[],
-      isNot(contains(const FontFeature.tabularFigures())),
+      isNot(contains(const FontFeature('cv02'))),
       reason: 'the prose around the date is left alone',
     );
     expect(spans[' · Weekly']?.fontFamily, isNot('Inconsolata'));
@@ -154,7 +152,7 @@ void main() {
       );
       expect(
         _spanStyles(tester)['Today 09:05']?.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
+        dateFigureFontFeatures,
       );
       expect(find.textContaining('No cadence'), findsNothing);
     });
@@ -234,13 +232,13 @@ void main() {
   });
 
   group('the pill tells the truth about the cadence', () {
-    testWidgets('lapsed: days over, warning-tinted — never "Due Sun"', (
+    testWidgets('lapsed: days overdue, warning-tinted — never "Due Sun"', (
       tester,
     ) async {
-      // Weekly, last contact 3 Aug 09:00 → due 10 Aug → 3 days over on the 13th.
+      // Weekly, last contact 3 Aug 09:00 → due 10 Aug → 3 days overdue on the 13th.
       await pump(tester, item(lastCheckInAt: DateTime(2026, 8, 3, 9)));
 
-      expect(find.text('3 days over'), findsOneWidget);
+      expect(find.text('3 days overdue'), findsOneWidget);
       expect(find.textContaining('Due '), findsNothing);
       final pill = tester.widget<DsPill>(
         find.byKey(const ValueKey('people-row-pill-overdue')),
@@ -307,7 +305,7 @@ void main() {
       // words again, so the row drops it.
       expect(find.text('No reminders'), findsNothing);
       expect(find.byType(PeopleCadencePillWidget), findsNothing);
-      expect(find.textContaining('days over'), findsNothing);
+      expect(find.textContaining('days overdue'), findsNothing);
       // The stored setting is still what the line names.
       expect(
         find.text('Call · Mon 3 Aug 09:00 · Weekly', findRichText: true),

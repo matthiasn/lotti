@@ -39,6 +39,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
 class _RecordingNavigatorObserver extends NavigatorObserver {
@@ -141,6 +142,7 @@ void main() {
         const RelationshipsPage(),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          personTimelineOverride(),
           // The person page's record button watches the app-wide recorder.
           audioRecorderControllerProvider.overrideWith(
             FakeAudioRecorderController.new,
@@ -277,6 +279,7 @@ void main() {
         ),
         overrides: [
           relationshipRepositoryProvider.overrideWithValue(mockRepository),
+          personTimelineOverride(),
           // The person page's record button watches the app-wide recorder.
           audioRecorderControllerProvider.overrideWith(
             FakeAudioRecorderController.new,
@@ -345,6 +348,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            personTimelineOverride(),
             // The person page's record button watches the app-wide recorder.
             audioRecorderControllerProvider.overrideWith(
               FakeAudioRecorderController.new,
@@ -564,6 +568,7 @@ void main() {
           ),
           overrides: [
             relationshipRepositoryProvider.overrideWithValue(mockRepository),
+            personTimelineOverride(),
             // The person page's record button watches the app-wide recorder.
             audioRecorderControllerProvider.overrideWith(
               FakeAudioRecorderController.new,
@@ -612,7 +617,7 @@ void main() {
   });
 
   /// Five people across the three bands, seen on Thursday 13 Aug 10:30:
-  /// Anna lapsed (weekly, last contact 3 Aug → due Mon 10 Aug, 3 days over),
+  /// Anna lapsed (weekly, last contact 3 Aug → due Mon 10 Aug, 3 days overdue),
   /// Ben due within the week (weekly, contacted this morning → Thu 20 Aug),
   /// Cara on track (monthly, 1 Aug → 31 Aug), Dan not important, Eve
   /// important but dormant.
@@ -681,7 +686,7 @@ void main() {
     expect(find.text('No reminders · 2'), findsOneWidget);
 
     // Never "Due Mon" for a lapse that happened last Monday (P5).
-    expect(find.text('3 days over'), findsOneWidget);
+    expect(find.text('3 days overdue'), findsOneWidget);
     expect(find.text('Due Mon'), findsNothing);
     expect(find.text('Due Thu'), findsOneWidget);
     // `Dormant` says something the *Not enrolled* heading above it does
@@ -690,7 +695,7 @@ void main() {
 
     // A pill that only repeats its own band heading is dropped: it spent
     // the row's trailing slot, and the width the name needs, to say the
-    // word three rows up already said. `Due Thu` and `3 days over` carry a
+    // word three rows up already said. `Due Thu` and `3 days overdue` carry a
     // time no heading can, so those survive — which is the whole rule.
     expect(
       find.text('On track · 2'),
@@ -850,6 +855,7 @@ void main() {
             mediaQueryData: MediaQueryData(size: Size(width, 800)),
             overrides: [
               relationshipRepositoryProvider.overrideWithValue(mockRepository),
+              personTimelineOverride(),
               // The person page's record button watches the app-wide recorder.
               audioRecorderControllerProvider.overrideWith(
                 FakeAudioRecorderController.new,

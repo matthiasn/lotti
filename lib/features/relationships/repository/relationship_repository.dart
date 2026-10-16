@@ -11,6 +11,7 @@ import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -571,6 +572,18 @@ class RelationshipRepository implements RelationshipCascade {
     }
   }
 
+  /// Every live note, voice note, photo and meeting on the person's timeline
+  /// (ADR 0138), private ones included — what the agent reads and Phase A
+  /// counts as evidence, unscoped by the display preference for the reason
+  /// [getAllCheckInsForRelationship] is.
+  Future<List<JournalEntity>> getAllTimelineEntries(String relationshipId) =>
+      allPersonTimelineEntries(_journalDb, relationshipId);
+
+  /// When the person's timeline last gained or lost an entry
+  /// ([personTimelineLinksChangedAt]).
+  Future<DateTime?> getTimelineLinksChangedAt(String relationshipId) =>
+      personTimelineLinksChangedAt(_journalDb, relationshipId);
+
   // ── Task links ─────────────────────────────────────────────────────────────
 
   /// Links [taskId] to the relationship with a [RelationshipLink]
@@ -595,29 +608,13 @@ class RelationshipRepository implements RelationshipCascade {
   Future<bool> unlinkTask({
     required String relationshipId,
     required String taskId,
-  }) async {
-    final links = await _journalDb.typedLinksForTaskIds(
-      {relationshipId, taskId},
-      types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+  }) {
+    return tombstoneRelationshipLinks(
+      journalDb: _journalDb,
+      journalRepository: _journalRepository,
+      personId: relationshipId,
+      otherId: taskId,
     );
-    final matchingLinks = links.where(
-      (link) =>
-          link.deletedAt == null &&
-          ((link.fromId == relationshipId && link.toId == taskId) ||
-              (link.fromId == taskId && link.toId == relationshipId)),
-    );
-    final deletedAt = clock.now();
-    var found = false;
-    var updated = true;
-    for (final link in matchingLinks) {
-      found = true;
-      updated =
-          await _journalRepository.updateLink(
-            link.copyWith(deletedAt: deletedAt, hidden: true),
-          ) &&
-          updated;
-    }
-    return found && updated;
   }
 
   // ── Update ─────────────────────────────────────────────────────────────────
@@ -767,6 +764,7 @@ class RelationshipRepository implements RelationshipCascade {
       {for (final c in checkIns) c.id},
       deletedAt,
       personId: relationshipId,
+      includeTimeline: true,
     );
     return true;
   }
@@ -783,14 +781,27 @@ class RelationshipRepository implements RelationshipCascade {
   /// recorded against the person before its check-in exists, so its
   /// recording carries a link from the person too, and that link is the
   /// check-in's, not another owner's.
+  ///
+  /// With [includeTimeline] — the person is being deleted — the notes, voice
+  /// notes and photos on the person's timeline (ADR 0138) go the same way.
+  /// Without it, an entry that is still on the person's timeline stays: the
+  /// person is live and still shows it. Meetings and tasks are never
+  /// tombstoned here; they are things of their own, as linked tasks are.
   Future<void> _softDeleteEntriesOf(
     Set<String> checkInIds,
     DateTime deletedAt, {
     required String personId,
+    bool includeTimeline = false,
   }) async {
     final owners = {...checkInIds, personId};
-    final entries = await getAllEntriesForCheckIns(checkInIds);
-    for (final entry in entries.values.expand((e) => e).toSet()) {
+    final timelineIds = await personTimelineLinkTargets(_journalDb, personId);
+    final entries = {
+      ...(await getAllEntriesForCheckIns(checkInIds)).values.expand((e) => e),
+      if (includeTimeline)
+        ...(await getAllTimelineEntries(personId)).where(isCheckInEntryKind),
+    };
+    for (final entry in entries) {
+      if (!includeTimeline && timelineIds.contains(entry.id)) continue;
       final others = {
         for (final id in await _journalDb.parentLinkedEntityIds(entry.id).get())
           if (!owners.contains(id)) id,

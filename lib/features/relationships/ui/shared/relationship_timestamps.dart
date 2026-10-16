@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/relationship_calendar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/themes/theme.dart' show dateFigureFontFeatures;
 import 'package:material_ui/material_ui.dart';
 
 /// 24h date-time formatting for the relationships surface: `Today 14:20`,
@@ -19,8 +19,9 @@ import 'package:material_ui/material_ui.dart';
 
 /// The [TextStyle] for a relationship timestamp: [base], or the
 /// design-system caption token when the caller has no host line to match,
-/// with the app's tabular-figure features (`numericBadgeFontFeatures`, the
-/// journal's and the timer's) so a column of dates lines up digit for digit.
+/// with the open digits of `dateFigureFontFeatures` — no slashed zero, which
+/// made a date in a line of prose read as a code, and no tabular spacing,
+/// which set `11` as `1 1`.
 ///
 /// [base] matters wherever a date sits *inside* a line of prose. The style
 /// changes figures and colour and nothing else, so a timestamp in a 16pt
@@ -31,7 +32,7 @@ TextStyle relationshipTimestampStyle(
   Color? color,
   TextStyle? base,
 }) => (base ?? tokens.typography.styles.others.caption).copyWith(
-  fontFeatures: numericBadgeFontFeatures,
+  fontFeatures: dateFigureFontFeatures,
   color: color ?? tokens.colors.text.lowEmphasis,
 );
 

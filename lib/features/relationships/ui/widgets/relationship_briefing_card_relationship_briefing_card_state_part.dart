@@ -132,10 +132,19 @@ class RelationshipBriefingCard extends ConsumerStatefulWidget {
   const RelationshipBriefingCard({
     required this.relationship,
     required this.checkIns,
+    this.folded = false,
     super.key,
   });
 
   final RelationshipEntry relationship;
+
+  /// Starts a calm face — a current briefing, or one being written — as its
+  /// header row alone, opening in place on a tap. The person page asks for
+  /// it on a phone when the user's own notes already lead *Before you talk*:
+  /// the briefing's sentence then said the same thing a second time and kept
+  /// the timeline off the first screen. A face that asks something of the
+  /// reader is never folded.
+  final bool folded;
 
   /// Newest first. The latest one drives the cadence pill and names the day
   /// of the "new check-in" that made a briefing out of date; the count feeds
@@ -150,6 +159,7 @@ class RelationshipBriefingCard extends ConsumerStatefulWidget {
 class _RelationshipBriefingCardState
     extends ConsumerState<RelationshipBriefingCard> {
   bool _expanded = false;
+  bool _opened = false;
   bool _requesting = false;
   bool _marking = false;
 
@@ -414,6 +424,8 @@ class _RelationshipBriefingCardState
       identityData: identityData,
       modelMissing: modelMissing,
       expanded: _expanded,
+      folded: widget.folded && !_opened,
+      onOpen: () => setState(() => _opened = true),
       requesting: _requesting,
       onToggleExpanded: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName),
@@ -465,27 +477,24 @@ class _NotEnrolledCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Named for what it turns on. The header pill already says *No
+          // reminders*; a status line here said it a second time.
           _BriefingHeader(
-            icon: LottiIcons.people,
+            icon: LottiIcons.notification,
             plain: true,
-            status: _StatusLine(
-              tiers: [
-                if (paused)
-                  relationshipStatusLabel(context, data.status)
-                else
-                  // The band and the pill's own words for this state, so
-                  // one fact has one name on the list and on the page.
-                  messages.relationshipNotEnrolled,
-              ],
-              color: tokens.colors.text.lowEmphasis,
-            ),
+            title: messages.relationshipRemindersOfferTitle,
+            status: paused
+                ? _StatusLine(
+                    tiers: [relationshipStatusLabel(context, data.status)],
+                    color: tokens.colors.text.lowEmphasis,
+                  )
+                : null,
           ),
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.cardPadding,
-              0,
-              tokens.spacing.cardPadding,
-              tokens.spacing.step4,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step4,
             ),
             child: Text(
               paused
@@ -505,18 +514,19 @@ class _NotEnrolledCard extends StatelessWidget {
           // and changeable — rather than a default discovered later.
           if (!paused)
             Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.cardPadding,
-                0,
-                tokens.spacing.cardPadding,
-                tokens.spacing.step4,
+              padding: EdgeInsets.only(
+                left: tokens.spacing.cardPadding,
+                right: tokens.spacing.cardPadding,
+                bottom: tokens.spacing.step4,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // The page's one label style.
                   Text(
                     messages.relationshipCadencePromptLabel,
-                    style: tokens.typography.styles.others.caption.copyWith(
+                    style: captionLabelStyle(
+                      tokens,
                       color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
@@ -540,24 +550,31 @@ class _NotEnrolledCard extends StatelessWidget {
           // heading into. An unexplained disclaimer in the one place it is
           // about to stop applying is worse than none; what the agent
           // sends belongs somewhere it can actually be explained.
-          _AgentCardFooter(
-            plain: true,
-            action: paused
-                ? null
-                : DesignSystemButton(
-                    key: const ValueKey('relationship-agent-mark-important'),
-                    tapTargetSize: MaterialTapTargetSize.padded,
-                    // Named with the same verb the state uses: the band,
-                    // the pill and the summary all say *enrolled*, so the
-                    // control that ends *Not enrolled* says it too.
-                    label: messages.relationshipAgentEnrolPerson(
-                      data.nickname ?? data.title,
-                    ),
-                    leadingIcon: LottiIcons.star,
-                    isLoading: marking,
-                    onPressed: marking ? null : onMarkImportant,
-                  ),
-          ),
+          // The offer's one action inside the card, under the choice it
+          // applies — a footer band of its own made the offer the tallest
+          // block on a page with nothing to brief yet.
+          if (!paused)
+            Padding(
+              padding: EdgeInsets.only(
+                left: tokens.spacing.cardPadding,
+                right: tokens.spacing.cardPadding,
+                bottom: tokens.spacing.cardPadding,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                // Secondary: the bar's Speak stays the page's one filled
+                // control, and the body above already names the person.
+                child: DesignSystemButton(
+                  key: const ValueKey('relationship-agent-mark-important'),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  label: messages.relationshipTurnOnReminders,
+                  variant: DesignSystemButtonVariant.secondary,
+                  leadingIcon: LottiIcons.notification,
+                  isLoading: marking,
+                  onPressed: marking ? null : onMarkImportant,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -570,14 +587,19 @@ class _NotEnrolledCard extends StatelessWidget {
 /// cards' own.
 class _BriefingHeader extends StatelessWidget {
   const _BriefingHeader({
-    required this.status,
+    this.status,
+    this.title,
     this.trailing,
     this.onTap,
     this.icon,
     this.plain = false,
   });
 
-  final _StatusLine status;
+  /// What the agent is doing; none on the offer, whose body says it.
+  final _StatusLine? status;
+
+  /// The card's title; *Briefing* unless the face is about something else.
+  final String? title;
   final Widget? trailing;
   final VoidCallback? onTap;
   final IconData? icon;
@@ -589,7 +611,7 @@ class _BriefingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final messages = context.messages;
     return TldrHeader(
-      title: messages.relationshipBriefingTitle,
+      title: title ?? messages.relationshipBriefingTitle,
       agentName: null,
       subtitle: status,
       plain: plain,
@@ -614,18 +636,17 @@ class _BandRationale extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.cardPadding,
-        0,
-        tokens.spacing.cardPadding,
-        tokens.spacing.step3,
+      padding: EdgeInsets.only(
+        left: tokens.spacing.cardPadding,
+        right: tokens.spacing.cardPadding,
+        bottom: tokens.spacing.step3,
       ),
       child: Text(
         text,
         key: const ValueKey('relationship-agent-band-rationale'),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
+        style: tokens.typography.styles.body.bodyMedium.copyWith(color: color),
       ),
     );
   }
@@ -668,7 +689,7 @@ class _StatusLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final style = tokens.typography.styles.body.bodySmall.copyWith(
+    final style = tokens.typography.styles.others.caption.copyWith(
       color: color,
     );
     final glyphSize = icon == null ? leadingSize : IconSizes.s;
@@ -764,19 +785,12 @@ class _AgentCardFooter extends StatelessWidget {
     required this.action,
     this.leading,
     this.identity,
-    this.meta,
-    this.plain = false,
   });
 
   /// The secondary, text-only action on the leading edge.
   final Widget? leading;
   final Widget? action;
   final Widget? identity;
-  final Widget? meta;
-
-  /// The unenrolled card is not an AI surface: its band is the section
-  /// card's own tint rather than the AI footer wash.
-  final bool plain;
 
   @override
   Widget build(BuildContext context) {
@@ -785,35 +799,22 @@ class _AgentCardFooter extends StatelessWidget {
         MediaQuery.textScalerOf(context).scale(1) > TextScales.large;
     final ai = tokens.colors.aiCard;
 
-    // The plain band is a faint neutral wash over the card surface — the
-    // tint alpha the tone-tinted fills use, in ink rather than an accent —
-    // so it reads as the footer of a quiet card, not as a raised block.
-    final plainWash = Color.alphaBlend(
-      tokens.colors.text.highEmphasis.withValues(alpha: SurfaceAlphas.tint),
-      tokens.colors.background.level02,
-    );
     return Container(
       key: const ValueKey('relationship-agent-footer'),
       // Full width regardless of what sits inside: a footer with only the
       // model row (the running face) must still wash the whole card.
       width: double.infinity,
       decoration: BoxDecoration(
-        color: plain ? plainWash : ai.footerWash,
-        border: Border(
-          top: BorderSide(
-            color: plain ? tokens.colors.decorative.level01 : ai.borderSoft,
-          ),
-        ),
+        color: ai.footerWash,
+        border: Border(top: BorderSide(color: ai.borderSoft)),
       ),
-      // A step more above than below when meta rows close the card; with
-      // nothing under the action row the inset is symmetric.
+      // A step more above than below when the model row closes the card;
+      // with nothing under the action row the inset is symmetric.
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
         tokens.spacing.cardPadding,
-        identity == null && meta == null
-            ? tokens.spacing.step4
-            : tokens.spacing.step3,
+        identity == null ? tokens.spacing.step4 : tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -857,11 +858,9 @@ class _AgentCardFooter extends StatelessWidget {
             ),
           // A designed gap under the action row: the 48pt floor gives no
           // slack once a large-text pill outgrows it.
-          if ((leading != null || action != null) &&
-              (identity != null || meta != null))
+          if ((leading != null || action != null) && identity != null)
             SizedBox(height: tokens.spacing.step3),
           ?identity,
-          ?meta,
         ],
       ),
     );

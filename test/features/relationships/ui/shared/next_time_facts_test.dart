@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/ui/shared/next_time_facts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,7 +17,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('each fact is a low-emphasis caption over a body line, the '
+  testWidgets('each fact is a medium-emphasis label over a body line, the '
       'words carrying the key', (tester) async {
     await pump(tester, const [
       (
@@ -30,10 +31,20 @@ void main() {
     final caption = tester.widget<Text>(find.text('Pay attention to'));
     final body = tester.widget<Text>(find.byKey(attention));
     expect(body.data, 'The krill deadline.');
-    expect(caption.style?.color, tokens.colors.text.lowEmphasis);
+    expect(caption.style?.color, tokens.colors.text.mediumEmphasis);
+    // The page's one label style: the caption's size, told apart from the
+    // caption metadata by weight.
     expect(
       caption.style?.fontSize,
       tokens.typography.styles.others.caption.fontSize,
+    );
+    expect(
+      caption.style?.fontWeight,
+      captionLabelStyle(tokens).fontWeight,
+    );
+    expect(
+      caption.style?.fontWeight,
+      isNot(tokens.typography.styles.others.caption.fontWeight),
     );
     expect(body.style?.color, tokens.colors.text.highEmphasis);
     expect(
@@ -50,7 +61,7 @@ void main() {
     );
   });
 
-  testWidgets('facts stack `step1` inside a pair and `step3` between pairs, '
+  testWidgets('facts stack `step1` inside a pair and `step4` between pairs, '
       'with nothing above the first', (tester) async {
     await pump(tester, const [
       (
@@ -74,7 +85,7 @@ void main() {
     );
     expect(
       secondCaption.top - firstBody.bottom,
-      closeTo(tokens.spacing.step3, 0.5),
+      closeTo(tokens.spacing.step4, 0.5),
     );
   });
 

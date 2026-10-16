@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -89,7 +90,7 @@ void main() {
     final handle = tester.ensureSemantics();
     await pump(tester, person());
 
-    expect(tester.widget<DsPill>(pillFinder).label, 'Weekly');
+    expect(tester.widget<DesignSystemButton>(pillFinder).label, 'Weekly');
     expect(
       tester.getSemantics(pillFinder).label,
       'Reminders: Weekly. Tap to change.',
@@ -101,7 +102,7 @@ void main() {
       'actually run on', (tester) async {
     await pump(tester, person(cadenceDays: null));
 
-    expect(tester.widget<DsPill>(pillFinder).label, 'Monthly');
+    expect(tester.widget<DesignSystemButton>(pillFinder).label, 'Monthly');
   });
 
   testWidgets('opens a sheet asking how often, on the current interval', (

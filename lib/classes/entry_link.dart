@@ -112,8 +112,10 @@ abstract class EntryLink with _$EntryLink {
     DateTime? deletedAt,
   }) = SupersedesLink;
 
-  /// `fromId` is a relationship; `toId` is a check-in or task belonging to
-  /// it, mirroring [ProjectLink]'s direction. Granted by ADR 0038 decision 3.
+  /// `fromId` is a relationship; `toId` is something on the person's
+  /// timeline — a check-in or task (ADR 0038 decision 3), or a note, voice
+  /// note, photo or meeting (ADR 0138) — mirroring [ProjectLink]'s
+  /// direction. Readers resolve the kind from the target's journal `type`.
   const factory EntryLink.relationship({
     required String id,
     required String fromId,

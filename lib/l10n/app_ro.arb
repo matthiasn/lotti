@@ -1435,7 +1435,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Închideți",
   "checkInDurationChip": "Durată",
   "checkInDurationChipSemantics": "Durată: {duration}. Schimbați",
   "checkInDurationQuickPickHint": "Atingeți o durată pentru a o salva sau rotiți rotița.",
@@ -1458,28 +1457,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "data viitoare",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "data viitoare notată",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "subiecte",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 subiect} few{{count} subiecte} other{{count} de subiecte}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Mai mult",
   "checkInNarrativeHint": "Despre ce ați vorbit? O linie este de ajuns.",
   "checkInNoDuration": "Fără durată",
   "checkInOpenSettingsButton": "Deschideți setările",
@@ -4753,16 +4730,21 @@
   "referenceImageSelectionSubtitle": "Alegeți până la {maxImages} imagini pentru a ghida stilul vizual al IA",
   "referenceImageSelectionTitle": "Selectați imagini de referință",
   "referenceImageSkip": "Săriți peste",
+  "relationshipAboutShowAll": "Afișați tot ({count})",
+  "relationshipAboutShowLess": "Afișați mai puțin",
+  "relationshipAboutTitle": "Despre {name}",
   "relationshipActionCall": "Apelați",
   "relationshipActionEmail": "E-mail",
   "relationshipActionFailed": "Nimic de pe acest dispozitiv nu poate deschide acest lucru",
   "relationshipActionMessage": "Mesaj",
+  "relationshipAddAction": "Adăugați",
   "relationshipAddChannelButton": "Adăugați o modalitate de contact",
   "relationshipAddChannelFromContacts": "sau din contacte",
+  "relationshipAddNote": "Adăugați o notă despre {name}",
+  "relationshipAddPhotos": "Adăugați fotografii",
+  "relationshipAddToTimeline": "Adăugați în cronologia persoanei {name}",
   "relationshipAgentAsOfBand": "{band} · actualizat {age}",
   "relationshipAgentBriefNow": "Creați briefingul acum",
-  "relationshipAgentCall": "Sunați pe {name}",
-  "relationshipAgentEnrolPerson": "Amintiți-mi de {name}",
   "relationshipAgentFailedBody": "Furnizorul a returnat o eroare înainte ca briefingul să fie scris. Check-in-urile dvs. sunt neschimbate.",
   "relationshipAgentFailedNoModel": "Nu este configurat niciun model pentru briefinguri. Alegeți unul în Setări AI › Agenți. Detaliile sunt în fila Activitate.",
   "relationshipAgentFailedPlain": "Ultima rulare a eșuat",
@@ -4775,7 +4757,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefingurile sunt în pauză cât timp această persoană este inactivă sau arhivată.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 propunere} few{{count} propuneri} other{{count} de propuneri}}",
   "relationshipAgentSeeActivity": "Vedeți activitatea",
   "relationshipAgentSources": "Surse: {count, plural, =1{1 check-in} few{{count} check-in-uri} other{{count} de check-in-uri}} · canalele de contact nu sunt trimise niciodată",
   "relationshipAgentTryAgain": "Încercați din nou",
@@ -4783,7 +4764,9 @@
   "relationshipAgentWatchingNextLook": "Agentul urmărește · următoarea verificare {day}",
   "relationshipAgentWriting": "Se scrie briefingul…",
   "relationshipBannerSemanticLabel": "Banner de relație pentru {personName}",
+  "relationshipBeforeYouTalkTitle": "Înainte să vorbiți",
   "relationshipBriefingAge": "{days, plural, =1{vechi de 1 zi} few{vechi de {days} zile} other{vechi de {days} de zile}}",
+  "relationshipBriefingOptions": "Opțiuni pentru briefing",
   "relationshipBriefingRequestFailed": "Rezumatul nu a putut fi solicitat.",
   "relationshipBriefingTitle": "Rezumat",
   "relationshipCadenceEveryNDays": "{days, plural, =1{În fiecare zi} few{La fiecare {days} zile} other{La fiecare {days} de zile}}",
@@ -4796,6 +4779,7 @@
   "relationshipCadencePromptLabel": "Cât de des?",
   "relationshipCadenceQuarterly": "Trimestrial",
   "relationshipCadenceWeekly": "Săptămânal",
+  "relationshipCallConfirmTitle": "Sunați persoana {name}?",
   "relationshipChatAgentName": "Agent de briefing",
   "relationshipChatAgentSubtitle": "Cunoaște check-in-urile dvs., nu canalele de contact",
   "relationshipChatAgentTitle": "{name} · agent de briefing",
@@ -4806,10 +4790,8 @@
   "relationshipCheckInAddComment": "Adăugați un comentariu",
   "relationshipCheckInAddPhoto": "Fotografie",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 comentariu} few{{count} comentarii} other{{count} de comentarii}}",
-  "relationshipCheckInCommentHint": "Adăugați un comentariu…",
   "relationshipCheckInEmpty": "Nimic adăugat încă. Adăugați un comentariu, o înregistrare sau o fotografie.",
   "relationshipCheckInGone": "Acest check-in nu mai există.",
-  "relationshipCheckInNoteLabel": "Notat la salvarea check-in-ului",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 fotografie} few{{count} fotografii} other{{count} de fotografii}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 înregistrare} few{{count} înregistrări} other{{count} de înregistrări}}",
   "relationshipCheckInReminderBody": "Un moment bun pentru a lua legătura.",
@@ -4823,15 +4805,11 @@
   },
   "relationshipCheckInsLabel": "Înregistrări",
   "relationshipCheckInTitle": "Contact cu {name}",
-  "relationshipContactCardAction": "Card de contact",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Date de contact",
   "relationshipContactLinked": "Datele de contact au fost copiate",
   "relationshipContactLinkFailed": "Datele de contact nu au putut fi salvate",
   "relationshipContactMissing": "Acel contact nu se află pe acest dispozitiv",
   "relationshipContactNoChanges": "Nu este nimic nou de copiat",
+  "relationshipCreateTask": "Adăugați o sarcină pentru {name}",
   "relationshipCreateTitle": "Adăugați o persoană",
   "relationshipDaysOver": "{count, plural, =1{1 zi de întârziere} few{{count} zile de întârziere} other{{count} de zile de întârziere}}",
   "@relationshipDaysOver": {
@@ -4941,7 +4919,6 @@
   },
   "relationshipLinkContact": "Asociați un contact",
   "relationshipLinkedTasksLabel": "Sarcini",
-  "relationshipLinkTaskButton": "Asociați o sarcină",
   "relationshipLogCheckIn": "Înregistrați un contact",
   "relationshipMoreActions": "Mai multe acțiuni",
   "relationshipNameLabel": "Nume",
@@ -4954,12 +4931,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Următoarea întâlnire",
   "relationshipNextTimeFromEarlier": "Din check-in-ul dvs. din {day}",
   "relationshipNextTimeTitle": "Data viitoare",
   "relationshipNicknameLabel": "Poreclă",
-  "relationshipNoCheckIns": "Nicio înregistrare încă — adăugați una după următoarea conversație.",
-  "relationshipNoLinkedTasks": "Nicio sarcină asociată încă.",
+  "relationshipNoteHint": "Unde v-ați cunoscut, ce îi place, o idee de cadou…",
   "relationshipNotEnrolled": "Fără memento-uri",
+  "relationshipNotePin": "Fixați la Despre",
+  "relationshipNoteSaveFailed": "Nota nu a putut fi salvată.",
+  "relationshipNoteSheetTitle": "Notă despre {name}",
   "relationshipNotFound": "Această persoană nu mai este urmărită.",
   "relationshipPayAttentionTo": "Fiți atent la",
   "relationshipPhotoAddBanner": "Adăugați un banner",
@@ -4978,7 +4958,7 @@
   "relationshipPhotoSheetTitle": "Fotografie – {name}",
   "relationshipPostCallAskCall": "Ați reușit să vorbiți cu {name}?",
   "relationshipPostCallAskMessage": "Ați trimis un mesaj către {name}?",
-  "relationshipPostCallDismiss": "Ignorați",
+  "relationshipPostCallDismiss": "Nu de data aceasta",
   "relationshipPostCallMeta": "început la {time} · {minutes, plural, =0{sub un minut} =1{circa 1 min} other{circa {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -4995,11 +4975,11 @@
   "relationshipProposalEvidence": "Din interacțiunea din {date}",
   "relationshipProposalUndoFailed": "Anularea nu a reușit. Este posibil ca sarcina să fi fost modificată.",
   "relationshipReachPrivacy": "Rămâne pe acest dispozitiv · niciodată partajat cu AI-ul",
-  "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Asociați alt contact",
   "relationshipReminderPausedBody": "Revine atunci, dacă nu înregistrați un contact înainte.",
   "relationshipReminderPausedTitle": "Memento întrerupt până la {time}",
   "relationshipReminderSnoozeLonger": "Amânați mai mult",
+  "relationshipRemindersOfferTitle": "Mementouri și briefinguri",
   "relationshipRemindersPillSemantics": "Memento-uri: {cadence}. Atingeți pentru a schimba.",
   "relationshipRemindersSheetTitle": "Memento-uri",
   "relationshipRemindersSwitchLabel": "Amintiți-mi să păstrez legătura",
@@ -5007,6 +4987,7 @@
   "relationshipsEmptyState": "Adăugați persoanele de care doriți să rămâneți aproape.",
   "relationshipsGroupDue": "Scadente",
   "relationshipsPageTitle": "Persoane",
+  "relationshipSpeak": "Vorbiți",
   "relationshipsSelectPersonHint": "Selectați o persoană pentru a-i vedea pagina.",
   "relationshipsSummaryDueNow": "Scadente acum",
   "relationshipsSummaryEnrolled": "/ {count} cu memento-uri",
@@ -5077,9 +5058,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Nimic aici încă. Vorbiți după ce discutați cu {name} sau adăugați o notă, o sarcină sau fotografii.",
+  "relationshipTimelineFilterAll": "Toate",
+  "relationshipTimelineFilterMeetings": "Întâlniri",
+  "relationshipTimelineFilterNotes": "Note",
+  "relationshipTimelineFilterPhotos": "Fotografii",
+  "relationshipTimelineMeeting": "Întâlnire",
+  "relationshipTimelineMeetingCalledOff": "Anulată",
+  "relationshipTimelineNote": "Notă",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Sarcină",
+  "relationshipTimelineTaskDoneAt": "Finalizată {time}",
+  "relationshipTimelineTaskOverdue": "Întârziată din {day}",
+  "relationshipTimelineThisWeek": "Săptămâna aceasta",
+  "relationshipTimelineTitle": "Cronologie",
+  "relationshipTimelineToday": "Astăzi",
+  "relationshipTimelineUpcoming": "Urmează",
+  "relationshipTimelineVoiceNote": "Notă vocală",
   "relationshipTimestampToday": "Azi",
   "relationshipTimestampYesterday": "Ieri",
-  "relationshipTrackingSinceLabel": "Urmărire din {date}",
+  "relationshipTurnOnReminders": "Activați mementourile",
   "relationshipTurnRemindersOff": "Dezactivați memento-urile",
   "relationshipUpdateFromContact": "Actualizați din contact",
   "saveButton": "Salvați",

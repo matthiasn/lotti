@@ -213,9 +213,10 @@ void main() {
     });
   });
 
-  // ADR 0064: a check-in is in the feed, never a search result.
+  // ADR 0139: a check-in is in the feed and a search result alike — the
+  // exclusion ADR 0064 made is gone.
   group('runQuery - check-ins', () {
-    for (final (query, expected) in [('', true), ('krill', false)]) {
+    for (final (query, expected) in [('', true), ('krill', true)]) {
       test("query '$query' ${expected ? 'keeps' : 'drops'} check-ins", () {
         fakeAsync((async) {
           runner.runQuery(

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -95,4 +96,38 @@ void main() {
     await tester.tapAt(Offset(target.center.dx, target.top + 2));
     expect(pressed, 1);
   });
+
+  testWidgets('hovered, the border firms to the full accent', (tester) async {
+    await pump(tester, onPressed: () {});
+    final ai = tester
+        .element(find.byType(AgentChatButton))
+        .designTokens
+        .colors
+        .aiCard;
+    ShapeDecoration pill() => tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(AgentChatButton),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => box.decoration)
+        .whereType<ShapeDecoration>()
+        .single;
+    Color border() => (pill().shape as RoundedRectangleBorder).side.color;
+    expect(border(), ai.border);
+
+    await _hover(tester, find.byType(AgentChatButton));
+
+    expect(border(), ai.accent);
+  });
+}
+
+/// Puts a mouse over [target] and settles, so hover styling shows.
+Future<void> _hover(WidgetTester tester, Finder target) async {
+  final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await mouse.addPointer(location: Offset.zero);
+  addTearDown(mouse.removePointer);
+  await mouse.moveTo(tester.getCenter(target));
+  await tester.pumpAndSettle();
 }

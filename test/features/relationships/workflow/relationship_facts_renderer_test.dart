@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -107,6 +109,7 @@ void main() {
     List<RecalledObservation> observations = const [],
     Map<String, List<JournalEntity>> checkInEntries = const {},
     Map<String, String> imageDescriptions = const {},
+    List<JournalEntity> timeline = const [],
   }) => renderer.render(
     relationship: relationship(),
     derivation: d ?? derivation(),
@@ -119,7 +122,157 @@ void main() {
     observations: observations,
     checkInEntries: checkInEntries,
     imageDescriptions: imageDescriptions,
+    timelineEntries: timeline,
   );
+
+  group("the person's timeline (ADR 0138)", () {
+    JournalEntity note(String id, DateTime at, String text, {bool? pinned}) =>
+        JournalEntity.journalEntry(
+          meta: meta(id, dateFrom: at).copyWith(starred: pinned),
+          entryText: EntryText(plainText: text),
+        );
+    JournalEntity meeting(String id, DateTime at, {EventStatus? status}) =>
+        JournalEntity.event(
+          meta: meta(
+            id,
+            dateFrom: at,
+          ).copyWith(dateTo: at.add(const Duration(hours: 2))),
+          data: EventData(
+            title: 'Coffee $id',
+            stars: 0,
+            status: status ?? EventStatus.planned,
+          ),
+        );
+
+    String section(String facts, String heading) {
+      final start = facts.indexOf(heading);
+      expect(start, isNot(-1), reason: 'FACTS carry $heading');
+      final rest = facts.substring(start);
+      final next = RegExp(r'\n[A-Z][A-Z ]+[(:]').firstMatch(rest.substring(1));
+      return next == null ? rest : rest.substring(0, next.start + 1);
+    }
+
+    test('an empty timeline says none in every section', () {
+      final facts = render();
+      expect(section(facts, 'NOTES ABOUT THE PERSON'), contains('- none'));
+      expect(section(facts, 'VOICE NOTES AND PHOTOS'), contains('- none'));
+      expect(section(facts, 'UPCOMING MEETINGS'), contains('- none'));
+    });
+
+    test('pinned notes lead, then the newest unpinned ones, each bounded', () {
+      final facts = render(
+        timeline: [
+          note('n-old', DateTime(2026, 5), 'Prefers tea.'),
+          note('n-new', DateTime(2026, 8, 10), 'Starts a new job Monday.'),
+          note('n-pin', DateTime(2025), 'Met at uni.', pinned: true),
+          for (var i = 0; i < relationshipNoteLookback + 3; i++)
+            note('bulk-$i', DateTime(2026, 6, 1, i), 'bulk $i'),
+        ],
+      );
+
+      final notes = section(facts, 'NOTES ABOUT THE PERSON');
+      final lines = notes.split('\n').where((l) => l.startsWith('- '));
+      expect(lines.first, '- pinned | 2025-01-01 | Met at uni.');
+      expect(lines.elementAt(1), '- 2026-08-10 | Starts a new job Monday.');
+      expect(lines.length, 1 + relationshipNoteLookback);
+      expect(notes, isNot(contains('Prefers tea.')));
+    });
+
+    test('a voice note reads with its transcript and a photo with its '
+        'description', () {
+      final facts = render(
+        timeline: [
+          testAudioEntry.copyWith(
+            meta: meta('voice', dateFrom: DateTime(2026, 8, 12, 19)),
+            entryText: const EntryText(plainText: 'Wants a send-off.'),
+          ),
+          testImageEntry.copyWith(
+            meta: meta('photo', dateFrom: DateTime(2026, 8, 11, 9)),
+          ),
+        ],
+        imageDescriptions: {'photo': 'Two penguins on a sled.'},
+      );
+
+      final media = section(facts, 'VOICE NOTES AND PHOTOS');
+      expect(media, contains('recording'));
+      expect(media, contains('Wants a send-off.'));
+      expect(media, contains('photo: Two penguins on a sled.'));
+      expect(
+        media.indexOf('Wants a send-off.'),
+        lessThan(media.indexOf('Two penguins')),
+        reason: 'newest first',
+      );
+    });
+
+    test('only meetings ahead within the horizon are upcoming, soonest '
+        'first', () {
+      final facts = render(
+        timeline: [
+          meeting('past', now.subtract(const Duration(days: 1))),
+          meeting('later', now.add(const Duration(days: 9))),
+          meeting('soon', now.add(const Duration(days: 2))),
+          meeting(
+            'beyond',
+            now.add(
+              const Duration(days: relationshipUpcomingMeetingDays + 1),
+            ),
+          ),
+        ],
+      );
+
+      final upcoming = section(facts, 'UPCOMING MEETINGS');
+      expect(upcoming, contains('Coffee soon [planned]'));
+      expect(
+        upcoming.indexOf('Coffee soon'),
+        lessThan(upcoming.indexOf('Coffee later')),
+      );
+      expect(upcoming, isNot(contains('Coffee past')));
+      expect(upcoming, isNot(contains('Coffee beyond')));
+    });
+
+    test('at most the soonest few meetings go out, and the rest are counted '
+        'rather than listed', () {
+      const extra = 2;
+      final facts = render(
+        timeline: [
+          for (var i = 0; i < relationshipUpcomingMeetingLookback + extra; i++)
+            meeting('m$i', now.add(Duration(days: i + 1))),
+        ],
+      );
+
+      final upcoming = section(facts, 'UPCOMING MEETINGS');
+      final lines = upcoming.split('\n').where((l) => l.startsWith('- '));
+      expect(lines.length, relationshipUpcomingMeetingLookback + 1);
+      expect(upcoming, contains('Coffee m0 '));
+      expect(upcoming, isNot(contains('Coffee m6 ')));
+      expect(lines.last, '- and $extra later');
+    });
+
+    test('a meeting is placed by the instant its stored offset names: one '
+        'an hour ahead on a clock three hours east of this one has already '
+        'begun here', () {
+      // The writer's wall clock reads an hour later than this device's,
+      // and the writer sat three hours east of it: the instant it names is
+      // two hours ago, in whatever zone the test runs.
+      final stored = now.add(const Duration(hours: 1));
+      final east = JournalEntity.event(
+        meta: meta('east', dateFrom: stored).copyWith(
+          dateTo: stored.add(const Duration(hours: 1)),
+          utcOffset: now.timeZoneOffset.inMinutes + 180,
+        ),
+        data: const EventData(
+          title: 'Coffee east',
+          stars: 0,
+          status: EventStatus.planned,
+        ),
+      );
+
+      final upcoming = section(render(timeline: [east]), 'UPCOMING MEETINGS');
+
+      expect(upcoming, isNot(contains('Coffee east')));
+      expect(upcoming, contains('- none'));
+    });
+  });
 
   group('check-in entries', () {
     JournalEntity comment(String id, DateTime at, String text) =>

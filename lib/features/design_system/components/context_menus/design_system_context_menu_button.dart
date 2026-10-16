@@ -19,6 +19,7 @@ class DesignSystemContextMenuButton extends StatelessWidget {
     this.tooltip,
     this.iconColor,
     this.semanticsLabel,
+    this.header,
     super.key,
   });
 
@@ -37,6 +38,10 @@ class DesignSystemContextMenuButton extends StatelessWidget {
   /// Semantics label for the opened menu container.
   final String? semanticsLabel;
 
+  /// Optional quiet heading above the rows — what the rows act on, such as
+  /// the model a briefing would be written with.
+  final String? header;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -45,6 +50,7 @@ class DesignSystemContextMenuButton extends StatelessWidget {
     return DesignSystemContextMenuAnchor(
       items: items,
       semanticsLabel: semanticsLabel,
+      header: header,
       builder: (context, {required toggle, required isOpen}) {
         return SizedBox(
           width: tokens.spacing.step9,

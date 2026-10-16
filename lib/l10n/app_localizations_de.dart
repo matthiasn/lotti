@@ -3353,9 +3353,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Aufnahme wird gelöscht. Dein Check-in bleibt offen.';
 
   @override
-  String get checkInDismissButton => 'Schließen';
-
-  @override
   String get checkInDurationChip => 'Dauer';
 
   @override
@@ -3410,29 +3407,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInMoreCaptionFeeling => 'Stimmung';
-
-  @override
-  String get checkInMoreCaptionNextTime => 'nächstes Mal';
-
-  @override
-  String get checkInMoreCaptionNextTimeSet => 'nächstes Mal notiert';
-
-  @override
-  String get checkInMoreCaptionTopics => 'Themen';
-
-  @override
-  String checkInMoreCaptionTopicsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Themen',
-      one: '1 Thema',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkInMoreSection => 'Mehr';
 
   @override
   String get checkInNarrativeHint =>
@@ -12515,6 +12489,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get referenceImageSkip => 'Überspringen';
 
   @override
+  String relationshipAboutShowAll(int count) {
+    return 'Alle anzeigen ($count)';
+  }
+
+  @override
+  String get relationshipAboutShowLess => 'Weniger anzeigen';
+
+  @override
+  String relationshipAboutTitle(String name) {
+    return 'Über $name';
+  }
+
+  @override
   String get relationshipActionCall => 'Anrufen';
 
   @override
@@ -12528,10 +12515,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipActionMessage => 'Nachricht';
 
   @override
+  String get relationshipAddAction => 'Hinzufügen';
+
+  @override
   String get relationshipAddChannelButton => 'Kontaktweg hinzufügen';
 
   @override
   String get relationshipAddChannelFromContacts => 'oder aus Kontakten';
+
+  @override
+  String relationshipAddNote(String name) {
+    return 'Notiz über $name hinzufügen';
+  }
+
+  @override
+  String get relationshipAddPhotos => 'Fotos hinzufügen';
+
+  @override
+  String relationshipAddToTimeline(String name) {
+    return 'Zur Zeitleiste von $name hinzufügen';
+  }
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
@@ -12540,16 +12543,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipAgentBriefNow => 'Jetzt briefen';
-
-  @override
-  String relationshipAgentCall(String name) {
-    return '$name anrufen';
-  }
-
-  @override
-  String relationshipAgentEnrolPerson(String name) {
-    return 'An $name erinnern';
-  }
 
   @override
   String get relationshipAgentFailedBody =>
@@ -12601,17 +12594,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Briefings pausieren, solange diese Person ruht oder archiviert ist.';
 
   @override
-  String relationshipAgentProposedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Vorschläge',
-      one: '1 Vorschlag',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Aktivität ansehen';
 
   @override
@@ -12645,6 +12627,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relationshipBeforeYouTalkTitle => 'Bevor ihr redet';
+
+  @override
   String relationshipBriefingAge(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12654,6 +12639,9 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get relationshipBriefingOptions => 'Briefing-Optionen';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12690,6 +12678,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Wöchentlich';
+
+  @override
+  String relationshipCallConfirmTitle(String name) {
+    return '$name anrufen?';
+  }
 
   @override
   String get relationshipChatAgentName => 'Briefing-Agent';
@@ -12738,17 +12731,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipCheckInCommentHint => 'Kommentar hinzufügen…';
-
-  @override
   String get relationshipCheckInEmpty =>
       'Noch nichts hinzugefügt. Füge einen Kommentar, eine Aufnahme oder ein Foto hinzu.';
 
   @override
   String get relationshipCheckInGone => 'Diesen Check-in gibt es nicht mehr.';
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Beim Erfassen notiert';
 
   @override
   String relationshipCheckInPhotoCount(int count) {
@@ -12790,12 +12777,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipContactCardAction => 'Visitenkarte';
-
-  @override
-  String get relationshipContactChannelsLabel => 'Kontaktdaten';
-
-  @override
   String get relationshipContactLinked => 'Kontaktdaten übernommen';
 
   @override
@@ -12808,6 +12789,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipContactNoChanges => 'Nichts Neues zu übernehmen';
+
+  @override
+  String relationshipCreateTask(String name) {
+    return 'Aufgabe für $name hinzufügen';
+  }
 
   @override
   String get relationshipCreateTitle => 'Person hinzufügen';
@@ -13040,9 +13026,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipLinkedTasksLabel => 'Aufgaben';
 
   @override
-  String get relationshipLinkTaskButton => 'Aufgabe verknüpfen';
-
-  @override
   String get relationshipLogCheckIn => 'Check-in erfassen';
 
   @override
@@ -13060,6 +13043,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relationshipNextMeetingLabel => 'Nächstes Treffen';
+
+  @override
   String relationshipNextTimeFromEarlier(String day) {
     return 'Aus deinem Check-in vom $day';
   }
@@ -13071,14 +13057,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipNicknameLabel => 'Spitzname';
 
   @override
-  String get relationshipNoCheckIns =>
-      'Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.';
-
-  @override
-  String get relationshipNoLinkedTasks => 'Noch keine Aufgaben verknüpft.';
+  String get relationshipNoteHint =>
+      'Wo ihr euch kennengelernt habt, was die Person liebt, eine Geschenkidee …';
 
   @override
   String get relationshipNotEnrolled => 'Ohne Erinnerungen';
+
+  @override
+  String get relationshipNotePin => 'An „Über“ anheften';
+
+  @override
+  String get relationshipNoteSaveFailed =>
+      'Die Notiz konnte nicht gespeichert werden.';
+
+  @override
+  String relationshipNoteSheetTitle(String name) {
+    return 'Notiz über $name';
+  }
 
   @override
   String get relationshipNotFound =>
@@ -13144,7 +13139,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallDismiss => 'Verwerfen';
+  String get relationshipPostCallDismiss => 'Diesmal nicht';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -13180,9 +13175,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bleibt auf diesem Gerät · nie mit der KI geteilt';
 
   @override
-  String get relationshipReachTitle => 'Erreichen';
-
-  @override
   String get relationshipRelinkContact => 'Anderen Kontakt verknüpfen';
 
   @override
@@ -13196,6 +13188,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Länger pausieren';
+
+  @override
+  String get relationshipRemindersOfferTitle => 'Erinnerungen und Briefings';
 
   @override
   String relationshipRemindersPillSemantics(String cadence) {
@@ -13222,6 +13217,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get relationshipsPageTitle => 'Menschen';
+
+  @override
+  String get relationshipSpeak => 'Sprechen';
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -13297,15 +13295,72 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String relationshipTimelineEmpty(String name) {
+    return 'Noch nichts hier. Sprich nach deinem Gespräch mit $name oder füge eine Notiz, eine Aufgabe oder Fotos hinzu.';
+  }
+
+  @override
+  String get relationshipTimelineFilterAll => 'Alle';
+
+  @override
+  String get relationshipTimelineFilterMeetings => 'Treffen';
+
+  @override
+  String get relationshipTimelineFilterNotes => 'Notizen';
+
+  @override
+  String get relationshipTimelineFilterPhotos => 'Fotos';
+
+  @override
+  String get relationshipTimelineMeeting => 'Treffen';
+
+  @override
+  String get relationshipTimelineMeetingCalledOff => 'Abgesagt';
+
+  @override
+  String get relationshipTimelineNote => 'Notiz';
+
+  @override
+  String relationshipTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
+  String get relationshipTimelineTask => 'Aufgabe';
+
+  @override
+  String relationshipTimelineTaskDoneAt(String time) {
+    return 'Erledigt $time';
+  }
+
+  @override
+  String relationshipTimelineTaskOverdue(String day) {
+    return 'Überfällig seit $day';
+  }
+
+  @override
+  String get relationshipTimelineThisWeek => 'Diese Woche';
+
+  @override
+  String get relationshipTimelineTitle => 'Zeitleiste';
+
+  @override
+  String get relationshipTimelineToday => 'Heute';
+
+  @override
+  String get relationshipTimelineUpcoming => 'Demnächst';
+
+  @override
+  String get relationshipTimelineVoiceNote => 'Sprachnotiz';
+
+  @override
   String get relationshipTimestampToday => 'Heute';
 
   @override
   String get relationshipTimestampYesterday => 'Gestern';
 
   @override
-  String relationshipTrackingSinceLabel(String date) {
-    return 'Erfasst seit $date';
-  }
+  String get relationshipTurnOnReminders => 'Erinnerungen einschalten';
 
   @override
   String get relationshipTurnRemindersOff => 'Erinnerungen ausschalten';

@@ -1657,7 +1657,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Luk",
   "checkInDurationChip": "Varighed",
   "checkInDurationChipSemantics": "Varighed: {duration}. Skift",
   "checkInDurationQuickPickHint": "Tryk på en længde for at gemme den, eller drej hjulet.",
@@ -1680,28 +1679,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "næste gang",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "næste gang noteret",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "emner",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 emne} other{{count} emner}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Mere",
   "checkInNarrativeHint": "Hvad talte I om? Én linje er nok.",
   "checkInNoDuration": "Ingen varighed",
   "checkInOpenSettingsButton": "Åbn indstillinger",
@@ -5363,16 +5340,21 @@
   "referenceImageSelectionSubtitle": "Vælg op til {maxImages} billeder for at styre AI'ens visuelle stil",
   "referenceImageSelectionTitle": "Vælg referencebilleder",
   "referenceImageSkip": "Spring over",
+  "relationshipAboutShowAll": "Vis alle ({count})",
+  "relationshipAboutShowLess": "Vis færre",
+  "relationshipAboutTitle": "Om {name}",
   "relationshipActionCall": "Ring op",
   "relationshipActionEmail": "E-mail",
   "relationshipActionFailed": "Intet på denne enhed kan åbne det",
   "relationshipActionMessage": "Besked",
+  "relationshipAddAction": "Tilføj",
   "relationshipAddChannelButton": "Tilføj kontaktoplysning",
   "relationshipAddChannelFromContacts": "eller fra kontakter",
+  "relationshipAddNote": "Tilføj en note om {name}",
+  "relationshipAddPhotos": "Tilføj fotos",
+  "relationshipAddToTimeline": "Tilføj til tidslinjen for {name}",
   "relationshipAgentAsOfBand": "{band} · opdateret {age}",
   "relationshipAgentBriefNow": "Brief nu",
-  "relationshipAgentCall": "Ring til {name}",
-  "relationshipAgentEnrolPerson": "Mind mig om {name}",
   "relationshipAgentFailedBody": "Udbyderen svarede med en fejl, før briefingen blev skrevet. Dine check-ins er uændrede.",
   "relationshipAgentFailedNoModel": "Der er ikke sat en model op til briefinger. Vælg en under AI-indstillinger › Agenter. Detaljer findes under fanen Aktivitet.",
   "relationshipAgentFailedPlain": "Seneste kørsel mislykkedes",
@@ -5385,7 +5367,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefinger holder pause, mens denne person er i dvale eller arkiveret.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 forslag} other{{count} forslag}}",
   "relationshipAgentSeeActivity": "Se aktivitet",
   "relationshipAgentSources": "Kilder: {count, plural, =1{1 check-in} other{{count} check-ins}} · kontaktkanaler sendes aldrig",
   "relationshipAgentTryAgain": "Prøv igen",
@@ -5393,7 +5374,9 @@
   "relationshipAgentWatchingNextLook": "Agenten holder øje · næste kig {day}",
   "relationshipAgentWriting": "Skriver briefingen…",
   "relationshipBannerSemanticLabel": "Relationsbanner for {personName}",
+  "relationshipBeforeYouTalkTitle": "Før I taler sammen",
   "relationshipBriefingAge": "{days, plural, =1{1 dag gammel} other{{days} dage gammel}}",
+  "relationshipBriefingOptions": "Indstillinger for briefing",
   "relationshipBriefingRequestFailed": "Kunne ikke bestille briefingen.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Hver dag} other{Hver {days}. dag}}",
@@ -5406,6 +5389,7 @@
   "relationshipCadencePromptLabel": "Hvor ofte?",
   "relationshipCadenceQuarterly": "Hvert kvartal",
   "relationshipCadenceWeekly": "Ugentligt",
+  "relationshipCallConfirmTitle": "Ring til {name}?",
   "relationshipChatAgentName": "Briefingagent",
   "relationshipChatAgentSubtitle": "Kender dine check-ins, ikke kontaktvejene",
   "relationshipChatAgentTitle": "{name} · briefingagent",
@@ -5416,10 +5400,8 @@
   "relationshipCheckInAddComment": "Tilføj kommentar",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 kommentar} other{{count} kommentarer}}",
-  "relationshipCheckInCommentHint": "Tilføj en kommentar…",
   "relationshipCheckInEmpty": "Intet tilføjet endnu. Tilføj en kommentar, en optagelse eller et foto.",
   "relationshipCheckInGone": "Dette check-in findes ikke længere.",
-  "relationshipCheckInNoteLabel": "Noteret ved registreringen",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 foto} other{{count} fotos}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 optagelse} other{{count} optagelser}}",
   "relationshipCheckInReminderBody": "Et godt tidspunkt at tage kontakt.",
@@ -5433,15 +5415,11 @@
   },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipCheckInTitle": "Check-in med {name}",
-  "relationshipContactCardAction": "Kontaktkort",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Kontaktoplysninger",
   "relationshipContactLinked": "Kontaktoplysninger kopieret",
   "relationshipContactLinkFailed": "Kunne ikke gemme kontaktoplysningerne",
   "relationshipContactMissing": "Den kontakt findes ikke på denne enhed",
   "relationshipContactNoChanges": "Intet nyt at kopiere",
+  "relationshipCreateTask": "Tilføj en opgave til {name}",
   "relationshipCreateTitle": "Tilføj person",
   "relationshipDaysOver": "{count, plural, =1{1 dag forsinket} other{{count} dage forsinket}}",
   "@relationshipDaysOver": {
@@ -5551,7 +5529,6 @@
   },
   "relationshipLinkContact": "Tilknyt kontakt",
   "relationshipLinkedTasksLabel": "Opgaver",
-  "relationshipLinkTaskButton": "Link opgave",
   "relationshipLogCheckIn": "Registrér check-in",
   "relationshipMoreActions": "Flere handlinger",
   "relationshipNameLabel": "Navn",
@@ -5564,12 +5541,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Næste møde",
   "relationshipNextTimeFromEarlier": "Fra dit tjek-ind {day}",
   "relationshipNextTimeTitle": "Næste gang",
   "relationshipNicknameLabel": "Kaldenavn",
-  "relationshipNoCheckIns": "Ingen check-ins endnu — registrér et efter jeres næste snak.",
-  "relationshipNoLinkedTasks": "Ingen opgaver linket endnu.",
+  "relationshipNoteHint": "Hvor I mødtes, hvad de elsker, en gaveidé …",
   "relationshipNotEnrolled": "Uden påmindelser",
+  "relationshipNotePin": "Fastgør til Om",
+  "relationshipNoteSaveFailed": "Noten kunne ikke gemmes.",
+  "relationshipNoteSheetTitle": "Note om {name}",
   "relationshipNotFound": "Denne person følges ikke længere.",
   "relationshipPayAttentionTo": "Vær opmærksom på",
   "relationshipPhotoAddBanner": "Tilføj banner",
@@ -5588,7 +5568,7 @@
   "relationshipPhotoSheetTitle": "Foto af {name}",
   "relationshipPostCallAskCall": "Fik du fat i {name}?",
   "relationshipPostCallAskMessage": "Fik du skrevet til {name}?",
-  "relationshipPostCallDismiss": "Afvis",
+  "relationshipPostCallDismiss": "Ikke denne gang",
   "relationshipPostCallMeta": "startede kl. {time} · {minutes, plural, =0{under et minut} =1{cirka 1 min} other{cirka {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5605,11 +5585,11 @@
   "relationshipProposalEvidence": "Fra check-in den {date}",
   "relationshipProposalUndoFailed": "Kunne ikke fortryde. Opgaven kan være blevet ændret.",
   "relationshipReachPrivacy": "Bliver på denne enhed · deles aldrig med AI'en",
-  "relationshipReachTitle": "Kontakt",
   "relationshipRelinkContact": "Tilknyt en anden kontakt",
   "relationshipReminderPausedBody": "Den kommer igen til den tid, medmindre du registrerer et check-in forinden.",
   "relationshipReminderPausedTitle": "Påmindelsen er sat på pause til {time}",
   "relationshipReminderSnoozeLonger": "Udsæt længere",
+  "relationshipRemindersOfferTitle": "Påmindelser og briefinger",
   "relationshipRemindersPillSemantics": "Påmindelser: {cadence}. Tryk for at ændre.",
   "relationshipRemindersSheetTitle": "Påmindelser",
   "relationshipRemindersSwitchLabel": "Mind mig om at holde kontakten",
@@ -5617,6 +5597,7 @@
   "relationshipsEmptyState": "Tilføj de mennesker, du vil holde kontakten med.",
   "relationshipsGroupDue": "Skal kontaktes",
   "relationshipsPageTitle": "Personer",
+  "relationshipSpeak": "Tal",
   "relationshipsSelectPersonHint": "Vælg en person for at se deres side.",
   "relationshipsSummaryDueNow": "Skal kontaktes nu",
   "relationshipsSummaryEnrolled": "/ {count} med påmindelser",
@@ -5687,9 +5668,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Intet her endnu. Tal efter din samtale med {name}, eller tilføj en note, en opgave eller fotos.",
+  "relationshipTimelineFilterAll": "Alle",
+  "relationshipTimelineFilterMeetings": "Møder",
+  "relationshipTimelineFilterNotes": "Noter",
+  "relationshipTimelineFilterPhotos": "Fotos",
+  "relationshipTimelineMeeting": "Møde",
+  "relationshipTimelineMeetingCalledOff": "Aflyst",
+  "relationshipTimelineNote": "Note",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Opgave",
+  "relationshipTimelineTaskDoneAt": "Udført {time}",
+  "relationshipTimelineTaskOverdue": "Forfalden siden {day}",
+  "relationshipTimelineThisWeek": "Denne uge",
+  "relationshipTimelineTitle": "Tidslinje",
+  "relationshipTimelineToday": "I dag",
+  "relationshipTimelineUpcoming": "Kommende",
+  "relationshipTimelineVoiceNote": "Talenote",
   "relationshipTimestampToday": "I dag",
   "relationshipTimestampYesterday": "I går",
-  "relationshipTrackingSinceLabel": "Fulgt siden {date}",
+  "relationshipTurnOnReminders": "Slå påmindelser til",
   "relationshipTurnRemindersOff": "Slå påmindelser fra",
   "relationshipUpdateFromContact": "Opdater fra kontakt",
   "saveButton": "Gem",

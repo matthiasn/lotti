@@ -246,6 +246,24 @@ each owns an element whose dirty flag nothing else clears. Any new delegate
 follows the same rule: the delegate carries geometry and content, the widgets
 it builds resolve the tokens.
 
+# The agent's own hue: `aiCard.accent`
+
+`colors.aiCard` is the palette of everything an agent wrote or suggests — its
+cards, its sparkle, its tile on a timeline. Its `accent`, `accentSoft`,
+`border` and `borderSoft` are a saturated **violet** (`#A99BFF` dark,
+`#5A4BD1` light), deliberately not `interactive.enabled` (product owner,
+2026-10-15). The two used to be the same teal, so "this is the agent" and
+"you can press this" looked identical on every surface that showed both.
+
+- Teal (`interactive.enabled`) means an action or a selection, and nothing
+  else.
+- Violet (`aiCard.accent`) means agent content, and nothing else. A control
+  *on* an agent surface that the user presses is still an action, so it stays
+  teal.
+- The violet is saturated where the persona-avatar ramp
+  (`PersonaAccentHues`) is muted, so a person with a violet face is never
+  read as the agent.
+
 # The alert ramp: `default` fills, `ink` writes
 
 `colors.alert.{error,success,warning,info}` carries four steps, and which one a

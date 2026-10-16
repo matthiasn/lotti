@@ -1,7 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/contact_quick_actions.dart';
@@ -9,252 +9,86 @@ import 'package:lotti/features/relationships/util/contact_channel_uri.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
-
-/// A launcher whose answers are scripted per action and whose calls are
-/// recorded, so the widget's two decisions — which buttons to show, and what
-/// to do when one is pressed — are both observable.
-class _FakeContactLauncher implements ContactLauncher {
-  _FakeContactLauncher({
-    this.launchable = const {
-      ContactAction.call,
-      ContactAction.message,
-      ContactAction.email,
-    },
-    this.launchSucceeds = true,
-  });
-
-  final Set<ContactAction> launchable;
-  final bool launchSucceeds;
-  final List<(ContactChannel, ContactAction)> launched = [];
-
-  @override
-  Future<bool> canLaunch(ContactChannel channel, ContactAction action) async =>
-      launchable.contains(action) && contactChannelUri(channel, action) != null;
-
-  @override
-  Future<bool> launch(ContactChannel channel, ContactAction action) async {
-    launched.add((channel, action));
-    return launchSucceeds;
-  }
-}
-
-/// An in-memory stand-in for the settings-backed store.
-class _FakePendingInteractionStore implements PendingInteractionStore {
-  PendingInteraction? remembered;
-  int clearCount = 0;
-
-  @override
-  Future<void> remember({
-    required String relationshipId,
-    required CheckInInteractionType interactionType,
-  }) async {
-    remembered = (
-      relationshipId: relationshipId,
-      interactionType: interactionType,
-      startedAt: DateTime(2026, 8, 17),
-    );
-  }
-
-  @override
-  Future<PendingInteraction?> read() async => remembered;
-
-  @override
-  Future<void> put(PendingInteraction p) async => remembered = p;
-
-  @override
-  Future<void> clear() async {
-    clearCount++;
-    remembered = null;
-  }
-}
+import '../../helpers/fake_contact_launcher.dart';
+import '../../helpers/fake_pending_interaction_store.dart';
 
 void main() {
-  ContactChannel channel(ContactChannelType type, String value) =>
-      ContactChannel(type: type, value: value);
+  const mobile = ContactChannel(
+    type: ContactChannelType.mobile,
+    value: '+15550109999',
+  );
+  const email = ContactChannel(
+    type: ContactChannelType.email,
+    value: 'pip@frostbeak.example',
+  );
 
-  late _FakeContactLauncher launcher;
-  late _FakePendingInteractionStore store;
+  late FakeContactLauncher launcher;
+  late FakePendingInteractionStore store;
 
   setUp(() {
-    launcher = _FakeContactLauncher();
-    store = _FakePendingInteractionStore();
+    launcher = FakeContactLauncher();
+    store = FakePendingInteractionStore();
   });
 
-  Future<void> pump(
+  /// Launches [channel] for [action] from a button, the way the person
+  /// page's contact row does.
+  Future<void> launch(
     WidgetTester tester,
-    ContactChannel target, {
-    String relationshipId = 'anna',
-  }) async {
+    ContactChannel channel,
+    ContactAction action,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        ContactQuickActions(relationshipId: relationshipId, channel: target),
+        Consumer(
+          builder: (context, ref, _) => TextButton(
+            key: const ValueKey('go'),
+            onPressed: () => launchContactAction(
+              context,
+              ref,
+              relationshipId: 'pip',
+              channel: channel,
+              action: action,
+            ),
+            child: const Text('go'),
+          ),
+        ),
         overrides: [
           contactLauncherProvider.overrideWithValue(launcher),
           pendingInteractionStoreProvider.overrideWithValue(store),
         ],
       ),
     );
-    // The availability check is asynchronous; the first frame renders nothing.
+    await tester.tap(find.byKey(const ValueKey('go')));
     await tester.pumpAndSettle();
   }
 
-  group('which buttons appear', () {
-    testWidgets('a mobile number offers call and message', (tester) async {
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
+  group('launchContactAction', () {
+    testWidgets('launches the channel and remembers a placed call, so the '
+        'next resume can offer a check-in', (tester) async {
+      await launch(tester, mobile, ContactAction.call);
 
-      expect(find.byIcon(LottiIcons.call), findsOneWidget);
-      expect(find.byIcon(LottiIcons.sms), findsOneWidget);
-      expect(find.byIcon(LottiIcons.mail), findsNothing);
-    });
-
-    testWidgets('a landline offers call but never a message composer', (
-      tester,
-    ) async {
-      await pump(tester, channel(ContactChannelType.phone, '+493090182'));
-
-      expect(find.byIcon(LottiIcons.call), findsOneWidget);
-      expect(find.byIcon(LottiIcons.sms), findsNothing);
-    });
-
-    testWidgets('an email address offers only mail', (tester) async {
-      await pump(tester, channel(ContactChannelType.email, 'anna@example.com'));
-
-      expect(find.byIcon(LottiIcons.mail), findsOneWidget);
-      expect(find.byIcon(LottiIcons.call), findsNothing);
-    });
-
-    testWidgets('a messaging handle offers nothing rather than a guessed '
-        'deep link', (tester) async {
-      await pump(tester, channel(ContactChannelType.messaging, '@anna'));
-
-      expect(find.byType(IconButton), findsNothing);
-    });
-
-    testWidgets('renders nothing when the platform has no handler', (
-      tester,
-    ) async {
-      launcher = _FakeContactLauncher(launchable: const {});
-
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      expect(
-        find.byType(IconButton),
-        findsNothing,
-        reason: 'a tablet with no dialer must show no button, not a dead one',
-      );
-    });
-
-    testWidgets('hides only the action the platform cannot service', (
-      tester,
-    ) async {
-      launcher = _FakeContactLauncher(launchable: const {ContactAction.call});
-
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      expect(find.byIcon(LottiIcons.call), findsOneWidget);
-      expect(find.byIcon(LottiIcons.sms), findsNothing);
-    });
-
-    testWidgets('shows nothing for a number that maps to no URI', (
-      tester,
-    ) async {
-      await pump(tester, channel(ContactChannelType.mobile, 'ask Bob'));
-
-      expect(find.byType(IconButton), findsNothing);
-    });
-
-    testWidgets('orders call before message consistently', (tester) async {
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      final icons = tester
-          .widgetList<Icon>(
-            find.descendant(
-              of: find.byType(IconButton),
-              matching: find.byType(Icon),
-            ),
-          )
-          .map((icon) => icon.icon)
-          .toList();
-
-      expect(icons, [LottiIcons.call, LottiIcons.sms]);
-    });
-  });
-
-  group('pressing a button', () {
-    testWidgets('launches the channel it belongs to', (tester) async {
-      final target = channel(ContactChannelType.mobile, '+15550109999');
-      await pump(tester, target);
-
-      await tester.tap(find.byIcon(LottiIcons.call));
-      await tester.pumpAndSettle();
-
-      expect(launcher.launched, [(target, ContactAction.call)]);
-    });
-
-    testWidgets('remembers a placed call so the next resume can offer a '
-        'check-in', (tester) async {
-      await pump(
-        tester,
-        channel(ContactChannelType.mobile, '+15550109999'),
-      );
-
-      await tester.tap(find.byIcon(LottiIcons.call));
-      await tester.pumpAndSettle();
-
-      expect(store.remembered!.relationshipId, 'anna');
-      expect(store.remembered!.interactionType, CheckInInteractionType.call);
-    });
-
-    testWidgets('remembers a message as a message', (tester) async {
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      await tester.tap(find.byIcon(LottiIcons.sms));
-      await tester.pumpAndSettle();
-
-      expect(store.remembered!.interactionType, CheckInInteractionType.message);
+      expect(launcher.launched, [(mobile, ContactAction.call)]);
+      expect(store.pending!.relationshipId, 'pip');
+      expect(store.pending!.interactionType, CheckInInteractionType.call);
+      expect(find.text('Nothing on this device can open that'), findsNothing);
     });
 
     testWidgets('remembers an email as a message, the nearest check-in kind', (
       tester,
     ) async {
-      await pump(tester, channel(ContactChannelType.email, 'anna@example.com'));
+      await launch(tester, email, ContactAction.email);
 
-      await tester.tap(find.byIcon(LottiIcons.mail));
-      await tester.pumpAndSettle();
-
-      expect(store.remembered!.interactionType, CheckInInteractionType.message);
+      expect(store.pending!.interactionType, CheckInInteractionType.message);
     });
 
-    testWidgets('remembers nothing when the platform refuses the launch — '
-        'there was no conversation to log', (tester) async {
-      launcher = _FakeContactLauncher(launchSucceeds: false);
+    testWidgets('a refused launch remembers nothing — there was no '
+        'conversation to log — and says so', (tester) async {
+      launcher = FakeContactLauncher(launchSucceeds: false);
 
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
+      await launch(tester, mobile, ContactAction.call);
 
-      await tester.tap(find.byIcon(LottiIcons.call));
-      await tester.pumpAndSettle();
-
-      expect(store.remembered, isNull);
-    });
-
-    testWidgets('tells the user when a launch is refused', (tester) async {
-      launcher = _FakeContactLauncher(launchSucceeds: false);
-
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      await tester.tap(find.byIcon(LottiIcons.call));
-      await tester.pumpAndSettle();
-
+      expect(store.pending, isNull);
       expect(find.text('Nothing on this device can open that'), findsOneWidget);
-    });
-
-    testWidgets('says nothing when the launch succeeds', (tester) async {
-      await pump(tester, channel(ContactChannelType.mobile, '+15550109999'));
-
-      await tester.tap(find.byIcon(LottiIcons.call));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Nothing on this device can open that'), findsNothing);
     });
   });
 
@@ -275,83 +109,26 @@ void main() {
     });
   });
 
-  group('channel changes', () {
-    testWidgets('re-checks availability when the channel is edited — a '
-        'landline corrected to a mobile gains a message button', (
-      tester,
-    ) async {
-      Widget build(ContactChannel target) => makeTestableWidgetWithScaffold(
-        ContactQuickActions(relationshipId: 'anna', channel: target),
-        overrides: [
-          contactLauncherProvider.overrideWithValue(launcher),
-          pendingInteractionStoreProvider.overrideWithValue(store),
-        ],
-      );
-
-      await tester.pumpWidget(
-        build(channel(ContactChannelType.phone, '+15550109999')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.byIcon(LottiIcons.sms), findsNothing);
-
-      await tester.pumpWidget(
-        build(channel(ContactChannelType.mobile, '+15550109999')),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(LottiIcons.sms), findsOneWidget);
-    });
-  });
-
-  group('firstReachableChannel', () {
-    const mobile = ContactChannel(
-      type: ContactChannelType.mobile,
-      value: '+15550109999',
-    );
-    const email = ContactChannel(
-      type: ContactChannelType.email,
-      value: 'pip@example.com',
+  testWidgets('every action has its own label and glyph', (tester) async {
+    late List<(String, IconData)> faces;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) {
+            faces = [
+              for (final action in ContactAction.values)
+                (
+                  contactActionLabel(context, action),
+                  contactActionIcon(action),
+                ),
+            ];
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
     );
 
-    test('nothing for a person without channels', () async {
-      expect(await firstReachableChannel(launcher, const []), isNull);
-    });
-
-    test('nothing when the platform can open none of them', () async {
-      final none = _FakeContactLauncher(launchable: const {});
-      expect(await firstReachableChannel(none, const [mobile, email]), isNull);
-    });
-
-    test("the first channel in the person's own order that opens — a call "
-        'on a phone', () async {
-      final found = await firstReachableChannel(launcher, const [
-        mobile,
-        email,
-      ]);
-      expect(found, (channel: mobile, action: ContactAction.call));
-    });
-
-    test('skips channels the platform cannot open — email on a desktop with '
-        'no dialer', () async {
-      final desktop = _FakeContactLauncher(
-        launchable: const {ContactAction.email},
-      );
-      final found = await firstReachableChannel(desktop, const [
-        mobile,
-        email,
-      ]);
-      expect(found, (channel: email, action: ContactAction.email));
-    });
-
-    test(
-      'a mobile with no dialer but a messenger offers the message',
-      () async {
-        final messenger = _FakeContactLauncher(
-          launchable: const {ContactAction.message},
-        );
-        final found = await firstReachableChannel(messenger, const [mobile]);
-        expect(found, (channel: mobile, action: ContactAction.message));
-      },
-    );
+    expect(faces.map((f) => f.$1), ['Call', 'Message', 'Email']);
+    expect(faces.map((f) => f.$2).toSet(), hasLength(3));
   });
 }

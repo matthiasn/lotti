@@ -1435,7 +1435,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Schließen",
   "checkInDurationChip": "Dauer",
   "checkInDurationChipSemantics": "Dauer: {duration}. Ändern",
   "checkInDurationQuickPickHint": "Tippe eine Länge an, um sie zu übernehmen, oder dreh das Rad.",
@@ -1458,28 +1457,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "nächstes Mal",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "nächstes Mal notiert",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "Themen",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 Thema} other{{count} Themen}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Mehr",
   "checkInNarrativeHint": "Worüber habt ihr gesprochen? Eine Zeile reicht.",
   "checkInNoDuration": "Keine Dauer",
   "checkInOpenSettingsButton": "Einstellungen öffnen",
@@ -4753,16 +4730,21 @@
   "referenceImageSelectionSubtitle": "Wähle bis zu {maxImages} Bilder, um den visuellen Stil der KI zu leiten",
   "referenceImageSelectionTitle": "Referenzbilder auswählen",
   "referenceImageSkip": "Überspringen",
+  "relationshipAboutShowAll": "Alle anzeigen ({count})",
+  "relationshipAboutShowLess": "Weniger anzeigen",
+  "relationshipAboutTitle": "Über {name}",
   "relationshipActionCall": "Anrufen",
   "relationshipActionEmail": "E-Mail",
   "relationshipActionFailed": "Auf diesem Gerät kann das nichts öffnen",
   "relationshipActionMessage": "Nachricht",
+  "relationshipAddAction": "Hinzufügen",
   "relationshipAddChannelButton": "Kontaktweg hinzufügen",
   "relationshipAddChannelFromContacts": "oder aus Kontakten",
+  "relationshipAddNote": "Notiz über {name} hinzufügen",
+  "relationshipAddPhotos": "Fotos hinzufügen",
+  "relationshipAddToTimeline": "Zur Zeitleiste von {name} hinzufügen",
   "relationshipAgentAsOfBand": "{band} · Stand {age}",
   "relationshipAgentBriefNow": "Jetzt briefen",
-  "relationshipAgentCall": "{name} anrufen",
-  "relationshipAgentEnrolPerson": "An {name} erinnern",
   "relationshipAgentFailedBody": "Der Anbieter hat einen Fehler gemeldet, bevor das Briefing geschrieben wurde. Deine Check-ins sind unverändert.",
   "relationshipAgentFailedNoModel": "Für Briefings ist kein Modell eingerichtet. Wähle eins unter KI-Einstellungen › Agenten. Details stehen im Aktivitäts-Tab.",
   "relationshipAgentFailedPlain": "Letzter Lauf fehlgeschlagen",
@@ -4775,7 +4757,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefings pausieren, solange diese Person ruht oder archiviert ist.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 Vorschlag} other{{count} Vorschläge}}",
   "relationshipAgentSeeActivity": "Aktivität ansehen",
   "relationshipAgentSources": "Quellen: {count, plural, =1{1 Check-in} other{{count} Check-ins}} · Kontaktkanäle werden nie gesendet",
   "relationshipAgentTryAgain": "Erneut versuchen",
@@ -4783,7 +4764,9 @@
   "relationshipAgentWatchingNextLook": "Agent beobachtet · nächster Blick {day}",
   "relationshipAgentWriting": "Briefing wird geschrieben…",
   "relationshipBannerSemanticLabel": "Beziehungs-Banner für {personName}",
+  "relationshipBeforeYouTalkTitle": "Bevor ihr redet",
   "relationshipBriefingAge": "{days, plural, =1{1 Tag alt} other{{days} Tage alt}}",
+  "relationshipBriefingOptions": "Briefing-Optionen",
   "relationshipBriefingRequestFailed": "Briefing konnte nicht angefragt werden.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Jeden Tag} other{Alle {days} Tage}}",
@@ -4796,6 +4779,7 @@
   "relationshipCadencePromptLabel": "Wie oft?",
   "relationshipCadenceQuarterly": "Vierteljährlich",
   "relationshipCadenceWeekly": "Wöchentlich",
+  "relationshipCallConfirmTitle": "{name} anrufen?",
   "relationshipChatAgentName": "Briefing-Agent",
   "relationshipChatAgentSubtitle": "Kennt deine Check-ins, nicht die Kontaktwege",
   "relationshipChatAgentTitle": "{name} · Briefing-Agent",
@@ -4806,10 +4790,8 @@
   "relationshipCheckInAddComment": "Kommentar hinzufügen",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 Kommentar} other{{count} Kommentare}}",
-  "relationshipCheckInCommentHint": "Kommentar hinzufügen…",
   "relationshipCheckInEmpty": "Noch nichts hinzugefügt. Füge einen Kommentar, eine Aufnahme oder ein Foto hinzu.",
   "relationshipCheckInGone": "Diesen Check-in gibt es nicht mehr.",
-  "relationshipCheckInNoteLabel": "Beim Erfassen notiert",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 Aufnahme} other{{count} Aufnahmen}}",
   "relationshipCheckInReminderBody": "Ein guter Moment, dich zu melden.",
@@ -4823,15 +4805,11 @@
   },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipCheckInTitle": "Check-in mit {name}",
-  "relationshipContactCardAction": "Visitenkarte",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Kontaktdaten",
   "relationshipContactLinked": "Kontaktdaten übernommen",
   "relationshipContactLinkFailed": "Kontaktdaten konnten nicht gespeichert werden",
   "relationshipContactMissing": "Dieser Kontakt ist nicht auf diesem Gerät",
   "relationshipContactNoChanges": "Nichts Neues zu übernehmen",
+  "relationshipCreateTask": "Aufgabe für {name} hinzufügen",
   "relationshipCreateTitle": "Person hinzufügen",
   "relationshipDaysOver": "{count, plural, =1{1 Tag überfällig} other{{count} Tage überfällig}}",
   "@relationshipDaysOver": {
@@ -4941,7 +4919,6 @@
   },
   "relationshipLinkContact": "Kontakt verknüpfen",
   "relationshipLinkedTasksLabel": "Aufgaben",
-  "relationshipLinkTaskButton": "Aufgabe verknüpfen",
   "relationshipLogCheckIn": "Check-in erfassen",
   "relationshipMoreActions": "Weitere Aktionen",
   "relationshipNameLabel": "Name",
@@ -4954,12 +4931,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Nächstes Treffen",
   "relationshipNextTimeFromEarlier": "Aus deinem Check-in vom {day}",
   "relationshipNextTimeTitle": "Nächstes Mal",
   "relationshipNicknameLabel": "Spitzname",
-  "relationshipNoCheckIns": "Noch keine Check-ins — erfasse einen nach eurem nächsten Gespräch.",
-  "relationshipNoLinkedTasks": "Noch keine Aufgaben verknüpft.",
+  "relationshipNoteHint": "Wo ihr euch kennengelernt habt, was die Person liebt, eine Geschenkidee …",
   "relationshipNotEnrolled": "Ohne Erinnerungen",
+  "relationshipNotePin": "An „Über“ anheften",
+  "relationshipNoteSaveFailed": "Die Notiz konnte nicht gespeichert werden.",
+  "relationshipNoteSheetTitle": "Notiz über {name}",
   "relationshipNotFound": "Diese Person ist nicht mehr in deiner Liste.",
   "relationshipPayAttentionTo": "Darauf achten",
   "relationshipPhotoAddBanner": "Banner hinzufügen",
@@ -4978,7 +4958,7 @@
   "relationshipPhotoSheetTitle": "Foto von {name}",
   "relationshipPostCallAskCall": "Hast du {name} erreicht?",
   "relationshipPostCallAskMessage": "Hast du {name} geschrieben?",
-  "relationshipPostCallDismiss": "Verwerfen",
+  "relationshipPostCallDismiss": "Diesmal nicht",
   "relationshipPostCallMeta": "begonnen um {time} · {minutes, plural, =0{unter einer Minute} =1{etwa 1 Min.} other{etwa {minutes} Min.}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -4995,11 +4975,11 @@
   "relationshipProposalEvidence": "Aus dem Check-in vom {date}",
   "relationshipProposalUndoFailed": "Rückgängig machen nicht möglich. Die Aufgabe wurde möglicherweise geändert.",
   "relationshipReachPrivacy": "Bleibt auf diesem Gerät · nie mit der KI geteilt",
-  "relationshipReachTitle": "Erreichen",
   "relationshipRelinkContact": "Anderen Kontakt verknüpfen",
   "relationshipReminderPausedBody": "Sie kommt dann wieder, außer du trägst vorher einen Check-in ein.",
   "relationshipReminderPausedTitle": "Erinnerung pausiert bis {time}",
   "relationshipReminderSnoozeLonger": "Länger pausieren",
+  "relationshipRemindersOfferTitle": "Erinnerungen und Briefings",
   "relationshipRemindersPillSemantics": "Erinnerungen: {cadence}. Tippen zum Ändern.",
   "relationshipRemindersSheetTitle": "Erinnerungen",
   "relationshipRemindersSwitchLabel": "Erinnere mich daran, in Kontakt zu bleiben",
@@ -5007,6 +4987,7 @@
   "relationshipsEmptyState": "Füge die Menschen hinzu, denen du nah bleiben willst.",
   "relationshipsGroupDue": "Fällig",
   "relationshipsPageTitle": "Menschen",
+  "relationshipSpeak": "Sprechen",
   "relationshipsSelectPersonHint": "Wähle eine Person, um ihre Seite zu sehen.",
   "relationshipsSummaryDueNow": "Jetzt fällig",
   "relationshipsSummaryEnrolled": "/ {count} mit Erinnerungen",
@@ -5077,9 +5058,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Noch nichts hier. Sprich nach deinem Gespräch mit {name} oder füge eine Notiz, eine Aufgabe oder Fotos hinzu.",
+  "relationshipTimelineFilterAll": "Alle",
+  "relationshipTimelineFilterMeetings": "Treffen",
+  "relationshipTimelineFilterNotes": "Notizen",
+  "relationshipTimelineFilterPhotos": "Fotos",
+  "relationshipTimelineMeeting": "Treffen",
+  "relationshipTimelineMeetingCalledOff": "Abgesagt",
+  "relationshipTimelineNote": "Notiz",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Aufgabe",
+  "relationshipTimelineTaskDoneAt": "Erledigt {time}",
+  "relationshipTimelineTaskOverdue": "Überfällig seit {day}",
+  "relationshipTimelineThisWeek": "Diese Woche",
+  "relationshipTimelineTitle": "Zeitleiste",
+  "relationshipTimelineToday": "Heute",
+  "relationshipTimelineUpcoming": "Demnächst",
+  "relationshipTimelineVoiceNote": "Sprachnotiz",
   "relationshipTimestampToday": "Heute",
   "relationshipTimestampYesterday": "Gestern",
-  "relationshipTrackingSinceLabel": "Erfasst seit {date}",
+  "relationshipTurnOnReminders": "Erinnerungen einschalten",
   "relationshipTurnRemindersOff": "Erinnerungen ausschalten",
   "relationshipUpdateFromContact": "Aus Kontakt aktualisieren",
   "saveButton": "Speichern",

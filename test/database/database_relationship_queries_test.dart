@@ -676,5 +676,44 @@ void main() {
     test('getLiveTasksByIds short-circuits on an empty id set', () async {
       expect(await db!.getLiveTasksByIds(const {}), isEmpty);
     });
+
+    test(
+      'getLiveEntitiesOfTypesByIds keeps the live entities of the asked '
+      'types only, and honours the private-entry filter',
+      () async {
+        await db!.updateJournalEntity(task('task-1', at: baseTime));
+        await db!.updateJournalEntity(
+          checkIn('check-1', relationshipId: 'rel-a', at: baseTime),
+        );
+        await db!.updateJournalEntity(
+          task(
+            'task-gone',
+            at: baseTime,
+            deletedAt: baseTime.add(const Duration(days: 1)),
+          ),
+        );
+        await db!.updateJournalEntity(
+          task('task-private', at: baseTime, private: true),
+        );
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: privateFlag,
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        final found = await db!.getLiveEntitiesOfTypesByIds(
+          {'task-1', 'check-1', 'task-gone', 'task-private', 'nothing'},
+          types: {'Task'},
+        );
+
+        expect(found.map((e) => e.id), ['task-1']);
+        expect(
+          await db!.getLiveEntitiesOfTypesByIds({'task-1'}, types: const {}),
+          isEmpty,
+        );
+      },
+    );
   });
 }

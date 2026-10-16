@@ -10,7 +10,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/features/agents/ui/agent_chat_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
@@ -199,8 +201,10 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('carries back, talk to agent, edit and the menu; the wash is '
-        'the interactive tint over the page surface', (tester) async {
+    testWidgets('carries back, talk to agent and the menu, edit inside it; '
+        'the wash is the decorative tint over the page surface', (
+      tester,
+    ) async {
       await pump(tester);
 
       final bar = tester.widget<SliverPersistentHeader>(
@@ -218,9 +222,9 @@ void main() {
       );
       expect(find.byKey(const ValueKey('person-talk-to-agent')), findsOne);
 
-      // The sparkle, not a speech bubble: the Reach card spends the bubble
-      // on "text this human", and one page must not show two of them
-      // meaning two different correspondents.
+      // The sparkle, not a speech bubble: the contact row spends the
+      // bubble on "text this human", and one page must not show two of
+      // them meaning two different correspondents.
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('person-talk-to-agent')),
@@ -228,13 +232,20 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('person-edit')), findsOneWidget);
+      // Edit is a rare act: it waits in the menu, leaving the hero two
+      // controls beside back.
+      expect(find.byKey(const ValueKey('person-edit')), findsNothing);
       expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
       // The name belongs to the header block; the open hero shows none.
       expect(find.text('Commander Pip Frostbeak'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('person-menu')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('person-menu-edit')), findsOneWidget);
     });
 
-    testWidgets('edit opens the person form prefilled with this person', (
+    testWidgets("the menu's edit opens the person form prefilled with this "
+        'person', (
       tester,
     ) async {
       // The form behind the button reads GetIt: the shared setup, plus the
@@ -256,7 +267,9 @@ void main() {
       addTearDown(tearDownTestGetIt);
       await pump(tester);
 
-      await tester.tap(find.byKey(const ValueKey('person-edit')));
+      await tester.tap(find.byKey(const ValueKey('person-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('person-menu-edit')));
       await tester.pumpAndSettle();
 
       expect(find.text('Edit person'), findsOneWidget);
@@ -274,7 +287,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('person-talk-to-agent')), findsNothing);
       // The rest of the hero is untouched: leaving is never gated.
-      expect(find.byKey(const ValueKey('person-edit')), findsOneWidget);
+      expect(find.byType(GlassBackButton), findsOneWidget);
       expect(find.byKey(const ValueKey('person-menu')), findsOneWidget);
     });
 
@@ -461,7 +474,19 @@ void main() {
       // From the hero itself: under a banner there is no wash element.
       DsTokens tokensOf(WidgetTester tester) =>
           tester.element(find.byType(PersonHeroAppBar)).designTokens;
-      Color chatGlyph(WidgetTester tester) => tester
+      // The agent pill's label ink: the AI accent on the wash, the photo's
+      // neutral glyph on a banner. Its sparkle keeps the agent's hue on
+      // both — the one mark that says whose door it is.
+      Color chatInk(WidgetTester tester) => tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byKey(const ValueKey('person-talk-to-agent')),
+              matching: find.byType(Text),
+            ),
+          )
+          .style!
+          .color!;
+      Color sparkle(WidgetTester tester) => tester
           .widget<Icon>(
             find.descendant(
               of: find.byKey(const ValueKey('person-talk-to-agent')),
@@ -477,7 +502,7 @@ void main() {
         expect(banner, findsNothing);
         expect(scrim, findsNothing);
         expect(tester.getTopLeft(wash).dy, 0);
-        expect(chatGlyph(tester), tokensOf(tester).colors.text.highEmphasis);
+        expect(chatInk(tester), tokensOf(tester).colors.aiCard.accent);
         for (final button in tester.widgetList<GlassActionButton>(
           find.byType(GlassActionButton),
         )) {
@@ -533,7 +558,8 @@ void main() {
         );
         expect(picture.alignment, const Alignment(-0.5, 0));
         expect(picture.image, isA<ResizeImage>());
-        expect(chatGlyph(tester), PhotoNeutralGlass.glyph);
+        expect(chatInk(tester), PhotoNeutralGlass.glyph);
+        expect(sparkle(tester), tokens.colors.aiCard.accent);
         for (final button in tester.widgetList<GlassActionButton>(
           find.byType(GlassActionButton),
         )) {
@@ -582,7 +608,7 @@ void main() {
 
           final rows = tester.widgetList<Text>(
             find.descendant(
-              of: find.byType(PopupMenuItem<PersonMenuAction>),
+              of: find.byType(DesignSystemContextMenu),
               matching: find.byType(Text),
             ),
           );
@@ -670,7 +696,7 @@ void main() {
         expect(picture.image, isNull);
         expect(picture.thumbHash, isNotNull);
         expect(scrim, findsOneWidget);
-        expect(chatGlyph(tester), PhotoNeutralGlass.glyph);
+        expect(chatInk(tester), PhotoNeutralGlass.glyph);
       });
 
       testWidgets('a banner id with nothing to show yet is the wash exactly '
@@ -686,7 +712,7 @@ void main() {
         expect(banner, findsNothing);
         expect(scrim, findsNothing);
         expect(tester.getTopLeft(wash).dy, 0);
-        expect(chatGlyph(tester), tokensOf(tester).colors.text.highEmphasis);
+        expect(chatInk(tester), tokensOf(tester).colors.aiCard.accent);
       });
     });
 
@@ -830,6 +856,14 @@ void main() {
     DsPill pill(WidgetTester tester, String key) =>
         tester.widget<DsPill>(find.byKey(ValueKey(key)));
 
+    /// The reminders control: a button that names the rhythm and opens the
+    /// sheet that changes it.
+    String reminders(WidgetTester tester) => tester
+        .widget<DesignSystemButton>(
+          find.byKey(const ValueKey('person-pill-reminders')),
+        )
+        .label;
+
     testWidgets('the eyebrow is the category alone — reminders are the '
         "pill's to say; the one-liner joins the nickname and the last "
         'contact', (tester) async {
@@ -895,7 +929,7 @@ void main() {
       );
 
       expect(pill(tester, 'person-pill-cadence').label, 'On track');
-      expect(pill(tester, 'person-pill-reminders').label, 'Weekly');
+      expect(reminders(tester), 'Weekly');
       expect(pill(tester, 'person-pill-next-due').label, 'Next due Wed 19 Aug');
       expect(find.byKey(const ValueKey('person-pill-due')), findsNothing);
       expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
@@ -909,7 +943,7 @@ void main() {
         lastCheckIn: checkIn(DateTime(2026, 8, 12)),
       );
 
-      expect(pill(tester, 'person-pill-reminders').label, 'Monthly');
+      expect(reminders(tester), 'Monthly');
     });
 
     testWidgets('overdue: one warning-tinted pill saying since when and how '
@@ -924,21 +958,23 @@ void main() {
       final tokens = tester
           .element(find.byType(PersonHeaderBlock))
           .designTokens;
-      expect(due.label, 'Due since Sat · 5 days over');
+      expect(due.label, 'Due since Sat · 5 days overdue');
       expect(due.variant, DsPillVariant.tinted);
       expect(due.color, tokens.colors.alert.warning.defaultColor);
       expect(find.byKey(const ValueKey('person-pill-next-due')), findsNothing);
       expect(find.byKey(const ValueKey('person-pill-cadence')), findsNothing);
       // The interval does not vanish the moment someone is due: that is
       // exactly when the user may want to change it.
-      expect(pill(tester, 'person-pill-reminders').label, 'Weekly');
+      expect(reminders(tester), 'Weekly');
     });
 
-    testWidgets('not enrolled, dormant and archived each get the status pill', (
+    testWidgets('dormant and archived get the status pill; not enrolled '
+        'gets none — the offer card says it once, with the fix', (
       tester,
     ) async {
       await pump(tester, relationship: person(cadenceDays: 7));
-      expect(pill(tester, 'person-pill-status').label, 'No reminders');
+      expect(find.byKey(const ValueKey('person-pill-status')), findsNothing);
+      expect(find.text('No reminders'), findsNothing);
       // Not enrolled: the briefing card offers reminders, asking how often.
       expect(
         find.byKey(const ValueKey('person-pill-reminders')),
@@ -1026,7 +1062,9 @@ void main() {
         find.byKey(const ValueKey('person-pill-next-due')),
         findsOneWidget,
       );
-      expect(find.byType(DsPill), findsNWidgets(3));
+      // Two facts as pills; the reminders interval is a button, because
+      // pressing it changes the rhythm.
+      expect(find.byType(DsPill), findsNWidgets(2));
     });
   });
 }

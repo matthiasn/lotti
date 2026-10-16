@@ -12,7 +12,7 @@ enum PeopleListGroup { due, onTrack, notEnrolled }
 /// What the trailing pill on a People row says — a *truthful* read of the
 /// cadence (HANDOVER P5: an overdue person must never read as "Due Sun").
 enum PeopleCadencePillKind {
-  /// Cadence lapsed — `{n} days over`, or `Due today` on the due day itself
+  /// Cadence lapsed — `{n} days overdue`, or `Due today` on the due day itself
   /// — warning tint.
   overdue,
 
@@ -170,7 +170,7 @@ PeopleCadencePill peopleCadencePillOf(
 /// spends the row's trailing slot — and the width the person's name needs —
 /// saying what the heading three rows up has already said.
 ///
-/// The informative faces stay: `5 days over` and `Due Wed` carry a time no
+/// The informative faces stay: `5 days overdue` and `Due Wed` carry a time no
 /// heading can, and `Dormant` / `Archived` name a status the *Not enrolled*
 /// heading does not. Each of those kinds occurs in exactly one band, so the
 /// kind alone decides this — the caller does not have to pass its band in.

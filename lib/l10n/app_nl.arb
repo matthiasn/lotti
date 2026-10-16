@@ -1656,7 +1656,6 @@
   "@checkInDiscardRecordingBody": {
     "description": "Body of the confirmation before discarding a check-in recording: the audio is deleted, the composer stays open."
   },
-  "checkInDismissButton": "Sluiten",
   "checkInDurationChip": "Duur",
   "checkInDurationChipSemantics": "Duur: {duration}. Wijzigen",
   "checkInDurationQuickPickHint": "Tik op een duur om die te bewaren, of draai aan het wiel.",
@@ -1679,28 +1678,6 @@
   "@checkInMoreCaptionFeeling": {
     "description": "Folded More row caption segment while no feeling is chosen."
   },
-  "checkInMoreCaptionNextTime": "volgende keer",
-  "@checkInMoreCaptionNextTime": {
-    "description": "Folded More row caption segment while nothing is noted for next time."
-  },
-  "checkInMoreCaptionNextTimeSet": "volgende keer genoteerd",
-  "@checkInMoreCaptionNextTimeSet": {
-    "description": "Folded More row caption segment once something is noted for next time."
-  },
-  "checkInMoreCaptionTopics": "onderwerpen",
-  "@checkInMoreCaptionTopics": {
-    "description": "Folded More row caption segment while no topics are entered."
-  },
-  "checkInMoreCaptionTopicsCount": "{count, plural, =1{1 onderwerp} other{{count} onderwerpen}}",
-  "@checkInMoreCaptionTopicsCount": {
-    "description": "Folded More row caption segment: how many topics are entered.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "checkInMoreSection": "Meer",
   "checkInNarrativeHint": "Waar hebben jullie het over gehad? Eén regel is genoeg.",
   "checkInNoDuration": "Geen duur",
   "checkInOpenSettingsButton": "Instellingen openen",
@@ -5362,16 +5339,21 @@
   "referenceImageSelectionSubtitle": "Kies maximaal {maxImages} afbeeldingen om de visuele stijl van de AI te begeleiden",
   "referenceImageSelectionTitle": "Selecteer referentieafbeeldingen",
   "referenceImageSkip": "Overslaan",
+  "relationshipAboutShowAll": "Alles tonen ({count})",
+  "relationshipAboutShowLess": "Minder tonen",
+  "relationshipAboutTitle": "Over {name}",
   "relationshipActionCall": "Bellen",
   "relationshipActionEmail": "E-mail",
   "relationshipActionFailed": "Niets op dit apparaat kan dat openen",
   "relationshipActionMessage": "Bericht",
+  "relationshipAddAction": "Toevoegen",
   "relationshipAddChannelButton": "Contactgegeven toevoegen",
   "relationshipAddChannelFromContacts": "of uit contacten",
+  "relationshipAddNote": "Notitie over {name} toevoegen",
+  "relationshipAddPhotos": "Foto’s toevoegen",
+  "relationshipAddToTimeline": "Toevoegen aan de tijdlijn van {name}",
   "relationshipAgentAsOfBand": "{band} · bijgewerkt {age}",
   "relationshipAgentBriefNow": "Nu briefen",
-  "relationshipAgentCall": "{name} bellen",
-  "relationshipAgentEnrolPerson": "Herinner me aan {name}",
   "relationshipAgentFailedBody": "De provider gaf een fout voordat de briefing geschreven was. Je check-ins zijn ongewijzigd.",
   "relationshipAgentFailedNoModel": "Er is geen model ingesteld voor briefings. Kies er een onder AI-instellingen › Agents. Details staan op het tabblad Activiteit.",
   "relationshipAgentFailedPlain": "Laatste run mislukt",
@@ -5384,7 +5366,6 @@
     "description": "The out-of-date status line's middle tier when the day does not fit beside the age pill."
   },
   "relationshipAgentPausedBody": "Briefings pauzeren zolang deze persoon slapend of gearchiveerd is.",
-  "relationshipAgentProposedCount": "{count, plural, =1{1 voorstel} other{{count} voorstellen}}",
   "relationshipAgentSeeActivity": "Activiteit bekijken",
   "relationshipAgentSources": "Bronnen: {count, plural, =1{1 check-in} other{{count} check-ins}} · contactkanalen worden nooit verstuurd",
   "relationshipAgentTryAgain": "Opnieuw proberen",
@@ -5392,7 +5373,9 @@
   "relationshipAgentWatchingNextLook": "Agent houdt het in de gaten · volgende blik {day}",
   "relationshipAgentWriting": "Briefing wordt geschreven…",
   "relationshipBannerSemanticLabel": "Relatiebanner voor {personName}",
+  "relationshipBeforeYouTalkTitle": "Voordat jullie praten",
   "relationshipBriefingAge": "{days, plural, =1{1 dag oud} other{{days} dagen oud}}",
+  "relationshipBriefingOptions": "Briefingopties",
   "relationshipBriefingRequestFailed": "Kon de briefing niet aanvragen.",
   "relationshipBriefingTitle": "Briefing",
   "relationshipCadenceEveryNDays": "{days, plural, =1{Elke dag} other{Elke {days} dagen}}",
@@ -5405,6 +5388,7 @@
   "relationshipCadencePromptLabel": "Hoe vaak?",
   "relationshipCadenceQuarterly": "Elk kwartaal",
   "relationshipCadenceWeekly": "Wekelijks",
+  "relationshipCallConfirmTitle": "{name} bellen?",
   "relationshipChatAgentName": "Briefingagent",
   "relationshipChatAgentSubtitle": "Kent je check-ins, niet de contactgegevens",
   "relationshipChatAgentTitle": "{name} · briefingagent",
@@ -5415,10 +5399,8 @@
   "relationshipCheckInAddComment": "Opmerking toevoegen",
   "relationshipCheckInAddPhoto": "Foto",
   "relationshipCheckInCommentCount": "{count, plural, =1{1 opmerking} other{{count} opmerkingen}}",
-  "relationshipCheckInCommentHint": "Voeg een opmerking toe…",
   "relationshipCheckInEmpty": "Nog niets toegevoegd. Voeg een opmerking, een opname of een foto toe.",
   "relationshipCheckInGone": "Deze check-in bestaat niet meer.",
-  "relationshipCheckInNoteLabel": "Genoteerd bij het vastleggen",
   "relationshipCheckInPhotoCount": "{count, plural, =1{1 foto} other{{count} foto's}}",
   "relationshipCheckInRecordingCount": "{count, plural, =1{1 opname} other{{count} opnames}}",
   "relationshipCheckInReminderBody": "Een goed moment om contact op te nemen.",
@@ -5432,15 +5414,11 @@
   },
   "relationshipCheckInsLabel": "Check-ins",
   "relationshipCheckInTitle": "Check-in met {name}",
-  "relationshipContactCardAction": "Contactkaart",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
-  "relationshipContactChannelsLabel": "Contactgegevens",
   "relationshipContactLinked": "Contactgegevens gekopieerd",
   "relationshipContactLinkFailed": "Kon de contactgegevens niet opslaan",
   "relationshipContactMissing": "Dat contact staat niet op dit apparaat",
   "relationshipContactNoChanges": "Niets nieuws om te kopiëren",
+  "relationshipCreateTask": "Taak voor {name} toevoegen",
   "relationshipCreateTitle": "Persoon toevoegen",
   "relationshipDaysOver": "{count, plural, =1{1 dag te laat} other{{count} dagen te laat}}",
   "@relationshipDaysOver": {
@@ -5550,7 +5528,6 @@
   },
   "relationshipLinkContact": "Contact koppelen",
   "relationshipLinkedTasksLabel": "Taken",
-  "relationshipLinkTaskButton": "Taak koppelen",
   "relationshipLogCheckIn": "Check-in vastleggen",
   "relationshipMoreActions": "Meer acties",
   "relationshipNameLabel": "Naam",
@@ -5563,12 +5540,15 @@
       }
     }
   },
+  "relationshipNextMeetingLabel": "Volgende afspraak",
   "relationshipNextTimeFromEarlier": "Uit je check-in van {day}",
   "relationshipNextTimeTitle": "Volgende keer",
   "relationshipNicknameLabel": "Bijnaam",
-  "relationshipNoCheckIns": "Nog geen check-ins — leg er een vast na jullie volgende gesprek.",
-  "relationshipNoLinkedTasks": "Nog geen gekoppelde taken.",
+  "relationshipNoteHint": "Waar jullie elkaar ontmoetten, waar ze van houden, een cadeau-idee…",
   "relationshipNotEnrolled": "Zonder herinneringen",
+  "relationshipNotePin": "Vastzetten bij Over",
+  "relationshipNoteSaveFailed": "De notitie kon niet worden opgeslagen.",
+  "relationshipNoteSheetTitle": "Notitie over {name}",
   "relationshipNotFound": "Deze persoon staat niet meer in je lijst.",
   "relationshipPayAttentionTo": "Let op",
   "relationshipPhotoAddBanner": "Banner toevoegen",
@@ -5587,7 +5567,7 @@
   "relationshipPhotoSheetTitle": "Foto van {name}",
   "relationshipPostCallAskCall": "Heb je {name} bereikt?",
   "relationshipPostCallAskMessage": "Heb je {name} geschreven?",
-  "relationshipPostCallDismiss": "Negeren",
+  "relationshipPostCallDismiss": "Niet deze keer",
   "relationshipPostCallMeta": "begonnen om {time} · {minutes, plural, =0{minder dan een minuut} =1{ongeveer 1 min} other{ongeveer {minutes} min}}",
   "@relationshipPostCallMeta": {
     "placeholders": {
@@ -5604,11 +5584,11 @@
   "relationshipProposalEvidence": "Uit de check-in van {date}",
   "relationshipProposalUndoFailed": "Ongedaan maken is mislukt. De taak is mogelijk gewijzigd.",
   "relationshipReachPrivacy": "Blijft op dit apparaat · nooit gedeeld met de AI",
-  "relationshipReachTitle": "Contact",
   "relationshipRelinkContact": "Ander contact koppelen",
   "relationshipReminderPausedBody": "Dan komt hij terug, tenzij je eerst een check-in vastlegt.",
   "relationshipReminderPausedTitle": "Herinnering gepauzeerd tot {time}",
   "relationshipReminderSnoozeLonger": "Langer snoozen",
+  "relationshipRemindersOfferTitle": "Herinneringen en briefings",
   "relationshipRemindersPillSemantics": "Herinneringen: {cadence}. Tik om te wijzigen.",
   "relationshipRemindersSheetTitle": "Herinneringen",
   "relationshipRemindersSwitchLabel": "Herinner me eraan contact te houden",
@@ -5616,6 +5596,7 @@
   "relationshipsEmptyState": "Voeg de mensen toe met wie je dichtbij wilt blijven.",
   "relationshipsGroupDue": "Aan de beurt",
   "relationshipsPageTitle": "Mensen",
+  "relationshipSpeak": "Inspreken",
   "relationshipsSelectPersonHint": "Kies iemand om de pagina te zien.",
   "relationshipsSummaryDueNow": "Nu aan de beurt",
   "relationshipsSummaryEnrolled": "/ {count} met herinneringen",
@@ -5686,9 +5667,26 @@
     }
   },
   "relationshipStatusLineContactedNoCadence": "{type} · {time}",
+  "relationshipTimelineEmpty": "Nog niets hier. Spreek in na je gesprek met {name}, of voeg een notitie, een taak of foto’s toe.",
+  "relationshipTimelineFilterAll": "Alles",
+  "relationshipTimelineFilterMeetings": "Afspraken",
+  "relationshipTimelineFilterNotes": "Notities",
+  "relationshipTimelineFilterPhotos": "Foto’s",
+  "relationshipTimelineMeeting": "Afspraak",
+  "relationshipTimelineMeetingCalledOff": "Afgezegd",
+  "relationshipTimelineNote": "Notitie",
+  "relationshipTimelineRowLabel": "{kind}, {time}. {text}",
+  "relationshipTimelineTask": "Taak",
+  "relationshipTimelineTaskDoneAt": "Klaar {time}",
+  "relationshipTimelineTaskOverdue": "Te laat sinds {day}",
+  "relationshipTimelineThisWeek": "Deze week",
+  "relationshipTimelineTitle": "Tijdlijn",
+  "relationshipTimelineToday": "Vandaag",
+  "relationshipTimelineUpcoming": "Binnenkort",
+  "relationshipTimelineVoiceNote": "Spraaknotitie",
   "relationshipTimestampToday": "Vandaag",
   "relationshipTimestampYesterday": "Gisteren",
-  "relationshipTrackingSinceLabel": "Gevolgd sinds {date}",
+  "relationshipTurnOnReminders": "Herinneringen aanzetten",
   "relationshipTurnRemindersOff": "Herinneringen uitzetten",
   "relationshipUpdateFromContact": "Bijwerken vanuit contact",
   "saveButton": "Opslaan",

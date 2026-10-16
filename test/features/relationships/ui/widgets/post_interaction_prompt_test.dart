@@ -7,18 +7,24 @@ import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../helpers/check_in_speech_fakes.dart';
 
 /// In-memory stand-in for the settings-backed marker store, so the prompt's
 /// reads and clears are both scriptable and observable.
@@ -122,13 +128,21 @@ void main() {
     startedAt: startedAt ?? DateTime(2026, 8, 17, 11, 30),
   );
 
+  /// The app-wide recorder. *Yes, log it* opens the composer recording;
+  /// this one refuses to start unless a test says otherwise, so the tests
+  /// about what the form is prefilled with read the typed form it falls
+  /// back to.
+  late FakeAudioRecorderController recorder;
+
   Future<_FakePendingInteractionStore> pump(
     WidgetTester tester, {
     PendingInteraction? pending,
     RelationshipEntry? resolves,
     double bottomGap = 0,
     String relationshipId = 'rel-1',
+    AudioRecordingFailure? recordFailure = AudioRecordingFailure.busy,
   }) async {
+    recorder = FakeAudioRecorderController(recordFailure: recordFailure);
     final store = _FakePendingInteractionStore(pending);
     when(
       () => repository.getRelationshipById(any()),
@@ -144,6 +158,10 @@ void main() {
           overrides: [
             pendingInteractionStoreProvider.overrideWithValue(store),
             relationshipRepositoryProvider.overrideWithValue(repository),
+            audioRecorderControllerProvider.overrideWith(() => recorder),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              StubCheckInTranscriptionService(),
+            ),
           ],
         ),
       );
@@ -165,17 +183,14 @@ void main() {
     });
 
     testWidgets('states when it started and about how long it has been, in '
-        'the timestamp style — tabular figures, the UI face', (tester) async {
+        'the timestamp style — open digits, the UI face', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
       final meta = tester.widget<Text>(
         find.byKey(const ValueKey('person-post-call-meta')),
       );
       expect(meta.data, 'started 11:30 · about 11 min');
-      expect(
-        meta.style?.fontFeatures,
-        contains(const FontFeature.tabularFigures()),
-      );
+      expect(meta.style?.fontFeatures, dateFigureFontFeatures);
       expect(meta.style?.fontFamily, isNot('Inconsolata'));
     });
 
@@ -214,29 +229,62 @@ void main() {
       expect(find.byIcon(LottiIcons.chat), findsOneWidget);
     });
 
-    testWidgets('wears the interactive wash, not a plain card', (
+    testWidgets("is the page's own card: the section surface, the "
+        "timeline's tile, a heading-tier title and caption meta", (
       tester,
     ) async {
       await pump(tester, pending: marker(), resolves: person());
 
+      expect(tester.widget(offer), isA<DesignSystemSectionCard>());
       final tokens = tester.element(offer).designTokens;
-      final decoration =
-          tester.widget<Container>(offer).decoration! as BoxDecoration;
-      expect(decoration.color, PostInteractionPrompt.washColor(tokens));
+      expect(
+        find.descendant(
+          of: offer,
+          matching: find.byType(DesignSystemTimelineTile),
+        ),
+        findsOneWidget,
+      );
+      final title = tester.widget<Text>(
+        find.byKey(const ValueKey('person-post-call-title')),
+      );
+      expect(
+        title.style?.fontSize,
+        tokens.typography.styles.subtitle.subtitle1.fontSize,
+      );
       expect(find.byType(Card), findsNothing);
     });
 
-    testWidgets('offers both logging and declining, logging as a secondary '
-        "button: the page's bar already carries the one filled Log "
-        'check-in', (tester) async {
+    testWidgets('on a narrow phone the answer takes a line of its own '
+        'instead of running off the card', (tester) async {
+      setTestSurfaceSize(tester, const Size(320, 900));
+      await pump(tester, pending: marker(), resolves: person());
+
+      expect(tester.takeException(), isNull);
+      final no = tester.getRect(
+        find.byKey(const ValueKey('person-post-call-no')),
+      );
+      final yes = tester.getRect(
+        find.byKey(const ValueKey('person-post-call-yes')),
+      );
+      final card = tester.getRect(offer);
+      expect(no.right, lessThanOrEqualTo(card.right));
+      expect(yes.right, lessThanOrEqualTo(card.right));
+    });
+
+    testWidgets('offers logging as the one primary action and declining as '
+        'a quiet one, worded as an answer to the question', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
       final yes = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('person-post-call-yes')),
       );
       expect(yes.label, 'Yes, log it');
-      expect(yes.variant, DesignSystemButtonVariant.secondary);
-      expect(find.text('Dismiss'), findsOneWidget);
+      expect(yes.variant, DesignSystemButtonVariant.primary);
+      expect(yes.leadingIcon, LottiIcons.mic);
+      final no = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Not this time'),
+      );
+      expect(no.variant, DesignSystemButtonVariant.quiet);
     });
   });
 
@@ -342,7 +390,7 @@ void main() {
     testWidgets('drops the prompt', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       expect(offer, findsNothing);
@@ -357,7 +405,7 @@ void main() {
         resolves: person(),
       );
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       expect(store.clearCount, 1);
@@ -367,7 +415,7 @@ void main() {
     testWidgets('does not reappear on the next resume', (tester) async {
       await pump(tester, pending: marker(), resolves: person());
 
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text('Not this time'));
       await tester.pumpAndSettle();
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -378,6 +426,27 @@ void main() {
   });
 
   group('accepting', () {
+    // Right after a call, speaking is the quickest way to say what it was
+    // about: the composer opens recording against the person.
+    testWidgets('opens the composer recording against the person', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        pending: marker(),
+        resolves: person(),
+        recordFailure: null,
+      );
+
+      await tester.tap(find.text('Yes, log it'));
+      // The live recorder animates for as long as it runs: frames, not a
+      // settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(recorder.recordCalls.map((c) => c.linkedId), ['rel-1']);
+    });
+
     testWidgets('takes the marker while the form is open, so the offer does '
         'not ask about a call already being logged', (tester) async {
       final store = await pump(
@@ -414,7 +483,7 @@ void main() {
     });
 
     testWidgets('a second tap while the first is still claiming opens nothing '
-        'more, and Dismiss holds until it is done', (tester) async {
+        'more, and declining holds until it is done', (tester) async {
       final store = await pump(tester, pending: marker(), resolves: person());
       // The claim reads the marker, then waits on clearing it.
       final gate = store.clearGate = Completer<void>();
@@ -434,7 +503,7 @@ void main() {
       expect(
         tester
             .widget<DesignSystemButton>(
-              find.widgetWithText(DesignSystemButton, 'Dismiss'),
+              find.widgetWithText(DesignSystemButton, 'Not this time'),
             )
             .onPressed,
         isNull,
@@ -487,6 +556,9 @@ void main() {
     ) async {
       var current = now;
       final store = _FakePendingInteractionStore(marker());
+      recorder = FakeAudioRecorderController(
+        recordFailure: AudioRecordingFailure.busy,
+      );
       when(
         () => repository.getRelationshipById(any()),
       ).thenAnswer((_) async => person());
@@ -497,6 +569,10 @@ void main() {
             overrides: [
               pendingInteractionStoreProvider.overrideWithValue(store),
               relationshipRepositoryProvider.overrideWithValue(repository),
+              audioRecorderControllerProvider.overrideWith(() => recorder),
+              checkInTranscriptionServiceProvider.overrideWithValue(
+                StubCheckInTranscriptionService(),
+              ),
             ],
           ),
         );

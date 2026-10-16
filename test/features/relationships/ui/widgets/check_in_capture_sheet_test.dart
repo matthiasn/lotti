@@ -35,6 +35,7 @@ import '../../../../test_data/test_data.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/person_timeline_fakes.dart';
 
 /// Serves a fixed duration ranking, so a sheet test names the chip it taps
 /// instead of standing up a database.
@@ -223,6 +224,7 @@ void main() {
 
   List<Override> speechOverrides() => withServiceOverrides([
     relationshipRepositoryProvider.overrideWithValue(mockRepository),
+    personTimelineOverride(),
     audioRecorderControllerProvider.overrideWith(() => recorder),
     checkInTranscriptionServiceProvider.overrideWithValue(stubTranscription),
     checkInSettingsOpenerProvider.overrideWithValue(() async {
@@ -1896,6 +1898,22 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('check-in-close')));
       await tester.pumpAndSettle();
+      expect(find.byType(CheckInCaptureForm), findsNothing);
+      verifyNoSave();
+    });
+
+    testWidgets('a recorder that would not start recorded nothing: the '
+        'close leaves at once, with no question about a draft', (
+      tester,
+    ) async {
+      recorder.recordFailure = AudioRecordingFailure.busy;
+      await openSheet(tester);
+      await startDictation(tester);
+      expect(inlineRecorder, findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('check-in-close')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Discard this check-in'), findsNothing);
       expect(find.byType(CheckInCaptureForm), findsNothing);
       verifyNoSave();
     });

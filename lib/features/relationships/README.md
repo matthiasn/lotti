@@ -1,8 +1,9 @@
 # Relationships
 
 A personal CRM for a small, deliberately curated set of people. Each person
-has a timeline of **check-ins** — interaction type, sentiment, topics and
-narrative — and can have tasks linked to them. Marking someone important
+has a **timeline**: their check-ins — interaction type, sentiment, topics and
+narrative — together with notes, voice notes, photos, tasks and meetings
+linked to them. Marking someone important
 opts them into a dedicated agent that tracks contact cadence and prepares
 briefings from captured check-ins.
 
@@ -15,10 +16,18 @@ how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page.
 
 The person page holds a header with category, name, nickname and recent
-contact, and — for someone with reminders — how often they come, which one
-tap changes or turns off; it is followed by *Next time*, the agent briefing, check-ins,
-contact channels and linked tasks. The header opens the agent conversation
-and person editor, and tapping the avatar opens the person's photo: choose
+contact, and one row of actions: call, message and email where the device
+can, and — for someone with reminders — how often they come, which one tap
+changes or turns off. *Before you talk* follows as one card whose headline
+is the note the user left themselves to bring up, with what to avoid under it,
+a way into the check-in they came from, and the next meeting; then the
+agent's briefing and what the user pinned *About* the person — on a phone,
+when the user's own notes lead, the briefing and *About* fold to a line each
+and open in place. Then the timeline, newest first under *Upcoming*, *Today*, *This week* and each month,
+filterable by kind; a day's photos share one row. On a wide window *Before
+you talk* sits in a rail beside the timeline. The header opens the agent
+conversation, and its menu the person editor; tapping the avatar opens the
+person's photo: choose
 one from the library and pick which part of it is the face, adjust that
 later, or remove it. The photo shows wherever the person does, inside their
 usual colour; it stays on the user's devices and never enters agent context.
@@ -27,22 +36,25 @@ down to the avatar, which sits across its lower edge; the header's actions
 stay legible over it. Both
 pictures are managed from the person editor's Photo card — the banner is
 dragged sideways into place there — and the face from the page's avatar too.
-The bottom action bar offers a check-in, voice capture and an available
-contact action.
+The bottom bar offers *Speak*, which opens the check-in composer already
+recording, and *+ Add*: a check-in, a note about the person (which can be
+pinned to *About*), a task, or photos.
 
 ## Briefings and suggestions
 
 The agent card has six states: not enrolled, no briefing, running, failed,
 current and out of date — the last not reached today, since nothing yet
 marks a relationship briefing stale. One status line under the title says which, in
-that state's colour; the footer offers one quiet action, seeing the agent's
-activity, and one primary: turn reminders on, brief now, choose a model,
-retry or update — logging a check-in and calling belong to the page's action
-bar. An out-of-date briefing shows
+that state's colour. A current briefing, and one being written, keep their
+upkeep — update now, the agent's activity, the model — in a menu whose
+heading names the model, the provider and the cost so far; the other states
+offer one quiet action, seeing the agent's activity, and one primary: brief
+now, choose a model, retry or update. Without reminders the card is an offer:
+how often, and *Turn on reminders*. An out-of-date briefing shows
 its age in the header; open task proposals are counted by their own band
-under the body. The model row carries the inference cost, and a current
-briefing names its sources with its full text. The model row names the
-model and provider before anything is sent, so *Brief now* and *Update now*
+under the body. A current briefing names its sources, and why its band says
+what it does, with its full text. The model and provider are named before
+anything is sent, so *Brief now* and *Update now*
 start at once, with no confirmation; while a new briefing is written the
 previous one stays readable under the spinner, and after a failed run it
 stays readable under the failure, with its age. The agent keeps private notes
@@ -54,7 +66,7 @@ to the person.
 The agent can propose tasks from explicit commitments in check-ins. The
 card and chat show the source check-in and any proposed due date before
 confirmation. Confirming creates a task with inherited category/privacy,
-links it to the person and briefly highlights its Tasks row. History
+links it to the person and briefly highlights its row on the timeline. History
 provides a task destination and undo while the task remains unchanged.
 More than three suggestions fold, and same-kind suggestions can be
 confirmed together. Call scheduling and task-note suggestions are not
@@ -106,14 +118,16 @@ On Android and iOS, contact import lets the user select contacts and set
 importance and cadence before creating people. Linking or refreshing a
 contact preserves hand-edited channels and names. Available call, message
 and email actions use the device's capabilities; returning after a contact
-action offers a prefilled check-in under the person's name, and the page's
-own *Log check-in* and *Dictate* open prefilled the same way. Otherwise the
+action offers a prefilled check-in under the person's name — *Yes, log it*
+opens it recording — and the page's own *Speak* and *+ Add* open prefilled
+the same way. Otherwise the
 composer starts from how the two of you last connected. Desktop retains manual
 channel entry.
 
-Tasks can be linked, unlinked, or created from the person's task picker.
-Deleting a person removes their check-ins and agent; it does not delete
-independent tasks linked to them.
+Tasks can be linked or created from the person's task picker, and unlinked
+with a long press on their row. Deleting a person removes their check-ins,
+the notes, voice notes and photos on their timeline, and their agent; it does
+not delete tasks or meetings linked to them.
 
 ## Ownership and privacy
 
@@ -144,7 +158,8 @@ agent reads.
 
 People live in the People tab. Their check-ins also appear in the Logbook,
 as a filter type of their own, named for the person and opening on the
-person's page; a person's name is still not searchable from global search. Data stays on-device and syncs through the user's own end-to-end
+person's page. Check-ins are found by a Logbook search like any entry;
+a person's name alone is not a search term. Data stays on-device and syncs through the user's own end-to-end
 encrypted Matrix rooms. Private people are hidden from both list and detail
 routes when private entries are hidden; new check-ins inherit that privacy.
 Contact channels never enter agent context.

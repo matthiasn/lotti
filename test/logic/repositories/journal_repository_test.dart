@@ -304,6 +304,13 @@ void main() {
         when(
           () => mockJournalDb.linksFromIds(['check-1']),
         ).thenReturn(MockSelectable<LinkedDbEntry>(const []));
+        // Nor does the person's timeline: no notes, voice notes or photos.
+        when(
+          () => mockJournalDb.typedLinksForTaskIds(
+            any(),
+            types: any(named: 'types'),
+          ),
+        ).thenAnswer((_) async => const []);
         when(
           () => mockPersistenceLogic.updateMetadata(
             any(),

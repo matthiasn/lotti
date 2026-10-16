@@ -145,10 +145,6 @@
   "@relationshipCadenceOnTrack": {
     "description": "Relationships redesign label."
   },
-  "relationshipContactCardAction": "Contact card",
-  "@relationshipContactCardAction": {
-    "description": "Relationships redesign label."
-  },
   "relationshipDueDay": "Due {day}",
   "@relationshipDueDay": {
     "placeholders": {

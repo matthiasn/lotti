@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -130,13 +133,6 @@ class PostInteractionPrompt extends ConsumerStatefulWidget {
 
   final double bottomGap;
 
-  /// The wash behind the offer: the interactive accent at the tint alpha
-  /// over the card surface, the recipe every tone-tinted fill uses.
-  static Color washColor(DsTokens tokens) => Color.alphaBlend(
-    tokens.colors.interactive.enabled.withValues(alpha: SurfaceAlphas.tint),
-    tokens.colors.background.level02,
-  );
-
   @override
   ConsumerState<PostInteractionPrompt> createState() =>
       _PostInteractionPromptState();
@@ -203,7 +199,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     if (!mounted || generation != _refreshGeneration) return;
     setState(() {
       _pending = relationship == null ? null : pending;
-      _personName = relationship?.data.title;
+      _personName = relationship?.shortName;
     });
   }
 
@@ -228,10 +224,14 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
     if (_pending == null || _busy) return;
     setState(() => _busy = true);
     try {
+      // Straight into the recorder: right after a call, speaking is the
+      // quickest way to say what it was about, and the composer around it
+      // already holds the channel, the start and the minutes.
       await openCheckInForPerson(
         context: context,
         ref: ref,
         relationshipId: widget.relationshipId,
+        startSpeaking: true,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -276,48 +276,32 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
   }) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = tokens.colors.interactive.enabled;
-    return Container(
+    // The page's card, in the page's card grammar: the tile the timeline
+    // rows wear, the heading tier every card title uses, the meta in the
+    // caption — so the one card that asks a question is not drawn by hand.
+    return DesignSystemSectionCard(
       key: const ValueKey('person-post-call-offer'),
-      decoration: BoxDecoration(
-        color: PostInteractionPrompt.washColor(tokens),
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(
-          color: accent.withValues(alpha: SurfaceAlphas.washChip),
-        ),
-      ),
       padding: EdgeInsets.all(tokens.spacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: tokens.spacing.step8,
-                height: tokens.spacing.step8,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: SurfaceAlphas.washChip),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  checkInInteractionIcon(pending.interactionType),
-                  size: IconSizes.m,
-                  color: accent,
-                ),
+              DesignSystemTimelineTile(
+                icon: checkInInteractionIcon(pending.interactionType),
               ),
-              SizedBox(width: tokens.spacing.step4),
+              SizedBox(width: tokens.spacing.step3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: tokens.typography.styles.subtitle.subtitle2
+                      key: const ValueKey('person-post-call-title'),
+                      style: tokens.typography.styles.subtitle.subtitle1
                           .copyWith(color: tokens.colors.text.highEmphasis),
                     ),
-                    SizedBox(height: tokens.spacing.step2),
+                    SizedBox(height: tokens.spacing.step1),
                     Text(
                       messages.relationshipPostCallMeta(
                         relationshipTimeLabel(pending.startedAt),
@@ -326,7 +310,7 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
                       key: const ValueKey('person-post-call-meta'),
                       style: relationshipTimestampStyle(
                         tokens,
-                        color: tokens.colors.text.lowEmphasis,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   ],
@@ -335,24 +319,34 @@ class _PostInteractionPromptState extends ConsumerState<PostInteractionPrompt>
             ],
           ),
           SizedBox(height: tokens.spacing.cardItemSpacing),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            spacing: tokens.spacing.step2,
-            children: [
-              DesignSystemButton(
-                label: messages.relationshipPostCallDismiss,
-                variant: DesignSystemButtonVariant.tertiary,
-                onPressed: _busy ? null : () => unawaited(_dismiss()),
-              ),
-              // Secondary: the page's bar already carries the one filled
-              // *Log check-in*, which opens this same prefilled composer.
-              DesignSystemButton(
-                key: const ValueKey('person-post-call-yes'),
-                label: messages.relationshipPostCallYes,
-                variant: DesignSystemButtonVariant.secondary,
-                onPressed: _busy ? null : () => unawaited(_logCheckIn()),
-              ),
-            ],
+          // A Wrap, so a long translation or large text puts the answer on
+          // a line of its own instead of running off the card.
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: tokens.spacing.step2,
+              runSpacing: tokens.spacing.step2,
+              children: [
+                // Quiet: declining writes nothing and loses nothing, and it
+                // must never out-shout the offer it declines.
+                DesignSystemButton(
+                  key: const ValueKey('person-post-call-no'),
+                  label: messages.relationshipPostCallDismiss,
+                  variant: DesignSystemButtonVariant.quiet,
+                  onPressed: _busy ? null : () => unawaited(_dismiss()),
+                ),
+                // The primary: this card exists for the minute after a
+                // call, and logging it is what that minute is for.
+                DesignSystemButton(
+                  key: const ValueKey('person-post-call-yes'),
+                  label: messages.relationshipPostCallYes,
+                  leadingIcon: LottiIcons.mic,
+                  onPressed: _busy ? null : () => unawaited(_logCheckIn()),
+                ),
+              ],
+            ),
           ),
         ],
       ),

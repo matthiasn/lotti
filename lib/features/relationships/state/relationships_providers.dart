@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -92,7 +93,8 @@ final relationshipsListControllerProvider =
       name: 'relationshipsListControllerProvider',
     );
 
-/// One relationship plus its check-ins (newest first) and linked tasks.
+/// One relationship plus its check-ins (newest first), linked tasks and
+/// the rest of their timeline.
 typedef RelationshipDetail = ({
   RelationshipEntry relationship,
   List<CheckInEntry> checkIns,
@@ -101,11 +103,16 @@ typedef RelationshipDetail = ({
   /// display read, so a hidden private entry is absent.
   Map<String, List<JournalEntity>> checkInEntries,
   List<Task> linkedTasks,
+
+  /// The notes, voice notes, photos and meetings on the person's timeline
+  /// (ADR 0138), in no particular order — `buildPersonTimeline` sorts.
+  List<JournalEntity> timelineEntries,
 });
 
 /// Detail state for one relationship. Resolves to `null` when the id does
 /// not (or no longer) point at a live relationship. Reloads when the
-/// relationship, any of its check-ins, or any currently linked task changes.
+/// relationship, any of its check-ins, any currently linked task or anything
+/// else on its timeline changes.
 ///
 /// Auto-disposes with the page that watches it: one instance exists per
 /// person id, and each keeps an `UpdateNotifications` subscription alive, so
@@ -132,6 +139,12 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   /// nothing of check-ins — notifies the check-in's id but not the
   /// person's, so without this the new entry would not show.
   var _checkInIds = const <String>{};
+
+  /// Ids of the notes, voice notes, photos and meetings the last build saw
+  /// on the timeline, so editing one — or a transcript landing on a voice
+  /// note — refreshes its row. Adding or removing one is a link write, which
+  /// notifies the person's id.
+  var _timelineEntryIds = const <String>{};
 
   @override
   Future<RelationshipDetail?> build() async {
@@ -161,7 +174,8 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
             ) ||
             affectedIds.any(_linkedTaskIds.contains) ||
             affectedIds.any(_checkInIds.contains) ||
-            affectedIds.any(_checkInEntryIds.contains)) {
+            affectedIds.any(_checkInEntryIds.contains) ||
+            affectedIds.any(_timelineEntryIds.contains)) {
           ref.invalidateSelf();
         }
       },
@@ -183,11 +197,16 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
     };
     final linkedTasks = await repository.getLinkedTasks(_relationshipId);
     _linkedTaskIds = {for (final task in linkedTasks) task.id};
+    final timelineEntries = await ref
+        .read(personTimelineRepositoryProvider)
+        .getTimelineEntries(_relationshipId);
+    _timelineEntryIds = {for (final entry in timelineEntries) entry.id};
     return (
       relationship: relationship,
       checkIns: checkIns,
       checkInEntries: checkInEntries,
       linkedTasks: linkedTasks,
+      timelineEntries: timelineEntries,
     );
   }
 }

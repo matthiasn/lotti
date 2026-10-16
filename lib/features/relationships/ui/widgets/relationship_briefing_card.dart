@@ -21,10 +21,14 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/relationships/model/relationship_health_metrics.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
@@ -65,6 +69,8 @@ class _AgentCard extends StatelessWidget {
     required this.expanded,
     required this.requesting,
     required this.onToggleExpanded,
+    required this.folded,
+    required this.onOpen,
     required this.onOpenInternals,
     required this.onBrief,
     required this.onChooseModel,
@@ -87,9 +93,70 @@ class _AgentCard extends StatelessWidget {
   final bool expanded;
   final bool requesting;
   final VoidCallback onToggleExpanded;
+
+  /// Whether a calm face shows its header row alone ([RelationshipBriefingCard.folded]).
+  final bool folded;
+  final VoidCallback onOpen;
   final VoidCallback onOpenInternals;
   final VoidCallback? onBrief;
   final VoidCallback onChooseModel;
+
+  /// The faces that ask nothing of the reader: a current briefing, and one
+  /// being written. Their upkeep — update, activity, model — waits behind
+  /// the header's menu instead of a footer, so the card reads as what to
+  /// bring up rather than as the agent's control panel.
+  bool get _calm =>
+      state == RelationshipAgentCardState.current ||
+      state == RelationshipAgentCardState.running;
+
+  /// The header's menu on the calm faces. Its heading names the model and
+  /// the provider that would write an update, and what this agent has used
+  /// so far, so *Update now* never sends anything the reader has not been
+  /// shown (ADR 0061) — the disclosure the footer's model row made before.
+  Widget _menu(BuildContext context, AppLocalizations messages) {
+    final route = identityData.currentRoute;
+    final tokens = totalTokens > 0
+        ? messages.agentConversationTokenCount(
+            NumberFormat.compact(
+              locale: Localizations.localeOf(context).toString(),
+            ).format(totalTokens),
+          )
+        : null;
+    final heading = [
+      if (route != null)
+        formatInferenceRouteIdentity(
+          route,
+          viaLabel: messages.taskAgentRouteVia,
+        ),
+      ?tokens,
+    ].join(' · ');
+    return DesignSystemContextMenuButton(
+      key: const ValueKey('relationship-briefing-menu'),
+      tooltip: messages.relationshipBriefingOptions,
+      header: heading.isEmpty ? null : heading,
+      items: [
+        if (state == RelationshipAgentCardState.current)
+          DesignSystemContextMenuItem(
+            key: const ValueKey('relationship-brief-me'),
+            label: messages.taskAgentUpdateNow,
+            icon: LottiIcons.refresh,
+            onTap: onBrief,
+          ),
+        DesignSystemContextMenuItem(
+          key: const ValueKey('relationship-agent-see-activity'),
+          label: messages.relationshipAgentSeeActivity,
+          icon: LottiIcons.list,
+          onTap: onOpenInternals,
+        ),
+        DesignSystemContextMenuItem(
+          key: const ValueKey('relationship-agent-choose-model'),
+          label: messages.inferenceProfileChooseModelTitle,
+          icon: LottiIcons.aiSpark,
+          onTap: onChooseModel,
+        ),
+      ],
+    );
+  }
 
   /// The header's status line: what the agent is doing, or when the
   /// briefing was written and the band it read, in that state's colour.
@@ -411,64 +478,94 @@ class _AgentCard extends StatelessWidget {
     final showsSources =
         state == RelationshipAgentCardState.current && (expanded || !hasMore);
 
+    if (folded && _calm) {
+      return AgentSummaryCardSurface(
+        key: const ValueKey('relationship-briefing-card'),
+        children: [
+          DsQuietInk(
+            key: const ValueKey('relationship-briefing-open'),
+            onTap: onOpen,
+            builder: (BuildContext context, bool highlighted) =>
+                _BriefingHeader(
+                  status: _status(context, messages),
+                  trailing: Icon(
+                    LottiIcons.expand,
+                    size: IconSizes.s,
+                    color: ai.metaText,
+                  ),
+                ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+      );
+    }
+
     return AgentSummaryCardSurface(
       key: const ValueKey('relationship-briefing-card'),
       children: [
         _BriefingHeader(
           status: _status(context, messages),
-          trailing: _pill(context, messages),
+          trailing: _calm ? _menu(context, messages) : _pill(context, messages),
           onTap: onOpenInternals,
         ),
-        // The band above says "Strained"; this says why. The contract has
-        // always required it — "One sentence tracing the band to specific
-        // check-in evidence" — and the workflow has always stored it, but
-        // no widget read it, so a verdict on a person arrived with no way
-        // to check it. It sits with the band rather than behind the
-        // disclosure: an unexplained verdict is not a summary.
-        if (state == RelationshipAgentCardState.current && health != null)
-          _BandRationale(text: health!.rationale, color: ai.metaText),
         if (body != null)
           Padding(
             // No bottom inset under TldrBody: its disclosure row carries the
             // trailing gap inside its tap target. The plain-text bodies bring
             // one of their own.
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.cardPadding,
-              0,
-              tokens.spacing.cardPadding,
-              endsInBriefing ? 0 : tokens.spacing.step4,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: endsInBriefing ? 0 : tokens.spacing.step4,
             ),
             child: body,
           ),
+        // Why the band says what it says, under the summary it qualifies and
+        // only once the reader opened the briefing: collapsed, the summary is
+        // the 10-second read, and the evidence line above it pushed that read
+        // down. In the body ink — it is content, not metadata.
+        if (state == RelationshipAgentCardState.current &&
+            health != null &&
+            expanded)
+          _BandRationale(text: health!.rationale, color: ai.bodyText),
         RelationshipSuggestionsBand(
           relationshipId: item.relationship.id,
           checkIns: checkIns,
           showHistory: expanded,
         ),
-        _AgentCardFooter(
-          leading: footer.leading,
-          action: footer.action,
-          identity: TaskAgentIdentityRegion(
-            data: identityData,
-            onSetupTap: onChooseModel,
-            // This row is the disclosure a briefing starts on (ADR 0061):
-            // no width or text size may shed the provider from it.
-            alwaysNameProvider: true,
-            trailingMeta: totalTokens > 0
-                ? messages.agentConversationTokenCount(
-                    NumberFormat.compact(
-                      locale: Localizations.localeOf(context).toString(),
-                    ).format(totalTokens),
-                  )
-                : null,
+        if (!_calm)
+          _AgentCardFooter(
+            leading: footer.leading,
+            action: footer.action,
+            identity: TaskAgentIdentityRegion(
+              data: identityData,
+              onSetupTap: onChooseModel,
+              // This row is the disclosure a briefing starts on (ADR 0061):
+              // no width or text size may shed the provider from it.
+              alwaysNameProvider: true,
+              trailingMeta: totalTokens > 0
+                  ? messages.agentConversationTokenCount(
+                      NumberFormat.compact(
+                        locale: Localizations.localeOf(context).toString(),
+                      ).format(totalTokens),
+                    )
+                  : null,
+            ),
+          )
+        else
+          SizedBox(height: tokens.spacing.step3),
+        if (showsSources)
+          Padding(
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step4,
+            ),
+            child: _MetaLine(
+              label: messages.relationshipAgentSources(checkInCount),
+              color: ai.metaText,
+            ),
           ),
-          meta: showsSources
-              ? _MetaLine(
-                  label: messages.relationshipAgentSources(checkInCount),
-                  color: ai.metaText,
-                )
-              : null,
-        ),
       ],
     );
   }

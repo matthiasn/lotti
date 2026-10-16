@@ -29,6 +29,37 @@ const relationshipObservationLookback = 20;
 /// Longest check-in narrative excerpt the FACTS block carries per entry.
 const relationshipNarrativeExcerptChars = 400;
 
+/// How many of the person's newest unpinned notes the FACTS block carries;
+/// pinned notes — what the user keeps under *About* — always ride along, up
+/// to the same bound (ADR 0138 decision 6).
+const relationshipNoteLookback = 10;
+
+/// How many of the newest voice notes and photos on the person's timeline
+/// the FACTS block carries, each.
+const relationshipTimelineMediaLookback = 5;
+
+/// How far ahead the FACTS block looks for meetings with the person.
+const relationshipUpcomingMeetingDays = 30;
+
+/// How many of the soonest meetings in that window the FACTS block carries;
+/// a dense calendar must not crowd out the evidence the briefing is for.
+const relationshipUpcomingMeetingLookback = 5;
+
+/// The voice notes and photos on a person's timeline the FACTS block
+/// carries: the newest [relationshipTimelineMediaLookback] of each, newest
+/// first. The workflow reads descriptions for these photos only, so the
+/// lookup stays as small as what the briefing is sent.
+List<JournalEntity> relationshipTimelineMedia(List<JournalEntity> entries) {
+  int newestFirst(JournalEntity a, JournalEntity b) =>
+      b.meta.dateFrom.compareTo(a.meta.dateFrom);
+  List<JournalEntity> newest<T extends JournalEntity>() =>
+      (entries.whereType<T>().toList()..sort(newestFirst))
+          .take(relationshipTimelineMediaLookback)
+          .toList();
+  return [...newest<JournalAudio>(), ...newest<JournalImage>()]
+    ..sort(newestFirst);
+}
+
 /// The health bands one wake may publish, and the newest user-set sentiment
 /// they derive from.
 typedef RelationshipHealthBandConstraint = ({
@@ -83,9 +114,12 @@ RelationshipHealthBandConstraint? relationshipHealthBandConstraint({
 /// Renders the deterministic FACTS block of a relationship-agent Phase B
 /// wake (the goal facts-renderer shape).
 ///
-/// The context boundary is ADR 0040 Decision 4: the renderer receives the
-/// relationship, its check-ins, linked task titles/statuses, the previous
-/// briefing, and banner state — and nothing else.
+/// The context boundary is ADR 0040 Decision 4, as ADR 0138 widened it: the
+/// renderer receives the relationship, its check-ins, linked task
+/// titles/statuses, the notes, voice notes, photos and meetings on the
+/// person's timeline, the previous briefing, and banner state — and nothing
+/// else. The person's avatar and banner are not timeline entries, so they
+/// never reach it.
 ///
 /// Contact channels and contact refs ride along inside [RelationshipEntry],
 /// so the exclusion is a property of this file rather than of its signature:
@@ -114,6 +148,7 @@ class RelationshipFactsRenderer {
     List<RecalledObservation> observations = const [],
     Map<String, List<JournalEntity>> checkInEntries = const {},
     Map<String, String> imageDescriptions = const {},
+    List<JournalEntity> timelineEntries = const [],
   }) {
     final data = relationship.data;
     final buffer = StringBuffer()
@@ -231,6 +266,8 @@ class RelationshipFactsRenderer {
       );
     }
 
+    _renderTimeline(buffer, timelineEntries, imageDescriptions, now);
+
     if (previousReport == null) {
       buffer.writeln('PREVIOUS BRIEFING: none yet — this is the first.');
     } else {
@@ -241,7 +278,8 @@ class RelationshipFactsRenderer {
         ..writeln(previousReport.tldr ?? previousReport.content);
       if (relationshipEvidenceNewerThan(derivation, previousReport)) {
         buffer.writeln(
-          'BRIEFING IS STALE: check-ins changed after it was written.',
+          'BRIEFING IS STALE: check-ins or notes changed after it was '
+          'written.',
         );
       }
     }
@@ -301,6 +339,86 @@ class RelationshipFactsRenderer {
     if (proposals.isEmpty) buffer.writeln('- none');
 
     return buffer.toString().trimRight();
+  }
+
+  /// The person's timeline beyond check-ins and tasks (ADR 0138): the
+  /// user's own notes about them — pinned ones first, as what the user wants
+  /// remembered — then recent voice notes and photos, then the meetings
+  /// ahead. Every section is bounded and says so.
+  void _renderTimeline(
+    StringBuffer buffer,
+    List<JournalEntity> entries,
+    Map<String, String> imageDescriptions,
+    DateTime now,
+  ) {
+    int newestFirst(JournalEntity a, JournalEntity b) =>
+        b.meta.dateFrom.compareTo(a.meta.dateFrom);
+    final notes = entries.whereType<JournalEntry>().toList()..sort(newestFirst);
+    final pinned = notes
+        .where((n) => n.meta.starred ?? false)
+        .take(relationshipNoteLookback)
+        .toList();
+    final recent = notes
+        .where((n) => !(n.meta.starred ?? false))
+        .take(relationshipNoteLookback)
+        .toList();
+    buffer.writeln(
+      "NOTES ABOUT THE PERSON (the user's own words; pinned first, then "
+      'newest):',
+    );
+    if (pinned.isEmpty && recent.isEmpty) buffer.writeln('- none');
+    for (final note in pinned) {
+      buffer.writeln(
+        '- pinned | ${_day(note.meta.dateFrom)} | '
+        '${_excerpt(note.entryText?.plainText ?? '')}',
+      );
+    }
+    for (final note in recent) {
+      buffer.writeln(
+        '- ${_day(note.meta.dateFrom)} | '
+        '${_excerpt(note.entryText?.plainText ?? '')}',
+      );
+    }
+
+    final media = relationshipTimelineMedia(entries);
+    buffer.writeln('VOICE NOTES AND PHOTOS (newest first):');
+    if (media.isEmpty) buffer.writeln('- none');
+    for (final entry in media) {
+      buffer.writeln('- ${_entryLine(entry, imageDescriptions)}');
+    }
+
+    // Instants rebuilt with each meeting's stored offset (ADR 0114): a
+    // meeting written on a device in another zone is ahead or behind by the
+    // same instant on every device.
+    DateTime startOf(JournalEvent e) =>
+        relationshipStoredInstant(e.meta.dateFrom, e.meta.utcOffset);
+    final from = now.toUtc();
+    final horizon = from.add(
+      const Duration(days: relationshipUpcomingMeetingDays),
+    );
+    final ahead =
+        entries
+            .whereType<JournalEvent>()
+            .where(
+              (e) => startOf(e).isAfter(from) && startOf(e).isBefore(horizon),
+            )
+            .toList()
+          ..sort((a, b) => startOf(a).compareTo(startOf(b)));
+    final meetings = ahead.take(relationshipUpcomingMeetingLookback);
+    buffer.writeln(
+      'UPCOMING MEETINGS (next $relationshipUpcomingMeetingDays days, '
+      'soonest first, at most $relationshipUpcomingMeetingLookback):',
+    );
+    if (ahead.isEmpty) buffer.writeln('- none');
+    for (final meeting in meetings) {
+      buffer.writeln(
+        '- ${_minute(meeting.meta.dateFrom)}–'
+        '${_minute(meeting.meta.dateTo).split(' ').last} | '
+        '${meeting.data.title} [${meeting.data.status.name}]',
+      );
+    }
+    final omitted = ahead.length - relationshipUpcomingMeetingLookback;
+    if (omitted > 0) buffer.writeln('- and $omitted later');
   }
 
   /// Whether a banner of this agent was day-dismissed on the local

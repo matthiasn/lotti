@@ -44,6 +44,18 @@ sources:
     resource: ../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
     title: Runtime restoration after synced relationship prerequisites arrive
     last_modified: 2026-09-12
+  - id: adr-0138
+    resource: ../../docs/adr/0138-a-persons-timeline-is-their-relationship-links.md
+    title: ADR 0138 — a person's timeline is their relationship links
+    last_modified: 2026-10-15
+  - id: timeline-repo
+    resource: ../../lib/features/relationships/repository/person_timeline_repository.dart
+    title: PersonTimelineRepository — the timeline's links and notes
+    last_modified: 2026-10-15
+  - id: timeline-model
+    resource: ../../lib/features/relationships/model/person_timeline.dart
+    title: buildPersonTimeline — sections, photo days, filters, About
+    last_modified: 2026-10-16
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
@@ -221,12 +233,15 @@ opens-elsewhere glyph, as an event row does. `Relationship` is not in
 `entryTypes`; its card branch exists only because the switch over the
 sealed union is exhaustive. A Logbook selection saved before `CheckIn`
 existed gains it once (see [browse and linking](journal/browse-and-linking.md)).
-**Search never returns them**: a Logbook text search drops `CheckIn` from
-the queried types (`JournalQueryRunner.runQuery`), and check-ins are not
-embedded, so neither a person's name nor a check-in's note is findable
-outside the People tab — a privacy posture (ADR 0037: relationship data
-describes third parties), not an oversight. The People list itself is short
-by design and needs no local search.
+**Search returns them** like any entry (ADR 0139, superseding ADR 0064
+decision 3): a Logbook text search queries `CheckIn` with the other selected
+types, and the full-text index carries a check-in's note, its topics and its
+*Pay attention to* / *Avoid* lines (`Fts5Db.insertText`). Search runs on the
+device for its own user, so hiding them protected nothing; the `private`
+flag a check-in inherits from its person hides it in search as in the feed.
+Check-ins are not embedded — vector search resolves its hits to tasks only.
+A person is still not a Logbook type, so a name alone is not a search term.
+The People list itself is short by design and needs no local search.
 
 # Bound twice, on purpose
 
@@ -700,46 +715,71 @@ flowchart LR
 
 # The person page
 
-`RelationshipDetailsPage` (design 2026-09-06 §2–3) is one `CustomScrollView`
-in the design's order, above a sticky glass action bar in the Scaffold's
-`bottomNavigationBar` slot with `extendBody` so the bar blurs what scrolls
-under it — the task page's shape, on purpose:
+`RelationshipDetailsPage` is the person's timeline with what to know before
+the next conversation set beside it (design panel 2026-10-15). A person's
+timeline **is** their `RelationshipLink` targets plus their check-ins
+([ADR 0138](../../docs/adr/0138-a-persons-timeline-is-their-relationship-links.md)):
+notes, voice notes, photos, tasks and meetings are ordinary journal entries
+linked from the person, so nothing new is stored and every one of them still
+lives in the Logbook, the task list and the calendar where it always did.
 
-| Sliver | Widget | Notes |
+```mermaid
+flowchart LR
+  P[RelationshipEntry] -- RelationshipLink --> N[JournalEntry note]
+  P -- RelationshipLink --> A[JournalAudio voice note]
+  P -- RelationshipLink --> I[JournalImage photo]
+  P -- RelationshipLink --> T[Task]
+  P -- RelationshipLink --> E[JournalEvent meeting]
+  C[CheckInEntry] -- subtype = person id --> P
+  R[PersonTimelineRepository] --> DB[(JournalDb.getLiveEntitiesOfTypesByIds)]
+  DB --> D[RelationshipDetail.timelineEntries]
+  D --> M[buildPersonTimeline]
+  M --> V[PersonTimelineSliver]
+```
+
+[`PersonTimelineRepository`](../../lib/features/relationships/repository/person_timeline_repository.dart)
+owns the writes — `addToTimeline`, `removeFromTimeline`, `createNote` (a note
+pinned *About* the person is a starred one, `meta.starred`), `setPinned`,
+`updateNote`, `deleteNote` — and resolves the link targets in one query of the
+types a timeline holds (`personTimelineEntryTypes`). The detail controller
+loads them with the check-ins and the tasks, and watches their ids, so an edit
+to any of them refreshes the page. The pure
+[`buildPersonTimeline`](../../lib/features/relationships/model/person_timeline.dart)
+turns that into sections — *Upcoming*, *Today*, *This week*, then one per
+month — groups a day's photos into one row, applies the filter, and lifts the
+pinned notes out into *About*. An open task with a due date sits at its due
+date, a closed one at when it was closed, a meeting at its start. Meetings
+always show on a person, whatever the Events flag says.
+
+## Layout
+
+| Region | Widget | Notes |
 |---|---|---|
-| Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader` of its own, not a `SliverAppBar`: the avatar hangs half its diameter below the header, and every layer of an app bar clips that overflow. Slivers paint back to front, so the earlier header paints its overhang over the block scrolling under it. The name appears in the bar only once the wash band has folded (`AnimatedSwitcher`, never an invisible duplicate). |
-| Header block | `PersonHeaderBlock` (same file) | Eyebrow · name · one-liner · pills. The pills come from the list model's rules, so the page and the list never disagree about *due*; the cadence pill says the state (*On track*, or *Due since … · n days over*), and for an enrolled person — in every state, overdue included — [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) names the interval the runtime applies (`relationshipShownCadenceDays`) and opens `PersonRemindersSheet`: *How often?* with the interval pills, where a pick saves at once and re-runs the evaluation through `ensureRelationshipAgentInBackground`, and *Turn reminders off*, which keeps the stored interval. The eyebrow is the category alone; reminders are the pill's to say. It takes `calmEyebrowStyle`, not the mono timestamp style — it is a label, not a clock reading. The one-liner is `text.mediumEmphasis` with the tabular-figure timestamp style on its timestamp alone: nothing on it is tappable, and the interactive token on a whole non-interactive line promised a tap that never came while outranking the person's own name. The health band is **not** here — the briefing card owns it, because only the card can date it. |
-| Post-call offer | `PostInteractionPrompt` | Renders nothing until a marker exists (below). Directly under the header block, beside the paused-reminder callout: coming back from a call it is the most time-sensitive thing on the page, and below the briefing it was off a phone's first screen. Its `bottomGap` belongs to the offer, so no hole appears when there is none. |
-| Next time | `NextTimeCard` in [`person_page_cards.dart`](../../lib/features/relationships/ui/widgets/person_page_cards.dart), its facts drawn by [`NextTimeFacts`](../../lib/features/relationships/ui/shared/next_time_facts.dart) — flat caption/body pairs, the same widget the check-in page uses, where a bordered tile per fact made the page's quietest content its tallest block and gave it the lift of something pressable | From the newest check-in that *has* *pay attention to* / *avoid* notes (`NextTimeCard.sourceOf`), not simply the newest: the fields sit under the composer's *More*, so a quick check-in leaves them blank, and blank means "did not get to it", not "forget the last ones". When the source is older than the newest check-in the card says which one (`fromEarlier`). Above the briefing: the user's own notes are what the page is opened for in the minute before a call, and under a card with a summary, a footer and a model row they sat below the first screen on a phone. |
-| Briefing | `RelationshipBriefingCard` | Only when enrolled or a briefing exists; the page reads the report too, so the gap after the card is deterministic. |
-| Check-ins | [`CheckInsCardSliver`](../../lib/features/relationships/ui/widgets/check_ins_card.dart) | A `DecoratedSliver` wearing `DesignSystemSectionCard.decoration`, so the unbounded log stays lazy inside a card that matches the boxed ones. The rows are the Tasks and Projects lists' grouped rows (`GroupedCardRowSurface`): edge to edge under the header, the hover fill spanning the row, the last one rounded into the card, and the divider beside a hovered row giving way (`buildGroupedCardRowInteractions`). Each row carries a chevron, the sentiment in a fixed trailing slot, what the check-in holds on its meta line, and at most two lines of what was said. |
-| Reach · Tasks | `ReachCard`, [`LinkedTasksCard`](../../lib/features/relationships/ui/widgets/linked_tasks_card.dart) | Reach only with channels. |
+| Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader`: the avatar hangs half its diameter below it, inside the sliver's own extent so all of it is tappable. Back, *Talk to agent* (labelled, the agent's violet) and the ⋮ menu — Edit, contact linking, the agent's internals, Delete. The avatar is gone by half the fold; the folded bar names the person by `shortName`. |
+| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence with a meeting already booked shows no overdue pill; a person without reminders shows none, the offer card says it once. |
+| Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
+| Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
+| Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
+| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens the composer recording) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a note, a task and photos, each naming the person. |
 
-Every section, the check-in sliver and the action bar sit on
-`detailContentInsets` — the rule `DetailContentWidth` itself is built on: the
-content gutter plus, on a desktop-wide window, the centring that caps the
-column at `kDetailContentMaxWidth` **within the width the caller has**. Both
-the page and the bar measure that with a `LayoutBuilder`, because on the
-split the detail pane is narrower than the window and centring on the window
-would over-inset it. Exposed as a function because a sliver and a
-`bottomNavigationBar` cannot be children of that widget.
+On a pane at least `kDesktopBreakpoint` wide the page splits: the hero, header
+and timeline in a column of their own — its own Scaffold, so the bar docks
+under the history it adds to — and *Before you talk* in a rail beside it that
+scrolls on its own. The rail leaves the next meeting to the timeline's
+*Upcoming* row right next to it.
 
-The [action bar](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart)
-lays its controls out the way the task and entry bars do: a centred `Wrap`
-in which the filled *Log check-in* hugs its label (`DsGlassPill` without
-`expand`), the app's shared `GlassRecordButton` — the task and entry bars'
-own mic, lit by this person's running take — and the channel as a
-`DsGlassRoundButton` (its word in the accessible name; a labelled channel
-pill made this the only strip in the app with two pills) follow one
-`step4` apart, wrapping to a
-second line at large text on a narrow phone. It never stretches the primary
-to the column — on a desktop window that made it a bar-wide slab beside two
-pills, a shape no other strip in the app has. It
-resolves its third control once when built: the first channel, in the
-person's own order, for which `ContactLauncher.canLaunch` answers yes — a
-call on a phone, email on a desktop with a mail client, nothing where neither
-exists — and launches it through the same `launchContactAction` the Reach
-rows use, so the post-call marker is written the same way from both.
+Every section and the bar sit on `detailContentInsets`, measured with a
+`LayoutBuilder` because on the split the detail pane is narrower than the
+window. The timeline sliver is outdented by its rows' own inset, so a row's
+tile sits on the page's text edge and its hover fill reaches into the gutter.
+
+The page sets four type sizes: the title for the name (23), `heading3` for
+the one headline the brief card leads with (20), 16 for section and card
+titles (`subtitle1`, semibold) and everything the user reads (`bodyMedium`),
+and the caption for dates and meta (12) — with labels (the category,
+the timeline's sections, the next-time fields) in `captionLabelStyle`, the
+caption's size told apart by weight. Dates in running text use
+`dateFigureFontFeatures`: open digits, proportional spacing.
 
 # Status lifecycle
 
@@ -818,6 +858,13 @@ Every tombstone checks its result. `PersistenceLogic.updateDbEntity` answers
 `false` when the vector-clock comparison loses to a concurrent sync and `null`
 when it swallowed an exception, and neither may be reported to the caller as a
 deletion — the page would navigate away from a person who is still there.
+
+The cascade reaches the person's **timeline notes, voice notes and photos**
+too (`allPersonTimelineEntries`): they are about this one person and would
+otherwise survive as fragments of someone the user removed. **Tasks and
+meetings survive** — they belong to the user's own work and calendar — and
+their `RelationshipLink` rows to the person are left as they are, like every
+other link (below): each reader already skips a link whose person is gone.
 
 ## What the cascade does not reach
 
@@ -1959,8 +2006,8 @@ parsed by the same `parseSpeechTerms` — the category, and while
 editing the status), **Important** (the consent switch — labelled as the
 request it grants, *Remind me to stay in touch*, so it reads true while off —
 one line saying what it enables, and the cadence presets *only* once it is
-on, the applied interval preselected), **How to reach them** (the channel editor under the same privacy line
-the page's Reach card carries). The category is a name beside a 10px colour
+on, the applied interval preselected), **How to reach them** (the channel editor, under a line saying the
+channels stay on this device and are never shared with the AI). The category is a name beside a 10px colour
 dot rather than a second large avatar competing with the person's own;
 clearing it goes through the picker's own no-category row, so one component
 owns what the choices are. Like the capture sheet, the form draws no actions:
@@ -2480,15 +2527,16 @@ naming them would leak that they exist. It only offers the marker of the
 person whose page it is on. The offer asks rather than asserts — the marker
 proves the dialer or the mail app opened, not that anyone answered — and names
 its evidence under the question (`Did you reach Pip?` · `started 12:33 · about
-11 min`). Its *Yes, log it* is a secondary button: the page's bar already
-carries the one filled *Log check-in*, which opens the same composer. The
+11 min`). It is a section card in the page's grammar, and its *Yes, log it*
+is its primary: the minute after a call is what the card exists for, so the
+answer opens the composer already recording. The
 minutes it quotes travel into the capture sheet as `prefilledDuration` and
 are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
-All three doors — the offer's answer and the page's own *Log check-in* and
-*Dictate* — go through `openCheckInForPerson`, which claims the marker with
+All three doors — the offer's answer, the bar's *Speak* and the *+ Add*
+menu's check-in — go through `openCheckInForPerson`, which claims the marker with
 `PendingInteractionClaims.claimFor` (exclusive: two taps landing together get
 one marker between them) and opens the composer describing the call, so it is
 logged as that call whichever control the user reaches for. The elapsed
@@ -2501,7 +2549,9 @@ listens to the claim count and re-reads, which is how it stops asking (the
 store is plain settings, with nothing to listen to). A marker about someone
 else is neither used nor cleared. With no marker the composer starts from the
 latest check-in's interaction type rather than always *In person*. Declining
-is labelled *Dismiss*: it is permanent, which *Not now* did not say.
+is a quiet *Not this time*, an answer to the question asked; it clears the
+marker for good. A composer opened speaking onto a recorder that will not
+start (busy with another take) holds nothing, and closes without asking.
 
 ```mermaid
 stateDiagram-v2
@@ -2511,7 +2561,7 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: claimed by the offer, Log check-in or Dictate (same person)
+  Pending --> Capturing: claimed by the offer, Speak or + Add (same person)
   Capturing --> NoMarker: saved
   Capturing --> Pending: closed without saving (released as it was)
 ```

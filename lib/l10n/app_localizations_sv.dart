@@ -3334,9 +3334,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ljudet raderas. Din avstämning förblir öppen.';
 
   @override
-  String get checkInDismissButton => 'Stäng';
-
-  @override
   String get checkInDurationChip => 'Längd';
 
   @override
@@ -3391,29 +3388,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInMoreCaptionFeeling => 'Känsla';
-
-  @override
-  String get checkInMoreCaptionNextTime => 'nästa gång';
-
-  @override
-  String get checkInMoreCaptionNextTimeSet => 'nästa gång noterat';
-
-  @override
-  String get checkInMoreCaptionTopics => 'ämnen';
-
-  @override
-  String checkInMoreCaptionTopicsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ämnen',
-      one: '1 ämne',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkInMoreSection => 'Mer';
 
   @override
   String get checkInNarrativeHint => 'Vad pratade ni om? En rad räcker.';
@@ -12446,6 +12420,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get referenceImageSkip => 'Hoppa över';
 
   @override
+  String relationshipAboutShowAll(int count) {
+    return 'Visa alla ($count)';
+  }
+
+  @override
+  String get relationshipAboutShowLess => 'Visa färre';
+
+  @override
+  String relationshipAboutTitle(String name) {
+    return 'Om $name';
+  }
+
+  @override
   String get relationshipActionCall => 'Ring';
 
   @override
@@ -12459,10 +12446,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipActionMessage => 'Meddelande';
 
   @override
+  String get relationshipAddAction => 'Lägg till';
+
+  @override
   String get relationshipAddChannelButton => 'Lägg till kontaktuppgift';
 
   @override
   String get relationshipAddChannelFromContacts => 'eller från kontakter';
+
+  @override
+  String relationshipAddNote(String name) {
+    return 'Lägg till en anteckning om $name';
+  }
+
+  @override
+  String get relationshipAddPhotos => 'Lägg till foton';
+
+  @override
+  String relationshipAddToTimeline(String name) {
+    return 'Lägg till i tidslinjen för $name';
+  }
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
@@ -12471,16 +12474,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipAgentBriefNow => 'Briefa nu';
-
-  @override
-  String relationshipAgentCall(String name) {
-    return 'Ring $name';
-  }
-
-  @override
-  String relationshipAgentEnrolPerson(String name) {
-    return 'Påminn mig om $name';
-  }
 
   @override
   String get relationshipAgentFailedBody =>
@@ -12532,17 +12525,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Briefingar pausas så länge personen är vilande eller arkiverad.';
 
   @override
-  String relationshipAgentProposedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count förslag',
-      one: '1 förslag',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Visa aktivitet';
 
   @override
@@ -12576,6 +12558,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipBeforeYouTalkTitle => 'Innan ni pratar';
+
+  @override
   String relationshipBriefingAge(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12585,6 +12570,9 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get relationshipBriefingOptions => 'Briefingalternativ';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12621,6 +12609,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Varje vecka';
+
+  @override
+  String relationshipCallConfirmTitle(String name) {
+    return 'Ringa $name?';
+  }
 
   @override
   String get relationshipChatAgentName => 'Briefingagent';
@@ -12669,18 +12662,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipCheckInCommentHint => 'Lägg till en kommentar…';
-
-  @override
   String get relationshipCheckInEmpty =>
       'Inget tillagt än. Lägg till en kommentar, en inspelning eller ett foto.';
 
   @override
   String get relationshipCheckInGone =>
       'Den här avstämningen finns inte längre.';
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Antecknat vid avstämningen';
 
   @override
   String relationshipCheckInPhotoCount(int count) {
@@ -12722,12 +12709,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipContactCardAction => 'Kontaktkort';
-
-  @override
-  String get relationshipContactChannelsLabel => 'Kontaktuppgifter';
-
-  @override
   String get relationshipContactLinked => 'Kontaktuppgifter kopierade';
 
   @override
@@ -12740,6 +12721,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipContactNoChanges => 'Inget nytt att kopiera';
+
+  @override
+  String relationshipCreateTask(String name) {
+    return 'Lägg till en uppgift för $name';
+  }
 
   @override
   String get relationshipCreateTitle => 'Lägg till person';
@@ -12972,9 +12958,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipLinkedTasksLabel => 'Uppgifter';
 
   @override
-  String get relationshipLinkTaskButton => 'Länka uppgift';
-
-  @override
   String get relationshipLogCheckIn => 'Logga avstämning';
 
   @override
@@ -12992,6 +12975,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipNextMeetingLabel => 'Nästa möte';
+
+  @override
   String relationshipNextTimeFromEarlier(String day) {
     return 'Från din avstämning $day';
   }
@@ -13003,14 +12989,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipNicknameLabel => 'Smeknamn';
 
   @override
-  String get relationshipNoCheckIns =>
-      'Inga avstämningar än — logga en efter ert nästa samtal.';
-
-  @override
-  String get relationshipNoLinkedTasks => 'Inga uppgifter länkade än.';
+  String get relationshipNoteHint =>
+      'Var ni träffades, vad de älskar, en presentidé …';
 
   @override
   String get relationshipNotEnrolled => 'Utan påminnelser';
+
+  @override
+  String get relationshipNotePin => 'Fäst under Om';
+
+  @override
+  String get relationshipNoteSaveFailed => 'Anteckningen kunde inte sparas.';
+
+  @override
+  String relationshipNoteSheetTitle(String name) {
+    return 'Anteckning om $name';
+  }
 
   @override
   String get relationshipNotFound => 'Den här personen följs inte längre.';
@@ -13074,7 +13068,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallDismiss => 'Avfärda';
+  String get relationshipPostCallDismiss => 'Inte den här gången';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -13110,9 +13104,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Stannar på den här enheten · delas aldrig med AI:n';
 
   @override
-  String get relationshipReachTitle => 'Kontakt';
-
-  @override
   String get relationshipRelinkContact => 'Länka en annan kontakt';
 
   @override
@@ -13126,6 +13117,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Snooza längre';
+
+  @override
+  String get relationshipRemindersOfferTitle => 'Påminnelser och briefingar';
 
   @override
   String relationshipRemindersPillSemantics(String cadence) {
@@ -13152,6 +13146,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipsPageTitle => 'Personer';
+
+  @override
+  String get relationshipSpeak => 'Prata';
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -13227,15 +13224,72 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipTimelineEmpty(String name) {
+    return 'Inget här än. Prata efter ditt samtal med $name, eller lägg till en anteckning, en uppgift eller foton.';
+  }
+
+  @override
+  String get relationshipTimelineFilterAll => 'Alla';
+
+  @override
+  String get relationshipTimelineFilterMeetings => 'Möten';
+
+  @override
+  String get relationshipTimelineFilterNotes => 'Anteckningar';
+
+  @override
+  String get relationshipTimelineFilterPhotos => 'Foton';
+
+  @override
+  String get relationshipTimelineMeeting => 'Möte';
+
+  @override
+  String get relationshipTimelineMeetingCalledOff => 'Inställt';
+
+  @override
+  String get relationshipTimelineNote => 'Anteckning';
+
+  @override
+  String relationshipTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
+  String get relationshipTimelineTask => 'Uppgift';
+
+  @override
+  String relationshipTimelineTaskDoneAt(String time) {
+    return 'Klar $time';
+  }
+
+  @override
+  String relationshipTimelineTaskOverdue(String day) {
+    return 'Försenad sedan $day';
+  }
+
+  @override
+  String get relationshipTimelineThisWeek => 'Den här veckan';
+
+  @override
+  String get relationshipTimelineTitle => 'Tidslinje';
+
+  @override
+  String get relationshipTimelineToday => 'I dag';
+
+  @override
+  String get relationshipTimelineUpcoming => 'Kommande';
+
+  @override
+  String get relationshipTimelineVoiceNote => 'Röstanteckning';
+
+  @override
   String get relationshipTimestampToday => 'Idag';
 
   @override
   String get relationshipTimestampYesterday => 'Igår';
 
   @override
-  String relationshipTrackingSinceLabel(String date) {
-    return 'Följs sedan $date';
-  }
+  String get relationshipTurnOnReminders => 'Slå på påminnelser';
 
   @override
   String get relationshipTurnRemindersOff => 'Stäng av påminnelser';

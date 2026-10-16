@@ -3368,9 +3368,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zvuk se smaže. Tvůj check-in zůstane otevřený.';
 
   @override
-  String get checkInDismissButton => 'Zavřít';
-
-  @override
   String get checkInDurationChip => 'Délka';
 
   @override
@@ -3425,30 +3422,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInMoreCaptionFeeling => 'Pocit';
-
-  @override
-  String get checkInMoreCaptionNextTime => 'příště';
-
-  @override
-  String get checkInMoreCaptionNextTimeSet => 'příště poznamenáno';
-
-  @override
-  String get checkInMoreCaptionTopics => 'témata';
-
-  @override
-  String checkInMoreCaptionTopicsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count témat',
-      few: '$count témata',
-      one: '1 téma',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get checkInMoreSection => 'Více';
 
   @override
   String get checkInNarrativeHint => 'O čem jste mluvili? Stačí jeden řádek.';
@@ -12609,6 +12582,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get referenceImageSkip => 'Přeskočit';
 
   @override
+  String relationshipAboutShowAll(int count) {
+    return 'Zobrazit vše ($count)';
+  }
+
+  @override
+  String get relationshipAboutShowLess => 'Zobrazit méně';
+
+  @override
+  String relationshipAboutTitle(String name) {
+    return 'O osobě $name';
+  }
+
+  @override
   String get relationshipActionCall => 'Zavolat';
 
   @override
@@ -12622,10 +12608,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipActionMessage => 'Zpráva';
 
   @override
+  String get relationshipAddAction => 'Přidat';
+
+  @override
   String get relationshipAddChannelButton => 'Přidat kontakt';
 
   @override
   String get relationshipAddChannelFromContacts => 'nebo z kontaktů';
+
+  @override
+  String relationshipAddNote(String name) {
+    return 'Přidat poznámku o osobě $name';
+  }
+
+  @override
+  String get relationshipAddPhotos => 'Přidat fotky';
+
+  @override
+  String relationshipAddToTimeline(String name) {
+    return 'Přidat na časovou osu: $name';
+  }
 
   @override
   String relationshipAgentAsOfBand(String age, String band) {
@@ -12634,16 +12636,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipAgentBriefNow => 'Vytvořit briefing teď';
-
-  @override
-  String relationshipAgentCall(String name) {
-    return 'Zavolat $name';
-  }
-
-  @override
-  String relationshipAgentEnrolPerson(String name) {
-    return 'Připomínat $name';
-  }
 
   @override
   String get relationshipAgentFailedBody =>
@@ -12697,18 +12689,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Briefingy se pozastaví, dokud je tato osoba neaktivní nebo archivovaná.';
 
   @override
-  String relationshipAgentProposedCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count návrhů',
-      few: '$count návrhy',
-      one: '1 návrh',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get relationshipAgentSeeActivity => 'Zobrazit aktivitu';
 
   @override
@@ -12743,6 +12723,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipBeforeYouTalkTitle => 'Než si promluvíte';
+
+  @override
   String relationshipBriefingAge(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12753,6 +12736,9 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get relationshipBriefingOptions => 'Možnosti briefingu';
 
   @override
   String get relationshipBriefingRequestFailed =>
@@ -12790,6 +12776,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipCadenceWeekly => 'Každý týden';
+
+  @override
+  String relationshipCallConfirmTitle(String name) {
+    return 'Zavolat osobě $name?';
+  }
 
   @override
   String get relationshipChatAgentName => 'Briefingový agent';
@@ -12839,17 +12830,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipCheckInCommentHint => 'Přidej komentář…';
-
-  @override
   String get relationshipCheckInEmpty =>
       'Zatím nic. Přidej komentář, nahrávku nebo fotku.';
 
   @override
   String get relationshipCheckInGone => 'Tento check-in už neexistuje.';
-
-  @override
-  String get relationshipCheckInNoteLabel => 'Poznamenáno při zápisu';
 
   @override
   String relationshipCheckInPhotoCount(int count) {
@@ -12892,12 +12877,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipContactCardAction => 'Vizitka';
-
-  @override
-  String get relationshipContactChannelsLabel => 'Kontaktní údaje';
-
-  @override
   String get relationshipContactLinked => 'Kontaktní údaje zkopírovány';
 
   @override
@@ -12910,6 +12889,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipContactNoChanges => 'Není co nového zkopírovat';
+
+  @override
+  String relationshipCreateTask(String name) {
+    return 'Přidat úkol pro osobu $name';
+  }
 
   @override
   String get relationshipCreateTitle => 'Přidat osobu';
@@ -13149,9 +13133,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipLinkedTasksLabel => 'Úkoly';
 
   @override
-  String get relationshipLinkTaskButton => 'Propojit úkol';
-
-  @override
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
 
   @override
@@ -13169,6 +13150,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get relationshipNextMeetingLabel => 'Příští schůzka';
+
+  @override
   String relationshipNextTimeFromEarlier(String day) {
     return 'Z tvého check-inu $day';
   }
@@ -13180,14 +13164,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipNicknameLabel => 'Přezdívka';
 
   @override
-  String get relationshipNoCheckIns =>
-      'Zatím žádné záznamy — přidej první po dalším rozhovoru.';
-
-  @override
-  String get relationshipNoLinkedTasks => 'Zatím žádné propojené úkoly.';
+  String get relationshipNoteHint =>
+      'Kde jste se poznali, co má rád, nápad na dárek…';
 
   @override
   String get relationshipNotEnrolled => 'Bez připomínek';
+
+  @override
+  String get relationshipNotePin => 'Připnout k sekci O osobě';
+
+  @override
+  String get relationshipNoteSaveFailed => 'Poznámku se nepodařilo uložit.';
+
+  @override
+  String relationshipNoteSheetTitle(String name) {
+    return 'Poznámka o osobě $name';
+  }
 
   @override
   String get relationshipNotFound => 'Tahle osoba už není sledovaná.';
@@ -13251,7 +13243,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get relationshipPostCallDismiss => 'Zavřít';
+  String get relationshipPostCallDismiss => 'Teď ne';
 
   @override
   String relationshipPostCallMeta(String time, int minutes) {
@@ -13287,9 +13279,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zůstává v tomto zařízení · nikdy se nesdílí s AI';
 
   @override
-  String get relationshipReachTitle => 'Kontakt';
-
-  @override
   String get relationshipRelinkContact => 'Propojit jiný kontakt';
 
   @override
@@ -13303,6 +13292,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipReminderSnoozeLonger => 'Odložit na déle';
+
+  @override
+  String get relationshipRemindersOfferTitle => 'Připomínky a briefingy';
 
   @override
   String relationshipRemindersPillSemantics(String cadence) {
@@ -13329,6 +13321,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipsPageTitle => 'Lidé';
+
+  @override
+  String get relationshipSpeak => 'Mluvit';
 
   @override
   String get relationshipsSelectPersonHint =>
@@ -13405,15 +13400,72 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipTimelineEmpty(String name) {
+    return 'Zatím tu nic není. Promluv po rozhovoru s $name, nebo přidej poznámku, úkol či fotky.';
+  }
+
+  @override
+  String get relationshipTimelineFilterAll => 'Vše';
+
+  @override
+  String get relationshipTimelineFilterMeetings => 'Schůzky';
+
+  @override
+  String get relationshipTimelineFilterNotes => 'Poznámky';
+
+  @override
+  String get relationshipTimelineFilterPhotos => 'Fotky';
+
+  @override
+  String get relationshipTimelineMeeting => 'Schůzka';
+
+  @override
+  String get relationshipTimelineMeetingCalledOff => 'Zrušeno';
+
+  @override
+  String get relationshipTimelineNote => 'Poznámka';
+
+  @override
+  String relationshipTimelineRowLabel(String kind, String time, String text) {
+    return '$kind, $time. $text';
+  }
+
+  @override
+  String get relationshipTimelineTask => 'Úkol';
+
+  @override
+  String relationshipTimelineTaskDoneAt(String time) {
+    return 'Hotovo $time';
+  }
+
+  @override
+  String relationshipTimelineTaskOverdue(String day) {
+    return 'Po termínu od $day';
+  }
+
+  @override
+  String get relationshipTimelineThisWeek => 'Tento týden';
+
+  @override
+  String get relationshipTimelineTitle => 'Časová osa';
+
+  @override
+  String get relationshipTimelineToday => 'Dnes';
+
+  @override
+  String get relationshipTimelineUpcoming => 'Nadcházející';
+
+  @override
+  String get relationshipTimelineVoiceNote => 'Hlasová poznámka';
+
+  @override
   String get relationshipTimestampToday => 'Dnes';
 
   @override
   String get relationshipTimestampYesterday => 'Včera';
 
   @override
-  String relationshipTrackingSinceLabel(String date) {
-    return 'Sledováno od $date';
-  }
+  String get relationshipTurnOnReminders => 'Zapnout připomínky';
 
   @override
   String get relationshipTurnRemindersOff => 'Vypnout připomínky';

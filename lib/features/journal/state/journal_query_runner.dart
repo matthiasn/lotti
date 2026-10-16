@@ -127,13 +127,11 @@ class JournalQueryRunner {
       dashboards: params.enableDashboards,
       relationships: params.enableRelationships,
     );
-    // A check-in shows in the feed but is never a search result: its note
-    // describes a third party, whom search must not find outside People
-    // (ADR 0037, ADR 0064).
-    final types = params.selectedEntryTypes
-        .where(allowed.contains)
-        .where((type) => params.query.isEmpty || type != 'CheckIn')
-        .toList();
+    // A check-in is a search result like any entry (ADR 0139, superseding
+    // ADR 0064 decision 3): search runs on the device, only for its user,
+    // and the `private` flag a check-in inherits from its person hides it
+    // here as it hides it in the feed.
+    final types = params.selectedEntryTypes.where(allowed.contains).toList();
     final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;
 
     final starredEntriesOnly = params.filters.contains(

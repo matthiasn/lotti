@@ -93,6 +93,12 @@ void main() {
     syncService = MockAgentSyncService();
     relationshipAgentService = MockRelationshipAgentService();
     relationshipRepository = MockRelationshipRepository();
+    when(
+      () => relationshipRepository.getAllTimelineEntries(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => relationshipRepository.getTimelineLinksChangedAt(any()),
+    ).thenAnswer((_) async => null);
     logger = MockDomainLogger();
     scanRequests = 0;
     maintenance = RelationshipRuntimeMaintenance(
