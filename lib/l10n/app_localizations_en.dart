@@ -12492,7 +12492,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipBeforeYouTalkTitle => 'Before you talk';
+  String get relationshipBirthdayAdd => 'Add birthday';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
 
   @override
   String relationshipBriefingAge(int days) {
@@ -12780,9 +12783,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantLabel => 'Reminders on';
-
-  @override
   String relationshipImportConfirmButton(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12910,9 +12910,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String relationshipNextTimeFromEarlier(String day) {
     return 'From your check-in on $day';
   }
-
-  @override
-  String get relationshipNextTimeTitle => 'Next time';
 
   @override
   String get relationshipNicknameLabel => 'Nickname';
@@ -16802,12 +16799,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get relationshipBirthdayLabel => 'Birthday';
-
-  @override
-  String get relationshipBirthdayAdd => 'Add birthday';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

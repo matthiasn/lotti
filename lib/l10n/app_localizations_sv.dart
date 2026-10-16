@@ -12565,7 +12565,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipBeforeYouTalkTitle => 'Innan ni pratar';
+  String get relationshipBirthdayAdd => 'Lägg till födelsedag';
+
+  @override
+  String get relationshipBirthdayLabel => 'Födelsedag';
 
   @override
   String relationshipBriefingAge(int days) {
@@ -12856,9 +12859,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantLabel => 'Med påminnelser';
-
-  @override
   String relationshipImportConfirmButton(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -12988,9 +12988,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String relationshipNextTimeFromEarlier(String day) {
     return 'Från din avstämning $day';
   }
-
-  @override
-  String get relationshipNextTimeTitle => 'Nästa gång';
 
   @override
   String get relationshipNicknameLabel => 'Smeknamn';
@@ -16918,10 +16915,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get relationshipBirthdayLabel => 'Birthday';
-
-  @override
-  String get relationshipBirthdayAdd => 'Add birthday';
 }

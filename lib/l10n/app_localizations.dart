@@ -20869,11 +20869,17 @@ abstract class AppLocalizations {
   /// **'Relationship banner for {personName}'**
   String relationshipBannerSemanticLabel(String personName);
 
-  /// Title of the person page's briefing card: the user's own notes for next time, then the agent's summary.
+  /// Button in the person editor when no birthday is known yet.
   ///
   /// In en, this message translates to:
-  /// **'Before you talk'**
-  String get relationshipBeforeYouTalkTitle;
+  /// **'Add birthday'**
+  String get relationshipBirthdayAdd;
+
+  /// Label of the birthday row in the person editor, and the title of its calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get relationshipBirthdayLabel;
 
   /// No description provided for @relationshipBriefingAge.
   ///
@@ -21241,12 +21247,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 person added} other{{count} people added}}'**
   String relationshipImportAdded(int count);
 
-  /// No description provided for @relationshipImportantLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reminders on'**
-  String get relationshipImportantLabel;
-
   /// Creates one person per reviewed contact
   ///
   /// In en, this message translates to:
@@ -21432,12 +21432,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'From your check-in on {day}'**
   String relationshipNextTimeFromEarlier(String day);
-
-  /// No description provided for @relationshipNextTimeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Next time'**
-  String get relationshipNextTimeTitle;
 
   /// No description provided for @relationshipNicknameLabel.
   ///
@@ -28054,18 +28048,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Label of the birthday row in the person editor, and the title of its calendar.
-  ///
-  /// In en, this message translates to:
-  /// **'Birthday'**
-  String get relationshipBirthdayLabel;
-
-  /// Button in the person editor when no birthday is known yet.
-  ///
-  /// In en, this message translates to:
-  /// **'Add birthday'**
-  String get relationshipBirthdayAdd;
 }
 
 class _AppLocalizationsDelegate

@@ -12634,7 +12634,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipBeforeYouTalkTitle => 'Bevor ihr redet';
+  String get relationshipBirthdayAdd => 'Geburtstag hinzufügen';
+
+  @override
+  String get relationshipBirthdayLabel => 'Geburtstag';
 
   @override
   String relationshipBriefingAge(int days) {
@@ -12924,9 +12927,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get relationshipImportantLabel => 'Mit Erinnerungen';
-
-  @override
   String relationshipImportConfirmButton(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13056,9 +13056,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String relationshipNextTimeFromEarlier(String day) {
     return 'Aus deinem Check-in vom $day';
   }
-
-  @override
-  String get relationshipNextTimeTitle => 'Nächstes Mal';
 
   @override
   String get relationshipNicknameLabel => 'Spitzname';
@@ -17025,10 +17022,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get relationshipBirthdayLabel => 'Birthday';
-
-  @override
-  String get relationshipBirthdayAdd => 'Add birthday';
 }

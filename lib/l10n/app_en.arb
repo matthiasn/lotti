@@ -7620,9 +7620,13 @@
       }
     }
   },
-  "relationshipBeforeYouTalkTitle": "Before you talk",
-  "@relationshipBeforeYouTalkTitle": {
-    "description": "Title of the person page's briefing card: the user's own notes for next time, then the agent's summary."
+  "relationshipBirthdayAdd": "Add birthday",
+  "@relationshipBirthdayAdd": {
+    "description": "Button in the person editor when no birthday is known yet."
+  },
+  "relationshipBirthdayLabel": "Birthday",
+  "@relationshipBirthdayLabel": {
+    "description": "Label of the birthday row in the person editor, and the title of its calendar."
   },
   "relationshipBriefingAge": "{days, plural, =1{1 day old} other{{days} days old}}",
   "@relationshipBriefingAge": {
@@ -7866,7 +7870,6 @@
       }
     }
   },
-  "relationshipImportantLabel": "Reminders on",
   "relationshipImportConfirmButton": "{count, plural, =1{Add 1 person} other{Add {count} people}}",
   "@relationshipImportConfirmButton": {
     "description": "Creates one person per reviewed contact",
@@ -7995,7 +7998,6 @@
       }
     }
   },
-  "relationshipNextTimeTitle": "Next time",
   "relationshipNicknameLabel": "Nickname",
   "relationshipNoteHint": "Where you met, what they love, a gift idea…",
   "relationshipNotEnrolled": "No reminders",
@@ -10057,13 +10059,5 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip",
-  "relationshipBirthdayLabel": "Birthday",
-  "@relationshipBirthdayLabel": {
-    "description": "Label of the birthday row in the person editor, and the title of its calendar."
-  },
-  "relationshipBirthdayAdd": "Add birthday",
-  "@relationshipBirthdayAdd": {
-    "description": "Button in the person editor when no birthday is known yet."
-  }
+  "whatsNewSkipButton": "Skip"
 }

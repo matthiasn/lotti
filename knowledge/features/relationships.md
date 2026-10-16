@@ -325,32 +325,33 @@ width, and reads top to bottom:
   person segment leads back to their page. The title (*Check-in with Pip*)
   wears `detailPageTitleStyle`, the task title's tier. Under it,
   [`CheckInMetaSummaryLine`](../../lib/features/relationships/ui/widgets/check_in_meta_summary_line.dart)
-  draws type · start · length · feeling as one wrapping lane of the task
-  lane's square `DsPillShape.tag` read-outs — the feeling tinted in its
-  `sentimentColor`, as the person page's check-in row paints it, and led
-  by a mood glyph in that colour as a task's tinted status is by its own —
-  and an unset length or feeling as the task's muted round offer pill. Each
-  fact edits only its field in place through the composer's pickers
-  (`showCheckInTypePicker`, `pickCheckInStart`, `showCheckInDurationPicker`,
-  `showCheckInSentimentPicker`) and saves the check-in at once. The topics
-  follow as one tag, folded the way a task folds its labels (two named,
-  the rest as "+N"). The lane ends where a task's ends on *Details*: the
-  dashed muted pill *Edit check-in*, opening the composer for everything no
-  read-out edits — topics, the notes for next time, the logged note — and
-  the topics tag opens the same sheet, so nothing in the lane is a tag that
-  looks tappable and is not. The form wears this same lane, its last
-  lever folding out the details instead. The top bar
-  holds back alone, a `DesignSystemIconAction` with the chevron a task's
-  page and the person hero lead back with.
+  draws type · start · length · feeling in its read-out form
+  (`readOut: true`): the facts as words with their glyphs, no tag around
+  any — the feeling's glyph in its `sentimentColor`, its word in the fact
+  ink — and an unset length or feeling as the muted dashed offer, the one
+  shape that means "nothing here yet". Each fact edits only its field in
+  place through the composer's pickers (`showCheckInTypePicker`,
+  `pickCheckInStart`, `showCheckInDurationPicker`,
+  `showCheckInSentimentPicker`) and saves the check-in at once; the topics
+  follow, folded the way a task folds its labels (two named, the rest as
+  "+N"), and open the edit sheet where they change. *Edit check-in* lives
+  in the top bar's ⋮ (`check-in-detail-menu`), opening the composer for
+  everything no read-out edits: a dashed pill at the end of the facts read
+  as one more empty fact. The form keeps the tag lane, its last lever
+  folding out the details. The top bar's back is a
+  `DesignSystemIconAction` with the chevron a task's page and the person
+  hero lead back with.
 * **A faint rule, then the logged note** on the page itself, where a task
   keeps its description (`TaskForm`'s `decorative.level01` divider): the
   user's own words, not boxed under a caption.
-* **Next time** on a card of its own, its facts drawn by
-  [`NextTimeFacts`](../../lib/features/relationships/ui/shared/next_time_facts.dart)
-  — the same flat caption/body pairs the person page draws. It follows the
-  logged note rather than preceding it (a reader opens a check-in for what
-  was said; the derived notes come after) and wears the linked entry
-  cards' horizontal `step2` margin, so the page has one card edge.
+* **Next time** in the person page's own card,
+  [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart)
+  with `showProvenance: false` — the note to bring up as its headline, what
+  to avoid under it — so the two pages draw the same notes one way. It
+  follows the logged note rather than preceding it (a reader opens a
+  check-in for what was said; the derived notes come after) and wears the
+  linked entry cards' horizontal `step2` margin, so the page has one card
+  edge.
 * **Leaving while a take is live asks first.** The view sits in a
   `PopScope` that holds the route while `_recording`; the system back and
   the bar's back both run `_confirmLeaveRecording` — the recorder's own
@@ -615,9 +616,10 @@ not.** `peopleCadencePillRestatesBand` suppresses the `onTrack` and
 heading word for word; `overdue`, `dueSoon`, `dormant` and `archived` carry a
 time or a status no heading does, so they stay. The reclaimed width goes to
 the name, which wraps to two lines rather than truncating — the one string on
-the row a reader cannot reconstruct from anything else on it. The enrolment
-sparkle rides *inside* the name as a `WidgetSpan`, so a wrapped name does not
-strand it in the gap between the name and the pill. The overdue pill carries
+the row a reader cannot reconstruct from anything else on it. No marker
+sits beside the name: the band the row is in already says whether reminders
+are on. A long press on a row opens the composer already recording for that
+person (`openCheckInForPerson(startSpeaking: true)`). The overdue pill carries
 a leading `LottiIcons.warning` in `alert.warning.ink`: on the dark ground its
 tint alone read as an inert brown beside the neutral chip, and the glyph is
 the same one the briefing card's out-of-date line uses, so "needs attention"
@@ -756,7 +758,7 @@ always show on a person, whatever the Events flag says.
 | Region | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader`: the avatar hangs half its diameter below it, inside the sliver's own extent so all of it is tappable. Back, *Talk to agent* (labelled, the agent's violet) and the ⋮ menu — Edit, contact linking, the agent's internals, Delete. The avatar is gone by half the fold; the folded bar names the person by `shortName`. |
-| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence with a meeting already booked shows no overdue pill; a person without reminders shows none, the offer card says it once. |
+| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; a person without reminders shows none, the offer card says it once. |
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
 | Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
 | Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
