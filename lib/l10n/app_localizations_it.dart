@@ -3756,6 +3756,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mostra il pulsante di testo-to-speech locale sui riassunti dell\'intelligenza artificiale del compito. Richiede un modello Supertonic TTS installato.';
 
   @override
+  String get configFlagEnableCompanion => 'Compagna';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Mostra accanto al riassunto AI un personaggio che lo legge ad alta voce, con la bocca a tempo con la voce. Richiede la riproduzione di sintesi AI.';
+
+  @override
   String get configFlagEnableDailyOs => 'Abilita DailyOS';
 
   @override

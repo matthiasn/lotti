@@ -38,6 +38,8 @@ abstract final class ConfigFlagLabels {
         return LottiIcons.volume;
       case enableQueryChatFlag:
         return LottiIcons.chat;
+      case enableCompanionFlag:
+        return LottiIcons.moodGood;
       case enableLoggingFlag:
         return LottiIcons.bug;
       case enableMatrixFlag:
@@ -89,6 +91,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableAiSummaryTts;
       case enableQueryChatFlag:
         return context.messages.configFlagEnableQueryChat;
+      case enableCompanionFlag:
+        return context.messages.configFlagEnableCompanion;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:
@@ -140,6 +144,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableAiSummaryTtsDescription;
       case enableQueryChatFlag:
         return context.messages.configFlagEnableQueryChatDescription;
+      case enableCompanionFlag:
+        return context.messages.configFlagEnableCompanionDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:

@@ -50,6 +50,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableCompanionFlag,
+      description: 'Show the companion character beside spoken summaries?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,

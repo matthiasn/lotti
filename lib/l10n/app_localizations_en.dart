@@ -3693,6 +3693,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.';
 
   @override
+  String get configFlagEnableCompanion => 'Companion';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.';
+
+  @override
   String get configFlagEnableDailyOs => 'Enable DailyOS';
 
   @override

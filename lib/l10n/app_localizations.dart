@@ -6240,6 +6240,18 @@ abstract class AppLocalizations {
   /// **'Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.'**
   String get configFlagEnableAiSummaryTtsDescription;
 
+  /// No description provided for @configFlagEnableCompanion.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion'**
+  String get configFlagEnableCompanion;
+
+  /// No description provided for @configFlagEnableCompanionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.'**
+  String get configFlagEnableCompanionDescription;
+
   /// No description provided for @configFlagEnableDailyOs.
   ///
   /// In en, this message translates to:

@@ -27,6 +27,9 @@ enum TtsPlaybackStatus {
   error,
 }
 
+/// A clip the voice plays: the WAV at `path`, synthesized from `text`.
+typedef TtsClip = ({String path, String text});
+
 /// Sentinel distinguishing "leave unchanged" from "set to null" in
 /// [TtsPlaybackState.copyWith] for the nullable fields.
 const Object _undefined = Object();
@@ -44,6 +47,7 @@ class TtsPlaybackState {
     this.downloadProgress = 0,
     this.position = Duration.zero,
     this.duration = Duration.zero,
+    this.clip,
     this.errorMessage,
   });
 
@@ -63,6 +67,14 @@ class TtsPlaybackState {
   /// Total length of the synthesized clip, reported by the player once the
   /// WAV is opened.
   final Duration duration;
+
+  /// The clip being played, set only while [status] is
+  /// [TtsPlaybackStatus.playing]. A listener that needs the audio itself — the
+  /// companion shapes her mouth from its loudness and its words — reads it
+  /// from here. The path and the words come and go together, so the words are
+  /// always the ones the WAV was made from, whatever the screen shows now; the
+  /// file is deleted once playback ends.
+  final TtsClip? clip;
 
   /// Human-readable error detail, set only when [status] is
   /// [TtsPlaybackStatus.error].
@@ -86,6 +98,7 @@ class TtsPlaybackState {
     double? downloadProgress,
     Duration? position,
     Duration? duration,
+    Object? clip = _undefined,
     Object? errorMessage = _undefined,
   }) {
     return TtsPlaybackState(
@@ -94,6 +107,7 @@ class TtsPlaybackState {
       downloadProgress: downloadProgress ?? this.downloadProgress,
       position: position ?? this.position,
       duration: duration ?? this.duration,
+      clip: clip == _undefined ? this.clip : clip as TtsClip?,
       errorMessage: errorMessage == _undefined
           ? this.errorMessage
           : errorMessage as String?,
@@ -108,6 +122,7 @@ class TtsPlaybackState {
       other.downloadProgress == downloadProgress &&
       other.position == position &&
       other.duration == duration &&
+      other.clip == clip &&
       other.errorMessage == errorMessage;
 
   @override
@@ -117,6 +132,7 @@ class TtsPlaybackState {
     downloadProgress,
     position,
     duration,
+    clip,
     errorMessage,
   );
 }

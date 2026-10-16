@@ -5,9 +5,13 @@ Flutter: a character who can sit in the app and talk, instead of only
 appearing in a video. A cat and a red panda can stand in for her: the same
 rig, another species.
 
-**Status: proof of concept, shown in the widgetbook only.** Nothing in the app
-shows her yet. The plan she comes from, and the phases still ahead (the chat,
-the Daily OS briefing, a mood read from the record, character choice), is
+**Status: first appearance, behind a flag.** With **Companion**
+(`enable_companion`, Settings › Advanced Settings › Config Flags) and **AI
+summary playback** on, she stands beside a task's AI summary and speaks it
+when its read-aloud control is pressed. Everywhere else she is in the
+widgetbook only. The plan she comes from, and the branches still ahead (the
+Daily OS briefing, onboarding, a mood read from the record, character choice,
+talking back), is
 [docs/implementation_plans/2026-10-12_in_app_agent_avatar.md](../../../docs/implementation_plans/2026-10-12_in_app_agent_avatar.md).
 
 ## What it does
@@ -18,6 +22,11 @@ the Daily OS briefing, a mood read from the record, character choice), is
   think, clap, celebrate, horns, and so on), each with its face and posture.
   Her elbows come from a constrained arm solver, so her arms never cross into
   an X or bend backwards.
+- **She speaks with the app's voice.** `CompanionSpeaker` shows her speaking
+  whatever the on-device voice (`lib/features/tts/`) plays for one source:
+  the host asks the voice to speak, as it would without her, and gives her
+  the same source. She takes the words with the clip from the voice, so they
+  are always the ones being played. She owns none of the words she says.
 - **She talks.** The mouth follows a `MouthTrack` on a playhead the owner
   supplies, so a stall or a seek never puts it out of step with the voice:
   - `SpeechEnvelope`: a 16-bit PCM WAV's loudness, the format the on-device
@@ -43,19 +52,21 @@ the Daily OS briefing, a mood read from the record, character choice), is
 |---|---|
 | `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods |
 | `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart` |
-| `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks |
-| `ui/` | `CompanionView`, the live widget, and its `CompanionController` |
+| `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
+| `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate |
+| `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice |
 | `widgetbook/` | The widgetbook folder "Companion" |
 
 Per-frame values never leave `CompanionView`'s state: its `Ticker` steps the
 animator and repaints. What changes rarely (look, mood, what she says) comes
 in as widget parameters.
 
-She is drawn through `SupersampledPainter`, 4 samples per pixel by default,
-because Impeller on a GL driver without multisampling (as in a Linux VM)
-draws paths without anti-aliasing: her outline would show stair steps that
-crawl as she moves. `stage: true` stands her on the pitch videos' dark stage
-(`rig/stage_painter.dart`).
+She is drawn through `SupersampledPainter`, 4 samples per pixel on Linux and
+none elsewhere, because Impeller on a GL driver without multisampling (as in
+a Linux VM) draws paths without anti-aliasing: her outline would show stair
+steps that crawl as she moves. In the app she is framed head to toe, both
+hands in view in every gesture. `stage: true` stands her on the pitch
+videos' dark stage (`rig/stage_painter.dart`).
 
 ## Where she comes from
 

@@ -36,11 +36,13 @@ import 'package:path/path.dart' as p;
 /// answer: the design system and categories at the bottom, the agent runtime
 /// above the AI layer it calls, the journal — the logbook surface, its
 /// repository now shared from `lib/logic` — above the speech and agent
-/// features it composes, sync above the features whose entities it carries
-/// (features reach it through its outbox), the aggregators — demo,
-/// onboarding, Daily OS — near the top, and settings above them, since its
-/// route table hosts every feature's settings pages. Moving a feature is a
-/// design decision, and shows up as one in review.
+/// features it composes, the companion character just above the voice she
+/// lip-syncs to and below every surface that shows her (the words she says
+/// come from the host that owns them), sync above the features whose
+/// entities it carries (features reach it through its outbox), the
+/// aggregators — demo, onboarding, Daily OS — near the top, and settings
+/// above them, since its route table hosts every feature's settings pages.
+/// Moving a feature is a design decision, and shows up as one in review.
 const featureOrder = <String>[
   'provenance',
   'user_activity',
@@ -61,6 +63,7 @@ const featureOrder = <String>[
   'ai',
   'dashboards',
   'tts',
+  'companion',
   'agents',
   'speech',
   'journal',
@@ -77,7 +80,6 @@ const featureOrder = <String>[
   'goals',
   'projects',
   'daily_os_next',
-  'companion',
   'onboarding',
   'system_health',
   'settings',

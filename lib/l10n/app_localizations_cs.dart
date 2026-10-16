@@ -3755,6 +3755,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.';
 
   @override
+  String get configFlagEnableCompanion => 'Společnice';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Zobrazí postavu vedle AI souhrnu, která ho předčítá a hýbe ústy podle hlasu. Vyžaduje přehrávání AI souhrnů.';
+
+  @override
   String get configFlagEnableDailyOs => 'Povolit DailyOS';
 
   @override

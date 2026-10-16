@@ -15,7 +15,7 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
-    last_modified: 2026-10-07
+    last_modified: 2026-10-15
   - id: automation-row
     resource: ../../../lib/features/agents/ui/agent_automation_row.dart
     title: Shared agent report automation controls
@@ -82,6 +82,13 @@ Contents:
   entry of its own. The subtitle under *AI summary* is the agent's template
   name when it has one (e.g. *Task Laura*), otherwise the agent's display
   name; it is never the task title.
+- **The companion** — with `enable_companion` on, the drawn character of
+  [the companion feature](../companion.md) stands left of the summary
+  (`CompanionSpeaker`, full framing, `ControlSizes.companionCard` high). She
+  is the read-aloud control's face: shown only while that control is, and
+  speaking its utterance — the task id as `sourceId`, in the words the
+  voice was given at the tap — so a tap on the control is what makes her
+  talk.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). Change-set confirms

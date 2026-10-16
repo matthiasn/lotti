@@ -1805,6 +1805,8 @@
   "configFlagEnableAiStreamingDescription": "Strömma AI-svar för uppgiftsrelaterade åtgärder. Stäng av för att buffra svar och håll gränssnittet smidigare.",
   "configFlagEnableAiSummaryTts": "AI-sammanfattningsuppspelning",
   "configFlagEnableAiSummaryTtsDescription": "Visa den lokala text-till-tal-knappen på sammanfattningar av uppgift-AI. Kräver en installerad Supertonic TTS-modell.",
+  "configFlagEnableCompanion": "Följeslagare",
+  "configFlagEnableCompanionDescription": "Visa en figur bredvid AI-sammanfattningen som läser upp den, med munnen i takt med rösten. Kräver AI-sammanfattningsuppspelning.",
   "configFlagEnableDailyOs": "Aktivera DailyOS",
   "configFlagEnableDailyOsDescription": "Visa DailyOS i huvudnavigeringen.",
   "configFlagEnableDashboardsPage": "Aktivera dashboards-sidan",

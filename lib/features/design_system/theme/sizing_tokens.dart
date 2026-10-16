@@ -51,6 +51,15 @@ abstract final class ControlSizes {
   /// `spacing.step8`, `step9` and `step11` — the same 40, 48 and 80 today.
   static const double avatarHero = 80;
 
+  /// 136 — the height of the companion character beside the AI summary she
+  /// reads aloud, head to toe: tall enough for her face and hands to read
+  /// as gestures at full length. Her width follows from the framing she is
+  /// shown in.
+  ///
+  /// A container dimension like [avatarHero]: she is a figure on the
+  /// screen, and must not resize when the spacing scale is retuned.
+  static const double companionCard = 136;
+
   /// 64 — the square thumbnail standing in for a media entry that has been
   /// collapsed (the collapsed image card's preview).
   ///

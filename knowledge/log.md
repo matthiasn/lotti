@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-15
+* **Update**: [Companion](features/companion.md) — how she speaks with the
+  on-device voice (`CompanionSpeaker`, the clip read once, the playhead clock),
+  the full-length framing, and her new rank just above `tts`.
+* **Update**: [Text-to-speech](features/tts.md) — `clip`, the clip and its
+  words a listener may read while an utterance plays;
+  [agents UI surfaces](features/agents/ui-surfaces.md) — the companion beside
+  the AI summary; [architecture overview](architecture/overview.md) — the
+  companion's place in the layer order.
+
 ## 2026-10-14
 * **New**: [Companion](features/companion.md) — the animated character rig:
   the frame loop, the gesture and speaking state machines, playhead-timed

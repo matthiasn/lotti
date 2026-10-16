@@ -3774,6 +3774,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS Supertonic instalat.';
 
   @override
+  String get configFlagEnableCompanion => 'Însoțitoare';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Afișează lângă rezumatul AI un personaj care îl citește cu voce tare, cu gura în ritmul vocii. Necesită redarea rezumatelor AI.';
+
+  @override
   String get configFlagEnableDailyOs => 'Activează DailyOS';
 
   @override

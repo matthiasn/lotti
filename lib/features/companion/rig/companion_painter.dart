@@ -21,6 +21,10 @@ enum CompanionFraming {
 
   /// The part of character space that is fitted into the view.
   final Rect window;
+
+  /// Width over height of [window]: a box of this shape shows the framing
+  /// with no empty margin.
+  double get aspectRatio => window.width / window.height;
 }
 
 /// Paints one [pose] of the companion in [look], fitting [framing]'s window

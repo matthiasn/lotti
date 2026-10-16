@@ -2387,6 +2387,8 @@
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
   "configFlagEnableAiSummaryTtsDescription": "Show the local text-to-speech button on task AI summaries. Requires an installed Supertonic TTS model.",
+  "configFlagEnableCompanion": "Companion",
+  "configFlagEnableCompanionDescription": "Show a character beside the AI summary who reads it aloud, her lips moving with the voice. Needs AI summary playback.",
   "configFlagEnableDailyOs": "Enable DailyOS",
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",

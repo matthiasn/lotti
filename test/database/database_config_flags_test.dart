@@ -51,6 +51,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableCompanionFlag,
+    description: 'Show the companion character beside spoken summaries?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: resendAttachments,
     description: 'Resend Attachments',
     status: false,

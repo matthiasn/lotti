@@ -24,6 +24,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -559,6 +561,23 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final playbackControl = ttsEnabled && tldr.isNotEmpty && ttsEngineSupported
         ? _buildPlaybackControl(playback, spokenText)
         : null;
+    // The companion is the face of the read-aloud control, so she comes and
+    // goes with it, and speaks the same utterance: this task's, in the words
+    // the voice was given when it was tapped.
+    final companionEnabled =
+        ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    final companion = companionEnabled && playbackControl != null
+        ? SizedBox(
+            height: ControlSizes.companionCard,
+            child: AspectRatio(
+              aspectRatio: CompanionFraming.full.aspectRatio,
+              child: CompanionSpeaker(
+                key: const ValueKey('taskAgentCompanion'),
+                sourceId: widget.taskId,
+              ),
+            ),
+          )
+        : null;
 
     // Surface a toast when playback fails for this card's summary.
     ref.listen(ttsPlaybackControllerProvider, (previous, next) {
@@ -748,7 +767,16 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             padding: EdgeInsets.symmetric(
               horizontal: tokens.spacing.cardPadding,
             ),
-            child: reportBody,
+            child: companion == null
+                ? reportBody
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: tokens.spacing.step3,
+                    children: [
+                      companion,
+                      Expanded(child: reportBody),
+                    ],
+                  ),
           ),
         // The freshness word sits with the summary it describes, on the same
         // leading edge. The dense trigger is a 24-high box and the word

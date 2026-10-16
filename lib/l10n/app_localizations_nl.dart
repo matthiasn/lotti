@@ -3725,6 +3725,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon de lokale tekst-naar-spraak-knop op taak AI samenvattingen. Vereist een geïnstalleerd Supertonic TTS model.';
 
   @override
+  String get configFlagEnableCompanion => 'Metgezel';
+
+  @override
+  String get configFlagEnableCompanionDescription =>
+      'Toon naast de AI-samenvatting een personage dat hem voorleest, met haar mond op de stem. Vereist AI samenvatting afspelen.';
+
+  @override
   String get configFlagEnableDailyOs => 'DailyOS inschakelen';
 
   @override

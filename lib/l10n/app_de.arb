@@ -1583,6 +1583,8 @@
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
   "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
   "configFlagEnableAiSummaryTtsDescription": "Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes Supertonic-TTS-Modell.",
+  "configFlagEnableCompanion": "Begleiterin",
+  "configFlagEnableCompanionDescription": "Zeigt neben der AI-Zusammenfassung eine Figur, die sie vorliest – ihr Mund folgt der Stimme. Braucht „AI-Zusammenfassung vorlesen“.",
   "configFlagEnableDailyOs": "DailyOS aktivieren",
   "configFlagEnableDailyOsDescription": "DailyOS in der Hauptnavigation anzeigen.",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",

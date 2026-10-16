@@ -36,14 +36,35 @@ sources:
     resource: ../../lib/features/companion/rig/supersampled_painter.dart
     title: SupersampledPainter
     last_modified: 2026-10-14
+  - id: speaker
+    resource: ../../lib/features/companion/ui/companion_speaker.dart
+    title: CompanionSpeaker
+    last_modified: 2026-10-15
+  - id: spoken-track
+    resource: ../../lib/features/companion/state/spoken_track.dart
+    title: loadSpokenTrack and spokenTrackLoaderProvider
+    last_modified: 2026-10-15
+  - id: playhead-clock
+    resource: ../../lib/features/companion/animation/playhead_clock.dart
+    title: PlayheadClock
+    last_modified: 2026-10-15
 ---
 
 # Companion
 
-A drawn character, alive in a widget. Only the widgetbook mounts it today
-(`lib/widgetbook.dart`); nothing in the app shell does. Its
+A drawn character, alive in a widget. In the app she stands beside the task
+agent's AI summary, behind `enable_companion` (seeded off), and speaks it with
+the on-device voice ([agents UI surfaces](agents/ui-surfaces.md)); the
+widgetbook (`lib/widgetbook.dart`) shows all of her. Her
 [README](../../lib/features/companion/README.md) covers what she looks like
-and how to try her; this concept is how a frame of her is made.
+and how to try her; this concept is how a frame of her is made, and how she
+speaks.
+
+She ranks just above `tts` in the layer order
+(`tool/architecture/layer_guard.dart`): she imports the voice and the design
+system, and every surface that shows her ranks above her. So the words she
+says are always the host's — the task agent's summary, later the day's plan —
+and she never reaches up for data.
 
 # The frame loop
 
@@ -136,10 +157,68 @@ on — over the voiced part of the clip, first sound to last. Stretching the
 full `length` instead would squeeze the words into the front of the voice and
 close the lips early.
 
+# Speaking with the on-device voice
+
+`CompanionSpeaker` is `CompanionView` bound to the app-wide voice. The host
+asks the voice to speak, exactly as it would without her
+(`TtsPlaybackController.speak(sourceId:, text:)`), and gives her the same
+`sourceId`. The voice knows nothing about her: she reads
+`TtsPlaybackState`, whose `clip` carries the WAV and the words it was made
+from.
+
+```mermaid
+sequenceDiagram
+  participant Host as Host (AI summary card)
+  participant Voice as TtsPlaybackController
+  participant Her as CompanionSpeaker
+  participant Loader as loadSpokenTrack
+  Host->>Voice: speak(sourceId, text)
+  Voice-->>Her: playing, sourceId, clip (path + words)
+  Her->>Loader: the clip's path and words
+  Loader-->>Her: VoicedTextTrack (or TextLipSync)
+  loop every frame
+    Her->>Voice: read position (never watched)
+    Her->>Her: PlayheadClock carries it to now
+  end
+  Voice-->>Her: stopped (clip cleared)
+  Her->>Her: track dropped, she falls silent
+```
+
+- **Only the start and end of an utterance pass through Riverpod.** She
+  listens to one selected value — the clip while *her* source plays,
+  null otherwise — so the voice's position ticks never rebuild her. Another
+  source playing leaves her silent.
+- **The clip is read once, off the UI isolate.** `loadSpokenTrack` reads the
+  WAV and computes its loudness in `Isolate.run`, because a long summary is
+  minutes of samples. A clip already deleted (the utterance ended first) or
+  not 16-bit PCM falls back to `TextLipSync` on the words: the voice still
+  plays, so she still talks, less exactly in time.
+- **Her words are the clip's, not the screen's.** The host's text can change
+  while the voice is still synthesizing — the summary card expands, or a new
+  report lands — so she never takes words from the host: the clip carries the
+  text it was synthesized from.
+- **A late load never lands.** Each utterance start or end bumps a counter;
+  a load that finishes for an utterance that is over is dropped.
+- **The playhead is carried between reports.** The player reports its
+  position in coarse steps. `PlayheadClock` carries the latest report forward
+  by the time since it arrived, times the playback speed, and starts again
+  from every report — at most `maxLead` (250 ms) past it, so a stalled player
+  stops her mouth instead of letting it run on through the words. Each
+  utterance gets a fresh clock: two clips both open at zero, and a clock that
+  still held the first one's zero would start the second at its full lead.
+
+In the app she is shown in `CompanionFraming.full`: head to toe, wide enough
+that both wrists stay inside it with room for the hand in every gesture (a
+test walks each gesture through its phases). Her box is
+`ControlSizes.companionCard` high, its width following from
+`CompanionFraming.aspectRatio`.
+
 # Gotchas
 
 - `CompanionPose` is rebuilt field by field in `_withTrail` to add the hair
   and hem lag; a new pose field must be carried there too.
 - `SpeechEnvelope.fromWav` takes 16-bit PCM only.
+- Her ticker runs for as long as she is mounted, so a widget test of any
+  surface showing her pumps frames by hand; `pumpAndSettle` never settles.
 - The illustration colours are deliberately not design-system tokens; the
   [design system](design_system/) governs interface colour, not a drawing's.

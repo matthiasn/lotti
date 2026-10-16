@@ -1805,6 +1805,8 @@
   "configFlagEnableAiStreamingDescription": "Risposte dell'intelligenza artificiale per le azioni correlate al compito. Spegnere le risposte del buffer e mantenere l'interfaccia utente più fluida.",
   "configFlagEnableAiSummaryTts": "Riproduzione di sintesi AI",
   "configFlagEnableAiSummaryTtsDescription": "Mostra il pulsante di testo-to-speech locale sui riassunti dell'intelligenza artificiale del compito. Richiede un modello Supertonic TTS installato.",
+  "configFlagEnableCompanion": "Compagna",
+  "configFlagEnableCompanionDescription": "Mostra accanto al riassunto AI un personaggio che lo legge ad alta voce, con la bocca a tempo con la voce. Richiede la riproduzione di sintesi AI.",
   "configFlagEnableDailyOs": "Abilita DailyOS",
   "configFlagEnableDailyOsDescription": "Mostra DailyOS nella navigazione principale.",
   "configFlagEnableDashboardsPage": "Attivare la pagina Dashboards",

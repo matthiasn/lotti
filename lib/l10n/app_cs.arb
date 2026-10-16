@@ -1590,6 +1590,8 @@
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
   "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",
   "configFlagEnableAiSummaryTtsDescription": "Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model Supertonic TTS.",
+  "configFlagEnableCompanion": "Společnice",
+  "configFlagEnableCompanionDescription": "Zobrazí postavu vedle AI souhrnu, která ho předčítá a hýbe ústy podle hlasu. Vyžaduje přehrávání AI souhrnů.",
   "configFlagEnableDailyOs": "Povolit DailyOS",
   "configFlagEnableDailyOsDescription": "Zobrazit DailyOS v hlavní navigaci.",
   "configFlagEnableDashboardsPage": "Povolit stránku Dashboardů",

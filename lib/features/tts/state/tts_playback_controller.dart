@@ -237,6 +237,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       state = state.copyWith(
         status: TtsPlaybackStatus.playing,
         sourceId: sourceId,
+        clip: (path: file.path, text: text),
       );
       await player.play(file, speed: settings.speed);
     } catch (error) {
@@ -249,6 +250,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       state = state.copyWith(
         status: TtsPlaybackStatus.error,
         sourceId: sourceId,
+        clip: null,
         errorMessage: error.toString(),
       );
     } finally {
@@ -322,6 +324,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       status: TtsPlaybackStatus.stopped,
       sourceId: null,
       position: Duration.zero,
+      clip: null,
     );
   }
 
