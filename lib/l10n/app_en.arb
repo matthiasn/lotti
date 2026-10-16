@@ -10057,5 +10057,13 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip"
+  "whatsNewSkipButton": "Skip",
+  "relationshipBirthdayLabel": "Birthday",
+  "@relationshipBirthdayLabel": {
+    "description": "Label of the birthday row in the person editor, and the title of its calendar."
+  },
+  "relationshipBirthdayAdd": "Add birthday",
+  "@relationshipBirthdayAdd": {
+    "description": "Button in the person editor when no birthday is known yet."
+  }
 }

@@ -16956,4 +16956,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
+
+  @override
+  String get relationshipBirthdayAdd => 'Add birthday';
 }

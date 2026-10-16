@@ -69,6 +69,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.semanticsLabel,
+    this.multiline = false,
     super.key,
   }) : assert(
          onTrailingIconTap == null || trailingIcon != null,
@@ -129,6 +130,11 @@ class DesignSystemTextInput extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final String? semanticsLabel;
+
+  /// Lets the text wrap onto further lines, the field growing from its usual
+  /// height — for a list typed in one field, where one line would hide all
+  /// but its end.
+  final bool multiline;
 
   /// Whether a rounded field paints its own `background.level01` well. A
   /// field inside a modal sheet passes false: the sheet's raised surface
@@ -256,7 +262,7 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
             child: ConstrainedBox(
               // Editable fields keep their fixed height; a read-only display
               // value may wrap rather than clip what it is confirming.
-              constraints: widget.readOnly
+              constraints: widget.readOnly || widget.multiline
                   ? BoxConstraints(minHeight: spec.fieldHeight)
                   : BoxConstraints.tightFor(height: spec.fieldHeight),
               child: Center(
@@ -268,7 +274,11 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     enabled: widget.enabled,
                     readOnly: widget.readOnly,
                     showCursor: !widget.readOnly,
-                    maxLines: widget.readOnly && !widget.obscureText ? null : 1,
+                    maxLines:
+                        (widget.readOnly || widget.multiline) &&
+                            !widget.obscureText
+                        ? null
+                        : 1,
                     obscureText: widget.obscureText,
                     autofocus: widget.autofocus,
                     keyboardType: widget.keyboardType,

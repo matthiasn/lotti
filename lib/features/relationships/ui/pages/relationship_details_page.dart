@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -204,7 +205,7 @@ class _RelationshipDetailsPageState
       // Resolved-null means the person is gone (deleted here or on another
       // device) — that is not an error, so say so instead of alarming.
       final body = detailAsync.isLoading
-          ? const CircularProgressIndicator.adaptive()
+          ? const DesignSystemSpinner()
           : Text(
               detailAsync.hasError
                   ? context.messages.commonError

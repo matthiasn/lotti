@@ -6,9 +6,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -476,7 +478,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
             child: checkIn == null
                 ? Center(
                     child: detail == null && detailAsync.isLoading
-                        ? const CircularProgressIndicator()
+                        ? const DesignSystemSpinner()
                         : Text(
                             // A failed first load is an error; a person or
                             // check-in that resolved to nothing is gone.
@@ -761,10 +763,8 @@ class _Body extends StatelessWidget {
                   SizedBox(height: tokens.spacing.sectionGap),
                   // The faint rule a task draws between its identity and its
                   // body, so the two read as anchored bands.
-                  Divider(
+                  DesignSystemDivider(
                     key: const ValueKey('check-in-detail-rule'),
-                    height: 1,
-                    thickness: 1,
                     color: tokens.colors.decorative.level01,
                   ),
                   SizedBox(height: tokens.spacing.step4),

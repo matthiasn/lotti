@@ -16802,6 +16802,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
+
+  @override
+  String get relationshipBirthdayAdd => 'Add birthday';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

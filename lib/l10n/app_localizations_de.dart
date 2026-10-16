@@ -17025,4 +17025,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
+
+  @override
+  String get relationshipBirthdayAdd => 'Add birthday';
 }

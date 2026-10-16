@@ -16918,4 +16918,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
+
+  @override
+  String get relationshipBirthdayAdd => 'Add birthday';
 }

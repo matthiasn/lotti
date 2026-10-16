@@ -17113,4 +17113,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String get relationshipBirthdayLabel => 'Birthday';
+
+  @override
+  String get relationshipBirthdayAdd => 'Add birthday';
 }

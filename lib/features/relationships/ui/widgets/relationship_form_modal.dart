@@ -3,14 +3,20 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
@@ -32,7 +38,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -44,6 +49,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
   late final TextEditingController _nicknameController;
   late final TextEditingController _knownTermsController;
   late bool _important;
+
+  /// The person's birthday; null when not known.
+  DateTime? _birthday;
 
   /// Whether there is a name to save under. Save is held without one, and
   /// the Name field says so — rather than a live button that answers the
@@ -78,6 +86,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       text: formatSpeechTerms(data?.knownTerms),
     );
     _important = data?.important ?? false;
+    _birthday = data?.birthday;
     _cadenceDays = data?.checkInCadenceDays;
     _statusKind = data != null ? _kindOf(data.status) : _StatusKind.active;
     _categoryId = widget.initial?.meta.categoryId;
@@ -203,6 +212,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
           important: _important,
           checkInCadenceDays: _savedCadenceDays,
           contactChannels: _editedChannels,
+          birthday: _birthday,
         );
         // Append the replaced status to history when the kind changed — the
         // ProjectDetailController precedent.
@@ -249,6 +259,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             important: _important,
             checkInCadenceDays: _savedCadenceDays,
             contactChannels: _editedChannels,
+            birthday: _birthday,
             status: _mintStatus(_StatusKind.active),
           ),
           categoryId: _categoryId,
@@ -339,6 +350,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
       return true;
     }
     if (_important != (data?.important ?? false)) return true;
+    if (_birthday != data?.birthday) return true;
     if (_cadenceDays != data?.checkInCadenceDays) return true;
     final openingKind = data != null
         ? _kindOf(data.status)
@@ -466,9 +478,10 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
             children: [
               PersonCardHeader(title: messages.relationshipFormWhoTitle),
               gap(tokens.spacing.step4),
-              LottiTextField(
+              DesignSystemTextInput(
+                key: const ValueKey('person-form-name'),
                 controller: _nameController,
-                labelText: messages.relationshipNameLabel,
+                label: messages.relationshipNameLabel,
                 autofocus: !_isEditing,
                 textCapitalization: TextCapitalization.words,
               ),
@@ -484,21 +497,27 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                 ),
               ],
               gap(tokens.spacing.step4),
-              LottiTextField(
+              DesignSystemTextInput(
+                key: const ValueKey('person-form-nickname'),
                 controller: _nicknameController,
-                labelText: messages.relationshipNicknameLabel,
+                label: messages.relationshipNicknameLabel,
                 textCapitalization: TextCapitalization.words,
+              ),
+              gap(tokens.spacing.step4),
+              _BirthdayRow(
+                birthday: _birthday,
+                onChanged: (value) => setState(() => _birthday = value),
               ),
               gap(tokens.spacing.step4),
               // The category speech dictionary's format, so one habit edits
               // both lists.
-              LottiTextField(
+              DesignSystemTextInput(
                 key: const ValueKey('person-form-known-terms'),
                 controller: _knownTermsController,
-                labelText: messages.relationshipKnownTermsLabel,
+                label: messages.relationshipKnownTermsLabel,
                 hintText: messages.relationshipKnownTermsHint,
                 textCapitalization: TextCapitalization.words,
-                maxLines: null,
+                multiline: true,
               ),
               gap(tokens.spacing.step2),
               Text(
@@ -544,9 +563,9 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // screen reader reads "Important" with the switch's state, and
               // the label itself toggles.
               MergeSemantics(
-                child: InkWell(
+                child: DsQuietInk(
                   onTap: () => setState(() => _important = !_important),
-                  child: Row(
+                  builder: (BuildContext context, bool highlighted) => Row(
                     children: [
                       Expanded(
                         child: Text(
@@ -555,8 +574,11 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
                               .copyWith(color: tokens.colors.text.highEmphasis),
                         ),
                       ),
-                      Switch(
+                      DesignSystemToggle(
+                        key: const ValueKey('person-form-reminders'),
                         value: _important,
+                        semanticsLabel:
+                            messages.relationshipRemindersSwitchLabel,
                         onChanged: (value) =>
                             setState(() => _important = value),
                       ),

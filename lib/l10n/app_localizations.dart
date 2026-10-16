@@ -28054,6 +28054,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// Label of the birthday row in the person editor, and the title of its calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthday'**
+  String get relationshipBirthdayLabel;
+
+  /// Button in the person editor when no birthday is known yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add birthday'**
+  String get relationshipBirthdayAdd;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -249,7 +250,7 @@ class _PeopleListScaffold extends ConsumerWidget {
                   child: Padding(
                     padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
                     child: const Center(
-                      child: CircularProgressIndicator.adaptive(),
+                      child: DesignSystemSpinner(),
                     ),
                   ),
                 ),
