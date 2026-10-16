@@ -36,31 +36,37 @@ class PersonCardHeader extends StatelessWidget {
     final tokens = context.designTokens;
     return Row(
       children: [
-        Text(
-          title,
-          // `subtitle1`, not `subtitle2`: at 14 these titles sat *under*
-          // the 16pt body they head, and under the Briefing card's own
-          // title, so the person page had two heading tiers and the
-          // quieter one led the louder content.
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: tokens.colors.text.highEmphasis,
+        // The title, its count and its caption flow as one heading: at a
+        // large text size on a narrow phone they wrap onto further lines
+        // rather than running off the card, and the trailing action keeps
+        // its edge.
+        Expanded(
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step2,
+            children: [
+              Text(
+                title,
+                // `subtitle1`, not `subtitle2`: at 14 these titles sat
+                // *under* the 16pt body they head, and under the Briefing
+                // card's own title, so the person page had two heading tiers
+                // and the quieter one led the louder content.
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+              if (count != null)
+                Text(
+                  '· $count',
+                  key: countKey,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ?caption,
+            ],
           ),
         ),
-        if (count != null) ...[
-          SizedBox(width: tokens.spacing.step2),
-          Text(
-            '· $count',
-            key: countKey,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
-          ),
-        ],
-        if (caption != null) ...[
-          SizedBox(width: tokens.spacing.step3),
-          caption!,
-        ],
-        const Spacer(),
         ?trailing,
       ],
     );
