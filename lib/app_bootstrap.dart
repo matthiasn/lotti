@@ -236,7 +236,13 @@ Future<ProfileContext> bootstrapProfileServices(
   );
 
   getIt
-    ..registerSingleton<SecureStorage>(SecureStorage())
+    ..registerSingleton<SecureStorage>(
+      SecureStorage(
+        logging: getIt.isRegistered<DomainLogger>()
+            ? getIt<DomainLogger>()
+            : null,
+      ),
+    )
     ..registerSingleton<ProfileContext>(context)
     ..registerSingleton<Directory>(info.activeRoot)
     ..registerSingleton<SettingsDb>(SettingsDb())

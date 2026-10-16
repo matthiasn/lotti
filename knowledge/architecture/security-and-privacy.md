@@ -11,7 +11,7 @@ sources:
   - id: secure-storage
     resource: ../../lib/services/secure_storage.dart
     title: SecureStorage
-    last_modified: 2026-06-16
+    last_modified: 2026-10-16
   - id: event-trust
     resource: ../../lib/features/sync/matrix/sync_event_trust.dart
     title: SyncEventTrust — inbound sender trust
@@ -99,14 +99,31 @@ message, so neither the message nor a log line prints it.
 | Windows | Credential Locker (DPAPI) |
 | Linux | Secret Service (libsecret, via GNOME Keyring or KWallet) |
 
-`SecureStorage` adds two things over the raw plugin:
+`SecureStorage` adds three things over the raw plugin:
 
 - **A read-through in-memory cache.** The first read of a key is memoised for
   the process lifetime; `writeValue` deletes before writing so the cache and the
-  keystore cannot disagree.
+  keystore cannot disagree. Writes, deletes and cache-missing reads run one at
+  a time, so a read never caches a value a pending write or delete replaces.
 - **Namespacing by package name.** iOS and macOS entries carry the app's package
   name as `accountName`, so build flavours installed side by side do not collide
   in a shared keychain.
+- **Guards for Linux's single bundle.** On Linux the plugin keeps *every* key
+  in one libsecret item, a JSON object, which it reads, edits and writes back
+  whole; a blank item parses as "no keys", so one bad read followed by a write
+  drops every other secret (#4789). An unencrypted GNOME Keyring produces
+  exactly that read: it blanks any secret containing a backslash when it
+  reloads its file (gnome-keyring#147). So on Linux a value the bundle's JSON
+  would escape — a quote, a backslash, a control character, as in the Matrix
+  config and the GitHub account record — is stored base64url-encoded behind a
+  `lotti-b64:` prefix (as is a value that itself starts with the prefix, so a
+  read never mistakes it; other platforms neither encode nor decode). Before
+  its first access, `SecureStorage` rewrites every value an earlier version
+  stored raw in the bundle, including keys it never reads, such as another
+  profile's GitHub record. And before every write or delete the bundle is
+  read back: a key the cache holds but the bundle has lost is written back
+  first, logged as `secureStorage.repair` in the persistence domain, instead
+  of being overwritten by the one key being written.
 
 ## Android device backups
 
