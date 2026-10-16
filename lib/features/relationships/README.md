@@ -39,8 +39,11 @@ pictures are managed from the person editor's Photo card — the banner is
 dragged sideways into place there — and the face from the page's avatar too.
 The editor also keeps a birthday, which the agent's briefings count down to.
 The bottom bar offers *Speak*, which opens the check-in composer already
-recording, and *+ Add*: a check-in, a note about the person (which can be
-pinned to *About*), a task, or photos.
+recording, and *+ Add*: a check-in, a meeting, a note about the person (which
+can be pinned to *About*), a task, or photos. A meeting gets a title, a day,
+a start and a length; it lands under *Upcoming*, keys *Before you talk* to its
+day, and shows on the Daily OS Day view even with the Events feature off. An
+overdue person's warning pill opens the same meeting sheet.
 
 ## Briefings and suggestions
 

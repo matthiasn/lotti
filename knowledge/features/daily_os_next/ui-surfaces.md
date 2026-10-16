@@ -249,7 +249,11 @@ owns the rules once, for this lane *and* the planner's week-context lookback:
 - an event counts only while the **Events feature flag** is on — with it off,
   events are hidden everywhere, so the lane awaits
   `configFlagProvider(enableEventsFlag)` and re-runs when it flips, and the
-  week-context service reads `getConfigFlag` before it resolves;
+  week-context service reads `getConfigFlag` before it resolves — **unless it
+  is a meeting planned with a person**: `loadRecordedTimeInputs` also reads
+  the `RelationshipLink`s pointing at the range's events (only when there are
+  events), and an event linked from a live `RelationshipEntry` counts with the
+  flag off;
 - and only when it **took place** (`eventTookPlace`): a cancelled or missed
   event never happened and a postponed one has left its slot without naming
   a new one; every other status — tentative, planned, ongoing, completed,

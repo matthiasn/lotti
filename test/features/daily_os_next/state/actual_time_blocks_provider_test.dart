@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -20,7 +21,6 @@ import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
-import 'package:lotti/classes/entry_link.dart';
 
 void main() {
   group('dailyOsActualTimeUpdateProvider', () {

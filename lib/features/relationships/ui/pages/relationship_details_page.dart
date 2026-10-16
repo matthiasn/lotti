@@ -340,9 +340,9 @@ class _RelationshipDetailsPageState
           trailing: personHeaderPills(
             context,
             item,
-            onPlanMeeting: () => unawaited(
-              showPersonMeetingSheet(context: context, person: relationship),
-            ),
+            // The sheet reports its own failures, as the note sheet does.
+            onPlanMeeting: () =>
+                showPersonMeetingSheet(context: context, person: relationship),
           ),
         ),
       ),
