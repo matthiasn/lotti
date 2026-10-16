@@ -20,6 +20,7 @@ import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'actual_time_blocks_provider_test_helpers.dart';
+import 'package:lotti/classes/entry_link.dart';
 
 void main() {
   group('dailyOsActualTimeUpdateProvider', () {
@@ -251,6 +252,12 @@ void main() {
         when(
           () => db.basicLinksForEntryIds({walk.meta.id, dinner.meta.id}),
         ).thenAnswer((_) async => const []);
+        when(
+          () => db.typedLinksForTaskIds(
+            {dinner.meta.id},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer((_) async => const []);
       });
 
       ProviderContainer container() {
@@ -285,6 +292,41 @@ void main() {
         final blocks = await readActualBlocks(container(), day);
 
         expect(blocks.map((block) => block.title), ['Walking']);
+      });
+
+      test('off: a meeting planned with a person stays on the lane — '
+          "people's meetings show whatever the flag says", () async {
+        when(
+          () => db.watchConfigFlag(enableEventsFlag),
+        ).thenAnswer((_) => Stream.value(false));
+        final person = testRelationship;
+        when(
+          () => db.typedLinksForTaskIds(
+            {dinner.meta.id},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.relationship(
+              id: 'person->dinner',
+              fromId: person.meta.id,
+              toId: dinner.meta.id,
+              createdAt: day,
+              updatedAt: day,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => db.getJournalEntitiesForIdsUnordered({person.meta.id}),
+        ).thenAnswer((_) async => [person]);
+
+        final blocks = await readActualBlocks(container(), day);
+
+        expect(blocks.map((block) => block.title), [
+          'Walking',
+          'Dinner with a friend',
+        ]);
       });
 
       test('flipping it repaints the lane without a restart', () async {

@@ -7712,6 +7712,15 @@
   },
   "relationshipBriefingRequestFailed": "Could not request the briefing.",
   "relationshipBriefingTitle": "Briefing",
+  "relationshipBringUpBefore": "Bring up before {day}",
+  "@relationshipBringUpBefore": {
+    "description": "Label over the note to bring up, when a meeting is booked; {day} is like 'Sun 18 Oct'.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCadenceEveryNDays": "{days, plural, =1{Every day} other{Every {days} days}}",
   "@relationshipCadenceEveryNDays": {
     "placeholders": {
@@ -8041,6 +8050,40 @@
   },
   "relationshipLinkedTasksLabel": "Tasks",
   "relationshipLogCheckIn": "Log check-in",
+  "relationshipMeetingDefaultTitle": "Meet {name}",
+  "@relationshipMeetingDefaultTitle": {
+    "description": "A new meeting's prefilled title; {name} is the person's nickname or name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipMeetingSave": "Plan meeting",
+  "@relationshipMeetingSave": {
+    "description": "The meeting sheet's primary button."
+  },
+  "relationshipMeetingSaveFailed": "Could not plan the meeting.",
+  "@relationshipMeetingSaveFailed": {
+    "description": "Said under the title when planning the meeting failed."
+  },
+  "relationshipMeetingStartsLabel": "Starts",
+  "@relationshipMeetingStartsLabel": {
+    "description": "Title of the meeting sheet's day and time pickers."
+  },
+  "relationshipMeetingStartsSemantics": "Starts: {time}. Change",
+  "@relationshipMeetingStartsSemantics": {
+    "description": "Screen-reader label of the meeting sheet's start tag; {time} is like 'Sun 18 Oct · 15:00'.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipMeetingTitleLabel": "Title",
+  "@relationshipMeetingTitleLabel": {
+    "description": "Label of the meeting sheet's title field."
+  },
   "relationshipMoreActions": "More actions",
   "@relationshipMoreActions": {
     "description": "Tooltip of the person page's overflow menu (link contact, delete)"
@@ -8098,6 +8141,15 @@
   "relationshipPhotoSaveFailed": "Could not save the photo",
   "relationshipPhotoSheetTitle": "Photo of {name}",
   "@relationshipPhotoSheetTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipPlanMeeting": "Plan a meeting with {name}",
+  "@relationshipPlanMeeting": {
+    "description": "The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.",
     "placeholders": {
       "name": {
         "type": "String"

@@ -1050,6 +1050,52 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets('+ Add plans a meeting with the person, in its own sheet', (
+      tester,
+    ) async {
+      await pumpTimeline(tester);
+
+      await withClock(
+        Clock.fixed(now),
+        () => addFromMenu(tester, 'meeting'),
+      );
+
+      expect(find.text('Plan a meeting with Sis'), findsOneWidget);
+      expect(find.widgetWithText(TextField, 'Meet Sis'), findsOneWidget);
+    });
+  });
+
+  testWidgets('an overdue cadence pill is the way to plan the conversation '
+      'it asks for', (tester) async {
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true, cadenceDays: 7),
+    );
+    final weeksAgo = DateTime(2026, 7, 30, 10);
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer(
+      (_) async => [
+        checkIn('check-1').copyWith(
+          meta: meta('check-1').copyWith(dateFrom: weeksAgo, dateTo: weeksAgo),
+        ),
+      ],
+    );
+
+    await pumpPage(tester);
+    final due = find.byKey(const ValueKey('person-pill-due'));
+    expect(pill(tester, 'person-pill-due').onTap, isNotNull);
+    expect(
+      find.descendant(of: due, matching: find.byIcon(LottiIcons.chevronRight)),
+      findsOneWidget,
+    );
+
+    await withClock(Clock.fixed(now), () async {
+      await tester.tap(due);
+      await tester.pumpAndSettle();
+    });
+
+    expect(find.text('Plan a meeting with Sis'), findsOneWidget);
   });
 
   group('a call just placed from this page', () {

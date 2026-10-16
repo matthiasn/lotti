@@ -144,11 +144,53 @@ Future<DateTime?> pickCheckInStart({
       initial.minute,
     ),
   );
-  final time = await _pickCheckInTime(context, day);
+  final time = await _pickTime(
+    context,
+    day,
+    title: messages.checkInStartedLabel,
+    key: const ValueKey('check-in-time-picker'),
+  );
   if (!context.mounted || time == null) return day;
   return _notAfterNow(
     DateTime(day.year, day.month, day.day, time.hour, time.minute),
   );
+}
+
+/// When a meeting starts: the day, then the time, as [pickCheckInStart]
+/// asks them — but looking ahead, from today on, since a meeting is planned
+/// rather than logged. Resolves to the new start, or null when the day was
+/// dismissed; a dismissed time keeps the picked day.
+Future<DateTime?> pickMeetingStart({
+  required BuildContext context,
+  required DateTime initial,
+}) async {
+  final messages = context.messages;
+  final now = clock.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final result = await showDesignSystemDatePicker(
+    context: context,
+    title: messages.relationshipMeetingStartsLabel,
+    initialDate: initial,
+    firstDate: today,
+    lastDate: DateTime(today.year + 5, today.month, today.day),
+  );
+  final picked = result?.date;
+  if (!context.mounted || picked == null) return null;
+  final day = DateTime(
+    picked.year,
+    picked.month,
+    picked.day,
+    initial.hour,
+    initial.minute,
+  );
+  final time = await _pickTime(
+    context,
+    day,
+    title: messages.relationshipMeetingStartsLabel,
+    key: const ValueKey('meeting-time-picker'),
+  );
+  if (!context.mounted || time == null) return day;
+  return DateTime(day.year, day.month, day.day, time.hour, time.minute);
 }
 
 /// A check-in started in the past by definition: the date picker stops at
@@ -166,11 +208,16 @@ DateTime _notAfterNow(DateTime candidate) {
   return candidate.isAfter(nowMinute) ? nowMinute : candidate;
 }
 
-Future<TimeOfDay?> _pickCheckInTime(BuildContext context, DateTime initial) {
+Future<TimeOfDay?> _pickTime(
+  BuildContext context,
+  DateTime initial, {
+  required String title,
+  required Key key,
+}) {
   var chosen = TimeOfDay.fromDateTime(initial);
   return ModalUtils.showSinglePageModal<TimeOfDay>(
     context: context,
-    title: context.messages.checkInStartedLabel,
+    title: title,
     // A step of air above and below, so the wheel's outer rows are not
     // sliced by the sheet's top bar and its pinned Done.
     builder: (modalContext) => Padding(
@@ -178,10 +225,10 @@ Future<TimeOfDay?> _pickCheckInTime(BuildContext context, DateTime initial) {
         vertical: modalContext.designTokens.spacing.step4,
       ),
       child: DesignSystemTimeWheel(
-        key: const ValueKey('check-in-time-picker'),
+        key: key,
         initialDateTime: initial,
         use24hFormat: MediaQuery.alwaysUse24HourFormatOf(modalContext),
-        semanticsLabel: modalContext.messages.checkInStartedLabel,
+        semanticsLabel: title,
         onDateTimeChanged: (time) => chosen = TimeOfDay.fromDateTime(time),
       ),
     ),

@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart' as mocktail show any;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 final _day = DateTime(2026, 6, 8);
 
@@ -120,6 +121,27 @@ JournalEntity _rating({required String id}) {
   );
 }
 
+/// A person, as the People feature stores one.
+RelationshipEntry _person({required String id, bool deleted = false}) =>
+    testRelationship.copyWith(
+      meta: testRelationship.meta.copyWith(
+        id: id,
+        deletedAt: deleted ? _day : null,
+      ),
+    );
+
+/// The link that puts [toId] on [fromId]'s timeline — how a meeting planned
+/// with a person hangs off them.
+EntryLink _personLink({required String fromId, required String toId}) =>
+    EntryLink.relationship(
+      id: 'rel-$fromId-$toId',
+      fromId: fromId,
+      toId: toId,
+      createdAt: _day,
+      updatedAt: _day,
+      vectorClock: null,
+    );
+
 EntryLink _link({
   required String fromId,
   required String toId,
@@ -217,6 +239,48 @@ void main() {
         expect(resolved.categoryId, 'work');
       },
     );
+
+    test("reads the person → meeting links of the range's events, so a "
+        'meeting with a person shows with the Events feature off', () async {
+      final db = MockJournalDb();
+      final meeting = _event(id: 'evt-1', startHour: 15);
+      final person = _person(id: 'person-1');
+      final rangeEnd = _day.add(const Duration(days: 1));
+      when(
+        () => db.sortedCalendarEntries(rangeStart: _day, rangeEnd: rangeEnd),
+      ).thenAnswer((_) async => [meeting, _entry(id: 'e1', startHour: 9)]);
+      when(
+        () => db.basicLinksForEntryIds({'evt-1', 'e1'}),
+      ).thenAnswer((_) async => []);
+      when(
+        () => db.typedLinksForTaskIds(
+          {'evt-1'},
+          types: {'RelationshipLink'},
+        ),
+      ).thenAnswer(
+        (_) async => [
+          _personLink(fromId: 'person-1', toId: 'evt-1'),
+          // The query reads both directions; a link *from* the event is
+          // none of the meeting's business and is not followed.
+          _personLink(fromId: 'evt-1', toId: 'elsewhere'),
+        ],
+      );
+      when(
+        () => db.getJournalEntitiesForIdsUnordered({'person-1'}),
+      ).thenAnswer((_) async => [person]);
+
+      final inputs = await loadRecordedTimeInputs(
+        db,
+        rangeStart: _day,
+        rangeEnd: rangeEnd,
+      );
+
+      expect(inputs.linkedFromById, {'person-1': person});
+      expect(
+        inputs.resolve(eventsEnabled: false).map((pair) => pair.entry.meta.id),
+        ['evt-1', 'e1'],
+      );
+    });
 
     test('a range without links never queries for linked entities', () async {
       final db = MockJournalDb();
@@ -437,6 +501,57 @@ void main() {
       );
 
       expect(resolved.map((pair) => pair.entry.meta.id), ['e1']);
+    });
+
+    test('a meeting planned with a person shows with the Events feature '
+        'off, on its own category and title', () {
+      final meeting = _event(id: 'evt-1', startHour: 15, categoryId: 'cat-p');
+
+      final pair = resolveTimeEntries(
+        entries: [meeting],
+        links: [_personLink(fromId: 'person-1', toId: 'evt-1')],
+        linkedFromById: {'person-1': _person(id: 'person-1')},
+        eventsEnabled: false,
+      ).single;
+
+      expect(pair.entry.meta.id, 'evt-1');
+      expect(pair.linkedFrom, isNull);
+      expect(pair.categoryId, 'cat-p');
+    });
+
+    test('with the Events feature off, an event is not a meeting when its '
+        'person is deleted or what it hangs off is no person', () {
+      final resolved = resolveTimeEntries(
+        entries: [
+          _event(id: 'evt-gone', startHour: 9),
+          _event(id: 'evt-task', startHour: 13),
+        ],
+        links: [
+          _personLink(fromId: 'person-gone', toId: 'evt-gone'),
+          _link(fromId: 'task-1', toId: 'evt-task'),
+        ],
+        linkedFromById: {
+          'person-gone': _person(id: 'person-gone', deleted: true),
+          'task-1': _task(id: 'task-1'),
+        },
+        eventsEnabled: false,
+      );
+
+      expect(resolved, isEmpty);
+    });
+
+    test('a meeting with a person that was called off still leaves the '
+        'lane', () {
+      final resolved = resolveTimeEntries(
+        entries: [
+          _event(id: 'evt-1', startHour: 15, status: EventStatus.cancelled),
+        ],
+        links: [_personLink(fromId: 'person-1', toId: 'evt-1')],
+        linkedFromById: {'person-1': _person(id: 'person-1')},
+        eventsEnabled: false,
+      );
+
+      expect(resolved, isEmpty);
     });
 
     test('the fallback pick is invariant to the link list order '

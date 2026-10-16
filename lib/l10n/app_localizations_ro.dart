@@ -17296,4 +17296,37 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planificați o întâlnire cu $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Întâlnire cu $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titlu';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Începe';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Începe: $time. Schimbați';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planificați întâlnirea';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Întâlnirea nu a putut fi planificată.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'De abordat înainte de $day';
+  }
 }

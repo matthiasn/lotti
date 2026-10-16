@@ -42,8 +42,9 @@ Stream<Set<String>> actualTimelineUpdateBatches(Stream<Set<String>> updates) {
 /// set its start and end on the event page — and lands on the lane as a
 /// calendar block whose state follows the event's status
 /// ([eventBlockState]). Because events are hidden everywhere while the
-/// Events feature is off, the projection watches that flag and re-runs when
-/// it flips.
+/// Events feature is off — all but a meeting planned with a person, which
+/// shows regardless — the projection watches that flag and re-runs when it
+/// flips.
 ///
 /// Workouts are recorded time too, but they reach the journal only through the
 /// health import, and nothing on this surface used to ask for one — a walk

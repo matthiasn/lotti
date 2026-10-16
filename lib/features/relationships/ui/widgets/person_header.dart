@@ -753,10 +753,14 @@ class PersonHeaderBlock extends StatelessWidget {
 ///
 /// One tinted chip at most, and it is the cadence: the health band lives on
 /// the briefing card, which dates it.
+///
+/// [onPlanMeeting] makes the overdue pill the way to plan the conversation
+/// it asks for.
 List<Widget> personHeaderPills(
   BuildContext context,
-  RelationshipListItem item,
-) {
+  RelationshipListItem item, {
+  VoidCallback? onPlanMeeting,
+}) {
   final tokens = context.designTokens;
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
@@ -767,7 +771,7 @@ List<Widget> personHeaderPills(
     // not a meeting is booked — the list says it either way, and a page
     // that stayed quiet left the reader to work out they were late.
     if (pill.kind != PeopleCadencePillKind.notEnrolled)
-      relationshipCadencePill(context, item),
+      relationshipCadencePill(context, item, onOverdueTap: onPlanMeeting),
     // `isEnrolled`, not the raw flag: a dormant or archived person keeps
     // `important` while the runtime clears their reminders.
     if (isEnrolled(item.relationship))
@@ -801,11 +805,13 @@ List<Widget> personHeaderPills(
 /// everyone else.
 ///
 /// Keyed per kind (`<keyPrefix>-due` / `-cadence` / `-status`) so a test can
-/// say which fact it expects rather than which text.
+/// say which fact it expects rather than which text. [onOverdueTap] makes
+/// the lapsed pill tappable; the other states read out only.
 Widget relationshipCadencePill(
   BuildContext context,
   RelationshipListItem item, {
   String keyPrefix = 'person-pill',
+  VoidCallback? onOverdueTap,
 }) {
   final tokens = context.designTokens;
   final messages = context.messages;
@@ -823,6 +829,7 @@ Widget relationshipCadencePill(
         relationshipWeekdayLabelOf(context, peopleDueDateOf(item)!),
         pill.daysOver,
       ),
+      onTap: onOverdueTap,
     ),
     PeopleCadencePillKind.dueSoon || PeopleCadencePillKind.onTrack => DsPill(
       key: ValueKey('$keyPrefix-cadence'),

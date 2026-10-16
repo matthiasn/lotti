@@ -16870,6 +16870,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan a meeting with $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Meet $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Title';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Starts';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Starts: $time. Change';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Plan meeting';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Could not plan the meeting.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bring up before $day';
+  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

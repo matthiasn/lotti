@@ -78,6 +78,9 @@ void main() {
     when(() => journalDb.basicLinksForEntryIds(any())).thenAnswer(
       (_) async => const [],
     );
+    when(
+      () => journalDb.typedLinksForTaskIds(any(), types: any(named: 'types')),
+    ).thenAnswer((_) async => const []);
     when(() => journalDb.getConfigFlag(any())).thenAnswer((_) async => false);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserted.add(invocation.positionalArguments.single as AgentDomainEntity);

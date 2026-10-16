@@ -326,6 +326,156 @@ void main() {
     });
   });
 
+  group('createMeeting', () {
+    final start = DateTime(2026, 8, 16, 15);
+
+    setUp(() {
+      when(
+        () => persistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+        ),
+      ).thenAnswer(
+        (call) async =>
+            meta(
+              'new-meeting',
+              private: call.namedArguments[#private] as bool? ?? false,
+            ).copyWith(
+              dateFrom: call.namedArguments[#dateFrom] as DateTime,
+              dateTo: call.namedArguments[#dateTo] as DateTime,
+              categoryId: call.namedArguments[#categoryId] as String?,
+            ),
+      );
+      when(
+        () => persistence.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => persistence.updateMetadata(
+          any(),
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (call) async => (call.positionalArguments.first as Metadata).copyWith(
+          deletedAt: call.namedArguments[#deletedAt] as DateTime?,
+        ),
+      );
+      when(
+        () => persistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+    });
+
+    test("writes a planned event over the slot, in the person's category "
+        'and privacy, and puts it on their timeline', () async {
+      final meeting = await repository.createMeeting(
+        person: person,
+        title: '  Coffee with Pip  ',
+        start: start,
+        duration: const Duration(minutes: 90),
+      );
+
+      expect(meeting?.data.title, 'Coffee with Pip');
+      expect(meeting?.data.status, EventStatus.planned);
+      expect(meeting?.meta.dateFrom, start);
+      expect(meeting?.meta.dateTo, DateTime(2026, 8, 16, 16, 30));
+      expect(meeting?.meta.categoryId, 'cat-1');
+      expect(meeting?.meta.private, isTrue);
+      final written =
+          verify(
+                () => persistence.createDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(written, isA<JournalEvent>());
+      verify(
+        () => persistence.createLink(
+          fromId: 'person',
+          toId: 'new-meeting',
+          linkType: EntryLinkType.relationship,
+        ),
+      ).called(1);
+    });
+
+    test('writes nothing for a blank title or a slot of no length', () async {
+      for (final (title, duration) in [
+        ('   ', const Duration(hours: 1)),
+        ('Coffee', Duration.zero),
+        ('Coffee', const Duration(minutes: -5)),
+      ]) {
+        expect(
+          await repository.createMeeting(
+            person: person,
+            title: title,
+            start: start,
+            duration: duration,
+          ),
+          isNull,
+          reason: '$title / $duration',
+        );
+      }
+      verifyNever(() => persistence.createDbEntity(any()));
+    });
+
+    test('a meeting that could not be written is none, and is never '
+        'linked', () async {
+      when(
+        () => persistence.createDbEntity(any()),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await repository.createMeeting(
+          person: person,
+          title: 'Coffee',
+          start: start,
+          duration: const Duration(hours: 1),
+        ),
+        isNull,
+      );
+      verifyNever(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+    });
+
+    test('a meeting whose timeline link fails is removed again', () async {
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      expect(
+        await repository.createMeeting(
+          person: person,
+          title: 'Coffee',
+          start: start,
+          duration: const Duration(hours: 1),
+        ),
+        isNull,
+      );
+      final removed =
+          verify(
+                () => persistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(removed, isA<JournalEvent>());
+      expect(removed.id, 'new-meeting');
+      expect(removed.meta.deletedAt, isNotNull);
+    });
+  });
+
   group('personTimelineLinksChangedAt', () {
     Future<void> linkAt(String to, DateTime updatedAt, {DateTime? deletedAt}) =>
         db.upsertEntryLink(
