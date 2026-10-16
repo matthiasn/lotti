@@ -1551,6 +1551,36 @@ void main() {
         subdir: _subdir,
       );
     });
+
+    testWidgets('$suffix person page, planning a meeting — dark', (
+      tester,
+    ) async {
+      await pumpSurface(
+        tester,
+        home: const RelationshipDetailsPage(relationshipId: _pipId),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: personOverrides(
+          report: briefing(),
+          state: makeTestState(agentId: agentId),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('person-action-add')));
+      await tester.pumpAndSettle();
+      // The sheet's default start is read off the clock: the rig's own day.
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.byKey(const ValueKey('person-create-meeting')));
+        await tester.pumpAndSettle();
+      });
+
+      expect(find.text('Meet Pip'), findsOneWidget);
+      expect(find.text('Fri 14 Aug · 15:00'), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'person_meeting_sheet_${suffix}_dark',
+        subdir: _subdir,
+      );
+    });
   }
 
   // The rows are the Tasks list's grouped rows: hovered, the fill spans the
