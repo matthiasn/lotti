@@ -2204,6 +2204,76 @@
   "dailyOsNextBlockMoveTooltip": "Mover bloco",
   "dailyOsNextBlockResizeEndTooltip": "Ajustar final",
   "dailyOsNextBlockResizeStartTooltip": "Ajustar início",
+  "dailyOsNextBriefingBlockCount": "{count, plural, =0{Ainda não há nada planeado.} =1{Tens um bloco planeado.} other{Tens {count} blocos planeados.}}",
+  "@dailyOsNextBriefingBlockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingFree": "Ainda tens {duration} por planear.",
+  "@dailyOsNextBriefingFree": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFullyBooked": "O teu dia está cheio.",
+  "dailyOsNextBriefingHours": "{count, plural, =1{1 hora} other{{count} horas}}",
+  "@dailyOsNextBriefingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingHoursAndMinutes": "{hours} e {minutes}",
+  "@dailyOsNextBriefingHoursAndMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingLongest": "O mais longo é {title}, com {duration}.",
+  "@dailyOsNextBriefingLongest": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingMinutes": "{count, plural, =1{1 minuto} other{{count} minutos}}",
+  "@dailyOsNextBriefingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingNext": "A seguir, às {time}: {title}.",
+  "@dailyOsNextBriefingNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingNoPlan": "Ainda não há um plano para este dia. Um check-in rápido cria um.",
+  "dailyOsNextBriefingNothingLeft": "Não há mais nada planeado para hoje.",
+  "dailyOsNextBriefingPlayTooltip": "Ouvir o teu dia",
+  "dailyOsNextBriefingStopTooltip": "Parar o resumo",
   "dailyOsNextCaptureCaptured": "Entendi.",
   "dailyOsNextCaptureDoneCta": "Concluído",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Não foi possível guardar a gravação.",

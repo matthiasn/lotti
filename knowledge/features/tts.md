@@ -131,3 +131,9 @@ with words the screen shows now but the voice was never given. The
 stop, completion and error, because the file is deleted then, and a reader
 that gets there late finds no file — the companion falls back to the words
 alone.
+
+A failure never reaches the caller of `speak` as an exception: it is the
+`error` status above. A surface that asks the voice to speak calls
+`listenForPlaybackFailure` (`ui/playback_failure_toast.dart`) from its build,
+which shows one error toast per failure of *its* `sourceId` — the AI summary
+card and the Daily OS day briefing both do.

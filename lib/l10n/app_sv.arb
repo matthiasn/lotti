@@ -2205,6 +2205,76 @@
   "dailyOsNextBlockMoveTooltip": "Flyttblockering",
   "dailyOsNextBlockResizeEndTooltip": "Justera änden",
   "dailyOsNextBlockResizeStartTooltip": "Justera start",
+  "dailyOsNextBriefingBlockCount": "{count, plural, =0{Inget är planerat än.} =1{Du har ett block planerat.} other{Du har {count} block planerade.}}",
+  "@dailyOsNextBriefingBlockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingFree": "Du har fortfarande {duration} ledigt under din dag.",
+  "@dailyOsNextBriefingFree": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFullyBooked": "Din dag är fullbokad.",
+  "dailyOsNextBriefingHours": "{count, plural, =1{1 timme} other{{count} timmar}}",
+  "@dailyOsNextBriefingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingHoursAndMinutes": "{hours} och {minutes}",
+  "@dailyOsNextBriefingHoursAndMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingLongest": "Det längsta är {title}, på {duration}.",
+  "@dailyOsNextBriefingLongest": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingMinutes": "{count, plural, =1{1 minut} other{{count} minuter}}",
+  "@dailyOsNextBriefingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingNext": "Härnäst klockan {time}: {title}.",
+  "@dailyOsNextBriefingNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingNoPlan": "Det finns ingen plan för den här dagen än. En kort incheckning gör en.",
+  "dailyOsNextBriefingNothingLeft": "Inget mer är planerat för i dag.",
+  "dailyOsNextBriefingPlayTooltip": "Lyssna på din dag",
+  "dailyOsNextBriefingStopTooltip": "Stoppa genomgången",
   "dailyOsNextCaptureCaptured": "Förstått.",
   "dailyOsNextCaptureDoneCta": "Klart",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Inspelningen kunde inte sparas.",

@@ -4492,6 +4492,77 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Justera start';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Du har $count block planerade.',
+      one: 'Du har ett block planerat.',
+      zero: 'Inget är planerat än.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Du har fortfarande $duration ledigt under din dag.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Din dag är fullbokad.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count timmar',
+      one: '1 timme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours och $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Det längsta är $title, på $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minuter',
+      one: '1 minut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Härnäst klockan $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Det finns ingen plan för den här dagen än. En kort incheckning gör en.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Inget mer är planerat för i dag.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Lyssna på din dag';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Stoppa genomgången';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Förstått.';
 
   @override

@@ -29,6 +29,10 @@ via the rail's calendar button and resized by its edge; both survive restarts.
   plan: recorded time, imported workouts, check-ins with a length and events
   with a start and end sit on its recorded lane, and an event opens from its block. Agenda and Activity are
   a tap away.
+- **Briefs the day aloud.** With the companion on, she sits in the Day header;
+  tap her and she says how many blocks are planned, what is next, the longest
+  block and the time still free — from the plan alone, with the on-device
+  voice. Without a plan, she invites a check-in.
 - **Shows time that overlapped.** A call taken during a tracked session sits
   inset on top of it, and sessions started together share the lane side by
   side — on the Day view and in the docked day column alike.

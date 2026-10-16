@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branch 1 (`feat/companion-speaks`) built — see "Delivery"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`) and 2 (`feat/companion-day-briefing`) built — see "Delivery"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -386,16 +386,23 @@ The binding everything else uses, with one real host so it is not unused code.
 
 ### 2 · `feat/companion-day-briefing`: she tells you what your day looks like
 
-- **`DayBriefing`** (`daily_os_next/logic/`). A pure function from
-  `DayPlanData`, the plan's tasks and `now` to a few localized sentences, for
-  example: how many blocks are planned, the next block's title and time, the
-  longest block, and minutes left unscheduled (`remainingMinutes`). With no
-  plan, it invites a check-in. It uses data only, with no model call, and
-  ICU plurals in every catalog.
-- **A briefing slot on the Day page,** by the header. She briefs when tapped
-  (`sourceId` `day-briefing:<date>`). An auto-brief on the first visit of the
-  day is a Daily OS setting, off by default. Her mood is `calm` until
-  branch 4.
+- **`DayBriefing`** (`daily_os_next/logic/day_briefing.dart`). Pure facts
+  from the page's `DraftPlan` and `now`: how many blocks are planned
+  (buffers and dropped blocks excluded), the next block, the longest, and the
+  time still free. Free time is `capacityMinutes − scheduledMinutes`; the
+  first draft of this plan named `remainingMinutes`, which is a single
+  block's remaining estimate, not the day's. With no plan, only an invitation
+  to check in. Data only, no model call.
+- **The sentences** are composed in the UI (`composeDayBriefing`), because
+  `logic/` imports no localization: ICU plurals in all 11 catalogs.
+- **A briefing slot in the Day header** (`DayBriefingCompanion`): she leads
+  the header's actions as a `bust`, `ControlSizes.avatar` (48) square, level
+  with the icon buttons, so no new token. She briefs when tapped (`sourceId`
+  `day-briefing:<yyyy-MM-dd>`); a second tap stops her. Her mood is `calm`
+  until branch 4.
+- **Deferred: the auto-brief** on the first visit of the day. It needs a
+  persisted "briefed today" mark and a Daily OS setting, and whether it should
+  exist at all is still open; the tap covers the demo.
 - **Tests:**
   - `DayBriefing`, one test per sentence, on deterministic dates;
   - a glados property that every block count yields a sentence in every
@@ -482,10 +489,10 @@ The binding everything else uses, with one real host so it is not unused code.
   container dimension, so a named token in `sizing_tokens.dart`, never a
   number in the host. Approved at 96 for the torso framing, and raised to
   136 with the move to full framing, so her face and hands still read.
-- **Still open: her size in the Day header (branch 2).** At 136 and full
-  length she is likely too tall for a header. Either a token of its own or
-  the `bust` framing at a smaller size; it needs the owner's approval before
-  it is added.
+- **Her size in the Day header: `bust` at `ControlSizes.avatar`** (decided
+  2026-10-15). Full length at 136 is too tall for a header; the owner chose
+  the bust, and the existing 48 avatar token fits it beside the header's
+  48-high icon buttons.
 
 ## Testing
 

@@ -7505,6 +7505,78 @@ abstract class AppLocalizations {
   /// **'Adjust start'**
   String get dailyOsNextBlockResizeStartTooltip;
 
+  /// No description provided for @dailyOsNextBriefingBlockCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing is planned yet.} =1{You have one block planned.} other{You have {count} blocks planned.}}'**
+  String dailyOsNextBriefingBlockCount(int count);
+
+  /// No description provided for @dailyOsNextBriefingFree.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} of your day is still free.'**
+  String dailyOsNextBriefingFree(String duration);
+
+  /// No description provided for @dailyOsNextBriefingFullyBooked.
+  ///
+  /// In en, this message translates to:
+  /// **'Your day is fully booked.'**
+  String get dailyOsNextBriefingFullyBooked;
+
+  /// No description provided for @dailyOsNextBriefingHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String dailyOsNextBriefingHours(int count);
+
+  /// No description provided for @dailyOsNextBriefingHoursAndMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} and {minutes}'**
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes);
+
+  /// No description provided for @dailyOsNextBriefingLongest.
+  ///
+  /// In en, this message translates to:
+  /// **'The longest is {title}, at {duration}.'**
+  String dailyOsNextBriefingLongest(String title, String duration);
+
+  /// No description provided for @dailyOsNextBriefingMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String dailyOsNextBriefingMinutes(int count);
+
+  /// No description provided for @dailyOsNextBriefingNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next up at {time}: {title}.'**
+  String dailyOsNextBriefingNext(String time, String title);
+
+  /// No description provided for @dailyOsNextBriefingNoPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no plan for this day yet. A short check-in will make one.'**
+  String get dailyOsNextBriefingNoPlan;
+
+  /// No description provided for @dailyOsNextBriefingNothingLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing else is planned for today.'**
+  String get dailyOsNextBriefingNothingLeft;
+
+  /// No description provided for @dailyOsNextBriefingPlayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hear your day'**
+  String get dailyOsNextBriefingPlayTooltip;
+
+  /// No description provided for @dailyOsNextBriefingStopTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the briefing'**
+  String get dailyOsNextBriefingStopTooltip;
+
   /// No description provided for @dailyOsNextCaptureCaptured.
   ///
   /// In en, this message translates to:

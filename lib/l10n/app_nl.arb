@@ -2204,6 +2204,76 @@
   "dailyOsNextBlockMoveTooltip": "Blok verplaatsen",
   "dailyOsNextBlockResizeEndTooltip": "Einde aanpassen",
   "dailyOsNextBlockResizeStartTooltip": "Start aanpassen",
+  "dailyOsNextBriefingBlockCount": "{count, plural, =0{Er is nog niets gepland.} =1{Je hebt één blok gepland.} other{Je hebt {count} blokken gepland.}}",
+  "@dailyOsNextBriefingBlockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingFree": "Er is nog {duration} van je dag vrij.",
+  "@dailyOsNextBriefingFree": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFullyBooked": "Je dag zit vol.",
+  "dailyOsNextBriefingHours": "{count, plural, =1{1 uur} other{{count} uur}}",
+  "@dailyOsNextBriefingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingHoursAndMinutes": "{hours} en {minutes}",
+  "@dailyOsNextBriefingHoursAndMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingLongest": "Het langste is {title}, met {duration}.",
+  "@dailyOsNextBriefingLongest": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingMinutes": "{count, plural, =1{1 minuut} other{{count} minuten}}",
+  "@dailyOsNextBriefingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingNext": "Hierna om {time}: {title}.",
+  "@dailyOsNextBriefingNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingNoPlan": "Er is nog geen plan voor deze dag. Een korte check-in maakt er een.",
+  "dailyOsNextBriefingNothingLeft": "Voor vandaag staat er niets meer gepland.",
+  "dailyOsNextBriefingPlayTooltip": "Luister naar je dag",
+  "dailyOsNextBriefingStopTooltip": "Stop de briefing",
   "dailyOsNextCaptureCaptured": "Begrepen.",
   "dailyOsNextCaptureDoneCta": "Klaar",
   "dailyOsNextCaptureErrorAudioPersistFailed": "De opname kon niet worden opgeslagen.",

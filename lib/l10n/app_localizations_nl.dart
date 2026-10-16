@@ -4501,6 +4501,77 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Start aanpassen';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Je hebt $count blokken gepland.',
+      one: 'Je hebt één blok gepland.',
+      zero: 'Er is nog niets gepland.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Er is nog $duration van je dag vrij.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Je dag zit vol.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uur',
+      one: '1 uur',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours en $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Het langste is $title, met $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minuten',
+      one: '1 minuut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Hierna om $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Er is nog geen plan voor deze dag. Een korte check-in maakt er een.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Voor vandaag staat er niets meer gepland.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Luister naar je dag';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Stop de briefing';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Begrepen.';
 
   @override

@@ -4538,6 +4538,80 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Upravit začátek';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Máš naplánováno $count bloků.',
+      few: 'Máš naplánované $count bloky.',
+      one: 'Máš naplánovaný jeden blok.',
+      zero: 'Zatím nemáš nic naplánováno.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Ve tvém dni zbývá ještě $duration volného času.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked => 'Tvůj den je plně obsazený.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hodin',
+      few: '$count hodiny',
+      one: '1 hodina',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours a $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Nejdelší je $title, s délkou $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count minut',
+      few: '$count minuty',
+      one: '1 minuta',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Další v $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Pro tento den zatím nemáš plán. Krátký check-in ho vytvoří.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Na dnešek už nemáš nic naplánováno.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Poslechni si svůj den';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Zastavit přehled';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override

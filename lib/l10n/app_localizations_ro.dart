@@ -4565,6 +4565,81 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextBlockResizeStartTooltip => 'Ajustați începutul';
 
   @override
+  String dailyOsNextBriefingBlockCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aveți $count de blocuri planificate.',
+      few: 'Aveți $count blocuri planificate.',
+      one: 'Aveți un bloc planificat.',
+      zero: 'Încă nu este nimic planificat.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingFree(String duration) {
+    return 'Mai aveți $duration la dispoziție.';
+  }
+
+  @override
+  String get dailyOsNextBriefingFullyBooked =>
+      'Ziua dvs. este complet ocupată.';
+
+  @override
+  String dailyOsNextBriefingHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de ore',
+      few: '$count ore',
+      one: '1 oră',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingHoursAndMinutes(String hours, String minutes) {
+    return '$hours și $minutes';
+  }
+
+  @override
+  String dailyOsNextBriefingLongest(String title, String duration) {
+    return 'Cel mai lung este $title, de $duration.';
+  }
+
+  @override
+  String dailyOsNextBriefingMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de minute',
+      few: '$count minute',
+      one: '1 minut',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String dailyOsNextBriefingNext(String time, String title) {
+    return 'Urmează la $time: $title.';
+  }
+
+  @override
+  String get dailyOsNextBriefingNoPlan =>
+      'Încă nu există un plan pentru această zi. Un scurt check-in va crea unul.';
+
+  @override
+  String get dailyOsNextBriefingNothingLeft =>
+      'Pentru astăzi nu mai este nimic planificat.';
+
+  @override
+  String get dailyOsNextBriefingPlayTooltip => 'Ascultați ziua dvs.';
+
+  @override
+  String get dailyOsNextBriefingStopTooltip => 'Opriți rezumatul';
+
+  @override
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';
 
   @override

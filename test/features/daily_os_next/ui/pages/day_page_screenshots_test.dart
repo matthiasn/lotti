@@ -22,6 +22,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -37,17 +38,20 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_briefing_companion.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
@@ -59,6 +63,7 @@ import '../../../../helpers/manual_demo_world.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../tts/test_utils.dart';
 import '../../screenshot_harness.dart';
 import '../../test_doubles/mock_day_agent.dart';
 
@@ -897,6 +902,7 @@ Future<void> _pumpDayPage(
   bool showPlannerReview = true,
   List<DayActivityEntry> activityEntries = const [],
   List<TimeBlock>? actualBlocks,
+  bool companion = false,
 }) async {
   applyScreenshotDevice(tester, device);
   final actuals = actualBlocks ?? _actuals();
@@ -946,6 +952,17 @@ Future<void> _pumpDayPage(
           ),
           for (final coverImage in _manualWorld.coverImages)
             createEntryControllerOverride(coverImage),
+          // The companion in the header, with her flag and read-aloud on
+          // and a device voice; idle, so the capture shows her at rest.
+          if (companion) ...[
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(
+                flagName == enableCompanionFlag ||
+                    flagName == enableAiSummaryTtsFlag,
+              ),
+            ),
+            ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+          ],
         ],
         // DayPage lives inside the app shell in production. Reuse the real
         // design-system mobile bar / desktop sidebar so the captures reflect
@@ -1217,6 +1234,30 @@ void main() {
       await _switchToDayView(tester);
       expect(find.byType(DayTimeline), findsOneWidget);
       await captureScreenshot(tester, 'day_${device.name}_02_timeline_dark');
+    });
+  }
+
+  // The companion who briefs the day, in the header's actions.
+  for (final (device, brightness) in [
+    (proDevice, Brightness.dark),
+    (miniDevice, Brightness.light),
+    (desktopDevice, Brightness.dark),
+    (desktopDevice, Brightness.light),
+  ]) {
+    testWidgets('${device.name} timeline with the companion — '
+        '${brightness.name}', (tester) async {
+      await _pumpDayPage(
+        tester,
+        device: device,
+        brightness: brightness,
+        companion: true,
+      );
+      await _switchToDayView(tester);
+      expect(find.byType(DayBriefingCompanion), findsOneWidget);
+      await captureScreenshot(
+        tester,
+        'day_${device.name}_companion_timeline_${brightness.name}',
+      );
     });
   }
 

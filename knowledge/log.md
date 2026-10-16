@@ -1,6 +1,12 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-15
+* **Update**: [Text-to-speech](features/tts.md) — `listenForPlaybackFailure`,
+  the one error toast every host shows;
+  [Daily OS UI surfaces](features/daily_os_next/ui-surfaces.md) —
+  the day briefing: the companion as a bust in the Day header, the facts
+  `DayBriefing` computes from the plan, and one utterance per day;
+  [Companion](features/companion.md) — her two hosts and their framings.
 * **Update**: [Companion](features/companion.md) — how she speaks with the
   on-device voice (`CompanionSpeaker`, the clip read once, the playhead clock),
   the full-length framing, and her new rank just above `tts`.

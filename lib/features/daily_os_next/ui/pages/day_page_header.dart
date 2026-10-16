@@ -28,6 +28,7 @@ class DayHeader extends StatelessWidget {
     required this.onInspectAgent,
     required this.onDeletePlan,
     this.onSettings,
+    this.companion,
     super.key,
   });
 
@@ -44,6 +45,10 @@ class DayHeader extends StatelessWidget {
   final VoidCallback onInspectAgent;
   final VoidCallback? onSettings;
   final VoidCallback onDeletePlan;
+
+  /// The companion who briefs the day, leading the actions; it takes no room
+  /// when she is off.
+  final Widget? companion;
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +74,7 @@ class DayHeader extends StatelessWidget {
         actions: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ?companion,
             // ADR 0032 phase 4: the day agent's observable state (working /
             // attention / day-closed), tappable straight into its internals.
             // Flexible so the pill's label is what yields at large text

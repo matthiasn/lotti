@@ -40,7 +40,9 @@ abstract final class ControlSizes {
   static const double avatarCompact = 40;
 
   /// 48 — the standard person avatar: an import row, the Photo card's face
-  /// preview, anywhere a face stands beside a name at reading size.
+  /// preview, anywhere a face stands beside a name at reading size. The
+  /// companion's bust in the Day header is this size too, level with the
+  /// header's icon buttons.
   static const double avatar = 48;
 
   /// 80 — the person page's hero avatar, the one overlapping the banner.

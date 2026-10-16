@@ -2205,6 +2205,76 @@
   "dailyOsNextBlockMoveTooltip": "Flytblok",
   "dailyOsNextBlockResizeEndTooltip": "Juster enden",
   "dailyOsNextBlockResizeStartTooltip": "Juster start",
+  "dailyOsNextBriefingBlockCount": "{count, plural, =0{Der er ikke planlagt noget endnu.} =1{Du har én blok planlagt.} other{Du har {count} blokke planlagt.}}",
+  "@dailyOsNextBriefingBlockCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingFree": "Du har stadig {duration} fri i din dag.",
+  "@dailyOsNextBriefingFree": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingFullyBooked": "Din dag er fuldt booket.",
+  "dailyOsNextBriefingHours": "{count, plural, =1{1 time} other{{count} timer}}",
+  "@dailyOsNextBriefingHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingHoursAndMinutes": "{hours} og {minutes}",
+  "@dailyOsNextBriefingHoursAndMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingLongest": "Den længste er {title}, på {duration}.",
+  "@dailyOsNextBriefingLongest": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingMinutes": "{count, plural, =1{1 minut} other{{count} minutter}}",
+  "@dailyOsNextBriefingMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextBriefingNext": "Næste kl. {time}: {title}.",
+  "@dailyOsNextBriefingNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyOsNextBriefingNoPlan": "Der er ingen plan for denne dag endnu. Et kort check-in laver en.",
+  "dailyOsNextBriefingNothingLeft": "Der er ikke mere planlagt i dag.",
+  "dailyOsNextBriefingPlayTooltip": "Hør din dag",
+  "dailyOsNextBriefingStopTooltip": "Stop briefingen",
   "dailyOsNextCaptureCaptured": "Forstået.",
   "dailyOsNextCaptureDoneCta": "Færdig",
   "dailyOsNextCaptureErrorAudioPersistFailed": "Optagelsen kunne ikke gemmes.",
