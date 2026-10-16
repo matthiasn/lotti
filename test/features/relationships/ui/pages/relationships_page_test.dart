@@ -11,6 +11,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -221,7 +222,7 @@ void main() {
       await tester.pump();
 
       // Nothing has resolved yet: the tab must not read as empty.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(DesignSystemSpinner), findsOneWidget);
       expect(
         find.text('Add the people you want to stay close to.'),
         findsNothing,
@@ -230,7 +231,7 @@ void main() {
       firstLoad.complete([item('rel-1', title: 'Anna')]);
       await tester.pumpAndSettle();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
       expect(_rowNamed('Anna'), findsOneWidget);
     },
   );
@@ -451,12 +452,9 @@ void main() {
       expect(_rowNamed('Ben'), findsOneWidget);
       // Persona avatars replace the bare person icon.
       expect(find.byType(PersonaAvatar), findsNWidgets(2));
-      // Exactly one sparkle: Anna is important, Ben is not (the star is
-      // gone — it read as a toggle it was not).
-      expect(
-        find.byKey(const ValueKey('people-row-important')),
-        findsOneWidget,
-      );
+      // No marker beside a name: the band says whether reminders are on
+      // (the star went first — it read as a toggle it was not).
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
       expect(find.byIcon(LottiIconsFilled.star), findsNothing);
       // The status line is the last contact — what, when, cadence, with
       // the mono voice on the date alone — never "Tracking since …".
@@ -486,11 +484,11 @@ void main() {
     await tester.pumpWidget(buildPage());
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(DesignSystemSpinner), findsOneWidget);
 
     gate.complete([item('rel-1', title: 'Anna')]);
     await tester.pumpAndSettle();
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemSpinner), findsNothing);
     expect(_rowNamed('Anna'), findsOneWidget);
   });
 
@@ -524,7 +522,7 @@ void main() {
       // Mid-refetch: the established list must stay, with no loading shell.
       expect(calls, 2);
       expect(_rowNamed('Anna'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(DesignSystemSpinner), findsNothing);
 
       second.complete([
         item('rel-1', title: 'Anna'),
@@ -738,7 +736,13 @@ void main() {
     // Caption, name, day — the day on its own line so it is never
     // the part that ellipses.
     expect(find.text('Next due'), findsOneWidget);
-    expect(find.text('Ben'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PeopleSummaryCard),
+        matching: find.text('Ben'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Thu 20 Aug'), findsOneWidget);
     expect(find.text('2 people without reminders'), findsOneWidget);
   });

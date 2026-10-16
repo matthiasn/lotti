@@ -9,9 +9,10 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -89,13 +90,25 @@ void main() {
   /// A test's own provider overrides, on top of the page's.
   var overrides = <Override>[];
 
-  /// The header read-out under [key] — the task lane's [DsPill].
-  DsPill headerTag(WidgetTester tester, String key) => tester.widget<DsPill>(
-    find.descendant(
-      of: find.byKey(ValueKey(key)),
-      matching: find.byType(DsPill),
-    ),
-  );
+  /// What a tap on the header fact under [key] does — null while held.
+  VoidCallback? factTap(WidgetTester tester, String key) => tester
+      .widget<GestureDetector>(
+        find
+            .descendant(
+              of: find.byKey(ValueKey(key)),
+              matching: find.byType(GestureDetector),
+            )
+            .first,
+      )
+      .onTap;
+
+  /// The menu's *Edit check-in*, as the top bar's menu holds it.
+  DesignSystemContextMenuItem editItem(WidgetTester tester) => tester
+      .widget<DesignSystemContextMenuButton>(
+        find.byKey(const ValueKey('check-in-detail-menu')),
+      )
+      .items
+      .single;
 
   final person = testRelationship.copyWith(
     meta: testRelationship.meta.copyWith(id: 'rel-001', categoryId: 'crew'),
@@ -216,7 +229,11 @@ void main() {
     expect(find.text('11 min'), findsOneWidget);
     expect(find.text('Good'), findsOneWidget);
     expect(find.text('krill contract'), findsOneWidget);
-    expect(find.text('Next time'), findsOneWidget);
+    // The notes for next time in the person page's own card.
+    expect(
+      find.byKey(const ValueKey('check-in-detail-next-time')),
+      findsOneWidget,
+    );
     expect(find.text('The launch nerves.'), findsOneWidget);
     expect(find.text('Budget talk.'), findsOneWidget);
   });
@@ -697,14 +714,11 @@ void main() {
       expect(scope.canPop, isFalse, reason: 'a live take holds the route');
       // Edit is held too: an edit sheet over a running recorder, with the
       // floating indicator hidden, was the one door left to the same leak.
-      expect(headerTag(tester, 'check-in-detail-edit').onTap, isNull);
-      expect(headerTag(tester, 'check-in-topics-tag').onTap, isNull);
-      // And the header chips: a picker sheet over a running recorder was
+      expect(editItem(tester).onTap, isNull);
+      expect(factTap(tester, 'check-in-topics-tag'), isNull);
+      // And the header facts: a picker sheet over a running recorder was
       // the same leak through a different door.
-      expect(
-        headerTag(tester, 'check-in-type').onTap,
-        isNull,
-      );
+      expect(factTap(tester, 'check-in-type'), isNull);
 
       await tester.tap(find.byKey(const ValueKey('check-in-detail-back')));
       for (var i = 0; i < 4; i++) {
@@ -738,14 +752,11 @@ void main() {
       expect(recorder.cancelCalls, 1, reason: 'Discard discards');
       expect(backs, hasLength(1), reason: 'and then leaves');
       expect(
-        headerTag(tester, 'check-in-detail-edit').onTap,
+        editItem(tester).onTap,
         isNotNull,
         reason: 'Edit is back once the take is gone',
       );
-      expect(
-        headerTag(tester, 'check-in-type').onTap,
-        isNotNull,
-      );
+      expect(factTap(tester, 'check-in-type'), isNotNull);
       expect(
         tester
             .widget<PopScope<Object?>>(
@@ -982,27 +993,25 @@ void main() {
     verifyNever(() => repository.touchCheckIn(any()));
   });
 
-  testWidgets('Edit closes the header lane, where a task keeps Details, and '
-      'opens the composer for the fields no read-out edits', (tester) async {
+  testWidgets("Edit lives in the top bar's menu, not as a dashed pill in the "
+      'facts — where it read as one more empty fact — and opens the composer', (
+    tester,
+  ) async {
     stubDetail(checkIn());
     await pump(tester);
 
-    // The lever sits with the facts it edits, not in the top bar across
-    // the window from them; the top bar keeps back alone.
-    expect(find.byKey(const ValueKey('check-in-detail-more')), findsNothing);
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('check-in-meta-line')),
-        matching: find.byKey(const ValueKey('check-in-detail-edit')),
+        matching: find.text('Edit check-in'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.byType(DesignSystemIconAction), findsOneWidget);
-    final edit = headerTag(tester, 'check-in-detail-edit');
-    expect(edit.label, 'Edit check-in');
-    expect(edit.variant, DsPillVariant.muted);
+    expect(find.byType(DsPill), findsNothing, reason: 'facts read as words');
 
-    await tester.tap(find.byKey(const ValueKey('check-in-detail-edit')));
+    await tester.tap(find.byKey(const ValueKey('check-in-detail-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit check-in'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CheckInCaptureForm), findsOneWidget);
@@ -1013,7 +1022,7 @@ void main() {
     stubDetail(checkIn());
     await pump(tester);
 
-    expect(headerTag(tester, 'check-in-topics-tag').label, 'krill contract');
+    expect(find.text('krill contract'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('check-in-topics-tag')));
     await tester.pumpAndSettle();
 

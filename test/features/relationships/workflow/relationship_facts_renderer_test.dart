@@ -30,33 +30,36 @@ void main() {
     dateTo: dateFrom ?? testDate,
   );
 
-  RelationshipEntry relationship({List<ContactChannel>? channels}) =>
-      RelationshipEntry(
-        meta: meta('person-1'),
-        data: RelationshipData(
-          title: 'Anna',
-          nickname: 'Sis',
-          important: true,
-          checkInCadenceDays: 7,
-          contactChannels:
-              channels ??
-              const [
-                ContactChannel(
-                  type: ContactChannelType.phone,
-                  value: '+49 170 555 12 34',
-                ),
-                ContactChannel(
-                  type: ContactChannelType.email,
-                  value: 'anna@example.com',
-                ),
-              ],
-          status: RelationshipStatus.active(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
-          ),
-        ),
-      );
+  RelationshipEntry relationship({
+    List<ContactChannel>? channels,
+    DateTime? birthday,
+  }) => RelationshipEntry(
+    meta: meta('person-1'),
+    data: RelationshipData(
+      title: 'Anna',
+      nickname: 'Sis',
+      birthday: birthday,
+      important: true,
+      checkInCadenceDays: 7,
+      contactChannels:
+          channels ??
+          const [
+            ContactChannel(
+              type: ContactChannelType.phone,
+              value: '+49 170 555 12 34',
+            ),
+            ContactChannel(
+              type: ContactChannelType.email,
+              value: 'anna@example.com',
+            ),
+          ],
+      status: RelationshipStatus.active(
+        id: 'status-1',
+        createdAt: testDate,
+        utcOffset: 0,
+      ),
+    ),
+  );
 
   CheckInEntry checkIn(
     String id,
@@ -110,8 +113,9 @@ void main() {
     Map<String, List<JournalEntity>> checkInEntries = const {},
     Map<String, String> imageDescriptions = const {},
     List<JournalEntity> timeline = const [],
+    DateTime? birthday,
   }) => renderer.render(
-    relationship: relationship(),
+    relationship: relationship(birthday: birthday),
     derivation: d ?? derivation(),
     checkIns: checkIns,
     linkedTasks: tasks,
@@ -473,6 +477,25 @@ void main() {
       now: DateTime(2026, 3, 30, 10),
     );
     expect(facts, contains('daysSinceLastCheckIn: 2'));
+  });
+
+  test('a birthday reads as its month and day and how far off the next one '
+      'is — counted for the model, not left to it', () {
+    // The fixed clock reads Sun 16 Aug 2026.
+    expect(
+      render(birthday: DateTime(1990, 8, 20)),
+      contains('- birthday: 08-20 (next in 4 days)'),
+    );
+    expect(
+      render(birthday: DateTime(1985, 8, 16)),
+      contains('- birthday: 08-16 (next in 0 days)'),
+    );
+    // Already past this year: the next is next year's.
+    expect(
+      render(birthday: DateTime(1990, 3, 14)),
+      contains('- birthday: 03-14 (next in 210 days)'),
+    );
+    expect(render(), isNot(contains('birthday')));
   });
 
   test('renders the person, cadence state and recency from the derivation', () {

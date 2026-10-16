@@ -523,7 +523,7 @@ class _BirthdayRow extends StatelessWidget {
           variant: DesignSystemButtonVariant.secondary,
           size: DesignSystemButtonSize.dense,
           onPressed: () async {
-            final now = DateTime.now();
+            final now = clock.now();
             final picked = await showDesignSystemDatePicker(
               context: context,
               title: messages.relationshipBirthdayLabel,

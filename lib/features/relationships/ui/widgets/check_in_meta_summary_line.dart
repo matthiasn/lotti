@@ -358,12 +358,16 @@ class _Words extends StatelessWidget {
         children: [
           Icon(icon, size: IconSizes.s, color: iconColor),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            label,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: highlighted
-                  ? tokens.colors.interactive.enabled
-                  : labelColor,
+          // Flexible: at a large text size on a narrow phone a long fact —
+          // the topics — wraps under its glyph rather than running off.
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: highlighted
+                    ? tokens.colors.interactive.enabled
+                    : labelColor,
+              ),
             ),
           ),
         ],

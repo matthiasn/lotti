@@ -513,6 +513,10 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                     onPickStart: () => _pickStart(checkIn),
                     onPickDuration: () => _pickDuration(checkIn),
                     onPickSentiment: () => _pickSentiment(checkIn),
+                    onEditTopics: () => showCheckInEditSheet(
+                      context: context,
+                      checkIn: checkIn,
+                    ),
                     // Held — shown, not hidden — while a take is live: an
                     // edit sheet or a picker over a running recorder, with
                     // the floating indicator hidden, was a door to a
@@ -653,6 +657,7 @@ class _Body extends StatelessWidget {
     required this.onPickStart,
     required this.onPickDuration,
     required this.onPickSentiment,
+    required this.onEditTopics,
     this.category,
     this.onPersonTap,
     this.chipsEnabled = true,
@@ -682,6 +687,9 @@ class _Body extends StatelessWidget {
   final VoidCallback onPickStart;
   final VoidCallback onPickDuration;
   final VoidCallback onPickSentiment;
+
+  /// The topics fact opens the edit sheet, where topics change.
+  final VoidCallback onEditTopics;
 
   /// Whether the header's read-outs take a tap — not while a take is live.
   final bool chipsEnabled;
@@ -754,9 +762,10 @@ class _Body extends StatelessWidget {
                     onPickStart: onPickStart,
                     onPickDuration: onPickDuration,
                     onPickSentiment: onPickSentiment,
-                    // The lane's topics read out too; editing them is the
-                    // menu's sheet, as editing anything else is.
-                    onEdit: () {},
+                    // The topics change in the edit sheet, so their fact
+                    // opens it — the menu's *Edit check-in*, from where the
+                    // topics are read.
+                    onEdit: onEditTopics,
                     readOut: true,
                     enabled: chipsEnabled,
                   ),
