@@ -74,6 +74,7 @@ class OnboardingFirstTaskView extends StatelessWidget {
     this.transcript = '',
     this.amplitudes = const [],
     this.dbfs = CaptureState.defaultDbfs,
+    this.companion,
     super.key,
   });
 
@@ -158,6 +159,10 @@ class OnboardingFirstTaskView extends StatelessWidget {
   /// Latest raw dBFS for the breathing visual.
   final double dbfs;
 
+  /// The companion, above the headline at the person hero-avatar size; the
+  /// host builds her for the phase, so this view stays free of providers.
+  final Widget? companion;
+
   bool get _isComposing =>
       phase == OnboardingFirstTaskPhase.prompt ||
       phase == OnboardingFirstTaskPhase.listening;
@@ -207,6 +212,15 @@ class OnboardingFirstTaskView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (companion != null) ...[
+                  Center(
+                    child: SizedBox.square(
+                      dimension: ControlSizes.avatarHero,
+                      child: companion,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                ],
                 Text(
                   _headline,
                   textAlign: TextAlign.center,

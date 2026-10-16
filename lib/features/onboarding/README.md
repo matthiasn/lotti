@@ -11,6 +11,10 @@ them to one moment: speak a thought, and watch it become a structured task.
   offer available later.
 - **Does not nag.** The welcome auto-shows a small number of times within a fixed
   window and then stops. Completing it retires the offer entirely.
+- **Has a face, with the companion on.** She is the welcome's hero, then waves
+  the user on, listens while they record, thinks while the task is structured
+  and celebrates when it lands. Where the on-device voice is already installed
+  she says the headlines aloud; on a first run, she is silent.
 - **Can be replayed on purpose.** Settings › Onboarding reopens it any time.
 - **Sets up areas with real consent.** Creating the first areas is also where
   automatic transcription and image analysis are switched on — because the user

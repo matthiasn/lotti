@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
 import '../../../widget_test_utils.dart';
 
 const _clip = '/tmp/clip.wav';
@@ -82,6 +82,8 @@ void main() {
     double speed = 1,
     TtsPlaybackState startWith = const TtsPlaybackState(),
     TtsPlaybackState? initial,
+    CompanionController? controller,
+    GestureName? holding,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -92,6 +94,8 @@ void main() {
             sourceId: sourceId,
             look: CompanionLook.cat,
             mood: CompanionMood.bright,
+            controller: controller,
+            holding: holding,
           ),
         ),
         overrides: [
@@ -135,6 +139,21 @@ void main() {
     expect(shown.look, CompanionLook.cat);
     expect(shown.mood, CompanionMood.bright);
     expect(shown.framing, CompanionFraming.full);
+  });
+
+  testWidgets('hands her view the controller and the held gesture', (
+    tester,
+  ) async {
+    final controller = CompanionController();
+    await pumpSpeaker(
+      tester,
+      controller: controller,
+      holding: GestureName.think,
+    );
+
+    expect(view(tester).controller, same(controller));
+    expect(view(tester).holding, GestureName.think);
+    expect(controller.isAttached, isTrue);
   });
 
   testWidgets('is silent while nothing plays', (tester) async {

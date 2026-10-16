@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/playhead_clock.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
@@ -32,6 +33,8 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
     this.look = CompanionLook.grandma,
     this.mood = CompanionMood.calm,
     this.framing = CompanionFraming.full,
+    this.controller,
+    this.holding,
     super.key,
   });
 
@@ -42,6 +45,12 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
   final CompanionLook look;
   final CompanionMood mood;
   final CompanionFraming framing;
+
+  /// Passed through to [CompanionView]: cues a gesture now.
+  final CompanionController? controller;
+
+  /// Passed through to [CompanionView]: a gesture she keeps up.
+  final GestureName? holding;
 
   @override
   ConsumerState<CompanionSpeaker> createState() => _CompanionSpeakerState();
@@ -133,6 +142,8 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     look: widget.look,
     mood: widget.mood,
     framing: widget.framing,
+    controller: widget.controller,
+    holding: widget.holding,
     track: _track,
     playhead: _playhead,
   );

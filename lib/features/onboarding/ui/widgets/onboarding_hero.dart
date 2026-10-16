@@ -284,10 +284,15 @@ class OnboardingHeroPanel extends StatelessWidget {
     this.onExploreDemo,
     this.heroStyle = OnboardingHeroStyle.constellation,
     this.heroHeight = 276,
+    this.companion,
     super.key,
   });
 
   final OnboardingHeroStyle heroStyle;
+
+  /// The companion, standing in the hero frame in place of the [heroStyle]
+  /// artwork; null shows the artwork.
+  final Widget? companion;
   final VoidCallback onConnect;
   final VoidCallback onSkip;
 
@@ -330,11 +335,13 @@ class OnboardingHeroPanel extends StatelessWidget {
                     artworkColor: brightness == Brightness.light
                         ? panelBg
                         : tokens.colors.aiCard.background,
-                    child: buildOnboardingHeroVisual(
-                      heroStyle,
-                      tokens: tokens,
-                      brightness: brightness,
-                    ),
+                    child:
+                        companion ??
+                        buildOnboardingHeroVisual(
+                          heroStyle,
+                          tokens: tokens,
+                          brightness: brightness,
+                        ),
                   ),
                 ),
               ),

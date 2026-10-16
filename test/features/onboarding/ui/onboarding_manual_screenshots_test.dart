@@ -33,6 +33,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -478,6 +479,7 @@ void main() {
     required _OnboardingCase scenario,
     required ScreenshotDevice device,
     required Brightness brightness,
+    bool companion = false,
   }) => withTargetPlatform(
     device.isPhone ? TargetPlatform.android : TargetPlatform.linux,
     () async {
@@ -503,7 +505,13 @@ void main() {
           home: home,
           brightness: brightness,
           size: device.size,
-          overrides: withServiceOverrides(overrides()),
+          overrides: withServiceOverrides([
+            ...overrides(),
+            if (companion)
+              configFlagProvider(
+                enableCompanionFlag,
+              ).overrideWith((ref) => Stream.value(true)),
+          ]),
         ),
       );
       await settleFrames(tester, 18);
@@ -556,6 +564,33 @@ void main() {
             await captureScreenshot(
               tester,
               'onboarding_${scenario.fileName}_${viewport}_$theme',
+              subdir: 'onboarding',
+            );
+          },
+        );
+      }
+      // The companion greets, listens and celebrates in the same flow.
+      for (final scenario in [
+        _OnboardingCase.welcome,
+        _OnboardingCase.firstTask,
+        _OnboardingCase.taskCreated,
+      ]) {
+        testWidgets(
+          '${scenario.name} $viewport with the companion — $theme',
+          (tester) async {
+            await pumpCase(
+              tester,
+              scenario: scenario,
+              device: device,
+              brightness: brightness,
+              companion: true,
+            );
+
+            expect(find.byType(OnboardingCompanion), findsOneWidget);
+            expect(tester.takeException(), isNull);
+            await captureScreenshot(
+              tester,
+              'onboarding_companion_${scenario.fileName}_${viewport}_$theme',
               subdir: 'onboarding',
             );
           },

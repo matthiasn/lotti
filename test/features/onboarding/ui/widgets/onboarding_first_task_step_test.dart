@@ -2,17 +2,24 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/onboarding_event.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/analog_vu_meter.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -102,6 +109,7 @@ void main() {
     void Function(String taskId)? onTaskCreated,
     List<OnboardingCaptureCategory>? categories,
     Future<String?>? styleValue,
+    bool companion = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -131,6 +139,17 @@ void main() {
           recordingStyleAppPrefsProvider.overrideWithValue(
             _fakePrefs(styleValue: styleValue),
           ),
+          if (companion) ...[
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
+            ),
+            ttsPlaybackControllerProvider.overrideWith(
+              () => TtsPlaybackController(logger: MockDomainLogger()),
+            ),
+            spokenTrackLoaderProvider.overrideWithValue(
+              (clip, text) => Completer<MouthTrack>().future,
+            ),
+          ],
         ],
       ),
     );
@@ -799,5 +818,81 @@ void main() {
 
     gate.complete(realAha());
     await tester.pump();
+  });
+
+  group('the companion', () {
+    OnboardingCompanion her(WidgetTester tester) =>
+        tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion));
+
+    testWidgets('is not there while her flag is off', (tester) async {
+      await pumpStep(tester);
+
+      expect(find.byType(OnboardingCompanion), findsNothing);
+    });
+
+    testWidgets('waves the user on, the prompt headline her line', (
+      tester,
+    ) async {
+      await pumpStep(tester, companion: true);
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(her(tester).beat, OnboardingCompanionBeat.prompt);
+      expect(her(tester).framing, CompanionFraming.bust);
+      expect(
+        her(tester).line,
+        'Create your first task '
+        'Tap to talk and say what needs doing — Lotti turns it into a real '
+        'task.',
+      );
+    });
+
+    testWidgets('listens in silence while the mic is open', (tester) async {
+      await pumpStep(tester, companion: true);
+
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.listening,
+          transcript: '',
+          amplitudes: <double>[0.2],
+          dbfs: -20,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(her(tester).beat, OnboardingCompanionBeat.listening);
+      expect(her(tester).line, isNull);
+    });
+
+    testWidgets('thinks aloud while the words are structured', (tester) async {
+      await pumpStep(tester, companion: true);
+
+      controller.emit(
+        const CaptureState(
+          phase: CapturePhase.transcribing,
+          transcript: '',
+          amplitudes: <double>[],
+          dbfs: -60,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+
+      expect(her(tester).beat, OnboardingCompanionBeat.thinking);
+      expect(her(tester).line, 'Turning your words into a task…');
+    });
+
+    testWidgets('celebrates the landed task, its headline her line', (
+      tester,
+    ) async {
+      stubStructuring(realAha(taskId: 'suggested-task'));
+      await pumpStep(tester, companion: true);
+
+      await tester.tap(find.text('Plan my week'), warnIfMissed: false);
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+
+      expect(her(tester).beat, OnboardingCompanionBeat.created);
+      expect(her(tester).line, 'Your first task is ready');
+    });
   });
 }

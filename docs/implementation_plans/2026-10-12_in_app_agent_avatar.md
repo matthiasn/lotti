@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`) and 2 (`feat/companion-day-briefing`) built — see "Delivery"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -413,16 +413,25 @@ The binding everything else uses, with one real host so it is not unused code.
 
 ### 3 · `feat/companion-onboarding`: the first minute has a face
 
-- She replaces the hero of the welcome step. Then she follows the
-  first-capture flow:
+- She replaces the hero of the welcome step: full length, in the hero frame
+  at its own height (`OnboardingHeroPanel.companion`), so no new token. Then
+  she follows the first-capture flow as a bust, `ControlSizes.avatarHero`
+  square, above the headline (`OnboardingFirstTaskView.companion`):
+  - `wave` on the welcome and the prompt;
   - `listen` while the user records;
   - `think` while the task is structured;
   - `celebrate` when it appears.
+- **Held gestures** are a companion addition, `CompanionView.holding`: the
+  gesture replays whenever it relaxes, driven by her ticker, no timer.
 - **The voice is not there yet on a first run.** The model weights download
   on the first synthesis, so onboarding cannot rely on her voice. Lines are
-  captions; she speaks them only when the model is already installed.
-- **Tests:** the gesture for each first-capture state, and captions with the
-  model absent.
+  the headlines already on screen, which serve as captions; she speaks them
+  only when read-aloud is on and the model is already installed, never
+  starting the download. While the mic is open she has no line, so she never
+  talks into the recording.
+- **Tests:** the gesture for each first-capture state, held gestures, the
+  lines spoken or silent (model absent, read-aloud off, the flag loading
+  late), and stopping when the mic opens or the surface goes.
 
 **Commit:** `feat(onboarding): the companion greets, listens and celebrates the first task`
 

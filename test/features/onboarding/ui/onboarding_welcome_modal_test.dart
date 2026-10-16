@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -5,11 +7,14 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/onboarding_event.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -18,11 +23,14 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -152,6 +160,8 @@ void main() {
 
     expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
     expect(find.text('Choose your AI brain'), findsOneWidget);
+    // Her flag is off by default: the hero art stays.
+    expect(find.byType(OnboardingCompanion), findsNothing);
 
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeShown), isTrue);
@@ -976,4 +986,56 @@ void main() {
       expect(beamed, ['/tasks/task-9']);
     },
   );
+
+  testWidgets('with her flag on, the companion is the welcome hero and its '
+      'promise her line, said once', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      makeTestableWidget(
+        host(),
+        mediaQueryData: mq,
+        overrides: [
+          configFlagProvider.overrideWith(
+            (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
+          ),
+          ttsPlaybackControllerProvider.overrideWith(
+            () => TtsPlaybackController(logger: MockDomainLogger()),
+          ),
+          spokenTrackLoaderProvider.overrideWithValue(
+            (clip, text) => Completer<MouthTrack>().future,
+          ),
+        ],
+      ),
+    );
+    await tester.tap(find.text('open'));
+    // Her ticker never settles: pump frames rather than settle.
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    OnboardingCompanion her() =>
+        tester.widget<OnboardingCompanion>(find.byType(OnboardingCompanion));
+    expect(her().beat, OnboardingCompanionBeat.welcome);
+    expect(
+      her().line,
+      'Talk. Lotti turns it into a plan. Connect your AI brain, then speak a '
+      'thought and watch it become a structured task.',
+    );
+
+    // Back on the welcome she waves again, but says the promise only once.
+    await tester.tap(find.text('Choose your AI brain'));
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.tap(find.byIcon(LottiIcons.back));
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(her().beat, OnboardingCompanionBeat.welcome);
+    expect(her().line, isNull);
+  });
 }

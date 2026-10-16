@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_category_view.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_step.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
@@ -325,6 +326,10 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
   /// Set exactly once when the category step advances.
   late OnboardingFirstCapture _capture;
 
+  /// Whether the user has left the welcome once: back on it, the companion
+  /// waves again but does not repeat the promise.
+  var _greeted = false;
+
   @override
   Widget build(BuildContext context) {
     // Each step is its own natural height (a bottom sheet on phones), and
@@ -376,15 +381,34 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
   Widget _buildStep() {
     switch (_step) {
       case _FlowStep.welcome:
-        return OnboardingHeroPanel(
+        return Consumer(
           key: const ValueKey('onboarding-welcome'),
-          heroStyle: widget.heroStyle,
-          onConnect: () {
-            setState(() => _step = _FlowStep.connect);
-            widget.onProviderModalShown();
+          builder: (context, ref, _) {
+            final messages = context.messages;
+            return OnboardingHeroPanel(
+              heroStyle: widget.heroStyle,
+              // With her flag on she is the welcome's hero, and its promise
+              // is her first line — said once per modal.
+              companion: watchOnboardingCompanionEnabled(ref)
+                  ? OnboardingCompanion(
+                      beat: OnboardingCompanionBeat.welcome,
+                      line: _greeted
+                          ? null
+                          : '${messages.onboardingWelcomeTitle} '
+                                '${messages.onboardingWelcomeMessage}',
+                    )
+                  : null,
+              onConnect: () {
+                setState(() {
+                  _greeted = true;
+                  _step = _FlowStep.connect;
+                });
+                widget.onProviderModalShown();
+              },
+              onSkip: widget.onSkip,
+              onExploreDemo: widget.onExploreDemo,
+            );
           },
-          onSkip: widget.onSkip,
-          onExploreDemo: widget.onExploreDemo,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(

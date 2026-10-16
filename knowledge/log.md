@@ -1,6 +1,9 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-15
+* **Update**: [Onboarding](features/onboarding.md) — the companion: her beats,
+  her lines as the captions, and why her voice writes run after the frame;
+  [Companion](features/companion.md) — her third host, `CompanionView.holding`.
 * **Update**: [Text-to-speech](features/tts.md) — `listenForPlaybackFailure`,
   the one error toast every host shows;
   [Daily OS UI surfaces](features/daily_os_next/ui-surfaces.md) —

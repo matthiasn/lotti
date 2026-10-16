@@ -52,6 +52,47 @@ and the auto-show path has already written the shown count and first-shown
 timestamp *before* opening. What "look around first" costs you is a slot in the
 cadence budget, not the offer itself.
 
+# The companion
+
+With `enable_companion` on, the [companion](companion.md) takes part
+(`ui/widgets/onboarding_companion.dart`). Off, every surface is as it was.
+
+- **The welcome hero.** She stands, full length, in the welcome's hero frame in
+  place of the `heroStyle` artwork (`OnboardingHeroPanel.companion`), at the
+  frame's own height.
+- **The first-task step.** A bust, `ControlSizes.avatarHero` square, above the
+  headline (`OnboardingFirstTaskView.companion`); the view stays free of
+  providers and the step builds her for the frame.
+
+Each moment is an `OnboardingCompanionBeat`:
+
+| Beat | When | She |
+|---|---|---|
+| `welcome` | the welcome panel | waves once |
+| `prompt` | the first-task prompt | waves once |
+| `listening` | the mic is open | holds `listen` |
+| `thinking` | the words are structured | holds `think` |
+| `created` | the task landed | celebrates once |
+
+A held gesture is `CompanionView.holding`: replayed whenever it relaxes, for as
+long as the beat lasts.
+
+**Her lines are the captions on screen.** Each beat's line is the headline the
+surface already shows. She speaks it only where the voice is on hand —
+`enable_ai_summary_tts` on, a device voice, and its model **already
+installed** — and never starts the model download: on a true first run she is
+silent and the caption carries the words. The line is `null` while the mic is
+open, which stops her, so she never talks into the recording. Turning
+read-aloud off, here or by sync from another device, silences her at once. The welcome's
+promise is said once per modal: back on the welcome from the connect step, she
+waves but stays quiet.
+
+**Her writes to the voice run after the frame.** A line changes in
+`didUpdateWidget`, and leaving ends it in `dispose`; both run while the tree
+builds or tears down, when Riverpod refuses a provider write. Written there, the
+voice's `stop` threw before reaching the player and was swallowed, and she
+talked on over the recording; `_sayLater` defers each to a microtask.
+
 # A dedicated measurement store
 
 Onboarding metrics live in their **own** database (`onboarding_metrics.sqlite`),

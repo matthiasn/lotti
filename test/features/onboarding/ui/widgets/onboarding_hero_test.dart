@@ -764,4 +764,29 @@ void main() {
       );
     }
   });
+
+  testWidgets('the companion stands in the hero frame instead of the art', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        boundedPanel(
+          OnboardingHeroPanel(
+            onConnect: () {},
+            onSkip: () {},
+            companion: const ColoredBox(
+              key: ValueKey('her'),
+              color: Colors.red,
+            ),
+          ),
+        ),
+        mediaQueryData: reducedMotionMq,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('her')), findsOneWidget);
+    expect(find.byType(NeuralConstellation), findsNothing);
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+  });
 }

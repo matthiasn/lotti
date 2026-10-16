@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/onboarding_event.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/model/onboarding_capture_category.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_companion.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_first_task_view.dart';
 import 'package:lotti/features/speech/state/recording_style.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:material_ui/material_ui.dart';
@@ -148,8 +151,9 @@ class _OnboardingFirstTaskStepState
         RecordingStyle.modern;
 
     final messages = context.messages;
+    final phase = _viewPhase(captureState.phase);
     return OnboardingFirstTaskView(
-      phase: _viewPhase(captureState.phase),
+      phase: phase,
       style: style,
       accent: context.designTokens.colors.interactive.enabled,
       colorScheme: Theme.of(context).colorScheme,
@@ -180,8 +184,31 @@ class _OnboardingFirstTaskStepState
       transcript: _displayTranscript(captureState),
       amplitudes: captureState.amplitudes,
       dbfs: captureState.dbfs,
+      companion: watchOnboardingCompanionEnabled(ref)
+          ? OnboardingCompanion(
+              beat: OnboardingCompanionBeat.of(phase),
+              line: _companionLine(messages, phase),
+              framing: CompanionFraming.bust,
+            )
+          : null,
     );
   }
+
+  /// What she says in [phase]: the frame's own headline, so the caption on
+  /// screen is her line. Nothing while the mic is open, so she never talks
+  /// into the recording.
+  String? _companionLine(
+    AppLocalizations messages,
+    OnboardingFirstTaskPhase phase,
+  ) => switch (phase) {
+    OnboardingFirstTaskPhase.prompt =>
+      '${messages.onboardingFirstTaskTitle} '
+          '${messages.onboardingFirstTaskGuidance}',
+    OnboardingFirstTaskPhase.listening => null,
+    OnboardingFirstTaskPhase.thinking => messages.onboardingCaptureThinking,
+    OnboardingFirstTaskPhase.created =>
+      messages.onboardingFirstTaskCreatedTitle,
+  };
 
   /// The created card was tapped — hand the landed task to the host, which
   /// pops the modal and opens the real task page.
