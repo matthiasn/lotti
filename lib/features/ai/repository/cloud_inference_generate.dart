@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_ocr_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_format.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Text and image generation paths for [CloudInferenceRepository].
@@ -288,7 +289,7 @@ class CloudInferenceGenerate {
                   (image) {
                     return ChatCompletionMessageContentPart.image(
                       imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
+                        url: imageDataUri(image),
                       ),
                     );
                   },

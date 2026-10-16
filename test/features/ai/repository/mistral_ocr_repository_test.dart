@@ -55,11 +55,14 @@ void main() {
     }
 
     // Runs extractText and returns the single emitted chunk's text content.
-    Future<String> textFrom(MistralOcrRepository repo) async {
+    Future<String> textFrom(
+      MistralOcrRepository repo, {
+      List<String> images = const ['base64data'],
+    }) async {
       final chunks = await repo
           .extractText(
             model: model,
-            images: const ['base64data'],
+            images: images,
             baseUrl: baseUrl,
             apiKey: apiKey,
           )
@@ -197,6 +200,29 @@ void main() {
         final document = sentBody['document'] as Map<String, dynamic>;
         expect(document['type'], 'image_url');
         expect(document['image_url'], 'data:image/jpeg;base64,base64data');
+      });
+
+      test('labels a PNG document image/png rather than image/jpeg', () async {
+        late Map<String, dynamic> sentBody;
+        final repo = repoWithHandler((request) async {
+          sentBody = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(
+            jsonEncode({
+              'pages': [
+                {'index': 0, 'markdown': 'Hello world'},
+              ],
+            }),
+            200,
+          );
+        });
+        final png = base64Encode(
+          const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13],
+        );
+
+        await textFrom(repo, images: [png]);
+
+        final document = sentBody['document'] as Map<String, dynamic>;
+        expect(document['image_url'], 'data:image/png;base64,$png');
       });
 
       test(

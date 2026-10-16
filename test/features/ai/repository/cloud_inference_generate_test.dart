@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_call_impact.dart';
@@ -474,6 +475,53 @@ void main() {
         expect(request.reasoningEffort, ReasoningEffort.high);
         // Image content is encoded as a data URI in the request payload.
         expect(request.toString(), contains('data:image/jpeg;base64,'));
+      },
+    );
+
+    test(
+      'labels a PNG image/png on the OpenAI-compatible path',
+      () async {
+        when(
+          () => client.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+        final png = base64Encode(
+          const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13],
+        );
+
+        await generate
+            .generateWithImages(
+              prompt,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              model: 'gpt-5',
+              temperature: null,
+              images: [png],
+              provider: providerOfType(InferenceProviderType.openAi),
+              overrideClient: client,
+            )
+            .toList();
+
+        final request =
+            verify(
+                  () => client.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.single
+                as CreateChatCompletionRequest;
+        final parts =
+            (((jsonDecode(jsonEncode(request)) as Map)['messages'] as List)
+                        .single
+                    as Map)['content']
+                as List;
+        final imagePart = parts.cast<Map<String, dynamic>>().singleWhere(
+          (part) => part['type'] == 'image_url',
+        );
+        expect(
+          (imagePart['image_url'] as Map)['url'],
+          'data:image/png;base64,$png',
+        );
       },
     );
 

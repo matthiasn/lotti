@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/repository/inference_http_exception.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_format.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -63,8 +64,9 @@ class MistralOcrRepository {
     }
   }
 
-  /// Runs OCR over [images] (base64-encoded JPEG) and emits the combined
-  /// Markdown as a single streamed chat-completion chunk.
+  /// Runs OCR over [images] (base64-encoded, each labelled with the format
+  /// its bytes are) and emits the combined Markdown as a single streamed
+  /// chat-completion chunk.
   ///
   /// Each image is sent as its own `/v1/ocr` request (concurrently across
   /// images), and the per-page Markdown is concatenated in image order, with
@@ -179,7 +181,7 @@ class MistralOcrRepository {
               'model': model,
               'document': {
                 'type': 'image_url',
-                'image_url': 'data:image/jpeg;base64,$image',
+                'image_url': imageDataUri(image),
               },
               'include_image_base64': false,
             }),
