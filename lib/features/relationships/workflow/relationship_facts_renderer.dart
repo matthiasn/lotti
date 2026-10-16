@@ -158,6 +158,20 @@ class RelationshipFactsRenderer {
     if (data.nickname != null && data.nickname!.isNotEmpty) {
       buffer.writeln('- nickname: ${data.nickname}');
     }
+    if (data.birthday case final birthday?) {
+      // Month and day, with how far off the next one is: the model is told
+      // the distance rather than left to count it.
+      final today = DateTime(now.year, now.month, now.day);
+      var next = DateTime(now.year, birthday.month, birthday.day);
+      if (next.isBefore(today)) {
+        next = DateTime(now.year + 1, birthday.month, birthday.day);
+      }
+      final month = birthday.month.toString().padLeft(2, '0');
+      final day = birthday.day.toString().padLeft(2, '0');
+      buffer.writeln(
+        '- birthday: $month-$day (next in ${next.difference(today).inDays} days)',
+      );
+    }
     buffer
       ..writeln('- trackingSince: ${_day(relationship.meta.dateFrom)}')
       ..writeln('CADENCE:')

@@ -506,9 +506,11 @@ class _BirthdayRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
+          // The text fields' own label style, so the row reads as one more
+          // field of the card.
           child: Text(
             messages.relationshipBirthdayLabel,
-            style: context.designTokens.typography.styles.body.bodyMedium
+            style: context.designTokens.typography.styles.subtitle.subtitle2
                 .copyWith(color: context.designTokens.colors.text.highEmphasis),
           ),
         ),

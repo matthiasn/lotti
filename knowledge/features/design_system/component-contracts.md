@@ -87,6 +87,21 @@ the default `DsPillShape.pill` (fully-rounded, `radii.badgesPills`) is the
 mistaken for a button. The task-detail metadata summary is the reference
 consumer of the tag shape.
 
+The variants carry the rest of the grammar, one meaning each:
+
+| Shape / variant | Means | Example |
+|---|---|---|
+| `tag` · `filled`, bordered | a set fact that edits in place | a check-in composer's *Call*, *Now · 14:05* |
+| `tag` · `tinted` | a state, in its own colour, always with a glyph | *5 days overdue*, a sentiment |
+| `muted` (dashed) | an empty slot — a value not set yet — or the one lever of a lane | *Duration*, *How did it feel?* |
+| `pill` | a choice or a filter | the cadence choice, timeline filters |
+
+A dashed pill is never an action unrelated to the facts beside it: an edit
+command lives in the page's menu instead (the check-in page's *Edit
+check-in*). Where facts are read rather than set — a saved check-in's page —
+they are words with their glyphs, not tags at all
+(`CheckInMetaSummaryLine(readOut: true)`); each still opens its picker on a tap.
+
 `DesignSystemChip` is the canonical interactive filter token. Its `selected`
 flag owns both the activated surface and selected semantics; feature code does
 not repaint selected chips with local status colours. A count or status that
