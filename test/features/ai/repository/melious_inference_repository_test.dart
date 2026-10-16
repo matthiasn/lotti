@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/skills/entry_summary_tool.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -3687,6 +3688,54 @@ void main() {
         });
         expect(captured.body, contains('data:image/jpeg;base64,abc123'));
         expect(contentOf(chunks), 'vision reply');
+      },
+    );
+
+    test(
+      'generateWithImages labels a PNG screenshot image/png — Kimi K3 '
+      'rejects a PNG sent as image/jpeg as a malformed request',
+      () async {
+        late http.Request captured;
+        final repo = repositoryWith((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {'content': 'vision reply'},
+                },
+              ],
+            }),
+            200,
+          );
+        });
+        final png = base64Encode(
+          const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13],
+        );
+
+        await repo
+            .generateWithImages(
+              prompt: 'Describe this screenshot',
+              model: meliousKimiK3ModelId,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              images: [png],
+              tools: [entrySummaryTool],
+              toolChoice: entrySummaryToolChoiceFor(meliousKimiK3ModelId),
+              impactCollector: InferenceImpactCollector(),
+            )
+            .toList();
+
+        final body = jsonDecode(captured.body) as Map<String, dynamic>;
+        final parts =
+            ((body['messages'] as List).single as Map)['content'] as List;
+        final imagePart = parts.cast<Map<String, dynamic>>().singleWhere(
+          (part) => part['type'] == 'image_url',
+        );
+        expect(
+          (imagePart['image_url'] as Map)['url'],
+          'data:image/png;base64,$png',
+        );
       },
     );
 

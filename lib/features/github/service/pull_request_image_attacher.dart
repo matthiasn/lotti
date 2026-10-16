@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:lotti/logic/image_analysis_trigger.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_format.dart';
 import 'package:path/path.dart' as p;
 
 /// Imports image bytes as a journal image entry: [importPastedImages] by
@@ -54,7 +55,7 @@ class PullRequestImageAttacher {
     required Uint8List bytes,
     required String taskId,
   }) async {
-    final extension = pullRequestImageExtension(bytes);
+    final extension = ImageFormat.fromBytes(bytes)?.extension;
     if (extension == null) return false;
     try {
       final imported = await _import(
@@ -78,46 +79,6 @@ class PullRequestImageAttacher {
   }
 }
 
-/// The extensions of the image formats the app stores and decodes, by the
-/// magic bytes that open them.
-const _signatures = <String, List<int>>{
-  'png': [0x89, 0x50, 0x4E, 0x47],
-  'jpg': [0xFF, 0xD8, 0xFF],
-  'gif': [0x47, 0x49, 0x46, 0x38],
-  // RIFF....WEBP: the four bytes after the size are checked separately.
-  'webp': [0x52, 0x49, 0x46, 0x46],
-};
-
-/// The file extension [bytes] should be stored under, by what the bytes
-/// are; null for anything else — an SVG, or a `.png` URL that answered
-/// with something that is no PNG — which the app neither decodes nor
-/// stores, whatever the URL's path promises.
-String? pullRequestImageExtension(Uint8List bytes) {
-  for (final MapEntry(key: extension, value: signature)
-      in _signatures.entries) {
-    if (bytes.length < signature.length) continue;
-    var matches = true;
-    for (var i = 0; i < signature.length; i++) {
-      if (bytes[i] != signature[i]) {
-        matches = false;
-        break;
-      }
-    }
-    if (!matches) continue;
-    if (extension == 'webp') {
-      if (bytes.length < 12 ||
-          bytes[8] != 0x57 ||
-          bytes[9] != 0x45 ||
-          bytes[10] != 0x42 ||
-          bytes[11] != 0x50) {
-        continue;
-      }
-    }
-    return extension;
-  }
-  return null;
-}
-
 /// [bytes], the image at [url], as a file the full-size viewer can show:
 /// under [root] (the system temp directory by default), named by the URL so
 /// the same image written again lands on the same file — and written every
@@ -132,7 +93,7 @@ File pullRequestImageFile(
   required String url,
   Directory? root,
 }) {
-  final extension = pullRequestImageExtension(bytes) ?? 'img';
+  final extension = ImageFormat.fromBytes(bytes)?.extension ?? 'img';
   final name = '${sha1.convert(utf8.encode(url))}.$extension';
   final directory = Directory(
     p.join((root ?? Directory.systemTemp).path, 'lotti_pull_request_images'),

@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_format.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -484,7 +485,7 @@ class MeliousInferenceRepository extends TranscriptionRepository {
           ...images.map(
             (image) => ChatCompletionMessageContentPart.image(
               imageUrl: ChatCompletionMessageImageUrl(
-                url: 'data:image/jpeg;base64,$image',
+                url: imageDataUri(image),
               ),
             ),
           ),

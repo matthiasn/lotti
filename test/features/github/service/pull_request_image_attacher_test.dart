@@ -26,59 +26,11 @@ void main() {
   const taskId = 'task-1';
   final png = Uint8List.fromList([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 1, 2]);
   final jpg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 1, 2]);
-  final gif = Uint8List.fromList([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]);
-  final webp = Uint8List.fromList([
-    0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 1, //
-  ]);
-  final riff = Uint8List.fromList([
-    0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45, 1, //
-  ]);
   final svg = Uint8List.fromList(
     '<svg xmlns="http://www.w3.org/2000/svg"/>'.codeUnits,
   );
 
   setUpAll(registerAllFallbackValues);
-
-  group('pullRequestImageExtension', () {
-    for (final (bytes, name, extension) in [
-      (png, 'png', 'png'),
-      (jpg, 'jpeg', 'jpg'),
-      (gif, 'gif', 'gif'),
-      (webp, 'webp', 'webp'),
-    ]) {
-      test('reads $name from its bytes, whatever the URL says', () {
-        expect(
-          pullRequestImageExtension(bytes),
-          extension,
-        );
-        expect(
-          pullRequestImageExtension(bytes),
-          extension,
-        );
-      });
-    }
-
-    test('bytes that are no image format are not one, whatever a URL '
-        'promised', () {
-      final plain = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-      expect(pullRequestImageExtension(plain), isNull);
-      expect(pullRequestImageExtension(svg), isNull);
-    });
-
-    test('a RIFF that is not WEBP is not an image', () {
-      expect(
-        pullRequestImageExtension(riff),
-        isNull,
-      );
-    });
-
-    test('bytes shorter than a signature are not an image', () {
-      expect(
-        pullRequestImageExtension(Uint8List.fromList([0x89, 0x50])),
-        isNull,
-      );
-    });
-  });
 
   group('PullRequestImageAttacher', () {
     late List<_Import> imports;

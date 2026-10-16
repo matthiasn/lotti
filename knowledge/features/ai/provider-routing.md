@@ -23,7 +23,11 @@ sources:
   - id: melious
     resource: ../../../lib/features/ai/repository/melious_inference_repository.dart
     title: Melious request shaping and response parsing
-    last_modified: 2026-09-12
+    last_modified: 2026-10-16
+  - id: image-format
+    resource: ../../../lib/utils/image_format.dart
+    title: Image data URIs labelled by their magic bytes
+    last_modified: 2026-10-16
   - id: term-corrector
     resource: ../../../lib/utils/transcript_term_corrector.dart
     title: Post-transcription correction against known terms
@@ -79,12 +83,22 @@ throws `UnsupportedError`.
 
 Vision-capable coding prompts reuse `generateWithImages()`. The skill runner
 sends the system message normally and builds the user message as multipart text
-plus `data:image/jpeg;base64,...` image parts; this is the OpenAI-compatible
-vision shape used by Melious (including Kimi K3) and the generic fallback.
+plus `data:` URI image parts; this is the OpenAI-compatible vision shape used by
+Melious (including Kimi K3) and the generic fallback.
+
 With no selected images the runner stays on `generate()`, preserving the exact
 text-only request path. The model must also be chat-capable: dedicated Mistral
 OCR models are filtered from coding-prompt selection, and the runner drops any
 stale image payload before provider routing if the resolved target is OCR-only.
+
+Coding-prompt images are re-encoded to JPEG first (`processReferenceImage`), but
+image analysis sends the stored file's raw bytes, so a pasted screenshot goes
+out as a PNG and demo media as WebP. `imageDataUri` labels each part with the
+format its magic bytes are (PNG, JPEG, GIF or WebP); bytes of no recognised
+format keep `image/jpeg`. The label is not cosmetic: on 2026-10-16 Melious
+answered a PNG or WebP labelled `image/jpeg` with `400 The request was rejected
+as malformed` for `kimi-k3`, while `glm-5.3-flash` accepted the same request.
+Mistral OCR's `document.image_url` uses the same helper.
 
 # Usage normalization
 
