@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -326,6 +327,28 @@ void main() {
       expect(
         tag(tester, 'check-in-duration').variant,
         DsPillVariant.muted,
+      );
+    });
+
+    testWidgets('a fact under a pointer answers in the action ink', (
+      tester,
+    ) async {
+      await pump(tester, readOut: true);
+      final call = find.text('Call');
+      expect(
+        tester.widget<Text>(call).style?.color,
+        tokensOf(tester).colors.text.highEmphasis,
+      );
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(call));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<Text>(call).style?.color,
+        tokensOf(tester).colors.interactive.enabled,
       );
     });
 
