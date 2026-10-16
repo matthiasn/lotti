@@ -18,10 +18,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
 import 'package:lotti/features/relationships/model/imported_contact.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
+import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
+import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
@@ -40,6 +43,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../helpers/check_in_speech_fakes.dart';
+import '../../helpers/fake_pending_interaction_store.dart';
 import '../../helpers/person_timeline_fakes.dart';
 
 /// Counts pushes so a test can tell which navigator a route landed on.
@@ -425,6 +429,53 @@ void main() {
         reason: 'a refused write leaves the sheet open with the toast',
       );
     });
+  });
+
+  testWidgets('a long press on a person opens the composer already '
+      'recording for them, without leaving the list', (tester) async {
+    when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
+      (_) async => [item('rel-1', title: 'Anna', important: true)],
+    );
+    when(
+      () => mockRepository.getRelationshipById(any()),
+    ).thenAnswer((_) async => item('rel-1', title: 'Anna').relationship);
+    when(
+      () => mockRepository.getCheckInsForRelationship(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => mockRepository.getEntriesForCheckIns(any()),
+    ).thenAnswer((_) async => const {});
+    when(
+      () => mockRepository.getLinkedTasks(any()),
+    ).thenAnswer((_) async => []);
+
+    await withClock(Clock.fixed(testDate), () async {
+      await tester.pumpWidget(
+        buildPage(
+          overrides: [
+            pendingInteractionStoreProvider.overrideWithValue(
+              FakePendingInteractionStore(),
+            ),
+            checkInTranscriptionServiceProvider.overrideWithValue(
+              StubCheckInTranscriptionService(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    });
+
+    await tester.longPress(_rowNamed('Anna'));
+    // The live recorder animates: frames, not a settle.
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final form = tester.widget<CheckInCaptureForm>(
+      find.byType(CheckInCaptureForm),
+    );
+    expect(form.relationshipId, 'rel-1');
+    expect(form.startSpeaking, isTrue);
   });
 
   testWidgets(
