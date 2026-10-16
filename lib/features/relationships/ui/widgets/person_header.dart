@@ -648,7 +648,6 @@ class PersonHeaderBlock extends StatelessWidget {
   const PersonHeaderBlock({
     required this.item,
     required this.categoryName,
-    this.nextMeetingAt,
     this.actions,
     super.key,
   });
@@ -661,19 +660,12 @@ class PersonHeaderBlock extends StatelessWidget {
   /// of the pills alone.
   final Widget? actions;
 
-  /// When the next meeting with the person starts, if one is booked.
-  final DateTime? nextMeetingAt;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final data = item.relationship.data;
-    final pills = personHeaderPills(
-      context,
-      item,
-      nextMeetingAt: nextMeetingAt,
-    );
+    final pills = personHeaderPills(context, item);
 
     // The category alone: that reminders are on, and how often, is the
     // reminders pill's to say — it says it in every state and can change it.
@@ -761,26 +753,20 @@ class PersonHeaderBlock extends StatelessWidget {
 ///
 /// One tinted chip at most, and it is the cadence: the health band lives on
 /// the briefing card, which dates it.
-///
-/// A lapsed cadence with a meeting already booked ([nextMeetingAt]) shows no
-/// cadence pill at all: the warning asked for something the user has
-/// already done, and nagged with nothing left to do about it, while the
-/// meeting itself leads *Before you talk* (design panel 2026-10-15).
 List<Widget> personHeaderPills(
   BuildContext context,
-  RelationshipListItem item, {
-  DateTime? nextMeetingAt,
-}) {
+  RelationshipListItem item,
+) {
   final tokens = context.designTokens;
   final messages = context.messages;
   final pill = peopleCadencePillOf(item);
   final quiet = tokens.colors.text.mediumEmphasis;
-  final meetingBooked =
-      nextMeetingAt != null && pill.kind == PeopleCadencePillKind.overdue;
   final pills = <Widget>[
     // Not enrolled: the page's offer card says so and offers the fix; a
-    // pill here said *No reminders* a second time.
-    if (!meetingBooked && pill.kind != PeopleCadencePillKind.notEnrolled)
+    // pill here said *No reminders* a second time. Overdue shows whether or
+    // not a meeting is booked — the list says it either way, and a page
+    // that stayed quiet left the reader to work out they were late.
+    if (pill.kind != PeopleCadencePillKind.notEnrolled)
       relationshipCadencePill(context, item),
     // `isEnrolled`, not the raw flag: a dormant or archived person keeps
     // `important` while the runtime clears their reminders.

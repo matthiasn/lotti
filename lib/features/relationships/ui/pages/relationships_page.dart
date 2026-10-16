@@ -22,6 +22,7 @@ import 'package:lotti/features/relationships/ui/pages/relationship_details_page.
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
@@ -270,7 +271,7 @@ class _PeopleListScaffold extends ConsumerWidget {
 }
 
 /// The summary card and the banded rows, as one sliver list.
-class _PeopleList extends StatelessWidget {
+class _PeopleList extends ConsumerWidget {
   const _PeopleList({
     required this.items,
     required this.selectedRelationshipId,
@@ -280,7 +281,7 @@ class _PeopleList extends StatelessWidget {
   final String? selectedRelationshipId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final sections = peopleListSections(items);
     final children = <Widget>[
@@ -312,6 +313,13 @@ class _PeopleList extends StatelessWidget {
             item: item,
             selected: item.relationship.id == selectedRelationshipId,
             onTap: () => beamToNamed('/people/${item.relationship.id}'),
+            // Straight to speaking a check-in, without opening the page.
+            onLongPress: () => openCheckInForPerson(
+              context: context,
+              ref: ref,
+              relationshipId: item.relationship.id,
+              startSpeaking: true,
+            ),
           ),
       ],
     ];

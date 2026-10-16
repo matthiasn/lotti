@@ -12,7 +12,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One person on the People list (design 2026-09-06 §2): the persona
-/// avatar, the name with a sparkle for an important person, one status line
+/// avatar, the name — no marker beside it, since the band it sits in says
+/// whether reminders are on (design review 2026-10-16) — one status line
 /// (`Call · Today 12:44 · Weekly`) whose timestamp alone wears the mono
 /// voice, and the truthful cadence pill — shown only when it says something
 /// the band heading has not ([peopleCadencePillRestatesBand]).
@@ -27,12 +28,16 @@ class PeopleListRow extends StatelessWidget {
   const PeopleListRow({
     required this.item,
     required this.onTap,
+    this.onLongPress,
     this.selected = false,
     super.key,
   });
 
   final RelationshipListItem item;
   final VoidCallback onTap;
+
+  /// A long press speaks a check-in for the person straight from the list.
+  final VoidCallback? onLongPress;
   final bool selected;
 
   @override
@@ -50,6 +55,7 @@ class PeopleListRow extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step4,
@@ -81,53 +87,11 @@ class PeopleListRow extends StatelessWidget {
                         // column down the list, rather than wherever each
                         // name happens to end.
                         Expanded(
-                          // The sparkle rides *inside* the name, as the
-                          // last thing on its last line. Beside it in a
-                          // Row it was pushed to the far right of a
-                          // full-width column, so a wrapped name left it
-                          // stranded in the gap between the name and the
-                          // pill, marking neither.
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(text: data.title),
-                                // `isEnrolled`, not the raw flag: a dormant
-                                // person keeps `important` while the
-                                // runtime clears their reminders, and this
-                                // marker is announced as "Reminders on".
-                                if (isEnrolled(relationship))
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    // The only thing that marks an enrolled
-                                    // person on this row, so it carries the word
-                                    // too: colour alone says nothing to a screen
-                                    // reader, and the import page already labels
-                                    // the same concept.
-                                    child: Padding(
-                                      padding: EdgeInsetsDirectional.only(
-                                        start: tokens.spacing.step2,
-                                      ),
-                                      child: Semantics(
-                                        label: context
-                                            .messages
-                                            .relationshipImportantLabel,
-                                        child: Icon(
-                                          LottiIcons.aiSpark,
-                                          key: const ValueKey(
-                                            'people-row-important',
-                                          ),
-                                          size: IconSizes.xs,
-                                          // The meta ink, not the accent:
-                                          // teal on this list means
-                                          // pressable, and a marker is not.
-                                          color:
-                                              tokens.colors.text.mediumEmphasis,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
+                          // No marker beside the name: the band the row
+                          // sits in already says whether reminders are on.
+                          child: Text(
+                            data.title,
+                            key: const ValueKey('people-row-name'),
                             // The name is the row. It wraps rather than
                             // truncating, because `Commander Pip Fr…` is the one
                             // string on this row the reader cannot reconstruct

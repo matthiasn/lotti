@@ -328,14 +328,12 @@ class _RelationshipDetailsPageState
       PersonHeaderBlock(
         item: item,
         categoryName: categoryName,
-        nextMeetingAt: nextMeeting?.event.meta.dateFrom,
         // The verbs first, then the reminders control, as one row.
         actions: PersonContactRow(
           relationship: relationship,
           trailing: personHeaderPills(
             context,
             item,
-            nextMeetingAt: nextMeeting?.event.meta.dateFrom,
           ),
         ),
       ),
