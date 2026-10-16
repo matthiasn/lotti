@@ -476,6 +476,45 @@ void main() {
     });
   });
 
+  group('deleteNote', () {
+    test('saves the note again, stamped deleted, and answers whether it was '
+        'saved', () async {
+      when(
+        () => persistence.updateMetadata(
+          any(),
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (call) async => (call.positionalArguments.first as Metadata).copyWith(
+          deletedAt: call.namedArguments[#deletedAt] as DateTime?,
+        ),
+      );
+      when(
+        () => persistence.updateDbEntity(any()),
+      ).thenAnswer((_) async => null);
+      final note =
+          JournalEntity.journalEntry(
+                meta: meta('note-1'),
+                entryText: const EntryText(plainText: 'Gift: a scarf'),
+              )
+              as JournalEntry;
+
+      final deleted = await withClock(
+        Clock.fixed(at),
+        () => repository.deleteNote(note),
+      );
+
+      expect(deleted, isFalse, reason: 'a save that answers nothing failed');
+      final saved =
+          verify(
+                () => persistence.updateDbEntity(captureAny()),
+              ).captured.single
+              as JournalEntity;
+      expect(saved.id, 'note-1');
+      expect(saved.meta.deletedAt, at);
+    });
+  });
+
   group('personTimelineLinksChangedAt', () {
     Future<void> linkAt(String to, DateTime updatedAt, {DateTime? deletedAt}) =>
         db.upsertEntryLink(
