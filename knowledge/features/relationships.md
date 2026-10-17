@@ -2649,7 +2649,18 @@ stateDiagram-v2
   else the first three lines of the transcript, and opens to the whole
   transcript in place with *Show more*. A check-in's row folds the same way,
   leading with the summary of the first recording it holds, when there is
-  one, and opening to its own words. The sort writes that summary: the
+  one, and opening to its own words. A spoken check-in's recording gets that
+  summary when its words land: the composer and the check-in page ask
+  `CheckInTranscriptionService.transcribe(summarize: true)`, which hands the
+  words to `PersonRecordingSummarizer`
+  ([person_recording_summarizer.dart](../../lib/features/relationships/service/person_recording_summarizer.dart))
+  — one forced `summarize_person_recording` call on the person's briefing
+  route, which already reads every check-in about them, saved with
+  `saveRecordingSummary`. It skips words short enough to be their own summary
+  and a recording that already has one (a speech-to-text engine's
+  post-processing writes one). Typed check-ins are never summarized (product
+  owner, 2026-10-17); a capture asks for none, since its sort writes the
+  line. The sort writes that summary: the
   tool's `oneLiner`, saved as an ordinary audio-summary response linked from
   the recording (`saveRecordingSummary`) before the review opens, so it
   stands whatever the review does — and costs no second model call.

@@ -14,10 +14,12 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
+import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -109,7 +111,12 @@ void main() {
   /// a controller built outside it would never settle under `fakeAsync`.
   ///
   /// With [watchOnly] the wait comes from `watch` — listening, no request.
-  void withRun(void Function(_Run run) body, {bool watchOnly = false}) {
+  void withRun(
+    void Function(_Run run) body, {
+    bool watchOnly = false,
+    bool summarize = false,
+    PersonRecordingSummarizer? summarizer,
+  }) {
     fakeAsync((async) {
       final updates = StreamController<Set<String>>.broadcast();
       final notifications = MockUpdateNotifications();
@@ -123,6 +130,7 @@ void main() {
         runner,
         relationships,
         logger,
+        summarizer,
       );
 
       final wait = watchOnly
@@ -130,6 +138,7 @@ void main() {
           : service.transcribe(
               audioEntryId: audioEntryId,
               relationshipId: personId,
+              summarize: summarize,
             );
       final run = _Run(async, updates, wait)..settle();
       body(run);
@@ -140,6 +149,7 @@ void main() {
   }
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(AutomationResult.notHandled);
     registerFallbackValue(SkillType.transcription);
   });
@@ -480,6 +490,56 @@ void main() {
 
     // CodeRabbit review on #4347: the runner writes nothing for an empty
     // response, so a run ending without an error is no proof of words.
+    group("a check-in's recording, once its words are in", () {
+      late MockPersonRecordingSummarizer summarizer;
+
+      setUp(() {
+        summarizer = MockPersonRecordingSummarizer();
+        when(
+          () => summarizer.summarize(
+            person: any(named: 'person'),
+            audioId: any(named: 'audioId'),
+            transcript: any(named: 'transcript'),
+          ),
+        ).thenAnswer((_) async => true);
+        stubEntity(audioWith('Pip hauled the krill.'));
+      });
+
+      test('is summarized for the person when the caller asks', () {
+        when(
+          () => journalDb.journalEntityById(personId),
+        ).thenAnswer((_) async => testRelationship);
+
+        withRun(
+          (run) {
+            verify(
+              () => summarizer.summarize(
+                person: testRelationship,
+                audioId: audioEntryId,
+                transcript: 'Pip hauled the krill.',
+              ),
+            ).called(1);
+          },
+          summarize: true,
+          summarizer: summarizer,
+        );
+      });
+
+      test('is not summarized unasked, nor for a person who cannot be '
+          'read', () {
+        withRun((run) {}, summarizer: summarizer);
+        withRun((run) {}, summarize: true, summarizer: summarizer);
+        withRun((run) {}, summarize: true);
+        verifyNever(
+          () => summarizer.summarize(
+            person: any(named: 'person'),
+            audioId: any(named: 'audioId'),
+            transcript: any(named: 'transcript'),
+          ),
+        );
+      });
+    });
+
     test('a run that ends without words changes no check-in', () {
       withRun((run) {
         verifyNever(() => relationships.touchCheckInsHolding(any()));

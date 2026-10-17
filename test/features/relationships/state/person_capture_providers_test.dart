@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/relationships/repository/person_timeline_reposito
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_capture_sort_tool.dart';
 import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
+import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
 import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/get_it.dart';
@@ -166,6 +169,7 @@ void main() {
         relationshipRepositoryProvider.overrideWithValue(relationships),
         personTimelineRepositoryProvider.overrideWithValue(timeline),
         taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+        journalDbProvider.overrideWithValue(services.journalDb),
       ],
     );
     addTearDown(container.dispose);
@@ -206,6 +210,114 @@ void main() {
         impactCollector: any(named: 'impactCollector'),
       ),
     ).called(1);
+  });
+
+  test('the recording summarizer saves through the timeline and sees a '
+      'summary already there', () async {
+    when(
+      () => timeline.saveRecordingSummary(
+        audioId: any(named: 'audioId'),
+        summary: any(named: 'summary'),
+        modelId: any(named: 'modelId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(() => services.journalDb.getLinkedEntities('audio-1')).thenAnswer(
+      (_) async => const [],
+    );
+    when(generateCall).thenAnswer(
+      (_) => Stream.value(
+        CreateChatCompletionStreamResponse(
+          id: 'chunk',
+          object: 'chat.completion.chunk',
+          created: 0,
+          choices: [
+            ChatCompletionStreamResponseChoice(
+              index: 0,
+              delta: ChatCompletionStreamResponseDelta(
+                toolCalls: [
+                  ChatCompletionStreamMessageToolCallChunk(
+                    index: 0,
+                    id: 'call-1',
+                    type: ChatCompletionStreamMessageToolCallChunkType.function,
+                    function: ChatCompletionStreamMessageFunctionCall(
+                      name: personRecordingSummaryToolName,
+                      arguments: jsonEncode({'oneLiner': 'Pip is calm.'}),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final summarizer = world().read(personRecordingSummarizerProvider);
+    final words = 'Pip talked about the launch at length. ' * 6;
+
+    expect(
+      await summarizer.summarize(
+        person: person,
+        audioId: 'audio-1',
+        transcript: words,
+      ),
+      isTrue,
+    );
+    verify(
+      () => timeline.saveRecordingSummary(
+        audioId: 'audio-1',
+        summary: 'Pip is calm.',
+        modelId: 'glm-5.2',
+        categoryId: 'cat-1',
+      ),
+    ).called(1);
+    verify(
+      () => inference.generate(
+        any(),
+        model: 'glm-5.2',
+        temperature: 0.2,
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: 'key',
+        systemMessage: personRecordingSummarySystemMessage,
+        maxCompletionTokens: personRecordingSummaryMaxTokens,
+        provider: any(named: 'provider'),
+        tools: [personRecordingSummaryTool],
+        toolChoice: personRecordingSummaryToolChoiceFor('glm-5.2'),
+        geminiThinkingMode: GeminiThinkingMode.minimal,
+        reasoningEffort: ReasoningEffort.minimal,
+        impactCollector: any(named: 'impactCollector'),
+      ),
+    ).called(1);
+
+    when(() => services.journalDb.getLinkedEntities('audio-2')).thenAnswer(
+      (_) async => [
+        JournalEntity.aiResponse(
+          meta: Metadata(
+            id: 'summary',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: const AiResponseData(
+            model: 'm',
+            systemMessage: '',
+            prompt: '',
+            thoughts: '',
+            response: 'x',
+            type: AiResponseType.audioSummary,
+          ),
+        ),
+      ],
+    );
+    expect(
+      await summarizer.summarize(
+        person: person,
+        audioId: 'audio-2',
+        transcript: words,
+      ),
+      isFalse,
+    );
   });
 
   test('a person whose route resolves to nothing has no sorter', () async {

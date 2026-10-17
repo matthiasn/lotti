@@ -166,6 +166,7 @@ import 'package:lotti/features/recent_searches/state/recent_searches_repository.
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
+import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
 import 'package:lotti/features/relationships/service/relationship_agent_service.dart';
 import 'package:lotti/features/relationships/service/relationship_chat_service.dart';
 import 'package:lotti/features/relationships/service/relationship_proposal_service.dart';
@@ -1615,6 +1616,9 @@ class MockProjectLifecycleService extends Mock
 
 class MockRelationshipRepository extends Mock
     implements RelationshipRepository {}
+
+class MockPersonRecordingSummarizer extends Mock
+    implements PersonRecordingSummarizer {}
 
 class MockPersonTimelineRepository extends Mock
     implements PersonTimelineRepository {}

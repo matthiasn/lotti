@@ -275,6 +275,8 @@ void main() {
     ).called(1);
     expect(transcription.transcribeCalls, ['audio-1']);
     expect(transcription.transcribePeople, ['pip']);
+    // The sort writes the capture's line; no second summary is asked for.
+    expect(transcription.summarizeCalls, isEmpty);
     expect(prompts.single, contains('Called Pip about the launch.'));
     expect(find.text("Here's what I heard"), findsOneWidget);
     expect(

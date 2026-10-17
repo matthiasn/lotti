@@ -664,6 +664,8 @@ void main() {
       }
 
       expect(transcription.transcribeCalls, ['take-1']);
+      // A check-in's recording: its words are summarized too.
+      expect(transcription.summarizeCalls, ['take-1']);
       expect(transcription.transcribePeople, ['rel-001']);
       verify(() => repository.touchCheckIn('c-1')).called(1);
       expect(
