@@ -270,12 +270,11 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
 
     state = const SyncSubscribeConnecting();
     await provisioning.configureFromBundle(bundle);
-    final outcome = ref.read(provisioningControllerProvider);
-    final connected = outcome.maybeWhen(
-      ready: (_) => true,
-      done: () => true,
-      orElse: () => false,
-    );
+    // A paid bundle is always `provisioned`, so success means `ready`: the
+    // password was rotated and a handover minted.
+    final connected = ref
+        .read(provisioningControllerProvider)
+        .maybeWhen(ready: (_) => true, orElse: () => false);
     if (!connected) {
       // The connect page shows why; the bundle stays claimable for a retry.
       return;
@@ -358,10 +357,11 @@ class RotationConfirmer {
 /// Runs [RotationConfirmer.confirmPending] once per visit of the Devices
 /// page; resolves to whether a pending proof was confirmed.
 final FutureProvider<bool> pendingRotationRecoveryProvider =
-    FutureProvider.autoDispose<bool>(
-      (ref) => ref.read(rotationConfirmerProvider).confirmPending(),
-      name: 'pendingRotationRecoveryProvider',
-    );
+    FutureProvider.autoDispose<bool>((ref) async {
+      // Builds without the service never held a paid bundle.
+      if (ref.read(syncSubscriptionApiProvider) == null) return false;
+      return ref.read(rotationConfirmerProvider).confirmPending();
+    }, name: 'pendingRotationRecoveryProvider');
 
 final Provider<RotationConfirmer> rotationConfirmerProvider =
     Provider.autoDispose<RotationConfirmer>(

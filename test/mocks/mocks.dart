@@ -209,6 +209,7 @@ import 'package:lotti/features/sync/services/definition_clock_stamper.dart';
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -1117,6 +1118,8 @@ class MockMaintenance extends Mock implements Maintenance {}
 class MockHistoricalSyncService extends Mock implements HistoricalSyncService {}
 
 class MockMatrixService extends Mock implements MatrixService {}
+
+class MockSyncSubscriptionApi extends Mock implements SyncSubscriptionApi {}
 
 class MockGeolocationService extends Mock implements GeolocationService {}
 

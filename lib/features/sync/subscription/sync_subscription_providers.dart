@@ -18,15 +18,21 @@ const bool _webCheckoutAllowed = bool.fromEnvironment(
   defaultValue: true,
 );
 
-/// The service base URL, or null when this build offers no web checkout.
-/// Only an `https://` URL counts, so a typo cannot send secrets in clear.
-final syncSubscriptionBaseUrlProvider = Provider<Uri?>((ref) {
-  if (!_webCheckoutAllowed) return null;
-  final uri = Uri.tryParse(_apiUrl);
+/// The service base URL for [raw], or null when the build offers no web
+/// checkout. Only an `https://` URL counts, so a typo in a build define
+/// cannot send the entitlement secret in clear.
+Uri? syncServiceBaseUrl(String raw, {required bool allowed}) {
+  if (!allowed) return null;
+  final uri = Uri.tryParse(raw);
   if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return null;
   // A trailing slash makes `resolve` append rather than replace the path.
   return uri.path.endsWith('/') ? uri : uri.replace(path: '${uri.path}/');
-}, name: 'syncSubscriptionBaseUrlProvider');
+}
+
+final syncSubscriptionBaseUrlProvider = Provider<Uri?>(
+  (ref) => syncServiceBaseUrl(_apiUrl, allowed: _webCheckoutAllowed),
+  name: 'syncSubscriptionBaseUrlProvider',
+);
 
 /// Whether the subscribe entry is shown at all.
 final syncSubscriptionAvailableProvider = Provider<bool>(

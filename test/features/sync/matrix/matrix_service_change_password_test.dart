@@ -263,4 +263,36 @@ void main() {
       ).called(1);
     });
   });
+
+  group('MatrixService.publishRotationProof', () {
+    test(
+      'sets the challenge as room state keyed by the bundle, the shape the '
+      'provisioning service reads',
+      () async {
+        when(
+          () => gateway.setRoomState(
+            roomId: any(named: 'roomId'),
+            eventType: any(named: 'eventType'),
+            stateKey: any(named: 'stateKey'),
+            content: any(named: 'content'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await service.publishRotationProof(
+          roomId: '!room:example.com',
+          bundleId: 'bundle-1',
+          challenge: 'challenge-1',
+        );
+
+        verify(
+          () => gateway.setRoomState(
+            roomId: '!room:example.com',
+            eventType: 'com.lotti.sync.provisioning.rotation',
+            stateKey: 'bundle-1',
+            content: {'challenge': 'challenge-1'},
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

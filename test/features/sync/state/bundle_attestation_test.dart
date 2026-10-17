@@ -142,6 +142,13 @@ void main() {
     );
   });
 
+  test('a refusal names its reason when logged', () {
+    expect(
+      const UntrustedBundleException(BundleTrustFailure.expired).toString(),
+      'UntrustedBundleException(expired)',
+    );
+  });
+
   test('an unknown key id is refused', () {
     final foreign = _signedBundle.copyWith(
       att: _vectorAttestation.copyWith(kid: 'someone-else'),
