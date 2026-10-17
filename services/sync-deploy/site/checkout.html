@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Lotti Sync — checkout</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <h1>Lotti Sync</h1>
+    <p id="status">Opening the secure checkout…</p>
+    <p class="fine">
+      Payment is handled by Paddle, our merchant of record. Lotti never sees
+      your card or PayPal details, and Paddle never sees your journal: your
+      sync data stays end-to-end encrypted between your own devices.
+    </p>
+    <button id="retry" hidden>Open checkout again</button>
+  </main>
+  <script src="config.js"></script>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <script src="checkout.js"></script>
+</body>
+</html>

@@ -11,6 +11,10 @@
 # this repository. Nothing here has a default for a secret: a checked-in
 # default is a published credential.
 
+# A fixed project name keeps volume names stable (lotti-sync_synapse-data …)
+# whatever directory compose is run from; the render script relies on it.
+name: lotti-sync
+
 services:
   postgres:
     image: postgres:16.4-alpine
