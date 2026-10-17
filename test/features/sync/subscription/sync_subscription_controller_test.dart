@@ -568,6 +568,45 @@ void main() {
       });
     });
 
+    test('a kept session never reclaims on a device that owes a proof', () {
+      fakeAsync((async) {
+        when(
+          () => bench.api.checkoutState('s1'),
+        ).thenAnswer((_) async => SyncCheckoutState.paid);
+        bench.seed(_seeded.withPendingProof(owed));
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(bench.provisioning.configured, isEmpty);
+        verifyNever(() => bench.api.checkoutState(any()));
+        expect(bench.record!.containsKey('pendingProof'), isFalse);
+        expect(bench.record!.containsKey('sessionId'), isFalse);
+      });
+    });
+
+    test('an unconfirmed proof keeps the session for the next visit', () {
+      fakeAsync((async) {
+        when(
+          () => bench.api.confirmRotation(
+            any(),
+            claimSecret: any(named: 'claimSecret'),
+            bundleId: any(named: 'bundleId'),
+          ),
+        ).thenThrow(
+          const SyncSubscriptionException(SyncSubscriptionFailureKind.offline),
+        );
+        bench.seed(_seeded.withPendingProof(owed));
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(bench.provisioning.configured, isEmpty);
+        expect(bench.record!['sessionId'], 's1');
+        expect(bench.record!['pendingProof'], isNotNull);
+      });
+    });
+
     test('a device whose connect failed retries it', () {
       fakeAsync((async) {
         when(bench.matrix.isLoggedIn).thenReturn(false);

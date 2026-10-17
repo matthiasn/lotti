@@ -117,23 +117,23 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
   Future<void> resume() async {
     final record = await _store.load();
     if (record == null) return;
+    final loggedIn = ref.read(matrixServiceProvider).isLoggedIn();
+    if (loggedIn && record.pendingProof != null) {
+      // A device that syncs and owes a proof only finishes it. The claim
+      // would redeliver the bootstrap bundle, and connecting it again would
+      // log the live session out for a password that was already rotated.
+      await _guarded(_finishPendingProof);
+      return;
+    }
     final sessionId = record.sessionId;
     if (sessionId == null) {
       // The session can be gone while the payment is not: a connect that
       // failed, or a checkout paid after its session timed out. The claim
-      // needs no session. A device that already syncs only finishes the
-      // rotation proof it owes — reclaiming would log its live session out
-      // for a bootstrap credential it already rotated. A device that does
-      // not sync yet claims; unpaid simply means nothing to resume.
-      if (ref.read(matrixServiceProvider).isLoggedIn()) {
-        if (record.pendingProof != null) {
-          await _guarded(
-            () => ref.read(rotationConfirmerProvider).confirmPending(),
-          );
-        }
-        return;
+      // needs no session, so a device that does not sync yet asks for it;
+      // unpaid simply means nothing to resume.
+      if (!loggedIn) {
+        await _guarded(() => _claimAndConnect(record, quietIfUnpaid: true));
       }
-      await _guarded(() => _claimAndConnect(record, quietIfUnpaid: true));
       return;
     }
     try {
@@ -151,6 +151,12 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
     } on Object {
       state = const SyncSubscribeFailed(SyncSubscribeFailure.service);
     }
+  }
+
+  Future<void> _finishPendingProof() async {
+    if (!await ref.read(rotationConfirmerProvider).confirmPending()) return;
+    final confirmed = await _store.load();
+    if (confirmed != null) await _store.save(confirmed.withSession(null));
   }
 
   /// Runs [work] from a future nobody awaits, turning any escape into a state.
