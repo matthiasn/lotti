@@ -3,9 +3,11 @@
 Suspension is reversible and keeps everything, so a renewal restores sync
 exactly where it stopped. Kept forever, though, a lapsed account is personal
 data with no purpose left. After ``erase_after`` of continuous suspension this
-reaper deletes the user's media, deletes and purges their sync room, erases
-the Matrix account and revokes the record — in that order, so a failure part
-way leaves the account suspended and the next run finishes the job.
+reaper claims the account in the erasure ledger — which revokes it and
+detaches it from its subscription in one transaction, so a renewal can no
+longer unsuspend it — then deletes the user's media, deletes and purges the
+sync room, and erases the Matrix user. Each step is recorded; a run that fails
+part way resumes at the first unfinished step.
 
 The user's own devices still hold their memories; only the server copy goes.
 """
@@ -18,8 +20,8 @@ from datetime import datetime, timedelta, timezone
 
 from shared.matrix import SynapseAdminClient
 
+from .account_erasure_repository import AccountErasure, AccountErasureRepository
 from .periodic_task import PeriodicTask
-from .subscription_repository import SubscriptionRepository
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ class LapsedAccountReaper(PeriodicTask):
 
     def __init__(
         self,
-        repository: SubscriptionRepository,
+        repository: AccountErasureRepository,
         admin_client: SynapseAdminClient,
         *,
         erase_after: timedelta = DEFAULT_ERASE_AFTER,
@@ -60,30 +62,49 @@ class LapsedAccountReaper(PeriodicTask):
         await self.reap_once()
 
     async def reap_once(self) -> int:
-        """Erase one batch of lapsed accounts; return how many were erased."""
+        """Claim newly lapsed accounts, advance every open erasure; return how many finished."""
         now = self._now_provider()
-        erased = 0
         for user in await self._repository.list_lapsed_accounts(
             suspended_before=now - self._erase_after,
             limit=self._batch_size,
         ):
-            try:
-                # Everything uploaded up to now: the account can send nothing
-                # more while suspended.
-                await self._admin_client.delete_user_media(
-                    user.user_mxid,
-                    before_ts_ms=int(now.timestamp() * 1000),
-                )
-                await self._admin_client.delete_room(user.room_id)
-                await self._admin_client.erase_user(user.user_mxid)
-            except Exception as exc:  # noqa: BLE001 - one account must not stop the batch
-                logger.warning("Could not erase lapsed account %s: %s", user.user_mxid, exc)
-                continue
-            await self._repository.revoke(
+            await self._repository.claim_erasure(
                 user.bundle_id,
-                f"Erased after {self._erase_after.days} days of lapsed subscription",
+                suspended_before=now - self._erase_after,
+                now=now,
             )
+        erased = 0
+        for erasure in await self._repository.list_open_erasures(limit=self._batch_size):
+            try:
+                await self._advance(erasure)
+            except Exception as exc:  # noqa: BLE001 - one account must not stop the batch
+                logger.warning("Could not erase lapsed account %s: %s", erasure.user_mxid, exc)
+                await self._repository.record_erasure_error(erasure.bundle_id, str(exc))
+                continue
             erased += 1
         if erased:
             logger.info("Erased %s lapsed account(s)", erased)
         return erased
+
+    async def _advance(self, erasure: AccountErasure) -> None:
+        now = self._now_provider()
+        if erasure.media_deleted_at is None:
+            # Everything uploaded up to now: a suspended account sends nothing.
+            await self._admin_client.delete_user_media(
+                erasure.user_mxid,
+                before_ts_ms=int(now.timestamp() * 1000),
+            )
+            await self._repository.record_erasure_step(
+                erasure.bundle_id, "media_deleted_at", now=now
+            )
+        if erasure.room_deleted_at is None:
+            await self._admin_client.delete_room(erasure.room_id)
+            await self._repository.record_erasure_step(
+                erasure.bundle_id, "room_deleted_at", now=self._now_provider()
+            )
+        if erasure.user_erased_at is None:
+            await self._admin_client.erase_user(erasure.user_mxid)
+            await self._repository.record_erasure_step(
+                erasure.bundle_id, "user_erased_at", now=self._now_provider()
+            )
+        await self._repository.complete_erasure(erasure.bundle_id, now=self._now_provider())

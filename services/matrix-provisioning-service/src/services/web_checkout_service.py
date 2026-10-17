@@ -18,6 +18,7 @@ from enum import Enum
 from urllib.parse import urlencode
 
 from ..core.exceptions import (
+    AlreadySubscribedException,
     BundleClaimConflictException,
     CheckoutSessionException,
     EntitlementAuthenticationException,
@@ -125,6 +126,23 @@ class WebCheckoutService:
         price_id = self._plans.get(plan)
         if price_id is None:
             raise InvalidSubscriptionProductException("Plan is not offered")
+        current = await self._repository.get_current_subscription(entitlement_id)
+        if (
+            current is not None
+            and current.provider is SubscriptionProvider.PADDLE
+            and grants_access(current, now=now)
+        ):
+            # A second checkout would bill twice; the app claims instead.
+            raise AlreadySubscribedException("This entitlement already has a subscription")
+        open_session = await self._repository.get_open_checkout_session(
+            entitlement_id,
+            price_id=price_id,
+            now=now,
+        )
+        if open_session is not None:
+            # A retry reuses the payable session rather than minting a second
+            # one a still-open browser tab could also complete.
+            return self._created(open_session)
         if len(claim_secret) < 32:
             raise BundleClaimConflictException("Claim secret is too short")
         session = CheckoutSession(
@@ -138,9 +156,12 @@ class WebCheckoutService:
             created_at=now,
         )
         await self._repository.create_checkout_session(session)
+        return self._created(session)
+
+    def _created(self, session: CheckoutSession) -> CreatedCheckoutSession:
         # A fragment never reaches a server log, so the session id stays
         # between the app, the browser and Paddle's custom_data.
-        fragment = urlencode({"session": session.session_id, "price": price_id})
+        fragment = urlencode({"session": session.session_id, "price": session.price_id})
         return CreatedCheckoutSession(
             session_id=session.session_id,
             checkout_url=f"{self._checkout_page_url}#{fragment}",

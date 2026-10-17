@@ -515,7 +515,7 @@ class Container:
 
     def _create_lapsed_account_reaper(self) -> LapsedAccountReaper:
         return LapsedAccountReaper(
-            self.get_subscription_repository(),
+            self.get_web_subscription_repository(),
             self.get_admin_client(),
             erase_after=timedelta(days=float(os.getenv("LAPSED_ACCOUNT_ERASE_DAYS", "30"))),
         )

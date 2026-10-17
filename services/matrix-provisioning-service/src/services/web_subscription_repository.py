@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 
 from ..core.constants import DEFAULT_DB_PATH
 from ..core.subscriptions import CheckoutSession
-from .subscription_repository import SubscriptionRepository, _iso, _parse
+from .account_erasure_repository import AccountErasureRepository
+from .subscription_repository import _iso, _parse
 
 ATTEMPT_KIND_WEB_CHECKOUT = "web_checkout"
 
@@ -47,7 +48,7 @@ CREATE TABLE IF NOT EXISTS paddle_webhook_events (
 """
 
 
-class WebSubscriptionRepository(SubscriptionRepository):
+class WebSubscriptionRepository(AccountErasureRepository):
     """Adds checkout sessions and Paddle event ids to the paid schema."""
 
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
@@ -115,6 +116,39 @@ class WebSubscriptionRepository(SubscriptionRepository):
     async def get_checkout_session(self, session_id: str) -> CheckoutSession | None:
         """Return a session by id, or ``None``."""
         return await asyncio.to_thread(self._get_checkout_session_sync, session_id)
+
+    def _get_open_checkout_session_sync(
+        self,
+        entitlement_id: str,
+        price_id: str,
+        now: datetime,
+    ) -> CheckoutSession | None:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT * FROM checkout_sessions WHERE entitlement_id = ? AND price_id = ? "
+                "AND bound_token_fingerprint IS NULL AND expires_at > ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (entitlement_id, price_id, _iso(now)),
+            ).fetchone()
+            return self._row_to_checkout_session(row) if row else None
+        finally:
+            conn.close()
+
+    async def get_open_checkout_session(
+        self,
+        entitlement_id: str,
+        *,
+        price_id: str,
+        now: datetime,
+    ) -> CheckoutSession | None:
+        """The newest unpaid, unexpired session for this plan, if any."""
+        return await asyncio.to_thread(
+            self._get_open_checkout_session_sync,
+            entitlement_id,
+            price_id,
+            now,
+        )
 
     def _bind_checkout_session_sync(
         self,

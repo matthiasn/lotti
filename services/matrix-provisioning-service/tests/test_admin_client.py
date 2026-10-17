@@ -232,22 +232,96 @@ async def test_erasure_uses_the_gdpr_deactivation_endpoint(credentials):
     assert json.loads(requests[0].read()) == {"erase": True}
 
 
-async def test_room_deletion_purges_the_history(credentials):
-    requests = []
+def _room_admin_handler(requests, *, exists=True, statuses=("purging", "complete")):
+    remaining = list(statuses)
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.startswith("/_synapse/admin/v2/rooms/"):
+        path = request.url.path
+        if path.startswith("/_synapse/admin/v1/rooms/"):
             requests.append(request)
-            return httpx.Response(200, json={"delete_id": "abc"})
+            return httpx.Response(200 if exists else 404, json={})
+        if path.startswith("/_synapse/admin/v2/rooms/delete_status/"):
+            requests.append(request)
+            state = remaining.pop(0) if remaining else "purging"
+            return httpx.Response(200, json={"status": state, "error": "disk full"})
+        if path.startswith("/_synapse/admin/v2/rooms/"):
+            requests.append(request)
+            return httpx.Response(200, json={"delete_id": "del-1"})
         return synapse_handler(request)
+
+    return handler
+
+
+async def _no_sleep(_seconds):
+    return None
+
+
+async def test_room_deletion_purges_and_waits_for_completion(credentials):
+    requests = []
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler(requests)),
+    )
+
+    await client.delete_room("!sync:example.com", sleep=_no_sleep)
+
+    delete = next(r for r in requests if r.method == "DELETE")
+    assert delete.url.raw_path.endswith(b"/%21sync%3Aexample.com")
+    assert json.loads(delete.read()) == {"purge": True, "block": False}
+    polls = [r for r in requests if "delete_status/del-1" in r.url.path]
+    assert len(polls) == 2
+
+
+async def test_deleting_a_room_that_is_already_gone_succeeds(credentials):
+    requests = []
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler(requests, exists=False)),
+    )
+
+    await client.delete_room("!gone:example.com", sleep=_no_sleep)
+
+    assert [r.method for r in requests] == ["GET"]
+
+
+@pytest.mark.parametrize(
+    ("statuses", "max_polls", "message"),
+    [
+        (("failed",), 5, "failed to purge"),
+        (("purging", "purging"), 2, "did not finish"),
+    ],
+)
+async def test_a_purge_that_fails_or_stalls_is_an_error(credentials, statuses, max_polls, message):
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler([], statuses=statuses)),
+    )
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.delete_room("!sync:example.com", max_polls=max_polls, sleep=_no_sleep)
+
+
+@pytest.mark.parametrize(
+    ("handler_path", "response", "message"),
+    [
+        ("/_synapse/admin/v2/rooms/delete_status/", httpx.Response(500, json={}), "status"),
+        ("/_synapse/admin/v2/rooms/!", httpx.Response(200, json={}), "no delete id"),
+    ],
+)
+async def test_unexpected_deletion_responses_are_errors(
+    credentials, handler_path, response, message
+):
+    base = _room_admin_handler([])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith(handler_path):
+            return response
+        return base(request)
 
     client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
 
-    await client.delete_room("!sync:example.com")
-
-    assert requests[0].method == "DELETE"
-    assert requests[0].url.raw_path.endswith(b"/%21sync%3Aexample.com")
-    assert json.loads(requests[0].read()) == {"purge": True, "block": False}
+    with pytest.raises(ProvisioningError, match=message):
+        await client.delete_room("!sync:example.com", sleep=_no_sleep)
 
 
 @pytest.mark.parametrize(
@@ -263,6 +337,8 @@ async def test_room_deletion_purges_the_history(credentials):
 )
 async def test_erasure_failures_are_not_silently_accepted(credentials, path, call, message):
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/_synapse/admin/v1/rooms/"):
+            return httpx.Response(200, json={})  # the room exists
         if request.url.path.startswith(path):
             return httpx.Response(500, json={})
         return synapse_handler(request)

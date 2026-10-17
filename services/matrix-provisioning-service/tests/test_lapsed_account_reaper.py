@@ -1,27 +1,17 @@
 """Tests for erasing accounts that stayed lapsed past the grace window."""
 
-# ruff: noqa: S105,S106 - explicit non-production credential fixtures
-
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 import pytest
 from src.core.models import BundleStatus
-from src.core.subscriptions import (
-    AcknowledgementState,
-    EntitlementState,
-    GoogleSubscriptionState,
-    SubscriptionProvider,
-    VerifiedSubscription,
-)
+from src.services.account_erasure_repository import AccountErasureRepository
 from src.services.lapsed_account_reaper import LapsedAccountReaper
-from src.services.subscription_repository import SubscriptionRepository
-from tests.conftest import ROOM_ID, seed_user
+from tests.conftest import ROOM_ID
+from tests.erasure_fixtures import NOW, paid_account
 
 pytestmark = pytest.mark.anyio
-
-NOW = datetime(2026, 10, 17, 12, tzinfo=timezone.utc)
 
 
 class FakeAdmin:
@@ -46,7 +36,7 @@ class FakeAdmin:
 
 @pytest.fixture
 def repository(tmp_path):
-    return SubscriptionRepository(str(tmp_path / "lapsed.db"))
+    return AccountErasureRepository(str(tmp_path / "lapsed.db"))
 
 
 @pytest.fixture
@@ -54,52 +44,8 @@ def admin():
     return FakeAdmin()
 
 
-def reaper_for(repository, admin, *, now=NOW):
-    return LapsedAccountReaper(repository, admin, now_provider=lambda: now)
-
-
-async def paid_account(repository, name, *, suspended_at=None, unsuspended_at=None):
-    """A paid account whose Matrix suspension was observed at ``suspended_at``."""
-    user = await seed_user(repository, name)
-    await repository.create_entitlement(
-        entitlement_id=f"entitlement-{name}",
-        obfuscated_account_id=f"obfuscated-{name}",
-        auth_secret_hash="auth-hash",
-        now=NOW - timedelta(days=90),
-    )
-    stored = await repository.store_verified_subscription(
-        VerifiedSubscription(
-            entitlement_id=f"entitlement-{name}",
-            token_fingerprint=f"fp-{name}",
-            encrypted_purchase_token=b"sealed",
-            encryption_key_id="key-v1",
-            package_name="paddle",
-            product_id="pro_lotti_sync",
-            base_plan_id="pri_monthly",
-            latest_order_id=None,
-            google_state=GoogleSubscriptionState.EXPIRED,
-            entitlement_state=EntitlementState.EXPIRED,
-            start_time=NOW - timedelta(days=90),
-            current_period_end=None,
-            grace_deadline=None,
-            acknowledgement_state=AcknowledgementState.ACKNOWLEDGED,
-            binding_verified=True,
-            last_verified_at=NOW - timedelta(days=90),
-            next_reconciliation_at=NOW,
-            bundle_id=user.bundle_id,
-            provider=SubscriptionProvider.PADDLE,
-        ),
-        now=NOW - timedelta(days=90),
-    )
-    if suspended_at is not None:
-        await repository.record_subscription_enforcement(
-            stored.token_fingerprint, suspended=True, now=suspended_at
-        )
-    if unsuspended_at is not None:
-        await repository.record_subscription_enforcement(
-            stored.token_fingerprint, suspended=False, now=unsuspended_at
-        )
-    return user
+def reaper_for(repository, admin, **kwargs):
+    return LapsedAccountReaper(repository, admin, now_provider=lambda: NOW, **kwargs)
 
 
 async def test_an_account_suspended_past_the_window_is_erased_completely(repository, admin):
@@ -113,8 +59,10 @@ async def test_an_account_suspended_past_the_window_is_erased_completely(reposit
         ("erase_user", user.user_mxid),
     ]
     assert (await repository.get(user.bundle_id)).status is BundleStatus.REVOKED
-    # Revoked records are not offered again.
+    assert await repository.list_open_erasures(limit=10) == []
+    # Nothing is offered again.
     assert await reaper_for(repository, admin).reap_once() == 0
+    assert len(admin.calls) == 3
 
 
 async def test_accounts_inside_the_window_or_renewed_are_kept(repository, admin):
@@ -132,28 +80,57 @@ async def test_accounts_inside_the_window_or_renewed_are_kept(repository, admin)
     assert admin.calls == []
 
 
-async def test_a_failure_part_way_keeps_the_record_for_the_next_run(repository, admin):
-    first = await paid_account(repository, "first", suspended_at=NOW - timedelta(days=40))
-    second = await paid_account(repository, "second", suspended_at=NOW - timedelta(days=35))
+async def test_a_renewal_after_listing_but_before_claiming_wins(repository, admin):
+    await paid_account(repository, "racer", suspended_at=NOW - timedelta(days=31))
+    original = repository.list_lapsed_accounts
+
+    async def list_then_renew(**kwargs):
+        listed = await original(**kwargs)
+        await repository.record_subscription_enforcement(
+            "fp-racer", suspended=False, now=NOW - timedelta(seconds=1)
+        )
+        return listed
+
+    repository.list_lapsed_accounts = list_then_renew
+
+    assert await reaper_for(repository, admin).reap_once() == 0
+
+    assert admin.calls == []
+
+
+async def test_a_failure_part_way_resumes_at_the_failed_step(repository, admin):
+    user = await paid_account(repository, "lapsed", suspended_at=NOW - timedelta(days=31))
+    admin.fail_on = "erase_user"
+
+    assert await reaper_for(repository, admin).reap_once() == 0
+
+    [open_erasure] = await repository.list_open_erasures(limit=10)
+    assert open_erasure.room_deleted_at is not None
+    assert open_erasure.last_error == "erase_user failed"
+    admin.calls.clear()
+    admin.fail_on = None
+
+    assert await reaper_for(repository, admin).reap_once() == 1
+
+    # Media and room were not touched again: Synapse would refuse the room.
+    assert admin.calls == [("erase_user", user.user_mxid)]
+
+
+async def test_one_failing_account_does_not_stop_the_batch(repository, admin):
+    await paid_account(repository, "first", suspended_at=NOW - timedelta(days=40))
+    await paid_account(repository, "second", suspended_at=NOW - timedelta(days=35))
     admin.fail_on = "delete_room"
 
     assert await reaper_for(repository, admin).reap_once() == 0
 
-    assert (await repository.get(first.bundle_id)).status is not BundleStatus.REVOKED
-    assert (await repository.get(second.bundle_id)).status is not BundleStatus.REVOKED
-    # Both were attempted: one account's failure does not stop the batch.
-    assert [call[1] for call in admin.calls] == [first.user_mxid, second.user_mxid]
-
-    admin.fail_on = None
-    assert await reaper_for(repository, admin).reap_once() == 2
+    assert [call[0] for call in admin.calls] == ["delete_user_media", "delete_user_media"]
 
 
-async def test_the_oldest_lapses_are_erased_first_in_bounded_batches(repository, admin):
+async def test_the_oldest_lapses_are_claimed_first_in_bounded_batches(repository, admin):
     older = await paid_account(repository, "older", suspended_at=NOW - timedelta(days=50))
     await paid_account(repository, "newer", suspended_at=NOW - timedelta(days=40))
-    reaper = LapsedAccountReaper(repository, admin, batch_size=1, now_provider=lambda: NOW)
 
-    assert await reaper.reap_once() == 1
+    assert await reaper_for(repository, admin, batch_size=1).reap_once() == 1
 
     assert admin.calls[0][1] == older.user_mxid
 

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Header, HTTPException, Request, status
 
 from ..container import container
 from ..core.exceptions import (
+    AlreadySubscribedException,
     BundleClaimConflictException,
     BundleClaimRateLimitException,
     CheckoutSessionException,
@@ -82,6 +83,8 @@ async def create_checkout_session(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
+    except AlreadySubscribedException as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return CheckoutSessionResponse(**created.__dict__)
 
 

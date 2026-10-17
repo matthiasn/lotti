@@ -7,9 +7,10 @@ activity and media usage.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
 from time import time_ns
 
@@ -405,18 +406,31 @@ class SynapseAdminClient(SynapseClientBase):
         if not resp.is_success:
             raise ProvisioningError(f"Failed to erase {user_mxid} (HTTP {resp.status_code})")
 
-    async def delete_room(self, room_id: str) -> None:
-        """Remove a room and purge every event in it from the database.
+    async def delete_room(
+        self,
+        room_id: str,
+        *,
+        poll_interval: float = 2.0,
+        max_polls: int = 150,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    ) -> None:
+        """Remove a room and purge every event in it, and wait until it is gone.
 
-        Synapse runs the purge in the background; this returns once it is
-        scheduled.
+        Synapse runs the purge in the background and reports its progress
+        under the returned ``delete_id``; success means that purge finished,
+        not merely that it was scheduled. A room Synapse no longer knows is
+        already deleted, so calling this again after a partial run is safe.
 
         Raises:
-            ProvisioningError: If Synapse rejects the deletion.
+            ProvisioningError: If Synapse rejects the deletion, the purge
+                fails, or it does not finish within ``max_polls`` checks.
         """
         encoded = encode_room_id_for_path(room_id)
         client = self._client()
         headers = await self._auth_headers(client)
+        existing = await client.get(f"/_synapse/admin/v1/rooms/{encoded}", headers=headers)
+        if existing.status_code == 404:
+            return
         resp = await client.request(
             "DELETE",
             f"/_synapse/admin/v2/rooms/{encoded}",
@@ -425,6 +439,27 @@ class SynapseAdminClient(SynapseClientBase):
         )
         if not resp.is_success:
             raise ProvisioningError(f"Failed to delete room {room_id} (HTTP {resp.status_code})")
+        delete_id = resp.json().get("delete_id")
+        if not isinstance(delete_id, str) or not delete_id:
+            raise ProvisioningError(f"Synapse returned no delete id for room {room_id}")
+        for _ in range(max_polls):
+            status = await client.get(
+                f"/_synapse/admin/v2/rooms/delete_status/{delete_id}",
+                headers=headers,
+            )
+            if not status.is_success:
+                raise ProvisioningError(
+                    f"Could not read deletion status of {room_id} (HTTP {status.status_code})"
+                )
+            state = status.json().get("status")
+            if state == "complete":
+                return
+            if state == "failed":
+                raise ProvisioningError(
+                    f"Synapse failed to purge room {room_id}: {status.json().get('error', '')}"
+                )
+            await sleep(poll_interval)
+        raise ProvisioningError(f"Purge of room {room_id} did not finish in time")
 
     async def set_user_suspended(self, user_mxid: str, *, suspended: bool) -> None:
         """Reversibly suspend or restore a Matrix account.

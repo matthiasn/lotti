@@ -151,6 +151,12 @@ class CheckoutSessionException(ProvisioningServiceException):
     pass
 
 
+class AlreadySubscribedException(ProvisioningServiceException):
+    """Raised when a checkout is requested for an entitlement that already pays."""
+
+    pass
+
+
 class PaymentPendingException(ProvisioningServiceException):
     """Raised when no web subscription grants access to the entitlement yet."""
 

@@ -173,6 +173,12 @@ class PaddleSubscriptionService:
         """Re-apply Paddle's current view of a known subscription (reconciler path)."""
         reference = self.reference(stored)
         subscription = await self._paddle_client.get_subscription(reference.subscription_id)
+        if subscription.price_id not in self._allowed_price_ids:
+            # Moved to a price this service does not sell (a portal or catalog
+            # change): leave the stored row alone, so its deadline still
+            # fails closed, rather than grant access on an unknown plan.
+            logger.warning("Paddle subscription moved to an unknown price; not refreshed")
+            return
         now = self._now_provider()
         await self._store(
             subscription,

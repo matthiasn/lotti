@@ -2163,9 +2163,17 @@ class SubscriptionRepository(ProvisioningRepository):
             ).fetchone()
             if source is None:
                 raise PurchaseTokenConflictException("Unknown purchase token")
-            timestamp_column = "suspended_at" if suspended else "unsuspended_at"
+            # Re-enforcing an account that is already suspended keeps the
+            # moment it was first suspended: that is the clock the lapsed
+            # account reaper counts from.
+            assignment = (
+                "suspended_at = CASE WHEN matrix_suspended = 1 AND suspended_at IS NOT NULL "
+                "THEN suspended_at ELSE ? END"
+                if suspended
+                else "unsuspended_at = ?"
+            )
             conn.execute(
-                f"UPDATE play_subscriptions SET {timestamp_column} = ?, "
+                f"UPDATE play_subscriptions SET {assignment}, "
                 "matrix_suspended = ?, last_error = ?, updated_at = ? "
                 "WHERE entitlement_id = ? AND is_current = 1",
                 (

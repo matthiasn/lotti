@@ -398,3 +398,19 @@ async def test_a_known_subscription_never_binds_another_entitlements_session(
     foreign = await repository.get_checkout_session("foreign-session")
     assert foreign.bound_token_fingerprint is None
     assert await repository.get_current_subscription("entitlement-two") is None
+
+
+async def test_refresh_leaves_a_row_alone_when_moved_to_an_unknown_price(
+    service, repository, paddle, deliver
+):
+    await deliver(subscription_payload())
+    stored = await repository.get_current_subscription("entitlement-one")
+    paddle.subscription = parse_subscription(
+        subscription_payload(price_id="pri_unrelated", period_end=NOW + timedelta(days=400))
+    )
+
+    await service.refresh(stored)
+
+    after = await repository.get_current_subscription("entitlement-one")
+    assert after.current_period_end == stored.current_period_end
+    assert after.base_plan_id == MONTHLY_PRICE

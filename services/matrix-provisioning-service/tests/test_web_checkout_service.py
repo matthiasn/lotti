@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from src.core.exceptions import (
+    AlreadySubscribedException,
     BundleClaimConflictException,
     CheckoutSessionException,
     EntitlementAuthenticationException,
@@ -253,7 +254,7 @@ async def test_status_moves_from_pending_to_paid_when_the_webhook_lands(world, c
 
 
 async def test_status_reports_expiry_only_for_unpaid_sessions(world, credentials, clock):
-    unpaid = await open_session(world, credentials)
+    unpaid = await open_session(world, credentials, plan="annual")
     paid = await open_session(world, credentials)
     await pay(world, clock, paid.session_id)
     clock.now = NOW + timedelta(hours=1)
@@ -369,3 +370,25 @@ async def test_a_crash_before_binding_stays_pending_until_paddle_redelivers(
     monkeypatch.setattr(repository, "bind_checkout_session", bind)
     assert await pay(world, clock, created.session_id) == "applied"
     assert (await claim(world, credentials)).delivery.bundle == ENCODED_BUNDLE
+
+
+async def test_a_paid_entitlement_cannot_open_a_second_checkout(world, credentials, clock):
+    created = await open_session(world, credentials)
+    await pay(world, clock, created.session_id)
+
+    with pytest.raises(AlreadySubscribedException):
+        await open_session(world, credentials, plan="annual")
+
+
+async def test_a_retry_reuses_the_open_session_for_the_same_plan(world, credentials, clock):
+    first = await open_session(world, credentials)
+    again = await open_session(world, credentials)
+    annual = await open_session(world, credentials, plan="annual")
+
+    assert again.session_id == first.session_id
+    assert again.checkout_url == first.checkout_url
+    assert annual.session_id != first.session_id
+
+    clock.now = NOW + timedelta(hours=1)
+    fresh = await open_session(world, credentials)
+    assert fresh.session_id != first.session_id

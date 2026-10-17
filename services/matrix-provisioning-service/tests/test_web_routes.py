@@ -21,6 +21,7 @@ from src.core.constants import (
     SERVICE_WEB_CHECKOUT,
 )
 from src.core.exceptions import (
+    AlreadySubscribedException,
     BundleClaimConflictException,
     BundleClaimRateLimitException,
     CheckoutSessionException,
@@ -178,6 +179,7 @@ def test_session_route_requires_a_bearer_credential(client):
         (EntitlementAuthenticationException("bad"), 401),
         (WebCheckoutRateLimitException(retry_after_seconds=30), 429),
         (InvalidSubscriptionProductException("price"), 422),
+        (AlreadySubscribedException("paid"), 409),
     ],
 )
 def test_session_route_maps_failures(client, services, failure, code):
