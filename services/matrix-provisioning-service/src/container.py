@@ -61,6 +61,7 @@ from .core.features import play_subscriptions_enabled, web_subscriptions_enabled
 from .services.bundle_claim_reaper import BundleClaimReaper
 from .services.bundle_rotation_service import BundleRotationService
 from .services.bundle_service import BundleService
+from .services.bundle_signer import BundleSigner
 from .services.google_play_client import GoogleAccessTokenProvider, GooglePlayClient
 from .services.google_play_notifications import (
     GooglePlayNotificationService,
@@ -156,6 +157,26 @@ def _allowed_products() -> dict[str, frozenset[str]]:
     return {PLAY_SUBSCRIPTION_PRODUCT_ID: plans}
 
 
+def _bundle_signer() -> BundleSigner | None:
+    """The bundle signer, or ``None`` to keep issuing unsigned v2 bundles.
+
+    Unsigned stays possible on purpose: clients released before v3 cannot read
+    a signed bundle, so the operator turns signing on once those are gone.
+    """
+    seed = os.getenv("BUNDLE_SIGNING_KEY_BASE64", "")
+    if not seed:
+        return None
+    try:
+        decoded = base64.b64decode(seed, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("BUNDLE_SIGNING_KEY_BASE64 must be valid Base64") from exc
+    return BundleSigner(
+        seed=decoded,
+        kid=os.getenv("BUNDLE_SIGNING_KEY_ID", ""),
+        ttl=timedelta(hours=float(os.getenv("BUNDLE_ATTESTATION_TTL_HOURS", "24"))),
+    )
+
+
 def _web_reconciliation_interval() -> timedelta:
     # Paddle pushes every change; the refresh only repairs missed deliveries,
     # so it can be far less frequent than the Matrix enforcement loop.
@@ -225,7 +246,12 @@ class Container:
         return SynapseAdminClient(build_admin_credentials())
 
     def _create_bundle_service(self) -> BundleService:
-        return BundleService(self.get_provisioner(), self.get_repository(), self.get_admin_client())
+        return BundleService(
+            self.get_provisioner(),
+            self.get_repository(),
+            self.get_admin_client(),
+            signer=_bundle_signer(),
+        )
 
     def _create_redemption_poller(self) -> RedemptionPoller:
         return RedemptionPoller(

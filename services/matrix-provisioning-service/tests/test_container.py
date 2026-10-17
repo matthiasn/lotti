@@ -382,3 +382,34 @@ def test_web_configuration_fails_fast(env, name, value, message):
 
     with pytest.raises(ValueError, match=message):
         Container().get_web_checkout_service()
+
+
+def test_bundles_stay_unsigned_until_a_key_is_configured(env):
+    assert Container().get_bundle_service()._signer is None
+
+
+def test_signing_key_configuration_is_applied(env):
+    env.setenv("BUNDLE_SIGNING_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("BUNDLE_SIGNING_KEY_ID", "op-2026-10")
+    env.setenv("BUNDLE_ATTESTATION_TTL_HOURS", "2")
+
+    signer = Container().get_bundle_service()._signer
+
+    assert signer.kid == "op-2026-10"
+    assert signer._ttl == timedelta(hours=2)
+
+
+@pytest.mark.parametrize(
+    ("seed", "kid", "message"),
+    [
+        ("not base64!", "op", "valid Base64"),
+        (base64.b64encode(b"short").decode(), "op", "32-byte"),
+        (base64.b64encode(bytes(range(32))).decode(), "", "BUNDLE_SIGNING_KEY_ID"),
+    ],
+)
+def test_signing_key_configuration_fails_fast(env, seed, kid, message):
+    env.setenv("BUNDLE_SIGNING_KEY_BASE64", seed)
+    env.setenv("BUNDLE_SIGNING_KEY_ID", kid)
+
+    with pytest.raises(ValueError, match=message):
+        Container().get_bundle_service()

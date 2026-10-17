@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import logging
 from collections.abc import Awaitable, Callable
+from datetime import datetime, timezone
 from typing import TypeVar
 
 import httpx
@@ -27,6 +28,7 @@ from ..core.models import (
     CreateBundleResponse,
     ProvisionedUser,
 )
+from .bundle_signer import BundleSigner
 from .provisioning_repository import ProvisioningRepository
 
 logger = logging.getLogger(__name__)
@@ -53,10 +55,21 @@ class BundleService:
         provisioner: SynapseProvisioner,
         repository: ProvisioningRepository,
         admin_client: SynapseAdminClient,
+        *,
+        signer: BundleSigner | None = None,
+        now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         self._provisioner = provisioner
         self._repository = repository
         self._admin_client = admin_client
+        self._signer = signer
+        self._now_provider = now_provider or (lambda: datetime.now(timezone.utc))
+
+    def _encode(self, result: ProvisionResult) -> str:
+        """The string handed to the user: v3 and signed when a key is configured."""
+        if self._signer is None:
+            return result.encoded_bundle
+        return self._signer.sign(result.bundle, now=self._now_provider()).encode()
 
     async def create_bundle(self, request: CreateBundleRequest) -> CreateBundleResponse:
         """Provision a new account and return its bundle exactly once.
@@ -150,7 +163,14 @@ class BundleService:
                 f"Could not reach Synapse to provision {request.username}: {exc}"
             ) from exc
 
-        persistence_task = asyncio.ensure_future(persist(result, result.encoded_bundle))
+        try:
+            encoded = self._encode(result)
+        except Exception:
+            logger.exception("Could not sign the bundle for %s; deactivating it", result.user_mxid)
+            await self._deactivate_orphan(result.user_mxid)
+            raise
+
+        persistence_task = asyncio.ensure_future(persist(result, encoded))
         try:
             # SQLite work delegated with ``to_thread`` keeps running if its
             # awaiting coroutine is cancelled. Shield the persistence task so

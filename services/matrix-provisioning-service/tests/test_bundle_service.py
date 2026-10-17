@@ -8,8 +8,10 @@ live credential, which is the worst possible outcome.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import threading
+from datetime import datetime, timezone
 
 import httpx
 import pytest
@@ -19,6 +21,7 @@ from src.core.exceptions import (
 )
 from src.core.models import BundleStatus, CreateBundleRequest
 from src.services.bundle_service import BundleService, fingerprint_bundle
+from src.services.bundle_signer import BundleSigner, verify_bundle
 from tests.conftest import (
     ROOM_ID,
     SERVER_NAME,
@@ -26,7 +29,7 @@ from tests.conftest import (
     synapse_handler,
 )
 
-from shared.matrix import SynapseAdminClient, SynapseProvisioner
+from shared.matrix import SynapseAdminClient, SynapseProvisioner, SyncBundle
 
 pytestmark = pytest.mark.anyio
 
@@ -508,3 +511,59 @@ async def test_a_claim_does_not_block_a_different_name(repository, credentials, 
     response = await service.create_bundle(CreateBundleRequest(username="unrelated"))
 
     assert response.user.username == "unrelated"
+
+
+SIGNING_NOW = datetime(2026, 10, 17, 12, tzinfo=timezone.utc)
+
+
+def _signing_service(repository, credentials, transport, signer) -> BundleService:
+    return BundleService(
+        SynapseProvisioner(credentials, transport=transport),
+        repository,
+        SynapseAdminClient(credentials, transport=transport),
+        signer=signer,
+        now_provider=lambda: SIGNING_NOW,
+    )
+
+
+async def test_a_configured_signer_issues_verifiable_v3_bundles(
+    repository, credentials, mock_transport
+):
+    signer = BundleSigner(seed=bytes(range(32)), kid="test-2026-10")
+    service = _signing_service(repository, credentials, mock_transport, signer)
+
+    response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))
+
+    decoded = SyncBundle.decode(response.bundle)
+    assert decoded.version == 3
+    verify_bundle(
+        decoded,
+        {"test-2026-10": base64.urlsafe_b64decode(signer.public_key_base64url() + "=")},
+        now=SIGNING_NOW,
+    )
+    # The stored fingerprint identifies the signed string the user received.
+    stored = await repository.get(response.user.bundle_id)
+    assert stored.bundle_fingerprint == fingerprint_bundle(response.bundle)
+
+
+async def test_a_signing_failure_rolls_the_account_back(
+    repository, credentials, tracking_transport
+):
+    transport, requests = tracking_transport
+
+    class BrokenSigner:
+        def sign(self, bundle, *, now):
+            raise RuntimeError("key unavailable")
+
+    service = _signing_service(repository, credentials, transport, BrokenSigner())
+
+    with pytest.raises(RuntimeError, match="key unavailable"):
+        await service.create_bundle(CreateBundleRequest(username="lotti_user"))
+
+    assert any(
+        r.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(r.url)
+        and json.loads(r.content).get("deactivated") is True
+        for r in requests
+    )
+    assert await repository.find_by_username("lotti_user") is None

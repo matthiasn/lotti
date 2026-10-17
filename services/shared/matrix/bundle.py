@@ -5,6 +5,12 @@ hands to a new user and the Lotti client imports. Its schema is a contract with
 the shipped Dart client (``lib/features/sync/state/provisioning_controller.dart``)
 — the client rejects ``v:1`` bundles and dispatches on ``kind``, so neither
 field may change shape without a coordinated client release.
+
+Schema v3 adds ``att``, an Ed25519 attestation by the operator's provisioning
+service. It signs the account identity — never the password — so a device that
+rotated the password can hand the same attestation on in a ``handover`` bundle.
+This module only carries the attestation; signing lives in the service, which
+holds the key, so the CLI keeps working without the crypto dependency.
 """
 
 from __future__ import annotations
@@ -15,9 +21,12 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 
-#: Schema version understood by the current Lotti client. The client rejects
+#: Unsigned schema, understood by every released client. The client rejects
 #: v:1 bundles, which predate the ``kind`` discriminator.
 BUNDLE_SCHEMA_VERSION = 2
+
+#: Schema carrying an operator attestation (``att``).
+SIGNED_BUNDLE_SCHEMA_VERSION = 3
 
 
 class BundleKind(str, Enum):
@@ -38,6 +47,56 @@ class BundleDecodeError(ValueError):
 
 
 @dataclass(frozen=True)
+class BundleAttestation:
+    """The operator's signature over a bundle's identity fields.
+
+    ``iat``/``exp`` are Unix seconds; ``sig`` is the Base64url (no padding)
+    Ed25519 signature over :func:`attestation_payload`.
+    """
+
+    kid: str
+    iat: int
+    exp: int
+    sig: str
+
+    def to_dict(self) -> dict:
+        """Return the wire-format ``att`` object."""
+        return {"kid": self.kid, "iat": self.iat, "exp": self.exp, "sig": self.sig}
+
+
+def attestation_payload(
+    *,
+    home_server: str,
+    user: str,
+    room_id: str,
+    kid: str,
+    iat: int,
+    exp: int,
+) -> bytes:
+    """The exact bytes an attestation signs.
+
+    Canonical JSON: keys sorted, no whitespace, UTF-8 without escaping — the
+    same bytes Dart's ``jsonEncode`` produces for the same sorted map, which is
+    what the client verifies against. The password and ``kind`` are excluded
+    on purpose: both change on handover while the identity does not.
+    """
+    return json.dumps(
+        {
+            "exp": exp,
+            "homeServer": home_server,
+            "iat": iat,
+            "kid": kid,
+            "roomId": room_id,
+            "user": user,
+            "v": SIGNED_BUNDLE_SCHEMA_VERSION,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode()
+
+
+@dataclass(frozen=True)
 class SyncBundle:
     """A decoded provisioning bundle."""
 
@@ -46,11 +105,16 @@ class SyncBundle:
     password: str
     room_id: str
     kind: BundleKind = BundleKind.PROVISIONED
-    version: int = BUNDLE_SCHEMA_VERSION
+    attestation: BundleAttestation | None = None
+
+    @property
+    def version(self) -> int:
+        """v3 exactly when the bundle carries an attestation."""
+        return SIGNED_BUNDLE_SCHEMA_VERSION if self.attestation else BUNDLE_SCHEMA_VERSION
 
     def to_dict(self) -> dict:
         """Return the wire-format dict, with keys in the client's field order."""
-        return {
+        wire = {
             "v": self.version,
             "kind": self.kind.value,
             "homeServer": self.home_server,
@@ -58,6 +122,9 @@ class SyncBundle:
             "password": self.password,
             "roomId": self.room_id,
         }
+        if self.attestation is not None:
+            wire["att"] = self.attestation.to_dict()
+        return wire
 
     def encode(self) -> str:
         """Encode to the Base64url (no padding) string the client imports."""
@@ -109,10 +176,10 @@ class SyncBundle:
             raise BundleDecodeError("Bundle JSON must be an object")
 
         version = data.get("v")
-        if version != BUNDLE_SCHEMA_VERSION:
+        if version not in (BUNDLE_SCHEMA_VERSION, SIGNED_BUNDLE_SCHEMA_VERSION):
             raise BundleDecodeError(
                 f"Unsupported bundle schema version {version!r} "
-                f"(expected {BUNDLE_SCHEMA_VERSION})"
+                f"(expected {BUNDLE_SCHEMA_VERSION} or {SIGNED_BUNDLE_SCHEMA_VERSION})"
             )
 
         try:
@@ -124,11 +191,27 @@ class SyncBundle:
         if missing:
             raise BundleDecodeError(f"Bundle is missing required field(s): {', '.join(missing)}")
 
+        attestation = None
+        if version == SIGNED_BUNDLE_SCHEMA_VERSION:
+            attestation = _decode_attestation(data.get("att"))
+
         return cls(
             home_server=data["homeServer"],
             user=data["user"],
             password=data["password"],
             room_id=data["roomId"],
             kind=kind,
-            version=version,
+            attestation=attestation,
         )
+
+
+def _decode_attestation(att: object) -> BundleAttestation:
+    if not isinstance(att, dict):
+        raise BundleDecodeError("A v3 bundle must carry an attestation object")
+    kid, iat, exp, sig = att.get("kid"), att.get("iat"), att.get("exp"), att.get("sig")
+    if not (isinstance(kid, str) and kid and isinstance(sig, str) and sig):
+        raise BundleDecodeError("Bundle attestation is missing its key id or signature")
+    # bool is an int subclass; a JSON true is not a timestamp.
+    if not all(isinstance(t, int) and not isinstance(t, bool) for t in (iat, exp)):
+        raise BundleDecodeError("Bundle attestation timestamps must be integers")
+    return BundleAttestation(kid=kid, iat=iat, exp=exp, sig=sig)

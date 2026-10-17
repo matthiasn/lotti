@@ -13,6 +13,7 @@ import pytest
 
 from shared.matrix.bundle import (
     BUNDLE_SCHEMA_VERSION,
+    BundleAttestation,
     BundleDecodeError,
     BundleKind,
     SyncBundle,
@@ -138,3 +139,48 @@ def test_decode_rejects_valid_base64_that_is_not_json():
 
     with pytest.raises(BundleDecodeError):
         SyncBundle.decode(encoded)
+
+
+def _encode_raw(payload: dict) -> str:
+    return base64.urlsafe_b64encode(json.dumps(payload).encode()).rstrip(b"=").decode()
+
+
+_V3_FIELDS = {
+    "v": 3,
+    "kind": "provisioned",
+    "homeServer": "https://matrix.example.com",
+    "user": "@lotti_user:example.com",
+    "password": "pw",
+    "roomId": "!room:example.com",
+}
+
+
+@pytest.mark.parametrize(
+    ("att", "expected_message"),
+    [
+        (None, "attestation object"),
+        ({"kid": "k", "iat": 1, "exp": 2}, "key id or signature"),
+        ({"kid": "", "iat": 1, "exp": 2, "sig": "s"}, "key id or signature"),
+        ({"kid": "k", "iat": "1", "exp": 2, "sig": "s"}, "integers"),
+        ({"kid": "k", "iat": 1, "exp": True, "sig": "s"}, "integers"),
+    ],
+)
+def test_v3_requires_a_well_formed_attestation(att, expected_message):
+    payload = dict(_V3_FIELDS)
+    if att is not None:
+        payload["att"] = att
+
+    with pytest.raises(BundleDecodeError, match=expected_message):
+        SyncBundle.decode(_encode_raw(payload))
+
+
+def test_v3_decodes_its_attestation_and_v2_ignores_a_stray_one():
+    att = {"kid": "k", "iat": 1, "exp": 2, "sig": "s"}
+
+    signed = SyncBundle.decode(_encode_raw({**_V3_FIELDS, "att": att}))
+    unsigned = SyncBundle.decode(_encode_raw({**_V3_FIELDS, "v": 2, "att": att}))
+
+    assert signed.attestation == BundleAttestation(kid="k", iat=1, exp=2, sig="s")
+    assert signed.to_dict()["att"] == att
+    assert unsigned.attestation is None
+    assert "att" not in unsigned.to_dict()
