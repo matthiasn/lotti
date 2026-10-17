@@ -41,6 +41,7 @@ from .core.constants import (
     SERVICE_BUNDLE_SERVICE,
     SERVICE_GOOGLE_PLAY_CLIENT,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
+    SERVICE_LAPSED_ACCOUNT_REAPER,
     SERVICE_PADDLE_CLIENT,
     SERVICE_PADDLE_SUBSCRIPTIONS,
     SERVICE_PAID_BUNDLE_SERVICE,
@@ -67,6 +68,7 @@ from .services.google_play_notifications import (
     GooglePlayNotificationService,
     PubSubAuthenticator,
 )
+from .services.lapsed_account_reaper import LapsedAccountReaper
 from .services.paddle_client import PADDLE_LIVE_BASE_URL, PADDLE_SANDBOX_BASE_URL, PaddleClient
 from .services.paddle_subscription_service import PaddleSubscriptionService
 from .services.paid_bundle_service import PaidBundleService
@@ -99,6 +101,7 @@ def build_admin_credentials() -> AdminCredentials:
         admin_token=os.getenv("MATRIX_ADMIN_TOKEN") or None,
         admin_user=os.getenv("MATRIX_ADMIN_USER") or None,
         admin_password=os.getenv("MATRIX_ADMIN_PASSWORD") or None,
+        api_url=os.getenv("MATRIX_ADMIN_API_URL") or None,
     )
 
 
@@ -235,6 +238,7 @@ class Container:
         self._factories[SERVICE_PADDLE_CLIENT] = self._create_paddle_client
         self._factories[SERVICE_PADDLE_SUBSCRIPTIONS] = self._create_paddle_subscriptions
         self._factories[SERVICE_WEB_CHECKOUT] = self._create_web_checkout_service
+        self._factories[SERVICE_LAPSED_ACCOUNT_REAPER] = self._create_lapsed_account_reaper
 
     def _create_repository(self) -> WebSubscriptionRepository:
         return WebSubscriptionRepository(os.getenv("DB_PATH", DEFAULT_DB_PATH))
@@ -503,6 +507,13 @@ class Container:
             allowed_price_ids=_paddle_price_ids(),
         )
 
+    def _create_lapsed_account_reaper(self) -> LapsedAccountReaper:
+        return LapsedAccountReaper(
+            self.get_subscription_repository(),
+            self.get_admin_client(),
+            erase_after=timedelta(days=float(os.getenv("LAPSED_ACCOUNT_ERASE_DAYS", "30"))),
+        )
+
     def get(self, service_name: str) -> Any:
         """Get a service by name (lazy initialization)"""
         if service_name not in self._services:
@@ -609,6 +620,9 @@ class Container:
 
     def get_web_checkout_service(self) -> WebCheckoutService:
         return cast(WebCheckoutService, self.get(SERVICE_WEB_CHECKOUT))
+
+    def get_lapsed_account_reaper(self) -> LapsedAccountReaper:
+        return cast(LapsedAccountReaper, self.get(SERVICE_LAPSED_ACCOUNT_REAPER))
 
 
 # Global container instance

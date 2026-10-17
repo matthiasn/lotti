@@ -2187,6 +2187,38 @@ class SubscriptionRepository(ProvisioningRepository):
         finally:
             conn.close()
 
+    def _list_lapsed_accounts_sync(
+        self,
+        suspended_before: datetime,
+        limit: int,
+    ) -> list[ProvisionedUser]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT u.* FROM play_subscriptions s "
+                "JOIN provisioned_users u ON u.bundle_id = s.bundle_id "
+                "WHERE s.is_current = 1 AND s.matrix_suspended = 1 "
+                "AND s.suspended_at IS NOT NULL AND s.suspended_at <= ? "
+                "AND u.status != ? ORDER BY s.suspended_at ASC LIMIT ?",
+                (_iso(suspended_before), BundleStatus.REVOKED.value, max(1, limit)),
+            ).fetchall()
+            return [self._row_to_user(row) for row in rows]
+        finally:
+            conn.close()
+
+    async def list_lapsed_accounts(
+        self,
+        *,
+        suspended_before: datetime,
+        limit: int,
+    ) -> list[ProvisionedUser]:
+        """Accounts still suspended since before ``suspended_before``, not yet erased.
+
+        Renewing unsuspends the account and records ``matrix_suspended = 0``,
+        so a subscriber who comes back inside the window never appears here.
+        """
+        return await asyncio.to_thread(self._list_lapsed_accounts_sync, suspended_before, limit)
+
     async def record_subscription_enforcement(
         self,
         token_fingerprint: str,

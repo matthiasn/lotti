@@ -214,6 +214,65 @@ async def test_subscription_enforcement_uses_reversible_suspension(
     assert requests[0].read().decode() == ('{"suspend":true}' if suspended else '{"suspend":false}')
 
 
+async def test_erasure_uses_the_gdpr_deactivation_endpoint(credentials):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/_synapse/admin/v1/deactivate/" in request.url.path:
+            requests.append(request)
+            return httpx.Response(200, json={"id_server_unbind_result": "success"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    await client.erase_user(USER)
+
+    assert requests[0].method == "POST"
+    assert requests[0].url.path.endswith("/@heavy_user:example.com")
+    assert json.loads(requests[0].read()) == {"erase": True}
+
+
+async def test_room_deletion_purges_the_history(credentials):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/_synapse/admin/v2/rooms/"):
+            requests.append(request)
+            return httpx.Response(200, json={"delete_id": "abc"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    await client.delete_room("!sync:example.com")
+
+    assert requests[0].method == "DELETE"
+    assert requests[0].url.raw_path.endswith(b"/%21sync%3Aexample.com")
+    assert json.loads(requests[0].read()) == {"purge": True, "block": False}
+
+
+@pytest.mark.parametrize(
+    ("path", "call", "message"),
+    [
+        ("/_synapse/admin/v1/deactivate/", lambda c: c.erase_user(USER), "Failed to erase"),
+        (
+            "/_synapse/admin/v2/rooms/",
+            lambda c: c.delete_room("!sync:example.com"),
+            "Failed to delete room",
+        ),
+    ],
+)
+async def test_erasure_failures_are_not_silently_accepted(credentials, path, call, message):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith(path):
+            return httpx.Response(500, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await call(client)
+
+
 async def test_suspension_failure_is_not_silently_accepted(credentials):
     def handler(request: httpx.Request) -> httpx.Response:
         if "/_synapse/admin/v1/suspend/" in request.url.path:
@@ -675,3 +734,30 @@ def test_synapse_client_disables_redirects(credentials):
 def test_admin_credentials_require_an_authentication_method():
     with pytest.raises(ValueError, match="either admin_token"):
         AdminCredentials(homeserver="https://matrix.example.com")
+
+
+@pytest.mark.parametrize("api_url", ["synapse:8008", "ftp://synapse:8008", "http://"])
+def test_admin_credentials_reject_a_malformed_api_url(api_url):
+    with pytest.raises(ValueError, match="api_url"):
+        AdminCredentials(
+            homeserver="https://matrix.example.com",
+            admin_token="token",  # noqa: S106 - fixture credential
+            api_url=api_url,
+        )
+
+
+async def test_an_api_url_carries_admin_calls_off_the_public_listener(tracking_transport):
+    transport, requests = tracking_transport
+    credentials = AdminCredentials(
+        homeserver="https://matrix.example.com/",
+        admin_token="tok",  # noqa: S106 - fixture credential for the mock homeserver
+        api_url="http://synapse:8008/",
+    )
+    client = SynapseAdminClient(credentials, transport=transport)
+    register_synapse_account("@lotti_user:example.com")
+
+    await client.get_user_activity("@lotti_user:example.com")
+
+    assert {(r.url.scheme, r.url.host, r.url.port) for r in requests} == {("http", "synapse", 8008)}
+    assert credentials.base_url == "https://matrix.example.com"
+    await client.aclose()

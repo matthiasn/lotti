@@ -1,0 +1,121 @@
+# Production stack for paid Lotti Sync: Synapse + Postgres + provisioning service.
+# Usage (see sync-deploy/README.md for the whole runbook):
+#   cd services && docker compose -f docker-compose.sync-prod.yml --env-file /etc/lotti-sync/sync.env up -d
+#
+# Every port binds to 127.0.0.1. The host's nginx (sync-deploy/nginx/lotti-sync.conf)
+# terminates TLS and forwards only the client API, media, the app's client
+# routes and the Paddle webhook. The Synapse admin API, federation and every
+# admin route of the provisioning service are unreachable from outside.
+#
+# Secrets live in the env file named above, owned by root, mode 0600, outside
+# this repository. Nothing here has a default for a secret: a checked-in
+# default is a published credential.
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: lotti-sync-postgres
+    environment:
+      - POSTGRES_USER=synapse
+      - POSTGRES_PASSWORD=${SYNAPSE_DB_PASSWORD:?set SYNAPSE_DB_PASSWORD}
+      - POSTGRES_DB=synapse
+      # Synapse requires C collation.
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      sync-internal:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synapse"]
+      interval: 10s
+      retries: 6
+    restart: unless-stopped
+
+  synapse:
+    # Account suspension needs >= 1.110. Pin, and bump deliberately.
+    image: matrixdotorg/synapse:v1.130.0
+    container_name: lotti-sync-synapse
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SYNAPSE_CONFIG_PATH=/data/homeserver.yaml
+    volumes:
+      # homeserver.yaml is rendered from sync-deploy/synapse/homeserver.yaml.template
+      # by sync-deploy/render-synapse-config.sh; the signing key lives here too.
+      - synapse-data:/data
+    ports:
+      - "127.0.0.1:8008:8008"
+    networks:
+      sync-internal:
+      sync-edge:
+    restart: unless-stopped
+
+  matrix-provisioning-service:
+    build:
+      context: .
+      dockerfile: matrix-provisioning-service/Dockerfile
+    container_name: lotti-sync-provisioning
+    depends_on:
+      - synapse
+    ports:
+      - "127.0.0.1:8003:8003"
+    environment:
+      # The public URL goes into bundles; admin calls travel the internal
+      # network, so the admin API never has to cross nginx.
+      - MATRIX_HOMESERVER=${MATRIX_PUBLIC_BASEURL:?set MATRIX_PUBLIC_BASEURL, e.g. https://matrix.example.com}
+      - MATRIX_ADMIN_API_URL=http://synapse:8008
+      - MATRIX_ADMIN_TOKEN=${MATRIX_ADMIN_TOKEN:?set MATRIX_ADMIN_TOKEN}
+      - API_KEYS=${API_KEY:?set API_KEY, e.g. openssl rand -hex 32}
+      - ADMIN_API_KEYS=${ADMIN_API_KEY:?set ADMIN_API_KEY, e.g. openssl rand -hex 32}
+      # Retention: 30 days of room history and media (sync-deploy/README.md §Purging).
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - ENABLE_RETENTION_SWEEP=true
+      - RETENTION_SWEEP_HOURS=24
+      - RETENTION_SWEEP_MEDIA=true
+      - ENABLE_REDEMPTION_POLLING=true
+      # Paid web checkout through Paddle.
+      - ENABLE_WEB_SUBSCRIPTIONS=${ENABLE_WEB_SUBSCRIPTIONS:-true}
+      - ENABLE_PLAY_SUBSCRIPTIONS=false
+      - PADDLE_ENVIRONMENT=${PADDLE_ENVIRONMENT:-sandbox}
+      - PADDLE_API_KEY=${PADDLE_API_KEY:?set PADDLE_API_KEY}
+      - PADDLE_WEBHOOK_SECRET=${PADDLE_WEBHOOK_SECRET:?set PADDLE_WEBHOOK_SECRET}
+      - PADDLE_PRICE_IDS=${PADDLE_PRICE_IDS:?set PADDLE_PRICE_IDS, comma-separated}
+      - WEB_CHECKOUT_PAGE_URL=${WEB_CHECKOUT_PAGE_URL:?set WEB_CHECKOUT_PAGE_URL}
+      - WEB_SUBSCRIPTION_GRACE_DAYS=${WEB_SUBSCRIPTION_GRACE_DAYS:-7}
+      - SUBSCRIPTION_ENCRYPTION_KEY_ID=${SUBSCRIPTION_ENCRYPTION_KEY_ID:?set SUBSCRIPTION_ENCRYPTION_KEY_ID}
+      - SUBSCRIPTION_ENCRYPTION_KEY_BASE64=${SUBSCRIPTION_ENCRYPTION_KEY_BASE64:?set SUBSCRIPTION_ENCRYPTION_KEY_BASE64}
+      - 'SUBSCRIPTION_DECRYPTION_KEYS_JSON=${SUBSCRIPTION_DECRYPTION_KEYS_JSON:-{}}'
+      - PLAY_ACCOUNT_BINDING_KEY_BASE64=${ACCOUNT_BINDING_KEY_BASE64:?set ACCOUNT_BINDING_KEY_BASE64}
+      # Signed (v3) bundles. Leave empty until the app release that verifies
+      # them is out; older apps cannot read a v3 bundle.
+      - BUNDLE_SIGNING_KEY_BASE64=${BUNDLE_SIGNING_KEY_BASE64:-}
+      - BUNDLE_SIGNING_KEY_ID=${BUNDLE_SIGNING_KEY_ID:-}
+      - LOG_LEVEL=INFO
+      - PORT=8003
+      # Only the host (the bridge gateway) may set X-Forwarded-For: the
+      # entitlement quota is keyed on the client address nginx reports.
+      - FORWARDED_ALLOW_IPS=172.29.0.1
+      - CORS_ALLOWED_ORIGINS=${WEB_CHECKOUT_ORIGIN:?set WEB_CHECKOUT_ORIGIN, e.g. https://sync.example.com}
+    volumes:
+      - provisioning-data:/app/data
+    networks:
+      sync-internal:
+      sync-edge:
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  synapse-data:
+  provisioning-data:
+
+networks:
+  # No route out: Postgres lives here alone with its two clients.
+  sync-internal:
+    internal: true
+  sync-edge:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24
+          gateway: 172.29.0.1

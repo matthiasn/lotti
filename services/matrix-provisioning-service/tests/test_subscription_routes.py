@@ -15,6 +15,7 @@ from src.core.constants import (
     SERVICE_BUNDLE_CLAIM_REAPER,
     SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
+    SERVICE_LAPSED_ACCOUNT_REAPER,
     SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_SUBSCRIPTION_ACCESS_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
@@ -234,6 +235,7 @@ def services(repository, monkeypatch):
         SERVICE_SUBSCRIPTION_REPOSITORY: FakeSubscriptionRepository(),
         SERVICE_SUBSCRIPTION_RECONCILER: FakeReconciler(),
         SERVICE_BUNDLE_CLAIM_REAPER: FakeReconciler(),
+        SERVICE_LAPSED_ACCOUNT_REAPER: FakeReconciler(),
     }
     container.reset()
     container.override("provisioning_repository", repository)

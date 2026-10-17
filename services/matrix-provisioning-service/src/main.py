@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
 
     subscription_reconciler = None
     bundle_claim_reaper = None
+    lapsed_account_reaper = None
     play_enabled = play_subscriptions_enabled()
     web_enabled = web_subscriptions_enabled()
     if play_enabled or web_enabled:
@@ -64,6 +65,7 @@ async def lifespan(app: FastAPI):
             await container.get_admin_client().require_account_suspension_support()
             subscription_reconciler = container.get_subscription_reconciler()
             bundle_claim_reaper = container.get_bundle_claim_reaper()
+            lapsed_account_reaper = container.get_lapsed_account_reaper()
         except Exception:
             await container.get_admin_client().aclose()
             await _close_provider_clients()
@@ -95,6 +97,8 @@ async def lifespan(app: FastAPI):
         subscription_reconciler.start()
         assert bundle_claim_reaper is not None
         bundle_claim_reaper.start()
+        assert lapsed_account_reaper is not None
+        lapsed_account_reaper.start()
         logger.info(
             "Paid SYNC enabled (Google Play: %s, web checkout: %s)",
             play_enabled,
@@ -116,6 +120,8 @@ async def lifespan(app: FastAPI):
         await subscription_reconciler.stop()
     if bundle_claim_reaper is not None:
         await bundle_claim_reaper.stop()
+    if lapsed_account_reaper is not None:
+        await lapsed_account_reaper.stop()
     # After the background loops, so nothing is mid-request when the shared
     # connection pool goes away.
     await container.get_admin_client().aclose()

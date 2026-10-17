@@ -43,6 +43,7 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
     retention = FakePeriodicTask()
     reconciler = FakePeriodicTask()
     reaper = FakePeriodicTask()
+    lapsed = FakePeriodicTask()
     admin = FakeCloseable()
     google = FakeCloseable()
     resolved = []
@@ -56,6 +57,7 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
         get_google_play_notifications=lambda: resolved.append("notifications"),
         get_subscription_reconciler=lambda: reconciler,
         get_bundle_claim_reaper=lambda: reaper,
+        get_lapsed_account_reaper=lambda: lapsed,
         get_admin_client=lambda: admin,
         existing=lambda name: google if name == SERVICE_GOOGLE_PLAY_CLIENT else None,
     )
@@ -73,11 +75,11 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
             "notifications",
         ]
         assert admin.suspension_checks == 1
-        assert all(task.started for task in (poller, retention, reconciler, reaper))
+        assert all(task.started for task in (poller, retention, reconciler, reaper, lapsed))
         assert not admin.closed
         assert not google.closed
 
-    assert all(task.stopped for task in (poller, retention, reconciler, reaper))
+    assert all(task.stopped for task in (poller, retention, reconciler, reaper, lapsed))
     assert admin.closed
     assert google.closed
 
@@ -85,6 +87,7 @@ async def test_lifespan_starts_and_stops_every_enabled_worker(monkeypatch):
 async def test_lifespan_rejects_subscriptions_without_suspension_support(monkeypatch):
     reconciler = FakePeriodicTask()
     reaper = FakePeriodicTask()
+    lapsed = FakePeriodicTask()
     admin = FakeCloseable(suspension_error=RuntimeError("unsupported Synapse"))
     google = FakeCloseable()
     fake_container = SimpleNamespace(
@@ -95,6 +98,7 @@ async def test_lifespan_rejects_subscriptions_without_suspension_support(monkeyp
         get_google_play_notifications=lambda: None,
         get_subscription_reconciler=lambda: reconciler,
         get_bundle_claim_reaper=lambda: reaper,
+        get_lapsed_account_reaper=lambda: lapsed,
         get_admin_client=lambda: admin,
         existing=lambda name: google if name == SERVICE_GOOGLE_PLAY_CLIENT else None,
     )
@@ -147,6 +151,7 @@ async def test_lifespan_rejects_invalid_paid_delivery_configuration(monkeypatch)
 async def test_lifespan_runs_web_checkout_without_any_google_dependency(monkeypatch):
     reconciler = FakePeriodicTask()
     reaper = FakePeriodicTask()
+    lapsed = FakePeriodicTask()
     admin = FakeCloseable()
     paddle = FakeCloseable()
     resolved = []
@@ -164,6 +169,7 @@ async def test_lifespan_runs_web_checkout_without_any_google_dependency(monkeypa
         get_web_checkout_service=lambda: resolved.append("web_checkout"),
         get_subscription_reconciler=lambda: reconciler,
         get_bundle_claim_reaper=lambda: reaper,
+        get_lapsed_account_reaper=lambda: lapsed,
         get_admin_client=lambda: admin,
         existing=lambda name: paddle if name == SERVICE_PADDLE_CLIENT else None,
     )
@@ -178,7 +184,7 @@ async def test_lifespan_runs_web_checkout_without_any_google_dependency(monkeypa
         # Web checkout suspends lapsed accounts exactly like Play does, so the
         # same startup gate applies.
         assert admin.suspension_checks == 1
-        assert reconciler.started and reaper.started
+        assert reconciler.started and reaper.started and lapsed.started
 
-    assert reconciler.stopped and reaper.stopped
+    assert reconciler.stopped and reaper.stopped and lapsed.stopped
     assert paddle.closed is True

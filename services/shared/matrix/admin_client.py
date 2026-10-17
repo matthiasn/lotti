@@ -384,6 +384,48 @@ class SynapseAdminClient(SynapseClientBase):
         if not resp.is_success:
             raise ProvisioningError(f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})")
 
+    async def erase_user(self, user_mxid: str) -> None:
+        """Deactivate an account and erase it (GDPR erasure).
+
+        Unlike :meth:`deactivate_user`, this also marks the user erased, so
+        Synapse redacts their messages for anyone joining later and drops their
+        profile. Irreversible.
+
+        Raises:
+            ProvisioningError: If Synapse rejects the erasure.
+        """
+        encoded = encode_mxid_for_path(user_mxid)
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.post(
+            f"/_synapse/admin/v1/deactivate/{encoded}",
+            headers=headers,
+            json={"erase": True},
+        )
+        if not resp.is_success:
+            raise ProvisioningError(f"Failed to erase {user_mxid} (HTTP {resp.status_code})")
+
+    async def delete_room(self, room_id: str) -> None:
+        """Remove a room and purge every event in it from the database.
+
+        Synapse runs the purge in the background; this returns once it is
+        scheduled.
+
+        Raises:
+            ProvisioningError: If Synapse rejects the deletion.
+        """
+        encoded = encode_room_id_for_path(room_id)
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.request(
+            "DELETE",
+            f"/_synapse/admin/v2/rooms/{encoded}",
+            headers=headers,
+            json={"purge": True, "block": False},
+        )
+        if not resp.is_success:
+            raise ProvisioningError(f"Failed to delete room {room_id} (HTTP {resp.status_code})")
+
     async def set_user_suspended(self, user_mxid: str, *, suspended: bool) -> None:
         """Reversibly suspend or restore a Matrix account.
 

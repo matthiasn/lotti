@@ -29,7 +29,7 @@ from tests.conftest import (
     synapse_handler,
 )
 
-from shared.matrix import SynapseAdminClient, SynapseProvisioner, SyncBundle
+from shared.matrix import AdminCredentials, SynapseAdminClient, SynapseProvisioner, SyncBundle
 
 pytestmark = pytest.mark.anyio
 
@@ -567,3 +567,22 @@ async def test_a_signing_failure_rolls_the_account_back(
         for r in requests
     )
     assert await repository.find_by_username("lotti_user") is None
+
+
+async def test_bundles_carry_the_public_url_while_admin_calls_stay_internal(
+    repository, tracking_transport
+):
+    transport, requests = tracking_transport
+    credentials = AdminCredentials(
+        homeserver="https://matrix.example.com",
+        admin_user="admin",
+        admin_password="secret",  # noqa: S106 - fixture credential for the mock homeserver
+        api_url="http://synapse:8008",
+    )
+    service = _service(repository, credentials, transport)
+
+    response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))
+
+    # The app only accepts https:// homeservers, and must reach the public one.
+    assert SyncBundle.decode(response.bundle).home_server == "https://matrix.example.com"
+    assert {r.url.host for r in requests} == {"synapse"}

@@ -13,6 +13,7 @@ from src.container import container
 from src.core.constants import (
     SERVICE_ADMIN_CLIENT,
     SERVICE_BUNDLE_CLAIM_REAPER,
+    SERVICE_LAPSED_ACCOUNT_REAPER,
     SERVICE_PADDLE_SUBSCRIPTIONS,
     SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
@@ -124,6 +125,7 @@ def services(repository, monkeypatch):
         SERVICE_PADDLE_SUBSCRIPTIONS: FakePaddleSubscriptions(),
         SERVICE_SUBSCRIPTION_RECONCILER: FakeWorker(),
         SERVICE_BUNDLE_CLAIM_REAPER: FakeWorker(),
+        SERVICE_LAPSED_ACCOUNT_REAPER: FakeWorker(),
     }
     container.reset()
     container.override("provisioning_repository", repository)

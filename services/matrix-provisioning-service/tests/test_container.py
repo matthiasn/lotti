@@ -17,6 +17,7 @@ from src.services.bundle_rotation_service import BundleRotationService
 from src.services.bundle_service import BundleService
 from src.services.google_play_client import GooglePlayClient
 from src.services.google_play_notifications import GooglePlayNotificationService
+from src.services.lapsed_account_reaper import LapsedAccountReaper
 from src.services.paddle_client import PADDLE_LIVE_BASE_URL, PADDLE_SANDBOX_BASE_URL
 from src.services.paddle_subscription_service import PaddleSubscriptionService
 from src.services.paid_bundle_service import PaidBundleService
@@ -382,6 +383,24 @@ def test_web_configuration_fails_fast(env, name, value, message):
 
     with pytest.raises(ValueError, match=message):
         Container().get_web_checkout_service()
+
+
+def test_admin_api_url_is_read_from_the_environment(env):
+    env.setenv("MATRIX_ADMIN_API_URL", "http://synapse:8008")
+
+    credentials = build_admin_credentials()
+
+    assert credentials.request_url == "http://synapse:8008"
+    assert credentials.base_url == "https://matrix.example.com"
+
+
+def test_lapsed_account_erasure_window_is_configurable(env):
+    env.setenv("LAPSED_ACCOUNT_ERASE_DAYS", "45")
+
+    reaper = Container().get_lapsed_account_reaper()
+
+    assert isinstance(reaper, LapsedAccountReaper)
+    assert reaper._erase_after == timedelta(days=45)
 
 
 def test_bundles_stay_unsigned_until_a_key_is_configured(env):
