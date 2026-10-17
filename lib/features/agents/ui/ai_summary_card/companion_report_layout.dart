@@ -2,74 +2,114 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The task summary with the companion who reads it aloud, arranged by the
-/// width the card body has.
-///
-/// - **Wide** (at least [besideMinWidth]): she stands beside the whole body
-///   at [ControlSizes.companionCardWide], level with the summary's opening
-///   line, and the prose takes the rest of the row.
-/// - **Narrow**: beside the prose she would cost a phone a third of its
-///   measure and stand by a column far taller than she is. The prose takes
-///   the full width instead, and she stands under it at
-///   [ControlSizes.companionCardCompact], beside the links that close the
-///   body — [buildBody] receives her as its disclosure leading.
-///
-/// Either way her slot is only as wide as the reach she uses at rest and in
-/// most gestures (the bust window); the rest of her head-to-toe frame hangs
-/// into the card gutter on her leading side and into the gap on her trailing
-/// side, so her silhouette — not her empty frame — lines up with the edge the
-/// footer starts on. Both overhangs are smaller than the gutter they hang
-/// into, so a hand at full reach is never clipped by the card nor drawn over
-/// the prose.
-class CompanionReportLayout extends StatelessWidget {
-  const CompanionReportLayout({
-    required this.companion,
-    required this.buildBody,
-    super.key,
-  });
+/// Where the companion stands on the task summary card, by the width the
+/// card body has.
+enum CompanionPlacement {
+  /// Head to toe at the card's leading side, [ControlSizes.companionCard]
+  /// high, in place of the badge and heading the header, summary and
+  /// freshness row ([CompanionBesideReport]); her head is level with the
+  /// title.
+  beside(CompanionFraming.full),
+
+  /// Her bust inside the header's badge tile, grown to [ControlSizes.avatar]
+  /// like the Day header's bust, beside the agent name she answers to; the
+  /// summary keeps the full width. Beside the prose on a
+  /// phone she would cost it a third of its measure and stand by a column
+  /// far taller than she is.
+  header(CompanionFraming.bust);
+
+  const CompanionPlacement(this.framing);
+
+  /// The framing she is drawn in for this placement.
+  final CompanionFraming framing;
 
   /// The narrowest card body that keeps her beside the prose: a 168-high
   /// slot and its gap still leave the summary about 55 characters a line.
   static const double besideMinWidth = 480;
 
+  static CompanionPlacement forBodyWidth(double width) =>
+      width >= besideMinWidth ? beside : header;
+}
+
+/// [companion] standing at the leading side of the card, heading the
+/// [header], [body] and [footer] beside her — in place of the header's
+/// badge, so the title, the agent name, the summary, its links and the
+/// freshness row share one edge.
+///
+/// Her slot sits on the card padding and is only as wide as the reach she
+/// uses at rest and in most gestures (the bust window); the rest of her
+/// head-to-toe frame hangs into the card gutter on her leading side and into
+/// the header's and body's own leading inset on her trailing side. Both
+/// overhangs are smaller than the gutter they hang into, so a hand at full
+/// reach is never clipped by the card nor drawn over the prose.
+///
+/// Her head starts where the header's content does, and the slot keeps a
+/// step3 floor under her shoes above the card's edge.
+class CompanionBesideReport extends StatelessWidget {
+  const CompanionBesideReport({
+    required this.companion,
+    required this.header,
+    required this.body,
+    required this.footer,
+    super.key,
+  });
+
   /// The figure, expanding to the box it is given in the full framing.
   final Widget companion;
 
-  /// The report body; on a narrow card it is handed her slot to stand at the
-  /// start of its disclosure row, on a wide one null.
-  final Widget Function(Widget? disclosureLeading) buildBody;
+  /// The card header, without its badge, carrying its own insets.
+  final Widget header;
+
+  /// The report body, carrying its own horizontal insets.
+  final Widget body;
+
+  /// The freshness row, carrying its own insets: in the column, so "Out of
+  /// date" starts on the summary's edge, and at the column's foot, so it
+  /// closes the card level with her feet however short the summary.
+  final Widget footer;
 
   @override
   Widget build(BuildContext context) {
     final spacing = context.designTokens.spacing;
-    final gap = spacing.step5;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= besideMinWidth) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: gap,
-            children: [
-              CompanionSlot(
-                height: ControlSizes.companionCardWide,
-                child: companion,
-              ),
-              Expanded(child: buildBody(null)),
-            ],
-          );
-        }
-        return buildBody(
-          Padding(
-            // Her frame starts at the crown of her hair; without air above
-            // it she would stand on the last line of the prose.
-            padding: EdgeInsetsDirectional.only(top: spacing.step3, end: gap),
-            child: CompanionSlot(
-              height: ControlSizes.companionCardCompact,
-              child: companion,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: spacing.cardPadding,
+            top: spacing.step4,
+            bottom: spacing.step3,
+          ),
+          child: CompanionSlot(
+            height: ControlSizes.companionCard,
+            child: companion,
+          ),
+        ),
+        Expanded(
+          // At least her rail's height, with the freshness row at its foot:
+          // under a one-line summary the status band still closes the card
+          // instead of floating beside her shins. Taller prose needs no
+          // spare room, and the column is just its content.
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight:
+                  spacing.step4 + ControlSizes.companionCard + spacing.step3,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [header, body],
+                ),
+                footer,
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

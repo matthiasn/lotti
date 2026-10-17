@@ -39,9 +39,14 @@ String? resolveReportAdditional(AgentReportEntity? report) {
 ///
 /// Report freshness lives in the strip under the summary, and the schedule,
 /// switch and model identity in the agent internals panel; the header keeps
-/// only the report identity and the optional chat and playback controls. The whole badge + title + agent-name block is one
-/// tap target that opens the agent internals, so the name no longer needs its
-/// own oversized touch area.
+/// only the report identity and the optional chat and playback controls.
+///
+/// The badge comes in three forms: the sparkle tile (the default, or
+/// [icon]), a [figure] inside a grown tile, or none ([badge] false). The
+/// badge + title + agent-name block is one tap target that opens the agent
+/// internals, so the name needs no oversized touch area of its own — except
+/// that a figure stands outside it: she is not a control, and tapping her
+/// must mean the same at every width.
 class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
@@ -50,6 +55,8 @@ class TldrHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.icon,
+    this.figure,
+    this.badge = true,
     this.plain = false,
     super.key,
   });
@@ -73,6 +80,19 @@ class TldrHeader extends StatelessWidget {
   /// surface — the unenrolled person's plain card — passes its own.
   final IconData? icon;
 
+  /// A figure drawn inside the badge tile in place of its glyph — the
+  /// companion's bust on a narrow task card, where she is the agent the
+  /// caption names. The tile grows to [ControlSizes.avatar] around her and
+  /// keeps its fill, hairline and highlight, so she reads as the card's
+  /// badge rather than a sticker beside it. Decorative: the header's label
+  /// already says who she is.
+  final Widget? figure;
+
+  /// False drops the badge tile and its gap, so the title starts on the
+  /// header's leading edge — for a card whose identity stands elsewhere,
+  /// as the companion does beside a wide task card.
+  final bool badge;
+
   /// The card's own name, when it is not the task/goal agent's
   /// `aiCardTitle`. The relationship briefing is the same panel wearing a
   /// different noun ("Briefing"), so it passes its own title rather than
@@ -94,17 +114,59 @@ class TldrHeader extends StatelessWidget {
     final displayName = agentName?.trim();
     final hasName =
         subtitle == null && displayName != null && displayName.isNotEmpty;
+    final tileSize = figure == null
+        ? ControlSizes.iconChip
+        : ControlSizes.avatar;
+    Widget tile({required bool highlighted}) => Container(
+      width: tileSize,
+      height: tileSize,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: plain ? tokens.colors.background.level03 : ai.accentSoft,
+        borderRadius: BorderRadius.circular(
+          tokens.radii.m,
+        ),
+        border: Border.all(
+          color: plain
+              ? tokens.colors.decorative.level01
+              : highlighted
+              ? ai.accent
+              : ai.border,
+        ),
+      ),
+      clipBehavior: figure == null ? Clip.none : Clip.antiAlias,
+      child: ExcludeSemantics(
+        child:
+            figure ??
+            Icon(
+              icon ?? LottiIcons.aiSpark,
+              size: IconSizes.l,
+              color: plain ? tokens.colors.text.mediumEmphasis : ai.accent,
+            ),
+      ),
+    );
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
-        tokens.spacing.step4,
+        // The grown figure tile sits in the card's corner: the same inset
+        // above it as beside it, or it reads as pushed against the top.
+        figure != null && badge
+            ? tokens.spacing.cardPadding
+            : tokens.spacing.step4,
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) => Row(
           children: [
+            // A figure is not a control: her tile stands outside the
+            // tap-to-internals ink, so tapping her means the same at every
+            // width — nothing yet — and the title and name stay the target.
+            if (badge && figure != null) ...[
+              tile(highlighted: false),
+              SizedBox(width: tokens.spacing.step3),
+            ],
             // `Expanded` keeps the slot so the playback control stays pinned to
             // the card's trailing edge, while `Align` hands the button loose
             // constraints — without it the ink target stretches across the whole
@@ -128,6 +190,9 @@ class TldrHeader extends StatelessWidget {
                   // brightens a step.
                   child: DsQuietInk(
                     onTap: onAgentTap,
+                    // Without the badge tile in the ink, its border no longer
+                    // answers focus; the ring does instead.
+                    focusRing: figure != null || !badge,
                     borderRadius: BorderRadius.circular(tokens.radii.m),
                     builder: (context, highlighted) => ConstrainedBox(
                       constraints: const BoxConstraints(
@@ -136,36 +201,10 @@ class TldrHeader extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: tokens.spacing.step8,
-                            height: tokens.spacing.step8,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: plain
-                                  ? tokens.colors.background.level03
-                                  : ai.accentSoft,
-                              borderRadius: BorderRadius.circular(
-                                tokens.radii.m,
-                              ),
-                              border: Border.all(
-                                color: plain
-                                    ? tokens.colors.decorative.level01
-                                    : highlighted
-                                    ? ai.accent
-                                    : ai.border,
-                              ),
-                            ),
-                            child: ExcludeSemantics(
-                              child: Icon(
-                                icon ?? LottiIcons.aiSpark,
-                                size: IconSizes.l,
-                                color: plain
-                                    ? tokens.colors.text.mediumEmphasis
-                                    : ai.accent,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: tokens.spacing.step3),
+                          if (badge && figure == null) ...[
+                            tile(highlighted: highlighted),
+                            SizedBox(width: tokens.spacing.step3),
+                          ],
                           // `Flexible` + single-line text is what makes the
                           // shrink-wrap real: text allowed to wrap would
                           // report the full available width straight back and
@@ -301,7 +340,6 @@ class TldrBody extends StatelessWidget {
     required this.disclosureKey,
     this.onOpenInternals,
     this.bodyStyle,
-    this.disclosureLeading,
     super.key,
   });
 
@@ -320,11 +358,6 @@ class TldrBody extends StatelessWidget {
   /// defaulted: a default would hand a fourth surface the task card's key
   /// and make its failures name the wrong screen.
   final Key disclosureKey;
-
-  /// A figure standing at the start of the disclosure row, the links beside
-  /// it — the companion on a narrow task card, where beside the prose she
-  /// would starve its measure. Null leaves the links on the row alone.
-  final Widget? disclosureLeading;
 
   /// Reading-measure cap for the report prose. The card itself stays
   /// full-width, but body lines must not — unbounded desktop widths produce
@@ -354,8 +387,32 @@ class TldrBody extends StatelessWidget {
         );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
     final hasDisclosure = hasMore || expanded || onOpenInternals != null;
-    final links = hasDisclosure
-        ? Wrap(
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (tldr.trim().isNotEmpty)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
+            child: SelectionArea(
+              child: AgentMarkdownView(tldr, style: bodyStyle),
+            ),
+          ),
+        if (expanded && hasMore) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
+            child: SelectionArea(
+              child: AgentMarkdownView(additionalReport!, style: bodyStyle),
+            ),
+          ),
+        ],
+        // No spacer above the disclosure row: its 40-high tap target already
+        // carries ~12 px of optical padding on each side, so an explicit gap
+        // stacked a second one on top and left a dead band under the prose.
+        // The target instead reaches up into the last line's descender area.
+        if (hasDisclosure)
+          Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step2,
             children: [
@@ -383,43 +440,7 @@ class TldrBody extends StatelessWidget {
                   onPressed: onOpenInternals!,
                 ),
             ],
-          )
-        : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (tldr.trim().isNotEmpty)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
-            child: SelectionArea(
-              child: AgentMarkdownView(tldr, style: bodyStyle),
-            ),
           ),
-        if (expanded && hasMore) ...[
-          SizedBox(height: tokens.spacing.sectionGap),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
-            child: SelectionArea(
-              child: AgentMarkdownView(additionalReport!, style: bodyStyle),
-            ),
-          ),
-        ],
-        // No spacer above the disclosure row: its 40-high tap target already
-        // carries ~12 px of optical padding on each side, so an explicit gap
-        // stacked a second one on top and left a dead band under the prose.
-        // The target instead reaches up into the last line's descender area.
-        if (disclosureLeading case final leading?)
-          // The links centre on the figure's height: it is the taller of the
-          // two, and links pinned to its top would leave its foot bare.
-          Row(
-            children: [
-              leading,
-              if (links != null) Expanded(child: links),
-            ],
-          )
-        else
-          ?links,
         // Without a disclosure row there is no tap target to supply the
         // trailing optical gap, so the body pays for it itself. The card gives
         // this block no bottom padding of its own.

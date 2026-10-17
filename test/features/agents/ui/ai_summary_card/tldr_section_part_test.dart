@@ -218,71 +218,107 @@ void main() {
     });
   });
 
-  group('TldrBody.disclosureLeading', () {
-    const leadingKey = ValueKey('leading');
-    const leading = SizedBox(key: leadingKey, width: 60, height: 100);
+  group('TldrHeader badge', () {
+    const figureKey = ValueKey('figure');
 
-    Widget body({required bool withLinks}) => TldrBody(
-      tldr: 'Summary first.',
-      expanded: false,
-      additionalReport: withLinks ? 'Full report details.' : null,
-      onToggle: () {},
-      onOpenInternals: withLinks ? () {} : null,
-      disclosureKey: const ValueKey('disclosure'),
-      disclosureLeading: leading,
-    );
-
-    testWidgets('stands under the prose, the links beside it on its centre '
-        'line', (tester) async {
+    testWidgets('a figure stands inside the tile in place of the glyph, the '
+        'tile grown to the avatar size, and adds nothing to the label', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(body(withLinks: true)),
-      );
-
-      final figure = tester.getRect(find.byKey(leadingKey));
-      final prose = tester.getRect(find.byType(AgentMarkdownView));
-      final readMore = tester.getRect(find.byKey(const ValueKey('disclosure')));
-      final internals = tester.getRect(find.text('Open agent internals'));
-
-      expect(figure.top, greaterThanOrEqualTo(prose.bottom));
-      expect(figure.left, prose.left);
-      expect(readMore.left, greaterThanOrEqualTo(figure.right));
-      expect(internals.left, greaterThan(readMore.right));
-      expect(readMore.center.dy, closeTo(figure.center.dy, 0.01));
-    });
-
-    testWidgets('stands alone when there are no links, and the body still '
-        'pays its own trailing gap', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Align(
-            alignment: Alignment.topLeft,
-            child: body(withLinks: false),
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            onAgentTap: () {},
+            figure: const SizedBox.expand(key: figureKey),
           ),
         ),
       );
 
-      expect(find.text('Read more'), findsNothing);
-      expect(find.text('Open agent internals'), findsNothing);
-      final figure = tester.getRect(find.byKey(leadingKey));
-      final step3 = tester
-          .element(find.byType(TldrBody))
-          .designTokens
-          .spacing
-          .step3;
-      // The last child of the body is the gap it pays itself, right under
-      // the figure.
-      final column = tester.widget<Column>(
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      final tile = tester.widget<Container>(
         find
-            .descendant(
-              of: find.byType(TldrBody),
-              matching: find.byType(Column),
+            .ancestor(
+              of: find.byKey(figureKey),
+              matching: find.byType(Container),
             )
             .first,
       );
-      final gap = column.children.last;
-      expect(gap, isA<SizedBox>());
-      expect((gap as SizedBox).height, step3);
-      expect(tester.getRect(find.byWidget(gap)).top, figure.bottom);
+      expect(tile.clipBehavior, Clip.antiAlias);
+      expect(
+        tester.getSize(find.byWidget(tile)),
+        const Size.square(ControlSizes.avatar),
+      );
+      expect(
+        tester.getRect(find.byKey(figureKey)).right,
+        lessThan(tester.getRect(find.text('AI summary')).left),
+      );
+      expect(find.bySemanticsLabel('AI summary. Laura'), findsOneWidget);
+    });
+
+    testWidgets('a figure is not a control: tapping her does nothing, the '
+        'title still opens the internals', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            onAgentTap: () => taps++,
+            figure: const SizedBox.expand(key: figureKey),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(figureKey));
+      expect(taps, 0);
+      await tester.tap(find.text('AI summary'));
+      expect(taps, 1);
+    });
+
+    testWidgets('a figure tile sits as far below the top as in from the side', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const TldrHeader(
+            agentName: 'Laura',
+            figure: SizedBox.expand(key: figureKey),
+          ),
+        ),
+      );
+
+      final header = tester.getRect(find.byType(TldrHeader));
+      final tile = tester.getRect(
+        find
+            .ancestor(
+              of: find.byKey(figureKey),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(tile.top - header.top, tile.left - header.left);
+    });
+
+    testWidgets('without a badge the title starts on the leading inset', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Laura', onAgentTap: () {}, badge: false),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      final header = tester.getRect(find.byType(TldrHeader));
+      final padding = tester
+          .element(find.byType(TldrHeader))
+          .designTokens
+          .spacing
+          .cardPadding;
+      expect(
+        tester.getRect(find.text('AI summary')).left,
+        header.left + padding,
+      );
     });
   });
 

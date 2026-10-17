@@ -83,17 +83,29 @@ Contents:
   name when it has one (e.g. *Task Laura*), otherwise the agent's display
   name; it is never the task title.
 - **The companion** — with `enable_companion` on, the drawn character of
-  [the companion feature](../companion.md) stands with the summary
-  (`CompanionSpeaker`, full framing, arranged by `CompanionReportLayout`). On
-  a card body at least `besideMinWidth` (480) wide she stands left of it,
-  `ControlSizes.companionCardWide` high; narrower, the summary takes the full
-  width and she stands under it, `ControlSizes.companionCardCompact` high, as
-  `TldrBody.disclosureLeading` beside *Read more* and *Open agent internals*.
-  Her slot is the `bust` window's width; the rest of her `full` frame hangs
-  into the card padding and the gap, never further than either, so her
-  silhouette rather than her empty frame meets the footer's leading edge. She
-  is the read-aloud control's face: shown only while that control is, and
-  speaking its utterance — the task id as `sourceId`, in the words the
+  [the companion feature](../companion.md) is the card's identity mark in
+  place of the sparkle badge (`CompanionSpeaker`). Where she stands is a
+  `CompanionPlacement`, chosen from the card body's width rather than the
+  window's:
+  - **beside** (body at least `besideMinWidth`, 480): head to toe, `full`
+    framing, `ControlSizes.companionCard` (168) high, as a leading rail
+    (`CompanionBesideReport`) beside a column holding the badge-less
+    `TldrHeader`, the report body and the freshness row, so the title, agent
+    name, summary, links and *Out of date* share one edge. Her slot is the
+    `bust` window's width; the rest of her `full` frame hangs into the card
+    padding and the column's leading inset, never further than either. A
+    `step3` floor keeps her shoes off the card's edge.
+  - **header** (narrower): her `bust` drawn inside the header's badge tile
+    (`TldrHeader.figure`), grown to `ControlSizes.avatar`, with the tile's
+    accent fill and hairline, as far below the card's top as in from its
+    side; the summary keeps the full card width.
+
+  She is not a control at either width: her tile stands outside the
+  header's tap-to-internals ink, so only the title and agent name (and the
+  *Open agent internals* link) open the internals.
+
+  She is the read-aloud control's face: shown only while that control is,
+  and speaking its utterance — the task id as `sourceId`, in the words the
   voice was given at the tap — so a tap on the control is what makes her
   talk.
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a

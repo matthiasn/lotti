@@ -63,15 +63,11 @@ abstract final class ControlSizes {
   /// into the card padding, and at 168 that room (15.6) still fits inside
   /// it (16).
   ///
+  /// A narrow card shows her bust in its header at [avatar] instead.
+  ///
   /// A container dimension like [avatarHero]: she is a figure on the
   /// screen, and must not resize when the spacing scale is retuned.
-  static const double companionCardWide = 168;
-
-  /// 104 — the companion's height on a narrow card, where she stands under
-  /// the summary beside its Read more and agent-internals links rather than
-  /// beside the prose: the two stacked 40-high links and their gap fit her
-  /// height, so the row she shares with them costs no extra height.
-  static const double companionCardCompact = 104;
+  static const double companionCard = 168;
 
   /// 64 — the square thumbnail standing in for a media entry that has been
   /// collapsed (the collapsed image card's preview).

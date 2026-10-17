@@ -1,6 +1,6 @@
 ### Changed
 - **The companion stands better on the AI summary card.** On a wide card she
-  is taller and lines up with the edge the *Out of date* row starts on. On a
-  phone the summary now uses the full width of the card, and she stands
-  under it beside *Read more* and *Open agent internals* rather than
-  squeezing the text into a narrow column.
+  takes the place of the sparkle badge, standing taller beside the title and
+  the summary, which now share one left edge. On a phone her portrait sits in
+  the card's header badge instead, and the summary uses the full width of the
+  card rather than squeezing into a narrow column beside her.
