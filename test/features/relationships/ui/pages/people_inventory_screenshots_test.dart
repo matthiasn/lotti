@@ -958,6 +958,35 @@ void main() {
             as AiResponseEntry,
       ]),
     ),
+    // The launch call's recording carries the one line a spoken check-in
+    // gets once its words land.
+    linkedAiResponsesControllerProvider('take-pip-3').overrideWith(
+      () => _FixedResponses('take-pip-3', [
+        JournalEntity.aiResponse(
+              meta: Metadata(
+                id: 'take-pip-3-summary',
+                createdAt: _now,
+                updatedAt: _now,
+                dateFrom: _now,
+                dateTo: _now,
+              ),
+              data: const AiResponseData(
+                model: 'glm-5.2',
+                systemMessage: '',
+                prompt: '',
+                thoughts: '',
+                response:
+                    'The launch slips a week; Pip wants the krill '
+                    'contract signed first.',
+                oneLiner:
+                    'The launch slips a week; Pip wants the krill '
+                    'contract signed first.',
+                type: AiResponseType.audioSummary,
+              ),
+            )
+            as AiResponseEntry,
+      ]),
+    ),
     agentReportProvider(agentId).overrideWith((ref) async => report),
     agentStateProvider(agentId).overrideWith((ref) async => state),
     agentIsRunningProvider(
