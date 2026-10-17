@@ -304,6 +304,8 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
+    if (getIt.isRegistered<SecureStorage>())
+      secureStorageProvider.overrideWithValue(getIt<SecureStorage>()),
     if (getIt.isRegistered<SettingsDb>())
       settingsDbProvider.overrideWithValue(getIt<SettingsDb>()),
     if (getIt.isRegistered<PersistenceLogic>())

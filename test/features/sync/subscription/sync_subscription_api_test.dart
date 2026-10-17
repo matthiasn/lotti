@@ -9,7 +9,7 @@ import 'package:http/testing.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 
 const _entitlement = SyncEntitlement(id: 'ent-1', authSecret: 'auth-secret');
-final _base = Uri.parse('https://api.example.com/');
+final Uri _base = Uri.parse('https://api.example.com/');
 
 class _Recorder {
   final requests = <http.Request>[];
@@ -176,7 +176,9 @@ void main() {
         recorder.requests.single.url.path,
         '/api/v1/client/subscriptions/bundle-claims/confirm-rotation',
       );
-      expect(jsonDecode(recorder.requests.single.body)['bundle_id'], 'b-1');
+      final body =
+          jsonDecode(recorder.requests.single.body) as Map<String, dynamic>;
+      expect(body['bundle_id'], 'b-1');
     });
 
     test('the portal link must be https', () async {
@@ -275,6 +277,7 @@ void main() {
       test('${error.runtimeType} is offline', () {
         final api = SyncSubscriptionApi(
           baseUrl: _base,
+          // ignore: only_throw_errors - the transport failures http raises
           httpClient: MockClient((_) async => throw error),
         );
 

@@ -1,16 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart' hide isMobile;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_store.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/secure_storage.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../../helpers/fallbacks.dart';
-import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 
 class _MemoryStore extends SyncSubscriptionStore {
@@ -26,7 +24,7 @@ const _record = SyncSubscriptionRecord(
   entitlement: SyncEntitlement(id: 'ent-1', authSecret: 'auth'),
   claimSecret: 'claim',
 );
-final _portal = Uri.parse('https://customer-portal.paddle.com/cpl_1');
+final Uri _portal = Uri.parse('https://customer-portal.paddle.com/cpl_1');
 
 void main() {
   setUpAll(() {
@@ -71,13 +69,9 @@ void main() {
     when(
       () => storage.read(key: syncSubscriptionKey),
     ).thenAnswer((_) async => null);
-    await setUpTestGetIt(
-      additionalSetup: () {
-        getIt.registerSingleton<SecureStorage>(storage);
-      },
+    final container = ProviderContainer(
+      overrides: [secureStorageProvider.overrideWithValue(storage)],
     );
-    addTearDown(tearDownTestGetIt);
-    final container = ProviderContainer();
     addTearDown(container.dispose);
 
     expect(await container.read(syncSubscriptionStoreProvider).load(), isNull);

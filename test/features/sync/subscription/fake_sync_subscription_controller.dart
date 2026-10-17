@@ -12,6 +12,7 @@ class FakeSyncSubscriptionController extends SyncSubscriptionController {
   @override
   SyncSubscribeState build() => _initial;
 
+  // ignore: use_setters_to_change_properties - mirrors a state transition
   void emit(SyncSubscribeState next) => state = next;
 
   @override

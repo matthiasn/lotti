@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_store.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/secure_storage.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -49,7 +48,7 @@ final syncSubscriptionApiProvider = Provider<SyncSubscriptionApi?>((ref) {
 }, name: 'syncSubscriptionApiProvider');
 
 final syncSubscriptionStoreProvider = Provider<SyncSubscriptionStore>(
-  (ref) => SyncSubscriptionStore(getIt<SecureStorage>()),
+  (ref) => SyncSubscriptionStore(ref.watch(secureStorageProvider)),
   name: 'syncSubscriptionStoreProvider',
 );
 

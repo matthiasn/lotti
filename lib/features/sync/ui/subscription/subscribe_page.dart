@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -31,30 +29,21 @@ SliverWoltModalSheetPage subscribePage({
   );
 }
 
-class SubscribeBody extends ConsumerStatefulWidget {
+class SubscribeBody extends ConsumerWidget {
   const SubscribeBody({required this.pageIndexNotifier, super.key});
 
   final ValueNotifier<int> pageIndexNotifier;
 
   @override
-  ConsumerState<SubscribeBody> createState() => _SubscribeBodyState();
-}
-
-class _SubscribeBodyState extends ConsumerState<SubscribeBody> {
-  @override
-  void initState() {
-    super.initState();
+  Widget build(BuildContext context, WidgetRef ref) {
     // A checkout left open, or paid while the app was closed, continues.
-    unawaited(ref.read(syncSubscriptionControllerProvider.notifier).resume());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(syncSubscriptionControllerProvider, (_, next) {
-      if (next is SyncSubscribeConnecting) {
-        widget.pageIndexNotifier.value = SyncSetupPage.connect;
-      }
-    });
+    ref
+      ..watch(syncSubscriptionResumeProvider)
+      ..listen(syncSubscriptionControllerProvider, (_, next) {
+        if (next is SyncSubscribeConnecting) {
+          pageIndexNotifier.value = SyncSetupPage.connect;
+        }
+      });
     final state = ref.watch(syncSubscriptionControllerProvider);
     final controller = ref.read(syncSubscriptionControllerProvider.notifier);
 

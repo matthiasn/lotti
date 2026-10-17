@@ -26,7 +26,9 @@ const _bundle = SyncProvisioningBundle(
   password: 'bootstrap',
   roomId: '!room:example.com',
 );
-final _checkoutUrl = Uri.parse('https://sync.example.com/checkout#session=s1');
+final Uri _checkoutUrl = Uri.parse(
+  'https://sync.example.com/checkout#session=s1',
+);
 
 /// Stands in for the real provisioning flow, which has its own suite; this
 /// one only needs to see what the subscription flow hands it.
@@ -55,9 +57,9 @@ class _FakeProvisioning extends ProvisioningController {
 
 class _Bench {
   _Bench() {
-    when(() => storage.read(key: syncSubscriptionKey)).thenAnswer(
-      (_) async => stored,
-    );
+    when(
+      () => storage.read(key: syncSubscriptionKey),
+    ).thenAnswer((_) async => stored);
     when(
       () => storage.write(
         key: syncSubscriptionKey,
@@ -66,7 +68,7 @@ class _Bench {
     ).thenAnswer((invocation) async {
       stored = invocation.namedArguments[#value] as String;
     });
-    when(() => matrix.isLoggedIn()).thenReturn(true);
+    when(matrix.isLoggedIn).thenReturn(true);
     when(
       () => matrix.publishRotationProof(
         roomId: any(named: 'roomId'),
@@ -322,6 +324,27 @@ void main() {
       });
     });
 
+    test('an unexpected error while polling fails the flow, not the zone', () {
+      fakeAsync((async) {
+        when(
+          () => bench.api.checkoutState('s1'),
+        ).thenAnswer((_) async => throw StateError('corrupt response'));
+
+        unawaited(bench.controller.subscribe(SyncSubscriptionPlan.annual));
+        async
+          ..flushMicrotasks()
+          ..elapse(syncCheckoutPollInterval);
+
+        expect(
+          (bench.state as SyncSubscribeFailed).failure,
+          SyncSubscribeFailure.service,
+        );
+        clearInteractions(bench.api);
+        async.elapse(syncCheckoutPollInterval * 3);
+        verifyNever(() => bench.api.checkoutState(any()));
+      });
+    });
+
     test('an expired session forgets itself and asks for a plan again', () {
       fakeAsync((async) {
         when(
@@ -495,6 +518,26 @@ void main() {
 
         expect(bench.state, isA<SyncSubscribeIdle>());
         expect(bench.record!.containsKey('sessionId'), isFalse);
+      });
+    });
+
+    test('an unexpected error while resuming is reported', () {
+      fakeAsync((async) {
+        when(
+          () => bench.api.checkoutState('s1'),
+        ).thenAnswer((_) async => SyncCheckoutState.paid);
+        when(
+          () => bench.api.claim(any(), claimSecret: any(named: 'claimSecret')),
+        ).thenAnswer((_) async => throw StateError('keystore locked'));
+        bench.seed(_seeded);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(
+          (bench.state as SyncSubscribeFailed).failure,
+          SyncSubscribeFailure.service,
+        );
       });
     });
 

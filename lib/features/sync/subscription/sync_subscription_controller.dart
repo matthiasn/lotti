@@ -130,6 +130,8 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
       }
     } on SyncSubscriptionException {
       // Nothing to resume that can be resumed now; the plan choice stays.
+    } on Object {
+      state = const SyncSubscribeFailed(SyncSubscribeFailure.service);
     }
   }
 
@@ -189,9 +191,10 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
 
   void _startPolling(SyncSubscriptionRecord record) {
     _poll?.cancel();
+    // _pollOnce never throws: every failure becomes a state.
     _poll = Timer.periodic(
       syncCheckoutPollInterval,
-      (_) => unawaited(_pollOnce(record)),
+      (_) => _pollOnce(record),
     );
   }
 
@@ -224,6 +227,10 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
         _stopPolling();
         state = SyncSubscribeFailed(_failureOf(e));
       }
+    } on Object {
+      // Called from a timer: nothing awaits it, so nothing may escape.
+      _stopPolling();
+      state = const SyncSubscribeFailed(SyncSubscribeFailure.service);
     } finally {
       _polling = false;
     }
@@ -353,6 +360,14 @@ class RotationConfirmer {
     return true;
   }
 }
+
+/// Resumes an unfinished checkout once per visit of the subscribe page.
+/// Riverpod owns the future, so its lifetime is the page's.
+final FutureProvider<void> syncSubscriptionResumeProvider =
+    FutureProvider.autoDispose<void>(
+      (ref) => ref.read(syncSubscriptionControllerProvider.notifier).resume(),
+      name: 'syncSubscriptionResumeProvider',
+    );
 
 /// Runs [RotationConfirmer.confirmPending] once per visit of the Devices
 /// page; resolves to whether a pending proof was confirmed.
