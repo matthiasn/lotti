@@ -12836,6 +12836,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Zmínit před $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13221,6 +13226,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Schůzka: $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Naplánovat schůzku';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Schůzku se nepodařilo naplánovat.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Začátek';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Začátek: $time. Změnit';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Název';
+
+  @override
   String get relationshipMoreActions => 'Další akce';
 
   @override
@@ -13312,6 +13340,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Fotka – $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Naplánovat schůzku s osobou $name';
   }
 
   @override
@@ -17248,37 +17281,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Naplánovat schůzku s osobou $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Schůzka: $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Název';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Začátek';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Začátek: $time. Změnit';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Naplánovat schůzku';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Schůzku se nepodařilo naplánovat.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Zmínit před $day';
-  }
 }

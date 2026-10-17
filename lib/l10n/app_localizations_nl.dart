@@ -12684,6 +12684,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bespreken vóór $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13059,6 +13064,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipLogCheckIn => 'Check-in vastleggen';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Afspraak met $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Afspraak plannen';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'De afspraak kon niet worden gepland.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Begint';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Begint: $time. Wijzigen';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Meer acties';
 
   @override
@@ -13152,6 +13180,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto van $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan een afspraak met $name';
   }
 
   @override
@@ -17093,37 +17126,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Plan een afspraak met $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Afspraak met $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Begint';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Begint: $time. Wijzigen';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Afspraak plannen';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'De afspraak kon niet worden gepland.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Bespreken vóór $day';
-  }
 }

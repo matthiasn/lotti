@@ -12667,6 +12667,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Ta upp före $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13043,6 +13048,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipLogCheckIn => 'Logga avstämning';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Träffa $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planera möte';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mötet kunde inte planeras.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Börjar';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Börjar: $time. Ändra';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Fler åtgärder';
 
   @override
@@ -13134,6 +13161,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto på $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planera ett möte med $name';
   }
 
   @override
@@ -17055,36 +17087,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planera ett möte med $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Träffa $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Börjar';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Börjar: $time. Ändra';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planera möte';
-
-  @override
-  String get relationshipMeetingSaveFailed => 'Mötet kunde inte planeras.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Ta upp före $day';
-  }
 }

@@ -12872,6 +12872,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'À aborder avant le $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13247,6 +13252,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipLogCheckIn => 'Noter un échange';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Voir $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planifier la rencontre';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Impossible de planifier la rencontre.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Début';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Début : $time. Modifier';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titre';
+
+  @override
   String get relationshipMoreActions => 'Plus d\'actions';
 
   @override
@@ -13340,6 +13368,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Photo de $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planifier une rencontre avec $name';
   }
 
   @override
@@ -17317,37 +17350,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planifier une rencontre avec $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Voir $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titre';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Début';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Début : $time. Modifier';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planifier la rencontre';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Impossible de planifier la rencontre.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'À aborder avant le $day';
-  }
 }

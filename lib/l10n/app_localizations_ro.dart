@@ -12904,6 +12904,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipBriefingTitle => 'Rezumat';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'De abordat înainte de $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13291,6 +13296,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipLogCheckIn => 'Înregistrați un contact';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Întâlnire cu $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planificați întâlnirea';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Întâlnirea nu a putut fi planificată.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Începe';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Începe: $time. Schimbați';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titlu';
+
+  @override
   String get relationshipMoreActions => 'Mai multe acțiuni';
 
   @override
@@ -13383,6 +13411,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Fotografie – $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planificați o întâlnire cu $name';
   }
 
   @override
@@ -17365,37 +17398,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planificați o întâlnire cu $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Întâlnire cu $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titlu';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Începe';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Începe: $time. Schimbați';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planificați întâlnirea';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Întâlnirea nu a putut fi planificată.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'De abordat înainte de $day';
-  }
 }

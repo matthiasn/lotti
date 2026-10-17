@@ -20983,6 +20983,12 @@ abstract class AppLocalizations {
   /// **'Briefing'**
   String get relationshipBriefingTitle;
 
+  /// Label over the note to bring up, when a meeting is booked; {day} is like 'Sun 18 Oct'.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring up before {day}'**
+  String relationshipBringUpBefore(String day);
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -21475,6 +21481,42 @@ abstract class AppLocalizations {
   /// **'Log check-in'**
   String get relationshipLogCheckIn;
 
+  /// A new meeting's prefilled title; {name} is the person's nickname or name.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet {name}'**
+  String relationshipMeetingDefaultTitle(String name);
+
+  /// The meeting sheet's primary button.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan meeting'**
+  String get relationshipMeetingSave;
+
+  /// Said under the title when planning the meeting failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not plan the meeting.'**
+  String get relationshipMeetingSaveFailed;
+
+  /// Title of the meeting sheet's day and time pickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get relationshipMeetingStartsLabel;
+
+  /// Screen-reader label of the meeting sheet's start tag; {time} is like 'Sun 18 Oct · 15:00'.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts: {time}. Change'**
+  String relationshipMeetingStartsSemantics(String time);
+
+  /// Label of the meeting sheet's title field.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get relationshipMeetingTitleLabel;
+
   /// Tooltip of the person page's overflow menu (link contact, delete)
   ///
   /// In en, this message translates to:
@@ -21642,6 +21684,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo of {name}'**
   String relationshipPhotoSheetTitle(String name);
+
+  /// The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a meeting with {name}'**
+  String relationshipPlanMeeting(String name);
 
   /// Question heading the offer to log a call placed from Lotti. Asked, not asserted: the app only knows the dialer was opened.
   ///
@@ -28234,54 +28282,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan a meeting with {name}'**
-  String relationshipPlanMeeting(String name);
-
-  /// A new meeting's prefilled title; {name} is the person's nickname or name.
-  ///
-  /// In en, this message translates to:
-  /// **'Meet {name}'**
-  String relationshipMeetingDefaultTitle(String name);
-
-  /// Label of the meeting sheet's title field.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get relationshipMeetingTitleLabel;
-
-  /// Title of the meeting sheet's day and time pickers.
-  ///
-  /// In en, this message translates to:
-  /// **'Starts'**
-  String get relationshipMeetingStartsLabel;
-
-  /// Screen-reader label of the meeting sheet's start tag; {time} is like 'Sun 18 Oct · 15:00'.
-  ///
-  /// In en, this message translates to:
-  /// **'Starts: {time}. Change'**
-  String relationshipMeetingStartsSemantics(String time);
-
-  /// The meeting sheet's primary button.
-  ///
-  /// In en, this message translates to:
-  /// **'Plan meeting'**
-  String get relationshipMeetingSave;
-
-  /// Said under the title when planning the meeting failed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not plan the meeting.'**
-  String get relationshipMeetingSaveFailed;
-
-  /// Label over the note to bring up, when a meeting is booked; {day} is like 'Sun 18 Oct'.
-  ///
-  /// In en, this message translates to:
-  /// **'Bring up before {day}'**
-  String relationshipBringUpBefore(String day);
 }
 
 class _AppLocalizationsDelegate
