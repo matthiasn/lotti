@@ -26,32 +26,17 @@ flowchart LR
 
 ## 1. Secrets
 
-Create `/etc/lotti-sync/sync.env`, owned by root, mode `0600`, never in git:
+All commands below run from the repository root.
 
 ```sh
-SYNAPSE_SERVER_NAME=example.com
-MATRIX_PUBLIC_BASEURL=https://matrix.example.com
-SYNAPSE_DB_PASSWORD=$(openssl rand -hex 24)
-SYNAPSE_MACAROON_SECRET=$(openssl rand -hex 32)
-SYNAPSE_FORM_SECRET=$(openssl rand -hex 32)
-SYNAPSE_REGISTRATION_SECRET=$(openssl rand -hex 32)
-API_KEY=$(openssl rand -hex 32)
-ADMIN_API_KEY=$(openssl rand -hex 32)
-SUBSCRIPTION_ENCRYPTION_KEY_ID=escrow-2026-10
-SUBSCRIPTION_ENCRYPTION_KEY_BASE64=$(openssl rand -base64 32)
-ACCOUNT_BINDING_KEY_BASE64=$(openssl rand -base64 32)
-PADDLE_ENVIRONMENT=sandbox
-PADDLE_API_KEY=…              # Paddle → Developer tools → Authentication
-PADDLE_WEBHOOK_SECRET=…       # from the notification destination, step 5
-PADDLE_MONTHLY_PRICE_ID=pri_…
-PADDLE_ANNUAL_PRICE_ID=pri_…
-WEB_CHECKOUT_PAGE_URL=https://sync.example.com/checkout
-WEB_CHECKOUT_ORIGIN=https://sync.example.com
-MATRIX_ADMIN_TOKEN=…          # step 3
-# Step 7, once the app release that verifies signatures is out:
-BUNDLE_SIGNING_KEY_BASE64=
-BUNDLE_SIGNING_KEY_ID=
+sudo services/sync-deploy/init-env.sh /etc/lotti-sync/sync.env example.com
 ```
+
+writes `/etc/lotti-sync/sync.env` (root, `0600`, never in git) with every
+generated secret as a literal value — Compose reads the file as plain
+`KEY=value` lines and runs no shell in it. It refuses to overwrite an existing
+file. Fill in the Paddle values (step 5) and `MATRIX_ADMIN_TOKEN` (step 3)
+afterwards.
 
 Keep an offline copy of `SUBSCRIPTION_ENCRYPTION_KEY_BASE64` and, later, the
 signing key. Losing the escrow key strands unclaimed bundles; losing the
@@ -60,9 +45,8 @@ signing key means shipping a new public key in an app release.
 ## 2. Synapse
 
 ```sh
-services/sync-deploy/render-synapse-config.sh /etc/lotti-sync/sync.env
-cd services
-docker compose -f docker-compose.sync-prod.yml --env-file /etc/lotti-sync/sync.env up -d postgres synapse
+sudo services/sync-deploy/render-synapse-config.sh /etc/lotti-sync/sync.env
+sudo docker compose -f services/docker-compose.sync-prod.yml --env-file /etc/lotti-sync/sync.env up -d postgres synapse
 ```
 
 The template is deliberately narrow: registration closed, no federation
@@ -84,7 +68,7 @@ curl -s -X POST http://127.0.0.1:8008/_matrix/client/v3/login \
 Put the returned `access_token` into `MATRIX_ADMIN_TOKEN`, then start the rest:
 
 ```sh
-docker compose -f docker-compose.sync-prod.yml --env-file /etc/lotti-sync/sync.env up -d --build
+sudo docker compose -f services/docker-compose.sync-prod.yml --env-file /etc/lotti-sync/sync.env up -d --build
 ```
 
 Startup fails closed if Synapse cannot suspend accounts or any Paddle setting
@@ -92,11 +76,14 @@ is missing — read `docker logs lotti-sync-provisioning` before anything else.
 
 ## 4. nginx and the site
 
+The site file serves TLS from one certificate covering all three names, so the
+certificate must exist before the file is enabled:
+
 ```sh
+sudo certbot certonly --nginx -d matrix.example.com -d api.example.com -d sync.example.com
 sudo cp services/sync-deploy/nginx/lotti-sync.conf /etc/nginx/sites-available/
-# replace the three example hostnames, then:
+# replace example.com throughout, including the certificate paths, then:
 sudo ln -s /etc/nginx/sites-available/lotti-sync.conf /etc/nginx/sites-enabled/
-sudo certbot --nginx -d matrix.example.com -d api.example.com -d sync.example.com
 sudo mkdir -p /srv/lotti-sync/site && sudo cp services/sync-deploy/site/* /srv/lotti-sync/site/
 sudo cp /srv/lotti-sync/site/config.example.js /srv/lotti-sync/site/config.js   # then fill in
 sudo nginx -t && sudo systemctl reload nginx

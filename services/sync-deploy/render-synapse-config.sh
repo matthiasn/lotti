@@ -35,6 +35,9 @@ if [[ -z "$volume" ]]; then
   volume="$(docker volume inspect --format '{{ .Mountpoint }}' lotti-sync_synapse-data)"
 fi
 
+# Synapse runs as UID 991 and writes its signing key and media here; a fresh
+# volume on a rootful daemon is root-owned.
+chown 991:991 "$volume"
 install -m 0640 -o 991 -g 991 "$rendered" "$volume/homeserver.yaml"
 install -m 0644 -o 991 -g 991 "$here/synapse/log.config" "$volume/log.config"
 
