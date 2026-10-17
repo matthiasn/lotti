@@ -11903,6 +11903,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'De server accepteerde de inloggegevens van die code niet. Een code werkt niet meer zodra het wachtwoord van het account verandert — haal een verse code op je andere apparaat, of probeer het gewoon opnieuw als alleen de verbinding wegviel.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Deze code is niet ondertekend door Lotti Sync. Hij is daarom niet gebruikt en er is niets veranderd op dit apparaat. Haal een nieuwe code uit je abonnement of van een van je eigen apparaten.';
+
+  @override
   String get provisionedSyncImportButton => 'Doorgaan';
 
   @override

@@ -19825,6 +19825,12 @@ abstract class AppLocalizations {
   /// **'The server didn\'t accept that code\'s sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.'**
   String get provisionedSyncErrorLoginFailed;
 
+  /// No description provided for @provisionedSyncErrorUntrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'This code isn\'t signed by Lotti Sync, so it wasn\'t used and nothing on this device changed. Get a fresh code from your subscription or from one of your own devices.'**
+  String get provisionedSyncErrorUntrusted;
+
   /// No description provided for @provisionedSyncImportButton.
   ///
   /// In en, this message translates to:

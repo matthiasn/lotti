@@ -12032,6 +12032,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Server nepřijal přihlašovací údaje z kódu. Kód přestane fungovat, jakmile se změní heslo účtu — vezmi si nový kód z druhého zařízení, nebo to prostě zkus znovu, pokud jen vypadlo připojení.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Tento kód není podepsaný službou Lotti Sync, proto nebyl použit a na tomto zařízení se nic nezměnilo. Získej nový kód ze svého předplatného nebo z některého ze svých zařízení.';
+
+  @override
   String get provisionedSyncImportButton => 'Pokračovat';
 
   @override

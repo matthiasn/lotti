@@ -12099,6 +12099,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Serverul nu a acceptat datele de autentificare din cod. Un cod nu mai funcționează după ce parola contului se schimbă — generați un cod nou pe celălalt dispozitiv sau reîncercați dacă doar conexiunea a căzut.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Acest cod nu este semnat de Lotti Sync, așa că nu a fost folosit și nimic nu s-a schimbat pe acest dispozitiv. Obțineți un cod nou din abonamentul dumneavoastră sau de pe unul dintre dispozitivele dumneavoastră.';
+
+  @override
   String get provisionedSyncImportButton => 'Continuați';
 
   @override

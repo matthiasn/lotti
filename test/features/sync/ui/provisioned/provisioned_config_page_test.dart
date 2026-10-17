@@ -350,6 +350,26 @@ void main() {
       },
     );
 
+    testWidgets(
+      'an untrusted code says it was not used, not that sign-in failed',
+      (tester) async {
+        await pumpConfigWidget(
+          tester,
+          const ProvisioningState.error(ProvisioningError.untrustedBundle),
+        );
+
+        final context = tester.element(find.byType(ProvisionedConfigWidget));
+        expect(
+          find.text(context.messages.provisionedSyncErrorUntrusted),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.provisionedSyncErrorLoginFailed),
+          findsNothing,
+        );
+      },
+    );
+
     void expectNextSteps(WidgetTester tester) {
       final context = tester.element(find.byType(ProvisionedConfigWidget));
       expect(find.text(context.messages.syncPairedVerifyStep), findsOneWidget);

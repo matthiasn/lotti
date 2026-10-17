@@ -12084,6 +12084,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le serveur n\'a pas accepté les identifiants de ce code. Un code cesse de fonctionner dès que le mot de passe du compte change — récupère un code neuf sur ton autre appareil, ou réessaie simplement si la connexion a échoué.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Ce code n\'est pas signé par Lotti Sync : il n\'a pas été utilisé et rien n\'a changé sur cet appareil. Récupère un nouveau code depuis ton abonnement ou depuis l\'un de tes appareils.';
+
+  @override
   String get provisionedSyncImportButton => 'Continuer';
 
   @override

@@ -5172,6 +5172,7 @@
   "provisionedSyncError": "Quel codice non ha funzionato",
   "provisionedSyncErrorConfigurationFailed": "Qualcosa è andato storto durante il collegamento. Riprova; se continua a fallire, verifica che l’altro dispositivo stia ancora sincronizzando.",
   "provisionedSyncErrorLoginFailed": "Il server non ha accettato le credenziali di quel codice. Un codice smette di funzionare quando cambia la password dell'account — genera un codice nuovo sull'altro dispositivo, oppure riprova se è stata solo la connessione.",
+  "provisionedSyncErrorUntrusted": "Questo codice non è firmato da Lotti Sync, quindi non è stato usato e su questo dispositivo non è cambiato nulla. Prendi un nuovo codice dal tuo abbonamento o da uno dei tuoi dispositivi.",
   "provisionedSyncImportButton": "Continua",
   "provisionedSyncImportHint": "Incolla qui il codice di abbinamento",
   "provisionedSyncImportTitle": "Configura la sincronizzazione",

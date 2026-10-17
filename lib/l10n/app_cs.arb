@@ -4598,6 +4598,7 @@
   "provisionedSyncError": "Tenhle kód nezabral",
   "provisionedSyncErrorConfigurationFailed": "Při připojování se něco pokazilo. Zkus to znovu; pokud to selhává dál, zkontroluj, že druhé zařízení pořád synchronizuje.",
   "provisionedSyncErrorLoginFailed": "Server nepřijal přihlašovací údaje z kódu. Kód přestane fungovat, jakmile se změní heslo účtu — vezmi si nový kód z druhého zařízení, nebo to prostě zkus znovu, pokud jen vypadlo připojení.",
+  "provisionedSyncErrorUntrusted": "Tento kód není podepsaný službou Lotti Sync, proto nebyl použit a na tomto zařízení se nic nezměnilo. Získej nový kód ze svého předplatného nebo z některého ze svých zařízení.",
   "provisionedSyncImportButton": "Pokračovat",
   "provisionedSyncImportHint": "Sem vlož párovací kód",
   "provisionedSyncImportTitle": "Nastavit synchronizaci",

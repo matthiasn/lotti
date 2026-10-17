@@ -12023,6 +12023,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il server non ha accettato le credenziali di quel codice. Un codice smette di funzionare quando cambia la password dell\'account — genera un codice nuovo sull\'altro dispositivo, oppure riprova se è stata solo la connessione.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Questo codice non è firmato da Lotti Sync, quindi non è stato usato e su questo dispositivo non è cambiato nulla. Prendi un nuovo codice dal tuo abbonamento o da uno dei tuoi dispositivi.';
+
+  @override
   String get provisionedSyncImportButton => 'Continua';
 
   @override

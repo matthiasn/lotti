@@ -11949,6 +11949,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Server hat die Zugangsdaten aus dem Code nicht akzeptiert. Ein Code funktioniert nicht mehr, sobald sich das Passwort des Kontos ändert — hol dir einen frischen Code von deinem anderen Gerät, oder versuch es einfach nochmal, falls nur die Verbindung abgebrochen ist.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Dieser Code ist nicht von Lotti Sync signiert. Er wurde deshalb nicht verwendet, und auf diesem Gerät hat sich nichts geändert. Hol dir einen neuen Code aus deinem Abo oder von einem deiner eigenen Geräte.';
+
+  @override
   String get provisionedSyncImportButton => 'Weiter';
 
   @override

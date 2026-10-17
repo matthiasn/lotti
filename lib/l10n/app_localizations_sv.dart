@@ -11892,6 +11892,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Servern godtog inte kodens inloggningsuppgifter. En kod slutar fungera när kontots lösenord ändras — hämta en färsk kod på din andra enhet, eller försök bara igen om det bara var anslutningen.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Den här koden är inte signerad av Lotti Sync, så den användes inte och inget har ändrats på den här enheten. Hämta en ny kod från din prenumeration eller från en av dina egna enheter.';
+
+  @override
   String get provisionedSyncImportButton => 'Fortsätt';
 
   @override

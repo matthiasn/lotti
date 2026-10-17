@@ -10,4 +10,9 @@ enum ProvisioningError {
   /// persistence. The original exception is already logged via the logging
   /// service.
   configurationError,
+
+  /// The bundle names a homeserver that requires the operator's signature
+  /// and its signature is missing, unknown, forged or expired. Nothing was
+  /// changed: the check runs before the current session is touched.
+  untrustedBundle,
 }

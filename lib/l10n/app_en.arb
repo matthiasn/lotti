@@ -7193,6 +7193,7 @@
   "provisionedSyncError": "That code didn't work",
   "provisionedSyncErrorConfigurationFailed": "Something went wrong while connecting. Try again; if it keeps failing, check the other device is still syncing.",
   "provisionedSyncErrorLoginFailed": "The server didn't accept that code's sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.",
+  "provisionedSyncErrorUntrusted": "This code isn't signed by Lotti Sync, so it wasn't used and nothing on this device changed. Get a fresh code from your subscription or from one of your own devices.",
   "provisionedSyncImportButton": "Continue",
   "provisionedSyncImportHint": "Paste the pairing code here",
   "provisionedSyncImportTitle": "Set up sync",

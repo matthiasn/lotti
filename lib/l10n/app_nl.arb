@@ -5171,6 +5171,7 @@
   "provisionedSyncError": "Die code werkte niet",
   "provisionedSyncErrorConfigurationFailed": "Er ging iets mis tijdens het verbinden. Probeer het opnieuw; blijft het misgaan, controleer dan of het andere apparaat nog synchroniseert.",
   "provisionedSyncErrorLoginFailed": "De server accepteerde de inloggegevens van die code niet. Een code werkt niet meer zodra het wachtwoord van het account verandert — haal een verse code op je andere apparaat, of probeer het gewoon opnieuw als alleen de verbinding wegviel.",
+  "provisionedSyncErrorUntrusted": "Deze code is niet ondertekend door Lotti Sync. Hij is daarom niet gebruikt en er is niets veranderd op dit apparaat. Haal een nieuwe code uit je abonnement of van een van je eigen apparaten.",
   "provisionedSyncImportButton": "Doorgaan",
   "provisionedSyncImportHint": "Plak hier de koppelcode",
   "provisionedSyncImportTitle": "Synchronisatie instellen",

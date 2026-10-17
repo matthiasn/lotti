@@ -4591,6 +4591,7 @@
   "provisionedSyncError": "Codul nu a funcționat",
   "provisionedSyncErrorConfigurationFailed": "Ceva nu a mers bine la conectare. Încercați din nou; dacă eșuează în continuare, verificați dacă celălalt dispozitiv încă se sincronizează.",
   "provisionedSyncErrorLoginFailed": "Serverul nu a acceptat datele de autentificare din cod. Un cod nu mai funcționează după ce parola contului se schimbă — generați un cod nou pe celălalt dispozitiv sau reîncercați dacă doar conexiunea a căzut.",
+  "provisionedSyncErrorUntrusted": "Acest cod nu este semnat de Lotti Sync, așa că nu a fost folosit și nimic nu s-a schimbat pe acest dispozitiv. Obțineți un cod nou din abonamentul dumneavoastră sau de pe unul dintre dispozitivele dumneavoastră.",
   "provisionedSyncImportButton": "Continuați",
   "provisionedSyncImportHint": "Lipiți aici codul de asociere",
   "provisionedSyncImportTitle": "Configurați sincronizarea",
