@@ -15,6 +15,7 @@ void main() {
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
     'syncDatabaseProvider': syncDatabaseProvider,
+    'secureStorageProvider': secureStorageProvider,
     'settingsDbProvider': settingsDbProvider,
     'persistenceLogicProvider': persistenceLogicProvider,
     'navServiceProvider': navServiceProvider,

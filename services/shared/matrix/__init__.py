@@ -14,9 +14,12 @@ from .admin_client import (
 )
 from .bundle import (
     BUNDLE_SCHEMA_VERSION,
+    SIGNED_BUNDLE_SCHEMA_VERSION,
+    BundleAttestation,
     BundleDecodeError,
     BundleKind,
     SyncBundle,
+    attestation_payload,
 )
 from .core import (
     AdminCredentials,
@@ -30,8 +33,10 @@ from .provisioner import SYNC_ROOM_RETENTION_DAYS, ProvisionResult, SynapseProvi
 
 __all__ = [
     "BUNDLE_SCHEMA_VERSION",
+    "SIGNED_BUNDLE_SCHEMA_VERSION",
     "SYNC_ROOM_RETENTION_DAYS",
     "AdminCredentials",
+    "BundleAttestation",
     "BundleDecodeError",
     "BundleKind",
     "MediaDeletion",
@@ -46,6 +51,7 @@ __all__ = [
     "UserActivity",
     "UserAlreadyExistsError",
     "UserMediaUsage",
+    "attestation_payload",
     "encode_mxid_for_path",
     "encode_room_id_for_path",
 ]

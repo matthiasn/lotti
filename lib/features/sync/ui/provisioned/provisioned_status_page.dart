@@ -6,6 +6,8 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_controller.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/auto_verification_launcher.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_devices_list.dart';
@@ -88,6 +90,12 @@ class ProvisionedStatusWidget extends ConsumerWidget {
     final logger = ref.watch(domainLoggerProvider);
     final messages = context.messages;
     final tokens = context.designTokens;
+    // Finishes a paid bootstrap whose confirmation did not reach the service
+    // (offline, app closed): without it the account is deactivated a day on.
+    ref.watch(pendingRotationRecoveryProvider);
+    final hasSubscription =
+        ref.watch(syncSubscriptionAvailableProvider) &&
+        ref.watch(syncSubscriptionRecordProvider).value != null;
 
     return SingleChildScrollView(
       child: Column(
@@ -179,6 +187,24 @@ class ProvisionedStatusWidget extends ConsumerWidget {
                   },
                   label: messages.provisionedSyncDisconnect,
                 ),
+                if (hasSubscription)
+                  DesignSystemButton(
+                    key: const Key('sync_manage_subscription'),
+                    variant: DesignSystemButtonVariant.secondary,
+                    leadingIcon: LottiIcons.openExternal,
+                    label: messages.syncManageSubscription,
+                    onPressed: () async {
+                      final opened = await ref.read(
+                        openSyncSubscriptionPortalProvider,
+                      )();
+                      if (!opened && context.mounted) {
+                        context.showToast(
+                          tone: DesignSystemToastTone.error,
+                          title: messages.syncManageSubscriptionFailed,
+                        );
+                      }
+                    },
+                  ),
                 // Last and smallest: a diagnostics dump is the least likely
                 // reason anyone opens this sheet, and as the first bordered pill
                 // in the row it won a weight contest against the account action.

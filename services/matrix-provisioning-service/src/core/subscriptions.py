@@ -1,4 +1,9 @@
-"""Google Play subscription states and their sync-access interpretation."""
+"""Paid subscription states and their sync-access interpretation.
+
+Google Play's subscription state vocabulary is the canonical one. Other
+providers (Paddle) map their own lifecycle onto it at the adapter boundary, so
+one entitlement state machine governs access no matter who took the payment.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +26,13 @@ class GoogleSubscriptionState(str, Enum):
     PENDING_PURCHASE_CANCELED = "SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED"
 
 
+class SubscriptionProvider(str, Enum):
+    """Who sold the subscription and is authoritative for its lifecycle."""
+
+    GOOGLE_PLAY = "google_play"
+    PADDLE = "paddle"
+
+
 class EntitlementState(str, Enum):
     """Small internal state machine used to enforce Matrix sync access."""
 
@@ -39,6 +51,13 @@ ACCESS_ENTITLEMENT_STATES = frozenset(
         EntitlementState.CANCELED_ACTIVE,
     }
 )
+
+
+def grants_access(subscription: VerifiedSubscription, *, now: datetime) -> bool:
+    """Whether a stored entitlement allows sync at ``now``."""
+    return subscription.entitlement_state in ACCESS_ENTITLEMENT_STATES and (
+        subscription.current_period_end is None or now < subscription.current_period_end
+    )
 
 
 class AcknowledgementState(str, Enum):
@@ -202,6 +221,7 @@ class VerifiedSubscription:
     suspended_at: datetime | None = None
     unsuspended_at: datetime | None = None
     last_error: str | None = None
+    provider: SubscriptionProvider = SubscriptionProvider.GOOGLE_PLAY
 
 
 @dataclass(frozen=True)
@@ -332,3 +352,17 @@ def normalize_entitlement(
         return NormalizedEntitlement(EntitlementState.EXPIRED, False, None)
 
     return NormalizedEntitlement(EntitlementState.SUSPENDED, False, None)
+
+
+@dataclass(frozen=True)
+class CheckoutSession:
+    """One web checkout launch bound to an entitlement until Paddle reports it."""
+
+    session_id: str
+    entitlement_id: str
+    claim_secret_hash: str
+    price_id: str
+    expires_at: datetime
+    bound_token_fingerprint: str | None
+    bound_at: datetime | None
+    created_at: datetime

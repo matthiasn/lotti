@@ -46,6 +46,15 @@ abstract class MatrixSyncGateway {
   /// alone, whatever its lifetime.
   Future<bool> ensureRoomRetention(String roomId);
 
+  /// Sets a room state event. State events are not end-to-end encrypted,
+  /// so [content] must hold nothing private.
+  Future<void> setRoomState({
+    required String roomId,
+    required String eventType,
+    required String stateKey,
+    required Map<String, Object?> content,
+  });
+
   /// Returns a room snapshot by its identifier.
   Room? getRoomById(String roomId);
 

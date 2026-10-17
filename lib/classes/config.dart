@@ -9,6 +9,11 @@ abstract class MatrixConfig with _$MatrixConfig {
     required String homeServer,
     required String user,
     required String password,
+
+    /// The operator's signature over this account's identity, kept from the
+    /// bundle that provisioned it so every handover this device issues
+    /// carries it on. Null for self-hosted and hand-typed accounts.
+    @JsonKey(includeIfNull: false) BundleAttestation? attestation,
   }) = _MatrixConfig;
 
   factory MatrixConfig.fromJson(Map<String, dynamic> json) =>
@@ -30,6 +35,25 @@ enum SyncBundleKind {
   handover,
 }
 
+/// The provisioning service's Ed25519 signature over a bundle's identity
+/// (`homeServer`, `user`, `roomId`), present from schema v3.
+///
+/// The password is deliberately not signed: a device that rotated it hands
+/// the same attestation on, and the next device can still verify it.
+/// `iat`/`exp` are Unix seconds; `sig` is unpadded Base64url.
+@freezed
+abstract class BundleAttestation with _$BundleAttestation {
+  const factory BundleAttestation({
+    required String kid,
+    required int iat,
+    required int exp,
+    required String sig,
+  }) = _BundleAttestation;
+
+  factory BundleAttestation.fromJson(Map<String, dynamic> json) =>
+      _$BundleAttestationFromJson(json);
+}
+
 @Freezed(toStringOverride: false)
 abstract class SyncProvisioningBundle with _$SyncProvisioningBundle {
   const factory SyncProvisioningBundle({
@@ -39,6 +63,7 @@ abstract class SyncProvisioningBundle with _$SyncProvisioningBundle {
     required String user,
     required String password,
     required String roomId,
+    @JsonKey(includeIfNull: false) BundleAttestation? att,
   }) = _SyncProvisioningBundle;
 
   const SyncProvisioningBundle._();
@@ -50,5 +75,5 @@ abstract class SyncProvisioningBundle with _$SyncProvisioningBundle {
   String toString() =>
       'SyncProvisioningBundle(v: $v, kind: ${kind.name}, '
       'homeServer: $homeServer, user: $user, password: <redacted>, '
-      'roomId: $roomId)';
+      'roomId: $roomId, signed: ${att != null})';
 }

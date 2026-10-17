@@ -209,6 +209,16 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   }
 
   @override
+  Future<void> setRoomState({
+    required String roomId,
+    required String eventType,
+    required String stateKey,
+    required Map<String, Object?> content,
+  }) async {
+    await _client.setRoomStateWithKey(roomId, eventType, stateKey, content);
+  }
+
+  @override
   Room? getRoomById(String roomId) => _client.getRoomById(roomId);
 
   @override

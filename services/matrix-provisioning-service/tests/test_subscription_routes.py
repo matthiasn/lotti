@@ -15,6 +15,7 @@ from src.core.constants import (
     SERVICE_BUNDLE_CLAIM_REAPER,
     SERVICE_BUNDLE_ROTATION_SERVICE,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
+    SERVICE_LAPSED_ACCOUNT_REAPER,
     SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_SUBSCRIPTION_ACCESS_SERVICE,
     SERVICE_SUBSCRIPTION_IDENTITY,
@@ -234,6 +235,7 @@ def services(repository, monkeypatch):
         SERVICE_SUBSCRIPTION_REPOSITORY: FakeSubscriptionRepository(),
         SERVICE_SUBSCRIPTION_RECONCILER: FakeReconciler(),
         SERVICE_BUNDLE_CLAIM_REAPER: FakeReconciler(),
+        SERVICE_LAPSED_ACCOUNT_REAPER: FakeReconciler(),
     }
     container.reset()
     container.override("provisioning_repository", repository)
@@ -291,11 +293,32 @@ def test_entitlement_bootstrap_maps_per_client_rate_limit(client, services):
 
 def test_subscription_routes_fail_closed_when_feature_is_disabled(client, monkeypatch):
     monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    monkeypatch.setenv("ENABLE_WEB_SUBSCRIPTIONS", "false")
 
     response = client.post("/api/v1/client/subscriptions/entitlements")
 
     assert response.status_code == 503
-    assert response.json()["detail"] == "Google Play SYNC subscriptions are disabled"
+    assert response.json()["detail"] == "Paid SYNC subscriptions are disabled"
+
+
+def test_web_checkout_alone_opens_shared_routes_but_not_play_routes(client, services, monkeypatch):
+    monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    monkeypatch.setenv("ENABLE_WEB_SUBSCRIPTIONS", "true")
+
+    entitlement = client.post("/api/v1/client/subscriptions/entitlements")
+    intent = client.post(
+        "/api/v1/client/subscriptions/purchase-intents",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={
+            "entitlement_id": "entitlement-one",
+            "product_id": "lotti_sync",
+            "base_plan_id": "monthly",
+        },
+    )
+
+    assert entitlement.status_code == 201
+    assert intent.status_code == 503
+    assert intent.json()["detail"] == "Google Play SYNC subscriptions are disabled"
 
 
 def test_purchase_intent_requires_entitlement_bearer_credential(client):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -305,3 +306,43 @@ class PaidBundleResponse(BaseModel):
     rotation_challenge: str | None
     bundle_import_required: bool
     entitlement_state: str
+
+
+class CreateCheckoutSessionRequest(BaseModel):
+    """Authorize one web checkout launch for an entitlement."""
+
+    entitlement_id: str = Field(..., min_length=1, max_length=128)
+    plan: Literal["monthly", "annual"]
+    claim_secret: str = Field(..., min_length=32, max_length=256)
+
+
+class CheckoutSessionResponse(BaseModel):
+    """The URL the app opens in a browser tab, and the id it polls."""
+
+    session_id: str
+    checkout_url: str
+    expires_at: datetime
+
+
+class CheckoutSessionStatusRequest(BaseModel):
+    """Poll a checkout session by its unguessable id."""
+
+    session_id: str = Field(..., min_length=16, max_length=128)
+
+
+class CheckoutSessionStatusResponse(BaseModel):
+    """``pending`` until the webhook lands, then ``paid``; or ``expired``."""
+
+    state: str
+
+
+class PortalSessionRequest(BaseModel):
+    """Ask for a customer-portal link for the entitlement's web subscription."""
+
+    entitlement_id: str = Field(..., min_length=1, max_length=128)
+
+
+class PortalSessionResponse(BaseModel):
+    """Short-lived Paddle customer-portal link."""
+
+    url: str

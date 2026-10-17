@@ -12084,6 +12084,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le serveur n\'a pas accepté les identifiants de ce code. Un code cesse de fonctionner dès que le mot de passe du compte change — récupère un code neuf sur ton autre appareil, ou réessaie simplement si la connexion a échoué.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Ce code n\'est pas signé par Lotti Sync : il n\'a pas été utilisé et rien n\'a changé sur cet appareil. Récupère un nouveau code depuis ton abonnement ou depuis l\'un de tes appareils.';
+
+  @override
   String get provisionedSyncImportButton => 'Continuer';
 
   @override
@@ -12868,6 +12872,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'À aborder avant le $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13243,6 +13252,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipLogCheckIn => 'Noter un échange';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Voir $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planifier la rencontre';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Impossible de planifier la rencontre.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Début';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Début : $time. Modifier';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titre';
+
+  @override
   String get relationshipMoreActions => 'Plus d\'actions';
 
   @override
@@ -13336,6 +13368,11 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Photo de $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planifier une rencontre avec $name';
   }
 
   @override
@@ -15664,6 +15701,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncListUnknownPayload => 'Contenu inconnu';
 
   @override
+  String get syncManageSubscription => 'Gérer l\'abonnement';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Impossible d\'ouvrir la page de l\'abonnement. Réessaie plus tard.';
+
+  @override
   String get syncNotLoggedInToast => 'La synchronisation n\'est pas connectée';
 
   @override
@@ -15944,6 +15988,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Ton propre serveur de synchronisation ou Lotti Sync · rien ne quitte tes appareils sans chiffrement';
+
+  @override
   String get syncSetupEmptyHint =>
       'Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.';
 
@@ -15980,6 +16028,64 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Dictionnaire vocal';
+
+  @override
+  String get syncSubscribeAnnual => 'S\'abonner à l\'année';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Termine le paiement dans ton navigateur. Cet écran continuera tout seul dès sa réception.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Paiement reçu. Configuration de ton compte de synchronisation…';
+
+  @override
+  String get syncSubscribeEntry => 'Obtenir Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Le compte de cet abonnement est déjà configuré. Ajoute cet appareil depuis l\'un de tes appareils qui synchronise déjà.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Aucun navigateur n\'a pu être ouvert pour le paiement.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Cette appli a refusé le compte fourni par ton abonnement. Mets Lotti à jour et réessaie.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Impossible de joindre Lotti Sync. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync n\'a pas pu terminer pour le moment. Réessaie dans quelques minutes.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Ce paiement a expiré avant d\'être réglé. Choisis une formule pour recommencer.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Paiement par carte ou PayPal via Paddle, notre prestataire de paiement. Résiliable à tout moment.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti héberge la synchronisation entre tes appareils. Tout reste chiffré de bout en bout : seuls tes propres appareils peuvent lire tes entrées, pas même Lotti.';
+
+  @override
+  String get syncSubscribeMonthly => 'S\'abonner au mois';
+
+  @override
+  String get syncSubscribeOpening => 'Ouverture du paiement sécurisé…';
+
+  @override
+  String get syncSubscribeReopen => 'Rouvrir le paiement';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>
@@ -17248,37 +17354,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planifier une rencontre avec $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Voir $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titre';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Début';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Début : $time. Modifier';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planifier la rencontre';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Impossible de planifier la rencontre.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'À aborder avant le $day';
-  }
 }

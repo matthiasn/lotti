@@ -17,6 +17,9 @@ from src.services.bundle_rotation_service import BundleRotationService
 from src.services.bundle_service import BundleService
 from src.services.google_play_client import GooglePlayClient
 from src.services.google_play_notifications import GooglePlayNotificationService
+from src.services.lapsed_account_reaper import LapsedAccountReaper
+from src.services.paddle_client import PADDLE_LIVE_BASE_URL, PADDLE_SANDBOX_BASE_URL
+from src.services.paddle_subscription_service import PaddleSubscriptionService
 from src.services.paid_bundle_service import PaidBundleService
 from src.services.provisioning_repository import ProvisioningRepository
 from src.services.redemption_poller import RedemptionPoller
@@ -27,6 +30,8 @@ from src.services.subscription_identity_service import SubscriptionIdentityServi
 from src.services.subscription_reconciler import SubscriptionReconciler
 from src.services.subscription_repository import SubscriptionRepository
 from src.services.subscription_service import SubscriptionService
+from src.services.web_checkout_service import WebCheckoutService
+from src.services.web_subscription_repository import WebSubscriptionRepository
 
 from shared.matrix import SynapseAdminClient, SynapseProvisioner
 
@@ -317,3 +322,126 @@ def test_legacy_subscription_key_configuration_fails_fast(env, value, message):
 
     with pytest.raises(ValueError, match=message):
         Container().get_secret_cipher()
+
+
+def configure_web(env):
+    env.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    env.setenv("ENABLE_WEB_SUBSCRIPTIONS", "true")
+    env.setenv("SUBSCRIPTION_ENCRYPTION_KEY_ID", "key-v1")
+    env.setenv("SUBSCRIPTION_ENCRYPTION_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("PLAY_ACCOUNT_BINDING_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("PADDLE_API_KEY", "pdl_sdbx_apikey_test")
+    env.setenv("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test")
+    env.setenv("PADDLE_MONTHLY_PRICE_ID", " pri_monthly ")
+    env.setenv("PADDLE_ANNUAL_PRICE_ID", "pri_annual")
+    env.setenv("WEB_CHECKOUT_PAGE_URL", "https://sync.example.com/checkout/")
+
+
+def test_container_builds_the_web_graph_without_google_credentials(env, monkeypatch):
+    configure_web(env)
+    env.setenv("PADDLE_ENVIRONMENT", "sandbox")
+    env.setenv("WEB_SUBSCRIPTION_GRACE_DAYS", "3")
+
+    def no_google():
+        pytest.fail("A web-only deployment must not load Google credentials")
+
+    monkeypatch.setattr(
+        GoogleAccessTokenProvider, "from_application_default_credentials", no_google
+    )
+    container = Container()
+
+    assert isinstance(container.get_web_subscription_repository(), WebSubscriptionRepository)
+    assert container.get_paid_bundle_service()._google_play_client is None
+    paddle = container.get_paddle_subscription_service()
+    assert isinstance(paddle, PaddleSubscriptionService)
+    assert paddle._allowed_price_ids == frozenset({"pri_monthly", "pri_annual"})
+    assert paddle._grace_period == timedelta(days=3)
+    assert container.get_paddle_client()._base_url == PADDLE_SANDBOX_BASE_URL
+    checkout = container.get_web_checkout_service()
+    assert isinstance(checkout, WebCheckoutService)
+    assert checkout._plans == {"monthly": "pri_monthly", "annual": "pri_annual"}
+    reconciler = container.get_subscription_reconciler()
+    assert reconciler._subscription_service is None
+    assert reconciler._paddle_subscriptions is paddle
+
+
+def test_paddle_defaults_to_the_live_api(env):
+    configure_web(env)
+
+    assert Container().get_paddle_client()._base_url == PADDLE_LIVE_BASE_URL
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "message"),
+    [
+        ("PADDLE_WEBHOOK_SECRET", "", "PADDLE_WEBHOOK_SECRET"),
+        ("WEB_CHECKOUT_PAGE_URL", "http://insecure.example.com", "https"),
+        ("PADDLE_API_KEY", "", "PADDLE_API_KEY"),
+    ],
+)
+def test_web_configuration_fails_fast(env, name, value, message):
+    configure_web(env)
+    env.setenv(name, value)
+
+    with pytest.raises(ValueError, match=message):
+        Container().get_web_checkout_service()
+
+
+def test_a_single_plan_is_enough_but_none_is_refused(env):
+    configure_web(env)
+    env.setenv("PADDLE_ANNUAL_PRICE_ID", "")
+
+    assert Container().get_web_checkout_service()._plans == {"monthly": "pri_monthly"}
+
+    env.setenv("PADDLE_MONTHLY_PRICE_ID", " ")
+    with pytest.raises(ValueError, match="PADDLE_MONTHLY_PRICE_ID"):
+        Container().get_web_checkout_service()
+
+
+def test_admin_api_url_is_read_from_the_environment(env):
+    env.setenv("MATRIX_ADMIN_API_URL", "http://synapse:8008")
+
+    credentials = build_admin_credentials()
+
+    assert credentials.request_url == "http://synapse:8008"
+    assert credentials.base_url == "https://matrix.example.com"
+
+
+def test_lapsed_account_erasure_window_is_configurable(env):
+    env.setenv("LAPSED_ACCOUNT_ERASE_DAYS", "45")
+
+    reaper = Container().get_lapsed_account_reaper()
+
+    assert isinstance(reaper, LapsedAccountReaper)
+    assert reaper._erase_after == timedelta(days=45)
+
+
+def test_bundles_stay_unsigned_until_a_key_is_configured(env):
+    assert Container().get_bundle_service()._signer is None
+
+
+def test_signing_key_configuration_is_applied(env):
+    env.setenv("BUNDLE_SIGNING_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("BUNDLE_SIGNING_KEY_ID", "op-2026-10")
+    env.setenv("BUNDLE_ATTESTATION_TTL_HOURS", "2")
+
+    signer = Container().get_bundle_service()._signer
+
+    assert signer.kid == "op-2026-10"
+    assert signer._ttl == timedelta(hours=2)
+
+
+@pytest.mark.parametrize(
+    ("seed", "kid", "message"),
+    [
+        ("not base64!", "op", "valid Base64"),
+        (base64.b64encode(b"short").decode(), "op", "32-byte"),
+        (base64.b64encode(bytes(range(32))).decode(), "", "BUNDLE_SIGNING_KEY_ID"),
+    ],
+)
+def test_signing_key_configuration_fails_fast(env, seed, kid, message):
+    env.setenv("BUNDLE_SIGNING_KEY_BASE64", seed)
+    env.setenv("BUNDLE_SIGNING_KEY_ID", kid)
+
+    with pytest.raises(ValueError, match=message):
+        Container().get_bundle_service()

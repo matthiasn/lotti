@@ -11,6 +11,7 @@ from src.core.subscriptions import (
     AcknowledgementState,
     EntitlementState,
     GoogleSubscriptionState,
+    SubscriptionProvider,
     VerifiedSubscription,
 )
 from src.services.secret_cipher import SecretCipher
@@ -305,3 +306,70 @@ async def test_failed_old_token_enforces_racing_replacement_state(setup):
     current = await repository.get_current_subscription(old.entitlement_id)
     assert current.token_fingerprint == new_fingerprint
     assert access.calls == [(current, NOW)]
+
+
+class FakePaddleSubscriptions:
+    def __init__(self):
+        self.refreshed = []
+
+    async def refresh(self, stored):
+        self.refreshed.append(stored.token_fingerprint)
+
+
+async def test_paddle_rows_refresh_from_paddle_not_google(tmp_path):
+    repository = SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+    cipher = SecretCipher(key_id="key-v1", key=bytes(range(32)))
+    google = FakeSubscriptionService()
+    paddle = FakePaddleSubscriptions()
+    access = FakeAccessService()
+    stored = await add_due(
+        repository,
+        cipher,
+        "entitlement-one",
+        "paddle:sub_01",
+        provider=SubscriptionProvider.PADDLE,
+    )
+    reconciler = SubscriptionReconciler(
+        repository,
+        google,
+        access,
+        cipher,
+        paddle_subscriptions=paddle,
+        now_provider=lambda: NOW,
+    )
+
+    assert await reconciler.reconcile_once() == 1
+
+    assert paddle.refreshed == [stored.token_fingerprint]
+    assert google.calls == []
+    assert access.calls == [(stored, NOW)]
+
+
+@pytest.mark.parametrize(
+    ("provider", "message"),
+    [
+        (SubscriptionProvider.PADDLE, "Paddle subscriptions are not configured"),
+        (SubscriptionProvider.GOOGLE_PLAY, "Google Play subscriptions are not configured"),
+    ],
+)
+async def test_a_row_from_an_unconfigured_provider_is_recorded_and_still_enforced(
+    tmp_path, provider, message
+):
+    repository = SubscriptionRepository(str(tmp_path / "subscriptions.db"))
+    cipher = SecretCipher(key_id="key-v1", key=bytes(range(32)))
+    access = FakeAccessService()
+    stored = await add_due(repository, cipher, "entitlement-one", "token", provider=provider)
+    reconciler = SubscriptionReconciler(
+        repository,
+        None,
+        access,
+        cipher,
+        now_provider=lambda: NOW,
+    )
+
+    assert await reconciler.reconcile_once() == 0
+
+    failed = await repository.get_subscription_by_token(stored.token_fingerprint)
+    assert failed.last_error == message
+    # Stored deadlines still bind: a missing provider never extends access.
+    assert access.calls == [(stored, NOW)]

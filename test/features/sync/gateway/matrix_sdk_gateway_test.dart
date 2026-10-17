@@ -815,4 +815,26 @@ void main() {
 
     verify(() => client.dispose()).called(1);
   });
+
+  test('setRoomState writes the state event as given', () async {
+    when(
+      () => client.setRoomStateWithKey(any(), any(), any(), any()),
+    ).thenAnswer((_) async => r'$event');
+
+    await gateway.setRoomState(
+      roomId: '!room:server',
+      eventType: 'com.lotti.sync.provisioning.rotation',
+      stateKey: 'bundle-1',
+      content: const {'challenge': 'c'},
+    );
+
+    verify(
+      () => client.setRoomStateWithKey(
+        '!room:server',
+        'com.lotti.sync.provisioning.rotation',
+        'bundle-1',
+        const {'challenge': 'c'},
+      ),
+    ).called(1);
+  });
 }

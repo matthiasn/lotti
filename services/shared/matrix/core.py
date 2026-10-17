@@ -57,24 +57,39 @@ class AdminCredentials:
     A long-lived ``admin_token`` is preferred: it avoids keeping a password at
     rest and can be revoked independently. When no token is set, the flow falls
     back to password login, which is what the interactive CLI uses.
+
+    ``homeserver`` is the public HTTPS URL clients use, and the one written into
+    bundles. ``api_url`` optionally names a different address for the admin
+    calls themselves — in production, Synapse's internal container address, so
+    the admin API never has to be exposed through the public reverse proxy.
     """
 
     homeserver: str
     admin_token: str | None = None
     admin_user: str | None = None
     admin_password: str | None = None
+    api_url: str | None = None
 
     def __post_init__(self) -> None:
         parsed = urlsplit(self.homeserver)
         if parsed.scheme.lower() != "https" or not parsed.netloc:
             raise ValueError("homeserver must be a non-empty HTTPS URL")
+        if self.api_url is not None:
+            api = urlsplit(self.api_url)
+            if api.scheme.lower() not in ("http", "https") or not api.netloc:
+                raise ValueError("api_url must be an HTTP(S) URL")
         if not self.admin_token and not (self.admin_user and self.admin_password):
             raise ValueError("Provide either admin_token, or both admin_user and admin_password")
 
     @property
     def base_url(self) -> str:
-        """The homeserver URL without a trailing slash."""
+        """The public homeserver URL without a trailing slash."""
         return self.homeserver.rstrip("/")
+
+    @property
+    def request_url(self) -> str:
+        """Where admin requests are sent: ``api_url`` if set, else the public URL."""
+        return (self.api_url or self.homeserver).rstrip("/")
 
 
 class SynapseClientBase:
@@ -105,7 +120,7 @@ class SynapseClientBase:
     def _new_client(self) -> httpx.AsyncClient:
         """Build a fresh client. Callers own closing it."""
         kwargs: dict = {
-            "base_url": self._credentials.base_url,
+            "base_url": self._credentials.request_url,
             "timeout": self._timeout,
             "follow_redirects": False,
         }

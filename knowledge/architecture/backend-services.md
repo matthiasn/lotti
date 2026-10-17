@@ -35,7 +35,7 @@ them and whether anything keeps them working:
 | Group | Directories | App depends on it | Built or tested in CI |
 |-------|-------------|-------------------|-----------------------|
 | **Local inference servers** the user installs beside the app | `whisper_server`, `voxtral-local` | Yes, as optional providers at a default `localhost` URL | Released as binaries by `python-services-release.yml` on a version tag |
-| **Sync account provisioning** run by whoever hosts the homeserver | `matrix-provisioning-service`, `matrix-admin`, `shared` | Indirectly: the app redeems the bundles it issues, and never calls it over HTTP | Tested on every push touching them by `matrix-admin-ci.yml` |
+| **Sync account provisioning** run by whoever hosts the homeserver | `matrix-provisioning-service`, `matrix-admin`, `shared`, `sync-deploy` | Yes, for paid Lotti Sync: the app creates an anonymous entitlement, a checkout session and a claim over HTTP (`lib/features/sync/subscription/`), and redeems the bundles it issues. Builds without `LOTTI_SYNC_API_URL` never call it | Tested on every push touching them by `matrix-admin-ci.yml` |
 | **Hosted-AI billing proof of concept** | `ai-proxy-service`, `credits-service`, `dashboard` | No: the proxy is reachable as an optional generic OpenAI-compatible provider, and nothing requires it | No |
 
 `qwen/` is not a service: it is a README recipe for running a Qwen model locally

@@ -19,6 +19,37 @@ void main() {
       expect(decoded, equals(config), reason: '$scenario');
       expect(decoded.password, config.password, reason: '$scenario');
     }, tags: 'glados');
+
+    test(
+      'an attestation survives the keystore round-trip; none adds no key',
+      () {
+        const attestation = BundleAttestation(
+          kid: 'op-2026-10',
+          iat: 1792238400,
+          exp: 1792324800,
+          sig: 'c2ln',
+        );
+        const plain = MatrixConfig(
+          homeServer: 'https://matrix.example.com',
+          user: '@alice:example.com',
+          password: 'pw',
+        );
+        const signed = MatrixConfig(
+          homeServer: 'https://matrix.example.com',
+          user: '@alice:example.com',
+          password: 'pw',
+          attestation: attestation,
+        );
+
+        Map<String, dynamic> wire(MatrixConfig config) =>
+            jsonDecode(jsonEncode(config.toJson())) as Map<String, dynamic>;
+
+        expect(wire(plain).containsKey('attestation'), isFalse);
+        expect(MatrixConfig.fromJson(wire(signed)), signed);
+        // Configs written before attestations existed still load.
+        expect(MatrixConfig.fromJson(wire(plain)).attestation, isNull);
+      },
+    );
   });
 
   group('SyncProvisioningBundle', () {
@@ -40,6 +71,33 @@ void main() {
       expect(str, contains('kind: provisioned'));
       expect(str, contains('password: <redacted>'));
       expect(str, isNot(contains('super-secret-pw')));
+      expect(str, contains('signed: false'));
+    });
+
+    test('a v2 bundle has no att key; a v3 one round-trips it', () {
+      const att = BundleAttestation(
+        kid: 'op-2026-10',
+        iat: 1792238400,
+        exp: 1792324800,
+        sig: 'c2ln',
+      );
+      final signed = bundle.copyWith(v: 3, att: att);
+
+      final unsignedWire =
+          jsonDecode(jsonEncode(bundle.toJson())) as Map<String, dynamic>;
+      final signedWire =
+          jsonDecode(jsonEncode(signed.toJson())) as Map<String, dynamic>;
+
+      // Released clients parse v2 bundles; they never see an `att: null`.
+      expect(unsignedWire.containsKey('att'), isFalse);
+      expect(signedWire['att'], {
+        'kid': 'op-2026-10',
+        'iat': 1792238400,
+        'exp': 1792324800,
+        'sig': 'c2ln',
+      });
+      expect(SyncProvisioningBundle.fromJson(signedWire), signed);
+      expect(signed.toString(), contains('signed: true'));
     });
 
     test('fromJson round-trips correctly', () {

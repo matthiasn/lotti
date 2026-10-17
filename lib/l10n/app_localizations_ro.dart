@@ -12099,6 +12099,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Serverul nu a acceptat datele de autentificare din cod. Un cod nu mai funcționează după ce parola contului se schimbă — generați un cod nou pe celălalt dispozitiv sau reîncercați dacă doar conexiunea a căzut.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Acest cod nu este semnat de Lotti Sync, așa că nu a fost folosit și nimic nu s-a schimbat pe acest dispozitiv. Obțineți un cod nou din abonamentul dumneavoastră sau de pe unul dintre dispozitivele dumneavoastră.';
+
+  @override
   String get provisionedSyncImportButton => 'Continuați';
 
   @override
@@ -12900,6 +12904,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipBriefingTitle => 'Rezumat';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'De abordat înainte de $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13287,6 +13296,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipLogCheckIn => 'Înregistrați un contact';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Întâlnire cu $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planificați întâlnirea';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Întâlnirea nu a putut fi planificată.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Începe';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Începe: $time. Schimbați';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titlu';
+
+  @override
   String get relationshipMoreActions => 'Mai multe acțiuni';
 
   @override
@@ -13379,6 +13411,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Fotografie – $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planificați o întâlnire cu $name';
   }
 
   @override
@@ -15710,6 +15747,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncListUnknownPayload => 'Conținut necunoscut';
 
   @override
+  String get syncManageSubscription => 'Gestionați abonamentul';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Pagina abonamentului nu a putut fi deschisă. Încercați mai târziu.';
+
+  @override
   String get syncNotLoggedInToast => 'Sincronizarea nu este conectată';
 
   @override
@@ -15989,6 +16033,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Propriul server de sincronizare sau Lotti Sync · nimic nu părăsește dispozitivele dumneavoastră necriptat';
+
+  @override
   String get syncSetupEmptyHint =>
       'Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.';
 
@@ -16025,6 +16073,64 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Dicționar vocal';
+
+  @override
+  String get syncSubscribeAnnual => 'Abonați-vă anual';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Finalizați plata în browser. Acest ecran continuă de la sine imediat ce plata ajunge.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Plata a fost primită. Se configurează contul de sincronizare…';
+
+  @override
+  String get syncSubscribeEntry => 'Obțineți Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Contul acestui abonament este deja configurat. Adăugați acest dispozitiv de pe unul dintre dispozitivele care se sincronizează deja.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Nu s-a putut deschide niciun browser pentru plată.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Această aplicație a refuzat contul livrat de abonamentul dumneavoastră. Actualizați Lotti și încercați din nou.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Lotti Sync nu a putut fi contactat. Verificați conexiunea și încercați din nou.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync nu a putut finaliza acum. Încercați din nou peste câteva minute.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Plata a expirat înainte de a fi efectuată. Alegeți un abonament pentru a începe din nou.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Plata se face cu cardul sau prin PayPal, prin Paddle, furnizorul nostru de plăți. Puteți anula oricând.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti găzduiește sincronizarea dintre dispozitivele dumneavoastră. Totul rămâne criptat integral, astfel încât doar dispozitivele dumneavoastră — nici măcar Lotti — pot citi înregistrările.';
+
+  @override
+  String get syncSubscribeMonthly => 'Abonați-vă lunar';
+
+  @override
+  String get syncSubscribeOpening => 'Se deschide plata securizată…';
+
+  @override
+  String get syncSubscribeReopen => 'Redeschideți plata';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>
@@ -17296,37 +17402,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planificați o întâlnire cu $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Întâlnire cu $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titlu';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Începe';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Începe: $time. Schimbați';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planificați întâlnirea';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Întâlnirea nu a putut fi planificată.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'De abordat înainte de $day';
-  }
 }

@@ -197,6 +197,54 @@ compare a timestamp captured immediately after each Publisher response inside
 the SQLite transaction, so response order—not request start order—decides which
 authoritative observation wins.
 
+## Paddle web checkout
+
+The paid path for builds outside an app store. Off unless
+`ENABLE_WEB_SUBSCRIPTIONS=true`; startup then fails closed on any missing
+Paddle setting or a Synapse that cannot suspend accounts. Paddle subscriptions
+live in the same subscription table as Play ones (`provider = 'paddle'`), so
+escrow, suspension, the claim reaper and the reconciler apply unchanged; the
+reconciler refreshes Paddle rows from the Paddle API so a missed webhook
+self-heals, and an active row's access deadline is the paid period end plus a
+one-day delivery buffer, so a missing renewal fails closed.
+
+1. The app creates an anonymous entitlement (shared route).
+2. `POST /client/web-checkout/sessions` names a plan (`monthly`/`annual`) and
+   stores a hash of the app's claim secret; the response is the checkout page
+   URL with the session id in its fragment.
+3. The page opens Paddle.js with `customData.checkout_session_id`.
+4. `POST /webhooks/paddle` verifies `Paddle-Signature` (HMAC over
+   `ts:raw-body`, five-minute window), deduplicates by event id, ignores
+   events older than the stored state, and binds the subscription to the
+   session's entitlement. An event is recorded only after it applied, so a
+   failure is retried by Paddle instead of dropped.
+5. The app polls `POST /client/web-checkout/session-status` — the session id
+   is the credential, no secret hashing — then calls
+   `POST /client/web-checkout/claims`, which provisions on first call and
+   redelivers the same escrow after.
+6. Rotation is confirmed through the shared `confirm-rotation` route.
+7. `POST /client/web-checkout/portal-sessions` returns a Paddle portal link.
+
+## Signed bundles
+
+With `BUNDLE_SIGNING_KEY_BASE64` and `BUNDLE_SIGNING_KEY_ID` set, every bundle
+— admin or paid — is issued as schema v3 with an Ed25519 attestation over its
+identity (not its password). `python -m src.services.bundle_signer` prints a
+fresh key pair. Leave it unset until the app release that verifies signatures
+is what people run: older apps cannot read v3.
+
+## Lapsed accounts
+
+`LapsedAccountReaper` erases an account suspended for longer than
+`LAPSED_ACCOUNT_ERASE_DAYS`, counted from the first suspension. Claiming it
+revokes the record and detaches it from its subscription in one transaction;
+media, the room (waiting for Synapse's purge to complete) and the Matrix user
+(erased) then go one recorded step at a time, so a failed run resumes where it
+stopped. Completion frees the entitlement for a fresh account.
+
+Checkout is one per entitlement: a retry reuses the open session for the same
+plan, and a paying entitlement gets 409 instead of a second subscription.
+
 ## Configuration
 
 | Variable | Required | Default | Description |
@@ -204,6 +252,17 @@ authoritative observation wins.
 | `MATRIX_HOMESERVER` | Yes | — | Non-empty HTTPS homeserver URL; redirects are never followed |
 | `MATRIX_ADMIN_TOKEN` | Preferred | — | Long-lived Synapse admin access token |
 | `MATRIX_ADMIN_USER` / `MATRIX_ADMIN_PASSWORD` | Fallback | — | Used only when no token is set |
+| `MATRIX_ADMIN_API_URL` | No | `MATRIX_HOMESERVER` | Where admin calls go, e.g. `http://synapse:8008` inside Compose; bundles keep the public URL |
+| `ENABLE_WEB_SUBSCRIPTIONS` | No | `false` | Paddle web checkout |
+| `PADDLE_ENVIRONMENT` | No | `production` | `sandbox` for the Paddle sandbox API |
+| `PADDLE_API_KEY` / `PADDLE_WEBHOOK_SECRET` | Web | — | Paddle API key and notification-destination secret |
+| `PADDLE_MONTHLY_PRICE_ID` / `PADDLE_ANNUAL_PRICE_ID` | Web | — | At least one; the app names only the plan |
+| `WEB_CHECKOUT_PAGE_URL` | Web | — | HTTPS URL of the static checkout page |
+| `WEB_SUBSCRIPTION_GRACE_DAYS` | No | `7` | Access after a failed renewal |
+| `WEB_SUBSCRIPTION_REFRESH_HOURS` | No | `6` | Paddle API refresh interval per subscription |
+| `BUNDLE_SIGNING_KEY_BASE64` / `BUNDLE_SIGNING_KEY_ID` | No | — | Ed25519 seed and key id; set → v3 bundles |
+| `BUNDLE_ATTESTATION_TTL_HOURS` | No | `24` | How long a `provisioned` bundle stays importable |
+| `LAPSED_ACCOUNT_ERASE_DAYS` | No | `30` | Erase after this long suspended (minimum 7) |
 | `API_KEYS` | Yes | — | Comma-separated client keys (rotation callback) |
 | `ADMIN_API_KEYS` | Yes | — | Comma-separated admin keys (everything else) |
 | `DB_PATH` | No | `data/provisioning.db` | SQLite location |

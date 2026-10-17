@@ -11820,6 +11820,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server didn\'t accept that code\'s sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'This code isn\'t signed by Lotti Sync, so it wasn\'t used and nothing on this device changed. Get a fresh code from your subscription or from one of your own devices.';
+
+  @override
   String get provisionedSyncImportButton => 'Continue';
 
   @override
@@ -12590,6 +12594,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bring up before $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12961,6 +12970,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipLogCheckIn => 'Log check-in';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Meet $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Plan meeting';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Could not plan the meeting.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Starts';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Starts: $time. Change';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Title';
+
+  @override
   String get relationshipMoreActions => 'More actions';
 
   @override
@@ -13052,6 +13083,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Photo of $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan a meeting with $name';
   }
 
   @override
@@ -15318,6 +15354,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncListUnknownPayload => 'Unknown payload';
 
   @override
+  String get syncManageSubscription => 'Manage subscription';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Couldn\'t open the subscription page. Try again later.';
+
+  @override
   String get syncNotLoggedInToast => 'Sync is not logged in';
 
   @override
@@ -15591,6 +15634,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Runs on your own sync server · nothing leaves your devices unencrypted';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Your own sync server or Lotti Sync · nothing leaves your devices unencrypted';
+
+  @override
   String get syncSetupEmptyHint =>
       'Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.';
 
@@ -15626,6 +15673,64 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Speech dictionary';
+
+  @override
+  String get syncSubscribeAnnual => 'Subscribe yearly';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Finish the payment in your browser. This screen carries on by itself once it arrives.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Payment received. Setting up your sync account…';
+
+  @override
+  String get syncSubscribeEntry => 'Get Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'This subscription\'s account is already set up. Add this device from one of your devices that already syncs.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'No browser could be opened for the checkout.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'This app refused the account your subscription delivered. Update Lotti and try again.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Couldn\'t reach Lotti Sync. Check your connection and try again.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync couldn\'t complete that right now. Try again in a few minutes.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'That checkout timed out before it was paid. Pick a plan to start again.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Paid by card or PayPal through Paddle, our payment provider. Cancel any time.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti hosts the sync between your devices. Everything stays end-to-end encrypted, so only your own devices — not even Lotti — can read your entries.';
+
+  @override
+  String get syncSubscribeMonthly => 'Subscribe monthly';
+
+  @override
+  String get syncSubscribeOpening => 'Opening the secure checkout…';
+
+  @override
+  String get syncSubscribeReopen => 'Open checkout again';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>
@@ -16870,38 +16975,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Plan a meeting with $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Meet $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Title';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Starts';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Starts: $time. Change';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Plan meeting';
-
-  @override
-  String get relationshipMeetingSaveFailed => 'Could not plan the meeting.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Bring up before $day';
-  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

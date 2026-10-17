@@ -214,6 +214,141 @@ async def test_subscription_enforcement_uses_reversible_suspension(
     assert requests[0].read().decode() == ('{"suspend":true}' if suspended else '{"suspend":false}')
 
 
+async def test_erasure_uses_the_gdpr_deactivation_endpoint(credentials):
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "/_synapse/admin/v1/deactivate/" in request.url.path:
+            requests.append(request)
+            return httpx.Response(200, json={"id_server_unbind_result": "success"})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    await client.erase_user(USER)
+
+    assert requests[0].method == "POST"
+    assert requests[0].url.path.endswith("/@heavy_user:example.com")
+    assert json.loads(requests[0].read()) == {"erase": True}
+
+
+def _room_admin_handler(requests, *, exists=True, statuses=("purging", "complete")):
+    remaining = list(statuses)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.startswith("/_synapse/admin/v1/rooms/"):
+            requests.append(request)
+            return httpx.Response(200 if exists else 404, json={})
+        if path.startswith("/_synapse/admin/v2/rooms/delete_status/"):
+            requests.append(request)
+            state = remaining.pop(0) if remaining else "purging"
+            return httpx.Response(200, json={"status": state, "error": "disk full"})
+        if path.startswith("/_synapse/admin/v2/rooms/"):
+            requests.append(request)
+            return httpx.Response(200, json={"delete_id": "del-1"})
+        return synapse_handler(request)
+
+    return handler
+
+
+async def _no_sleep(_seconds):
+    return None
+
+
+async def test_room_deletion_purges_and_waits_for_completion(credentials):
+    requests = []
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler(requests)),
+    )
+
+    await client.delete_room("!sync:example.com", sleep=_no_sleep)
+
+    delete = next(r for r in requests if r.method == "DELETE")
+    assert delete.url.raw_path.endswith(b"/%21sync%3Aexample.com")
+    assert json.loads(delete.read()) == {"purge": True, "block": False}
+    polls = [r for r in requests if "delete_status/del-1" in r.url.path]
+    assert len(polls) == 2
+
+
+async def test_deleting_a_room_that_is_already_gone_succeeds(credentials):
+    requests = []
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler(requests, exists=False)),
+    )
+
+    await client.delete_room("!gone:example.com", sleep=_no_sleep)
+
+    assert [r.method for r in requests] == ["GET"]
+
+
+@pytest.mark.parametrize(
+    ("statuses", "max_polls", "message"),
+    [
+        (("failed",), 5, "failed to purge"),
+        (("purging", "purging"), 2, "did not finish"),
+    ],
+)
+async def test_a_purge_that_fails_or_stalls_is_an_error(credentials, statuses, max_polls, message):
+    client = SynapseAdminClient(
+        credentials,
+        transport=httpx.MockTransport(_room_admin_handler([], statuses=statuses)),
+    )
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.delete_room("!sync:example.com", max_polls=max_polls, sleep=_no_sleep)
+
+
+@pytest.mark.parametrize(
+    ("handler_path", "response", "message"),
+    [
+        ("/_synapse/admin/v2/rooms/delete_status/", httpx.Response(500, json={}), "status"),
+        ("/_synapse/admin/v2/rooms/!", httpx.Response(200, json={}), "no delete id"),
+    ],
+)
+async def test_unexpected_deletion_responses_are_errors(
+    credentials, handler_path, response, message
+):
+    base = _room_admin_handler([])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith(handler_path):
+            return response
+        return base(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await client.delete_room("!sync:example.com", sleep=_no_sleep)
+
+
+@pytest.mark.parametrize(
+    ("path", "call", "message"),
+    [
+        ("/_synapse/admin/v1/deactivate/", lambda c: c.erase_user(USER), "Failed to erase"),
+        (
+            "/_synapse/admin/v2/rooms/",
+            lambda c: c.delete_room("!sync:example.com"),
+            "Failed to delete room",
+        ),
+    ],
+)
+async def test_erasure_failures_are_not_silently_accepted(credentials, path, call, message):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.startswith("/_synapse/admin/v1/rooms/"):
+            return httpx.Response(200, json={})  # the room exists
+        if request.url.path.startswith(path):
+            return httpx.Response(500, json={})
+        return synapse_handler(request)
+
+    client = SynapseAdminClient(credentials, transport=httpx.MockTransport(handler))
+
+    with pytest.raises(ProvisioningError, match=message):
+        await call(client)
+
+
 async def test_suspension_failure_is_not_silently_accepted(credentials):
     def handler(request: httpx.Request) -> httpx.Response:
         if "/_synapse/admin/v1/suspend/" in request.url.path:
@@ -675,3 +810,30 @@ def test_synapse_client_disables_redirects(credentials):
 def test_admin_credentials_require_an_authentication_method():
     with pytest.raises(ValueError, match="either admin_token"):
         AdminCredentials(homeserver="https://matrix.example.com")
+
+
+@pytest.mark.parametrize("api_url", ["synapse:8008", "ftp://synapse:8008", "http://"])
+def test_admin_credentials_reject_a_malformed_api_url(api_url):
+    with pytest.raises(ValueError, match="api_url"):
+        AdminCredentials(
+            homeserver="https://matrix.example.com",
+            admin_token="token",  # noqa: S106 - fixture credential
+            api_url=api_url,
+        )
+
+
+async def test_an_api_url_carries_admin_calls_off_the_public_listener(tracking_transport):
+    transport, requests = tracking_transport
+    credentials = AdminCredentials(
+        homeserver="https://matrix.example.com/",
+        admin_token="tok",  # noqa: S106 - fixture credential for the mock homeserver
+        api_url="http://synapse:8008/",
+    )
+    client = SynapseAdminClient(credentials, transport=transport)
+    register_synapse_account("@lotti_user:example.com")
+
+    await client.get_user_activity("@lotti_user:example.com")
+
+    assert {(r.url.scheme, r.url.host, r.url.port) for r in requests} == {("http", "synapse", 8008)}
+    assert credentials.base_url == "https://matrix.example.com"
+    await client.aclose()

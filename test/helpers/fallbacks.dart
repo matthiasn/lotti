@@ -51,6 +51,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
@@ -649,4 +650,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(const DraftPlanPayload());
   registerFallbackValue(const RefinePlanPayload());
   registerFallbackValue(HabitCompletionType.success);
+  registerFallbackValue(SyncSubscriptionPlan.monthly);
+  registerFallbackValue(
+    const SyncEntitlement(id: 'fallback', authSecret: 'fallback'),
+  );
 }

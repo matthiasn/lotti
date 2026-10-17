@@ -131,3 +131,41 @@ class PubSubAuthenticationException(ProvisioningServiceException):
     """Raised when an RTDN push JWT or envelope cannot be trusted."""
 
     pass
+
+
+class PaddleWebhookException(ProvisioningServiceException):
+    """Raised when a Paddle notification is unsigned, replayed or malformed."""
+
+    pass
+
+
+class PaddleUnavailableException(ProvisioningServiceException):
+    """Raised when the Paddle API cannot be reached or answers unexpectedly."""
+
+    pass
+
+
+class CheckoutSessionException(ProvisioningServiceException):
+    """Raised when a web checkout session is unknown, expired or unbound."""
+
+    pass
+
+
+class AlreadySubscribedException(ProvisioningServiceException):
+    """Raised when a checkout is requested for an entitlement that already pays."""
+
+    pass
+
+
+class PaymentPendingException(ProvisioningServiceException):
+    """Raised when no web subscription grants access to the entitlement yet."""
+
+    pass
+
+
+class WebCheckoutRateLimitException(ProvisioningServiceException):
+    """Raised when an entitlement exceeds its web-checkout attempt quota."""
+
+    def __init__(self, *, retry_after_seconds: int):
+        super().__init__("Web checkout rate limit exceeded")
+        self.retry_after_seconds = retry_after_seconds

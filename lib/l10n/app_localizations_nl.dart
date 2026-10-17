@@ -11903,6 +11903,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'De server accepteerde de inloggegevens van die code niet. Een code werkt niet meer zodra het wachtwoord van het account verandert — haal een verse code op je andere apparaat, of probeer het gewoon opnieuw als alleen de verbinding wegviel.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Deze code is niet ondertekend door Lotti Sync. Hij is daarom niet gebruikt en er is niets veranderd op dit apparaat. Haal een nieuwe code uit je abonnement of van een van je eigen apparaten.';
+
+  @override
   String get provisionedSyncImportButton => 'Doorgaan';
 
   @override
@@ -12680,6 +12684,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bespreken vóór $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13055,6 +13064,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipLogCheckIn => 'Check-in vastleggen';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Afspraak met $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Afspraak plannen';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'De afspraak kon niet worden gepland.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Begint';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Begint: $time. Wijzigen';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Meer acties';
 
   @override
@@ -13148,6 +13180,11 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto van $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan een afspraak met $name';
   }
 
   @override
@@ -15453,6 +15490,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncListUnknownPayload => 'Onbekende lading';
 
   @override
+  String get syncManageSubscription => 'Abonnement beheren';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'De abonnementspagina kon niet worden geopend. Probeer het later opnieuw.';
+
+  @override
   String get syncNotLoggedInToast => 'Synchronisatie is niet aangemeld';
 
   @override
@@ -15732,6 +15776,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Je eigen syncserver of Lotti Sync · niets verlaat je apparaten onversleuteld';
+
+  @override
   String get syncSetupEmptyHint =>
       'Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.';
 
@@ -15768,6 +15816,64 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Spraakwoordenboek';
+
+  @override
+  String get syncSubscribeAnnual => 'Jaarlijks abonneren';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Rond de betaling af in je browser. Dit scherm gaat vanzelf verder zodra die binnen is.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Betaling ontvangen. Je sync-account wordt ingericht…';
+
+  @override
+  String get syncSubscribeEntry => 'Lotti Sync nemen';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Het account van dit abonnement is al ingericht. Voeg dit apparaat toe vanaf een van je apparaten dat al synchroniseert.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Er kon geen browser worden geopend voor de betaling.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Deze app weigerde het account dat je abonnement leverde. Werk Lotti bij en probeer het opnieuw.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Lotti Sync is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync kon dat nu niet afronden. Probeer het over een paar minuten opnieuw.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Die betaling is verlopen voordat er betaald was. Kies een abonnement om opnieuw te beginnen.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Betaling met kaart of PayPal via Paddle, onze betaalprovider. Op elk moment opzegbaar.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti host de synchronisatie tussen je apparaten. Alles blijft end-to-end versleuteld, dus alleen je eigen apparaten kunnen je items lezen — zelfs Lotti niet.';
+
+  @override
+  String get syncSubscribeMonthly => 'Maandelijks abonneren';
+
+  @override
+  String get syncSubscribeOpening => 'Beveiligde betaalpagina wordt geopend…';
+
+  @override
+  String get syncSubscribeReopen => 'Betaalpagina opnieuw openen';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>
@@ -17024,37 +17130,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Plan een afspraak met $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Afspraak met $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Begint';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Begint: $time. Wijzigen';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Afspraak plannen';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'De afspraak kon niet worden gepland.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Bespreken vóór $day';
-  }
 }

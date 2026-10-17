@@ -1,0 +1,94 @@
+# Synapse for paid Lotti Sync. Rendered by ../render-synapse-config.sh, which
+# substitutes the ${...} placeholders from the deployment env file.
+#
+# Shape of this server: a private mailbox host. No federation, no public
+# registration, no presence, no previews, short retention. Every account is
+# created by the provisioning service through the admin API.
+
+server_name: "${SYNAPSE_SERVER_NAME}"
+public_baseurl: "${MATRIX_PUBLIC_BASEURL}/"
+pid_file: /data/homeserver.pid
+report_stats: false
+
+listeners:
+  # Client and media only. There is no federation listener at all.
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses: ["0.0.0.0"]
+    resources:
+      - names: [client, media]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "${SYNAPSE_DB_PASSWORD}"
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/${SYNAPSE_SERVER_NAME}.signing.key"
+trusted_key_servers: []
+
+macaroon_secret_key: "${SYNAPSE_MACAROON_SECRET}"
+form_secret: "${SYNAPSE_FORM_SECRET}"
+# Only reachable through the admin register endpoint, which nginx never
+# forwards. Used once, from the host, to create the provisioning admin.
+registration_shared_secret: "${SYNAPSE_REGISTRATION_SECRET}"
+
+# --- Accounts -------------------------------------------------------------
+enable_registration: false
+enable_3pid_changes: false
+password_config:
+  enabled: true
+  # The app rotates the bootstrap password to 32 random bytes on import.
+  minimum_length: 16
+
+# --- No federation --------------------------------------------------------
+federation_domain_whitelist: []
+allow_public_rooms_over_federation: false
+allow_public_rooms_without_auth: false
+allow_profile_lookup_over_federation: false
+
+# --- Metadata minimisation ------------------------------------------------
+presence:
+  enabled: false
+url_preview_enabled: false
+require_auth_for_profile_requests: true
+limit_profile_requests_to_users_who_share_rooms: true
+include_profile_data_on_invite: false
+user_directory:
+  enabled: false
+# Client IPs are kept for a week (abuse handling), not the 28-day default.
+user_ips_max_age: 7d
+redaction_retention_period: 7d
+forget_rooms_on_leave: true
+
+# --- Storage bounds: the mailbox must never grow without limit -------------
+max_upload_size: 100M
+retention:
+  enabled: true
+  # Sync rooms carry m.room.retention max_lifetime = 30 days; this caps any
+  # room that does not, and runs the purge jobs that enforce it.
+  default_policy:
+    max_lifetime: 30d
+  allowed_lifetime_max: 30d
+  purge_jobs:
+    - interval: 12h
+media_retention:
+  local_media_lifetime: 30d
+  remote_media_lifetime: 7d
+# A reinstalled phone leaves its old device behind; drop it, and the to-device
+# key shares queued for it, after two months of silence.
+delete_stale_devices_after: 60d
+
+# --- Paid access -----------------------------------------------------------
+experimental_features:
+  # The provisioning service suspends lapsed accounts reversibly.
+  msc3823_account_suspension: true

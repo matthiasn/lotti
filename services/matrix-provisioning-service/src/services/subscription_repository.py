@@ -32,6 +32,7 @@ from ..core.subscriptions import (
     StoredSubscription,
     SubscriptionEvent,
     SubscriptionEventType,
+    SubscriptionProvider,
     SyncEntitlement,
     VerifiedSubscription,
 )
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS play_subscriptions (
     last_error                            TEXT,
     created_at                            TEXT NOT NULL,
     updated_at                            TEXT NOT NULL,
+    provider                              TEXT NOT NULL DEFAULT 'google_play',
     FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id),
     FOREIGN KEY (bundle_id) REFERENCES provisioned_users (bundle_id)
 );
@@ -284,6 +286,12 @@ class SubscriptionRepository(ProvisioningRepository):
             }
             if "matrix_suspended" not in subscription_columns:
                 conn.execute("ALTER TABLE play_subscriptions ADD COLUMN matrix_suspended INTEGER")
+            if "provider" not in subscription_columns:
+                # Rows written before web checkout existed are all Play rows.
+                conn.execute(
+                    "ALTER TABLE play_subscriptions ADD COLUMN provider TEXT NOT NULL "
+                    "DEFAULT 'google_play'"
+                )
             conn.commit()
         finally:
             conn.close()
@@ -334,6 +342,7 @@ class SubscriptionRepository(ProvisioningRepository):
             subscription_id=row["subscription_id"],
             created_at=_parse(row["created_at"]),
             updated_at=_parse(row["updated_at"]),
+            provider=SubscriptionProvider(row["provider"]),
         )
 
     @staticmethod
@@ -1074,6 +1083,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 snapshot.last_error,
                 _iso(created_at),
                 _iso(now),
+                snapshot.provider.value,
             )
             conn.execute(
                 "INSERT INTO play_subscriptions ("
@@ -1085,8 +1095,8 @@ class SubscriptionRepository(ProvisioningRepository):
                 "out_of_app_expired_token_fingerprint, binding_verified, bundle_id, "
                 "suspended_at, unsuspended_at, matrix_suspended, last_verified_at, "
                 "next_reconciliation_at, "
-                "last_error, created_at, updated_at"
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "last_error, created_at, updated_at, provider"
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(token_fingerprint) DO UPDATE SET "
                 "encrypted_purchase_token=excluded.encrypted_purchase_token, "
                 "encryption_key_id=excluded.encryption_key_id, "
@@ -2153,9 +2163,17 @@ class SubscriptionRepository(ProvisioningRepository):
             ).fetchone()
             if source is None:
                 raise PurchaseTokenConflictException("Unknown purchase token")
-            timestamp_column = "suspended_at" if suspended else "unsuspended_at"
+            # Re-enforcing an account that is already suspended keeps the
+            # moment it was first suspended: that is the clock the lapsed
+            # account reaper counts from.
+            assignment = (
+                "suspended_at = CASE WHEN matrix_suspended = 1 AND suspended_at IS NOT NULL "
+                "THEN suspended_at ELSE ? END"
+                if suspended
+                else "unsuspended_at = ?"
+            )
             conn.execute(
-                f"UPDATE play_subscriptions SET {timestamp_column} = ?, "
+                f"UPDATE play_subscriptions SET {assignment}, "
                 "matrix_suspended = ?, last_error = ?, updated_at = ? "
                 "WHERE entitlement_id = ? AND is_current = 1",
                 (
@@ -2176,6 +2194,38 @@ class SubscriptionRepository(ProvisioningRepository):
             return self._row_to_subscription(row)
         finally:
             conn.close()
+
+    def _list_lapsed_accounts_sync(
+        self,
+        suspended_before: datetime,
+        limit: int,
+    ) -> list[ProvisionedUser]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT u.* FROM play_subscriptions s "
+                "JOIN provisioned_users u ON u.bundle_id = s.bundle_id "
+                "WHERE s.is_current = 1 AND s.matrix_suspended = 1 "
+                "AND s.suspended_at IS NOT NULL AND s.suspended_at <= ? "
+                "AND u.status != ? ORDER BY s.suspended_at ASC LIMIT ?",
+                (_iso(suspended_before), BundleStatus.REVOKED.value, max(1, limit)),
+            ).fetchall()
+            return [self._row_to_user(row) for row in rows]
+        finally:
+            conn.close()
+
+    async def list_lapsed_accounts(
+        self,
+        *,
+        suspended_before: datetime,
+        limit: int,
+    ) -> list[ProvisionedUser]:
+        """Accounts still suspended since before ``suspended_before``, not yet erased.
+
+        Renewing unsuspends the account and records ``matrix_suspended = 0``,
+        so a subscriber who comes back inside the window never appears here.
+        """
+        return await asyncio.to_thread(self._list_lapsed_accounts_sync, suspended_before, limit)
 
     async def record_subscription_enforcement(
         self,

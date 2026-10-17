@@ -294,6 +294,10 @@ Payments does not support Connect, Elements or third-party tax integrations.
 
 ### Recommendation: Stripe Managed Payments, billed annually
 
+> **Superseded (2026-10-17):** Stripe Managed Payments cannot renew PayPal
+> subscriptions. The provider choice is now Paddle — see
+> [2026-10-17_paid_web_sync_subscription.md](2026-10-17_paid_web_sync_subscription.md).
+
 **Use a merchant of record.** You operate a German GmbH taking recurring
 payments from EU consumers. Doing that as your own merchant means OSS
 registration, per-country VAT rates, returns and audit exposure. Stripe direct
