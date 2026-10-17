@@ -12648,6 +12648,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Tag op før $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12679,6 +12684,96 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return 'Ring til $name?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Registrér som check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Forfalder $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tilføj $count punkter',
+      one: 'Tilføj 1 punkt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Nogle punkter kunne ikke tilføjes. De er her stadig.';
+
+  @override
+  String get relationshipCaptureHeard => 'Det her hørte jeg';
+
+  @override
+  String get relationshipCaptureHint =>
+      'En samtale, du havde, noget at huske eller en plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Behold som stemmenote';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Gemt som stemmenote med sine ord. Ingen model kan sortere den.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Gemt som stemmenote – intet i den at tilføje for sig.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Gemt som stemmenote. Intet kan transskribere den endnu.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Gemt som stemmenote. Ingen ord kom igennem.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Gemt som stemmenote med sine ord. Sorteringen virkede ikke – prøv Sortér på dens række senere.';
+
+  @override
+  String get relationshipCaptureListening => 'Lytter…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Planlæg et møde';
+
+  @override
+  String get relationshipCaptureNoDue => 'Ingen forfaldsdato';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Ingen model at sortere med – den forbliver en stemmenote.';
+
+  @override
+  String get relationshipCaptureNote => 'Behold som note';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Optagelsen er gemt i din dagbog, men den kunne ikke lægges på tidslinjen for $name.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sorteret af $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Sorterer det, du sagde…';
+
+  @override
+  String get relationshipCaptureTask => 'Tilføj en opgave';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Tal om $name';
   }
 
   @override
@@ -13023,6 +13118,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipLogCheckIn => 'Registrér check-in';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Møde med $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planlæg møde';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mødet kunne ikke planlægges.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Starter';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Starter: $time. Skift';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Flere handlinger';
 
   @override
@@ -13117,6 +13234,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planlæg et møde med $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Fik du fat i $name?';
   }
@@ -13202,6 +13324,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Skal kontaktes';
+
+  @override
+  String get relationshipSortThis => 'Sortér';
 
   @override
   String get relationshipsPageTitle => 'Personer';
@@ -16968,36 +17093,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planlæg et møde med $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Mød $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Starter';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Starter: $time. Skift';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planlæg møde';
-
-  @override
-  String get relationshipMeetingSaveFailed => 'Mødet kunne ikke planlægges.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Tag op før $day';
-  }
 }

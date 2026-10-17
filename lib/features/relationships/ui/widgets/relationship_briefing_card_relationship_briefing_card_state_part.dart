@@ -504,7 +504,7 @@ class _NotEnrolledCard extends StatelessWidget {
                     ),
               key: const ValueKey('relationship-agent-body'),
               // Prose in the prose ink, like the six enrolled faces.
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
@@ -646,7 +646,7 @@ class _BandRationale extends StatelessWidget {
         key: const ValueKey('relationship-agent-band-rationale'),
         maxLines: 3,
         overflow: TextOverflow.ellipsis,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(color: color),
+        style: tokens.typography.styles.body.bodySmall.copyWith(color: color),
       ),
     );
   }

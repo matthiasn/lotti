@@ -176,7 +176,7 @@ class CheckInNarrativeField extends StatelessWidget {
     final tokens = context.designTokens;
     // The placeholder in the typed text's own tier, in every state, so it
     // never changes size when a take lands — the copy changes instead.
-    final text = tokens.typography.styles.body.bodyLarge;
+    final text = tokens.typography.styles.body.bodySmall;
     return TextField(
       key: const ValueKey('check-in-narrative'),
       controller: controller,
@@ -409,7 +409,7 @@ class CheckInTakeRow extends StatelessWidget {
     );
     // What was said, in the typed note's own tier: one voice for the
     // field's text, whoever put it there.
-    final body = tokens.typography.styles.body.bodyLarge.copyWith(
+    final body = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
     // The route is the first thing a narrow row sheds; the length and the

@@ -30,10 +30,13 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
+import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
+import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -807,7 +810,7 @@ void main() {
     },
   );
 
-  testWidgets('the mic opens the capture sheet in speaking mode', (
+  testWidgets('Speak opens Speak about the person, already recording', (
     tester,
   ) async {
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
@@ -823,16 +826,36 @@ void main() {
         checkInTranscriptionServiceProvider.overrideWithValue(
           _NoTranscription(),
         ),
+        personCaptureSorterProvider.overrideWithValue(
+          PersonCaptureSorter(
+            modelFor: (_) async => null,
+            generate:
+                ({
+                  required prompt,
+                  required systemMessage,
+                  required model,
+                  required categoryId,
+                }) async => const [],
+          ),
+        ),
       ],
     );
     await tester.tap(find.byKey(const ValueKey('person-action-speak')));
-    await tester.pumpAndSettle();
+    // The live recorder animates: frames, not a settle.
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
-    final form = tester.widget<CheckInCaptureForm>(
-      find.byType(CheckInCaptureForm),
+    final flow = tester.widget<PersonCaptureFlowView>(
+      find.byType(PersonCaptureFlowView),
     );
-    expect(form.startSpeaking, isTrue);
-    expect(form.relationshipId, 'rel-1');
+    expect(flow.person.meta.id, 'rel-1');
+    expect(flow.sortAgain, isNull);
+    expect(find.text('Speak about Sis'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('check-in-inline-recorder')),
+      findsOneWidget,
+    );
   });
 
   group('a person with a whole timeline, on a phone', () {
@@ -1047,6 +1070,68 @@ void main() {
       expect(find.text('Note about Sis'), findsOneWidget);
       expect(
         find.widgetWithText(TextField, 'Ask about the sled race.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('Sort this on a voice note opens Speak about the person on '
+        'its words, not on the recorder', (tester) async {
+      final voiceNote =
+          JournalEntity.journalAudio(
+                meta: at('voice-1', DateTime(2026, 8, 13, 9)),
+                data: AudioData(
+                  dateFrom: DateTime(2026, 8, 13, 9),
+                  dateTo: DateTime(2026, 8, 13, 9, 1),
+                  audioFile: 'voice-1.aac',
+                  audioDirectory: '/audio/',
+                  duration: const Duration(minutes: 1),
+                ),
+                entryText: const EntryText(plainText: 'Coffee on Sunday.'),
+              )
+              as JournalAudio;
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      setTestSurfaceSize(tester, phone);
+      await pumpPage(
+        tester,
+        timelineEntries: [voiceNote],
+        mediaQueryData: const MediaQueryData(size: phone),
+        overrides: [
+          personCaptureSorterProvider.overrideWithValue(
+            PersonCaptureSorter(
+              modelFor: (_) async => null,
+              generate:
+                  ({
+                    required prompt,
+                    required systemMessage,
+                    required model,
+                    required categoryId,
+                  }) async => const [],
+            ),
+          ),
+        ],
+      );
+
+      final sort = find.byKey(const ValueKey('person-sort-voice-1'));
+      await tester.ensureVisible(sort);
+      await tester.tap(sort);
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      final flow = tester.widget<PersonCaptureFlowView>(
+        find.byType(PersonCaptureFlowView),
+      );
+      expect(flow.sortAgain, (
+        audioId: 'voice-1',
+        transcript: 'Coffee on Sunday.',
+      ));
+      expect(
+        find.byKey(const ValueKey('check-in-inline-recorder')),
         findsNothing,
       );
     });

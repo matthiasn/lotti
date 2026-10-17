@@ -726,7 +726,7 @@ class PersonHeaderBlock extends StatelessWidget {
           key: const ValueKey('person-one-liner'),
           text: oneLiner,
           date: spokeAt,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),

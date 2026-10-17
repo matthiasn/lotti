@@ -98,7 +98,7 @@ class PeopleListRow extends StatelessWidget {
                             // from anything else on it.
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.body.bodyLarge
+                            style: tokens.typography.styles.body.bodySmall
                                 .copyWith(
                                   fontWeight: tokens.typography.weight.semiBold,
                                   color: tokens.colors.text.highEmphasis,

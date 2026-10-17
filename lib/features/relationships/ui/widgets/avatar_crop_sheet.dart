@@ -289,7 +289,7 @@ class _AvatarCropFormState extends State<AvatarCropForm> {
             Expanded(
               child: Text(
                 messages.avatarCropPreviewLabel,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),

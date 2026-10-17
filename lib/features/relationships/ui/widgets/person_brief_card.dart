@@ -115,10 +115,9 @@ class PersonBriefCard extends StatelessWidget {
                       child: Text(
                         avoid,
                         key: const ValueKey('person-next-time-avoid'),
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(
-                              color: quiet,
-                            ),
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: quiet,
+                        ),
                       ),
                     ),
                   ],
@@ -252,7 +251,7 @@ class _MeetingRow extends StatelessWidget {
                         : title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: highlighted
                           ? tokens.colors.interactive.enabled
                           : tokens.colors.text.highEmphasis,

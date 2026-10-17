@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_capture.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
@@ -38,28 +39,14 @@ class PersonMeetingForm extends ConsumerStatefulWidget {
 
   final RelationshipEntry person;
 
-  /// How long a new meeting runs until the user says otherwise.
-  static const defaultDuration = Duration(hours: 1);
-
-  /// When a new meeting starts until the user says otherwise: tomorrow, at
-  /// the next full hour — a time that is free to move and never in the past.
-  /// Late in the evening the next full hour is already tomorrow's midnight,
-  /// and stays there rather than moving a day further.
-  static DateTime defaultStart(DateTime now) {
-    final next = nextFullHour(now);
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    if (!next.isBefore(tomorrow)) return next;
-    return DateTime(tomorrow.year, tomorrow.month, tomorrow.day, next.hour);
-  }
-
   @override
   ConsumerState<PersonMeetingForm> createState() => _PersonMeetingFormState();
 }
 
 class _PersonMeetingFormState extends ConsumerState<PersonMeetingForm> {
   TextEditingController? _title;
-  late DateTime _start = PersonMeetingForm.defaultStart(clock.now());
-  Duration _duration = PersonMeetingForm.defaultDuration;
+  late DateTime _start = personMeetingDefaultStart(clock.now());
+  Duration _duration = personMeetingDefaultDuration;
   var _saving = false;
 
   /// What went wrong with the last save, said under the title; null while

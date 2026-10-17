@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -512,6 +514,63 @@ void main() {
               as JournalEntity;
       expect(saved.id, 'note-1');
       expect(saved.meta.deletedAt, at);
+    });
+  });
+
+  group('saveVoiceNoteSummary', () {
+    test("writes the line as the recording's audio summary, linked from "
+        'it, and answers whether it was written', () async {
+      when(
+        () => persistence.createAiResponseEntry(
+          data: any(named: 'data'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await repository.saveVoiceNoteSummary(
+          audioId: 'audio-1',
+          summary: 'Pip wants a crew send-off.',
+          modelId: 'glm-5.2',
+          categoryId: 'cat-1',
+        ),
+        isFalse,
+      );
+      final data =
+          verify(
+                () => persistence.createAiResponseEntry(
+                  data: captureAny(named: 'data'),
+                  linkedId: 'audio-1',
+                  categoryId: 'cat-1',
+                ),
+              ).captured.single
+              as AiResponseData;
+      expect(data.type, AiResponseType.audioSummary);
+      expect(data.oneLiner, 'Pip wants a crew send-off.');
+      expect(data.response, 'Pip wants a crew send-off.');
+      expect(data.model, 'glm-5.2');
+    });
+  });
+
+  group('isOnTimeline', () {
+    test('is true only while a live RelationshipLink runs from the person '
+        'to the entry', () async {
+      await link('person', 'on');
+      await link('person', 'plain', relationship: false);
+      await link('person', 'gone', deletedAt: at);
+
+      expect(
+        await repository.isOnTimeline(personId: 'person', entryId: 'on'),
+        isTrue,
+      );
+      for (final id in ['plain', 'gone', 'never']) {
+        expect(
+          await repository.isOnTimeline(personId: 'person', entryId: id),
+          isFalse,
+          reason: id,
+        );
+      }
     });
   });
 

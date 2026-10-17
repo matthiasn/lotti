@@ -123,13 +123,18 @@ class DesignSystemTimelineRow extends StatelessWidget {
     final spacing = tokens.spacing;
     const tile = ControlSizes.iconChipCompact;
     final railLeft = spacing.step3 + tile / 2 - BorderWidths.hairline / 2;
+    // Rows sit a `step3` (12) apart — `step2` above, `step3` below — so a
+    // history reads as one run of entries rather than a stack of cards
+    // (design review 2026-10-17: the 20 they had read as airy).
+    final top = spacing.step2;
+    final bottom = spacing.step3;
 
     final content = Padding(
       padding: EdgeInsets.fromLTRB(
         spacing.step3,
+        top,
         spacing.step3,
-        spacing.step3,
-        spacing.step4,
+        bottom,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +172,7 @@ class DesignSystemTimelineRow extends StatelessWidget {
                             child: body,
                           ),
                         if (footer != null) ...[
-                          SizedBox(height: spacing.step3),
+                          SizedBox(height: spacing.step2),
                           footer!,
                         ],
                       ],
@@ -199,8 +204,8 @@ class DesignSystemTimelineRow extends StatelessWidget {
           Positioned(
             key: const ValueKey('timeline-row-rail'),
             left: railLeft,
-            top: spacing.step3 + tile + spacing.step1,
-            bottom: spacing.step1 - spacing.step3,
+            top: top + tile + spacing.step1,
+            bottom: spacing.step1 - top,
             width: BorderWidths.hairline,
             child: ColoredBox(color: tokens.colors.decorative.level01),
           ),
@@ -257,9 +262,9 @@ class DesignSystemTimelineSectionHeader extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           spacing.step3,
-          spacing.step5,
           spacing.step3,
-          spacing.step2,
+          spacing.step3,
+          spacing.step1,
         ),
         child: Row(
           children: [

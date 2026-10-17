@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -12,6 +15,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
@@ -97,6 +101,7 @@ void main() {
     openEntry: (e) => opened.add('entry ${e.meta.id}'),
     openTask: (t) => opened.add('task ${t.meta.id}'),
     unlinkTask: (t) => opened.add('unlink ${t.meta.id}'),
+    sortVoiceNote: (a) => opened.add('sort ${a.meta.id}'),
   );
 
   setUp(() => opened = []);
@@ -118,8 +123,10 @@ void main() {
     WidgetTester tester,
     PersonTimeline t, {
     ValueChanged<PersonTimelineFilter>? onFilter,
+    List<Override> overrides = const [],
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
+      overrides: overrides,
       CustomScrollView(
         slivers: [
           PersonTimelineSliver(
@@ -325,6 +332,197 @@ void main() {
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
+    });
+
+    Override summaryOf(String audioId, String oneLiner) =>
+        linkedAiResponsesControllerProvider(audioId).overrideWith(
+          () => _FixedResponses(audioId, [
+            JournalEntity.aiResponse(
+                  meta: meta('summary-$audioId', DateTime(2026, 8, 12, 19, 12)),
+                  data: AiResponseData(
+                    model: 'model',
+                    systemMessage: '',
+                    prompt: '',
+                    thoughts: '',
+                    response: 'A long summary.',
+                    type: AiResponseType.audioSummary,
+                    oneLiner: oneLiner,
+                  ),
+                )
+                as AiResponseEntry,
+          ]),
+        );
+
+    final longWords = [
+      for (var i = 1; i <= 12; i++) 'Sentence $i of what Pip said.',
+    ].join(' ');
+
+    testWidgets('a voice note with a summary leads with it, and Show more '
+        'opens the whole transcript in place; Show less folds it', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [
+            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: longWords),
+          ],
+        ),
+        overrides: [summaryOf('spoken', 'Pip wants a crew send-off.')],
+      );
+      await tester.pumpAndSettle();
+
+      Text words() => tester.widget<Text>(
+        find.byKey(const ValueKey('person-folded-words-spoken')),
+      );
+      expect(words().data, 'Pip wants a crew send-off.');
+      expect(words().maxLines, 3);
+
+      await tester.tap(find.text('Show more'));
+      await tester.pumpAndSettle();
+      expect(words().data, longWords);
+      expect(words().maxLines, isNull);
+      expect(opened, isEmpty, reason: 'expanding is not opening the entry');
+
+      await tester.tap(find.text('Show less'));
+      await tester.pumpAndSettle();
+      expect(words().data, 'Pip wants a crew send-off.');
+      // A way in, and it says so under a pointer.
+      final tokens = tester
+          .element(find.byType(PersonFoldedWords))
+          .designTokens;
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Show more')));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<Text>(find.text('Show more')).style?.color,
+        tokens.colors.interactive.hover,
+      );
+    });
+
+    testWidgets('a check-in holding a summarised recording leads with that '
+        'summary and opens to its own words', (tester) async {
+      final spoken = call.copyWith(
+        entryText: EntryText(plainText: longWords),
+      );
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            spoken.meta.id: [audio('take-1', DateTime(2026, 8, 1, 12, 44))],
+          },
+        ),
+        overrides: [summaryOf('take-1', 'Pip is calm about the slip.')],
+      );
+      await tester.pumpAndSettle();
+
+      Text words() => tester.widget<Text>(
+        find.byKey(ValueKey('person-folded-words-${spoken.meta.id}')),
+      );
+      expect(words().data, 'Pip is calm about the slip.');
+      await tester.tap(find.text('Show more'));
+      await tester.pumpAndSettle();
+      expect(words().data, longWords);
+    });
+
+    testWidgets('a check-in without a recording folds its long words to '
+        'three lines, and opens them on Show more', (tester) async {
+      setTestSurfaceSize(tester, const Size(390, 2400));
+      final typed = call.copyWith(
+        entryText: EntryText(plainText: longWords),
+      );
+      await pump(tester, timeline(checkIns: [typed], entries: [], tasks: []));
+      await tester.pumpAndSettle();
+
+      final words = find.byKey(
+        ValueKey('person-folded-words-${typed.meta.id}'),
+      );
+      expect(tester.widget<Text>(words).data, longWords);
+      expect(tester.widget<Text>(words).maxLines, 3);
+      await tester.tap(
+        find.byKey(ValueKey('person-folded-more-${typed.meta.id}')),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(words).maxLines, isNull);
+    });
+
+    testWidgets('without a summary a long transcript folds to three lines '
+        'and opens on Show more; a short one offers nothing to open', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(390, 2400));
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [
+            audio('long', DateTime(2026, 8, 12, 19, 10), words: longWords),
+            audio('short', DateTime(2026, 8, 11, 9), words: 'Send-off.'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('person-folded-more-short')),
+        findsNothing,
+      );
+      final more = find.byKey(const ValueKey('person-folded-more-long'));
+      expect(more, findsOneWidget);
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('person-folded-words-long')),
+            )
+            .maxLines,
+        isNull,
+      );
+    });
+
+    testWidgets('a voice note with words offers Sort this, which sorts it; '
+        'one still waiting for its words does not', (tester) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [
+            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
+            audio('waiting', DateTime(2026, 8, 11, 9)),
+          ],
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('person-sort-waiting')), findsNothing);
+      final sort = find.byKey(const ValueKey('person-sort-spoken'));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-spoken')),
+          matching: sort,
+        ),
+        findsOneWidget,
+      );
+      // Beside the meta line, so the action costs the row no height.
+      final tile = tester.getRect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-spoken')),
+          matching: find.byType(DesignSystemTimelineTile),
+        ),
+      );
+      expect(tester.getCenter(sort).dy, closeTo(tile.center.dy, 1));
+      await tester.tap(sort);
+      expect(opened, ['sort spoken']);
     });
 
     testWidgets('an overdue task says since when in the warning ink, a done '
@@ -578,4 +776,15 @@ Future<void> _hover(WidgetTester tester, Finder target) async {
   addTearDown(mouse.removePointer);
   await mouse.moveTo(tester.getCenter(target));
   await tester.pumpAndSettle();
+}
+
+/// Serves fixed linked responses, so a test states the summary it asserts
+/// about instead of standing up a database.
+class _FixedResponses extends LinkedAiResponsesController {
+  _FixedResponses(super.entryId, this.responses);
+
+  final List<AiResponseEntry> responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => responses;
 }

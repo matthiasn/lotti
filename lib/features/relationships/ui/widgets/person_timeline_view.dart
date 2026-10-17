@@ -2,12 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
+import 'package:lotti/features/journal/state/entry_summary_providers.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
@@ -29,6 +31,10 @@ typedef PersonTimelineActions = ({
 
   /// A long press on a task's row: take it off the person, after asking.
   void Function(Task task) unlinkTask,
+
+  /// *Sort this* on a voice note with words: sort them into check-ins,
+  /// notes, meetings or tasks, for review.
+  void Function(JournalAudio audio) sortVoiceNote,
 });
 
 /// The words a check-in row leads with: the text it was saved with, else its
@@ -169,7 +175,7 @@ class PersonTimelineSliver extends ConsumerWidget {
       if (timeline.itemCount >= personTimelineFiltersFrom)
         (context) => Padding(
           key: const ValueKey('person-timeline-filter'),
-          padding: inset.copyWith(top: tokens.spacing.step3),
+          padding: inset.copyWith(top: tokens.spacing.step2),
           child: DsChoicePills<PersonTimelineFilter>(
             value: filter,
             values: PersonTimelineFilter.values,
@@ -229,17 +235,7 @@ class PersonTimelineRow extends StatelessWidget {
         relationshipTimestampLabelOf(context, time, now: now);
     String day(DateTime time) => relationshipDayLabelOf(context, time);
 
-    final ({
-      IconData icon,
-      String kind,
-      String time,
-      List<String> tail,
-      String? text,
-      bool pending,
-      Widget? footer,
-      VoidCallback onTap,
-    })
-    row = switch (item) {
+    final row = switch (item) {
       final TimelineCheckIn row => () {
         final checkIn = row.checkIn;
         final summary = checkInSummaryOf(context, checkIn, row.entries);
@@ -366,19 +362,60 @@ class PersonTimelineRow extends StatelessWidget {
         ),
         tailStyle: metaStyle,
       ),
-      body: text == null || text.isEmpty
-          ? null
-          : Text(
-              text,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: row.pending
-                  ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
-                  : tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+      body: switch (item) {
+        // A voice note leads with its summary, and opens to its words.
+        final TimelineVoiceNote voice when !row.pending => PersonFoldedWords(
+          id: voice.audio.meta.id,
+          words: voice.audio.entryText?.plainText.trim() ?? '',
+          summaryOf: voice.audio.meta.id,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        // A check-in leads with the summary of the recording it holds,
+        // and opens to its own words.
+        final TimelineCheckIn checkIn
+            when !row.pending && text != null && text.isNotEmpty =>
+          PersonFoldedWords(
+            id: checkIn.checkIn.meta.id,
+            words: text,
+            summaryOf: checkIn.entries
+                .whereType<JournalAudio>()
+                .firstOrNull
+                ?.meta
+                .id,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
+          ),
+        _ when text == null || text.isEmpty => null,
+        _ => Text(
+          text,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: row.pending
+              ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
+              : tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+        ),
+      },
       footer: row.footer,
+      // Words to sort, a way to sort them: a voice note is what a capture
+      // stays when it was not filed, and this files it later. Beside the
+      // meta line, so the action costs the row no height.
+      trailing: switch (item) {
+        final TimelineVoiceNote row
+            when (row.audio.entryText?.plainText.trim() ?? '').isNotEmpty =>
+          DesignSystemButton(
+            key: ValueKey('person-sort-${row.audio.meta.id}'),
+            label: messages.relationshipSortThis,
+            variant: DesignSystemButtonVariant.quiet,
+            size: DesignSystemButtonSize.dense,
+            onPressed: () => actions.sortVoiceNote(row.audio),
+          ),
+        _ => null,
+      },
       last: last,
       highlighted: highlighted,
       onTap: row.onTap,
@@ -407,6 +444,97 @@ class PersonTimelineRow extends StatelessWidget {
     final to = event.meta.dateTo;
     final start = relationshipTimestampLabelOf(context, from, now: now);
     return to.isAfter(from) ? '$start – ${relationshipTimeLabel(to)}' : start;
+  }
+}
+
+/// A row's words, folded: the summary of the recording [summaryOf] when one
+/// was written (its newest audio summary's one-liner), else the first three
+/// lines of [words] — and, when there is more, *Show more* to read all of
+/// [words] in place, *Show less* to fold them again. A voice note passes its
+/// own recording; a check-in the recording it holds. A minute of speech set
+/// out in full made every spoken row the longest on the page.
+class PersonFoldedWords extends ConsumerStatefulWidget {
+  const PersonFoldedWords({
+    required this.id,
+    required this.words,
+    required this.style,
+    this.summaryOf,
+    super.key,
+  });
+
+  /// The row's entry, naming its keys.
+  final String id;
+  final String words;
+
+  /// The recording whose summary leads, or null for none.
+  final String? summaryOf;
+  final TextStyle style;
+
+  @override
+  ConsumerState<PersonFoldedWords> createState() => _PersonFoldedWordsState();
+}
+
+class _PersonFoldedWordsState extends ConsumerState<PersonFoldedWords> {
+  static const _foldedLines = 3;
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final transcript = widget.words;
+    final source = widget.summaryOf;
+    final summary = source == null ? null : audioSummaryOneLiner(ref, source);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // More to read when there is a summary in front of the words, or
+        // when the words run past the fold.
+        final overflows =
+            summary != null ||
+            (TextPainter(
+              text: TextSpan(text: transcript, style: widget.style),
+              maxLines: _foldedLines,
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
+        final words = _expanded ? transcript : (summary ?? transcript);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              words,
+              key: ValueKey('person-folded-words-${widget.id}'),
+              maxLines: _expanded ? null : _foldedLines,
+              overflow: _expanded ? null : TextOverflow.ellipsis,
+              style: widget.style,
+            ),
+            if (overflows)
+              DsQuietInk(
+                key: ValueKey('person-folded-more-${widget.id}'),
+                onTap: () => setState(() => _expanded = !_expanded),
+                builder: (context, highlighted) => Semantics(
+                  button: true,
+                  expanded: _expanded,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step1),
+                    child: Text(
+                      _expanded
+                          ? messages.timelineShowLess
+                          : messages.timelineShowMore,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: highlighted
+                            ? tokens.colors.interactive.hover
+                            : tokens.colors.interactive.enabled,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -557,7 +685,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
     if (pinned.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final messages = context.messages;
-    final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
     final title = messages.relationshipAboutTitle(widget.personName);
@@ -574,7 +702,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
           excludeSemantics: true,
           child: Padding(
             key: const ValueKey('person-about-toggle'),
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
             child: PersonCardHeader(
               title: title,
               count: pinned.length,
@@ -609,7 +737,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
             key: ValueKey('person-about-${note.id}'),
             onTap: () => widget.onOpen(note.note),
             builder: (context, highlighted) => Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
               child: Text(
                 note.note.entryText?.plainText.trim() ?? '',
                 maxLines: oneLine ? 1 : null,

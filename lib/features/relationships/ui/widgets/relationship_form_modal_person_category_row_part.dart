@@ -344,7 +344,7 @@ class PersonCategoryRow extends StatelessWidget {
                     category?.name ?? messages.habitCategoryHint,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: category == null
                           ? tokens.colors.text.lowEmphasis
                           : tokens.colors.text.highEmphasis,

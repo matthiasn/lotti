@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_mo
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
 import 'package:lotti/features/design_system/components/time_pickers/design_system_picker_wheels.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_capture.dart';
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -155,11 +156,6 @@ Future<DateTime?> pickCheckInStart({
     DateTime(day.year, day.month, day.day, time.hour, time.minute),
   );
 }
-
-/// The next full hour after [now]: 14:05 → 15:00, 23:20 → 00:00 the next
-/// day. An hour already full moves on too, so the result is always ahead.
-DateTime nextFullHour(DateTime now) =>
-    DateTime(now.year, now.month, now.day, now.hour + 1);
 
 /// When a meeting starts: the day, then the time, as [pickCheckInStart]
 /// asks them — but looking ahead, from today on, since a meeting is planned

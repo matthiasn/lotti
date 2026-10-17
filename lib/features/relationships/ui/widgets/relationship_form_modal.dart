@@ -436,7 +436,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
 
     Widget sectionLabel(String text) => Text(
       text,
-      style: tokens.typography.styles.body.bodyMedium.copyWith(
+      style: tokens.typography.styles.body.bodySmall.copyWith(
         color: tokens.colors.text.highEmphasis,
       ),
     );

@@ -24,8 +24,8 @@ import 'package:material_ui/material_ui.dart';
 /// which set `11` as `1 1`.
 ///
 /// [base] matters wherever a date sits *inside* a line of prose. The style
-/// changes figures and colour and nothing else, so a timestamp in a 16pt
-/// sentence stays 16pt — pinning it to the 12pt caption tier dropped the
+/// changes figures and colour and nothing else, so a timestamp in a body
+/// sentence stays the body size — pinning it to the caption tier dropped the
 /// date a size mid-sentence.
 TextStyle relationshipTimestampStyle(
   DsTokens tokens, {

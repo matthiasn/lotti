@@ -21,13 +21,15 @@ import 'package:lotti/features/relationships/repository/relationship_repository.
 import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
+import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
+import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/ui/pages/relationship_details_page.dart';
 import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/relationships/ui/shared/persona_avatar.dart';
-import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_summary_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -431,8 +433,8 @@ void main() {
     });
   });
 
-  testWidgets('a long press on a person opens the composer already '
-      'recording for them, without leaving the list', (tester) async {
+  testWidgets('a long press on a person opens Speak about them, already '
+      'recording, without leaving the list', (tester) async {
     when(() => mockRepository.getRelationshipsByRecency()).thenAnswer(
       (_) async => [item('rel-1', title: 'Anna', important: true)],
     );
@@ -459,6 +461,18 @@ void main() {
             checkInTranscriptionServiceProvider.overrideWithValue(
               StubCheckInTranscriptionService(),
             ),
+            personCaptureSorterProvider.overrideWithValue(
+              PersonCaptureSorter(
+                modelFor: (_) async => null,
+                generate:
+                    ({
+                      required prompt,
+                      required systemMessage,
+                      required model,
+                      required categoryId,
+                    }) async => const [],
+              ),
+            ),
           ],
         ),
       );
@@ -471,11 +485,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    final form = tester.widget<CheckInCaptureForm>(
-      find.byType(CheckInCaptureForm),
+    final flow = tester.widget<PersonCaptureFlowView>(
+      find.byType(PersonCaptureFlowView),
     );
-    expect(form.relationshipId, 'rel-1');
-    expect(form.startSpeaking, isTrue);
+    expect(flow.person.meta.id, 'rel-1');
+    expect(
+      find.byKey(const ValueKey('check-in-inline-recorder')),
+      findsOneWidget,
+    );
   });
 
   testWidgets(

@@ -20,5 +20,21 @@ Override personTimelineOverride({
         ? entries
         : const [],
   );
+  // A sort's one line is saved as the voice note's summary.
+  when(
+    () => repository.saveVoiceNoteSummary(
+      audioId: any(named: 'audioId'),
+      summary: any(named: 'summary'),
+      modelId: any(named: 'modelId'),
+      categoryId: any(named: 'categoryId'),
+    ),
+  ).thenAnswer((_) async => true);
+  // A spoken capture puts its voice note on the timeline as it is saved.
+  when(
+    () => repository.addToTimeline(
+      personId: any(named: 'personId'),
+      entryId: any(named: 'entryId'),
+    ),
+  ).thenAnswer((_) async => true);
   return personTimelineRepositoryProvider.overrideWithValue(repository);
 }

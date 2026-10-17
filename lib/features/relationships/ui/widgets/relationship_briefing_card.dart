@@ -291,7 +291,7 @@ class _AgentCard extends StatelessWidget {
       RelationshipAgentCardState.noBriefing => Text(
         messages.relationshipAgentNoBriefingBody(checkInCount),
         key: const ValueKey('relationship-agent-body'),
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
+        style: tokens.typography.styles.body.bodySmall.copyWith(
           color: ai.bodyText,
         ),
       ),
@@ -304,7 +304,7 @@ class _AgentCard extends StatelessWidget {
         final report => TldrBody(
           key: const ValueKey('relationship-briefing-body'),
           disclosureKey: const ValueKey('relationship-briefing-expand'),
-          bodyStyle: tokens.typography.styles.body.bodyMedium,
+          bodyStyle: tokens.typography.styles.body.bodySmall,
           tldr: resolveReportTldr(report),
           expanded: expanded,
           additionalReport: resolveReportAdditional(report),
@@ -324,7 +324,7 @@ class _AgentCard extends StatelessWidget {
                 ? messages.relationshipAgentFailedNoModel
                 : messages.relationshipAgentFailedBody,
             key: const ValueKey('relationship-agent-body'),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
+            style: tokens.typography.styles.body.bodySmall.copyWith(
               color: ai.bodyText,
             ),
           ),
@@ -341,7 +341,7 @@ class _AgentCard extends StatelessWidget {
             TldrBody(
               key: const ValueKey('relationship-briefing-body'),
               disclosureKey: const ValueKey('relationship-briefing-expand'),
-              bodyStyle: tokens.typography.styles.body.bodyMedium,
+              bodyStyle: tokens.typography.styles.body.bodySmall,
               tldr: resolveReportTldr(current),
               expanded: expanded,
               additionalReport: resolveReportAdditional(current),
@@ -356,7 +356,7 @@ class _AgentCard extends StatelessWidget {
         disclosureKey: const ValueKey('relationship-briefing-expand'),
         // The reading faces at the same size as the waiting faces' prose:
         // one body tier across all seven.
-        bodyStyle: tokens.typography.styles.body.bodyMedium,
+        bodyStyle: tokens.typography.styles.body.bodySmall,
         tldr: resolveReportTldr(current),
         expanded: expanded,
         additionalReport: resolveReportAdditional(current),
