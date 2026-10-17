@@ -2655,8 +2655,12 @@ stateDiagram-v2
   words to `PersonRecordingSummarizer`
   ([person_recording_summarizer.dart](../../lib/features/relationships/service/person_recording_summarizer.dart))
   — one forced `summarize_person_recording` call on the person's briefing
-  route, which already reads every check-in about them, saved with
-  `saveRecordingSummary`. It skips words short enough to be their own summary
+  route, saved with `saveRecordingSummary`. Only for a person with an active
+  relationship agent (`usableRelationshipAgent`): that agent's route already
+  reads every check-in about them, and the fallback chain a person without
+  one would resolve to never has. One two-minute deadline covers the call and
+  its retry, and a failing summary is logged apart from the transcript, whose
+  wait it never cancels. It skips words short enough to be their own summary
   and a recording that already has one (a speech-to-text engine's
   post-processing writes one). Typed check-ins are never summarized (product
   owner, 2026-10-17); a capture asks for none, since its sort writes the

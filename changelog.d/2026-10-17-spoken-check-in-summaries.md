@@ -1,5 +1,6 @@
 ### Added
 - **Spoken check-ins get a one-line summary on a person's timeline.** Once a
   check-in's recording is transcribed, the model the briefing names writes
-  one line about it, and the row opens to the full words with *Show more*.
+  one line about it — for people with reminders on, whose briefing already
+  reads their check-ins — and the row opens to the full words with *Show more*.
   Short and typed check-ins are left as they are.

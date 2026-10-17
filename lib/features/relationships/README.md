@@ -47,7 +47,8 @@ how a conversation felt is never guessed. A voice note that was not sorted
 offers *Sort this* on its row. A voice note shows the one-line summary its
 sort wrote, and opens to the whole transcript with *Show more*; a spoken
 check-in shows a one-line summary of its recording the same way, written by
-the model the briefing names. Typed check-ins are never summarized. *+ Add* offers a check-in, a meeting, a note about the person (which
+the model the briefing names — for someone with reminders on, whose
+briefing already reads their check-ins. Typed check-ins are never summarized. *+ Add* offers a check-in, a meeting, a note about the person (which
 can be pinned to *About*), a task, or photos. A meeting gets a title, a day,
 a start and a length; it lands under *Upcoming*, keys *Before you talk* to its
 day, and shows on the Daily OS Day view even with the Events feature off. An
