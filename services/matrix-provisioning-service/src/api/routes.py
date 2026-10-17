@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, status
@@ -36,6 +35,7 @@ from ..core.exceptions import (
     SynapseUnavailableException,
     UsernameAlreadyProvisionedException,
 )
+from ..core.features import paid_sync_enabled, play_subscriptions_enabled
 from ..core.models import (
     BundleDeliveryRequest,
     BundleEvent,
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _bearer_secret(authorization: str) -> str:
+def bearer_secret(authorization: str) -> str:
     parts = authorization.split()
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(
@@ -73,14 +73,20 @@ def _bearer_secret(authorization: str) -> str:
 
 
 def _require_subscriptions_enabled() -> None:
-    if os.getenv("ENABLE_PLAY_SUBSCRIPTIONS", "false").lower() not in (
-        "1",
-        "true",
-        "yes",
-    ):
+    """Gate the Play-only routes: purchase intents and purchase verification."""
+    if not play_subscriptions_enabled():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Google Play SYNC subscriptions are disabled",
+        )
+
+
+def _require_paid_sync_enabled() -> None:
+    """Gate the routes both paid channels share: entitlements and escrow."""
+    if not paid_sync_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Paid SYNC subscriptions are disabled",
         )
 
 
@@ -97,7 +103,7 @@ def _require_subscriptions_enabled() -> None:
 )
 async def create_sync_entitlement(request: Request) -> EntitlementCredentialsResponse:
     """Issue the stable app identity that purchases are attributed to."""
-    _require_subscriptions_enabled()
+    _require_paid_sync_enabled()
     try:
         credentials = await container.get_subscription_identity_service().create_entitlement(
             client_identifier=(request.client.host if request.client is not None else "unknown"),
@@ -127,7 +133,7 @@ async def create_purchase_intent(
     try:
         intent = await container.get_subscription_identity_service().create_purchase_intent(
             entitlement_id=request.entitlement_id,
-            auth_secret=_bearer_secret(authorization),
+            auth_secret=bearer_secret(authorization),
             product_id=request.product_id,
             base_plan_id=request.base_plan_id,
             now=datetime.now(timezone.utc),
@@ -163,7 +169,7 @@ async def verify_subscription_purchase(
     try:
         verified = await container.get_subscription_service().verify_purchase(
             submission,
-            entitlement_auth_secret=_bearer_secret(authorization),
+            entitlement_auth_secret=bearer_secret(authorization),
             now=request_started_at,
         )
         enforcement_now = datetime.now(timezone.utc)
@@ -262,12 +268,12 @@ async def deliver_paid_bundle(
     authorization: str = Header(default=""),
 ) -> PaidBundleResponse:
     """Retry a lost paid-bundle response without replaying a purchase proof."""
-    _require_subscriptions_enabled()
+    _require_paid_sync_enabled()
     try:
         now = datetime.now(timezone.utc)
         await container.get_subscription_identity_service().authenticate_bundle_claim_operation(
             request.entitlement_id,
-            _bearer_secret(authorization),
+            bearer_secret(authorization),
             now=now,
         )
         subscription = await container.get_subscription_repository().get_current_subscription(
@@ -338,11 +344,11 @@ async def confirm_paid_bundle_rotation(
     authorization: str = Header(default=""),
 ) -> None:
     """Destroy escrow only after server-observed Matrix rotation proof."""
-    _require_subscriptions_enabled()
+    _require_paid_sync_enabled()
     try:
         await container.get_bundle_rotation_service().confirm_rotation(
             entitlement_id=request.entitlement_id,
-            entitlement_auth_secret=_bearer_secret(authorization),
+            entitlement_auth_secret=bearer_secret(authorization),
             bundle_id=request.bundle_id,
             claim_secret=request.claim_secret,
             now=datetime.now(timezone.utc),

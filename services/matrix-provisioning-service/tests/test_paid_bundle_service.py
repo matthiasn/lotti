@@ -20,6 +20,7 @@ from src.core.subscriptions import (
     EntitlementState,
     GoogleSubscriptionState,
     PurchaseSubmission,
+    SubscriptionProvider,
     VerifiedPurchaseResult,
     VerifiedSubscription,
 )
@@ -1354,3 +1355,40 @@ def test_paid_username_is_deterministic_safe_and_bounded():
     assert len(retry) == 64
     assert retry.endswith("deadbeef")
     assert retry != username
+
+
+async def test_web_entry_refuses_a_play_subscription(service, repository, bundle_service):
+    verified = await verified_purchase(repository)
+
+    with pytest.raises(ValueError, match="submission"):
+        await service.provision_or_deliver_web(verified, claim_secret="claim-secret", now=NOW)
+
+    assert bundle_service.calls == []
+
+
+async def test_web_entry_never_acknowledges_with_google(
+    service, repository, bundle_service, google_client
+):
+    play = await verified_purchase(repository)
+    web = replace(
+        play,
+        subscription=replace(play.subscription, provider=SubscriptionProvider.PADDLE),
+    )
+
+    delivery = await service.provision_or_deliver_web(web, claim_secret="claim-secret", now=NOW)
+
+    assert delivery.bundle == ENCODED_BUNDLE
+    # The row is still PENDING acknowledgement as far as Google is concerned,
+    # yet the web path must not call Google at all.
+    assert google_client.acknowledgements == []
+    assert bundle_service.calls[0].notes == "Paddle web subscription"
+
+
+async def test_play_acknowledgement_without_a_google_client_fails_closed(
+    repository, bundle_service, cipher
+):
+    service = PaidBundleService(bundle_service, repository, None, cipher, now_provider=lambda: NOW)
+    verified = await verified_purchase(repository)
+
+    with pytest.raises(GooglePlayVerificationException, match="not configured"):
+        await service.provision_or_deliver(verified, submission(), now=NOW)

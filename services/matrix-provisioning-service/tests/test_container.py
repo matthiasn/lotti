@@ -17,6 +17,8 @@ from src.services.bundle_rotation_service import BundleRotationService
 from src.services.bundle_service import BundleService
 from src.services.google_play_client import GooglePlayClient
 from src.services.google_play_notifications import GooglePlayNotificationService
+from src.services.paddle_client import PADDLE_LIVE_BASE_URL, PADDLE_SANDBOX_BASE_URL
+from src.services.paddle_subscription_service import PaddleSubscriptionService
 from src.services.paid_bundle_service import PaidBundleService
 from src.services.provisioning_repository import ProvisioningRepository
 from src.services.redemption_poller import RedemptionPoller
@@ -27,6 +29,8 @@ from src.services.subscription_identity_service import SubscriptionIdentityServi
 from src.services.subscription_reconciler import SubscriptionReconciler
 from src.services.subscription_repository import SubscriptionRepository
 from src.services.subscription_service import SubscriptionService
+from src.services.web_checkout_service import WebCheckoutService
+from src.services.web_subscription_repository import WebSubscriptionRepository
 
 from shared.matrix import SynapseAdminClient, SynapseProvisioner
 
@@ -317,3 +321,64 @@ def test_legacy_subscription_key_configuration_fails_fast(env, value, message):
 
     with pytest.raises(ValueError, match=message):
         Container().get_secret_cipher()
+
+
+def configure_web(env):
+    env.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    env.setenv("ENABLE_WEB_SUBSCRIPTIONS", "true")
+    env.setenv("SUBSCRIPTION_ENCRYPTION_KEY_ID", "key-v1")
+    env.setenv("SUBSCRIPTION_ENCRYPTION_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("PLAY_ACCOUNT_BINDING_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
+    env.setenv("PADDLE_API_KEY", "pdl_sdbx_apikey_test")
+    env.setenv("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test")
+    env.setenv("PADDLE_PRICE_IDS", " pri_monthly , pri_annual ,")
+    env.setenv("WEB_CHECKOUT_PAGE_URL", "https://sync.example.com/checkout/")
+
+
+def test_container_builds_the_web_graph_without_google_credentials(env, monkeypatch):
+    configure_web(env)
+    env.setenv("PADDLE_ENVIRONMENT", "sandbox")
+    env.setenv("WEB_SUBSCRIPTION_GRACE_DAYS", "3")
+
+    def no_google():
+        pytest.fail("A web-only deployment must not load Google credentials")
+
+    monkeypatch.setattr(
+        GoogleAccessTokenProvider, "from_application_default_credentials", no_google
+    )
+    container = Container()
+
+    assert isinstance(container.get_web_subscription_repository(), WebSubscriptionRepository)
+    assert container.get_paid_bundle_service()._google_play_client is None
+    paddle = container.get_paddle_subscription_service()
+    assert isinstance(paddle, PaddleSubscriptionService)
+    assert paddle._allowed_price_ids == frozenset({"pri_monthly", "pri_annual"})
+    assert paddle._grace_period == timedelta(days=3)
+    assert container.get_paddle_client()._base_url == PADDLE_SANDBOX_BASE_URL
+    assert isinstance(container.get_web_checkout_service(), WebCheckoutService)
+    reconciler = container.get_subscription_reconciler()
+    assert reconciler._subscription_service is None
+    assert reconciler._paddle_subscriptions is paddle
+
+
+def test_paddle_defaults_to_the_live_api(env):
+    configure_web(env)
+
+    assert Container().get_paddle_client()._base_url == PADDLE_LIVE_BASE_URL
+
+
+@pytest.mark.parametrize(
+    ("name", "value", "message"),
+    [
+        ("PADDLE_PRICE_IDS", " , ", "PADDLE_PRICE_IDS"),
+        ("PADDLE_WEBHOOK_SECRET", "", "PADDLE_WEBHOOK_SECRET"),
+        ("WEB_CHECKOUT_PAGE_URL", "http://insecure.example.com", "https"),
+        ("PADDLE_API_KEY", "", "PADDLE_API_KEY"),
+    ],
+)
+def test_web_configuration_fails_fast(env, name, value, message):
+    configure_web(env)
+    env.setenv(name, value)
+
+    with pytest.raises(ValueError, match=message):
+        Container().get_web_checkout_service()

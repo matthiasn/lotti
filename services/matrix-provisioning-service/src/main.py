@@ -10,8 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from shared.auth import APIKeyAuthMiddleware
 
 from .api.routes import router
+from .api.web_routes import router as web_router
 from .container import container
-from .core.constants import SERVICE_GOOGLE_PLAY_CLIENT
+from .core.constants import SERVICE_GOOGLE_PLAY_CLIENT, SERVICE_PADDLE_CLIENT
+from .core.features import play_subscriptions_enabled, web_subscriptions_enabled
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -25,6 +27,13 @@ def _enabled(name: str, default: str = "true") -> bool:
     return os.getenv(name, default).lower() in ("1", "true", "yes")
 
 
+async def _close_provider_clients() -> None:
+    for name in (SERVICE_GOOGLE_PLAY_CLIENT, SERVICE_PADDLE_CLIENT):
+        client = container.existing(name)
+        if client is not None:
+            await client.aclose()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler"""
@@ -36,23 +45,28 @@ async def lifespan(app: FastAPI):
 
     subscription_reconciler = None
     bundle_claim_reaper = None
-    if _enabled("ENABLE_PLAY_SUBSCRIPTIONS", "false"):
+    play_enabled = play_subscriptions_enabled()
+    web_enabled = web_subscriptions_enabled()
+    if play_enabled or web_enabled:
         # Resolve and actively verify every security-critical dependency before
         # starting any worker or accepting a purchase. In particular, a server
         # that cannot suspend expired accounts must never enter paid mode.
         try:
             container.get_subscription_identity_service()
-            container.get_subscription_service()
+            if play_enabled:
+                container.get_subscription_service()
             container.get_paid_bundle_service()
-            container.get_google_play_notifications()
+            if play_enabled:
+                container.get_google_play_notifications()
+            if web_enabled:
+                container.get_paddle_subscription_service()
+                container.get_web_checkout_service()
             await container.get_admin_client().require_account_suspension_support()
             subscription_reconciler = container.get_subscription_reconciler()
             bundle_claim_reaper = container.get_bundle_claim_reaper()
         except Exception:
             await container.get_admin_client().aclose()
-            google_play_client = container.existing(SERVICE_GOOGLE_PLAY_CLIENT)
-            if google_play_client is not None:
-                await google_play_client.aclose()
+            await _close_provider_clients()
             raise
 
     poller = None
@@ -81,9 +95,13 @@ async def lifespan(app: FastAPI):
         subscription_reconciler.start()
         assert bundle_claim_reaper is not None
         bundle_claim_reaper.start()
-        logger.info("Google Play SYNC subscriptions enabled")
+        logger.info(
+            "Paid SYNC enabled (Google Play: %s, web checkout: %s)",
+            play_enabled,
+            web_enabled,
+        )
     else:
-        logger.info("Google Play SYNC subscriptions disabled by configuration")
+        logger.info("Paid SYNC subscriptions disabled by configuration")
 
     logger.info("Matrix Provisioning Service started successfully")
 
@@ -101,9 +119,7 @@ async def lifespan(app: FastAPI):
     # After the background loops, so nothing is mid-request when the shared
     # connection pool goes away.
     await container.get_admin_client().aclose()
-    google_play_client = container.existing(SERVICE_GOOGLE_PLAY_CLIENT)
-    if google_play_client is not None:
-        await google_play_client.aclose()
+    await _close_provider_clients()
     logger.info("Matrix Provisioning Service shutdown complete")
 
 
@@ -143,6 +159,13 @@ app.add_middleware(
         "/api/v1/client/subscriptions/bundle-claims/deliver",
         "/api/v1/client/subscriptions/bundle-claims/confirm-rotation",
         "/api/v1/google-play/rtdn",
+        # Web checkout: entitlement bearer secrets, the unguessable session id
+        # and Paddle's HMAC signature authenticate these, not an API key.
+        "/api/v1/client/web-checkout/sessions",
+        "/api/v1/client/web-checkout/session-status",
+        "/api/v1/client/web-checkout/claims",
+        "/api/v1/client/web-checkout/portal-sessions",
+        "/api/v1/webhooks/paddle",
     ],
     client_path_prefixes=["/api/v1/client"],
 )
@@ -156,6 +179,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1")
+app.include_router(web_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])

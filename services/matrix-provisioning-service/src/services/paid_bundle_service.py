@@ -1,4 +1,4 @@
-"""Reliable encrypted bundle provisioning for verified Play subscriptions."""
+"""Reliable encrypted bundle provisioning for verified paid subscriptions."""
 
 from __future__ import annotations
 
@@ -20,11 +20,12 @@ from ..core.models import BundleStatus, CreateBundleRequest
 from ..core.subscriptions import (
     AcknowledgementState,
     BundleClaim,
-    EntitlementState,
     PaidBundleDelivery,
     PurchaseSubmission,
     StoredSubscription,
+    SubscriptionProvider,
     VerifiedPurchaseResult,
+    grants_access,
 )
 from .bundle_service import BundleService, fingerprint_bundle
 from .google_play_client import GooglePlayClient
@@ -32,10 +33,9 @@ from .secret_cipher import SecretCipher
 from .subscription_repository import SubscriptionRepository
 from .subscription_security import SecretHasher
 
-_ACCESS_STATES = {
-    EntitlementState.ACTIVE,
-    EntitlementState.GRACE,
-    EntitlementState.CANCELED_ACTIVE,
+_PROVISIONING_NOTES = {
+    SubscriptionProvider.GOOGLE_PLAY: "Verified Google Play subscription",
+    SubscriptionProvider.PADDLE: "Paddle web subscription",
 }
 
 
@@ -46,7 +46,7 @@ class PaidBundleService:
         self,
         bundle_service: BundleService,
         repository: SubscriptionRepository,
-        google_play_client: GooglePlayClient,
+        google_play_client: GooglePlayClient | None,
         secret_cipher: SecretCipher,
         *,
         claim_ttl: timedelta = timedelta(hours=24),
@@ -83,15 +83,56 @@ class PaidBundleService:
         *,
         now: datetime,
     ) -> PaidBundleDelivery:
-        """Return the same escrowed bundle across network retries."""
+        """Return the same escrowed bundle across network retries.
+
+        Used by the Play path, which also acknowledges the purchase with Google
+        once the entitlement and its escrow are durable.
+        """
+        return await self._provision_or_deliver(
+            verified,
+            claim_secret=submission.claim_secret,
+            play_submission=submission,
+            now=now,
+        )
+
+    async def provision_or_deliver_web(
+        self,
+        verified: VerifiedPurchaseResult,
+        *,
+        claim_secret: str,
+        now: datetime,
+    ) -> PaidBundleDelivery:
+        """Provision or redeliver for a web (Paddle) subscription.
+
+        A merchant-of-record purchase needs no acknowledgement; everything
+        else — the claim-secret check, the cross-process reservation, escrow
+        reuse — is the Play path unchanged.
+        """
+        if verified.subscription.provider is SubscriptionProvider.GOOGLE_PLAY:
+            raise ValueError("Play subscriptions must be provisioned with their submission")
+        return await self._provision_or_deliver(
+            verified,
+            claim_secret=claim_secret,
+            play_submission=None,
+            now=now,
+        )
+
+    async def _provision_or_deliver(
+        self,
+        verified: VerifiedPurchaseResult,
+        *,
+        claim_secret: str,
+        play_submission: PurchaseSubmission | None,
+        now: datetime,
+    ) -> PaidBundleDelivery:
         operation_now = self._current_time(now)
-        if not _grants_access(verified.subscription, now=operation_now):
+        if not grants_access(verified.subscription, now=operation_now):
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
         if not await asyncio.to_thread(
             self._secret_hasher.verify,
-            submission.claim_secret,
+            claim_secret,
             verified.claim_secret_hash,
         ):
             raise BundleClaimConflictException("Invalid bundle claim secret")
@@ -100,15 +141,17 @@ class PaidBundleService:
         async with self._provisioning_locks[lock_index]:
             return await self._provision_or_deliver_locked(
                 verified,
-                submission,
+                claim_secret=claim_secret,
+                play_submission=play_submission,
                 now=self._current_time(operation_now),
             )
 
     async def _provision_or_deliver_locked(
         self,
         verified: VerifiedPurchaseResult,
-        submission: PurchaseSubmission,
         *,
+        claim_secret: str,
+        play_submission: PurchaseSubmission | None,
         now: datetime,
     ) -> PaidBundleDelivery:
         """Provision or reuse escrow while the entitlement stripe is held."""
@@ -149,7 +192,7 @@ class PaidBundleService:
             else:
                 existing_secret_matches = await asyncio.to_thread(
                     self._secret_hasher.verify,
-                    submission.claim_secret,
+                    claim_secret,
                     existing.claim_secret_hash,
                 )
                 if not existing_secret_matches:
@@ -162,7 +205,7 @@ class PaidBundleService:
                     )
                 delivery = await self._deliver_existing(
                     existing,
-                    claim_secret=submission.claim_secret,
+                    claim_secret=claim_secret,
                     now=self._current_time(now),
                     entitlement_id=verified.subscription.entitlement_id,
                 )
@@ -175,7 +218,7 @@ class PaidBundleService:
             if raced_claim is not None:
                 delivery = await self._deliver_existing(
                     raced_claim,
-                    claim_secret=submission.claim_secret,
+                    claim_secret=claim_secret,
                     now=self._current_time(now),
                     entitlement_id=verified.subscription.entitlement_id,
                 )
@@ -208,7 +251,7 @@ class PaidBundleService:
                         )
                     delivery = await self._deliver_existing(
                         claim,
-                        claim_secret=submission.claim_secret,
+                        claim_secret=claim_secret,
                         now=self._current_time(now),
                         entitlement_id=verified.subscription.entitlement_id,
                     )
@@ -222,11 +265,16 @@ class PaidBundleService:
             verified,
             now=self._current_time(now),
         )
-        if current.acknowledgement_state is AcknowledgementState.PENDING:
+        if (
+            play_submission is not None
+            and current.acknowledgement_state is AcknowledgementState.PENDING
+        ):
+            if self._google_play_client is None:
+                raise GooglePlayVerificationException("Google Play client is not configured")
             await self._google_play_client.acknowledge_subscription(
-                submission.package_name,
-                submission.product_id,
-                submission.purchase_token,
+                play_submission.package_name,
+                play_submission.product_id,
+                play_submission.purchase_token,
             )
             await self._repository.mark_subscription_acknowledged(
                 current.token_fingerprint,
@@ -259,7 +307,7 @@ class PaidBundleService:
             await self._repository.get_returnable_paid_delivery_state(entitlement_id)
         )
         validation_now = self._current_time(now)
-        if subscription is None or not _grants_access(subscription, now=validation_now):
+        if subscription is None or not grants_access(subscription, now=validation_now):
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
@@ -307,7 +355,7 @@ class PaidBundleService:
         )
         if current is None or current.token_fingerprint != verified.subscription.token_fingerprint:
             raise GooglePlayVerificationException("Verified purchase is no longer current")
-        if not _grants_access(current, now=now):
+        if not grants_access(current, now=now):
             raise GooglePlayVerificationException(
                 "Subscription does not currently grant SYNC access"
             )
@@ -356,7 +404,7 @@ class PaidBundleService:
         request = CreateBundleRequest(
             username=username,
             display_name="Lotti SYNC",
-            notes="Verified Google Play subscription",
+            notes=_PROVISIONING_NOTES[verified.subscription.provider],
         )
 
         async def persist(result, encoded):
@@ -431,7 +479,7 @@ class PaidBundleService:
             if entitlement_id is not None:
                 subscription = await self._repository.get_current_subscription(entitlement_id)
                 operation_now = self._current_time(operation_now)
-                if subscription is None or not _grants_access(
+                if subscription is None or not grants_access(
                     subscription,
                     now=operation_now,
                 ):
@@ -519,9 +567,3 @@ def rotation_challenge(claim_secret: str, bundle_id: str) -> str:
         hashlib.sha256,
     ).digest()
     return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
-
-
-def _grants_access(subscription, *, now: datetime) -> bool:
-    return subscription.entitlement_state in _ACCESS_STATES and (
-        subscription.current_period_end is None or now < subscription.current_period_end
-    )

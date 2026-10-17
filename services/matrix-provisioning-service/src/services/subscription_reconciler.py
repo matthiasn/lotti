@@ -1,4 +1,4 @@
-"""Periodic Google refresh and Matrix access convergence for subscriptions."""
+"""Periodic provider refresh and Matrix access convergence for subscriptions."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from ..core.constants import (
     DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE,
     DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS,
 )
+from ..core.subscriptions import StoredSubscription, SubscriptionProvider
+from .paddle_subscription_service import PaddleSubscriptionService
 from .periodic_task import PeriodicTask
 from .secret_cipher import SecretCipher
 from .subscription_access_service import SubscriptionAccessService
@@ -20,15 +22,20 @@ logger = logging.getLogger(__name__)
 
 
 class SubscriptionReconciler(PeriodicTask):
-    """Re-query due tokens so missed notifications cannot leave access stale."""
+    """Re-query due subscriptions so missed notifications cannot leave access stale.
+
+    Each row is refreshed from the provider that sold it: Google Play rows
+    through the Android Publisher API, Paddle rows through the Paddle API.
+    """
 
     def __init__(
         self,
         repository: SubscriptionRepository,
-        subscription_service: SubscriptionService,
+        subscription_service: SubscriptionService | None,
         access_service: SubscriptionAccessService,
         secret_cipher: SecretCipher,
         *,
+        paddle_subscriptions: PaddleSubscriptionService | None = None,
         interval_seconds: float = DEFAULT_SUBSCRIPTION_RECONCILE_INTERVAL_SECONDS,
         batch_size: int = DEFAULT_SUBSCRIPTION_RECONCILE_BATCH_SIZE,
         now_provider: Callable[[], datetime] | None = None,
@@ -37,11 +44,12 @@ class SubscriptionReconciler(PeriodicTask):
         if interval_seconds <= 0:
             raise ValueError("Subscription reconciliation interval must be positive")
         super().__init__(
-            name="Google Play subscription reconciler",
+            name="Subscription reconciler",
             interval_seconds=interval_seconds,
         )
         self._repository = repository
         self._subscription_service = subscription_service
+        self._paddle_subscriptions = paddle_subscriptions
         self._access_service = access_service
         self._secret_cipher = secret_cipher
         self._batch_size = batch_size
@@ -62,16 +70,7 @@ class SubscriptionReconciler(PeriodicTask):
         reconciled = 0
         for stored in subscriptions:
             try:
-                token = self._secret_cipher.decrypt(
-                    stored.encrypted_purchase_token,
-                    purpose="purchase-token",
-                    record_id=stored.token_fingerprint,
-                    key_id=stored.encryption_key_id,
-                ).decode()
-                await self._subscription_service.refresh_known_purchase(
-                    token,
-                    now=now,
-                )
+                await self._refresh_from_provider(stored, now=now)
                 current = await self._repository.get_current_subscription(stored.entitlement_id)
                 if current is not None:
                     await self._access_service.enforce(
@@ -104,3 +103,19 @@ class SubscriptionReconciler(PeriodicTask):
                     next_reconciliation_at=retry_now + self._failure_retry_delay,
                 )
         return reconciled
+
+    async def _refresh_from_provider(self, stored: StoredSubscription, *, now: datetime) -> None:
+        if stored.provider is SubscriptionProvider.PADDLE:
+            if self._paddle_subscriptions is None:
+                raise RuntimeError("Paddle subscriptions are not configured")
+            await self._paddle_subscriptions.refresh(stored)
+            return
+        if self._subscription_service is None:
+            raise RuntimeError("Google Play subscriptions are not configured")
+        token = self._secret_cipher.decrypt(
+            stored.encrypted_purchase_token,
+            purpose="purchase-token",
+            record_id=stored.token_fingerprint,
+            key_id=stored.encryption_key_id,
+        ).decode()
+        await self._subscription_service.refresh_known_purchase(token, now=now)

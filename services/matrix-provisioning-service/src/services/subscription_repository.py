@@ -32,6 +32,7 @@ from ..core.subscriptions import (
     StoredSubscription,
     SubscriptionEvent,
     SubscriptionEventType,
+    SubscriptionProvider,
     SyncEntitlement,
     VerifiedSubscription,
 )
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS play_subscriptions (
     last_error                            TEXT,
     created_at                            TEXT NOT NULL,
     updated_at                            TEXT NOT NULL,
+    provider                              TEXT NOT NULL DEFAULT 'google_play',
     FOREIGN KEY (entitlement_id) REFERENCES sync_entitlements (entitlement_id),
     FOREIGN KEY (bundle_id) REFERENCES provisioned_users (bundle_id)
 );
@@ -284,6 +286,12 @@ class SubscriptionRepository(ProvisioningRepository):
             }
             if "matrix_suspended" not in subscription_columns:
                 conn.execute("ALTER TABLE play_subscriptions ADD COLUMN matrix_suspended INTEGER")
+            if "provider" not in subscription_columns:
+                # Rows written before web checkout existed are all Play rows.
+                conn.execute(
+                    "ALTER TABLE play_subscriptions ADD COLUMN provider TEXT NOT NULL "
+                    "DEFAULT 'google_play'"
+                )
             conn.commit()
         finally:
             conn.close()
@@ -334,6 +342,7 @@ class SubscriptionRepository(ProvisioningRepository):
             subscription_id=row["subscription_id"],
             created_at=_parse(row["created_at"]),
             updated_at=_parse(row["updated_at"]),
+            provider=SubscriptionProvider(row["provider"]),
         )
 
     @staticmethod
@@ -1074,6 +1083,7 @@ class SubscriptionRepository(ProvisioningRepository):
                 snapshot.last_error,
                 _iso(created_at),
                 _iso(now),
+                snapshot.provider.value,
             )
             conn.execute(
                 "INSERT INTO play_subscriptions ("
@@ -1085,8 +1095,8 @@ class SubscriptionRepository(ProvisioningRepository):
                 "out_of_app_expired_token_fingerprint, binding_verified, bundle_id, "
                 "suspended_at, unsuspended_at, matrix_suspended, last_verified_at, "
                 "next_reconciliation_at, "
-                "last_error, created_at, updated_at"
-                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "last_error, created_at, updated_at, provider"
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(token_fingerprint) DO UPDATE SET "
                 "encrypted_purchase_token=excluded.encrypted_purchase_token, "
                 "encryption_key_id=excluded.encryption_key_id, "

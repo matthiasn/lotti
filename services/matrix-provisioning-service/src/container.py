@@ -41,6 +41,8 @@ from .core.constants import (
     SERVICE_BUNDLE_SERVICE,
     SERVICE_GOOGLE_PLAY_CLIENT,
     SERVICE_GOOGLE_PLAY_NOTIFICATIONS,
+    SERVICE_PADDLE_CLIENT,
+    SERVICE_PADDLE_SUBSCRIPTIONS,
     SERVICE_PAID_BUNDLE_SERVICE,
     SERVICE_PROVISIONER,
     SERVICE_PROVISIONING_REPOSITORY,
@@ -53,7 +55,9 @@ from .core.constants import (
     SERVICE_SUBSCRIPTION_RECONCILER,
     SERVICE_SUBSCRIPTION_REPOSITORY,
     SERVICE_SUBSCRIPTION_SERVICE,
+    SERVICE_WEB_CHECKOUT,
 )
+from .core.features import play_subscriptions_enabled, web_subscriptions_enabled
 from .services.bundle_claim_reaper import BundleClaimReaper
 from .services.bundle_rotation_service import BundleRotationService
 from .services.bundle_service import BundleService
@@ -62,6 +66,8 @@ from .services.google_play_notifications import (
     GooglePlayNotificationService,
     PubSubAuthenticator,
 )
+from .services.paddle_client import PADDLE_LIVE_BASE_URL, PADDLE_SANDBOX_BASE_URL, PaddleClient
+from .services.paddle_subscription_service import PaddleSubscriptionService
 from .services.paid_bundle_service import PaidBundleService
 from .services.provisioning_repository import ProvisioningRepository
 from .services.redemption_poller import RedemptionPoller
@@ -73,6 +79,8 @@ from .services.subscription_identity_service import SubscriptionIdentityService
 from .services.subscription_reconciler import SubscriptionReconciler
 from .services.subscription_repository import SubscriptionRepository
 from .services.subscription_service import SubscriptionService
+from .services.web_checkout_service import WebCheckoutService
+from .services.web_subscription_repository import WebSubscriptionRepository
 
 
 def build_admin_credentials() -> AdminCredentials:
@@ -148,6 +156,21 @@ def _allowed_products() -> dict[str, frozenset[str]]:
     return {PLAY_SUBSCRIPTION_PRODUCT_ID: plans}
 
 
+def _web_reconciliation_interval() -> timedelta:
+    # Paddle pushes every change; the refresh only repairs missed deliveries,
+    # so it can be far less frequent than the Matrix enforcement loop.
+    return timedelta(hours=float(os.getenv("WEB_SUBSCRIPTION_REFRESH_HOURS", "6")))
+
+
+def _paddle_price_ids() -> frozenset[str]:
+    prices = frozenset(
+        price.strip() for price in os.getenv("PADDLE_PRICE_IDS", "").split(",") if price.strip()
+    )
+    if not prices:
+        raise ValueError("PADDLE_PRICE_IDS must name at least one Paddle price")
+    return prices
+
+
 def _subscription_reconciliation_interval() -> timedelta:
     return timedelta(
         seconds=float(
@@ -188,9 +211,12 @@ class Container:
         self._factories[SERVICE_GOOGLE_PLAY_NOTIFICATIONS] = self._create_google_play_notifications
         self._factories[SERVICE_SUBSCRIPTION_RECONCILER] = self._create_subscription_reconciler
         self._factories[SERVICE_BUNDLE_CLAIM_REAPER] = self._create_bundle_claim_reaper
+        self._factories[SERVICE_PADDLE_CLIENT] = self._create_paddle_client
+        self._factories[SERVICE_PADDLE_SUBSCRIPTIONS] = self._create_paddle_subscriptions
+        self._factories[SERVICE_WEB_CHECKOUT] = self._create_web_checkout_service
 
-    def _create_repository(self) -> SubscriptionRepository:
-        return SubscriptionRepository(os.getenv("DB_PATH", DEFAULT_DB_PATH))
+    def _create_repository(self) -> WebSubscriptionRepository:
+        return WebSubscriptionRepository(os.getenv("DB_PATH", DEFAULT_DB_PATH))
 
     def _create_provisioner(self) -> SynapseProvisioner:
         return SynapseProvisioner(build_admin_credentials())
@@ -338,7 +364,9 @@ class Container:
         return PaidBundleService(
             self.get_bundle_service(),
             self.get_subscription_repository(),
-            self.get_google_play_client(),
+            # Web-only deployments have no Google credentials; Play
+            # acknowledgement is the only use of this client.
+            self.get_google_play_client() if play_subscriptions_enabled() else None,
             self.get_secret_cipher(),
             provisioning_wait_seconds=float(
                 os.getenv(
@@ -392,9 +420,12 @@ class Container:
     def _create_subscription_reconciler(self) -> SubscriptionReconciler:
         return SubscriptionReconciler(
             self.get_subscription_repository(),
-            self.get_subscription_service(),
+            self.get_subscription_service() if play_subscriptions_enabled() else None,
             self.get_subscription_access_service(),
             self.get_secret_cipher(),
+            paddle_subscriptions=(
+                self.get_paddle_subscription_service() if web_subscriptions_enabled() else None
+            ),
             interval_seconds=_subscription_reconciliation_interval().total_seconds(),
             batch_size=int(os.getenv("SUBSCRIPTION_RECONCILE_BATCH_SIZE", "50")),
         )
@@ -411,6 +442,39 @@ class Container:
                 )
             ),
             batch_size=int(os.getenv("BUNDLE_CLAIM_REAPER_BATCH_SIZE", "50")),
+        )
+
+    def _create_paddle_client(self) -> PaddleClient:
+        sandbox = os.getenv("PADDLE_ENVIRONMENT", "production").lower() == "sandbox"
+        return PaddleClient(
+            os.getenv("PADDLE_API_KEY", ""),
+            base_url=PADDLE_SANDBOX_BASE_URL if sandbox else PADDLE_LIVE_BASE_URL,
+        )
+
+    def _create_paddle_subscriptions(self) -> PaddleSubscriptionService:
+        secret = os.getenv("PADDLE_WEBHOOK_SECRET", "")
+        if not secret:
+            raise ValueError("PADDLE_WEBHOOK_SECRET is required")
+        return PaddleSubscriptionService(
+            self.get_web_subscription_repository(),
+            self.get_subscription_access_service(),
+            self.get_secret_cipher(),
+            self.get_paddle_client(),
+            webhook_secret=secret,
+            allowed_price_ids=_paddle_price_ids(),
+            grace_period=timedelta(days=float(os.getenv("WEB_SUBSCRIPTION_GRACE_DAYS", "7"))),
+            reconciliation_interval=_web_reconciliation_interval(),
+        )
+
+    def _create_web_checkout_service(self) -> WebCheckoutService:
+        return WebCheckoutService(
+            self.get_web_subscription_repository(),
+            self.get_subscription_identity_service(),
+            self.get_paid_bundle_service(),
+            self.get_subscription_access_service(),
+            self.get_paddle_subscription_service(),
+            checkout_page_url=os.getenv("WEB_CHECKOUT_PAGE_URL", ""),
+            allowed_price_ids=_paddle_price_ids(),
         )
 
     def get(self, service_name: str) -> Any:
@@ -440,6 +504,10 @@ class Container:
     def get_subscription_repository(self) -> SubscriptionRepository:
         """Get the repository that adds paid state to the provisioning database."""
         return cast(SubscriptionRepository, self.get(SERVICE_SUBSCRIPTION_REPOSITORY))
+
+    def get_web_subscription_repository(self) -> WebSubscriptionRepository:
+        """Get the repository with web checkout sessions and Paddle event ids."""
+        return cast(WebSubscriptionRepository, self.get(SERVICE_SUBSCRIPTION_REPOSITORY))
 
     def get_provisioner(self) -> SynapseProvisioner:
         """Get the Synapse provisioner"""
@@ -506,6 +574,15 @@ class Container:
 
     def get_bundle_claim_reaper(self) -> BundleClaimReaper:
         return cast(BundleClaimReaper, self.get(SERVICE_BUNDLE_CLAIM_REAPER))
+
+    def get_paddle_client(self) -> PaddleClient:
+        return cast(PaddleClient, self.get(SERVICE_PADDLE_CLIENT))
+
+    def get_paddle_subscription_service(self) -> PaddleSubscriptionService:
+        return cast(PaddleSubscriptionService, self.get(SERVICE_PADDLE_SUBSCRIPTIONS))
+
+    def get_web_checkout_service(self) -> WebCheckoutService:
+        return cast(WebCheckoutService, self.get(SERVICE_WEB_CHECKOUT))
 
 
 # Global container instance

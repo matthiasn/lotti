@@ -21,6 +21,9 @@ SERVICE_SUBSCRIPTION_ACCESS_SERVICE = "subscription_access_service"
 SERVICE_GOOGLE_PLAY_NOTIFICATIONS = "google_play_notifications"
 SERVICE_SUBSCRIPTION_RECONCILER = "subscription_reconciler"
 SERVICE_BUNDLE_CLAIM_REAPER = "bundle_claim_reaper"
+SERVICE_PADDLE_CLIENT = "paddle_client"
+SERVICE_PADDLE_SUBSCRIPTIONS = "paddle_subscriptions"
+SERVICE_WEB_CHECKOUT = "web_checkout"
 
 # Default SQLite location, mirroring the credits-service convention of a
 # `data/` directory mounted as a volume in Docker.

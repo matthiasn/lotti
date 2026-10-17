@@ -291,11 +291,32 @@ def test_entitlement_bootstrap_maps_per_client_rate_limit(client, services):
 
 def test_subscription_routes_fail_closed_when_feature_is_disabled(client, monkeypatch):
     monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    monkeypatch.setenv("ENABLE_WEB_SUBSCRIPTIONS", "false")
 
     response = client.post("/api/v1/client/subscriptions/entitlements")
 
     assert response.status_code == 503
-    assert response.json()["detail"] == "Google Play SYNC subscriptions are disabled"
+    assert response.json()["detail"] == "Paid SYNC subscriptions are disabled"
+
+
+def test_web_checkout_alone_opens_shared_routes_but_not_play_routes(client, services, monkeypatch):
+    monkeypatch.setenv("ENABLE_PLAY_SUBSCRIPTIONS", "false")
+    monkeypatch.setenv("ENABLE_WEB_SUBSCRIPTIONS", "true")
+
+    entitlement = client.post("/api/v1/client/subscriptions/entitlements")
+    intent = client.post(
+        "/api/v1/client/subscriptions/purchase-intents",
+        headers={"Authorization": f"Bearer {AUTH_SECRET}"},
+        json={
+            "entitlement_id": "entitlement-one",
+            "product_id": "lotti_sync",
+            "base_plan_id": "monthly",
+        },
+    )
+
+    assert entitlement.status_code == 201
+    assert intent.status_code == 503
+    assert intent.json()["detail"] == "Google Play SYNC subscriptions are disabled"
 
 
 def test_purchase_intent_requires_entitlement_bearer_credential(client):

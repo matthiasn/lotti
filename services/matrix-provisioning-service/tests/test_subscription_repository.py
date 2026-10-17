@@ -25,6 +25,7 @@ from src.core.subscriptions import (
     EntitlementState,
     GoogleSubscriptionState,
     SubscriptionEventType,
+    SubscriptionProvider,
     VerifiedSubscription,
 )
 from src.services.subscription_repository import (
@@ -87,6 +88,51 @@ def test_existing_subscription_schema_is_migrated_with_matrix_state(tmp_path):
     columns = {row[1] for row in connection.execute("PRAGMA table_info(play_subscriptions)")}
     connection.close()
     assert "matrix_suspended" in columns
+
+
+async def test_rows_written_before_web_checkout_migrate_as_play_rows(tmp_path):
+    db_path = tmp_path / "pre-web.db"
+    repository = SubscriptionRepository(str(db_path))
+    await repository.create_entitlement(
+        entitlement_id="entitlement-one",
+        obfuscated_account_id="obfuscated-one",
+        auth_secret_hash="auth-hash",
+        now=NOW,
+    )
+    await repository.store_verified_subscription(
+        verified_subscription("entitlement-one", "token-one"), now=NOW
+    )
+    connection = sqlite3.connect(db_path)
+    connection.execute("ALTER TABLE play_subscriptions DROP COLUMN provider")
+    connection.commit()
+    connection.close()
+
+    migrated = SubscriptionRepository(str(db_path))
+
+    stored = await migrated.get_subscription_by_token("token-one")
+    assert stored.provider is SubscriptionProvider.GOOGLE_PLAY
+
+
+async def test_provider_round_trips_and_is_not_rewritten_by_later_upserts(
+    subscription_repository,
+):
+    await subscription_repository.create_entitlement(
+        entitlement_id="entitlement-one",
+        obfuscated_account_id="obfuscated-one",
+        auth_secret_hash="auth-hash",
+        now=NOW,
+    )
+    snapshot = verified_subscription(
+        "entitlement-one", "paddle-token", provider=SubscriptionProvider.PADDLE
+    )
+    await subscription_repository.store_verified_subscription(snapshot, now=NOW)
+    await subscription_repository.store_verified_subscription(
+        replace(snapshot, last_verified_at=NOW + timedelta(minutes=1)),
+        now=NOW + timedelta(minutes=1),
+    )
+
+    stored = await subscription_repository.get_subscription_by_token("paddle-token")
+    assert stored.provider is SubscriptionProvider.PADDLE
 
 
 def verified_subscription(
