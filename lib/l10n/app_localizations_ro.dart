@@ -15714,6 +15714,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncListUnknownPayload => 'Conținut necunoscut';
 
   @override
+  String get syncManageSubscription => 'Gestionați abonamentul';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Pagina abonamentului nu a putut fi deschisă. Încercați mai târziu.';
+
+  @override
   String get syncNotLoggedInToast => 'Sincronizarea nu este conectată';
 
   @override
@@ -16029,6 +16036,64 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Dicționar vocal';
+
+  @override
+  String get syncSubscribeAnnual => 'Abonați-vă anual';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Finalizați plata în browser. Acest ecran continuă de la sine imediat ce plata ajunge.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Plata a fost primită. Se configurează contul de sincronizare…';
+
+  @override
+  String get syncSubscribeEntry => 'Obțineți Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Contul acestui abonament este deja configurat. Adăugați acest dispozitiv de pe unul dintre dispozitivele care se sincronizează deja.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Nu s-a putut deschide niciun browser pentru plată.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Această aplicație a refuzat contul livrat de abonamentul dumneavoastră. Actualizați Lotti și încercați din nou.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Lotti Sync nu a putut fi contactat. Verificați conexiunea și încercați din nou.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync nu a putut finaliza acum. Încercați din nou peste câteva minute.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Plata a expirat înainte de a fi efectuată. Alegeți un abonament pentru a începe din nou.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Plata se face cu cardul sau prin PayPal, prin Paddle, furnizorul nostru de plăți. Puteți anula oricând.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti găzduiește sincronizarea dintre dispozitivele dumneavoastră. Totul rămâne criptat integral, astfel încât doar dispozitivele dumneavoastră — nici măcar Lotti — pot citi înregistrările.';
+
+  @override
+  String get syncSubscribeMonthly => 'Abonați-vă lunar';
+
+  @override
+  String get syncSubscribeOpening => 'Se deschide plata securizată…';
+
+  @override
+  String get syncSubscribeReopen => 'Redeschideți plata';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>

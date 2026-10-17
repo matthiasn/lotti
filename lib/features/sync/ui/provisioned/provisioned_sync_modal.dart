@@ -4,11 +4,13 @@ import 'package:lotti/features/design_system/components/buttons/design_system_in
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/manual_credentials_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_config_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/sync_setup_entry.dart';
+import 'package:lotti/features/sync/ui/subscription/subscribe_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
@@ -124,10 +126,38 @@ class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
     );
   }
 
+  /// The paid path: subscribe, then the same connect and roster pages a
+  /// pairing code leads to. The subscribe page sits at index 0, so the
+  /// connect and roster pages keep their [SyncSetupPage] indices.
+  void _openSubscribe() {
+    pageIndexNotifier.value = SyncSetupPage.pairingCode;
+    entryNotifier.value = SyncSetupEntry.pairingCode;
+    ModalUtils.showMultiPageModal<void>(
+      context: context,
+      pageIndexNotifier: pageIndexNotifier,
+      pageListBuilder: (modalContext) => [
+        subscribePage(
+          context: modalContext,
+          pageIndexNotifier: pageIndexNotifier,
+        ),
+        provisionedConfigPage(
+          context: modalContext,
+          pageIndexNotifier: pageIndexNotifier,
+          entry: entryNotifier,
+        ),
+        provisionedStatusPage(
+          context: modalContext,
+          pageIndexNotifier: pageIndexNotifier,
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
+    final subscriptionAvailable = ref.watch(syncSubscriptionAvailableProvider);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -168,6 +198,20 @@ class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
                 leadingIcon: LottiIcons.scanQr,
                 onPressed: _openWizard,
               ),
+              if (subscriptionAvailable) ...[
+                SizedBox(height: tokens.spacing.step3),
+                // Below the code, never above it: a code from another device
+                // is free and is still the main road. This is the road for
+                // someone with nothing to pair with yet.
+                DesignSystemButton(
+                  key: const Key('sync_setup_subscribe'),
+                  label: messages.syncSubscribeEntry,
+                  size: DesignSystemButtonSize.large,
+                  variant: DesignSystemButtonVariant.secondary,
+                  leadingIcon: LottiIcons.cloud,
+                  onPressed: _openSubscribe,
+                ),
+              ],
               if (isLinux) ...[
                 SizedBox(height: tokens.spacing.step4),
                 // Quiet, under the accent: the code is still the main road,

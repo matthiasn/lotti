@@ -15668,6 +15668,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncListUnknownPayload => 'Contenu inconnu';
 
   @override
+  String get syncManageSubscription => 'Gérer l\'abonnement';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Impossible d\'ouvrir la page de l\'abonnement. Réessaie plus tard.';
+
+  @override
   String get syncNotLoggedInToast => 'La synchronisation n\'est pas connectée';
 
   @override
@@ -15984,6 +15991,64 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Dictionnaire vocal';
+
+  @override
+  String get syncSubscribeAnnual => 'S\'abonner à l\'année';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Termine le paiement dans ton navigateur. Cet écran continuera tout seul dès sa réception.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Paiement reçu. Configuration de ton compte de synchronisation…';
+
+  @override
+  String get syncSubscribeEntry => 'Obtenir Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Le compte de cet abonnement est déjà configuré. Ajoute cet appareil depuis l\'un de tes appareils qui synchronise déjà.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Aucun navigateur n\'a pu être ouvert pour le paiement.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Cette appli a refusé le compte fourni par ton abonnement. Mets Lotti à jour et réessaie.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Impossible de joindre Lotti Sync. Vérifie ta connexion et réessaie.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync n\'a pas pu terminer pour le moment. Réessaie dans quelques minutes.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Ce paiement a expiré avant d\'être réglé. Choisis une formule pour recommencer.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Paiement par carte ou PayPal via Paddle, notre prestataire de paiement. Résiliable à tout moment.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti héberge la synchronisation entre tes appareils. Tout reste chiffré de bout en bout : seuls tes propres appareils peuvent lire tes entrées, pas même Lotti.';
+
+  @override
+  String get syncSubscribeMonthly => 'S\'abonner au mois';
+
+  @override
+  String get syncSubscribeOpening => 'Ouverture du paiement sécurisé…';
+
+  @override
+  String get syncSubscribeReopen => 'Rouvrir le paiement';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>

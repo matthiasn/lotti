@@ -15407,6 +15407,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncListUnknownPayload => 'Ukendt nyttelast';
 
   @override
+  String get syncManageSubscription => 'Administrer abonnement';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Kunne ikke åbne abonnementssiden. Prøv igen senere.';
+
+  @override
   String get syncNotLoggedInToast => 'Sync er ikke logget ind';
 
   @override
@@ -15720,6 +15727,64 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Taleordbog';
+
+  @override
+  String get syncSubscribeAnnual => 'Abonnér årligt';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Gennemfør betalingen i din browser. Skærmen fortsætter af sig selv, når den er modtaget.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Betaling modtaget. Opretter din synkroniseringskonto…';
+
+  @override
+  String get syncSubscribeEntry => 'Få Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Kontoen for dette abonnement er allerede oprettet. Tilføj denne enhed fra en af dine enheder, der allerede synkroniserer.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Der kunne ikke åbnes en browser til betalingen.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Appen afviste den konto, dit abonnement leverede. Opdater Lotti, og prøv igen.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Kunne ikke nå Lotti Sync. Tjek din forbindelse, og prøv igen.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync kunne ikke gennemføre det lige nu. Prøv igen om et par minutter.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Betalingen udløb, før den blev gennemført. Vælg et abonnement for at starte igen.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Betales med kort eller PayPal via Paddle, vores betalingsudbyder. Opsig når som helst.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti står for synkroniseringen mellem dine enheder. Alt forbliver end-to-end-krypteret, så kun dine egne enheder — ikke engang Lotti — kan læse dine indlæg.';
+
+  @override
+  String get syncSubscribeMonthly => 'Abonnér månedligt';
+
+  @override
+  String get syncSubscribeOpening => 'Åbner den sikre betaling…';
+
+  @override
+  String get syncSubscribeReopen => 'Åbn betalingen igen';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>
