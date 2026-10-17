@@ -20,5 +20,12 @@ Override personTimelineOverride({
         ? entries
         : const [],
   );
+  // A spoken capture puts its voice note on the timeline as it is saved.
+  when(
+    () => repository.addToTimeline(
+      personId: any(named: 'personId'),
+      entryId: any(named: 'entryId'),
+    ),
+  ).thenAnswer((_) async => true);
   return personTimelineRepositoryProvider.overrideWithValue(repository);
 }
