@@ -99,7 +99,9 @@ class BundleAttestationVerifier {
     required this.trust,
   });
 
-  final Ed25519 ed25519;
+  /// Null when the caller knows the bundle is unsigned and did not load
+  /// libsodium; a signed bundle then cannot be verified and is refused.
+  final Ed25519? ed25519;
   final BundleTrust trust;
 
   /// Returns how [bundle] is trusted at [now], or throws
@@ -122,6 +124,10 @@ class BundleAttestationVerifier {
     final key = trust.keys[attestation.kid];
     if (key == null) {
       throw const UntrustedBundleException(BundleTrustFailure.unknownKey);
+    }
+    final ed25519 = this.ed25519;
+    if (ed25519 == null) {
+      throw const UntrustedBundleException(BundleTrustFailure.invalidSignature);
     }
     final valid = ed25519.verify(
       message: attestationPayload(

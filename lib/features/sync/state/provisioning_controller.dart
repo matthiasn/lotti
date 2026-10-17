@@ -199,8 +199,10 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       // Before anything touches the current session: a forged or phishing
       // bundle must not even log the existing account out.
       try {
+        // libsodium is only needed to check a signature; an unsigned bundle
+        // for a self-hosted server pairs without it, as it always did.
         BundleAttestationVerifier(
-          ed25519: await _ed25519Loader(),
+          ed25519: bundle.att == null ? null : await _ed25519Loader(),
           trust: _trust,
         ).verify(bundle, now: _clock());
       } on UntrustedBundleException catch (e) {

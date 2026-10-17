@@ -113,11 +113,22 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
   SyncSubscriptionStore get _store => ref.read(syncSubscriptionStoreProvider);
 
   /// Picks up where a previous run stopped: a session still awaiting payment,
-  /// or a paid one whose bundle was never claimed.
+  /// or a paid one whose bundle was never claimed or never connected.
   Future<void> resume() async {
     final record = await _store.load();
-    final sessionId = record?.sessionId;
-    if (record == null || sessionId == null) return;
+    if (record == null) return;
+    final sessionId = record.sessionId;
+    if (sessionId == null) {
+      // The session can be gone while the payment is not: a connect that
+      // failed, or a checkout paid after its session timed out. The claim
+      // needs no session, so a device that does not sync yet, or still owes
+      // a rotation proof, asks for it; unpaid simply means nothing to resume.
+      if (record.pendingProof != null ||
+          !ref.read(matrixServiceProvider).isLoggedIn()) {
+        await _guarded(() => _claimAndConnect(record, quietIfUnpaid: true));
+      }
+      return;
+    }
     try {
       switch (await _api.checkoutState(sessionId)) {
         case SyncCheckoutState.paid:
@@ -135,17 +146,34 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
     }
   }
 
+  /// Runs [work] from a future nobody awaits, turning any escape into a state.
+  Future<void> _guarded(Future<void> Function() work) async {
+    try {
+      await work();
+    } on Object {
+      state = const SyncSubscribeFailed(SyncSubscribeFailure.service);
+    }
+  }
+
   /// Opens the checkout for [plan] in the browser and waits for payment.
   Future<void> subscribe(SyncSubscriptionPlan plan) async {
     _stopPolling();
     state = const SyncSubscribeOpening();
     try {
       final record = await _ensureRecord();
-      final session = await _api.createCheckoutSession(
-        record.entitlement,
-        plan: plan,
-        claimSecret: record.claimSecret,
-      );
+      final SyncCheckoutSession session;
+      try {
+        session = await _api.createCheckoutSession(
+          record.entitlement,
+          plan: plan,
+          claimSecret: record.claimSecret,
+        );
+      } on SyncSubscriptionException catch (e) {
+        if (e.kind != SyncSubscriptionFailureKind.conflict) rethrow;
+        // Already paid for: claim it instead of billing a second time.
+        await _claimAndConnect(record);
+        return;
+      }
       final withSession = record.withSession(session.id);
       await _store.save(withSession);
       if (!await ref.read(syncCheckoutLauncherProvider)(session.checkoutUrl)) {
@@ -236,7 +264,10 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
     }
   }
 
-  Future<void> _claimAndConnect(SyncSubscriptionRecord record) async {
+  Future<void> _claimAndConnect(
+    SyncSubscriptionRecord record, {
+    bool quietIfUnpaid = false,
+  }) async {
     state = const SyncSubscribeClaiming();
     final SyncPaidBundle paid;
     try {
@@ -245,7 +276,10 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
         claimSecret: record.claimSecret,
       );
     } on SyncSubscriptionException catch (e) {
-      state = SyncSubscribeFailed(_failureOf(e));
+      state =
+          quietIfUnpaid && e.kind == SyncSubscriptionFailureKind.paymentPending
+          ? const SyncSubscribeIdle()
+          : SyncSubscribeFailed(_failureOf(e));
       return;
     }
     final encoded = paid.bundle;
@@ -264,15 +298,15 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
     }
     // Saved before the password rotates: if the app dies after rotating,
     // the proof is what keeps the service from deactivating the account.
-    final pending = record
-        .withSession(null)
-        .withPendingProof(
-          PendingRotationProof(
-            bundleId: paid.bundleId,
-            roomId: bundle.roomId,
-            challenge: challenge,
-          ),
-        );
+    // The session stays until the connect succeeds, so a failed one is
+    // picked up again by [resume].
+    final pending = record.withPendingProof(
+      PendingRotationProof(
+        bundleId: paid.bundleId,
+        roomId: bundle.roomId,
+        challenge: challenge,
+      ),
+    );
     await _store.save(pending);
 
     state = const SyncSubscribeConnecting();
@@ -287,6 +321,8 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
       return;
     }
     await ref.read(rotationConfirmerProvider).confirmPending();
+    final confirmed = await _store.load();
+    if (confirmed != null) await _store.save(confirmed.withSession(null));
     state = const SyncSubscribeDone();
   }
 

@@ -149,6 +149,16 @@ void main() {
     );
   });
 
+  test('a signed bundle cannot pass without an Ed25519 implementation', () {
+    expect(
+      () => const BundleAttestationVerifier(
+        ed25519: null,
+        trust: _trust,
+      ).verify(_signedBundle, now: _issuedAt),
+      refusedWith(BundleTrustFailure.invalidSignature),
+    );
+  });
+
   test('an unknown key id is refused', () {
     final foreign = _signedBundle.copyWith(
       att: _vectorAttestation.copyWith(kid: 'someone-else'),

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/provenance/crypto/ed25519.dart';
 import 'package:lotti/features/sync/state/bundle_attestation.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
@@ -1497,6 +1498,36 @@ void main() {
                 as Map<String, dynamic>;
         return SyncProvisioningBundle.fromJson(json);
       }
+
+      test('libsodium is loaded only for a bundle that is signed', () async {
+        var loads = 0;
+        final counting = ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => ProvisioningController(
+                onboardingSyncService: mockOnboardingSyncService,
+                trust: operatorTrust,
+                clock: () => issuedAt,
+                ed25519Loader: () {
+                  loads++;
+                  return SodiumEd25519.bundled();
+                },
+              ),
+            ),
+          ],
+        );
+        addTearDown(counting.dispose);
+        final controller = counting.read(
+          provisioningControllerProvider.notifier,
+        );
+
+        await controller.configureFromBundle(provisionedBundle);
+        expect(loads, 0);
+
+        await controller.configureFromBundle(signedBundle);
+        expect(loads, 1);
+      });
 
       test('a v3 bundle decodes with its attestation', () {
         final decoded = controller().decodeBundle(

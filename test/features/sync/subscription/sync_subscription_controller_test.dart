@@ -252,6 +252,27 @@ void main() {
       },
     );
 
+    test('an entitlement that already pays claims instead of paying twice', () {
+      fakeAsync((async) {
+        when(
+          () => bench.api.createCheckoutSession(
+            any(),
+            plan: any(named: 'plan'),
+            claimSecret: any(named: 'claimSecret'),
+          ),
+        ).thenThrow(
+          const SyncSubscriptionException(SyncSubscriptionFailureKind.conflict),
+        );
+
+        unawaited(bench.controller.subscribe(SyncSubscriptionPlan.annual));
+        async.flushMicrotasks();
+
+        expect(bench.launched, isEmpty);
+        expect(bench.provisioning.configured, [_bundle]);
+        expect(bench.state, isA<SyncSubscribeDone>());
+      });
+    });
+
     test('a browser that cannot open is reported', () {
       fakeAsync((async) {
         bench.launcherWorks = false;
@@ -447,6 +468,8 @@ void main() {
 
         expect(bench.state, isA<SyncSubscribeConnecting>());
         expect(bench.record!['pendingProof'], isNotNull);
+        // Kept, so the next visit resumes the paid claim.
+        expect(bench.record!['sessionId'], 's1');
         verifyNever(
           () => bench.api.confirmRotation(
             any(),
@@ -466,6 +489,97 @@ void main() {
           const SyncSubscriptionException(SyncSubscriptionFailureKind.conflict),
         );
         bench.seed(_seeded);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(
+          (bench.state as SyncSubscribeFailed).failure,
+          SyncSubscribeFailure.service,
+        );
+      });
+    });
+  });
+
+  group('resume without a session', () {
+    const sessionless = SyncSubscriptionRecord(
+      entitlement: _entitlement,
+      claimSecret: 'claim-secret',
+    );
+
+    test('a device that does not sync yet claims a late payment', () {
+      fakeAsync((async) {
+        when(bench.matrix.isLoggedIn).thenReturn(false);
+        bench.seed(sessionless);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(bench.provisioning.configured, [_bundle]);
+        verifyNever(() => bench.api.checkoutState(any()));
+      });
+    });
+
+    test('an unpaid entitlement just shows the plans again', () {
+      fakeAsync((async) {
+        when(bench.matrix.isLoggedIn).thenReturn(false);
+        when(
+          () => bench.api.claim(any(), claimSecret: any(named: 'claimSecret')),
+        ).thenThrow(
+          const SyncSubscriptionException(
+            SyncSubscriptionFailureKind.paymentPending,
+          ),
+        );
+        bench.seed(sessionless);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(bench.state, isA<SyncSubscribeIdle>());
+      });
+    });
+
+    test('a proof still owed retries the connect', () {
+      fakeAsync((async) {
+        bench.seed(
+          sessionless.withPendingProof(
+            const PendingRotationProof(
+              bundleId: 'b-1',
+              roomId: '!room:example.com',
+              challenge: 'challenge',
+            ),
+          ),
+        );
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        expect(bench.provisioning.configured, [_bundle]);
+        expect(bench.state, isA<SyncSubscribeDone>());
+      });
+    });
+
+    test('a syncing device with nothing owed claims nothing', () {
+      fakeAsync((async) {
+        bench.seed(sessionless);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        verifyNever(
+          () => bench.api.claim(any(), claimSecret: any(named: 'claimSecret')),
+        );
+        expect(bench.state, isA<SyncSubscribeIdle>());
+      });
+    });
+
+    test('an unexpected error is reported', () {
+      fakeAsync((async) {
+        when(bench.matrix.isLoggedIn).thenReturn(false);
+        when(
+          () => bench.api.claim(any(), claimSecret: any(named: 'claimSecret')),
+        ).thenAnswer((_) async => throw StateError('keystore locked'));
+        bench.seed(sessionless);
 
         unawaited(bench.controller.resume());
         async.flushMicrotasks();
