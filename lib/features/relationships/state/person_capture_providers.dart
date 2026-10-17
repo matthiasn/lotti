@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
+import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_capture_filer.dart';
@@ -88,11 +89,24 @@ final personCaptureSorterProvider = Provider<PersonCaptureSorter>(
 const personRecordingSummaryMaxTokens = 200;
 
 /// Gives spoken check-ins their one-line summary, on the person's briefing
-/// route — the sorter's — and saves it as the recording's audio summary.
+/// route, and saves it as the recording's audio summary.
+///
+/// Only for a person with an active relationship agent: that agent's route
+/// is the one that already reads every check-in about them. Without one, the
+/// fallback chain (a profile, a category default, the Settings default)
+/// would send the words somewhere that never saw them, unannounced — so the
+/// recording is left unsummarized and its row folds instead.
 final personRecordingSummarizerProvider = Provider<PersonRecordingSummarizer>(
   (ref) => PersonRecordingSummarizer(
-    modelFor: (person) =>
-        ref.read(personCaptureSorterProvider).modelFor(person),
+    modelFor: (person) async {
+      final agent = usableRelationshipAgent(
+        await ref
+            .read(agentRepositoryProvider)
+            .getEntity(relationshipAgentIdFor(person.meta.id)),
+      );
+      if (agent == null) return null;
+      return ref.read(personCaptureSorterProvider).modelFor(person);
+    },
     generate:
         ({
           required prompt,

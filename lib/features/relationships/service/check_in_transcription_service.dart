@@ -229,13 +229,27 @@ class CheckInTranscriptionService {
       await _relationshipRepository.touchCheckInsHolding(audioEntryId);
       final summarizer = _summarizer;
       if (!summarize || summarizer == null) return;
-      final person = await _journalDb.journalEntityById(relationshipId);
-      if (person is! RelationshipEntry) return;
-      await summarizer.summarize(
-        person: person,
-        audioId: audioEntryId,
-        transcript: transcript,
-      );
+      // The words are in: whatever happens to their summary from here on is
+      // logged on its own, never a failed transcript — the outer catch
+      // would cancel a wait that has its words.
+      try {
+        final person = await _journalDb.journalEntityById(relationshipId);
+        if (person is! RelationshipEntry) return;
+        await summarizer.summarize(
+          person: person,
+          audioId: audioEntryId,
+          transcript: transcript,
+        );
+      } catch (exception, stackTrace) {
+        _domainLogger.error(
+          LogDomain.speech,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: _logTag,
+          message:
+              'Could not summarize ${DomainLogger.sanitizeId(audioEntryId)}',
+        );
+      }
     } catch (exception, stackTrace) {
       _domainLogger.error(
         LogDomain.speech,

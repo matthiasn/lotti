@@ -252,6 +252,31 @@ void main() {
     expect(saved, isEmpty);
   });
 
+  test('one deadline covers both attempts: a retry gets what is left of '
+      'it, not a fresh one', () {
+    fakeAsync((async) {
+      answers
+        ..add(
+          () => Future<List<ChatCompletionMessageToolCall>>.delayed(
+            const Duration(seconds: 90),
+            () => [_call('not json')],
+          ),
+        )
+        ..add(() => Completer<List<ChatCompletionMessageToolCall>>().future);
+      bool? result;
+      unawaited(
+        summarizer(withModel: model)
+            .summarize(person: pip, audioId: 'a', transcript: longWords)
+            .then((value) => result = value),
+      );
+      async.elapse(const Duration(seconds: 100));
+      expect(prompts, hasLength(2), reason: 'the retry was asked');
+      expect(result, isNull);
+      async.elapse(const Duration(seconds: 21));
+      expect(result, isFalse, reason: 'two minutes in all, not four');
+    });
+  });
+
   test('a call that does not come back in time saves nothing', () {
     fakeAsync((async) {
       answers.add(

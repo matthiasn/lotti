@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -30,6 +32,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../helpers/test_get_it.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   final now = DateTime(2026, 8, 13, 14, 5);
@@ -252,6 +255,14 @@ void main() {
         ),
       ),
     );
+    // Pip has an active relationship agent: its route already reads every
+    // check-in about them.
+    when(() => agents.getEntity(relationshipAgentIdFor('pip'))).thenAnswer(
+      (_) async => makeTestIdentity(
+        agentId: relationshipAgentIdFor('pip'),
+        kind: AgentKinds.relationshipAgent,
+      ),
+    );
     final summarizer = world().read(personRecordingSummarizerProvider);
     final words = 'Pip talked about the launch at length. ' * 6;
 
@@ -318,6 +329,40 @@ void main() {
       ),
       isFalse,
     );
+  });
+
+  test('a person without an active relationship agent gets no summary — '
+      'the fallback route never saw their check-ins', () async {
+    when(() => services.journalDb.getLinkedEntities(any())).thenAnswer(
+      (_) async => const [],
+    );
+    final summarizer = world().read(personRecordingSummarizerProvider);
+    final words = 'Pip talked about the launch at length. ' * 6;
+
+    expect(
+      await summarizer.summarize(
+        person: person,
+        audioId: 'audio-1',
+        transcript: words,
+      ),
+      isFalse,
+    );
+    when(() => agents.getEntity(relationshipAgentIdFor('pip'))).thenAnswer(
+      (_) async => makeTestIdentity(
+        agentId: relationshipAgentIdFor('pip'),
+        kind: AgentKinds.relationshipAgent,
+        lifecycle: AgentLifecycle.dormant,
+      ),
+    );
+    expect(
+      await summarizer.summarize(
+        person: person,
+        audioId: 'audio-1',
+        transcript: words,
+      ),
+      isFalse,
+    );
+    verifyNever(generateCall);
   });
 
   test('a person whose route resolves to nothing has no sorter', () async {

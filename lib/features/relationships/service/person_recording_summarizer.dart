@@ -120,11 +120,14 @@ typedef PersonRecordingSummarySave =
 /// product owner chose spoken check-ins only, 2026-10-17). Typed check-ins
 /// are never summarized.
 ///
-/// It runs on the person's briefing route — the model that already reads
-/// every check-in about them — so no new destination sees the words. A
+/// It runs on the person's briefing route — the model their active
+/// relationship agent already reads every check-in with; the provider gives
+/// it no model for a person without one — so no new destination sees the
+/// words. A
 /// recording short enough to be its own summary, or one that already has a
 /// summary (a speech-to-text engine's post-processing writes one), is left
-/// alone. One forced call, one retry, bounded by [timeout]; a failure is
+/// alone. One forced call and one retry, the two together bounded by
+/// [timeout]; a failure is
 /// logged by its reason and leaves the recording without a summary, which
 /// its row folds instead.
 class PersonRecordingSummarizer {
@@ -171,18 +174,23 @@ class PersonRecordingSummarizer {
               systemMessage: personRecordingSummarySystemMessage,
               model: model,
               categoryId: person.meta.categoryId,
-            ).timeout(timeout),
+            ),
           );
-      String line;
-      try {
-        line = await ask(prompt);
-      } on PersonCaptureSortToolException catch (first) {
-        line = await ask(
-          '$prompt\n\nYour previous answer was rejected: ${first.reason}. '
-          'Call the $personRecordingSummaryToolName tool and respond with '
-          'nothing else.',
-        );
+      Future<String> askWithRetry() async {
+        try {
+          return await ask(prompt);
+        } on PersonCaptureSortToolException catch (first) {
+          return ask(
+            '$prompt\n\nYour previous answer was rejected: ${first.reason}. '
+            'Call the $personRecordingSummaryToolName tool and respond with '
+            'nothing else.',
+          );
+        }
       }
+
+      // One deadline for both attempts: a retry gets what is left of it,
+      // not a fresh one.
+      final line = await askWithRetry().timeout(timeout);
       return await _save(
         audioId: audioId,
         summary: line,

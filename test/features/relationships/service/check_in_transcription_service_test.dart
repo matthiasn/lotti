@@ -525,6 +525,33 @@ void main() {
         );
       });
 
+      test('a summary that fails is logged on its own; the words still '
+          'reach the wait', () {
+        when(
+          () => journalDb.journalEntityById(personId),
+        ).thenThrow(StateError('database locked'));
+
+        withRun(
+          (run) {
+            expect(run.result, 'Pip hauled the krill.');
+            verify(
+              () => logger.error(
+                LogDomain.speech,
+                any<Object>(),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                subDomain: any<String>(named: 'subDomain'),
+                message: any<String>(
+                  named: 'message',
+                  that: startsWith('Could not summarize'),
+                ),
+              ),
+            ).called(1);
+          },
+          summarize: true,
+          summarizer: summarizer,
+        );
+      });
+
       test('is not summarized unasked, nor for a person who cannot be '
           'read', () {
         withRun((run) {}, summarizer: summarizer);
