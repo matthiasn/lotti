@@ -299,6 +299,23 @@ void main() {
     expect(recorder.modalVisibleLog.last, isFalse);
   });
 
+  testWidgets('an item edited in review is filed as edited', (tester) async {
+    await open(tester);
+    await stop(tester);
+
+    await tapKey(tester, 'person-capture-check-in-type');
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('check-in-type-inPerson')));
+    await settle(tester);
+    await tapKey(tester, 'person-capture-file');
+    await settle(tester);
+
+    expect(
+      (filer.calls.single.items.first as PersonCaptureCheckIn).interactionType,
+      CheckInInteractionType.inPerson,
+    );
+  });
+
   testWidgets('with everything set aside there is nothing to file', (
     tester,
   ) async {

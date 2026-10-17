@@ -169,12 +169,18 @@ void main() {
         items: [
           {'kind': 'task', 'title': 'x' * 400},
           {'kind': 'note', 'text': 'y' * 5000},
+          {
+            'kind': 'checkIn',
+            'summary': 'Talked.',
+            'topics': ['z' * 400],
+          },
         ],
       ),
     ]);
 
     expect((items[0] as PersonCaptureTask).title.length, 160);
     expect((items[1] as PersonCaptureNote).text.length, 2000);
+    expect((items[2] as PersonCaptureCheckIn).topics.single.length, 160);
   });
 
   test('the tool is pinned for models that honour a pin', () {
