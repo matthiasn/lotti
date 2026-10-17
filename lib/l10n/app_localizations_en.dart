@@ -15634,6 +15634,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Runs on your own sync server · nothing leaves your devices unencrypted';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Your own sync server or Lotti Sync · nothing leaves your devices unencrypted';
+
+  @override
   String get syncSetupEmptyHint =>
       'Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.';
 

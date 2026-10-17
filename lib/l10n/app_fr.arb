@@ -6016,6 +6016,7 @@
   "syncReauthTitle": "Confirme que c’est toi",
   "syncSetupCta": "Configurer la synchronisation",
   "syncSetupEmptyFootnote": "Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement",
+  "syncSetupEmptyFootnoteHosted": "Ton propre serveur de synchronisation ou Lotti Sync · rien ne quitte tes appareils sans chiffrement",
   "syncSetupEmptyHint": "Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.",
   "syncSetupEmptyTitle": "Synchronise tes appareils",
   "syncSetupUseAccountLink": "Se connecter avec un compte Matrix à la place",

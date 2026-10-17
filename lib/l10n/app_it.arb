@@ -6673,6 +6673,7 @@
   "syncReauthTitle": "Conferma che sei tu",
   "syncSetupCta": "Configura la sincronizzazione",
   "syncSetupEmptyFootnote": "Gira sul tuo server di sincronizzazione · niente lascia i tuoi dispositivi in chiaro",
+  "syncSetupEmptyFootnoteHosted": "Il tuo server di sincronizzazione o Lotti Sync · niente lascia i tuoi dispositivi senza cifratura",
   "syncSetupEmptyHint": "Il tuo diario su ogni tuo dispositivo. Cifrato end-to-end, solo tra i tuoi dispositivi: senza account cloud.",
   "syncSetupEmptyTitle": "Sincronizza i tuoi dispositivi",
   "syncSetupUseAccountLink": "Accedi invece con un account Matrix",

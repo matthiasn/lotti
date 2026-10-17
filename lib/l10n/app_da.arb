@@ -6673,6 +6673,7 @@
   "syncReauthTitle": "Bekræft, at det er dig",
   "syncSetupCta": "Konfigurer synkronisering",
   "syncSetupEmptyFootnote": "Kører på din egen synkroniseringsserver · intet forlader dine enheder ukrypteret",
+  "syncSetupEmptyFootnoteHosted": "Din egen synkroniseringsserver eller Lotti Sync · intet forlader dine enheder ukrypteret",
   "syncSetupEmptyHint": "Din dagbog på alle dine enheder. End-to-end-krypteret, kun mellem dine enheder — ingen cloudkonto.",
   "syncSetupEmptyTitle": "Synkronisér dine enheder",
   "syncSetupUseAccountLink": "Log i stedet ind med en Matrix-konto",

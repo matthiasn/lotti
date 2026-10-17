@@ -15841,6 +15841,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Dein eigener Sync-Server oder Lotti Sync · nichts verlässt deine Geräte unverschlüsselt';
+
+  @override
   String get syncSetupEmptyHint =>
       'Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.';
 

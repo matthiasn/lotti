@@ -226,7 +226,11 @@ class _SyncSetupEmptyStateState extends ConsumerState<SyncSetupEmptyState> {
               ],
               SizedBox(height: tokens.spacing.step5),
               Text(
-                messages.syncSetupEmptyFootnote,
+                // "Your own server" alone would contradict the hosted
+                // option offered just above it.
+                subscriptionAvailable
+                    ? messages.syncSetupEmptyFootnoteHosted
+                    : messages.syncSetupEmptyFootnote,
                 textAlign: TextAlign.center,
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,

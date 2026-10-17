@@ -6672,6 +6672,7 @@
   "syncReauthTitle": "Bevestig dat jij het bent",
   "syncSetupCta": "Synchronisatie instellen",
   "syncSetupEmptyFootnote": "Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld",
+  "syncSetupEmptyFootnoteHosted": "Je eigen syncserver of Lotti Sync · niets verlaat je apparaten onversleuteld",
   "syncSetupEmptyHint": "Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.",
   "syncSetupEmptyTitle": "Synchroniseer je apparaten",
   "syncSetupUseAccountLink": "In plaats daarvan inloggen met een Matrix-account",

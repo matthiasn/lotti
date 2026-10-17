@@ -6016,6 +6016,7 @@
   "syncReauthTitle": "Confirma que eres tú",
   "syncSetupCta": "Configurar sincronización",
   "syncSetupEmptyFootnote": "Funciona en tu propio servidor de sincronización · nada sale de tus dispositivos sin cifrar",
+  "syncSetupEmptyFootnoteHosted": "Tu propio servidor de sincronización o Lotti Sync · nada sale de tus dispositivos sin cifrar",
   "syncSetupEmptyHint": "Tu diario en todos tus dispositivos. Cifrado de extremo a extremo, solo entre tus dispositivos: sin cuenta en la nube.",
   "syncSetupEmptyTitle": "Sincroniza tus dispositivos",
   "syncSetupUseAccountLink": "Iniciar sesión con una cuenta de Matrix en su lugar",

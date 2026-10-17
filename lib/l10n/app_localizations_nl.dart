@@ -15776,6 +15776,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Draait op je eigen synchronisatieserver · niets verlaat je apparaten onversleuteld';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Je eigen syncserver of Lotti Sync · niets verlaat je apparaten onversleuteld';
+
+  @override
   String get syncSetupEmptyHint =>
       'Je dagboek op elk apparaat dat je bezit. End-to-end versleuteld, alleen tussen jouw apparaten — zonder cloudaccount.';
 

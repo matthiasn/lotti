@@ -15927,6 +15927,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Tvůj vlastní synchronizační server nebo Lotti Sync · nic neopustí tvá zařízení nešifrované';
+
+  @override
   String get syncSetupEmptyHint =>
       'Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.';
 

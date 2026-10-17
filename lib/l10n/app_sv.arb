@@ -6673,6 +6673,7 @@
   "syncReauthTitle": "Bekräfta att det är du",
   "syncSetupCta": "Konfigurera synk",
   "syncSetupEmptyFootnote": "Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat",
+  "syncSetupEmptyFootnoteHosted": "Din egen synkserver eller Lotti Sync · inget lämnar dina enheter okrypterat",
   "syncSetupEmptyHint": "Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.",
   "syncSetupEmptyTitle": "Synka dina enheter",
   "syncSetupUseAccountLink": "Logga in med ett Matrix-konto i stället",

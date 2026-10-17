@@ -16033,6 +16033,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Propriul server de sincronizare sau Lotti Sync · nimic nu părăsește dispozitivele dumneavoastră necriptat';
+
+  @override
   String get syncSetupEmptyHint =>
       'Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.';
 

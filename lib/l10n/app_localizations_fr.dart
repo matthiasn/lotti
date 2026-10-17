@@ -15988,6 +15988,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Fonctionne sur ton propre serveur de synchronisation · rien ne quitte tes appareils sans chiffrement';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Ton propre serveur de synchronisation ou Lotti Sync · rien ne quitte tes appareils sans chiffrement';
+
+  @override
   String get syncSetupEmptyHint =>
       'Ton journal sur chacun de tes appareils. Chiffré de bout en bout, uniquement entre tes appareils — sans compte cloud.';
 

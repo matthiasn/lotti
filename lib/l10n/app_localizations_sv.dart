@@ -15740,6 +15740,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Körs på din egen synkroniseringsserver · inget lämnar dina enheter okrypterat';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Din egen synkserver eller Lotti Sync · inget lämnar dina enheter okrypterat';
+
+  @override
   String get syncSetupEmptyHint =>
       'Din dagbok på alla dina enheter. Totalsträckskrypterad, bara mellan dina enheter — inget molnkonto.';
 

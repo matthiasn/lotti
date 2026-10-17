@@ -15879,6 +15879,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Corre no teu próprio servidor de sincronização · nada sai dos teus dispositivos sem cifra';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'O teu próprio servidor de sincronização ou o Lotti Sync · nada sai dos teus dispositivos sem cifra';
+
+  @override
   String get syncSetupEmptyHint =>
       'O teu diário em todos os teus dispositivos. Cifrado de ponta a ponta, só entre os teus dispositivos — sem conta na nuvem.';
 

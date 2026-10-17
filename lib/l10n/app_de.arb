@@ -6016,6 +6016,7 @@
   "syncReauthTitle": "Bist du das?",
   "syncSetupCta": "Sync einrichten",
   "syncSetupEmptyFootnote": "Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt",
+  "syncSetupEmptyFootnoteHosted": "Dein eigener Sync-Server oder Lotti Sync · nichts verlässt deine Geräte unverschlüsselt",
   "syncSetupEmptyHint": "Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.",
   "syncSetupEmptyTitle": "Geräte synchronisieren",
   "syncSetupUseAccountLink": "Stattdessen mit einem Matrix-Konto anmelden",

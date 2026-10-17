@@ -26027,6 +26027,12 @@ abstract class AppLocalizations {
   /// **'Runs on your own sync server · nothing leaves your devices unencrypted'**
   String get syncSetupEmptyFootnote;
 
+  /// No description provided for @syncSetupEmptyFootnoteHosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own sync server or Lotti Sync · nothing leaves your devices unencrypted'**
+  String get syncSetupEmptyFootnoteHosted;
+
   /// No description provided for @syncSetupEmptyHint.
   ///
   /// In en, this message translates to:

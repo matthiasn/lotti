@@ -9415,6 +9415,7 @@
   "syncReauthTitle": "Confirm it's you",
   "syncSetupCta": "Set up sync",
   "syncSetupEmptyFootnote": "Runs on your own sync server · nothing leaves your devices unencrypted",
+  "syncSetupEmptyFootnoteHosted": "Your own sync server or Lotti Sync · nothing leaves your devices unencrypted",
   "syncSetupEmptyHint": "Your journal on every device you own. End-to-end encrypted, between your devices only — no cloud account.",
   "syncSetupEmptyTitle": "Sync your devices",
   "syncSetupUseAccountLink": "Sign in with a Matrix account instead",

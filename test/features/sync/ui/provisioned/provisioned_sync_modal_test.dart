@@ -122,6 +122,20 @@ void main() {
         );
         expect(subscription.calls, ['resume']);
       });
+
+      testWidgets('the footnote names both ways to sync', (tester) async {
+        await pumpEmptyState(tester, subscriptionAvailable: true);
+
+        final context = tester.element(find.byType(SyncSetupEmptyState));
+        expect(
+          find.text(context.messages.syncSetupEmptyFootnoteHosted),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.syncSetupEmptyFootnote),
+          findsNothing,
+        );
+      });
     });
 
     testWidgets('explains sync and leads with the one setup action', (

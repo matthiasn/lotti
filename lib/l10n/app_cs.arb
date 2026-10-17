@@ -6023,6 +6023,7 @@
   "syncReauthTitle": "Potvrď, že jsi to ty",
   "syncSetupCta": "Nastavit synchronizaci",
   "syncSetupEmptyFootnote": "Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované",
+  "syncSetupEmptyFootnoteHosted": "Tvůj vlastní synchronizační server nebo Lotti Sync · nic neopustí tvá zařízení nešifrované",
   "syncSetupEmptyHint": "Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.",
   "syncSetupEmptyTitle": "Synchronizuj svá zařízení",
   "syncSetupUseAccountLink": "Místo toho se přihlásit účtem Matrix",

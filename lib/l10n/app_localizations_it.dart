@@ -15928,6 +15928,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Gira sul tuo server di sincronizzazione · niente lascia i tuoi dispositivi in chiaro';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Il tuo server di sincronizzazione o Lotti Sync · niente lascia i tuoi dispositivi senza cifratura';
+
+  @override
   String get syncSetupEmptyHint =>
       'Il tuo diario su ogni tuo dispositivo. Cifrato end-to-end, solo tra i tuoi dispositivi: senza account cloud.';
 

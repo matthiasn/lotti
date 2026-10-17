@@ -6016,6 +6016,7 @@
   "syncReauthTitle": "Confirmați-vă identitatea",
   "syncSetupCta": "Configurați sincronizarea",
   "syncSetupEmptyFootnote": "Rulează pe propriul server de sincronizare · nimic nu părăsește dispozitivele dumneavoastră necriptat",
+  "syncSetupEmptyFootnoteHosted": "Propriul server de sincronizare sau Lotti Sync · nimic nu părăsește dispozitivele dumneavoastră necriptat",
   "syncSetupEmptyHint": "Jurnalul dumneavoastră pe fiecare dispozitiv pe care îl dețineți. Criptat integral, doar între dispozitivele dumneavoastră — fără cont în cloud.",
   "syncSetupEmptyTitle": "Sincronizați-vă dispozitivele",
   "syncSetupUseAccountLink": "Autentificați-vă în schimb cu un cont Matrix",
