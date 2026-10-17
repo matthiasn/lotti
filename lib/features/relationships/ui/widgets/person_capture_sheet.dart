@@ -360,7 +360,7 @@ class _Recording extends StatelessWidget {
         Text(
           messages.relationshipCaptureHint,
           key: const ValueKey('person-capture-hint'),
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: quiet,
           ),
         ),
@@ -422,7 +422,7 @@ class _Working extends StatelessWidget {
           Flexible(
             child: Text(
               text,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
@@ -460,7 +460,7 @@ class _Ending extends StatelessWidget {
         ],
         Text(
           text,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
+          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
         ),

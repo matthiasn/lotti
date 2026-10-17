@@ -369,7 +369,7 @@ class PersonTimelineRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: row.pending
                   ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
-                  : tokens.typography.styles.body.bodyMedium.copyWith(
+                  : tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.highEmphasis,
                     ),
             ),
@@ -567,7 +567,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
     if (pinned.isEmpty) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final messages = context.messages;
-    final bodyStyle = tokens.typography.styles.body.bodyMedium.copyWith(
+    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
     final title = messages.relationshipAboutTitle(widget.personName);

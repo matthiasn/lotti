@@ -175,7 +175,7 @@ class PersonCaptureItemCard extends StatelessWidget {
             Text(
               words,
               key: const ValueKey('person-capture-item-words'),
-              style: tokens.typography.styles.body.bodyLarge.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: ink,
               ),
             ),

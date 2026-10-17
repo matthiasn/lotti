@@ -210,7 +210,7 @@ class _RelationshipDetailsPageState
               detailAsync.hasError
                   ? context.messages.commonError
                   : context.messages.relationshipNotFound,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             );

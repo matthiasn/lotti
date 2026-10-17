@@ -364,7 +364,7 @@ class _Words extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: highlighted
                     ? tokens.colors.interactive.enabled
                     : labelColor,

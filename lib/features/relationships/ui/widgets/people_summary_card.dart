@@ -105,7 +105,7 @@ class PeopleSummaryCard extends StatelessWidget {
                     SizedBox(width: tokens.spacing.step2),
                     Text(
                       messages.relationshipsSummaryEnrolled(summary.enrolled),
-                      style: styles.body.bodyMedium.copyWith(
+                      style: styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
@@ -147,7 +147,7 @@ class PeopleSummaryCard extends StatelessWidget {
                       key: const ValueKey('people-summary-next-due'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: styles.body.bodyMedium.copyWith(
+                      style: styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
                     )
@@ -166,7 +166,7 @@ class PeopleSummaryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       // High-emphasis ink, not the interactive accent: the
                       // chevron says it opens, and teal has one job.
-                      style: styles.body.bodyMedium.copyWith(
+                      style: styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
                     ),

@@ -114,7 +114,8 @@ void main() {
     expect(inCard(3, find.byType(FactTag)), findsNothing);
   });
 
-  testWidgets("the item's words lead, a size above the rest of its card", (
+  testWidgets("the item's words are set in the body size every entry uses, "
+      'in the high ink', (
     tester,
   ) async {
     await pump(tester);
@@ -127,7 +128,7 @@ void main() {
     );
     expect(
       words.style?.fontSize,
-      tokens.typography.styles.body.bodyLarge.fontSize,
+      tokens.typography.styles.body.bodySmall.fontSize,
     );
     expect(words.style?.color, tokens.colors.text.highEmphasis);
   });

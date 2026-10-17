@@ -238,7 +238,7 @@ class _PeopleListScaffold extends ConsumerWidget {
                     child: Text(
                       context.messages.commonError,
                       textAlign: TextAlign.center,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),

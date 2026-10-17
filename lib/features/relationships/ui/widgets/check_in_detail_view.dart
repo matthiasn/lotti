@@ -486,7 +486,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
                                 ? messages.commonError
                                 : messages.relationshipCheckInGone,
                             key: const ValueKey('check-in-detail-gone'),
-                            style: tokens.typography.styles.body.bodyMedium
+                            style: tokens.typography.styles.body.bodySmall
                                 .copyWith(
                                   color: tokens.colors.text.mediumEmphasis,
                                 ),
@@ -785,7 +785,7 @@ class _Body extends StatelessWidget {
                     SelectableText(
                       note,
                       key: const ValueKey('check-in-detail-note'),
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
                     )
@@ -793,7 +793,7 @@ class _Body extends StatelessWidget {
                     Text(
                       messages.relationshipCheckInEmpty,
                       key: const ValueKey('check-in-detail-empty'),
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),

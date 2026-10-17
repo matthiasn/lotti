@@ -47,10 +47,10 @@ class PersonCardHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                // `subtitle1`, not `subtitle2`: at 14 these titles sat
-                // *under* the 16pt body they head, and under the Briefing
-                // card's own title, so the person page had two heading tiers
-                // and the quieter one led the louder content.
+                // `subtitle1`, not `subtitle2`: a heading a clear size above
+                // the `bodySmall` it heads, and level with the Briefing
+                // card's own title, so the person page has one heading tier
+                // and it leads the content under it.
                 style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),

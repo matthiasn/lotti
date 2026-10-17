@@ -343,7 +343,7 @@ class _ReviewStep extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             messages.relationshipRemindersSwitchLabel,
-                            style: tokens.typography.styles.body.bodyMedium
+                            style: tokens.typography.styles.body.bodySmall
                                 .copyWith(
                                   color: tokens.colors.text.highEmphasis,
                                 ),
@@ -376,7 +376,7 @@ class _ReviewStep extends ConsumerWidget {
                 SizedBox(height: tokens.spacing.step4),
                 Text(
                   messages.relationshipCadencePromptLabel,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.highEmphasis,
                   ),
                 ),
@@ -484,7 +484,7 @@ class _Message extends StatelessWidget {
             Text(
               body,
               textAlign: TextAlign.center,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
