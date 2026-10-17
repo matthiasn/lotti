@@ -104,12 +104,14 @@ void main() {
     final row = tester.getRect(find.byType(DesignSystemTimelineRow));
     final spacing = dsTokensDark.spacing;
     // The same step1 gap above and below every tile: the next row's tile
-    // sits its own step3 inset below this row's bottom.
+    // sits its own step2 inset below this row's bottom.
     expect(rail.top - tile.bottom, closeTo(spacing.step1, 0.5));
     expect(
-      row.bottom + spacing.step3 - rail.bottom,
+      row.bottom + spacing.step2 - rail.bottom,
       closeTo(spacing.step1, 0.5),
     );
+    // Rows sit a step3 apart: step2 above the tile, step3 under the row.
+    expect(tile.top - row.top, closeTo(spacing.step2, 0.5));
     expect(rail.center.dx, closeTo(tile.center.dx, 0.5));
   });
 
