@@ -18,7 +18,6 @@ import 'package:lotti/features/relationships/service/person_capture_sorter.dart'
 import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -48,6 +47,12 @@ class _FakeFiler implements PersonCaptureFiler {
     await gate?.future;
     return remaining;
   }
+}
+
+/// A transcription service whose probe fails.
+class _ThrowingProbe extends StubCheckInTranscriptionService {
+  @override
+  Future<bool> canTranscribe() async => throw StateError('profile store gone');
 }
 
 void main() {
@@ -456,6 +461,19 @@ void main() {
         message: any<String>(named: 'message'),
       ),
     ).called(1);
+  });
+
+  testWidgets('a transcription probe that throws keeps the voice note', (
+    tester,
+  ) async {
+    transcription = _ThrowingProbe();
+    await open(tester);
+    await stop(tester);
+
+    expect(
+      find.text('Saved as a voice note. Nothing can transcribe it yet.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a timeline write that throws is logged too', (tester) async {

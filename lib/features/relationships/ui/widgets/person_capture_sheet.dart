@@ -92,8 +92,10 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
         PersonCaptureVoiceNote(again.audioId, PersonCaptureKept.closed),
         PersonCaptureSortAgain(again.audioId, again.transcript),
       );
+      // Each step handles its own failures, so nothing is lost by not
+      // awaiting it here.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) unawaited(_sort());
+        if (mounted) _sort();
       });
     }
   }
@@ -128,7 +130,15 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
     } catch (error, stackTrace) {
       _log(error, stackTrace);
     }
-    final canTranscribe = await transcription.canTranscribe();
+    bool canTranscribe;
+    try {
+      canTranscribe = await transcription.canTranscribe();
+    } catch (error, stackTrace) {
+      // A probe that fails is a transcriber that is not there: the capture
+      // stays the voice note it already is.
+      _log(error, stackTrace);
+      canTranscribe = false;
+    }
     _go(PersonCaptureSaved(audioId, canTranscribe: canTranscribe));
     if (_phase is! PersonCaptureTranscribing) return;
     final wait = _wait = transcription.transcribe(
@@ -197,7 +207,7 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
       PersonCaptureRecording() => _Recording(
         person: widget.person,
         model: _model,
-        onRecorded: (id, length) => unawaited(_onRecorded(id, length)),
+        onRecorded: _onRecorded,
         onDiscarded: () => _go(const PersonCaptureThrownAway()),
         onFailed: (kind) => setState(() => _failure = kind),
       ),
@@ -236,7 +246,7 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
           fullWidth: true,
           onPressed: _filing || review.accepted.isEmpty
               ? null
-              : () => unawaited(_file(review)),
+              : () => _file(review),
         ),
         secondary: [
           DesignSystemButton(

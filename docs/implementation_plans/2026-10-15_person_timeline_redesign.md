@@ -524,6 +524,14 @@ event linked from a live person counts with the Events flag off.
 
 **PR 4 — Speak your mind**
 
+As built: the bar's *Speak* and the People row's long press open the capture;
+the post-call offer keeps the composer, which knows the call's kind and
+minutes that a sort could only guess. A review card's on/off is a toggle, not
+✓ / ✕. Filing links a meeting and a task to the recording with a plain link;
+a note is the voice note itself unless a check-in took the recording. The
+briefing is not touched explicitly: the timeline-link watermark already moves
+when the voice note leaves the timeline or an item joins it.
+
 1. The `sort_person_capture` skill: tool schema, parser, deterministic date validator
    and prompt (bounded, no channels).
 2. `PersonCaptureService`: record → voice note → transcript → sort → review model,
