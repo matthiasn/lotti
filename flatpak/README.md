@@ -226,7 +226,7 @@ builder's plain `patch -p1` invocation applies them.
 
 Current version-specific native inputs and patches include:
 
-- `sqlite3 3.5.1`, `3.5.2` and `3.6.0`: preloads the hash-matched Linux
+- `sqlite3 3.5.1`, `3.5.2`, `3.6.0` and `3.7.1`: preloads the hash-matched Linux
   library for each architecture into the package hook's shared cache. These
   versions validate and reuse an existing matching library, so they need no
   source patch.

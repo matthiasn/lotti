@@ -20,129 +20,129 @@ environment:
 
 dependencies:
   a2ui_core: ^0.1.1
-  async: ^2.13.0
+  async: ^2.13.1
   audio_decoder: ^0.8.1
-  beamer: ^1.5.2
-  cached_network_image: ^4.0.0
+  beamer: ^1.7.0
+  cached_network_image: ^4.0.4
   camera: ^0.12.1
-  camera_desktop: ^1.2.1
-  clock: ^1.1.1
-  collection: ^1.18.0
-  connectivity_plus: ^7.0.0
-  country_flags: ^4.1.1
-  crypto: ^3.0.1
-  cupertino_ui: ^1.0.2
-  dart_geohash: ^2.0.1
-  dbus: ^0.7.11
+  camera_desktop: ^2.0.0
+  clock: ^1.1.3
+  collection: ^1.19.1
+  connectivity_plus: ^7.3.1
+  country_flags: ^4.1.2
+  crypto: ^3.0.7
+  cupertino_ui: ^1.1.3
+  dart_geohash: ^2.1.0
+  dbus: ^0.8.0
   delta_markdown:
     git:
       url: https://github.com/matthiasn/delta_markdown.git
       ref: 131dbc1
-  device_info_plus: ^12.1.0
-  drift: ^2.21.0
-  easy_debounce: ^2.0.2+1
-  enum_to_string: ^2.0.1
-  equatable: ^2.0.3
+  device_info_plus: ^12.4.0
+  drift: ^2.34.4
+  easy_debounce: ^2.0.3
+  enum_to_string: ^2.2.1
+  equatable: ^2.1.0
   exif: ^3.3.0
-  file_selector: ^1.0.3
-  fl_chart: ^1.0.0
+  file_selector: ^1.1.0
+  fl_chart: ^1.2.0
   flex_color_picker: ^4.0.0
   flutter:
     sdk: flutter
-  flutter_animate: ^4.1.1+1
+  flutter_animate: ^4.5.2
   flutter_colorpicker: ^1.1.0
   # Relationship contact linking and multi-select import (ADR 0041). Mobile
   # only — the picker is never opened on desktop, where contact channels are
   # entered manually.
-  flutter_contacts: ^2.3.1
+  flutter_contacts: ^2.6.0
   flutter_form_builder: ^11.0.0
   flutter_gpu:
     sdk: flutter
-  flutter_image_compress: ^2.0.3
+  flutter_image_compress: ^2.5.1
   flutter_lame: 1.0.3
   flutter_linkify: ^6.0.0
-  flutter_local_notifications: ^22.0.1
+  flutter_local_notifications: ^22.3.2
   flutter_localizations:
     sdk: flutter
-  flutter_map: ^8.0.0
+  flutter_map: ^8.3.2
   flutter_onnxruntime: ^1.8.0
-  flutter_quill: ^11.5.1
+  flutter_quill: ^11.6.0
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
-  flutter_riverpod: ^3.1.0
-  flutter_scene: ^0.23.0
-  flutter_secure_storage: ^10.0.0
-  flutter_svg: ^2.2.4
+  flutter_riverpod: ^3.4.3
+  flutter_scene: ^0.24.3
+  flutter_secure_storage: ^10.3.4
+  flutter_svg: ^2.3.0
   flutter_vodozemac: ^0.8.1
-  form_builder_validators: ^11.0.0
-  formz: ^0.8.0
+  form_builder_validators: ^11.3.0
+  formz: ^0.8.1
   freezed_annotation: ^3.1.0
-  gal: ^2.3.2
-  genui: ^0.10.2
+  gal: ^2.3.3
+  genui: ^0.10.4
   # CoreLocation on iOS and macOS, used without the geolocator front end so
   # its Play Services based Android implementation is never linked; Android
   # reads location through the app's own LottiLocationPlugin.
-  geolocator_apple: ^2.3.14
-  geolocator_platform_interface: ^4.3.0
-  get_it: ^9.2.1
-  glass_kit: ^4.0.1
-  google_fonts: ^8.1.0
-  gpt_markdown: ^1.0.20
+  geolocator_apple: ^2.3.15
+  geolocator_platform_interface: ^4.4.0
+  get_it: ^9.3.0
+  glass_kit: ^4.0.2
+  google_fonts: ^9.0.0
+  gpt_markdown: ^1.3.4
   health: ^13.3.1
-  http: ^1.2.0
-  infinite_scroll_pagination: ^5.0.0
+  http: ^1.6.0
+  infinite_scroll_pagination: ^5.1.1
   intersperse: ^2.0.0
   intl: ^0.20.3
   json_annotation: ^4.12.0
-  json_schema_builder: ^0.1.3
+  json_schema_builder: ^0.1.7
   just_waveform: ^0.0.7
   latlong2: ^0.10.1
-  lucide_icons_flutter: ^3.1.15
-  material_ui: ^1.1.1
-  matrix: ^12.0.1
-  media_kit: ^1.0.2
+  lucide_icons_flutter: ^4.0.0
+  material_ui: ^1.7.0
+  matrix: ^14.1.0
+  media_kit: ^1.2.6
   media_kit_libs_audio: ^1.0.7
-  meta: ^1.12.0
-  multi_select_flutter: ^4.0.0
-  objectbox: ^5.2.0
-  objectbox_flutter_libs: ^5.2.0
+  meta: ^1.19.0
+  multi_select_flutter: ^4.1.3
+  objectbox: ^5.3.2
+  objectbox_flutter_libs: ^5.3.2
   # openai_dart 1.x+ is a rewritten client (the ChatCompletion* request and
   # message types are gone); the inference layer is built on the 0.6 API.
-  openai_dart: ^0.6.1
-  package_info_plus: ^9.0.0
-  path: ^1.8.1
-  path_provider: ^2.0.12
+  openai_dart: ^0.6.2
+  package_info_plus: ^9.0.1
+  path: ^1.9.1
+  path_provider: ^2.1.6
   # permission_handler 13.x hard-codes Android compileSdk 37 in its plugin
   # module; android/build.gradle pins 36 (targetSdk follows it).
-  permission_handler: ^12.0.0+1
+  permission_handler: ^12.0.3
   photo_view: ^0.15.0
   pointycastle: ^4.0.0
-  qr_flutter: ^4.0.0
-  quiver: ^3.2.1
-  record: ^7.1.0
+  qr_flutter: ^4.1.0
+  quiver: ^3.2.2
+  record: ^7.1.2
   research_package:
     git:
       url: https://github.com/matthiasn/research.package
       ref: fc229b9d
-  riverpod: ^3.1.0
+  riverpod: ^3.4.3
   rxdart: ^0.28.0
-  share_plus: ^12.0.0
-  shared_preferences: ^2.3.2
+  share_plus: ^12.0.2
+  shared_preferences: ^2.5.6
   sherpa_onnx: 1.13.4
   sliver_tools: ^0.2.12
-  sodium: ^4.1.1+1
-  sqflite_common_ffi: ^2.3.3
-  sqlite3: ^3.5.1
+  sodium: ^4.1.2
+  sqflite_common_ffi: ^2.4.4
+  sqlite3: ^3.7.1
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1
-  timezone: ^0.11.0
-  tinycolor2: ^3.0.0
-  url_launcher: ^6.1.2
-  uuid: ^4.3.3
-  vector_math: ^2.4.2
-  wechat_assets_picker: ^10.1.0
-  widgetbook: ^3.7.1
-  window_manager: ^0.5.0
+  timezone: ^0.11.2
+  tinycolor2: ^3.0.1
+  url_launcher: ^6.3.3
+  uuid: ^4.6.0
+  vector_math: ^2.4.3
+  wechat_assets_picker: ^10.1.3
+  widgetbook: ^3.25.0
+  window_manager: ^0.5.2
   wolt_modal_sheet: ^0.11.0
   zxing2: ^0.2.4
 
@@ -150,12 +150,6 @@ dependency_overrides:
   # json_serializable >=6.13.2 requires analyzer >=10, while
   # objectbox_generator 5.x currently caps analyzer below 11.
   analyzer_plugin: '>=0.14.0 <0.14.5'
-  # flutter_scene 0.23 pins code_assets ^1.2.1, which would downgrade the
-  # native-assets toolchain for everyone else. Its build hook compiles fine
-  # against 2.x (verified by a full Linux build), so keep the toolchain
-  # current (with the matching native_toolchain_c below). Re-check on every
-  # flutter_scene bump.
-  code_assets: ^2.0.0
   # health >=13.2.0 requires device_info_plus ^12.1.0, while
   # super_native_extensions 0.9.1 still caps it below 12.0.0.
   device_info_plus: ^12.1.0
@@ -164,8 +158,6 @@ dependency_overrides:
   # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
-  # Partner of the code_assets override above (0.19.4 needs code_assets 2.x).
-  native_toolchain_c: 0.19.4
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1
@@ -199,35 +191,35 @@ dev_dependencies:
   # second edit on every plugin major bump.
   # Parses Dart directives in test/architecture/feature_import_direction_test.dart.
   analyzer: ^10.2.0
-  arb_utils: ^0.11.0
-  archive: ^4.0.7
-  build_runner: ^2.5.4
+  arb_utils: ^0.11.1
+  archive: ^4.5.2
+  build_runner: ^2.15.1
   camera_platform_interface: any
   cross_file: any
-  dart_style: ^3.0.1
-  drift_dev: ^2.16.0
-  fake_async: ^1.3.1
+  dart_style: ^3.1.7
+  drift_dev: ^2.34.0
+  fake_async: ^1.3.3
   file_selector_platform_interface: any
   # flutter_launcher_icons: ^0.14.1
-  flutter_dotenv: ^6.0.0
+  flutter_dotenv: ^6.0.1
   flutter_launcher_icons:
     git:
       url: https://github.com/devmil/flutter_launcher_icons
       ref: f23536e
 
-  flutter_native_splash: ^2.2.16
+  flutter_native_splash: ^2.4.8
   flutter_test:
     sdk: flutter
-  freezed: ^3.1.0
-  glados: ^1.1.1
-  image: ^4.9.2
+  freezed: ^3.2.5
+  glados: ^1.1.7
+  image: ^4.12.0
   integration_test:
     sdk: flutter
   irondash_message_channel: any
-  json_serializable: ^6.0.0
-  mocktail: ^1.0.0
-  msix: ^3.7.0
-  objectbox_generator: ^5.2.0
+  json_serializable: ^6.14.1
+  mocktail: ^1.0.5
+  msix: ^3.18.0
+  objectbox_generator: ^5.3.2
   path_provider_platform_interface: any
   permission_handler_platform_interface: any
   plugin_platform_interface: any
@@ -235,7 +227,7 @@ dev_dependencies:
   super_native_extensions: any
   url_launcher_platform_interface: any
   very_good_analysis: ^11.0.0
-  yaml: ^3.1.3
+  yaml: ^3.1.4
 flutter_launcher_icons:
   android: true
   ios: true

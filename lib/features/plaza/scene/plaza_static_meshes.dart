@@ -76,7 +76,7 @@ class PlazaStaticMeshes {
             node.raycastable,
             node.layers,
             node.lightChannelMask,
-            node.castsShadows,
+            node.shadowCastingMode,
           );
           final batch = groups.putIfAbsent(
             key,
@@ -106,7 +106,7 @@ class PlazaStaticMeshes {
           ..raycastable = source.raycastable
           ..layers = source.layers
           ..lightChannelMask = source.lightChannelMask
-          ..castsShadows = source.castsShadows
+          ..shadowCastingMode = source.shadowCastingMode
           ..shadowStatic = true,
       ));
     }
