@@ -84,6 +84,25 @@ final class PersonCaptureTask extends PersonCaptureItem {
   final DateTime? due;
 }
 
+/// The next full hour after [now]: 14:05 → 15:00, 23:20 → 00:00 the next
+/// day. An hour already full moves on too, so the result is always ahead.
+DateTime nextFullHour(DateTime now) =>
+    DateTime(now.year, now.month, now.day, now.hour + 1);
+
+/// How long a meeting runs until the user says otherwise.
+const personMeetingDefaultDuration = Duration(hours: 1);
+
+/// When a meeting starts until the user says otherwise: tomorrow, at the
+/// next full hour — a time that is free to move and never in the past. Late
+/// in the evening the next full hour is already tomorrow's midnight, and
+/// stays there rather than moving a day further.
+DateTime personMeetingDefaultStart(DateTime now) {
+  final next = nextFullHour(now);
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  if (!next.isBefore(tomorrow)) return next;
+  return DateTime(tomorrow.year, tomorrow.month, tomorrow.day, next.hour);
+}
+
 /// The most items one capture sorts into: a capture is a minute of speech,
 /// and a review of more than three is a form, not a glance.
 const personCaptureMaxItems = 3;

@@ -66,6 +66,41 @@ void main() {
     });
   });
 
+  group('personMeetingDefaultStart', () {
+    test('is tomorrow at the next full hour', () {
+      expect(
+        personMeetingDefaultStart(DateTime(2026, 8, 13, 10, 20)),
+        DateTime(2026, 8, 14, 11),
+      );
+    });
+
+    test('moves an hour already full on, so it is never now', () {
+      expect(
+        personMeetingDefaultStart(DateTime(2026, 8, 13, 10)),
+        DateTime(2026, 8, 14, 11),
+      );
+    });
+
+    test('nextFullHour is always ahead, across midnight', () {
+      expect(
+        nextFullHour(DateTime(2026, 8, 13, 14, 5)),
+        DateTime(2026, 8, 13, 15),
+      );
+      expect(
+        nextFullHour(DateTime(2026, 8, 13, 23, 20)),
+        DateTime(2026, 8, 14),
+      );
+    });
+
+    test("late in the evening it is tomorrow's midnight, not a day "
+        'further', () {
+      expect(
+        personMeetingDefaultStart(DateTime(2026, 8, 13, 23, 20)),
+        DateTime(2026, 8, 14),
+      );
+    });
+  });
+
   test('copyWith moves only the fields the review edits', () {
     const checkIn = PersonCaptureCheckIn(
       interactionType: CheckInInteractionType.call,
