@@ -236,8 +236,14 @@ is what people run: older apps cannot read v3.
 ## Lapsed accounts
 
 `LapsedAccountReaper` erases an account suspended for longer than
-`LAPSED_ACCOUNT_ERASE_DAYS`: media, room (purged), the Matrix user (erased),
-then the record (revoked).
+`LAPSED_ACCOUNT_ERASE_DAYS`, counted from the first suspension. Claiming it
+revokes the record and detaches it from its subscription in one transaction;
+media, the room (waiting for Synapse's purge to complete) and the Matrix user
+(erased) then go one recorded step at a time, so a failed run resumes where it
+stopped. Completion frees the entitlement for a fresh account.
+
+Checkout is one per entitlement: a retry reuses the open session for the same
+plan, and a paying entitlement gets 409 instead of a second subscription.
 
 ## Configuration
 

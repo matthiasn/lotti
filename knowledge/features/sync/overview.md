@@ -414,6 +414,13 @@ Rules the code keeps:
   reaper deactivates an account whose rotation is unconfirmed after 24 hours,
   so `RotationConfirmer` retries it on every visit to the Devices page
   (`pendingRotationRecoveryProvider`) until the service accepts it.
+- **One checkout per entitlement.** A retry reuses the open session for the
+  same plan, and once a Paddle subscription grants access the service refuses
+  a new checkout (409); the app then claims instead of paying again.
+- **A paid claim outlives its session.** The session id is kept until the
+  connect succeeds; without it, `resume` still claims when a proof is owed or
+  the device does not sync yet, so a failed connect or a late payment is
+  picked up on the next visit.
 - **A paid bundle goes through the pairing flow.** The subscription controller
   only obtains the bundle; verification, login, room join and rotation are
   `ProvisioningController`'s, unchanged.
@@ -446,11 +453,21 @@ accounts.
 ## Lapsed accounts are erased
 
 `LapsedAccountReaper` erases an account that has stayed suspended for
-`LAPSED_ACCOUNT_ERASE_DAYS` (30, never fewer than 7): it deletes the user's
-media, deletes and purges the sync room, erases the Matrix user, then revokes
-the record — in that order, so a partial failure leaves the account suspended
-for the next run. Renewing inside the window unsuspends the account with
-everything intact.
+`LAPSED_ACCOUNT_ERASE_DAYS` (30, never fewer than 7), counted from the first
+suspension — re-enforcement does not restart the clock. It works through a
+durable ledger (`account_erasure_repository.py`):
+
+1. **Claim**, in one transaction: re-check that the account is still
+   suspended past the cutoff, revoke the bundle, detach it from every
+   subscription row (so no enforcement can unsuspend it), open the ledger
+   entry. A renewal that wins the race makes the claim a no-op.
+2. **Steps**, each recorded: delete the user's media, delete the room and wait
+   for Synapse's purge to report `complete`, erase the Matrix user. A failed
+   run resumes at the first unfinished step.
+3. **Complete**: close the entry and delete the bundle claim, so a later
+   payment on the same entitlement provisions a fresh account.
+
+Renewing inside the window unsuspends the account with everything intact.
 
 # Pairing a new device
 
