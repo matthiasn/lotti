@@ -10181,5 +10181,113 @@
     "description": "Badge displayed on the newest release in the What's New view."
   },
   "whatsNewDoneButton": "Done",
-  "whatsNewSkipButton": "Skip"
+  "whatsNewSkipButton": "Skip",
+  "relationshipCaptureTitle": "Speak about {name}",
+  "@relationshipCaptureTitle": {
+    "description": "Title of the sheet that records a spoken capture about a person; {name} is their nickname or name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureHint": "A conversation you had, something to remember, or a plan.",
+  "@relationshipCaptureHint": {
+    "description": "Hint under the recorder: what a spoken capture can be."
+  },
+  "relationshipCaptureSortedBy": "Sorted by {route}",
+  "@relationshipCaptureSortedBy": {
+    "description": "Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureNoSorter": "No model to sort with — it stays a voice note.",
+  "@relationshipCaptureNoSorter": {
+    "description": "Caption when no model can sort a capture."
+  },
+  "relationshipCaptureListening": "Listening back…",
+  "@relationshipCaptureListening": {
+    "description": "Status while the capture is transcribed."
+  },
+  "relationshipCaptureSorting": "Sorting what you said…",
+  "@relationshipCaptureSorting": {
+    "description": "Status while the capture is sorted by the model."
+  },
+  "relationshipCaptureHeard": "Here's what I heard",
+  "@relationshipCaptureHeard": {
+    "description": "Heading over the review of a sorted capture."
+  },
+  "relationshipCaptureFile": "{count, plural, =1{File 1 item} other{File {count} items}}",
+  "@relationshipCaptureFile": {
+    "description": "Primary button filing the accepted items of a capture.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCaptureKeepVoiceNote": "Keep as a voice note",
+  "@relationshipCaptureKeepVoiceNote": {
+    "description": "Button closing the review without filing; the recording stays a voice note."
+  },
+  "relationshipCaptureFileFailed": "Some items could not be filed. They are still here.",
+  "@relationshipCaptureFileFailed": {
+    "description": "Said in the review when filing failed for some items."
+  },
+  "relationshipCaptureKeptNoTranscriber": "Saved as a voice note. Nothing can transcribe it yet.",
+  "@relationshipCaptureKeptNoTranscriber": {
+    "description": "Outcome: no transcription model is set up."
+  },
+  "relationshipCaptureKeptNoWords": "Saved as a voice note. No words came through.",
+  "@relationshipCaptureKeptNoWords": {
+    "description": "Outcome: the transcript was empty or never arrived."
+  },
+  "relationshipCaptureKeptNoSorter": "Saved as a voice note, with its words. No model can sort it.",
+  "@relationshipCaptureKeptNoSorter": {
+    "description": "Outcome: no model can sort the capture."
+  },
+  "relationshipCaptureKeptSortFailed": "Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.",
+  "@relationshipCaptureKeptSortFailed": {
+    "description": "Outcome: sorting failed."
+  },
+  "relationshipCaptureKeptNothingToFile": "Saved as a voice note — nothing in it to file on its own.",
+  "@relationshipCaptureKeptNothingToFile": {
+    "description": "Outcome: the sort found nothing to file."
+  },
+  "relationshipCaptureCheckIn": "Log as a check-in",
+  "@relationshipCaptureCheckIn": {
+    "description": "Review card label: file this item as a check-in."
+  },
+  "relationshipCaptureMeeting": "Plan a meeting",
+  "@relationshipCaptureMeeting": {
+    "description": "Review card label: file this item as a planned meeting."
+  },
+  "relationshipCaptureNote": "Keep as a note",
+  "@relationshipCaptureNote": {
+    "description": "Review card label: file this item as a note."
+  },
+  "relationshipCaptureTask": "Add a task",
+  "@relationshipCaptureTask": {
+    "description": "Review card label: file this item as a task."
+  },
+  "relationshipCaptureDue": "Due {day}",
+  "@relationshipCaptureDue": {
+    "description": "A task's due day on its review card.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureNoDue": "No due date",
+  "@relationshipCaptureNoDue": {
+    "description": "A task without a due day, on its review card; tapping sets one."
+  },
+  "relationshipSortThis": "Sort this",
+  "@relationshipSortThis": {
+    "description": "Action on a voice-note row of a person's timeline: sort its words into check-ins, notes, meetings or tasks."
+  }
 }

@@ -20977,6 +20977,12 @@ abstract class AppLocalizations {
   /// **'Briefing'**
   String get relationshipBriefingTitle;
 
+  /// Label over the note to bring up, when a meeting is booked; {day} is like 'Sun 18 Oct'.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring up before {day}'**
+  String relationshipBringUpBefore(String day);
+
   /// No description provided for @relationshipCadenceEveryNDays.
   ///
   /// In en, this message translates to:
@@ -21469,6 +21475,42 @@ abstract class AppLocalizations {
   /// **'Log check-in'**
   String get relationshipLogCheckIn;
 
+  /// A new meeting's prefilled title; {name} is the person's nickname or name.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet {name}'**
+  String relationshipMeetingDefaultTitle(String name);
+
+  /// The meeting sheet's primary button.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan meeting'**
+  String get relationshipMeetingSave;
+
+  /// Said under the title when planning the meeting failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not plan the meeting.'**
+  String get relationshipMeetingSaveFailed;
+
+  /// Title of the meeting sheet's day and time pickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get relationshipMeetingStartsLabel;
+
+  /// Screen-reader label of the meeting sheet's start tag; {time} is like 'Sun 18 Oct · 15:00'.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts: {time}. Change'**
+  String relationshipMeetingStartsSemantics(String time);
+
+  /// Label of the meeting sheet's title field.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get relationshipMeetingTitleLabel;
+
   /// Tooltip of the person page's overflow menu (link contact, delete)
   ///
   /// In en, this message translates to:
@@ -21636,6 +21678,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo of {name}'**
   String relationshipPhotoSheetTitle(String name);
+
+  /// The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a meeting with {name}'**
+  String relationshipPlanMeeting(String name);
 
   /// Question heading the offer to log a call placed from Lotti. Asked, not asserted: the app only knows the dialer was opened.
   ///
@@ -28121,53 +28169,137 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get whatsNewSkipButton;
 
-  /// The person page's create-menu row and the meeting sheet's title; also read out on the overdue pill, which opens the sheet.
+  /// Title of the sheet that records a spoken capture about a person; {name} is their nickname or name.
   ///
   /// In en, this message translates to:
-  /// **'Plan a meeting with {name}'**
-  String relationshipPlanMeeting(String name);
+  /// **'Speak about {name}'**
+  String relationshipCaptureTitle(String name);
 
-  /// A new meeting's prefilled title; {name} is the person's nickname or name.
+  /// Hint under the recorder: what a spoken capture can be.
   ///
   /// In en, this message translates to:
-  /// **'Meet {name}'**
-  String relationshipMeetingDefaultTitle(String name);
+  /// **'A conversation you had, something to remember, or a plan.'**
+  String get relationshipCaptureHint;
 
-  /// Label of the meeting sheet's title field.
+  /// Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.
   ///
   /// In en, this message translates to:
-  /// **'Title'**
-  String get relationshipMeetingTitleLabel;
+  /// **'Sorted by {route}'**
+  String relationshipCaptureSortedBy(String route);
 
-  /// Title of the meeting sheet's day and time pickers.
+  /// Caption when no model can sort a capture.
   ///
   /// In en, this message translates to:
-  /// **'Starts'**
-  String get relationshipMeetingStartsLabel;
+  /// **'No model to sort with — it stays a voice note.'**
+  String get relationshipCaptureNoSorter;
 
-  /// Screen-reader label of the meeting sheet's start tag; {time} is like 'Sun 18 Oct · 15:00'.
+  /// Status while the capture is transcribed.
   ///
   /// In en, this message translates to:
-  /// **'Starts: {time}. Change'**
-  String relationshipMeetingStartsSemantics(String time);
+  /// **'Listening back…'**
+  String get relationshipCaptureListening;
 
-  /// The meeting sheet's primary button.
+  /// Status while the capture is sorted by the model.
   ///
   /// In en, this message translates to:
-  /// **'Plan meeting'**
-  String get relationshipMeetingSave;
+  /// **'Sorting what you said…'**
+  String get relationshipCaptureSorting;
 
-  /// Said under the title when planning the meeting failed.
+  /// Heading over the review of a sorted capture.
   ///
   /// In en, this message translates to:
-  /// **'Could not plan the meeting.'**
-  String get relationshipMeetingSaveFailed;
+  /// **'Here\'s what I heard'**
+  String get relationshipCaptureHeard;
 
-  /// Label over the note to bring up, when a meeting is booked; {day} is like 'Sun 18 Oct'.
+  /// Primary button filing the accepted items of a capture.
   ///
   /// In en, this message translates to:
-  /// **'Bring up before {day}'**
-  String relationshipBringUpBefore(String day);
+  /// **'{count, plural, =1{File 1 item} other{File {count} items}}'**
+  String relationshipCaptureFile(int count);
+
+  /// Button closing the review without filing; the recording stays a voice note.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep as a voice note'**
+  String get relationshipCaptureKeepVoiceNote;
+
+  /// Said in the review when filing failed for some items.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items could not be filed. They are still here.'**
+  String get relationshipCaptureFileFailed;
+
+  /// Outcome: no transcription model is set up.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a voice note. Nothing can transcribe it yet.'**
+  String get relationshipCaptureKeptNoTranscriber;
+
+  /// Outcome: the transcript was empty or never arrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a voice note. No words came through.'**
+  String get relationshipCaptureKeptNoWords;
+
+  /// Outcome: no model can sort the capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a voice note, with its words. No model can sort it.'**
+  String get relationshipCaptureKeptNoSorter;
+
+  /// Outcome: sorting failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.'**
+  String get relationshipCaptureKeptSortFailed;
+
+  /// Outcome: the sort found nothing to file.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a voice note — nothing in it to file on its own.'**
+  String get relationshipCaptureKeptNothingToFile;
+
+  /// Review card label: file this item as a check-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Log as a check-in'**
+  String get relationshipCaptureCheckIn;
+
+  /// Review card label: file this item as a planned meeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a meeting'**
+  String get relationshipCaptureMeeting;
+
+  /// Review card label: file this item as a note.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep as a note'**
+  String get relationshipCaptureNote;
+
+  /// Review card label: file this item as a task.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task'**
+  String get relationshipCaptureTask;
+
+  /// A task's due day on its review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Due {day}'**
+  String relationshipCaptureDue(String day);
+
+  /// A task without a due day, on its review card; tapping sets one.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get relationshipCaptureNoDue;
+
+  /// Action on a voice-note row of a person's timeline: sort its words into check-ins, notes, meetings or tasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort this'**
+  String get relationshipSortThis;
 }
 
 class _AppLocalizationsDelegate

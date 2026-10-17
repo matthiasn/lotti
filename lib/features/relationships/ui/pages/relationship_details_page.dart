@@ -23,6 +23,7 @@ import 'package:lotti/features/relationships/ui/model/people_list_model.dart';
 import 'package:lotti/features/relationships/ui/widgets/paused_reminder_callout.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_brief_card.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_create_menu.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
@@ -174,14 +175,12 @@ class _RelationshipDetailsPageState
   Future<void> _openComposer(
     BuildContext context, {
     required CheckInEntry? latest,
-    bool startSpeaking = false,
   }) async {
     await openCheckInForPerson(
       context: context,
       ref: ref,
       relationshipId: relationshipId,
       fallbackInteractionType: latest?.data.interactionType,
-      startSpeaking: startSpeaking,
     );
   }
 
@@ -292,6 +291,14 @@ class _RelationshipDetailsPageState
           beamToNamed('/journal/${entry.meta.id}'),
       openTask: (Task task) => beamToNamed('/tasks/${task.meta.id}'),
       unlinkTask: (Task task) => tasks.unlinkTask(context, ref, task),
+      sortVoiceNote: (JournalAudio audio) => showPersonCaptureSheet(
+        context: context,
+        person: relationship,
+        sortAgain: (
+          audioId: audio.meta.id,
+          transcript: audio.entryText?.plainText ?? '',
+        ),
+      ),
     );
 
     Future<void> create() async {
@@ -408,8 +415,10 @@ class _RelationshipDetailsPageState
 
     final bar = RelationshipActionBar(
       personName: personName,
+      // Speak your mind: a capture the page sorts for review, rather than
+      // a check-in the user has to file by hand.
       onSpeak: () => unawaited(
-        _openComposer(context, latest: latest, startSpeaking: true),
+        showPersonCaptureSheet(context: context, person: relationship),
       ),
       onAdd: () => unawaited(create()),
     );

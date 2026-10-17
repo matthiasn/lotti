@@ -12648,6 +12648,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Tag op før $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -13023,6 +13028,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipLogCheckIn => 'Registrér check-in';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Mød $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planlæg møde';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mødet kunne ikke planlægges.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Starter';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Starter: $time. Skift';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Flere handlinger';
 
   @override
@@ -13114,6 +13141,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String relationshipPhotoSheetTitle(String name) {
     return 'Foto af $name';
+  }
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planlæg et møde med $name';
   }
 
   @override
@@ -16970,34 +17002,90 @@ class AppLocalizationsDa extends AppLocalizations {
   String get whatsNewSkipButton => 'Spring over';
 
   @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planlæg et møde med $name';
+  String relationshipCaptureTitle(String name) {
+    return 'Speak about $name';
   }
 
   @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Mød $name';
+  String get relationshipCaptureHint =>
+      'A conversation you had, something to remember, or a plan.';
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sorted by $route';
   }
 
   @override
-  String get relationshipMeetingTitleLabel => 'Titel';
+  String get relationshipCaptureNoSorter =>
+      'No model to sort with — it stays a voice note.';
 
   @override
-  String get relationshipMeetingStartsLabel => 'Starter';
+  String get relationshipCaptureListening => 'Listening back…';
 
   @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Starter: $time. Skift';
+  String get relationshipCaptureSorting => 'Sorting what you said…';
+
+  @override
+  String get relationshipCaptureHeard => 'Here\'s what I heard';
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'File $count items',
+      one: 'File 1 item',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get relationshipMeetingSave => 'Planlæg møde';
+  String get relationshipCaptureKeepVoiceNote => 'Keep as a voice note';
 
   @override
-  String get relationshipMeetingSaveFailed => 'Mødet kunne ikke planlægges.';
+  String get relationshipCaptureFileFailed =>
+      'Some items could not be filed. They are still here.';
 
   @override
-  String relationshipBringUpBefore(String day) {
-    return 'Tag op før $day';
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Saved as a voice note. Nothing can transcribe it yet.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Saved as a voice note. No words came through.';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Saved as a voice note, with its words. No model can sort it.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Saved as a voice note — nothing in it to file on its own.';
+
+  @override
+  String get relationshipCaptureCheckIn => 'Log as a check-in';
+
+  @override
+  String get relationshipCaptureMeeting => 'Plan a meeting';
+
+  @override
+  String get relationshipCaptureNote => 'Keep as a note';
+
+  @override
+  String get relationshipCaptureTask => 'Add a task';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Due $day';
   }
+
+  @override
+  String get relationshipCaptureNoDue => 'No due date';
+
+  @override
+  String get relationshipSortThis => 'Sort this';
 }
