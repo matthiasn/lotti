@@ -2,6 +2,8 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -198,21 +200,62 @@ class PersonTimelineRepository {
         starred: pinned,
       ),
     );
-    if (!(await _persistenceLogic.createDbEntity(note) ?? false)) return null;
-    final written = note as JournalEntry;
+    final written = await _writeOnTimeline(person, note);
+    return written is JournalEntry ? written : null;
+  }
+
+  /// Plans a meeting with [person]: a planned event titled [title] from
+  /// [start] for [duration], on their timeline. Like any event with a span
+  /// it lands on the Daily OS Day view, and because it is linked from a
+  /// person it does so whether or not the Events feature is on. Returns null
+  /// when nothing was written, for a blank title or a duration that is not
+  /// positive; an event whose timeline link fails is removed again, as a
+  /// note is.
+  Future<JournalEvent?> createMeeting({
+    required RelationshipEntry person,
+    required String title,
+    required DateTime start,
+    required Duration duration,
+  }) async {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty || duration <= Duration.zero) return null;
+    final meeting = JournalEntity.event(
+      data: EventData(title: trimmed, stars: 0, status: EventStatus.planned),
+      entryText: const EntryText(plainText: ''),
+      meta: await _persistenceLogic.createMetadata(
+        dateFrom: start,
+        dateTo: start.add(duration),
+        categoryId: person.meta.categoryId,
+        private: person.meta.private,
+      ),
+    );
+    final written = await _writeOnTimeline(person, meeting);
+    return written is JournalEvent ? written : null;
+  }
+
+  /// Saves [entity] and links it from [person]. An entity whose link is
+  /// refused or throws is deleted again — a retry would otherwise write a
+  /// second copy, and the first would sit where the person's page cannot
+  /// reach it. Returns the saved entity, or null when nothing stands.
+  Future<JournalEntity?> _writeOnTimeline(
+    RelationshipEntry person,
+    JournalEntity entity,
+  ) async {
+    if (!(await _persistenceLogic.createDbEntity(entity) ?? false)) {
+      return null;
+    }
     bool linked;
     try {
       linked = await addToTimeline(
         personId: person.meta.id,
-        entryId: note.meta.id,
+        entryId: entity.meta.id,
       );
     } catch (_) {
-      // A link write that throws is as refused as one that answers false:
-      // the note must not outlive it, or a retry writes a second copy.
+      // A link write that throws is as refused as one that answers false.
       linked = false;
     }
-    if (linked) return written;
-    await deleteNote(written);
+    if (linked) return entity;
+    await _delete(entity);
     return null;
   }
 
@@ -260,11 +303,13 @@ class PersonTimelineRepository {
 
   /// Deletes [note]. Its timeline link is left to the generic delete model,
   /// whose readers already skip a deleted target.
-  Future<bool> deleteNote(JournalEntry note) async {
+  Future<bool> deleteNote(JournalEntry note) => _delete(note);
+
+  Future<bool> _delete(JournalEntity entity) async {
     final result = await _persistenceLogic.updateDbEntity(
-      note.copyWith(
+      entity.copyWith(
         meta: await _persistenceLogic.updateMetadata(
-          note.meta,
+          entity.meta,
           deletedAt: clock.now(),
         ),
       ),

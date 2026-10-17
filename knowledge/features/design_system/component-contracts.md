@@ -885,7 +885,7 @@ compose the same three parts from
 
 | Part | What it fixes |
 | --- | --- |
-| `DsActionModal` | Presentation, header and body inset. Wolt's top-bar *layer* is off; the header rides the toolbar's **leading** slot, full width, carrying its own close (and an optional back). A centred toolbar title can never reach the sheet gutter — its leading width mirrors the trailing button — and a header placed in the page content instead would sit under the bottom sheet's opaque 48pt drag strip and never receive a tap. |
+| `DsActionModal` | Presentation, header and body inset. Wolt's top-bar *layer* is off; the header rides the toolbar's **leading** slot, full width, carrying its own close (and an optional back). The close is `maybePop`, so a body that must not be left mid-write — a `PopScope` that cannot pop — holds the sheet against it as against the scrim and Esc. A centred toolbar title can never reach the sheet gutter — its leading width mirrors the trailing button — and a header placed in the page content instead would sit under the bottom sheet's opaque 48pt drag strip and never receive a tap. |
 | `DsActionRow` | The row: a washed `ControlSizes.iconChip` tile, title, optional description, optional trailing value, and a trailing glyph. `DsActionRowTone` picks the tile's wash — `neutral` for acting on what exists, `accent` for bringing something new into being, `destructive` for the one irreversible row. |
 | `DsActionToggleChip` | A boolean the sheet owns — starred, private, flagged — as a two-state pill instead of a menu row that promises an action, never changes its title, and dismisses the sheet after each toggle. |
 

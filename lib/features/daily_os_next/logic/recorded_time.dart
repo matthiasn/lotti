@@ -12,15 +12,17 @@ import 'package:lotti/utils/entry_tools.dart';
 /// entries, and resolve each survivor's linked-from entity (a linked Task wins,
 /// ratings never count, otherwise the first surviving non-rating link).
 /// An event with a span counts too — it is the user's own statement of where
-/// the time went — as long as the Events feature is on and the event
-/// actually took place ([eventTookPlace]); an event is always its own thing
-/// and is never attributed to the task it may hang off.
+/// the time went — as long as the Events feature is on, or the event is a
+/// meeting planned with a person, and the event actually took place
+/// ([eventTookPlace]); an event is always its own thing and is never
+/// attributed to the task it may hang off.
 /// This module owns that resolution once; each consumer projects the resolved
 /// pairs into its own shape (UI `TimeBlock`s, prompt span buckets).
 
 /// The journal rows a recorded-time projection reads for one range: the
 /// calendar entries inside it, their basic links (plus the person → check-in
-/// owner links), and the entities those links come from.
+/// owner links and the person → meeting links), and the entities those links
+/// come from.
 class RecordedTimeInputs {
   /// Creates the inputs. Load them with [loadRecordedTimeInputs].
   const RecordedTimeInputs({
@@ -56,11 +58,23 @@ Future<RecordedTimeInputs> loadRecordedTimeInputs(
     rangeStart: rangeStart,
     rangeEnd: rangeEnd,
   );
+  final eventIds = {
+    for (final entry in entries)
+      if (entry is JournalEvent) entry.meta.id,
+  };
   final links = [
     ...await db.basicLinksForEntryIds(
       entries.map((entry) => entry.meta.id).toSet(),
     ),
     ...checkInOwnerLinks(entries),
+    // A meeting is on a person's timeline through a RelationshipLink, which
+    // the basic-link lookup never returns; read only the ones pointing at an
+    // event, so a person's whole timeline is never pulled in here.
+    if (eventIds.isNotEmpty)
+      ...(await db.typedLinksForTaskIds(
+        eventIds,
+        types: {entryLinkTypeDbName(EntryLinkType.relationship)},
+      )).where((link) => eventIds.contains(link.toId)),
   ];
   final linkedFromIds = links.map((link) => link.fromId).toSet();
   final linkedFrom = linkedFromIds.isEmpty
@@ -134,6 +148,18 @@ List<EntryLink> checkInOwnerLinks(List<JournalEntity> entries) => [
       ),
 ];
 
+/// Whether any of [linkedFromIds] is a live person — what makes an event a
+/// meeting planned with them.
+bool _isMeetingWithPerson({
+  required Set<String>? linkedFromIds,
+  required Map<String, JournalEntity> linkedFromById,
+}) =>
+    linkedFromIds?.any((id) {
+      final from = linkedFromById[id];
+      return from is RelationshipEntry && from.meta.deletedAt == null;
+    }) ??
+    false;
+
 /// Whether an [event] took place at the time it carries.
 ///
 /// A cancelled or missed event never happened, and a postponed one has left
@@ -160,8 +186,10 @@ bool eventTookPlace(JournalEvent event) => switch (event.data.status) {
 ///
 /// A [JournalEvent] survives only while [eventsEnabled] (the Events feature
 /// flag — with it off, events are hidden everywhere, this resolution
-/// included) and while it [eventTookPlace]; it resolves with no linked-from
-/// entity, so its own category and title are what the consumers see.
+/// included) or while it is a meeting with a person — linked from a live
+/// [RelationshipEntry], which shows whatever the flag says — and only while
+/// it [eventTookPlace]; it resolves with no linked-from entity, so its own
+/// category and title are what the consumers see.
 ///
 /// The [links] are ordered by `(createdAt, fromId)` before the candidate
 /// sets are built: the backing query carries no ORDER BY, so its row order
@@ -194,7 +222,15 @@ List<ResolvedTimeEntry> resolveTimeEntries({
   for (final entry in entries) {
     if (entry.meta.deletedAt != null) continue;
     final isEvent = entry is JournalEvent;
-    if (isEvent && (!eventsEnabled || !eventTookPlace(entry))) continue;
+    if (isEvent) {
+      final shown =
+          eventsEnabled ||
+          _isMeetingWithPerson(
+            linkedFromIds: entryIdToLinkedFromIds[entry.meta.id],
+            linkedFromById: linkedFromById,
+          );
+      if (!shown || !eventTookPlace(entry)) continue;
+    }
     final duration = entryDuration(entry);
     if (duration <= Duration.zero) continue;
 

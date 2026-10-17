@@ -17,10 +17,14 @@ import 'package:material_ui/material_ui.dart';
 /// at glance distance. The glyph is the one the briefing card's out-of-date
 /// line already uses, so "needs attention" is drawn one way across the
 /// feature.
+///
+/// With [onTap] the pill is also the way out of the lapse — the person page
+/// opens the meeting sheet from it — and a trailing chevron says so.
 DsPill relationshipOverduePill(
   BuildContext context, {
   required String label,
   required Key pillKey,
+  VoidCallback? onTap,
 }) {
   final tokens = context.designTokens;
   return DsPill(
@@ -35,5 +39,13 @@ DsPill relationshipOverduePill(
     ),
     labelColor: tokens.colors.text.highEmphasis,
     label: label,
+    trailing: onTap == null
+        ? null
+        : Icon(
+            LottiIcons.chevronRight,
+            size: IconSizes.xs,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+    onTap: onTap,
   );
 }

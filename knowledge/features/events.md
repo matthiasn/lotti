@@ -22,7 +22,10 @@ memory-forward overview and a photographic detail page.
 the logbook query drops the `JournalEvent` type, `EntryDetailsWidget` renders a
 linked event as nothing, the tab, create-event and type-filter affordances are
 absent, and the Daily OS timeline's recorded lane — and the planner's
-recorded-time lookback behind it — leave events out.
+recorded-time lookback behind it — leave events out. The one exception is a
+meeting planned with a person: an event linked from a live `RelationshipEntry`
+shows on that person and on the Day view whatever the flag says (see
+[relationships](relationships.md)).
 
 # An entity, not a task subtype
 

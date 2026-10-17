@@ -18,9 +18,11 @@ import 'package:material_ui/material_ui.dart';
 /// meeting as a row of its own. It replaced a stack of label-over-line pairs
 /// in which every line weighed the same and nothing read first.
 ///
-/// [meeting] is passed on a phone only: on a wide pane the timeline's own
-/// *Upcoming* row sits beside the rail and says it already. Renders nothing
-/// when there is neither a note nor a meeting.
+/// With a [meeting] booked the notes are for it: the label over the headline
+/// says *Bring up before Sun 18 Oct* rather than *Pay attention to*. Its own
+/// row shows only with [showMeetingRow] — on a phone; on a wide pane the
+/// timeline's *Upcoming* row sits beside the rail and says it already.
+/// Renders nothing when there is neither a note nor a meeting row.
 class PersonBriefCard extends StatelessWidget {
   const PersonBriefCard({
     required this.source,
@@ -29,8 +31,12 @@ class PersonBriefCard extends StatelessWidget {
     this.onOpenSource,
     this.onOpenMeeting,
     this.showProvenance = true,
+    this.showMeetingRow = true,
     super.key,
   });
+
+  /// Whether the [meeting] gets a row of its own under the notes.
+  final bool showMeetingRow;
 
   /// Whether the card says which check-in its notes are from — not on that
   /// check-in's own page, where the answer is the page.
@@ -53,7 +59,8 @@ class PersonBriefCard extends StatelessWidget {
     final avoid = _nonBlank(source?.data.avoid);
     final hasNotes = source != null && (attention != null || avoid != null);
     final meeting = this.meeting;
-    if (!hasNotes && meeting == null) return const SizedBox.shrink();
+    final meetingRow = showMeetingRow ? meeting : null;
+    if (!hasNotes && meetingRow == null) return const SizedBox.shrink();
 
     final quiet = tokens.colors.text.mediumEmphasis;
     return DesignSystemSectionCard(
@@ -66,7 +73,15 @@ class PersonBriefCard extends StatelessWidget {
           if (hasNotes) ...[
             if (attention != null) ...[
               Text(
-                messages.relationshipPayAttentionTo,
+                meeting == null
+                    ? messages.relationshipPayAttentionTo
+                    : messages.relationshipBringUpBefore(
+                        relationshipDayLabelOf(
+                          context,
+                          meeting.event.meta.dateFrom,
+                        ),
+                      ),
+                key: const ValueKey('person-next-time-label'),
                 style: captionLabelStyle(tokens),
               ),
               SizedBox(height: tokens.spacing.step2),
@@ -115,13 +130,13 @@ class PersonBriefCard extends StatelessWidget {
               _Provenance(source: source, onOpen: onOpenSource),
             ],
           ],
-          if (meeting != null) ...[
+          if (meetingRow != null) ...[
             if (hasNotes) ...[
               SizedBox(height: tokens.spacing.step3),
               const DesignSystemDivider(),
               SizedBox(height: tokens.spacing.step3),
             ],
-            _MeetingRow(meeting: meeting, now: now, onOpen: onOpenMeeting),
+            _MeetingRow(meeting: meetingRow, now: now, onOpen: onOpenMeeting),
           ],
         ],
       ),

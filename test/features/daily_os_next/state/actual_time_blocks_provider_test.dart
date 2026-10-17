@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -251,6 +252,12 @@ void main() {
         when(
           () => db.basicLinksForEntryIds({walk.meta.id, dinner.meta.id}),
         ).thenAnswer((_) async => const []);
+        when(
+          () => db.typedLinksForTaskIds(
+            {dinner.meta.id},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer((_) async => const []);
       });
 
       ProviderContainer container() {
@@ -285,6 +292,41 @@ void main() {
         final blocks = await readActualBlocks(container(), day);
 
         expect(blocks.map((block) => block.title), ['Walking']);
+      });
+
+      test('off: a meeting planned with a person stays on the lane — '
+          "people's meetings show whatever the flag says", () async {
+        when(
+          () => db.watchConfigFlag(enableEventsFlag),
+        ).thenAnswer((_) => Stream.value(false));
+        final person = testRelationship;
+        when(
+          () => db.typedLinksForTaskIds(
+            {dinner.meta.id},
+            types: {'RelationshipLink'},
+          ),
+        ).thenAnswer(
+          (_) async => [
+            EntryLink.relationship(
+              id: 'person->dinner',
+              fromId: person.meta.id,
+              toId: dinner.meta.id,
+              createdAt: day,
+              updatedAt: day,
+              vectorClock: null,
+            ),
+          ],
+        );
+        when(
+          () => db.getJournalEntitiesForIdsUnordered({person.meta.id}),
+        ).thenAnswer((_) async => [person]);
+
+        final blocks = await readActualBlocks(container(), day);
+
+        expect(blocks.map((block) => block.title), [
+          'Walking',
+          'Dinner with a friend',
+        ]);
       });
 
       test('flipping it repaints the lane without a restart', () async {

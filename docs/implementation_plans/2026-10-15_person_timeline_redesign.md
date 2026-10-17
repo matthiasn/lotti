@@ -516,6 +516,12 @@ before it is opened, with before/after pairs from the inventory rig published vi
 3. Agent facts: UPCOMING. The meeting shows on the Daily OS Day view through the
    existing event projection (verified with a test there).
 
+As built: the label over the note reads *Bring up before Sun 18 Oct* — a
+possessive built from the meeting's title ("Sunday's coffee") does not survive
+eleven catalogs. The ⚠ pill opens the meeting sheet directly, with a trailing
+chevron. Q2 reached the Day view as an exemption in `resolveTimeEntries`: an
+event linked from a live person counts with the Events flag off.
+
 **PR 4 — Speak your mind**
 
 1. The `sort_person_capture` skill: tool schema, parser, deterministic date validator

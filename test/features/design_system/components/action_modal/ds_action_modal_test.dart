@@ -82,23 +82,47 @@ void main() {
       expect(backs, 1);
     });
 
-    testWidgets('the close glyph pops the route', (tester) async {
+    // A modal always sits over a page: the header is pushed on top of one.
+    Future<void> pushHeader(WidgetTester tester, {bool canPop = true}) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          Navigator(
-            onGenerateRoute: (settings) => MaterialPageRoute<void>(
-              builder: (_) => const DsActionModalHeader(title: 'Actions'),
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PopScope(
+                    canPop: canPop,
+                    child: const DsActionModalHeader(title: 'Actions'),
+                  ),
+                ),
+              ),
+              child: const Text('open'),
             ),
           ),
         ),
       );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the close glyph pops the route', (tester) async {
+      await pushHeader(tester);
 
       await tester.tap(find.byIcon(LottiIcons.close));
       await tester.pumpAndSettle();
 
-      // Popping the last route leaves the navigator empty rather than
-      // throwing — proof the tap reached Navigator.pop.
       expect(find.byType(DsActionModalHeader), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
+
+    testWidgets('a body that cannot pop holds the sheet against the close '
+        'glyph, as it does against the scrim and Esc', (tester) async {
+      await pushHeader(tester, canPop: false);
+
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DsActionModalHeader), findsOneWidget);
     });
   });
 

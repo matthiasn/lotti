@@ -741,8 +741,9 @@ flowchart LR
 
 [`PersonTimelineRepository`](../../lib/features/relationships/repository/person_timeline_repository.dart)
 owns the writes — `addToTimeline`, `removeFromTimeline`, `createNote` (a note
-pinned *About* the person is a starred one, `meta.starred`), `setPinned`,
-`updateNote`, `deleteNote` — and resolves the link targets in one query of the
+pinned *About* the person is a starred one, `meta.starred`), `createMeeting`
+(a planned `JournalEvent` over the chosen slot), `setPinned`, `updateNote`,
+`deleteNote` — and resolves the link targets in one query of the
 types a timeline holds (`personTimelineEntryTypes`). The detail controller
 loads them with the check-ins and the tasks, and watches their ids, so an edit
 to any of them refreshes the page. The pure
@@ -751,18 +752,42 @@ turns that into sections — *Upcoming*, *Today*, *This week*, then one per
 month — groups a day's photos into one row, applies the filter, and lifts the
 pinned notes out into *About*. An open task with a due date sits at its due
 date, a closed one at when it was closed, a meeting at its start. Meetings
-always show on a person, whatever the Events flag says.
+always show on a person, whatever the Events flag says — and on the Daily OS
+Day view too: `loadRecordedTimeInputs` reads the `RelationshipLink`s pointing
+at a day's events, and `resolveTimeEntries` keeps an event linked from a live
+person with the flag off.
+
+Every create writes the entry first, in the person's category and privacy,
+then links it; an entry whose link is refused or throws is deleted again, so
+a retry never leaves a second copy, nor the first where the person's page
+cannot reach it.
+
+```mermaid
+sequenceDiagram
+  participant S as Meeting sheet
+  participant R as PersonTimelineRepository
+  participant P as PersistenceLogic
+  S->>R: createMeeting(person, title, start, duration)
+  R->>P: createDbEntity(planned JournalEvent, start..start+duration)
+  R->>P: createLink(person -> event, RelationshipLink)
+  alt link refused or throws
+    R->>P: updateDbEntity(event, deletedAt)
+    R-->>S: null (the sheet says it could not plan it)
+  else linked
+    R-->>S: the event (the sheet closes)
+  end
+```
 
 ## Layout
 
 | Region | Widget | Notes |
 |---|---|---|
 | Hero | [`PersonHeroAppBar`](../../lib/features/relationships/ui/widgets/person_header.dart) | A pinned `SliverPersistentHeader`: the avatar hangs half its diameter below it, inside the sliver's own extent so all of it is tappable. Back, *Talk to agent* (labelled, the agent's violet) and the ⋮ menu — Edit, contact linking, the agent's internals, Delete. The avatar is gone by half the fold; the folded bar names the person by `shortName`. |
-| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; a person without reminders shows none, the offer card says it once. |
+| Header block | `PersonHeaderBlock` (same file) | Category · name · one-liner, then one row of actions: [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart) — Call, Message, Email as dense labelled buttons, a call always confirming first — with `personHeaderPills` flowing after them: the cadence fact, [`PersonRemindersPill`](../../lib/features/relationships/ui/widgets/person_reminders_pill.dart) and the next due day. A lapsed cadence shows its overdue pill whether or not a meeting is booked — the list says it either way, and one rule serves both; here the pill is also the way out, a trailing chevron saying so: a tap opens the meeting sheet (`onPlanMeeting`). A person without reminders shows none, the offer card says it once. |
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
-| Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
+| Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. With a meeting booked the label over the headline names its day — *Bring up before Sun 18 Oct* — on every width, rail included. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
 | Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
-| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens the composer recording) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a note, a task and photos, each naming the person. |
+| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens the composer recording) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
 
 On a pane at least `kDesktopBreakpoint` wide the page splits: the hero, header
 and timeline in a column of their own — its own Scaffold, so the bar docks

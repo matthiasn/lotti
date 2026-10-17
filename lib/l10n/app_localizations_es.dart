@@ -17181,4 +17181,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planear un encuentro con $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Quedar con $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Título';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Empieza';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Empieza: $time. Cambiar';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planear encuentro';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'No se pudo planear el encuentro.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'Comentar antes del $day';
+  }
 }

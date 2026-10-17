@@ -109,7 +109,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
       spacing: readOut ? tokens.spacing.step4 : tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _Fact(
+        FactTag(
           readOut: readOut,
           key: const ValueKey('check-in-type'),
           semanticsLabel: messages.checkInTypeChipSemantics(typeLabel),
@@ -118,7 +118,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
           emphasised: true,
           onTap: live(onPickType),
         ),
-        _Fact(
+        FactTag(
           readOut: readOut,
           key: const ValueKey('check-in-started'),
           semanticsLabel: messages.checkInTimeChipSemantics(startedLabel),
@@ -128,7 +128,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
           onTap: live(onPickStart),
         ),
         if (hasDuration)
-          _Fact(
+          FactTag(
             readOut: readOut,
             key: const ValueKey('check-in-duration'),
             semanticsLabel: messages.checkInDurationChipSemantics(
@@ -168,7 +168,7 @@ class CheckInMetaSummaryLine extends StatelessWidget {
         // sheet where topics change rather than a row of tags that look
         // tappable and are not.
         if (topics.isNotEmpty)
-          _Fact(
+          FactTag(
             readOut: readOut,
             key: const ValueKey('check-in-topics-tag'),
             semanticsLabel:
@@ -211,9 +211,10 @@ class CheckInMetaSummaryLine extends StatelessWidget {
 }
 
 /// One set fact: the task header's filled, bordered tag, its glyph at the
-/// lane's glyph size, a tap opening the fact's picker.
-class _Fact extends StatelessWidget {
-  const _Fact({
+/// lane's glyph size, a tap opening the fact's picker — on a check-in, and
+/// for a meeting's when and how long in its sheet.
+class FactTag extends StatelessWidget {
+  const FactTag({
     required this.semanticsLabel,
     required this.icon,
     required this.label,

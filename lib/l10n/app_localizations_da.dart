@@ -16968,4 +16968,36 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planlæg et møde med $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Mød $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Starter';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Starter: $time. Skift';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planlæg møde';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mødet kunne ikke planlægges.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'Tag op før $day';
+  }
 }

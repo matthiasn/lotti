@@ -35,6 +35,25 @@ void main() {
     expect(find.text('Add a task for Pip'), findsOneWidget);
     expect(find.text('Add photos'), findsOneWidget);
     expect(find.text('Log check-in'), findsOneWidget);
+    expect(find.text('Plan a meeting with Pip'), findsOneWidget);
+  });
+
+  testWidgets('planning a meeting sits right under logging a check-in', (
+    tester,
+  ) async {
+    await pumpMenu(tester);
+
+    final checkIn = tester.getTopLeft(
+      find.byKey(const ValueKey('person-create-checkIn')),
+    );
+    final meeting = tester.getTopLeft(
+      find.byKey(const ValueKey('person-create-meeting')),
+    );
+    final note = tester.getTopLeft(
+      find.byKey(const ValueKey('person-create-note')),
+    );
+    expect(meeting.dy, greaterThan(checkIn.dy));
+    expect(note.dy, greaterThan(meeting.dy));
   });
 
   for (final choice in PersonCreateChoice.values) {

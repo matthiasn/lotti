@@ -5,7 +5,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What the person page's create menu can add.
-enum PersonCreateChoice { note, task, photos, checkIn }
+enum PersonCreateChoice { note, task, photos, checkIn, meeting }
 
 /// The person page's create menu — the bar's **+** (design panel
 /// 2026-10-15): everything that can go on the person's timeline besides
@@ -31,13 +31,19 @@ Future<PersonCreateChoice?> showPersonCreateMenu({
             title: title,
             onTap: () => Navigator.of(sheetContext).pop(choice),
           );
-      // The check-in first: logging a conversation is what the page is for.
+      // The check-in first: logging a conversation is what the page is for;
+      // planning the next one is the nearest thing to it.
       return DsActionModalList(
         children: [
           row(
             PersonCreateChoice.checkIn,
             LottiIcons.forum,
             messages.relationshipLogCheckIn,
+          ),
+          row(
+            PersonCreateChoice.meeting,
+            LottiIcons.calendar,
+            messages.relationshipPlanMeeting(personName),
           ),
           row(
             PersonCreateChoice.note,

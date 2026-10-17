@@ -17024,4 +17024,37 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan een afspraak met $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Afspraak met $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Begint';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Begint: $time. Wijzigen';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Afspraak plannen';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'De afspraak kon niet worden gepland.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bespreken vóór $day';
+  }
 }

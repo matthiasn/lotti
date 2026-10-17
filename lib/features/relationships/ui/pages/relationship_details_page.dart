@@ -26,6 +26,7 @@ import 'package:lotti/features/relationships/ui/widgets/person_brief_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_contact_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_create_menu.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_meeting_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_note_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_task_actions.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
@@ -321,6 +322,8 @@ class _RelationshipDetailsPageState
           );
         case PersonCreateChoice.checkIn:
           await _openComposer(context, latest: latest);
+        case PersonCreateChoice.meeting:
+          await showPersonMeetingSheet(context: context, person: relationship);
       }
     }
 
@@ -332,9 +335,14 @@ class _RelationshipDetailsPageState
         // The verbs first, then the reminders control, as one row.
         actions: PersonContactRow(
           relationship: relationship,
+          // Overdue, the pill is the way to plan the conversation it asks
+          // for.
           trailing: personHeaderPills(
             context,
             item,
+            // The sheet reports its own failures, as the note sheet does.
+            onPlanMeeting: () =>
+                showPersonMeetingSheet(context: context, person: relationship),
           ),
         ),
       ),
@@ -364,9 +372,11 @@ class _RelationshipDetailsPageState
       if (hasNotes || (showMeeting && compact)) ...[
         PersonBriefCard(
           source: nextTime,
+          meeting: nextMeeting,
           // On a wide pane the timeline's own Upcoming row sits right beside
-          // this rail and says it already.
-          meeting: compact ? nextMeeting : null,
+          // this rail and says it already; the card still keys its notes to
+          // the meeting.
+          showMeetingRow: compact,
           now: now,
           onOpenSource: hasNotes ? () => actions.openCheckIn(nextTime!) : null,
           onOpenMeeting: nextMeeting == null

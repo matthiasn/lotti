@@ -16986,4 +16986,36 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planera ett möte med $name';
+  }
+
+  @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Träffa $name';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Börjar';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Börjar: $time. Ändra';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planera möte';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mötet kunde inte planeras.';
+
+  @override
+  String relationshipBringUpBefore(String day) {
+    return 'Ta upp före $day';
+  }
 }

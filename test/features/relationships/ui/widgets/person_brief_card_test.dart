@@ -62,6 +62,7 @@ void main() {
     VoidCallback? onOpenSource,
     VoidCallback? onOpenMeeting,
     bool showProvenance = true,
+    bool showMeetingRow = true,
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       PersonBriefCard(
@@ -71,6 +72,7 @@ void main() {
         onOpenSource: onOpenSource,
         onOpenMeeting: onOpenMeeting,
         showProvenance: showProvenance,
+        showMeetingRow: showMeetingRow,
       ),
     ),
   );
@@ -210,6 +212,47 @@ void main() {
 
     await tester.tap(row);
     expect(opened, 1);
+  });
+
+  testWidgets('with no meeting booked, the note is labelled Pay attention '
+      'to', (tester) async {
+    await pump(tester, source: checkIn(attention: 'The move'));
+
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('person-next-time-label')))
+          .data,
+      'Pay attention to',
+    );
+  });
+
+  testWidgets('with a meeting booked, the note is for it: Bring up before '
+      'its day — even where the meeting has no row of its own', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      source: checkIn(attention: 'The move'),
+      meeting: coffee,
+      showMeetingRow: false,
+    );
+
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('person-next-time-label')))
+          .data,
+      'Bring up before Sun 16 Aug',
+    );
+    expect(find.byKey(const ValueKey('person-next-meeting')), findsNothing);
+    expect(find.text('Coffee at the ice garden'), findsNothing);
+  });
+
+  testWidgets('a meeting with no row of its own and no notes makes no card', (
+    tester,
+  ) async {
+    await pump(tester, meeting: coffee, showMeetingRow: false);
+
+    expect(find.byKey(const ValueKey('person-brief')), findsNothing);
   });
 
   testWidgets("on the check-in's own page it does not say which check-in "
