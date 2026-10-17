@@ -19,12 +19,12 @@ import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
-import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -568,15 +568,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final companionEnabled =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
     final companion = companionEnabled && playbackControl != null
-        ? SizedBox(
-            height: ControlSizes.companionCard,
-            child: AspectRatio(
-              aspectRatio: CompanionFraming.full.aspectRatio,
-              child: CompanionSpeaker(
-                key: const ValueKey('taskAgentCompanion'),
-                sourceId: widget.taskId,
-              ),
-            ),
+        ? CompanionSpeaker(
+            key: const ValueKey('taskAgentCompanion'),
+            sourceId: widget.taskId,
           )
         : null;
 
@@ -625,13 +619,14 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           )
         : null;
     final headerControls = [?chatButton, ?playbackControl];
-    final reportBody = TldrBody(
+    Widget reportBody({Widget? disclosureLeading}) => TldrBody(
       disclosureKey: const ValueKey('taskAgentReportDisclosure'),
       tldr: tldr,
       expanded: _expanded,
       additionalReport: additionalReport,
       onToggle: () => setState(() => _expanded = !_expanded),
       onOpenInternals: () => _openInternals(agentName: subtitle),
+      disclosureLeading: disclosureLeading,
     );
     // Nothing to propose, no section: an empty "Proposed changes" band cost a
     // divider and two paddings to say what the missing rows already said. A
@@ -759,14 +754,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               horizontal: tokens.spacing.cardPadding,
             ),
             child: companion == null
-                ? reportBody
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: tokens.spacing.step3,
-                    children: [
-                      companion,
-                      Expanded(child: reportBody),
-                    ],
+                ? reportBody()
+                : CompanionReportLayout(
+                    companion: companion,
+                    buildBody: (leading) =>
+                        reportBody(disclosureLeading: leading),
                   ),
           ),
         // The freshness word sits with the summary it describes, on the same

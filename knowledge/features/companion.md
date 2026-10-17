@@ -211,7 +211,7 @@ She has three hosts, each with its own framing:
 
 | Host | Framing | Box | Utterance (`sourceId`) |
 |---|---|---|---|
-| AI summary card (`agents/ui/ai_summary_card.dart`) | `full` | `ControlSizes.companionCard` high, width from `CompanionFraming.aspectRatio` | the task id |
+| AI summary card (`agents/ui/ai_summary_card.dart`, laid out by `agents/ui/ai_summary_card/companion_report_layout.dart`) | `full` | `ControlSizes.companionCardWide` high beside the summary on a card body at least `CompanionReportLayout.besideMinWidth` wide, `ControlSizes.companionCardCompact` under it otherwise; a `CompanionSlot` as wide as the `bust` window, the rest of the `full` frame overhanging into the gutters | the task id |
 | Day page header ([Daily OS](daily_os_next/ui-surfaces.md#the-day-briefing)) | `bust` | `ControlSizes.avatar` square | `day-briefing:<yyyy-MM-dd>` |
 | Onboarding welcome and first task ([onboarding](onboarding.md#the-companion)) | `full` in the welcome hero, `bust` on the first task | the hero frame's height; `ControlSizes.avatarHero` square | `onboarding-companion` |
 

@@ -301,6 +301,7 @@ class TldrBody extends StatelessWidget {
     required this.disclosureKey,
     this.onOpenInternals,
     this.bodyStyle,
+    this.disclosureLeading,
     super.key,
   });
 
@@ -319,6 +320,11 @@ class TldrBody extends StatelessWidget {
   /// defaulted: a default would hand a fourth surface the task card's key
   /// and make its failures name the wrong screen.
   final Key disclosureKey;
+
+  /// A figure standing at the start of the disclosure row, the links beside
+  /// it — the companion on a narrow task card, where beside the prose she
+  /// would starve its measure. Null leaves the links on the row alone.
+  final Widget? disclosureLeading;
 
   /// Reading-measure cap for the report prose. The card itself stays
   /// full-width, but body lines must not — unbounded desktop widths produce
@@ -348,32 +354,8 @@ class TldrBody extends StatelessWidget {
         );
     final hasMore = additionalReport?.trim().isNotEmpty ?? false;
     final hasDisclosure = hasMore || expanded || onOpenInternals != null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (tldr.trim().isNotEmpty)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
-            child: SelectionArea(
-              child: AgentMarkdownView(tldr, style: bodyStyle),
-            ),
-          ),
-        if (expanded && hasMore) ...[
-          SizedBox(height: tokens.spacing.sectionGap),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
-            child: SelectionArea(
-              child: AgentMarkdownView(additionalReport!, style: bodyStyle),
-            ),
-          ),
-        ],
-        // No spacer above the disclosure row: its 40-high tap target already
-        // carries ~12 px of optical padding on each side, so an explicit gap
-        // stacked a second one on top and left a dead band under the prose.
-        // The target instead reaches up into the last line's descender area.
-        if (hasDisclosure)
-          Wrap(
+    final links = hasDisclosure
+        ? Wrap(
             spacing: tokens.spacing.step4,
             runSpacing: tokens.spacing.step2,
             children: [
@@ -401,7 +383,43 @@ class TldrBody extends StatelessWidget {
                   onPressed: onOpenInternals!,
                 ),
             ],
+          )
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (tldr.trim().isNotEmpty)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
+            child: SelectionArea(
+              child: AgentMarkdownView(tldr, style: bodyStyle),
+            ),
           ),
+        if (expanded && hasMore) ...[
+          SizedBox(height: tokens.spacing.sectionGap),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: maxReadingWidth),
+            child: SelectionArea(
+              child: AgentMarkdownView(additionalReport!, style: bodyStyle),
+            ),
+          ),
+        ],
+        // No spacer above the disclosure row: its 40-high tap target already
+        // carries ~12 px of optical padding on each side, so an explicit gap
+        // stacked a second one on top and left a dead band under the prose.
+        // The target instead reaches up into the last line's descender area.
+        if (disclosureLeading case final leading?)
+          // The links centre on the figure's height: it is the taller of the
+          // two, and links pinned to its top would leave its foot bare.
+          Row(
+            children: [
+              leading,
+              if (links != null) Expanded(child: links),
+            ],
+          )
+        else
+          ?links,
         // Without a disclosure row there is no tap target to supply the
         // trailing optical gap, so the body pays for it itself. The card gives
         // this block no bottom padding of its own.

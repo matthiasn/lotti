@@ -83,8 +83,15 @@ Contents:
   name when it has one (e.g. *Task Laura*), otherwise the agent's display
   name; it is never the task title.
 - **The companion** — with `enable_companion` on, the drawn character of
-  [the companion feature](../companion.md) stands left of the summary
-  (`CompanionSpeaker`, full framing, `ControlSizes.companionCard` high). She
+  [the companion feature](../companion.md) stands with the summary
+  (`CompanionSpeaker`, full framing, arranged by `CompanionReportLayout`). On
+  a card body at least `besideMinWidth` (480) wide she stands left of it,
+  `ControlSizes.companionCardWide` high; narrower, the summary takes the full
+  width and she stands under it, `ControlSizes.companionCardCompact` high, as
+  `TldrBody.disclosureLeading` beside *Read more* and *Open agent internals*.
+  Her slot is the `bust` window's width; the rest of her `full` frame hangs
+  into the card padding and the gap, never further than either, so her
+  silhouette rather than her empty frame meets the footer's leading edge. She
   is the read-aloud control's face: shown only while that control is, and
   speaking its utterance — the task id as `sourceId`, in the words the
   voice was given at the tap — so a tap on the control is what makes her

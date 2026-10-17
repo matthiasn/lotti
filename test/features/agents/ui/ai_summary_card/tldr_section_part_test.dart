@@ -218,6 +218,74 @@ void main() {
     });
   });
 
+  group('TldrBody.disclosureLeading', () {
+    const leadingKey = ValueKey('leading');
+    const leading = SizedBox(key: leadingKey, width: 60, height: 100);
+
+    Widget body({required bool withLinks}) => TldrBody(
+      tldr: 'Summary first.',
+      expanded: false,
+      additionalReport: withLinks ? 'Full report details.' : null,
+      onToggle: () {},
+      onOpenInternals: withLinks ? () {} : null,
+      disclosureKey: const ValueKey('disclosure'),
+      disclosureLeading: leading,
+    );
+
+    testWidgets('stands under the prose, the links beside it on its centre '
+        'line', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(body(withLinks: true)),
+      );
+
+      final figure = tester.getRect(find.byKey(leadingKey));
+      final prose = tester.getRect(find.byType(AgentMarkdownView));
+      final readMore = tester.getRect(find.byKey(const ValueKey('disclosure')));
+      final internals = tester.getRect(find.text('Open agent internals'));
+
+      expect(figure.top, greaterThanOrEqualTo(prose.bottom));
+      expect(figure.left, prose.left);
+      expect(readMore.left, greaterThanOrEqualTo(figure.right));
+      expect(internals.left, greaterThan(readMore.right));
+      expect(readMore.center.dy, closeTo(figure.center.dy, 0.01));
+    });
+
+    testWidgets('stands alone when there are no links, and the body still '
+        'pays its own trailing gap', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Align(
+            alignment: Alignment.topLeft,
+            child: body(withLinks: false),
+          ),
+        ),
+      );
+
+      expect(find.text('Read more'), findsNothing);
+      expect(find.text('Open agent internals'), findsNothing);
+      final figure = tester.getRect(find.byKey(leadingKey));
+      final step3 = tester
+          .element(find.byType(TldrBody))
+          .designTokens
+          .spacing
+          .step3;
+      // The last child of the body is the gap it pays itself, right under
+      // the figure.
+      final column = tester.widget<Column>(
+        find
+            .descendant(
+              of: find.byType(TldrBody),
+              matching: find.byType(Column),
+            )
+            .first,
+      );
+      final gap = column.children.last;
+      expect(gap, isA<SizedBox>());
+      expect((gap as SizedBox).height, step3);
+      expect(tester.getRect(find.byWidget(gap)).top, figure.bottom);
+    });
+  });
+
   group('TldrHeader', () {
     testWidgets('a subtitle widget stands in for the name caption, and the '
         'badge can wear another glyph', (tester) async {
