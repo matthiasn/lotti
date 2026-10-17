@@ -4,9 +4,14 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
+import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
+import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/person_capture_filer.dart';
 import 'package:lotti/features/relationships/service/person_capture_sort_tool.dart';
 import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
@@ -74,4 +79,44 @@ final personCaptureSorterProvider = Provider<PersonCaptureSorter>(
     logger: ref.watch(domainLoggerProvider),
   ),
   name: 'personCaptureSorterProvider',
+);
+
+/// Files what the user accepted from a spoken capture about a person.
+final personCaptureFilerProvider = Provider<PersonCaptureFiler>(
+  (ref) => PersonCaptureFiler(
+    relationships: ref.watch(relationshipRepositoryProvider),
+    timeline: ref.watch(personTimelineRepositoryProvider),
+    createTask:
+        ({
+          required title,
+          required due,
+          required categoryId,
+          required inheritContextFrom,
+        }) async {
+          final logger = ref.read(domainLoggerProvider);
+          final agentService = ref.read(taskAgentServiceProvider);
+          final task = await createTask(
+            domainLogger: logger,
+            title: title,
+            due: due,
+            categoryId: categoryId,
+            inheritContextFrom: inheritContextFrom,
+          );
+          // The follow-up every other create path performs, so a task filed
+          // from a capture is not the one left without its category's agent.
+          if (task != null) {
+            await autoAssignCategoryAgentWith(
+              agentService,
+              task,
+              domainLogger: logger,
+            );
+          }
+          return task;
+        },
+    link: ({required fromId, required toId}) => ref
+        .read(persistenceLogicProvider)
+        .createLink(fromId: fromId, toId: toId),
+    logger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'personCaptureFilerProvider',
 );
