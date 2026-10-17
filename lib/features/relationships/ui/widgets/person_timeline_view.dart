@@ -174,7 +174,7 @@ class PersonTimelineSliver extends ConsumerWidget {
       if (timeline.itemCount >= personTimelineFiltersFrom)
         (context) => Padding(
           key: const ValueKey('person-timeline-filter'),
-          padding: inset.copyWith(top: tokens.spacing.step3),
+          padding: inset.copyWith(top: tokens.spacing.step2),
           child: DsChoicePills<PersonTimelineFilter>(
             value: filter,
             values: PersonTimelineFilter.values,
@@ -277,21 +277,7 @@ class PersonTimelineRow extends StatelessWidget {
           ],
           text: words.isEmpty ? messages.checkInTranscribingLabel : words,
           pending: words.isEmpty,
-          // Words to sort, a way to sort them: a voice note is what a
-          // capture stays when it was not filed, and this files it later.
-          footer: words.isEmpty
-              ? null
-              : Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: DesignSystemButton(
-                    key: ValueKey('person-sort-${row.audio.meta.id}'),
-                    label: messages.relationshipSortThis,
-                    variant: DesignSystemButtonVariant.quiet,
-                    size: DesignSystemButtonSize.dense,
-                    alignsLabelToLeadingEdge: true,
-                    onPressed: () => actions.sortVoiceNote(row.audio),
-                  ),
-                ),
+          footer: null,
           onTap: () => actions.openEntry(row.audio),
         );
       }(),
@@ -388,6 +374,21 @@ class PersonTimelineRow extends StatelessWidget {
                     ),
             ),
       footer: row.footer,
+      // Words to sort, a way to sort them: a voice note is what a capture
+      // stays when it was not filed, and this files it later. Beside the
+      // meta line, so the action costs the row no height.
+      trailing: switch (item) {
+        final TimelineVoiceNote row
+            when (row.audio.entryText?.plainText.trim() ?? '').isNotEmpty =>
+          DesignSystemButton(
+            key: ValueKey('person-sort-${row.audio.meta.id}'),
+            label: messages.relationshipSortThis,
+            variant: DesignSystemButtonVariant.quiet,
+            size: DesignSystemButtonSize.dense,
+            onPressed: () => actions.sortVoiceNote(row.audio),
+          ),
+        _ => null,
+      },
       last: last,
       highlighted: highlighted,
       onTap: row.onTap,
@@ -583,7 +584,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
           excludeSemantics: true,
           child: Padding(
             key: const ValueKey('person-about-toggle'),
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
             child: PersonCardHeader(
               title: title,
               count: pinned.length,
@@ -618,7 +619,7 @@ class _PersonAboutSectionState extends State<PersonAboutSection> {
             key: ValueKey('person-about-${note.id}'),
             onTap: () => widget.onOpen(note.note),
             builder: (context, highlighted) => Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
               child: Text(
                 note.note.entryText?.plainText.trim() ?? '',
                 maxLines: oneLine ? 1 : null,

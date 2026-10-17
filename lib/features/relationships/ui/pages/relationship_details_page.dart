@@ -334,7 +334,12 @@ class _RelationshipDetailsPageState
       }
     }
 
-    final gap = SizedBox(height: tokens.spacing.sectionGap);
+    // The page's blocks sit a `step5` apart, not the cards' `sectionGap`:
+    // header, notes, briefing, About and timeline are one person's page,
+    // and a section gap between each read as a stack of separate cards
+    // (design review 2026-10-17: "airy overall, vertically").
+    final blockGap = tokens.spacing.step5;
+    final gap = SizedBox(height: blockGap);
     final whoBlock = <Widget>[
       PersonHeaderBlock(
         item: item,
@@ -358,14 +363,14 @@ class _RelationshipDetailsPageState
       // is paused, and until when.
       PausedReminderCallout(
         relationshipId: relationshipId,
-        bottomGap: tokens.spacing.sectionGap,
+        bottomGap: blockGap,
       ),
       // Renders nothing until the user comes back from a call placed on
       // this page; then it is the most time-sensitive thing here, so it
       // sits where they land.
       PostInteractionPrompt(
         relationshipId: relationshipId,
-        bottomGap: tokens.spacing.sectionGap,
+        bottomGap: blockGap,
       ),
     ];
     final nextTime = PersonBriefCard.sourceOf(checkIns);
@@ -390,7 +395,7 @@ class _RelationshipDetailsPageState
               ? null
               : () => actions.openEntry(nextMeeting.event),
         ),
-        SizedBox(height: tokens.spacing.step4),
+        SizedBox(height: tokens.spacing.step3),
       ],
       // Always present: an unenrolled person gets the offer that explains
       // what reminders turn on.

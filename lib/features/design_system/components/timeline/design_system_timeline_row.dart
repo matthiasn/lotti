@@ -262,9 +262,9 @@ class DesignSystemTimelineSectionHeader extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           spacing.step3,
-          spacing.step4,
           spacing.step3,
-          spacing.step2,
+          spacing.step3,
+          spacing.step1,
         ),
         child: Row(
           children: [

@@ -351,6 +351,14 @@ void main() {
         ),
         findsOneWidget,
       );
+      // Beside the meta line, so the action costs the row no height.
+      final tile = tester.getRect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-spoken')),
+          matching: find.byType(DesignSystemTimelineTile),
+        ),
+      );
+      expect(tester.getCenter(sort).dy, closeTo(tile.center.dy, 1));
       await tester.tap(sort);
       expect(opened, ['sort spoken']);
     });
