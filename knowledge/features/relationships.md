@@ -618,8 +618,8 @@ time or a status no heading does, so they stay. The reclaimed width goes to
 the name, which wraps to two lines rather than truncating — the one string on
 the row a reader cannot reconstruct from anything else on it. No marker
 sits beside the name: the band the row is in already says whether reminders
-are on. A long press on a row opens the composer already recording for that
-person (`openCheckInForPerson(startSpeaking: true)`). The overdue pill carries
+are on. A long press on a row opens *Speak about Pip* already recording
+(`showPersonCaptureSheet`, see *Speak your mind*). The overdue pill carries
 a leading `LottiIcons.warning` in `alert.warning.ink`: on the dark ground its
 tint alone read as an inert brown beside the neutral chip, and the glyph is
 the same one the briefing card's out-of-date line uses, so "needs attention"
@@ -787,7 +787,7 @@ sequenceDiagram
 | Callouts | `PostInteractionPrompt`, the paused-reminder callout | Where the user lands coming back from a call. |
 | Before you talk | [`PersonBriefCard`](../../lib/features/relationships/ui/widgets/person_brief_card.dart), `RelationshipBriefingCard`, [`PersonAboutSection`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | One card with one thing that leads: the note to bring up, from the newest check-in that has notes (`PersonBriefCard.sourceOf`), set as a `heading3` headline; what to avoid under it in the quiet ink, marked by its glyph rather than a second label; a link into that check-in; and on a phone the next meeting as a row that opens it. With a meeting booked the label over the headline names its day — *Bring up before Sun 18 Oct* — on every width, rail included. Then the agent's briefing, then what the user pinned *About* the person. On a phone, when the user's notes lead, the briefing's calm faces (current, writing) fold to their header row (`RelationshipBriefingCard.folded`) and *About* to its heading — each opening in place — so the timeline starts on the first screen; a face that asks something is never folded. A wide pane shows the first three *About* notes, the rest behind `personDisclosure`. |
 | Timeline | [`PersonTimelineSliver`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart) | The heading, the filter pills once there is enough to filter, then each section's rows on [`DesignSystemTimelineRow`](../../lib/features/design_system/components/timeline/design_system_timeline_row.dart): a tile on a continuous rail, the meta line (when · what · how long) shedding segments from the end on a narrow width, the words capped at the prose measure, and for a check-in a caption line of how it felt and its topics. A task row unlinks on a long press. Lazily built: the history grows without bound. |
-| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens the composer recording) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
+| Bar | [`RelationshipActionBar`](../../lib/features/relationships/ui/widgets/relationship_action_bar.dart) | *Speak* (filled: opens *Speak about Pip* recording, see *Speak your mind*) and *+ Add*, whose [menu](../../lib/features/relationships/ui/widgets/person_create_menu.dart) offers a check-in, a meeting, a note, a task and photos, each naming the person. A meeting is planned in [its own sheet](../../lib/features/relationships/ui/widgets/person_meeting_sheet.dart): a title prefilled *Meet {name}*, then when and how long as the composer's own fact tags (`FactTag`) — tomorrow at the next full hour for an hour until changed — each opening its picker (`pickMeetingStart`, which looks ahead from today and moves a time already past to the next full hour, and the check-in duration picker). While the meeting is being written the sheet holds — Cancel off, and a `PopScope` the modal's close respects — so it never closes on a write that then lands anyway. |
 
 On a pane at least `kDesktopBreakpoint` wide the page splits: the hero, header
 and timeline in a column of their own — its own Scaffold, so the bar docks
@@ -2144,8 +2144,9 @@ Settings.
 
 # Voice check-ins (plan v2 phase 6)
 
-The person page's microphone opens the composer with `startSpeaking`, which
-presses *Dictate* after the first frame. From there the recorder is a small
+The post-call offer's *Yes, log it* opens the composer with `startSpeaking`,
+which presses *Dictate* after the first frame (the bar's *Speak* opens *Speak
+your mind* instead). From there the recorder is a small
 state machine, `CheckInSpeechPhase` in
 [check_in_speech_state.dart](../../lib/features/relationships/ui/widgets/check_in_speech_state.dart),
 each phase drawn in place of the note; a finished recording leaves the
@@ -2562,8 +2563,8 @@ are persisted as the check-in's end time (`dateTo − dateFrom`, no schema
 change), so the log's row shows the duration the offer promised; editing a
 check-in keeps its length when the start time moves.
 
-All three doors — the offer's answer, the bar's *Speak* and the *+ Add*
-menu's check-in — go through `openCheckInForPerson`, which claims the marker with
+Both doors into the composer — the offer's answer and the *+ Add* menu's
+check-in — go through `openCheckInForPerson`, which claims the marker with
 `PendingInteractionClaims.claimFor` (exclusive: two taps landing together get
 one marker between them) and opens the composer describing the call, so it is
 logged as that call whichever control the user reaches for. The elapsed
@@ -2588,7 +2589,7 @@ stateDiagram-v2
   Pending --> NoMarker: expired on read (TTL)
   Pending --> NoMarker: unreadable on read (cleared)
   Pending --> NoMarker: declined
-  Pending --> Capturing: claimed by the offer, Speak or + Add (same person)
+  Pending --> Capturing: claimed by the offer or + Add (same person)
   Capturing --> NoMarker: saved
   Capturing --> Pending: closed without saving (released as it was)
 ```
@@ -2601,6 +2602,92 @@ silently fills loose constraints, collapsing the list above it. A `Row` is
 not enough — its cross-axis constraints are merely loose; a vertical `Flex`
 passes unbounded main-axis constraints, under which the same `Center`
 shrink-wraps.
+
+## Speak your mind
+
+The bar's *Speak* and a long press on a People row open *Speak about Pip*
+([person_capture_sheet.dart](../../lib/features/relationships/ui/widgets/person_capture_sheet.dart)):
+the recorder, under a hint at what a capture can be and over a caption naming
+the model and provider that will sort it, so nothing leaves the device
+unannounced. The capture is driven by a pure machine,
+`personCaptureNext` in
+[person_capture_flow.dart](../../lib/features/relationships/model/person_capture_flow.dart),
+table-tested like `CheckInSpeechPhase`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Recording: Speak, or a long press on a People row
+  Recording --> Discarded: Discard (confirmed)
+  Discarded --> [*]
+  Recording --> Transcribing: saved, and something can transcribe
+  Recording --> VoiceNote: saved, nothing can transcribe
+  Transcribing --> Sorting: words arrive
+  Transcribing --> VoiceNote: no words, or none in time
+  Sorting --> Review: items to file
+  Sorting --> VoiceNote: no model, a failed sort, or nothing to file
+  Review --> Review: an item set aside, edited, or not filed
+  Review --> Filed: every accepted item filed
+  Review --> VoiceNote: Keep as a voice note
+  VoiceNote --> Sorting: Sort this on its timeline row
+  Filed --> [*]
+  VoiceNote --> [*]
+```
+
+- **Saved means kept.** The moment the recorder stops, the audio is a voice
+  note on the person's timeline (`addToTimeline`, a `RelationshipLink`), so a
+  closed sheet, a crash or a failed step always leaves it there; every later
+  phase only offers to file it as something more specific. A recording the
+  timeline will not take stops the capture there, saying it is in the
+  journal: sorting and filing what the person's page would never show helps
+  no one.
+- **Words.** `CheckInTranscriptionService` transcribes it, with the person's
+  names corrected. The transcript becomes the voice note's own words
+  (`entryText`), which is what its timeline row shows.
+- **Sort.** `PersonCaptureSorter`
+  ([person_capture_sorter.dart](../../lib/features/relationships/service/person_capture_sorter.dart))
+  makes one forced call to the `sort_person_capture` tool
+  ([person_capture_sort_tool.dart](../../lib/features/relationships/service/person_capture_sort_tool.dart)),
+  on the thinking slot of the route the briefing names
+  (`resolveRelationshipAgentModel`), with one retry that says what was wrong
+  and a two-minute bound per call. The prompt carries the time with its
+  weekday and zone, the person's names and the words, each inside its own
+  tag (`<person_name>`, `<capture>`) so nothing spoken can pass for the
+  prompt's own — never a contact channel. The tool has no field for how a conversation felt: sentiment stays
+  the user's (ADR 0038).
+- **Checked items.** At most three: `checkIn` (kind, start, length, topics,
+  what to bring up and avoid, a summary), `note`, `meeting` (title, start,
+  length) and `task` (title, due day). Every date is local time, round-tripped
+  (`parsePersonCaptureLocalTime`, `parsePersonCaptureDay`), so 30 February is
+  refused rather than moved. A field that fails its check drops; an item
+  without the words it is about drops; an unreadable call is retried.
+- **Review.** *Here's what I heard*: the words in two quiet lines, then one
+  card per item ([person_capture_review.dart](../../lib/features/relationships/ui/widgets/person_capture_review.dart)).
+  Its words lead; its facts are the composer's tags and open the composer's
+  and the meeting sheet's pickers. Every item is accepted until set aside, and
+  nothing is ever filed without the user's Save.
+- **File.** `PersonCaptureFiler`
+  ([person_capture_filer.dart](../../lib/features/relationships/service/person_capture_filer.dart))
+  files check-ins first, since they decide where the recording lives:
+  - a check-in holds the recording (`attachEntriesToCheckIn`), and the voice
+    note leaves the timeline (`removeFromTimeline`), so the timeline shows it
+    once;
+  - the first note is the voice note itself while the recording is on the
+    timeline; a second note, or any note once a check-in took the recording,
+    is written as a note of its own. Where the recording lives is read from
+    the timeline (`isOnTimeline`), not remembered, so a retry decides the same
+    way;
+  - a meeting is planned (`createMeeting`), an untimed one in the meeting
+    sheet's default slot; a task is written through the shared `createTask`
+    and linked to the person; both also link to the recording.
+  Each item is filed on its own. One that could not be written is handed
+  back and stays in review, said so. Once written, an item is filed whatever
+  happens to the links after it — attaching the recording, a task's person
+  link — since a retry would write it twice; those misses are logged.
+- **Sort this.** A voice note on the timeline with words carries *Sort this*,
+  which opens the same sheet straight on sorting those words.
+
+The post-call offer keeps the composer: it knows the call it is about, its
+kind and its minutes, and a sort would only guess them.
 
 # Related
 

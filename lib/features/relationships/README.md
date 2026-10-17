@@ -14,7 +14,7 @@ is one, how often a reminder comes. Turning reminders on — in the person
 editor, the contact-import review or the person page's card — always shows
 how often, with monthly preselected, and stores what it shows.
 Desktop uses a list/detail split; phones open a dedicated person page. A
-long press on a person starts a spoken check-in without opening the page.
+long press on a person starts speaking about them without opening the page.
 
 The person page holds a header with category, name, nickname and recent
 contact, and one row of actions: call, message and email where the device
@@ -38,8 +38,13 @@ stay legible over it. Both
 pictures are managed from the person editor's Photo card — the banner is
 dragged sideways into place there — and the face from the page's avatar too.
 The editor also keeps a birthday, which the agent's briefings count down to.
-The bottom bar offers *Speak*, which opens the check-in composer already
-recording, and *+ Add*: a check-in, a meeting, a note about the person (which
+The bottom bar offers *Speak* and *+ Add*. *Speak about Pip* records
+whatever is on your mind — a conversation you had, something to remember, a
+plan — and keeps it as a voice note on the timeline at once. Its words are
+then sorted, by the model the briefing names, into a check-in, a note, a
+meeting or a task, for you to review: nothing is filed until you save, and
+how a conversation felt is never guessed. A voice note that was not sorted
+offers *Sort this* on its row. *+ Add* offers a check-in, a meeting, a note about the person (which
 can be pinned to *About*), a task, or photos. A meeting gets a title, a day,
 a start and a length; it lands under *Upcoming*, keys *Before you talk* to its
 day, and shows on the Daily OS Day view even with the Events feature off. An
@@ -124,8 +129,8 @@ importance and cadence before creating people. Linking or refreshing a
 contact preserves hand-edited channels and names. Available call, message
 and email actions use the device's capabilities; returning after a contact
 action offers a prefilled check-in under the person's name — *Yes, log it*
-opens it recording — and the page's own *Speak* and *+ Add* open prefilled
-the same way. Otherwise the
+opens it recording — and the page's *+ Add* check-in opens prefilled the
+same way. Otherwise the
 composer starts from how the two of you last connected. Desktop retains manual
 channel entry.
 

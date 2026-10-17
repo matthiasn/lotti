@@ -97,6 +97,7 @@ void main() {
     openEntry: (e) => opened.add('entry ${e.meta.id}'),
     openTask: (t) => opened.add('task ${t.meta.id}'),
     unlinkTask: (t) => opened.add('unlink ${t.meta.id}'),
+    sortVoiceNote: (a) => opened.add('sort ${a.meta.id}'),
   );
 
   setUp(() => opened = []);
@@ -325,6 +326,33 @@ void main() {
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
+    });
+
+    testWidgets('a voice note with words offers Sort this, which sorts it; '
+        'one still waiting for its words does not', (tester) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [
+            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
+            audio('waiting', DateTime(2026, 8, 11, 9)),
+          ],
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('person-sort-waiting')), findsNothing);
+      final sort = find.byKey(const ValueKey('person-sort-spoken'));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-spoken')),
+          matching: sort,
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(sort);
+      expect(opened, ['sort spoken']);
     });
 
     testWidgets('an overdue task says since when in the warning ink, a done '

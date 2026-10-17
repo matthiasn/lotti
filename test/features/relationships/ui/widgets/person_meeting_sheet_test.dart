@@ -147,30 +147,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('PersonMeetingForm.defaultStart', () {
-    test('is tomorrow at the next full hour', () {
-      expect(
-        PersonMeetingForm.defaultStart(DateTime(2026, 8, 13, 10, 20)),
-        DateTime(2026, 8, 14, 11),
-      );
-    });
-
-    test('moves an hour already full on, so it is never now', () {
-      expect(
-        PersonMeetingForm.defaultStart(DateTime(2026, 8, 13, 10)),
-        DateTime(2026, 8, 14, 11),
-      );
-    });
-
-    test("late in the evening it is tomorrow's midnight, not a day "
-        'further', () {
-      expect(
-        PersonMeetingForm.defaultStart(DateTime(2026, 8, 13, 23, 20)),
-        DateTime(2026, 8, 14),
-      );
-    });
-  });
-
   testWidgets('opens on "Meet Pip", tomorrow at the next hour, for an hour, '
       'and planning it writes exactly that and closes the sheet', (
     tester,

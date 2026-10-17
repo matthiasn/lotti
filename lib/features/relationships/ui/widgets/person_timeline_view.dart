@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
@@ -29,6 +30,10 @@ typedef PersonTimelineActions = ({
 
   /// A long press on a task's row: take it off the person, after asking.
   void Function(Task task) unlinkTask,
+
+  /// *Sort this* on a voice note with words: sort them into check-ins,
+  /// notes, meetings or tasks, for review.
+  void Function(JournalAudio audio) sortVoiceNote,
 });
 
 /// The words a check-in row leads with: the text it was saved with, else its
@@ -229,17 +234,7 @@ class PersonTimelineRow extends StatelessWidget {
         relationshipTimestampLabelOf(context, time, now: now);
     String day(DateTime time) => relationshipDayLabelOf(context, time);
 
-    final ({
-      IconData icon,
-      String kind,
-      String time,
-      List<String> tail,
-      String? text,
-      bool pending,
-      Widget? footer,
-      VoidCallback onTap,
-    })
-    row = switch (item) {
+    final row = switch (item) {
       final TimelineCheckIn row => () {
         final checkIn = row.checkIn;
         final summary = checkInSummaryOf(context, checkIn, row.entries);
@@ -282,7 +277,21 @@ class PersonTimelineRow extends StatelessWidget {
           ],
           text: words.isEmpty ? messages.checkInTranscribingLabel : words,
           pending: words.isEmpty,
-          footer: null,
+          // Words to sort, a way to sort them: a voice note is what a
+          // capture stays when it was not filed, and this files it later.
+          footer: words.isEmpty
+              ? null
+              : Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: DesignSystemButton(
+                    key: ValueKey('person-sort-${row.audio.meta.id}'),
+                    label: messages.relationshipSortThis,
+                    variant: DesignSystemButtonVariant.quiet,
+                    size: DesignSystemButtonSize.dense,
+                    alignsLabelToLeadingEdge: true,
+                    onPressed: () => actions.sortVoiceNote(row.audio),
+                  ),
+                ),
           onTap: () => actions.openEntry(row.audio),
         );
       }(),

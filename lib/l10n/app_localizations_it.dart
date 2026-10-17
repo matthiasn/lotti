@@ -12807,6 +12807,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Da affrontare prima di $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12838,6 +12843,96 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return 'Chiamare $name?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Registra come check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Scade $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aggiungi $count elementi',
+      one: 'Aggiungi 1 elemento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Alcuni elementi non sono stati aggiunti. Sono ancora qui.';
+
+  @override
+  String get relationshipCaptureHeard => 'Ecco cosa ho sentito';
+
+  @override
+  String get relationshipCaptureHint =>
+      'Una conversazione che hai avuto, qualcosa da ricordare o un piano.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Tieni come nota vocale';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Salvata come nota vocale, con le sue parole. Nessun modello può ordinarla.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Salvata come nota vocale: niente da aggiungere a parte.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Salvata come nota vocale. Ancora niente può trascriverla.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Salvata come nota vocale. Non è passata nessuna parola.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Salvata come nota vocale, con le sue parole. L\'ordinamento non è riuscito: riprova più tardi con Ordina sulla sua riga.';
+
+  @override
+  String get relationshipCaptureListening => 'Ascolto…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Pianifica un incontro';
+
+  @override
+  String get relationshipCaptureNoDue => 'Nessuna scadenza';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Nessun modello per ordinarlo: resta una nota vocale.';
+
+  @override
+  String get relationshipCaptureNote => 'Tieni come nota';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'La registrazione è salvata nel tuo diario, ma non è stato possibile metterla nella cronologia di $name.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Ordinato da $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Ordino quello che hai detto…';
+
+  @override
+  String get relationshipCaptureTask => 'Aggiungi un\'attività';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Parla di $name';
   }
 
   @override
@@ -13182,6 +13277,29 @@ class AppLocalizationsIt extends AppLocalizations {
   String get relationshipLogCheckIn => 'Registra un contatto';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Incontro con $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Pianifica incontro';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Impossibile pianificare l\'incontro.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Inizio';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Inizio: $time. Cambia';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titolo';
+
+  @override
   String get relationshipMoreActions => 'Altre azioni';
 
   @override
@@ -13277,6 +13395,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Pianifica un incontro con $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Hai raggiunto $name?';
   }
@@ -13362,6 +13485,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'In scadenza';
+
+  @override
+  String get relationshipSortThis => 'Ordina';
 
   @override
   String get relationshipsPageTitle => 'Persone';
@@ -17176,37 +17302,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Pianifica un incontro con $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Vedere $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titolo';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Inizio';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Inizio: $time. Cambia';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Pianifica incontro';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Impossibile pianificare l\'incontro.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Da affrontare prima di $day';
-  }
 }

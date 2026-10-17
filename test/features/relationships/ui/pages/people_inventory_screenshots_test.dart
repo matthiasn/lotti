@@ -22,6 +22,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -36,6 +37,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -47,6 +49,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -74,7 +77,10 @@ import 'package:lotti/features/relationships/service/check_in_transcription_serv
 import 'package:lotti/features/relationships/service/contact_launcher.dart';
 import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/service/pending_interaction_store.dart';
+import 'package:lotti/features/relationships/service/person_capture_sort_tool.dart';
+import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
 import 'package:lotti/features/relationships/state/contact_import_controller.dart';
+import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
@@ -87,6 +93,7 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/check_in_detail_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/people_list_row.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_avatar_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_header.dart';
 import 'package:lotti/features/relationships/ui/widgets/post_interaction_prompt.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
@@ -113,6 +120,11 @@ import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart'
+    show
+        ChatCompletionMessageFunctionCall,
+        ChatCompletionMessageToolCall,
+        ChatCompletionMessageToolCallType;
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
@@ -2110,6 +2122,128 @@ void main() {
         'check_in_time_${viewport}_dark',
         subdir: _subdir,
       );
+    });
+
+    // Speak your mind (plan 2026-10-15): the recorder under what a capture
+    // can be and over where it will be sorted, then the review of what the
+    // words sorted into.
+    testWidgets('$viewport speak about a person — dark', (tester) async {
+      final recorder = FakeAudioRecorderController();
+      final transcription = StubCheckInTranscriptionService(
+        transcript:
+            'Just got off the phone with Pip, about twenty minutes. The launch '
+            'countdown is on track, but the krill contract still worries '
+            'them. Coffee at the ice garden on Sunday at three. I need to '
+            'send them the contract draft by Thursday.',
+      );
+      final sorter = PersonCaptureSorter(
+        modelFor: (_) async => (
+          modelId: 'glm-5.2',
+          provider: AiConfigInferenceProvider(
+            id: 'melious',
+            baseUrl: 'https://example.invalid',
+            apiKey: '',
+            name: 'Melious',
+            createdAt: _now,
+            inferenceProviderType: InferenceProviderType.melious,
+          ),
+          route: const InferenceRouteSnapshot(
+            providerModelId: 'glm-5.2',
+            modelName: 'GLM 5.2',
+            servingProviderType: InferenceProviderType.melious,
+            servingProviderName: 'Melious',
+            runtimeSettings: {},
+          ),
+          supportsTools: true,
+        ),
+        generate:
+            ({
+              required prompt,
+              required systemMessage,
+              required model,
+              required categoryId,
+            }) async => [
+              ChatCompletionMessageToolCall(
+                id: 'call-1',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: personCaptureSortToolName,
+                  arguments: jsonEncode({
+                    'items': [
+                      {
+                        'kind': 'checkIn',
+                        'interactionType': 'call',
+                        'startedAt': '2026-08-13T13:45',
+                        'durationMinutes': 20,
+                        'summary':
+                            'The launch countdown is on track; the krill '
+                            'contract still worries them.',
+                        'bringUp': 'The krill contract.',
+                      },
+                      {
+                        'kind': 'meeting',
+                        'title': 'Coffee at the ice garden',
+                        'start': '2026-08-16T15:00',
+                      },
+                      {
+                        'kind': 'task',
+                        'title': 'Send Pip the krill contract draft',
+                        'dueDate': '2026-08-20',
+                      },
+                    ],
+                  }),
+                ),
+              ),
+            ],
+      );
+      await pumpSurface(
+        tester,
+        home: _ModalHost(
+          open: (context) =>
+              showPersonCaptureSheet(context: context, person: pip),
+        ),
+        device: device,
+        brightness: Brightness.dark,
+        overrides: [
+          ...personOverrides(recorder: () => recorder),
+          checkInTranscriptionServiceProvider.overrideWithValue(transcription),
+          personCaptureSorterProvider.overrideWithValue(sorter),
+        ],
+      );
+      await withClock(Clock.fixed(_now), () async {
+        await tester.tap(find.byKey(const ValueKey('open-modal')));
+        // By hand: the recorder's orb breathes while the take is live.
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        for (var i = 0; i < RecordingLevelLine.levelWindow; i++) {
+          recorder.tick(
+            progress:
+                const Duration(seconds: 41) -
+                const Duration(milliseconds: 20) *
+                    (RecordingLevelLine.levelWindow - 1 - i),
+            dBFS: -48 + 30 * math.sin(i / 3).abs(),
+          );
+          await tester.pump();
+        }
+        expect(find.byKey(const ValueKey('person-capture-route')), findsOne);
+        await captureScreenshot(
+          tester,
+          'person_capture_recording_${viewport}_dark',
+          subdir: _subdir,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.byKey(const ValueKey('person-capture-item-2')), findsOne);
+        await captureScreenshot(
+          tester,
+          'person_capture_review_${viewport}_dark',
+          subdir: _subdir,
+        );
+      });
     });
 
     // The recorder in place of the text (design 2026-09-13, options 1b /

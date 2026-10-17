@@ -12900,6 +12900,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipBriefingTitle => 'Rezumat';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'De abordat înainte de $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12932,6 +12937,97 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return 'Sunați persoana $name?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Înregistrați ca check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Scadent $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Adăugați $count de elemente',
+      few: 'Adăugați $count elemente',
+      one: 'Adăugați 1 element',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Unele elemente nu au putut fi adăugate. Sunt încă aici.';
+
+  @override
+  String get relationshipCaptureHeard => 'Iată ce am auzit';
+
+  @override
+  String get relationshipCaptureHint =>
+      'O conversație pe care ați avut-o, ceva de reținut sau un plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Păstrați ca notă vocală';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Salvată ca notă vocală, cu cuvintele ei. Niciun model nu o poate sorta.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Salvată ca notă vocală – nimic de adăugat separat.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Salvată ca notă vocală. Încă nimic nu o poate transcrie.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Salvată ca notă vocală. Nu a trecut niciun cuvânt.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Salvată ca notă vocală, cu cuvintele ei. Sortarea nu a reușit – încercați mai târziu cu Sortați pe rândul ei.';
+
+  @override
+  String get relationshipCaptureListening => 'Se ascultă…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Planificați o întâlnire';
+
+  @override
+  String get relationshipCaptureNoDue => 'Fără termen';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Niciun model pentru sortare – rămâne o notă vocală.';
+
+  @override
+  String get relationshipCaptureNote => 'Păstrați ca notă';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Înregistrarea este salvată în jurnalul dumneavoastră, dar nu a putut fi pusă pe cronologia lui $name.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sortat de $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Se sortează ce ați spus…';
+
+  @override
+  String get relationshipCaptureTask => 'Adăugați o sarcină';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Vorbiți despre $name';
   }
 
   @override
@@ -13287,6 +13383,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relationshipLogCheckIn => 'Înregistrați un contact';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Întâlnire cu $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planificați întâlnirea';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Întâlnirea nu a putut fi planificată.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Începe';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Începe: $time. Schimbați';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titlu';
+
+  @override
   String get relationshipMoreActions => 'Mai multe acțiuni';
 
   @override
@@ -13382,6 +13501,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planificați o întâlnire cu $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Ați reușit să vorbiți cu $name?';
   }
@@ -13467,6 +13591,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Scadente';
+
+  @override
+  String get relationshipSortThis => 'Sortați';
 
   @override
   String get relationshipsPageTitle => 'Persoane';
@@ -17296,37 +17423,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planificați o întâlnire cu $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Întâlnire cu $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titlu';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Începe';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Începe: $time. Schimbați';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planificați întâlnirea';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Întâlnirea nu a putut fi planificată.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'De abordat înainte de $day';
-  }
 }

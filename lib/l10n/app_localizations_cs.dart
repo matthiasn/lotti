@@ -12832,6 +12832,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Zmínit před $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12864,6 +12869,98 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return 'Zavolat osobě $name?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Zapsat jako check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Termín $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zařadit $count položek',
+      few: 'Zařadit $count položky',
+      one: 'Zařadit 1 položku',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Některé položky nešlo zařadit. Pořád jsou tady.';
+
+  @override
+  String get relationshipCaptureHeard => 'Tohle zaznělo';
+
+  @override
+  String get relationshipCaptureHint =>
+      'Rozhovor, který jsi měl/a, něco k zapamatování nebo plán.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote =>
+      'Ponechat jako hlasovou poznámku';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Uloženo jako hlasová poznámka i se slovy. Žádný model ji neumí roztřídit.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Uloženo jako hlasová poznámka – nic v ní nestojí za samostatné zařazení.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Uloženo jako hlasová poznámka. Zatím ji nic neumí přepsat.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Uloženo jako hlasová poznámka. Neprošla žádná slova.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Uloženo jako hlasová poznámka i se slovy. Třídění nevyšlo – zkus to později přes Roztřídit na jejím řádku.';
+
+  @override
+  String get relationshipCaptureListening => 'Poslouchám…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Naplánovat schůzku';
+
+  @override
+  String get relationshipCaptureNoDue => 'Bez termínu';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Žádný model k třídění – zůstane hlasovou poznámkou.';
+
+  @override
+  String get relationshipCaptureNote => 'Ponechat jako poznámku';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Nahrávka je uložená v tvém deníku, ale nepodařilo se ji přidat na časovou osu osoby $name.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Třídí $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Třídím, co jsi řekl/a…';
+
+  @override
+  String get relationshipCaptureTask => 'Přidat úkol';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Mluv o osobě $name';
   }
 
   @override
@@ -13217,6 +13314,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipLogCheckIn => 'Zaznamenat kontakt';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Schůzka: $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Naplánovat schůzku';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'Schůzku se nepodařilo naplánovat.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Začátek';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Začátek: $time. Změnit';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Název';
+
+  @override
   String get relationshipMoreActions => 'Další akce';
 
   @override
@@ -13311,6 +13431,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Naplánovat schůzku s osobou $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Podařilo se ti zastihnout $name?';
   }
@@ -13396,6 +13521,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Na řadě';
+
+  @override
+  String get relationshipSortThis => 'Roztřídit';
 
   @override
   String get relationshipsPageTitle => 'Lidé';
@@ -17179,37 +17307,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Naplánovat schůzku s osobou $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Schůzka: $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Název';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Začátek';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Začátek: $time. Změnit';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Naplánovat schůzku';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'Schůzku se nepodařilo naplánovat.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Zmínit před $day';
-  }
 }

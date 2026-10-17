@@ -7746,6 +7746,119 @@
       }
     }
   },
+  "relationshipCaptureCheckIn": "Log as a check-in",
+  "@relationshipCaptureCheckIn": {
+    "description": "Review card label: file this item as a check-in."
+  },
+  "relationshipCaptureDue": "Due {day}",
+  "@relationshipCaptureDue": {
+    "description": "A task's due day on its review card.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureFile": "{count, plural, =1{File 1 item} other{File {count} items}}",
+  "@relationshipCaptureFile": {
+    "description": "Primary button filing the accepted items of a capture.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relationshipCaptureFileFailed": "Some items could not be filed. They are still here.",
+  "@relationshipCaptureFileFailed": {
+    "description": "Said in the review when filing failed for some items."
+  },
+  "relationshipCaptureHeard": "Here's what I heard",
+  "@relationshipCaptureHeard": {
+    "description": "Heading over the review of a sorted capture."
+  },
+  "relationshipCaptureHint": "A conversation you had, something to remember, or a plan.",
+  "@relationshipCaptureHint": {
+    "description": "Hint under the recorder: what a spoken capture can be."
+  },
+  "relationshipCaptureKeepVoiceNote": "Keep as a voice note",
+  "@relationshipCaptureKeepVoiceNote": {
+    "description": "Button closing the review without filing; the recording stays a voice note."
+  },
+  "relationshipCaptureKeptNoSorter": "Saved as a voice note, with its words. No model can sort it.",
+  "@relationshipCaptureKeptNoSorter": {
+    "description": "Outcome: no model can sort the capture."
+  },
+  "relationshipCaptureKeptNothingToFile": "Saved as a voice note — nothing in it to file on its own.",
+  "@relationshipCaptureKeptNothingToFile": {
+    "description": "Outcome: the sort found nothing to file."
+  },
+  "relationshipCaptureKeptNoTranscriber": "Saved as a voice note. Nothing can transcribe it yet.",
+  "@relationshipCaptureKeptNoTranscriber": {
+    "description": "Outcome: no transcription model is set up."
+  },
+  "relationshipCaptureKeptNoWords": "Saved as a voice note. No words came through.",
+  "@relationshipCaptureKeptNoWords": {
+    "description": "Outcome: the transcript was empty or never arrived."
+  },
+  "relationshipCaptureKeptSortFailed": "Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.",
+  "@relationshipCaptureKeptSortFailed": {
+    "description": "Outcome: sorting failed."
+  },
+  "relationshipCaptureListening": "Listening back…",
+  "@relationshipCaptureListening": {
+    "description": "Status while the capture is transcribed."
+  },
+  "relationshipCaptureMeeting": "Plan a meeting",
+  "@relationshipCaptureMeeting": {
+    "description": "Review card label: file this item as a planned meeting."
+  },
+  "relationshipCaptureNoDue": "No due date",
+  "@relationshipCaptureNoDue": {
+    "description": "A task without a due day, on its review card; tapping sets one."
+  },
+  "relationshipCaptureNoSorter": "No model to sort with — it stays a voice note.",
+  "@relationshipCaptureNoSorter": {
+    "description": "Caption when no model can sort a capture."
+  },
+  "relationshipCaptureNote": "Keep as a note",
+  "@relationshipCaptureNote": {
+    "description": "Review card label: file this item as a note."
+  },
+  "relationshipCaptureNotPlaced": "The recording is saved in your journal, but it could not be put on {name}'s timeline.",
+  "@relationshipCaptureNotPlaced": {
+    "description": "Said when a spoken capture's recording was saved but could not be put on the person's timeline; {name} is their nickname or name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureSortedBy": "Sorted by {route}",
+  "@relationshipCaptureSortedBy": {
+    "description": "Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "relationshipCaptureSorting": "Sorting what you said…",
+  "@relationshipCaptureSorting": {
+    "description": "Status while the capture is sorted by the model."
+  },
+  "relationshipCaptureTask": "Add a task",
+  "@relationshipCaptureTask": {
+    "description": "Review card label: file this item as a task."
+  },
+  "relationshipCaptureTitle": "Speak about {name}",
+  "@relationshipCaptureTitle": {
+    "description": "Title of the sheet that records a spoken capture about a person; {name} is their nickname or name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipChatAgentName": "Briefing agent",
   "relationshipChatAgentSubtitle": "Knows your check-ins, not the channels",
   "relationshipChatAgentTitle": "{name} · briefing agent",
@@ -8259,6 +8372,10 @@
   },
   "relationshipsEmptyState": "Add the people you want to stay close to.",
   "relationshipsGroupDue": "Due",
+  "relationshipSortThis": "Sort this",
+  "@relationshipSortThis": {
+    "description": "Action on a voice-note row of a person's timeline: sort its words into check-ins, notes, meetings or tasks."
+  },
   "relationshipsPageTitle": "People",
   "relationshipSpeak": "Speak",
   "@relationshipSpeak": {

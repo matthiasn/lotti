@@ -12680,6 +12680,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Bespreken vóór $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12711,6 +12716,96 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return '$name bellen?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Vastleggen als check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Vervalt $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items opbergen',
+      one: '1 item opbergen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Sommige items konden niet worden opgeborgen. Ze staan er nog.';
+
+  @override
+  String get relationshipCaptureHeard => 'Dit heb ik gehoord';
+
+  @override
+  String get relationshipCaptureHint =>
+      'Een gesprek dat je had, iets om te onthouden of een plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Bewaren als spraaknotitie';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Opgeslagen als spraaknotitie, met haar woorden. Geen model kan haar sorteren.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Opgeslagen als spraaknotitie – er staat niets in om apart op te bergen.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Opgeslagen als spraaknotitie. Nog niets kan haar transcriberen.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Opgeslagen als spraaknotitie. Er kwamen geen woorden door.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Opgeslagen als spraaknotitie, met haar woorden. Sorteren lukte niet – probeer later Sorteren op haar regel.';
+
+  @override
+  String get relationshipCaptureListening => 'Luisteren…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Een afspraak plannen';
+
+  @override
+  String get relationshipCaptureNoDue => 'Geen vervaldatum';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Geen model om te sorteren – het blijft een spraaknotitie.';
+
+  @override
+  String get relationshipCaptureNote => 'Bewaren als notitie';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'De opname staat in je dagboek, maar kon niet op de tijdlijn van $name worden gezet.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Gesorteerd door $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Ik sorteer wat je zei…';
+
+  @override
+  String get relationshipCaptureTask => 'Een taak toevoegen';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Praat over $name';
   }
 
   @override
@@ -13055,6 +13150,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipLogCheckIn => 'Check-in vastleggen';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Afspraak met $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Afspraak plannen';
+
+  @override
+  String get relationshipMeetingSaveFailed =>
+      'De afspraak kon niet worden gepland.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Begint';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Begint: $time. Wijzigen';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Meer acties';
 
   @override
@@ -13151,6 +13269,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Plan een afspraak met $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Heb je $name bereikt?';
   }
@@ -13236,6 +13359,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Aan de beurt';
+
+  @override
+  String get relationshipSortThis => 'Sorteren';
 
   @override
   String get relationshipsPageTitle => 'Mensen';
@@ -17024,37 +17150,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Plan een afspraak met $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Afspraak met $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Begint';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Begint: $time. Wijzigen';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Afspraak plannen';
-
-  @override
-  String get relationshipMeetingSaveFailed =>
-      'De afspraak kon niet worden gepland.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Bespreken vóór $day';
-  }
 }

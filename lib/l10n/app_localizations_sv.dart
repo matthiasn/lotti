@@ -12663,6 +12663,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipBriefingTitle => 'Briefing';
 
   @override
+  String relationshipBringUpBefore(String day) {
+    return 'Ta upp före $day';
+  }
+
+  @override
   String relationshipCadenceEveryNDays(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -12694,6 +12699,96 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String relationshipCallConfirmTitle(String name) {
     return 'Ringa $name?';
+  }
+
+  @override
+  String get relationshipCaptureCheckIn => 'Logga som avstämning';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Förfaller $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Lägg till $count saker',
+      one: 'Lägg till 1 sak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Vissa saker kunde inte läggas till. De finns kvar här.';
+
+  @override
+  String get relationshipCaptureHeard => 'Det här hörde jag';
+
+  @override
+  String get relationshipCaptureHint =>
+      'Ett samtal du haft, något att minnas eller en plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Behåll som röstanteckning';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Sparad som röstanteckning, med sina ord. Ingen modell kan sortera den.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Sparad som röstanteckning – inget i den att lägga till för sig.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Sparad som röstanteckning. Inget kan transkribera den än.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Sparad som röstanteckning. Inga ord kom fram.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Sparad som röstanteckning, med sina ord. Sorteringen fungerade inte – försök senare med Sortera på dess rad.';
+
+  @override
+  String get relationshipCaptureListening => 'Lyssnar…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Planera ett möte';
+
+  @override
+  String get relationshipCaptureNoDue => 'Inget förfallodatum';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Ingen modell att sortera med – den förblir en röstanteckning.';
+
+  @override
+  String get relationshipCaptureNote => 'Behåll som anteckning';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Inspelningen är sparad i din dagbok, men den kunde inte läggas på tidslinjen för $name.';
+  }
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sorteras av $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Sorterar det du sa…';
+
+  @override
+  String get relationshipCaptureTask => 'Lägg till en uppgift';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Prata om $name';
   }
 
   @override
@@ -13039,6 +13134,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipLogCheckIn => 'Logga avstämning';
 
   @override
+  String relationshipMeetingDefaultTitle(String name) {
+    return 'Möte med $name';
+  }
+
+  @override
+  String get relationshipMeetingSave => 'Planera möte';
+
+  @override
+  String get relationshipMeetingSaveFailed => 'Mötet kunde inte planeras.';
+
+  @override
+  String get relationshipMeetingStartsLabel => 'Börjar';
+
+  @override
+  String relationshipMeetingStartsSemantics(String time) {
+    return 'Börjar: $time. Ändra';
+  }
+
+  @override
+  String get relationshipMeetingTitleLabel => 'Titel';
+
+  @override
   String get relationshipMoreActions => 'Fler åtgärder';
 
   @override
@@ -13133,6 +13250,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String relationshipPlanMeeting(String name) {
+    return 'Planera ett möte med $name';
+  }
+
+  @override
   String relationshipPostCallAskCall(String name) {
     return 'Fick du tag på $name?';
   }
@@ -13218,6 +13340,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Dags';
+
+  @override
+  String get relationshipSortThis => 'Sortera';
 
   @override
   String get relationshipsPageTitle => 'Personer';
@@ -16986,36 +17111,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String relationshipPlanMeeting(String name) {
-    return 'Planera ett möte med $name';
-  }
-
-  @override
-  String relationshipMeetingDefaultTitle(String name) {
-    return 'Träffa $name';
-  }
-
-  @override
-  String get relationshipMeetingTitleLabel => 'Titel';
-
-  @override
-  String get relationshipMeetingStartsLabel => 'Börjar';
-
-  @override
-  String relationshipMeetingStartsSemantics(String time) {
-    return 'Börjar: $time. Ändra';
-  }
-
-  @override
-  String get relationshipMeetingSave => 'Planera möte';
-
-  @override
-  String get relationshipMeetingSaveFailed => 'Mötet kunde inte planeras.';
-
-  @override
-  String relationshipBringUpBefore(String day) {
-    return 'Ta upp före $day';
-  }
 }
