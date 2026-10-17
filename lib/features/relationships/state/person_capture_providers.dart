@@ -3,17 +3,21 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
+import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/service/person_capture_filer.dart';
 import 'package:lotti/features/relationships/service/person_capture_sort_tool.dart';
 import 'package:lotti/features/relationships/service/person_capture_sorter.dart';
+import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/workflow/relationship_agent_workflow.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
@@ -79,6 +83,85 @@ final personCaptureSorterProvider = Provider<PersonCaptureSorter>(
     logger: ref.watch(domainLoggerProvider),
   ),
   name: 'personCaptureSorterProvider',
+);
+
+/// The most a one-line summary may answer with.
+const personRecordingSummaryMaxTokens = 200;
+
+/// Gives spoken check-ins their one-line summary, on the person's briefing
+/// route, and saves it as the recording's audio summary.
+///
+/// Only for a person with an active relationship agent: that agent's route
+/// is the one that already reads every check-in about them. Without one, the
+/// fallback chain (a profile, a category default, the Settings default)
+/// would send the words somewhere that never saw them, unannounced — so the
+/// recording is left unsummarized and its row folds instead.
+final personRecordingSummarizerProvider = Provider<PersonRecordingSummarizer>(
+  (ref) => PersonRecordingSummarizer(
+    modelFor: (person) async {
+      final agent = usableRelationshipAgent(
+        await ref
+            .read(agentRepositoryProvider)
+            .getEntity(relationshipAgentIdFor(person.meta.id)),
+      );
+      if (agent == null) return null;
+      return ref.read(personCaptureSorterProvider).modelFor(person);
+    },
+    generate:
+        ({
+          required prompt,
+          required systemMessage,
+          required model,
+          required categoryId,
+        }) async {
+          final answer = await ref
+              .read(cloudInferenceRepositoryProvider)
+              .generateToolCalls(
+                prompt: prompt,
+                systemMessage: systemMessage,
+                model: model.modelId,
+                provider: model.provider,
+                temperature: 0.2,
+                maxCompletionTokens: personRecordingSummaryMaxTokens,
+                geminiThinkingMode: GeminiThinkingMode.minimal,
+                reasoningEffort: ReasoningEffort.minimal,
+                tools: const [personRecordingSummaryTool],
+                toolChoice: personRecordingSummaryToolChoiceFor(model.modelId),
+                attribution: OneShotGenerationAttribution(
+                  workType: AiWorkType.audioSummary,
+                  triggerType: AiTriggerType.automatic,
+                  categoryId: categoryId,
+                ),
+              );
+          return answer.toolCalls;
+        },
+    save:
+        ({
+          required audioId,
+          required summary,
+          required modelId,
+          required categoryId,
+        }) => ref
+            .read(personTimelineRepositoryProvider)
+            .saveRecordingSummary(
+              audioId: audioId,
+              summary: summary,
+              modelId: modelId,
+              categoryId: categoryId,
+            ),
+    hasSummary: (audioId) async {
+      final linked = await ref
+          .read(journalDbProvider)
+          .getLinkedEntities(audioId);
+      return linked.any(
+        (entity) =>
+            entity is AiResponseEntry &&
+            entity.data.type == AiResponseType.audioSummary,
+      );
+    },
+    logger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'personRecordingSummarizerProvider',
 );
 
 /// Files what the user accepted from a spoken capture about a person.

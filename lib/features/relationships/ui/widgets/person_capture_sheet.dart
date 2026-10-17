@@ -179,7 +179,7 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
     final modelId = sort.modelId;
     if (summary != null && modelId != null) {
       try {
-        await timeline.saveVoiceNoteSummary(
+        await timeline.saveRecordingSummary(
           audioId: phase.audioId,
           summary: summary,
           modelId: modelId,

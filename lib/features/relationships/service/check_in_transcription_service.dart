@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/relationships/model/relationship_speech_terms.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/person_recording_summarizer.dart';
+import 'package:lotti/features/relationships/state/person_capture_providers.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -83,8 +85,9 @@ class CheckInTranscriptionService {
     this._profileResolver,
     this._runner,
     this._relationshipRepository,
-    this._domainLogger,
-  );
+    this._domainLogger, [
+    this._summarizer,
+  ]);
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;
@@ -94,6 +97,10 @@ class CheckInTranscriptionService {
 
   /// Receives every failure that ends or degrades a transcript wait.
   final DomainLogger _domainLogger;
+
+  /// Gives a spoken check-in's recording its one-line summary, once its
+  /// words are in; null where nothing summarizes.
+  final PersonRecordingSummarizer? _summarizer;
 
   /// Whether the selected system default has a usable transcription slot.
   Future<bool> canTranscribe() async => await _resolveProfile() != null;
@@ -123,10 +130,16 @@ class CheckInTranscriptionService {
   ///
   /// Listening starts before inference so a fast result cannot be missed.
   /// Missing default configuration and inference errors end the wait promptly.
+  ///
+  /// With [summarize] — a check-in's recording — the words, once in, are
+  /// also given a one-line summary (`PersonRecordingSummarizer`), which the
+  /// check-in's timeline row leads with. A capture leaves it off: its sort
+  /// writes that line itself.
   CheckInTranscriptWait transcribe({
     required String audioEntryId,
     required String relationshipId,
     Duration timeout = checkInTranscriptTimeout,
+    bool summarize = false,
   }) {
     final wait = _awaitTranscript(audioEntryId, timeout: timeout);
     unawaited(
@@ -134,6 +147,7 @@ class CheckInTranscriptionService {
         audioEntryId: audioEntryId,
         relationshipId: relationshipId,
         onFailure: wait.cancel,
+        summarize: summarize,
       ),
     );
     return wait;
@@ -176,6 +190,7 @@ class CheckInTranscriptionService {
     required String audioEntryId,
     required String relationshipId,
     required void Function() onFailure,
+    required bool summarize,
   }) async {
     try {
       final (profile, knownTerms) = await (
@@ -206,11 +221,35 @@ class CheckInTranscriptionService {
       // A run can end without an error and without words — the runner
       // writes nothing for an empty response — so the transcript is read
       // back rather than assumed: no words, no change to the check-in.
-      if (failed || await _readTranscript(audioEntryId) == null) return;
+      final transcript = failed ? null : await _readTranscript(audioEntryId);
+      if (transcript == null) return;
       // The words are evidence: when the recording already belongs to a
       // saved check-in, that check-in changed, and its briefing is stale.
       // Done here rather than in the composer, which may be long closed.
       await _relationshipRepository.touchCheckInsHolding(audioEntryId);
+      final summarizer = _summarizer;
+      if (!summarize || summarizer == null) return;
+      // The words are in: whatever happens to their summary from here on is
+      // logged on its own, never a failed transcript — the outer catch
+      // would cancel a wait that has its words.
+      try {
+        final person = await _journalDb.journalEntityById(relationshipId);
+        if (person is! RelationshipEntry) return;
+        await summarizer.summarize(
+          person: person,
+          audioId: audioEntryId,
+          transcript: transcript,
+        );
+      } catch (exception, stackTrace) {
+        _domainLogger.error(
+          LogDomain.speech,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: _logTag,
+          message:
+              'Could not summarize ${DomainLogger.sanitizeId(audioEntryId)}',
+        );
+      }
     } catch (exception, stackTrace) {
       _domainLogger.error(
         LogDomain.speech,
@@ -313,4 +352,5 @@ CheckInTranscriptionService checkInTranscriptionService(Ref ref) =>
       ref.watch(skillInferenceRunnerProvider),
       ref.watch(relationshipRepositoryProvider),
       ref.watch(domainLoggerProvider),
+      ref.watch(personRecordingSummarizerProvider),
     );

@@ -2649,9 +2649,24 @@ stateDiagram-v2
   else the first three lines of the transcript, and opens to the whole
   transcript in place with *Show more*. A check-in's row folds the same way,
   leading with the summary of the first recording it holds, when there is
-  one, and opening to its own words. The sort writes that summary: the
+  one, and opening to its own words. A spoken check-in's recording gets that
+  summary when its words land: the composer and the check-in page ask
+  `CheckInTranscriptionService.transcribe(summarize: true)`, which hands the
+  words to `PersonRecordingSummarizer`
+  ([person_recording_summarizer.dart](../../lib/features/relationships/service/person_recording_summarizer.dart))
+  — one forced `summarize_person_recording` call on the person's briefing
+  route, saved with `saveRecordingSummary`. Only for a person with an active
+  relationship agent (`usableRelationshipAgent`): that agent's route already
+  reads every check-in about them, and the fallback chain a person without
+  one would resolve to never has. One two-minute deadline covers the call and
+  its retry, and a failing summary is logged apart from the transcript, whose
+  wait it never cancels. It skips words short enough to be their own summary
+  and a recording that already has one (a speech-to-text engine's
+  post-processing writes one). Typed check-ins are never summarized (product
+  owner, 2026-10-17); a capture asks for none, since its sort writes the
+  line. The sort writes that summary: the
   tool's `oneLiner`, saved as an ordinary audio-summary response linked from
-  the recording (`saveVoiceNoteSummary`) before the review opens, so it
+  the recording (`saveRecordingSummary`) before the review opens, so it
   stands whatever the review does — and costs no second model call.
 - **Sort.** `PersonCaptureSorter`
   ([person_capture_sorter.dart](../../lib/features/relationships/service/person_capture_sorter.dart))

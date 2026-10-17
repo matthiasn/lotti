@@ -1270,6 +1270,8 @@ void main() {
       );
       expect(saveEnabled(tester), isTrue);
       expect(stubTranscription.transcribeCalls, ['audio-1']);
+      // A check-in's recording: its words are summarized too.
+      expect(stubTranscription.summarizeCalls, ['audio-1']);
       expect(
         stubTranscription.transcribePeople,
         ['rel-001'],

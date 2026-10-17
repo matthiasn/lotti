@@ -146,6 +146,7 @@ extension _CheckInCaptureFormActions on _CheckInCaptureFormState {
     _closeTranscriptWait(audioEntryId);
     final wait = _transcriptWaits[audioEntryId] = request
         ? transcription.transcribe(
+            summarize: true,
             audioEntryId: audioEntryId,
             relationshipId: widget.relationshipId,
           )

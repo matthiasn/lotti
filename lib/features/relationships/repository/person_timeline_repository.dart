@@ -155,12 +155,13 @@ class PersonTimelineRepository {
     );
   }
 
-  /// Saves [summary] as voice note [audioId]'s audio summary, written by
-  /// [modelId]: the line its timeline row leads with. It is an ordinary
+  /// Saves [summary] as recording [audioId]'s audio summary, written by
+  /// [modelId]: the line its timeline row — a voice note's, or that of the
+  /// check-in holding it — leads with. It is an ordinary
   /// audio summary — linked from the recording, so it shares its privacy and
   /// sits where every reader of a recording's summary looks, newest first.
   /// Answers whether it was written.
-  Future<bool> saveVoiceNoteSummary({
+  Future<bool> saveRecordingSummary({
     required String audioId,
     required String summary,
     required String modelId,

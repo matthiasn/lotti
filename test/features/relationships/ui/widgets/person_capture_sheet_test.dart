@@ -145,7 +145,7 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: any(named: 'audioId'),
         summary: any(named: 'summary'),
         modelId: any(named: 'modelId'),
@@ -275,6 +275,8 @@ void main() {
     ).called(1);
     expect(transcription.transcribeCalls, ['audio-1']);
     expect(transcription.transcribePeople, ['pip']);
+    // The sort writes the capture's line; no second summary is asked for.
+    expect(transcription.summarizeCalls, isEmpty);
     expect(prompts.single, contains('Called Pip about the launch.'));
     expect(find.text("Here's what I heard"), findsOneWidget);
     expect(
@@ -295,7 +297,7 @@ void main() {
     await stop(tester);
 
     verify(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: 'audio-1',
         summary: 'Pip called about the launch.',
         modelId: 'gemini-2.5-flash',
@@ -309,7 +311,7 @@ void main() {
       'still opens', (tester) async {
     answer = () => [call(twoItems, oneLiner: 'Pip called.')];
     when(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: any(named: 'audioId'),
         summary: any(named: 'summary'),
         modelId: any(named: 'modelId'),
