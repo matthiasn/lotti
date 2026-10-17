@@ -12698,6 +12698,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relationshipCaptureNote => 'Keep as a note';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'The recording is saved in your journal, but it could not be put on $name\'s timeline.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Sorted by $route';
   }
@@ -16990,11 +16995,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'The recording is saved in your journal, but it could not be put on $name\'s timeline.';
-  }
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

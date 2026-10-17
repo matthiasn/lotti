@@ -73,10 +73,24 @@ class PersonCaptureFiler {
     final unfiled = <PersonCaptureItem>{};
     // Whether the recording is still the voice note on the timeline — false
     // when an earlier filing gave it to a check-in.
-    var recordingOnTimeline = await _timeline.isOnTimeline(
-      personId: person.meta.id,
-      entryId: audioId,
-    );
+    bool recordingOnTimeline;
+    try {
+      recordingOnTimeline = await _timeline.isOnTimeline(
+        personId: person.meta.id,
+        entryId: audioId,
+      );
+    } catch (error, stackTrace) {
+      // Unread, a guess either way could write a note twice or leave the
+      // recording behind: hand everything back for the user to try again.
+      _logger?.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'personCaptureFiler',
+        message: 'where the recording lives could not be read',
+      );
+      return List.of(items);
+    }
     var voiceNoteIsANote = false;
     for (final item in ordered) {
       try {

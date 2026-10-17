@@ -35,6 +35,7 @@ class _FakeFiler implements PersonCaptureFiler {
   final calls = <({String audioId, List<PersonCaptureItem> items})>[];
   List<PersonCaptureItem> remaining = const [];
   Completer<void>? gate;
+  bool throws = false;
 
   @override
   Future<List<PersonCaptureItem>> file({
@@ -45,6 +46,7 @@ class _FakeFiler implements PersonCaptureFiler {
   }) async {
     calls.add((audioId: audioId, items: items));
     await gate?.future;
+    if (throws) throw StateError('database locked');
     return remaining;
   }
 }
@@ -363,6 +365,24 @@ void main() {
     expect(find.text('Send the draft'), findsOneWidget);
     expect(find.text('Talked about the launch.'), findsNothing);
     expect(find.text('File 1 item'), findsOneWidget);
+  });
+
+  testWidgets('a filing that throws leaves the sheet usable, everything '
+      'still in review', (tester) async {
+    filer.throws = true;
+    await open(tester);
+    await stop(tester);
+
+    await tapKey(tester, 'person-capture-file');
+    await settle(tester);
+
+    expect(
+      find.text('Some items could not be filed. They are still here.'),
+      findsOneWidget,
+    );
+    expect(find.text('File 2 items'), findsOneWidget);
+    expect(button(tester, 'person-capture-file').onPressed, isNotNull);
+    expect(button(tester, 'person-capture-keep').onPressed, isNotNull);
   });
 
   testWidgets('Keep as a voice note closes without filing', (tester) async {

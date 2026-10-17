@@ -12756,6 +12756,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get relationshipCaptureNote => 'Behold som note';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Optagelsen er gemt i din dagbog, men den kunne ikke lægges på tidslinjen for $name.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Sorteret af $route';
   }
@@ -17088,9 +17093,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'Optagelsen er gemt i din dagbog, men den kunne ikke lægges på ${name}s tidslinje.';
-  }
 }

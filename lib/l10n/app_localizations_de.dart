@@ -12840,6 +12840,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get relationshipCaptureNote => 'Als Notiz behalten';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Die Aufnahme ist in deinem Journal gespeichert, konnte aber nicht auf die Zeitleiste von $name gelegt werden.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Sortiert von $route';
   }
@@ -17214,9 +17219,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'Die Aufnahme ist in deinem Journal gespeichert, konnte aber nicht auf die Zeitleiste von $name gelegt werden.';
-  }
 }

@@ -12976,6 +12976,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get relationshipCaptureNote => 'Garder comme note';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'L\'enregistrement est sauvegardé dans ton journal, mais il n\'a pas pu être ajouté à la chronologie de $name.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Trié par $route';
   }
@@ -17369,9 +17374,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'L\'enregistrement est sauvegardé dans ton journal, mais il n\'a pas pu être ajouté à la chronologie de $name.';
-  }
 }

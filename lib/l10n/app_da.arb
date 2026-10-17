@@ -5481,7 +5481,7 @@
   "relationshipCaptureNoDue": "Ingen forfaldsdato",
   "relationshipCaptureNoSorter": "Ingen model at sortere med – den forbliver en stemmenote.",
   "relationshipCaptureNote": "Behold som note",
-  "relationshipCaptureNotPlaced": "Optagelsen er gemt i din dagbog, men den kunne ikke lægges på {name}s tidslinje.",
+  "relationshipCaptureNotPlaced": "Optagelsen er gemt i din dagbog, men den kunne ikke lægges på tidslinjen for {name}.",
   "relationshipCaptureSortedBy": "Sorteret af {route}",
   "relationshipCaptureSorting": "Sorterer det, du sagde…",
   "relationshipCaptureTask": "Tilføj en opgave",

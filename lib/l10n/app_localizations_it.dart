@@ -12858,15 +12858,15 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Archivia $count elementi',
-      one: 'Archivia 1 elemento',
+      other: 'Aggiungi $count elementi',
+      one: 'Aggiungi 1 elemento',
     );
     return '$_temp0';
   }
 
   @override
   String get relationshipCaptureFileFailed =>
-      'Alcuni elementi non sono stati archiviati. Sono ancora qui.';
+      'Alcuni elementi non sono stati aggiunti. Sono ancora qui.';
 
   @override
   String get relationshipCaptureHeard => 'Ecco cosa ho sentito';
@@ -12884,7 +12884,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipCaptureKeptNothingToFile =>
-      'Salvata come nota vocale: niente da archiviare a parte.';
+      'Salvata come nota vocale: niente da aggiungere a parte.';
 
   @override
   String get relationshipCaptureKeptNoTranscriber =>
@@ -12913,6 +12913,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get relationshipCaptureNote => 'Tieni come nota';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'La registrazione è salvata nel tuo diario, ma non è stato possibile metterla nella cronologia di $name.';
+  }
 
   @override
   String relationshipCaptureSortedBy(String route) {
@@ -17297,9 +17302,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'La registrazione è salvata nel tuo diario, ma non è stato possibile metterla nella cronologia di $name.';
-  }
 }

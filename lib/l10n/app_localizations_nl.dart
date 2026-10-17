@@ -12788,6 +12788,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get relationshipCaptureNote => 'Bewaren als notitie';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'De opname staat in je dagboek, maar kon niet op de tijdlijn van $name worden gezet.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Gesorteerd door $route';
   }
@@ -17145,9 +17150,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'De opname staat in je dagboek, maar kon niet op de tijdlijn van $name worden gezet.';
-  }
 }

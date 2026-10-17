@@ -12952,16 +12952,16 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Arhivați $count de elemente',
-      few: 'Arhivați $count elemente',
-      one: 'Arhivați 1 element',
+      other: 'Adăugați $count de elemente',
+      few: 'Adăugați $count elemente',
+      one: 'Adăugați 1 element',
     );
     return '$_temp0';
   }
 
   @override
   String get relationshipCaptureFileFailed =>
-      'Unele elemente nu au putut fi arhivate. Sunt încă aici.';
+      'Unele elemente nu au putut fi adăugate. Sunt încă aici.';
 
   @override
   String get relationshipCaptureHeard => 'Iată ce am auzit';
@@ -12979,7 +12979,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipCaptureKeptNothingToFile =>
-      'Salvată ca notă vocală – nimic de arhivat separat.';
+      'Salvată ca notă vocală – nimic de adăugat separat.';
 
   @override
   String get relationshipCaptureKeptNoTranscriber =>
@@ -13008,6 +13008,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relationshipCaptureNote => 'Păstrați ca notă';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Înregistrarea este salvată în jurnalul dumneavoastră, dar nu a putut fi pusă pe cronologia lui $name.';
+  }
 
   @override
   String relationshipCaptureSortedBy(String route) {
@@ -17418,9 +17423,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'Înregistrarea este salvată în jurnalul dumneavoastră, dar nu a putut fi pusă pe cronologia lui $name.';
-  }
 }

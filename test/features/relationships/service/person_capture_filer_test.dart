@@ -521,6 +521,38 @@ void main() {
     ).called(1);
   });
 
+  test('where the recording lives cannot be read: everything is handed '
+      'back, nothing written, and the reason logged', () async {
+    when(
+      () => timeline.isOnTimeline(
+        personId: any(named: 'personId'),
+        entryId: any(named: 'entryId'),
+      ),
+    ).thenThrow(StateError('database locked'));
+    const items = [
+      PersonCaptureNote(text: 'Sextants.'),
+      PersonCaptureTask(title: 'Send it'),
+    ];
+
+    expect(await file(items), items);
+    expect(tasksWritten, isEmpty);
+    verifyNever(
+      () => timeline.createNote(
+        person: any(named: 'person'),
+        text: any(named: 'text'),
+      ),
+    );
+    verify(
+      () => logger.error(
+        LogDomain.persistence,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'personCaptureFiler',
+        message: any<String>(named: 'message'),
+      ),
+    ).called(1);
+  });
+
   test('a meeting that could not be planned is handed back', () async {
     when(
       () => timeline.createMeeting(

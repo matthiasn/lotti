@@ -12867,15 +12867,15 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Archivar $count elementos',
-      one: 'Archivar 1 elemento',
+      other: 'Añadir $count elementos',
+      one: 'Añadir 1 elemento',
     );
     return '$_temp0';
   }
 
   @override
   String get relationshipCaptureFileFailed =>
-      'Algunos elementos no se pudieron archivar. Siguen aquí.';
+      'Algunos elementos no se pudieron añadir. Siguen aquí.';
 
   @override
   String get relationshipCaptureHeard => 'Esto es lo que oí';
@@ -12893,7 +12893,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipCaptureKeptNothingToFile =>
-      'Guardada como nota de voz: no hay nada que archivar por separado.';
+      'Guardada como nota de voz: no hay nada que añadir por separado.';
 
   @override
   String get relationshipCaptureKeptNoTranscriber =>
@@ -12922,6 +12922,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get relationshipCaptureNote => 'Guardar como nota';
+
+  @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'La grabación está guardada en tu diario, pero no se pudo poner en la línea de tiempo de $name.';
+  }
 
   @override
   String relationshipCaptureSortedBy(String route) {
@@ -17302,9 +17307,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'La grabación está guardada en tu diario, pero no se pudo poner en la línea de tiempo de $name.';
-  }
 }

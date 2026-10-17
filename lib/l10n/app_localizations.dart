@@ -21133,6 +21133,12 @@ abstract class AppLocalizations {
   /// **'Keep as a note'**
   String get relationshipCaptureNote;
 
+  /// Said when a spoken capture's recording was saved but could not be put on the person's timeline; {name} is their nickname or name.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording is saved in your journal, but it could not be put on {name}\'s timeline.'**
+  String relationshipCaptureNotPlaced(String name);
+
   /// Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.
   ///
   /// In en, this message translates to:
@@ -28300,12 +28306,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Said when a spoken capture's recording was saved but could not be put on the person's timeline; {name} is their nickname or name.
-  ///
-  /// In en, this message translates to:
-  /// **'The recording is saved in your journal, but it could not be put on {name}\'s timeline.'**
-  String relationshipCaptureNotPlaced(String name);
 }
 
 class _AppLocalizationsDelegate

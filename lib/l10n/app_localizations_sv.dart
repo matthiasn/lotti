@@ -12771,6 +12771,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get relationshipCaptureNote => 'Behåll som anteckning';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Inspelningen är sparad i din dagbok, men den kunde inte läggas på tidslinjen för $name.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Sorteras av $route';
   }
@@ -17106,9 +17111,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'Inspelningen är sparad i din dagbok, men den kunde inte läggas på ${name}s tidslinje.';
-  }
 }

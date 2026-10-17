@@ -12943,6 +12943,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get relationshipCaptureNote => 'Ponechat jako poznámku';
 
   @override
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Nahrávka je uložená v tvém deníku, ale nepodařilo se ji přidat na časovou osu osoby $name.';
+  }
+
+  @override
   String relationshipCaptureSortedBy(String route) {
     return 'Třídí $route';
   }
@@ -17302,9 +17307,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String relationshipCaptureNotPlaced(String name) {
-    return 'Nahrávka je uložená v tvém deníku, ale nepodařilo se ji přidat na časovou osu osoby $name.';
-  }
 }

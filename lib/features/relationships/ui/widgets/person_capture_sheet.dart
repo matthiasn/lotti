@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/relationships/model/person_capture.dart';
 import 'package:lotti/features/relationships/model/person_capture_flow.dart';
 import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/repository/person_timeline_repository.dart';
@@ -180,14 +181,22 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
       _filing = true;
       _error = null;
     });
-    final remaining = await ref
-        .read(personCaptureFilerProvider)
-        .file(
-          person: widget.person,
-          audioId: review.audioId,
-          items: review.accepted,
-          now: clock.now(),
-        );
+    List<PersonCaptureItem> remaining;
+    try {
+      remaining = await ref
+          .read(personCaptureFilerProvider)
+          .file(
+            person: widget.person,
+            audioId: review.audioId,
+            items: review.accepted,
+            now: clock.now(),
+          );
+    } catch (error, stackTrace) {
+      // Whatever went wrong, the sheet leaves its filing state: nothing is
+      // known to be filed, so everything stays in review.
+      _log(error, stackTrace);
+      remaining = review.accepted;
+    }
     if (!mounted) return;
     setState(() {
       _filing = false;

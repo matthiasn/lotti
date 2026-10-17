@@ -5481,7 +5481,7 @@
   "relationshipCaptureNoDue": "Inget förfallodatum",
   "relationshipCaptureNoSorter": "Ingen modell att sortera med – den förblir en röstanteckning.",
   "relationshipCaptureNote": "Behåll som anteckning",
-  "relationshipCaptureNotPlaced": "Inspelningen är sparad i din dagbok, men den kunde inte läggas på {name}s tidslinje.",
+  "relationshipCaptureNotPlaced": "Inspelningen är sparad i din dagbok, men den kunde inte läggas på tidslinjen för {name}.",
   "relationshipCaptureSortedBy": "Sorteras av {route}",
   "relationshipCaptureSorting": "Sorterar det du sa…",
   "relationshipCaptureTask": "Lägg till en uppgift",
