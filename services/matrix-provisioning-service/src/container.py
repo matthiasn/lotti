@@ -186,13 +186,19 @@ def _web_reconciliation_interval() -> timedelta:
     return timedelta(hours=float(os.getenv("WEB_SUBSCRIPTION_REFRESH_HOURS", "6")))
 
 
-def _paddle_price_ids() -> frozenset[str]:
-    prices = frozenset(
-        price.strip() for price in os.getenv("PADDLE_PRICE_IDS", "").split(",") if price.strip()
-    )
-    if not prices:
-        raise ValueError("PADDLE_PRICE_IDS must name at least one Paddle price")
-    return prices
+def _paddle_plans() -> dict[str, str]:
+    """Plan name the app asks for → the Paddle price it is sold as."""
+    plans = {
+        plan: price.strip()
+        for plan, price in (
+            ("monthly", os.getenv("PADDLE_MONTHLY_PRICE_ID", "")),
+            ("annual", os.getenv("PADDLE_ANNUAL_PRICE_ID", "")),
+        )
+        if price.strip()
+    }
+    if not plans:
+        raise ValueError("Set PADDLE_MONTHLY_PRICE_ID and/or PADDLE_ANNUAL_PRICE_ID")
+    return plans
 
 
 def _subscription_reconciliation_interval() -> timedelta:
@@ -491,7 +497,7 @@ class Container:
             self.get_secret_cipher(),
             self.get_paddle_client(),
             webhook_secret=secret,
-            allowed_price_ids=_paddle_price_ids(),
+            allowed_price_ids=frozenset(_paddle_plans().values()),
             grace_period=timedelta(days=float(os.getenv("WEB_SUBSCRIPTION_GRACE_DAYS", "7"))),
             reconciliation_interval=_web_reconciliation_interval(),
         )
@@ -504,7 +510,7 @@ class Container:
             self.get_subscription_access_service(),
             self.get_paddle_subscription_service(),
             checkout_page_url=os.getenv("WEB_CHECKOUT_PAGE_URL", ""),
-            allowed_price_ids=_paddle_price_ids(),
+            plans=_paddle_plans(),
         )
 
     def _create_lapsed_account_reaper(self) -> LapsedAccountReaper:

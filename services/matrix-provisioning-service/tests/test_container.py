@@ -332,7 +332,8 @@ def configure_web(env):
     env.setenv("PLAY_ACCOUNT_BINDING_KEY_BASE64", base64.b64encode(bytes(range(32))).decode())
     env.setenv("PADDLE_API_KEY", "pdl_sdbx_apikey_test")
     env.setenv("PADDLE_WEBHOOK_SECRET", "pdl_ntfset_test")
-    env.setenv("PADDLE_PRICE_IDS", " pri_monthly , pri_annual ,")
+    env.setenv("PADDLE_MONTHLY_PRICE_ID", " pri_monthly ")
+    env.setenv("PADDLE_ANNUAL_PRICE_ID", "pri_annual")
     env.setenv("WEB_CHECKOUT_PAGE_URL", "https://sync.example.com/checkout/")
 
 
@@ -356,7 +357,9 @@ def test_container_builds_the_web_graph_without_google_credentials(env, monkeypa
     assert paddle._allowed_price_ids == frozenset({"pri_monthly", "pri_annual"})
     assert paddle._grace_period == timedelta(days=3)
     assert container.get_paddle_client()._base_url == PADDLE_SANDBOX_BASE_URL
-    assert isinstance(container.get_web_checkout_service(), WebCheckoutService)
+    checkout = container.get_web_checkout_service()
+    assert isinstance(checkout, WebCheckoutService)
+    assert checkout._plans == {"monthly": "pri_monthly", "annual": "pri_annual"}
     reconciler = container.get_subscription_reconciler()
     assert reconciler._subscription_service is None
     assert reconciler._paddle_subscriptions is paddle
@@ -371,7 +374,6 @@ def test_paddle_defaults_to_the_live_api(env):
 @pytest.mark.parametrize(
     ("name", "value", "message"),
     [
-        ("PADDLE_PRICE_IDS", " , ", "PADDLE_PRICE_IDS"),
         ("PADDLE_WEBHOOK_SECRET", "", "PADDLE_WEBHOOK_SECRET"),
         ("WEB_CHECKOUT_PAGE_URL", "http://insecure.example.com", "https"),
         ("PADDLE_API_KEY", "", "PADDLE_API_KEY"),
@@ -382,6 +384,17 @@ def test_web_configuration_fails_fast(env, name, value, message):
     env.setenv(name, value)
 
     with pytest.raises(ValueError, match=message):
+        Container().get_web_checkout_service()
+
+
+def test_a_single_plan_is_enough_but_none_is_refused(env):
+    configure_web(env)
+    env.setenv("PADDLE_ANNUAL_PRICE_ID", "")
+
+    assert Container().get_web_checkout_service()._plans == {"monthly": "pri_monthly"}
+
+    env.setenv("PADDLE_MONTHLY_PRICE_ID", " ")
+    with pytest.raises(ValueError, match="PADDLE_MONTHLY_PRICE_ID"):
         Container().get_web_checkout_service()
 
 

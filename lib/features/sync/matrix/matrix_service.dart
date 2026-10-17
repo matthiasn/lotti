@@ -45,6 +45,10 @@ import 'package:meta/meta.dart';
 ///   recover from offline-created bursts.
 /// - Exposes `getSyncMetrics()`, `forceRescan()`, `retryNow()`, and
 ///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
+/// State event type the provisioning service reads as rotation proof; must
+/// match `ROTATION_EVENT_TYPE` in the service's `bundle_rotation_service.py`.
+const String rotationProofEventType = 'com.lotti.sync.provisioning.rotation';
+
 class MatrixService {
   MatrixService({
     required this._gateway,
@@ -630,6 +634,22 @@ class MatrixService {
   // form part of MatrixService's mocked public API — keep the signatures here.
 
   Future<String?> joinRoom(String roomId) => _ops.joinRoom(roomId);
+
+  /// Publishes the proof the paid provisioning service reads before it
+  /// destroys a bundle's escrow: the challenge derived from the claim secret,
+  /// as a state event keyed by the bundle id. Plain state, so it carries
+  /// nothing secret — the challenge is only meaningful to the server that
+  /// issued the bundle.
+  Future<void> publishRotationProof({
+    required String roomId,
+    required String bundleId,
+    required String challenge,
+  }) => _gateway.setRoomState(
+    roomId: roomId,
+    eventType: rotationProofEventType,
+    stateKey: bundleId,
+    content: {'challenge': challenge},
+  );
 
   /// Creates the account's encrypted sync room and returns its id, for the
   /// first device signing in with its own credentials rather than a bundle.

@@ -71,7 +71,7 @@ async def create_checkout_session(
         created = await container.get_web_checkout_service().create_session(
             entitlement_id=request.entitlement_id,
             auth_secret=bearer_secret(authorization),
-            price_id=request.price_id,
+            plan=request.plan,
             claim_secret=request.claim_secret,
         )
     except EntitlementAuthenticationException as exc:

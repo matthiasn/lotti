@@ -43,7 +43,8 @@ ACCOUNT_BINDING_KEY_BASE64=$(openssl rand -base64 32)
 PADDLE_ENVIRONMENT=sandbox
 PADDLE_API_KEY=…              # Paddle → Developer tools → Authentication
 PADDLE_WEBHOOK_SECRET=…       # from the notification destination, step 5
-PADDLE_PRICE_IDS=pri_…,pri_…  # monthly and annual
+PADDLE_MONTHLY_PRICE_ID=pri_…
+PADDLE_ANNUAL_PRICE_ID=pri_…
 WEB_CHECKOUT_PAGE_URL=https://sync.example.com/checkout
 WEB_CHECKOUT_ORIGIN=https://sync.example.com
 MATRIX_ADMIN_TOKEN=…          # step 3
@@ -109,7 +110,8 @@ in this repository.
 ## 5. Paddle
 
 1. Catalog: product "Lotti Sync" with a monthly and an annual price; their ids
-   go into `PADDLE_PRICE_IDS`.
+   go into `PADDLE_MONTHLY_PRICE_ID` and `PADDLE_ANNUAL_PRICE_ID`. The app
+   only ever names a plan, so changing a price needs no app release.
 2. Notifications → new destination `https://api.example.com/api/v1/webhooks/paddle`,
    events `subscription.created`, `.activated`, `.updated`, `.past_due`,
    `.paused`, `.resumed`, `.canceled`. Copy its secret into

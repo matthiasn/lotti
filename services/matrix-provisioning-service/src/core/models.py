@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -311,7 +312,7 @@ class CreateCheckoutSessionRequest(BaseModel):
     """Authorize one web checkout launch for an entitlement."""
 
     entitlement_id: str = Field(..., min_length=1, max_length=128)
-    price_id: str = Field(..., min_length=1, max_length=128)
+    plan: Literal["monthly", "annual"]
     claim_secret: str = Field(..., min_length=32, max_length=256)
 
 

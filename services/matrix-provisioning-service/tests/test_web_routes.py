@@ -147,7 +147,7 @@ def bearer():
 
 SESSION_BODY = {
     "entitlement_id": "entitlement-one",
-    "price_id": "pri_monthly",
+    "plan": "monthly",
     "claim_secret": CLAIM_SECRET,
 }
 CLAIM_BODY = {"entitlement_id": "entitlement-one", "claim_secret": CLAIM_SECRET}

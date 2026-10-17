@@ -82,7 +82,7 @@ class WebCheckoutService:
         paddle_subscriptions: PaddleSubscriptionService,
         *,
         checkout_page_url: str,
-        allowed_price_ids: frozenset[str],
+        plans: dict[str, str],
         session_ttl: timedelta = timedelta(minutes=30),
         attempt_limit: int = 10,
         attempt_window: timedelta = timedelta(minutes=15),
@@ -91,15 +91,15 @@ class WebCheckoutService:
     ):
         if not checkout_page_url.startswith("https://"):
             raise ValueError("WEB_CHECKOUT_PAGE_URL must be an https:// URL")
-        if not allowed_price_ids:
-            raise ValueError("At least one Paddle price id must be enabled")
+        if not plans:
+            raise ValueError("At least one Paddle plan must be configured")
         self._repository = repository
         self._identity_service = identity_service
         self._paid_bundle_service = paid_bundle_service
         self._access_service = access_service
         self._paddle_subscriptions = paddle_subscriptions
         self._checkout_page_url = checkout_page_url
-        self._allowed_price_ids = allowed_price_ids
+        self._plans = plans
         self._session_ttl = session_ttl
         self._attempt_limit = attempt_limit
         self._attempt_window = attempt_window
@@ -111,14 +111,20 @@ class WebCheckoutService:
         *,
         entitlement_id: str,
         auth_secret: str,
-        price_id: str,
+        plan: str,
         claim_secret: str,
     ) -> CreatedCheckoutSession:
-        """Authorize one checkout launch and remember which claim secret it pays for."""
+        """Authorize one checkout launch and remember which claim secret it pays for.
+
+        The app names a ``plan`` ("monthly", "annual"); which Paddle price that
+        is stays server configuration, so sandbox and live prices never reach
+        an app build.
+        """
         now = self._now_provider()
         await self._authenticate(entitlement_id, auth_secret, now=now)
-        if price_id not in self._allowed_price_ids:
-            raise InvalidSubscriptionProductException("Price is not enabled for SYNC")
+        price_id = self._plans.get(plan)
+        if price_id is None:
+            raise InvalidSubscriptionProductException("Plan is not offered")
         if len(claim_secret) < 32:
             raise BundleClaimConflictException("Claim secret is too short")
         session = CheckoutSession(

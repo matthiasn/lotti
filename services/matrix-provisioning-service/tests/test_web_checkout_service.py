@@ -118,7 +118,7 @@ def world(tmp_path, clock):
         access,
         paddle,
         checkout_page_url=CHECKOUT_PAGE,
-        allowed_price_ids=frozenset({MONTHLY_PRICE, ANNUAL_PRICE}),
+        plans={"monthly": MONTHLY_PRICE, "annual": ANNUAL_PRICE},
         attempt_limit=3,
         now_provider=clock,
     )
@@ -137,11 +137,11 @@ async def credentials(world):
     return await world["identity"].create_entitlement(client_identifier="device", now=NOW)
 
 
-async def open_session(world, credentials, *, price_id=MONTHLY_PRICE):
+async def open_session(world, credentials, *, plan="monthly"):
     return await world["checkout"].create_session(
         entitlement_id=credentials.entitlement_id,
         auth_secret=credentials.auth_secret,
-        price_id=price_id,
+        plan=plan,
         claim_secret=CLAIM_SECRET,
     )
 
@@ -166,13 +166,13 @@ async def claim(world, credentials, *, claim_secret=CLAIM_SECRET):
     ("overrides", "message"),
     [
         ({"checkout_page_url": "http://sync.example.com/"}, "https"),
-        ({"allowed_price_ids": frozenset()}, "price"),
+        ({"plans": {}}, "plan"),
     ],
 )
 async def test_service_validates_its_configuration(world, overrides, message):
     values = {
         "checkout_page_url": CHECKOUT_PAGE,
-        "allowed_price_ids": frozenset({MONTHLY_PRICE}),
+        "plans": {"monthly": MONTHLY_PRICE},
     }
     values.update(overrides)
     with pytest.raises(ValueError, match=message):
@@ -198,9 +198,12 @@ async def test_session_url_keeps_the_session_id_out_of_server_logs(world, creden
     assert CLAIM_SECRET not in stored.claim_secret_hash
 
 
-async def test_session_rejects_unknown_prices(world, credentials):
+async def test_session_maps_plans_to_server_side_prices(world, credentials):
+    annual = await open_session(world, credentials, plan="annual")
+
+    assert parse_qs(urlsplit(annual.checkout_url).fragment)["price"] == [ANNUAL_PRICE]
     with pytest.raises(InvalidSubscriptionProductException):
-        await open_session(world, credentials, price_id="pri_free")
+        await open_session(world, credentials, plan="lifetime")
 
 
 async def test_session_rejects_a_short_claim_secret(world, credentials):
@@ -208,7 +211,7 @@ async def test_session_rejects_a_short_claim_secret(world, credentials):
         await world["checkout"].create_session(
             entitlement_id=credentials.entitlement_id,
             auth_secret=credentials.auth_secret,
-            price_id=MONTHLY_PRICE,
+            plan="monthly",
             claim_secret="short",
         )
 
@@ -218,14 +221,14 @@ async def test_session_rejects_wrong_and_unknown_credentials(world, credentials)
         await world["checkout"].create_session(
             entitlement_id=credentials.entitlement_id,
             auth_secret="wrong",
-            price_id=MONTHLY_PRICE,
+            plan="monthly",
             claim_secret=CLAIM_SECRET,
         )
     with pytest.raises(EntitlementAuthenticationException):
         await world["checkout"].create_session(
             entitlement_id="no-such-entitlement",
             auth_secret=credentials.auth_secret,
-            price_id=MONTHLY_PRICE,
+            plan="monthly",
             claim_secret=CLAIM_SECRET,
         )
 
