@@ -256,6 +256,12 @@ void main() {
       ),
     ).thenAnswer((_) async => task);
     when(
+      () => timeline.isOnTimeline(
+        personId: any(named: 'personId'),
+        entryId: any(named: 'entryId'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
       () => relationships.linkTask(
         relationshipId: any(named: 'relationshipId'),
         taskId: any(named: 'taskId'),

@@ -29,15 +29,19 @@ typedef PersonCaptureLink =
 ///   recording attached, and the voice note leaves the timeline: the
 ///   check-in holds it now, so the timeline shows it once.
 /// - A **note** is the voice note itself — its transcript is already its
-///   words — unless a check-in took the recording, in which case it is
-///   written as a note of its own.
+///   words — while the recording is still on the timeline; a second note,
+///   or any note once a check-in took the recording, is written as a note of
+///   its own.
 /// - A **meeting** is a planned event on the timeline; a **task** is linked
 ///   to the person as any task. Both link to the recording, so either one
 ///   leads back to what was said.
 ///
-/// Check-ins go first, since they decide where the recording lives. Each
-/// item is filed on its own: one that fails is handed back rather than
-/// abandoning the rest.
+/// Check-ins go first, since they decide where the recording lives. Where it
+/// lives is read from the timeline, not remembered, so a retry of what an
+/// earlier filing handed back decides the same way. Each item is filed on
+/// its own: one that could not be written is handed back rather than
+/// abandoning the rest. Once an item is written it counts as filed whatever
+/// happens to the links around it, since a retry would write it twice.
 class PersonCaptureFiler {
   PersonCaptureFiler({
     required this._relationships,
@@ -67,7 +71,13 @@ class PersonCaptureFiler {
       ...items.where((item) => item is! PersonCaptureCheckIn),
     ];
     final unfiled = <PersonCaptureItem>{};
-    var recordingMoved = false;
+    // Whether the recording is still the voice note on the timeline — false
+    // when an earlier filing gave it to a check-in.
+    var recordingOnTimeline = await _timeline.isOnTimeline(
+      personId: person.meta.id,
+      entryId: audioId,
+    );
+    var voiceNoteIsANote = false;
     for (final item in ordered) {
       try {
         final filed = switch (item) {
@@ -76,12 +86,15 @@ class PersonCaptureFiler {
             audioId,
             checkIn,
             now: now,
-            attach: !recordingMoved,
-            onMoved: () => recordingMoved = true,
+            attach: recordingOnTimeline,
+            onMoved: () => recordingOnTimeline = false,
           ),
+          // The first note while the recording is on the timeline is the
+          // voice note itself; its words are already there.
+          PersonCaptureNote() when recordingOnTimeline && !voiceNoteIsANote =>
+            voiceNoteIsANote = true,
           PersonCaptureNote(:final text) =>
-            !recordingMoved ||
-                await _timeline.createNote(person: person, text: text) != null,
+            await _timeline.createNote(person: person, text: text) != null,
           final PersonCaptureMeeting meeting => await _meeting(
             person,
             audioId,
@@ -135,18 +148,35 @@ class PersonCaptureFiler {
     if (!attach) return true;
     // The check-in is saved: a recording that will not attach stays the
     // voice note it is, and the check-in still counts as filed.
-    final attached = await _relationships.attachEntriesToCheckIn(
-      checkInId: created.meta.id,
-      entryIds: [audioId],
-    );
-    if (attached) {
+    await _afterWrite('attaching the recording to a check-in', () async {
+      final attached = await _relationships.attachEntriesToCheckIn(
+        checkInId: created.meta.id,
+        entryIds: [audioId],
+      );
+      if (!attached) return;
       onMoved();
       await _timeline.removeFromTimeline(
         personId: person.meta.id,
         entryId: audioId,
       );
-    }
+    });
     return true;
+  }
+
+  /// A step after an item was written: logged when it fails, never a
+  /// reason to hand the written item back.
+  Future<void> _afterWrite(String what, Future<void> Function() step) async {
+    try {
+      await step();
+    } catch (error, stackTrace) {
+      _logger?.error(
+        LogDomain.persistence,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'personCaptureFiler',
+        message: '$what failed after the item was filed',
+      );
+    }
   }
 
   Future<bool> _meeting(
@@ -162,7 +192,10 @@ class PersonCaptureFiler {
       duration: meeting.duration ?? personMeetingDefaultDuration,
     );
     if (created == null) return false;
-    await _link(fromId: created.meta.id, toId: audioId);
+    await _afterWrite(
+      'linking a meeting to its recording',
+      () => _link(fromId: created.meta.id, toId: audioId),
+    );
     return true;
   }
 
@@ -180,18 +213,23 @@ class PersonCaptureFiler {
     if (created == null) return false;
     // Written is filed: handed back, a task whose link failed would be
     // written a second time by the retry. The miss is logged instead.
-    final linked = await _relationships.linkTask(
-      relationshipId: person.meta.id,
-      taskId: created.meta.id,
-    );
-    if (!linked) {
-      _logger?.log(
-        LogDomain.persistence,
-        'a filed task could not be linked to its person',
-        subDomain: 'personCaptureFiler',
+    await _afterWrite('linking a task to its person', () async {
+      final linked = await _relationships.linkTask(
+        relationshipId: person.meta.id,
+        taskId: created.meta.id,
       );
-    }
-    await _link(fromId: created.meta.id, toId: audioId);
+      if (!linked) {
+        _logger?.log(
+          LogDomain.persistence,
+          'a filed task could not be linked to its person',
+          subDomain: 'personCaptureFiler',
+        );
+      }
+    });
+    await _afterWrite(
+      'linking a task to its recording',
+      () => _link(fromId: created.meta.id, toId: audioId),
+    );
     return true;
   }
 }

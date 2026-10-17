@@ -4871,6 +4871,7 @@
   "relationshipCaptureNoDue": "Sin fecha de vencimiento",
   "relationshipCaptureNoSorter": "No hay modelo para ordenarlo: se queda como nota de voz.",
   "relationshipCaptureNote": "Guardar como nota",
+  "relationshipCaptureNotPlaced": "La grabación está guardada en tu diario, pero no se pudo poner en la línea de tiempo de {name}.",
   "relationshipCaptureSortedBy": "Lo ordena {route}",
   "relationshipCaptureSorting": "Ordenando lo que dijiste…",
   "relationshipCaptureTask": "Añadir una tarea",

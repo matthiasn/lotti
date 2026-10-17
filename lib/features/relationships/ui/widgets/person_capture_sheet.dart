@@ -77,6 +77,11 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   late final Future<PersonCaptureModel?> _model;
   CheckInTranscriptWait? _wait;
   CheckInSpeechFailureKind? _failure;
+
+  /// The recording was saved but could not be put on the timeline: the
+  /// capture stops there, rather than sort and file what the person's page
+  /// would never show.
+  var _notPlaced = false;
   String? _error;
   var _filing = false;
 
@@ -119,16 +124,23 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   Future<void> _onRecorded(String audioId, Duration _) async {
     final transcription = ref.read(checkInTranscriptionServiceProvider);
     final timeline = ref.read(personTimelineRepositoryProvider);
+    // From here on the capture is a voice note on the person's timeline,
+    // whatever happens to the sheet.
+    var placed = false;
     try {
-      // From here on the capture is a voice note on the person's timeline,
-      // whatever happens to the sheet.
-      final placed = await timeline.addToTimeline(
+      placed = await timeline.addToTimeline(
         personId: widget.person.meta.id,
         entryId: audioId,
       );
       if (!placed) _log('the voice note could not be put on the timeline');
     } catch (error, stackTrace) {
       _log(error, stackTrace);
+    }
+    if (!placed) {
+      if (!mounted) return;
+      setState(() => _notPlaced = true);
+      _go(PersonCaptureSaved(audioId, canTranscribe: false));
+      return;
     }
     bool canTranscribe;
     try {
@@ -200,6 +212,9 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
     final messages = context.messages;
     final failure = _failure;
     final body = switch (_phase) {
+      _ when _notPlaced => _Ending(
+        text: messages.relationshipCaptureNotPlaced(widget.person.shortName),
+      ),
       _ when failure != null => _Ending(
         text: checkInRecordingFailureCopy(messages, failure).$2,
         title: checkInRecordingFailureCopy(messages, failure).$1,

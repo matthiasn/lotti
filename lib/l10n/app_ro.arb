@@ -4871,6 +4871,7 @@
   "relationshipCaptureNoDue": "Fără termen",
   "relationshipCaptureNoSorter": "Niciun model pentru sortare – rămâne o notă vocală.",
   "relationshipCaptureNote": "Păstrați ca notă",
+  "relationshipCaptureNotPlaced": "Înregistrarea este salvată în jurnalul dumneavoastră, dar nu a putut fi pusă pe cronologia lui {name}.",
   "relationshipCaptureSortedBy": "Sortat de {route}",
   "relationshipCaptureSorting": "Se sortează ce ați spus…",
   "relationshipCaptureTask": "Adăugați o sarcină",

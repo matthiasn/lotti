@@ -12702,6 +12702,91 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relationshipCaptureCheckIn => 'Logga som avstämning';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Förfaller $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Lägg till $count saker',
+      one: 'Lägg till 1 sak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Vissa saker kunde inte läggas till. De finns kvar här.';
+
+  @override
+  String get relationshipCaptureHeard => 'Det här hörde jag';
+
+  @override
+  String get relationshipCaptureHint =>
+      'Ett samtal du haft, något att minnas eller en plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Behåll som röstanteckning';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Sparad som röstanteckning, med sina ord. Ingen modell kan sortera den.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Sparad som röstanteckning – inget i den att lägga till för sig.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Sparad som röstanteckning. Inget kan transkribera den än.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Sparad som röstanteckning. Inga ord kom fram.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Sparad som röstanteckning, med sina ord. Sorteringen fungerade inte – försök senare med Sortera på dess rad.';
+
+  @override
+  String get relationshipCaptureListening => 'Lyssnar…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Planera ett möte';
+
+  @override
+  String get relationshipCaptureNoDue => 'Inget förfallodatum';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'Ingen modell att sortera med – den förblir en röstanteckning.';
+
+  @override
+  String get relationshipCaptureNote => 'Behåll som anteckning';
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sorteras av $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Sorterar det du sa…';
+
+  @override
+  String get relationshipCaptureTask => 'Lägg till en uppgift';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Prata om $name';
+  }
+
+  @override
   String get relationshipChatAgentName => 'Briefingagent';
 
   @override
@@ -13045,7 +13130,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String relationshipMeetingDefaultTitle(String name) {
-    return 'Träffa $name';
+    return 'Möte med $name';
   }
 
   @override
@@ -13250,6 +13335,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Dags';
+
+  @override
+  String get relationshipSortThis => 'Sortera';
 
   @override
   String get relationshipsPageTitle => 'Personer';
@@ -17020,90 +17108,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get whatsNewSkipButton => 'Hoppa över';
 
   @override
-  String relationshipCaptureTitle(String name) {
-    return 'Prata om $name';
+  String relationshipCaptureNotPlaced(String name) {
+    return 'Inspelningen är sparad i din dagbok, men den kunde inte läggas på ${name}s tidslinje.';
   }
-
-  @override
-  String get relationshipCaptureHint =>
-      'Ett samtal du haft, något att minnas eller en plan.';
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Sorteras av $route';
-  }
-
-  @override
-  String get relationshipCaptureNoSorter =>
-      'Ingen modell att sortera med – det förblir ett röstmeddelande.';
-
-  @override
-  String get relationshipCaptureListening => 'Lyssnar…';
-
-  @override
-  String get relationshipCaptureSorting => 'Sorterar det du sa…';
-
-  @override
-  String get relationshipCaptureHeard => 'Det här hörde jag';
-
-  @override
-  String relationshipCaptureFile(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Arkivera $count saker',
-      one: 'Arkivera 1 sak',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCaptureKeepVoiceNote => 'Behåll som röstmeddelande';
-
-  @override
-  String get relationshipCaptureFileFailed =>
-      'Vissa saker kunde inte arkiveras. De finns kvar här.';
-
-  @override
-  String get relationshipCaptureKeptNoTranscriber =>
-      'Sparat som röstmeddelande. Inget kan transkribera det än.';
-
-  @override
-  String get relationshipCaptureKeptNoWords =>
-      'Sparat som röstmeddelande. Inga ord kom fram.';
-
-  @override
-  String get relationshipCaptureKeptNoSorter =>
-      'Sparat som röstmeddelande, med sina ord. Ingen modell kan sortera det.';
-
-  @override
-  String get relationshipCaptureKeptSortFailed =>
-      'Sparat som röstmeddelande, med sina ord. Sorteringen fungerade inte – försök senare med Sortera på dess rad.';
-
-  @override
-  String get relationshipCaptureKeptNothingToFile =>
-      'Sparat som röstmeddelande – inget i det att arkivera för sig.';
-
-  @override
-  String get relationshipCaptureCheckIn => 'Logga som check-in';
-
-  @override
-  String get relationshipCaptureMeeting => 'Planera ett möte';
-
-  @override
-  String get relationshipCaptureNote => 'Behåll som anteckning';
-
-  @override
-  String get relationshipCaptureTask => 'Lägg till en uppgift';
-
-  @override
-  String relationshipCaptureDue(String day) {
-    return 'Förfaller $day';
-  }
-
-  @override
-  String get relationshipCaptureNoDue => 'Inget förfallodatum';
-
-  @override
-  String get relationshipSortThis => 'Sortera';
 }

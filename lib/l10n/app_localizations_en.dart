@@ -12629,6 +12629,91 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get relationshipCaptureCheckIn => 'Log as a check-in';
+
+  @override
+  String relationshipCaptureDue(String day) {
+    return 'Due $day';
+  }
+
+  @override
+  String relationshipCaptureFile(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'File $count items',
+      one: 'File 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get relationshipCaptureFileFailed =>
+      'Some items could not be filed. They are still here.';
+
+  @override
+  String get relationshipCaptureHeard => 'Here\'s what I heard';
+
+  @override
+  String get relationshipCaptureHint =>
+      'A conversation you had, something to remember, or a plan.';
+
+  @override
+  String get relationshipCaptureKeepVoiceNote => 'Keep as a voice note';
+
+  @override
+  String get relationshipCaptureKeptNoSorter =>
+      'Saved as a voice note, with its words. No model can sort it.';
+
+  @override
+  String get relationshipCaptureKeptNothingToFile =>
+      'Saved as a voice note — nothing in it to file on its own.';
+
+  @override
+  String get relationshipCaptureKeptNoTranscriber =>
+      'Saved as a voice note. Nothing can transcribe it yet.';
+
+  @override
+  String get relationshipCaptureKeptNoWords =>
+      'Saved as a voice note. No words came through.';
+
+  @override
+  String get relationshipCaptureKeptSortFailed =>
+      'Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.';
+
+  @override
+  String get relationshipCaptureListening => 'Listening back…';
+
+  @override
+  String get relationshipCaptureMeeting => 'Plan a meeting';
+
+  @override
+  String get relationshipCaptureNoDue => 'No due date';
+
+  @override
+  String get relationshipCaptureNoSorter =>
+      'No model to sort with — it stays a voice note.';
+
+  @override
+  String get relationshipCaptureNote => 'Keep as a note';
+
+  @override
+  String relationshipCaptureSortedBy(String route) {
+    return 'Sorted by $route';
+  }
+
+  @override
+  String get relationshipCaptureSorting => 'Sorting what you said…';
+
+  @override
+  String get relationshipCaptureTask => 'Add a task';
+
+  @override
+  String relationshipCaptureTitle(String name) {
+    return 'Speak about $name';
+  }
+
+  @override
   String get relationshipChatAgentName => 'Briefing agent';
 
   @override
@@ -13171,6 +13256,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get relationshipsGroupDue => 'Due';
+
+  @override
+  String get relationshipSortThis => 'Sort this';
 
   @override
   String get relationshipsPageTitle => 'People';
@@ -16904,92 +16992,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatsNewSkipButton => 'Skip';
 
   @override
-  String relationshipCaptureTitle(String name) {
-    return 'Speak about $name';
+  String relationshipCaptureNotPlaced(String name) {
+    return 'The recording is saved in your journal, but it could not be put on $name\'s timeline.';
   }
-
-  @override
-  String get relationshipCaptureHint =>
-      'A conversation you had, something to remember, or a plan.';
-
-  @override
-  String relationshipCaptureSortedBy(String route) {
-    return 'Sorted by $route';
-  }
-
-  @override
-  String get relationshipCaptureNoSorter =>
-      'No model to sort with — it stays a voice note.';
-
-  @override
-  String get relationshipCaptureListening => 'Listening back…';
-
-  @override
-  String get relationshipCaptureSorting => 'Sorting what you said…';
-
-  @override
-  String get relationshipCaptureHeard => 'Here\'s what I heard';
-
-  @override
-  String relationshipCaptureFile(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'File $count items',
-      one: 'File 1 item',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get relationshipCaptureKeepVoiceNote => 'Keep as a voice note';
-
-  @override
-  String get relationshipCaptureFileFailed =>
-      'Some items could not be filed. They are still here.';
-
-  @override
-  String get relationshipCaptureKeptNoTranscriber =>
-      'Saved as a voice note. Nothing can transcribe it yet.';
-
-  @override
-  String get relationshipCaptureKeptNoWords =>
-      'Saved as a voice note. No words came through.';
-
-  @override
-  String get relationshipCaptureKeptNoSorter =>
-      'Saved as a voice note, with its words. No model can sort it.';
-
-  @override
-  String get relationshipCaptureKeptSortFailed =>
-      'Saved as a voice note, with its words. Sorting did not work — use Sort this on its row to try again.';
-
-  @override
-  String get relationshipCaptureKeptNothingToFile =>
-      'Saved as a voice note — nothing in it to file on its own.';
-
-  @override
-  String get relationshipCaptureCheckIn => 'Log as a check-in';
-
-  @override
-  String get relationshipCaptureMeeting => 'Plan a meeting';
-
-  @override
-  String get relationshipCaptureNote => 'Keep as a note';
-
-  @override
-  String get relationshipCaptureTask => 'Add a task';
-
-  @override
-  String relationshipCaptureDue(String day) {
-    return 'Due $day';
-  }
-
-  @override
-  String get relationshipCaptureNoDue => 'No due date';
-
-  @override
-  String get relationshipSortThis => 'Sort this';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

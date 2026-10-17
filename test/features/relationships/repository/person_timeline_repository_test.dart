@@ -515,6 +515,27 @@ void main() {
     });
   });
 
+  group('isOnTimeline', () {
+    test('is true only while a live RelationshipLink runs from the person '
+        'to the entry', () async {
+      await link('person', 'on');
+      await link('person', 'plain', relationship: false);
+      await link('person', 'gone', deletedAt: at);
+
+      expect(
+        await repository.isOnTimeline(personId: 'person', entryId: 'on'),
+        isTrue,
+      );
+      for (final id in ['plain', 'gone', 'never']) {
+        expect(
+          await repository.isOnTimeline(personId: 'person', entryId: id),
+          isFalse,
+          reason: id,
+        );
+      }
+    });
+  });
+
   group('personTimelineLinksChangedAt', () {
     Future<void> linkAt(String to, DateTime updatedAt, {DateTime? deletedAt}) =>
         db.upsertEntryLink(

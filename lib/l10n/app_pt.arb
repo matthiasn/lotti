@@ -5480,6 +5480,7 @@
   "relationshipCaptureNoDue": "Sem data de vencimento",
   "relationshipCaptureNoSorter": "Nenhum modelo para organizar: fica como nota de voz.",
   "relationshipCaptureNote": "Manter como nota",
+  "relationshipCaptureNotPlaced": "A gravação está guardada no teu diário, mas não foi possível colocá-la na cronologia de {name}.",
   "relationshipCaptureSortedBy": "Organizado por {route}",
   "relationshipCaptureSorting": "A organizar o que disseste…",
   "relationshipCaptureTask": "Adicionar uma tarefa",

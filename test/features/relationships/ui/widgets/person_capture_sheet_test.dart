@@ -440,8 +440,8 @@ void main() {
     expect(find.text("Here's what I heard"), findsOneWidget);
   });
 
-  testWidgets('a voice note the timeline could not take is logged, and the '
-      'capture goes on', (tester) async {
+  testWidgets('a voice note the timeline could not take stops the capture '
+      'there, says where the recording is, and is logged', (tester) async {
     when(
       () => timeline.addToTimeline(
         personId: any(named: 'personId'),
@@ -451,7 +451,17 @@ void main() {
     await open(tester);
     await stop(tester);
 
-    expect(find.text("Here's what I heard"), findsOneWidget);
+    expect(
+      find.text(
+        "The recording is saved in your journal, but it could not be put on Pip's timeline.",
+      ),
+      findsOneWidget,
+    );
+    expect(transcription.transcribeCalls, isEmpty);
+    expect(prompts, isEmpty);
+    await tapKey(tester, 'person-capture-done');
+    await settle(tester);
+    expect(find.text('Speak about Pip'), findsNothing);
     verify(
       () => logger.error(
         LogDomain.general,
@@ -486,7 +496,13 @@ void main() {
     await open(tester);
     await stop(tester);
 
-    expect(find.text("Here's what I heard"), findsOneWidget);
+    expect(
+      find.text(
+        "The recording is saved in your journal, but it could not be put on Pip's timeline.",
+      ),
+      findsOneWidget,
+    );
+    expect(transcription.transcribeCalls, isEmpty);
   });
 
   testWidgets('discarding the recording closes the sheet, writing nothing', (

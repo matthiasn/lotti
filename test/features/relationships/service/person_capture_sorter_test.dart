@@ -121,9 +121,15 @@ void main() {
 
     expect(prompt, contains('Now: Thursday 2026-08-13T14:05'));
     expect(prompt, contains('UTC'));
-    expect(prompt, contains('Person: Commander Pip Frostbeak'));
-    expect(prompt, contains('Called: Pip'));
-    expect(prompt, endsWith('Capture:\nCoffee on Sunday at three.'));
+    expect(
+      prompt,
+      contains('<person_name>Commander Pip Frostbeak</person_name>'),
+    );
+    expect(prompt, contains('<person_nickname>Pip</person_nickname>'));
+    expect(
+      prompt,
+      endsWith('<capture>\nCoffee on Sunday at three.\n</capture>'),
+    );
     expect(prompt, isNot(contains('555')));
   });
 
@@ -133,7 +139,7 @@ void main() {
       transcript: 'Hi.',
       now: now,
     );
-    expect(prompt, isNot(contains('Called:')));
+    expect(prompt, isNot(contains('person_nickname')));
   });
 
   test("sorts on the person's model, attributing the cost to their "

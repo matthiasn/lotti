@@ -4871,6 +4871,7 @@
   "relationshipCaptureNoDue": "Kein Fälligkeitsdatum",
   "relationshipCaptureNoSorter": "Kein Modell zum Sortieren – es bleibt eine Sprachnotiz.",
   "relationshipCaptureNote": "Als Notiz behalten",
+  "relationshipCaptureNotPlaced": "Die Aufnahme ist in deinem Journal gespeichert, konnte aber nicht auf die Zeitleiste von {name} gelegt werden.",
   "relationshipCaptureSortedBy": "Sortiert von {route}",
   "relationshipCaptureSorting": "Ich sortiere, was du gesagt hast…",
   "relationshipCaptureTask": "Eine Aufgabe anlegen",

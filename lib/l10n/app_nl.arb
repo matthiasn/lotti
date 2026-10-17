@@ -5480,6 +5480,7 @@
   "relationshipCaptureNoDue": "Geen vervaldatum",
   "relationshipCaptureNoSorter": "Geen model om te sorteren – het blijft een spraaknotitie.",
   "relationshipCaptureNote": "Bewaren als notitie",
+  "relationshipCaptureNotPlaced": "De opname staat in je dagboek, maar kon niet op de tijdlijn van {name} worden gezet.",
   "relationshipCaptureSortedBy": "Gesorteerd door {route}",
   "relationshipCaptureSorting": "Ik sorteer wat je zei…",
   "relationshipCaptureTask": "Een taak toevoegen",

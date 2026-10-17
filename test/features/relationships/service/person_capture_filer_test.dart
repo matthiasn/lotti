@@ -102,6 +102,12 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
+      () => timeline.isOnTimeline(
+        personId: any(named: 'personId'),
+        entryId: any(named: 'entryId'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
       () => timeline.removeFromTimeline(
         personId: any(named: 'personId'),
         entryId: any(named: 'entryId'),
@@ -299,6 +305,111 @@ void main() {
         entryIds: any(named: 'entryIds'),
       ),
     ).called(1);
+  });
+
+  test('the first note is the voice note; a second is written as a note '
+      'of its own', () async {
+    final unfiled = await file(const [
+      PersonCaptureNote(text: 'Sextants.'),
+      PersonCaptureNote(text: 'Hates calls before ten.'),
+    ]);
+
+    expect(unfiled, isEmpty);
+    verify(
+      () =>
+          timeline.createNote(person: person, text: 'Hates calls before ten.'),
+    ).called(1);
+    verifyNever(() => timeline.createNote(person: person, text: 'Sextants.'));
+  });
+
+  test('a note retried after a check-in took the recording is written — '
+      'where the recording lives is read, not remembered', () async {
+    when(
+      () => timeline.isOnTimeline(personId: 'pip', entryId: 'audio-1'),
+    ).thenAnswer((_) async => false);
+
+    expect(await file(const [PersonCaptureNote(text: 'Sextants.')]), isEmpty);
+    verify(
+      () => timeline.createNote(person: person, text: 'Sextants.'),
+    ).called(1);
+  });
+
+  test('a check-in retried after another took the recording does not take '
+      'it again', () async {
+    when(
+      () => timeline.isOnTimeline(personId: 'pip', entryId: 'audio-1'),
+    ).thenAnswer((_) async => false);
+
+    expect(
+      await file(const [
+        PersonCaptureCheckIn(
+          interactionType: CheckInInteractionType.call,
+          summary: 'Talked.',
+        ),
+      ]),
+      isEmpty,
+    );
+    verifyNever(
+      () => relationships.attachEntriesToCheckIn(
+        checkInId: any(named: 'checkInId'),
+        entryIds: any(named: 'entryIds'),
+      ),
+    );
+  });
+
+  test('once written, an item is filed whatever happens to the links after '
+      'it — a retry would write it twice — and each miss is logged', () async {
+    when(
+      () => relationships.attachEntriesToCheckIn(
+        checkInId: any(named: 'checkInId'),
+        entryIds: any(named: 'entryIds'),
+      ),
+    ).thenThrow(StateError('database locked'));
+    when(
+      () => relationships.linkTask(
+        relationshipId: any(named: 'relationshipId'),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenThrow(StateError('database locked'));
+    final throwing = PersonCaptureFiler(
+      relationships: relationships,
+      timeline: timeline,
+      createTask:
+          ({
+            required title,
+            required due,
+            required categoryId,
+            required inheritContextFrom,
+          }) async => taskEntry,
+      link: ({required fromId, required toId}) async =>
+          throw StateError('database locked'),
+      logger: logger,
+    );
+
+    final unfiled = await throwing.file(
+      person: person,
+      audioId: 'audio-1',
+      items: const [
+        PersonCaptureCheckIn(
+          interactionType: CheckInInteractionType.call,
+          summary: 'Talked.',
+        ),
+        PersonCaptureMeeting(title: 'Coffee'),
+        PersonCaptureTask(title: 'Send it'),
+      ],
+      now: now,
+    );
+
+    expect(unfiled, isEmpty);
+    verify(
+      () => logger.error(
+        LogDomain.persistence,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'personCaptureFiler',
+        message: any<String>(named: 'message'),
+      ),
+    ).called(4);
   });
 
   test('a meeting is planned on the timeline and leads back to the '

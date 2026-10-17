@@ -2603,13 +2603,6 @@ not enough — its cross-axis constraints are merely loose; a vertical `Flex`
 passes unbounded main-axis constraints, under which the same `Center`
 shrink-wraps.
 
-# Related
-
-* [JournalEntity](../domain/journal-entity.md) - the union both variants join, and the `subtype` denormalization pattern.
-* [Entry links](../domain/entry-links.md) - the `RelationshipLink` variant and why one type can span two endpoint kinds.
-* [Projects](projects.md) - the feature this one mirrors in status shape, flag gating and tab structure.
-* [Persistence](../architecture/persistence.md) - how `updateDbEntity` writes, notifies and enqueues sync.
-
 ## Speak your mind
 
 The bar's *Speak* and a long press on a People row open *Speak about Pip*
@@ -2643,7 +2636,10 @@ stateDiagram-v2
 - **Saved means kept.** The moment the recorder stops, the audio is a voice
   note on the person's timeline (`addToTimeline`, a `RelationshipLink`), so a
   closed sheet, a crash or a failed step always leaves it there; every later
-  phase only offers to file it as something more specific.
+  phase only offers to file it as something more specific. A recording the
+  timeline will not take stops the capture there, saying it is in the
+  journal: sorting and filing what the person's page would never show helps
+  no one.
 - **Words.** `CheckInTranscriptionService` transcribes it, with the person's
   names corrected. The transcript becomes the voice note's own words
   (`entryText`), which is what its timeline row shows.
@@ -2654,8 +2650,9 @@ stateDiagram-v2
   on the thinking slot of the route the briefing names
   (`resolveRelationshipAgentModel`), with one retry that says what was wrong
   and a two-minute bound per call. The prompt carries the time with its
-  weekday and zone, the person's names and the words — never a contact
-  channel. The tool has no field for how a conversation felt: sentiment stays
+  weekday and zone, the person's names and the words, each inside its own
+  tag (`<person_name>`, `<capture>`) so nothing spoken can pass for the
+  prompt's own — never a contact channel. The tool has no field for how a conversation felt: sentiment stays
   the user's (ADR 0038).
 - **Checked items.** At most three: `checkIn` (kind, start, length, topics,
   what to bring up and avoid, a summary), `note`, `meeting` (title, start,
@@ -2674,17 +2671,27 @@ stateDiagram-v2
   - a check-in holds the recording (`attachEntriesToCheckIn`), and the voice
     note leaves the timeline (`removeFromTimeline`), so the timeline shows it
     once;
-  - a note is the voice note itself, unless a check-in took the recording,
-    when it is written as a note of its own;
+  - the first note is the voice note itself while the recording is on the
+    timeline; a second note, or any note once a check-in took the recording,
+    is written as a note of its own. Where the recording lives is read from
+    the timeline (`isOnTimeline`), not remembered, so a retry decides the same
+    way;
   - a meeting is planned (`createMeeting`), an untimed one in the meeting
     sheet's default slot; a task is written through the shared `createTask`
     and linked to the person; both also link to the recording.
-  Each item is filed on its own. One that cannot be is handed back and stays
-  in review, said so. A written task whose person link failed counts as filed,
-  since a retry would write it twice.
+  Each item is filed on its own. One that could not be written is handed
+  back and stays in review, said so. Once written, an item is filed whatever
+  happens to the links after it — attaching the recording, a task's person
+  link — since a retry would write it twice; those misses are logged.
 - **Sort this.** A voice note on the timeline with words carries *Sort this*,
   which opens the same sheet straight on sorting those words.
 
 The post-call offer keeps the composer: it knows the call it is about, its
 kind and its minutes, and a sort would only guess them.
 
+# Related
+
+* [JournalEntity](../domain/journal-entity.md) - the union both variants join, and the `subtype` denormalization pattern.
+* [Entry links](../domain/entry-links.md) - the `RelationshipLink` variant and why one type can span two endpoint kinds.
+* [Projects](projects.md) - the feature this one mirrors in status shape, flag gating and tab structure.
+* [Persistence](../architecture/persistence.md) - how `updateDbEntity` writes, notifies and enqueues sync.

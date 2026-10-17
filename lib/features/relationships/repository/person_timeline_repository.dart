@@ -153,6 +153,14 @@ class PersonTimelineRepository {
     );
   }
 
+  /// Whether [entryId] is on [personId]'s timeline: a live
+  /// [RelationshipLink] runs from the person to it.
+  Future<bool> isOnTimeline({
+    required String personId,
+    required String entryId,
+  }) async =>
+      (await personTimelineLinkTargets(_journalDb, personId)).contains(entryId);
+
   /// Puts [entryId] on [personId]'s timeline. The link write notifies both
   /// endpoints, so the person's page reloads without a manual notification.
   Future<bool> addToTimeline({

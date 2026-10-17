@@ -7824,6 +7824,15 @@
   "@relationshipCaptureNote": {
     "description": "Review card label: file this item as a note."
   },
+  "relationshipCaptureNotPlaced": "The recording is saved in your journal, but it could not be put on {name}'s timeline.",
+  "@relationshipCaptureNotPlaced": {
+    "description": "Said when a spoken capture's recording was saved but could not be put on the person's timeline; {name} is their nickname or name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "relationshipCaptureSortedBy": "Sorted by {route}",
   "@relationshipCaptureSortedBy": {
     "description": "Caption naming the model and provider that will sort the capture, e.g. 'Sorted by Gemini 2.5 Flash · via Google'.",
