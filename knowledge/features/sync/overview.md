@@ -34,8 +34,16 @@ sources:
     last_modified: 2026-08-01
   - id: subscription-provisioner
     resource: ../../../services/matrix-provisioning-service/src/services
-    title: Google Play subscription verification and Matrix provisioning services
-    last_modified: 2026-08-30
+    title: Play and Paddle subscription handling and Matrix provisioning services
+    last_modified: 2026-10-17
+  - id: app-subscription
+    resource: ../../../lib/features/sync/subscription
+    title: In-app web checkout, claim and rotation proof
+    last_modified: 2026-10-17
+  - id: bundle-attestation
+    resource: ../../../lib/features/sync/state/bundle_attestation.dart
+    title: Signed provisioning bundle verification
+    last_modified: 2026-10-17
   - id: verification-launch-model
     resource: ../../../specs/tla/VerificationLaunch.tla
     title: VerificationLaunch — TLA+ model of opening the emoji ceremony, and crossing requests
@@ -124,13 +132,16 @@ full journal, agent or attachment payloads.
 | `queue/` | Persistent inbound queue, per-room worker, `onSync` catch-up bridge, durable late-key resume floor |
 | `sequence/` | Record `(hostId, counter)` coverage, detect gaps, track lifecycle states |
 | `backfill/` | Send missing-counter requests; answer peer requests with resend, deleted, unresolvable or covering-payload hints |
-| `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens |
+| `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens; `state/bundle_attestation.dart` verifies signed bundles |
+| `subscription/` | Paid Lotti Sync from the app: checkout sessions, claim, rotation proof, portal link ([below](#paid-sync-web-checkout-and-signed-bundles)) |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
 # Provisioned access and subscription state
 
-The Matrix provisioning service has two credential-delivery modes. Admin and
-CLI provisioning return a credential once and retain only its fingerprint. The
+The Matrix provisioning service has three credential-delivery modes. Admin and
+CLI provisioning return a credential once and retain only its fingerprint.
+Paddle web checkout, gated by `ENABLE_WEB_SUBSCRIPTIONS`, is described in
+[Paid sync](#paid-sync-web-checkout-and-signed-bundles). The
 Google Play path, gated by `ENABLE_PLAY_SUBSCRIPTIONS`, binds a verified purchase
 to a stable anonymous entitlement and retains the paid bundle in short-lived
 authenticated encryption so a lost HTTP response can return the same bundle
@@ -340,6 +351,107 @@ after entitlement and claim-secret authentication and rejects an exact-TTL expir
 before reserving the claim, so authentication time cannot extend the escrow
 window or exclude the reaper after expiry.
 
+# Paid sync: web checkout and signed bundles
+
+The operator's paid service sells sync through **Paddle**, the merchant of
+record, with the same escrow, suspension and reaper machinery as the Play
+path. Paddle subscriptions are rows of the shared subscription table with
+`provider = 'paddle'`; their lifecycle is mapped onto the Play state
+vocabulary at the adapter (`services/matrix-provisioning-service/src/core/paddle.py`),
+so one entitlement state machine governs both providers. Plan and reasoning:
+[2026-10-17 plan](../../../docs/implementation_plans/2026-10-17_paid_web_sync_subscription.md);
+deployment: [sync-deploy runbook](../../../services/sync-deploy/README.md).
+
+The app side is `lib/features/sync/subscription/`. Nothing in it carries a
+name, email or payment detail: the keystore record
+(`SyncSubscriptionStore`, key `LOTTI_SYNC_SUBSCRIPTION`) holds an anonymous
+entitlement id and secret, a client-generated claim secret, the last checkout
+session id and any rotation proof still owed to the service.
+
+```mermaid
+sequenceDiagram
+  participant App as SyncSubscriptionController
+  participant API as provisioning service
+  participant Browser as checkout page + Paddle
+  participant Prov as ProvisioningController
+  App->>API: entitlement (once per install)
+  App->>API: checkout session (plan, claim secret)
+  App->>Browser: open URL, session id in the fragment
+  Browser-->>API: signed webhook binds the subscription to the session
+  loop every 3 s
+    App->>API: session-status (no secret, cheap)
+  end
+  App->>API: claim → bundle + rotation challenge
+  App->>App: store pending proof
+  App->>Prov: decodeBundle + configureFromBundle (verify, login, rotate)
+  App->>API: room state com.lotti.sync.provisioning.rotation, then confirm-rotation
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> Opening: subscribe(plan)
+  Opening --> AwaitingPayment: browser opened
+  Opening --> Failed: offline, service error or no browser
+  AwaitingPayment --> Claiming: session paid
+  AwaitingPayment --> CheckoutExpired: session expired unpaid
+  AwaitingPayment --> Failed: session lost
+  AwaitingPayment --> Idle: cancel
+  Claiming --> Connecting: bundle accepted
+  Claiming --> Failed: claim refused, already set up or bundle invalid
+  Connecting --> Done: provisioning ready and proof confirmed
+  CheckoutExpired --> Opening: subscribe(plan)
+  Failed --> Opening: subscribe(plan)
+```
+
+Rules the code keeps:
+
+- **The session id is the poll credential.** Checkout status is read without
+  the entitlement secret, so polling never touches the scrypt-guarded claim
+  quota; the id travels in the URL fragment, which no server logs.
+- **The proof is durable before the password rotates.** The pending
+  `PendingRotationProof` is written before `configureFromBundle`; the claim
+  reaper deactivates an account whose rotation is unconfirmed after 24 hours,
+  so `RotationConfirmer` retries it on every visit to the Devices page
+  (`pendingRotationRecoveryProvider`) until the service accepts it.
+- **A paid bundle goes through the pairing flow.** The subscription controller
+  only obtains the bundle; verification, login, room join and rotation are
+  `ProvisioningController`'s, unchanged.
+- **Builds decide whether the entry exists.** `LOTTI_SYNC_API_URL` must be an
+  `https://` URL and `LOTTI_WEB_CHECKOUT` not `false`; store builds whose
+  rules require their own billing switch it off. Without both, the subscribe
+  button is absent and no request is made.
+
+## Signed provisioning bundles (schema v3)
+
+A v3 bundle adds `att` — `{kid, iat, exp, sig}` — an Ed25519 signature by the
+provisioning service over canonical JSON of `{exp, homeServer, iat, kid,
+roomId, user, v}`. The password and `kind` are **not** signed, so a device
+that rotated the password hands the same attestation on: the handover it mints
+is v3 with the original `att`, `MatrixConfig.attestation` keeps it in the
+keystore, and `regenerateHandover` carries it to every later device.
+`attestation_payload` (Python) and `attestationPayload` (Dart) must stay
+byte-identical; a shared test vector pins both.
+
+`BundleAttestationVerifier` runs at the start of `configureFromBundle`,
+**before the current session is touched**. A present attestation is always
+checked; a homeserver in `kLottiSyncBundleTrust.signedHomeservers` additionally
+requires one; an expired attestation refuses only a `provisioned` bundle. A
+refusal ends in `ProvisioningError.untrustedBundle`. Unsigned v2 bundles keep
+working for every other homeserver, so self-hosting is unaffected. The
+signature protects users from forged or phishing bundles; payment itself is
+enforced by the homeserver, where only the provisioning service can create
+accounts.
+
+## Lapsed accounts are erased
+
+`LapsedAccountReaper` erases an account that has stayed suspended for
+`LAPSED_ACCOUNT_ERASE_DAYS` (30, never fewer than 7): it deletes the user's
+media, deletes and purges the sync room, erases the Matrix user, then revokes
+the record — in that order, so a partial failure leaves the account suspended
+for the next run. Renewing inside the window unsuspends the account with
+everything intact.
+
 # Pairing a new device
 
 Pairing moves a **handover bundle** — homeserver, MXID, live password, room id,
@@ -348,7 +460,8 @@ Base64url-encoded — from a device that already syncs to one that does not.
 by the provisioning service through admin or verified-subscription flows, or
 by the CLI) rotates the account password and persists the new one; a `handover`
 bundle (minted by a peer) joins without rotating, so every peer shares one live
-credential. The controller's state transitions expose that distinction directly:
+credential. Either may be a signed v3 bundle, verified before anything else
+happens ([signed bundles](#signed-provisioning-bundles-schema-v3)). The controller's state transitions expose that distinction directly:
 a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds
 from room join to `done`. The behavior derives from bundle kind, never platform.
 

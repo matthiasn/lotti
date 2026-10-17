@@ -73,6 +73,18 @@ merge of two users' work.
   rotated; only the server named sees it — and the handover codes this device
   later mints, which carry it like every handover does. Every further device
   still pairs from this one with such a code. Linux only, by design.
+- **Sells hosted sync without an account.** In builds that name a Lotti Sync
+  service, *Set up sync* offers *Get Lotti Sync*: the user picks a yearly or
+  monthly plan, pays by card or PayPal in a browser tab, and the app finishes
+  setting up sync on its own once the payment arrives. No name, email or
+  payment detail ever reaches the app or the sync server; an anonymous
+  entitlement in the keychain is the whole identity. *Manage subscription* on
+  the Devices page opens the payment provider's portal to cancel or change
+  the card.
+- **Refuses forged pairing codes for the paid service.** A code for the
+  operator's homeserver must carry the service's signature; one that does not
+  is refused before the current session is touched. Codes for any other
+  homeserver work as before.
 - **Confirms a handover only when another device can compare it.** A joining
   second device shows which account it is about to join and a six-character
   check code that the inviting device derives independently and displays too —
@@ -118,7 +130,8 @@ lib/features/sync/
 ├── media/       # self-healing fetch for missing image/audio blobs
 ├── model/       # SyncMessage and node profiles
 ├── services/    # historical staging and other Sync orchestration services
-├── state/       # Riverpod controllers
+├── state/       # Riverpod controllers, signed-bundle verification
+├── subscription/ # paid Lotti Sync: checkout, claim, rotation proof
 └── ui/          # settings, stats, conflicts, outbox monitor
 ```
 
