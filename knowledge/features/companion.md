@@ -8,6 +8,10 @@ status: draft
 generated: { by: claude-code/opus-5.5, at: 2026-10-14T12:00:00Z }
 stale_after: 2027-02-22
 sources:
+  - id: goal-companion
+    resource: ../../lib/features/goals/ui/unified/goal_companion.dart
+    title: The goal card's companion and the pose a track status gives her
+    last_modified: 2026-10-17
   - id: animator
     resource: ../../lib/features/companion/animation/companion_animator.dart
     title: CompanionAnimator
@@ -207,13 +211,22 @@ sequenceDiagram
   utterance gets a fresh clock: two clips both open at zero, and a clock that
   still held the first one's zero would start the second at its full lead.
 
-She has three hosts, each with its own framing:
+She has four hosts, each with its own framing:
 
 | Host | Framing | Box | Utterance (`sourceId`) |
 |---|---|---|---|
 | AI summary card (`agents/ui/ai_summary_card.dart`, placed by `agents/ui/ai_summary_card/companion_report_layout.dart`) | `full` beside the summary on a card body at least `CompanionPlacement.besideMinWidth` wide; `bust` in the header's badge tile below that | `ControlSizes.companionCard` high in a `CompanionSlot` as wide as the `bust` window, the rest of the `full` frame overhanging into the gutters; the badge tile at `ControlSizes.avatar` | the task id |
 | Day page header ([Daily OS](daily_os_next/ui-surfaces.md#the-day-briefing)) | `bust` | `ControlSizes.avatar` square | `day-briefing:<yyyy-MM-dd>` |
 | Onboarding welcome and first task ([onboarding](onboarding.md#the-companion)) | `full` in the welcome hero, `bust` on the first task | the hero frame's height; `ControlSizes.avatarHero` square | `onboarding-companion` |
+| Goal card on the Goals list (`goals/ui/unified/unified_goal_card.dart`, via `goals/ui/unified/goal_companion.dart`) | `bust`, silent `CompanionView` | `ControlSizes.avatarCompact` tile on the goal's status wash, in place of the persona monogram | none — goals have no read-aloud |
+
+On the goal card her pose carries the goal's `GoalTrackStatus`
+(`goalCompanionPose`): a held gesture for the verdict at a glance and a mood
+for the face, because at 40 pixels the moods alone are a few pixels apart.
+Doing well is a raised thumb (`celebrate` once achieved), on the way back a
+clap, at risk a hand to the cheek, off track palms down — it is all right,
+never a scold — and no data a hand at her ear, listening for news. Until
+the health resolves she stands calm and at ready.
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).

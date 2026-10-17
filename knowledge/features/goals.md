@@ -1622,7 +1622,11 @@ handler would retract it; that wiring is a follow-up.
   filter tabs, consistency heatmap, completion-rate chart) with one
   header-only card per goal (`ui/unified/unified_goal_card.dart`). Cards
   use the same `dsCardSurface`, medium radius and subtle decorative border as
-  the habit rows below them in both light and dark themes. They
+  the habit rows below them in both light and dark themes. With
+  `enable_companion` on, the companion's bust stands in for the persona
+  monogram on the same status wash, her held gesture and mood following
+  the goal's `GoalTrackStatus` (`ui/unified/goal_companion.dart`; the
+  mapping is in [the companion concept](companion.md)). They
   carry a four-pill status vocabulary
   (`ui/unified/unified_goal_status.dart`: On track / At risk / Behind /
   No data, collapsed from `GoalTrackStatus`; `recovering` reads as At

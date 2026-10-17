@@ -7,6 +7,9 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -14,11 +17,15 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
+import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_card.dart';
+import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -139,12 +146,17 @@ void main() {
     GoalProgressView? progressView,
     bool progressFails = false,
     ThemeData? theme,
+    bool companion = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         UnifiedGoalCard(identity: identity('goal-1', 'Fitness')),
         theme: theme,
         overrides: [
+          if (companion)
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(flagName == enableCompanionFlag),
+            ),
           goalAgentHealthProvider(
             'goal-1',
           ).overrideWith((ref) async => agentHealth),
@@ -162,7 +174,14 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    if (companion) {
+      // She ticks for as long as she is mounted: pump frames, never settle.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    } else {
+      await tester.pumpAndSettle();
+    }
   }
 
   for (final theme in [DesignSystemTheme.light(), DesignSystemTheme.dark()]) {
@@ -196,6 +215,86 @@ void main() {
       },
     );
   }
+
+  group('the companion', () {
+    testWidgets('stands in for the persona chip, wearing its status wash, '
+        'while her flag is on', (tester) async {
+      await pump(
+        tester,
+        agentHealth: health(
+          agentId: 'goal-1',
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+        progressView: progress(),
+        companion: true,
+      );
+
+      expect(find.byType(NudgeBannerPersonaChip), findsNothing);
+      final bust = tester.widget<GoalCompanionBust>(
+        find.byType(GoalCompanionBust),
+      );
+      expect(
+        bust.pose,
+        (mood: CompanionMood.bright, gesture: GestureName.thumbs),
+      );
+      final tokens = tester
+          .element(find.byType(GoalCompanionBust))
+          .designTokens;
+      expect(
+        bust.fill,
+        unifiedGoalStatusColor(
+          UnifiedGoalStatus.onTrack,
+          tokens.colors,
+        ).withValues(alpha: SurfaceAlphas.washChip),
+      );
+      // She leads the header, before the goal's name.
+      expect(
+        tester.getRect(find.byType(GoalCompanionBust)).right,
+        lessThan(tester.getRect(find.text('Fitness')).left),
+      );
+    });
+
+    for (final (status, mood, gesture) in [
+      (GoalTrackStatus.atRisk, CompanionMood.busy, GestureName.think),
+      (GoalTrackStatus.offTrack, CompanionMood.frazzled, GestureName.palmsDown),
+      (
+        GoalTrackStatus.insufficientData,
+        CompanionMood.sleepy,
+        GestureName.listen,
+      ),
+    ]) {
+      testWidgets('holds ${gesture.name}, ${mood.name}, on a goal that is '
+          '${status.name}', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          agentHealth: health(agentId: 'goal-1', trackStatus: status),
+          progressView: progress(),
+          companion: true,
+        );
+
+        expect(
+          tester.widget<GoalCompanionBust>(find.byType(GoalCompanionBust)).pose,
+          (mood: mood, gesture: gesture),
+        );
+      });
+    }
+
+    testWidgets('is not shown while her flag is off', (tester) async {
+      await pump(
+        tester,
+        agentHealth: health(
+          agentId: 'goal-1',
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+        progressView: progress(),
+      );
+
+      expect(find.byType(GoalCompanionBust), findsNothing);
+      expect(find.byType(NudgeBannerPersonaChip), findsOneWidget);
+    });
+  });
 
   testWidgets('renders the pill with the folded recovery hint and the '
       'templated summary — and no habit rows', (tester) async {

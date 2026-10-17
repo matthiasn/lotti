@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,10 +10,12 @@ import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_day_marks.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
+import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_strip.dart';
@@ -21,7 +24,9 @@ import 'package:material_ui/material_ui.dart';
 /// One goal on the unified Goals list (design handover "Goals, Unified"
 /// §4.2): header (persona chip · name · status pill with folded recovery
 /// hint · trend chip · 7-day strip), a deterministic templated summary line,
-/// and nothing else.
+/// and nothing else. With the companion on, her bust stands in for the
+/// persona chip, her pose and mood following the goal's track status
+/// ([goalCompanionPose]).
 ///
 /// It used to embed the goal's habit rows as well — glyph, streak chain,
 /// flame count, window fraction, check circle apiece — which spent several
@@ -79,6 +84,8 @@ class UnifiedGoalCard extends ConsumerWidget {
     final color = status == null
         ? tokens.colors.text.lowEmphasis
         : unifiedGoalStatusColor(status, tokens.colors);
+    final companionEnabled =
+        ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
 
     // Same placeholder contract as the agents list: an unresolved strip
     // reserves its footprint with dashed cells, never the filled grey of a
@@ -157,12 +164,25 @@ class UnifiedGoalCard extends ConsumerWidget {
               ),
               placeholder: resolvedDays == null,
             );
-            final leading = NudgeBannerPersonaChip(
-              monogram: NudgeBannerPersonaChip.monogramFor(
-                identity.displayName,
-              ),
-              fill: color.withValues(alpha: SurfaceAlphas.washChip),
-            );
+            final fill = color.withValues(alpha: SurfaceAlphas.washChip);
+            // With the companion on, she is the goal's face in place of the
+            // monogram, and her pose follows its track status.
+            final leading = companionEnabled
+                ? GoalCompanionBust(
+                    key: const ValueKey('goalCompanion'),
+                    pose: goalCompanionPose(
+                      health?.trackStatus,
+                      resolved: healthAsync.hasValue,
+                    ),
+                    fill: fill,
+                    seed: identity.agentId.hashCode,
+                  )
+                : NudgeBannerPersonaChip(
+                    monogram: NudgeBannerPersonaChip.monogramFor(
+                      identity.displayName,
+                    ),
+                    fill: fill,
+                  );
             if (wide) {
               return Row(
                 children: [
