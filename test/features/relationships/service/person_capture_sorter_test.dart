@@ -147,9 +147,12 @@ void main() {
     answers.add(
       () => [
         _call(
-          items([
-            {'kind': 'note', 'text': 'Collects sextants.'},
-          ]),
+          jsonEncode({
+            'oneLiner': 'Pip collects sextants.',
+            'items': [
+              {'kind': 'note', 'text': 'Collects sextants.'},
+            ],
+          }),
         ),
       ],
     );
@@ -163,6 +166,8 @@ void main() {
       (result.items.single as PersonCaptureNote).text,
       'Collects sextants.',
     );
+    expect(result.summary, 'Pip collects sextants.');
+    expect(result.modelId, 'gemini-2.5-flash');
     expect(asked.single.system, personCaptureSortSystemMessage);
     expect(asked.single.categoryId, 'cat-1');
   });

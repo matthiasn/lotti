@@ -103,15 +103,17 @@ void main() {
   late FutureOr<List<ChatCompletionMessageToolCall>> Function() answer;
   late List<String> prompts;
 
-  ChatCompletionMessageToolCall call(List<Map<String, Object?>> items) =>
-      ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: personCaptureSortToolName,
-          arguments: jsonEncode({'items': items}),
-        ),
-      );
+  ChatCompletionMessageToolCall call(
+    List<Map<String, Object?>> items, {
+    String? oneLiner,
+  }) => ChatCompletionMessageToolCall(
+    id: 'call-1',
+    type: ChatCompletionMessageToolCallType.function,
+    function: ChatCompletionMessageFunctionCall(
+      name: personCaptureSortToolName,
+      arguments: jsonEncode({'oneLiner': ?oneLiner, 'items': items}),
+    ),
+  );
 
   final twoItems = [
     {
@@ -140,6 +142,14 @@ void main() {
       () => timeline.addToTimeline(
         personId: any(named: 'personId'),
         entryId: any(named: 'entryId'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => timeline.saveVoiceNoteSummary(
+        audioId: any(named: 'audioId'),
+        summary: any(named: 'summary'),
+        modelId: any(named: 'modelId'),
+        categoryId: any(named: 'categoryId'),
       ),
     ).thenAnswer((_) async => true);
     when(
@@ -276,6 +286,49 @@ void main() {
     expect(find.text('Add a task'), findsOneWidget);
     expect(find.text('Send the draft'), findsOneWidget);
     expect(find.text('File 2 items'), findsOneWidget);
+  });
+
+  testWidgets("the sort's one line is saved as the voice note's summary "
+      'before the review opens; without one nothing is saved', (tester) async {
+    answer = () => [call(twoItems, oneLiner: 'Pip called about the launch.')];
+    await open(tester);
+    await stop(tester);
+
+    verify(
+      () => timeline.saveVoiceNoteSummary(
+        audioId: 'audio-1',
+        summary: 'Pip called about the launch.',
+        modelId: 'gemini-2.5-flash',
+        categoryId: 'cat-1',
+      ),
+    ).called(1);
+    expect(find.text("Here's what I heard"), findsOneWidget);
+  });
+
+  testWidgets('a summary that cannot be saved is logged, and the review '
+      'still opens', (tester) async {
+    answer = () => [call(twoItems, oneLiner: 'Pip called.')];
+    when(
+      () => timeline.saveVoiceNoteSummary(
+        audioId: any(named: 'audioId'),
+        summary: any(named: 'summary'),
+        modelId: any(named: 'modelId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenThrow(StateError('database locked'));
+    await open(tester);
+    await stop(tester);
+
+    expect(find.text("Here's what I heard"), findsOneWidget);
+    verify(
+      () => logger.error(
+        LogDomain.general,
+        any<Object>(),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'PersonCaptureSheet',
+        message: any<String>(named: 'message'),
+      ),
+    ).called(1);
   });
 
   testWidgets('Save files exactly the accepted items and closes', (

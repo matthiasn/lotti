@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/ai_response_type.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -151,6 +153,33 @@ class PersonTimelineRepository {
       ids,
       types: personTimelineEntryTypes,
     );
+  }
+
+  /// Saves [summary] as voice note [audioId]'s audio summary, written by
+  /// [modelId]: the line its timeline row leads with. It is an ordinary
+  /// audio summary — linked from the recording, so it shares its privacy and
+  /// sits where every reader of a recording's summary looks, newest first.
+  /// Answers whether it was written.
+  Future<bool> saveVoiceNoteSummary({
+    required String audioId,
+    required String summary,
+    required String modelId,
+    String? categoryId,
+  }) async {
+    final created = await _persistenceLogic.createAiResponseEntry(
+      data: AiResponseData(
+        model: modelId,
+        systemMessage: '',
+        prompt: '',
+        thoughts: '',
+        response: summary,
+        oneLiner: summary,
+        type: AiResponseType.audioSummary,
+      ),
+      linkedId: audioId,
+      categoryId: categoryId,
+    );
+    return created != null;
   }
 
   /// Whether [entryId] is on [personId]'s timeline: a live

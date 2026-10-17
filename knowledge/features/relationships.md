@@ -2642,7 +2642,15 @@ stateDiagram-v2
   no one.
 - **Words.** `CheckInTranscriptionService` transcribes it, with the person's
   names corrected. The transcript becomes the voice note's own words
-  (`entryText`), which is what its timeline row shows.
+  (`entryText`).
+- **Its line on the timeline.** A voice note's row
+  ([`PersonVoiceNoteWords`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart))
+  leads with the recording's newest audio summary (`audioSummaryOneLiner`),
+  else the first three lines of the transcript, and opens to the whole
+  transcript in place with *Show more*. The sort writes that summary: the
+  tool's `oneLiner`, saved as an ordinary audio-summary response linked from
+  the recording (`saveVoiceNoteSummary`) before the review opens, so it
+  stands whatever the review does — and costs no second model call.
 - **Sort.** `PersonCaptureSorter`
   ([person_capture_sorter.dart](../../lib/features/relationships/service/person_capture_sorter.dart))
   makes one forced call to the `sort_person_capture` tool

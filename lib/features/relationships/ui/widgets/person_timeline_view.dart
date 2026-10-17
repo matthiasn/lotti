@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/components/empty_states/design_syst
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
+import 'package:lotti/features/journal/state/entry_summary_providers.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
@@ -361,18 +362,26 @@ class PersonTimelineRow extends StatelessWidget {
         ),
         tailStyle: metaStyle,
       ),
-      body: text == null || text.isEmpty
-          ? null
-          : Text(
-              text,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: row.pending
-                  ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
-                  : tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-            ),
+      body: switch (item) {
+        // A voice note leads with its summary, and opens to its words.
+        final TimelineVoiceNote voice when !row.pending => PersonVoiceNoteWords(
+          audio: voice.audio,
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        _ when text == null || text.isEmpty => null,
+        _ => Text(
+          text,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: row.pending
+              ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
+              : tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+        ),
+      },
       footer: row.footer,
       // Words to sort, a way to sort them: a voice note is what a capture
       // stays when it was not filed, and this files it later. Beside the
@@ -417,6 +426,90 @@ class PersonTimelineRow extends StatelessWidget {
     final to = event.meta.dateTo;
     final start = relationshipTimestampLabelOf(context, from, now: now);
     return to.isAfter(from) ? '$start – ${relationshipTimeLabel(to)}' : start;
+  }
+}
+
+/// A voice note's words on its timeline row: the recording's summary when
+/// one was written (the newest audio summary's one-liner), else the first
+/// three lines of what was said — and, when there is more, *Show more* to
+/// read the whole transcript in place, *Show less* to fold it again. A
+/// minute of speech set out in full made every voice note the longest row
+/// on the page.
+class PersonVoiceNoteWords extends ConsumerStatefulWidget {
+  const PersonVoiceNoteWords({
+    required this.audio,
+    required this.style,
+    super.key,
+  });
+
+  final JournalAudio audio;
+  final TextStyle style;
+
+  @override
+  ConsumerState<PersonVoiceNoteWords> createState() =>
+      _PersonVoiceNoteWordsState();
+}
+
+class _PersonVoiceNoteWordsState extends ConsumerState<PersonVoiceNoteWords> {
+  static const _foldedLines = 3;
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final transcript = widget.audio.entryText?.plainText.trim() ?? '';
+    final summary = audioSummaryOneLiner(ref, widget.audio.meta.id);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // More to read when there is a summary in front of the words, or
+        // when the words run past the fold.
+        final overflows =
+            summary != null ||
+            (TextPainter(
+              text: TextSpan(text: transcript, style: widget.style),
+              maxLines: _foldedLines,
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
+        final words = _expanded ? transcript : (summary ?? transcript);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              words,
+              key: ValueKey('person-voice-note-words-${widget.audio.meta.id}'),
+              maxLines: _expanded ? null : _foldedLines,
+              overflow: _expanded ? null : TextOverflow.ellipsis,
+              style: widget.style,
+            ),
+            if (overflows)
+              DsQuietInk(
+                key: ValueKey('person-voice-note-more-${widget.audio.meta.id}'),
+                onTap: () => setState(() => _expanded = !_expanded),
+                builder: (context, highlighted) => Semantics(
+                  button: true,
+                  expanded: _expanded,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step1),
+                    child: Text(
+                      _expanded
+                          ? messages.timelineShowLess
+                          : messages.timelineShowMore,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: highlighted
+                            ? tokens.colors.interactive.hover
+                            : tokens.colors.interactive.enabled,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
   }
 }
 

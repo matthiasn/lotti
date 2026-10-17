@@ -33,7 +33,7 @@ void main() {
   PersonCaptureSort sort(
     PersonCaptureSortOutcome outcome, [
     List<PersonCaptureItem> items = const [],
-  ]) => (outcome: outcome, items: items);
+  ]) => (outcome: outcome, items: items, summary: null, modelId: null);
 
   final table = <(String, PersonCapturePhase, PersonCaptureEvent, String)>[
     (

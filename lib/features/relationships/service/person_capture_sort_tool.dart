@@ -11,6 +11,7 @@ const personCaptureSortToolName = 'sort_person_capture';
 /// Wire argument names for [personCaptureSortToolName]: the JSON keys the
 /// model emits.
 abstract final class PersonCaptureSortToolArgs {
+  static const oneLiner = 'oneLiner';
   static const items = 'items';
   static const kind = 'kind';
   static const interactionType = 'interactionType';
@@ -42,6 +43,17 @@ const _maxProse = 2000;
 const _maxLine = 160;
 const _maxTopics = 5;
 
+/// The longest the capture's one-line summary may run.
+const personCaptureOneLinerMaxChars = 140;
+
+/// What a sort call published: the capture's one-line `summary` — the voice
+/// note's label on the timeline — or null when the model gave none, and the
+/// `items` to review.
+typedef PersonCaptureSortResult = ({
+  String? summary,
+  List<PersonCaptureItem> items,
+});
+
 /// A tool call that cannot be read as a sorted capture at all. The reason
 /// names what was wrong with its shape, never its content, so it is safe to
 /// log and to tell the model.
@@ -65,6 +77,14 @@ const ChatCompletionTool personCaptureSortTool = ChatCompletionTool(
     parameters: {
       'type': 'object',
       'properties': {
+        PersonCaptureSortToolArgs.oneLiner: {
+          'type': 'string',
+          'description':
+              'ONE plain sentence, at most $personCaptureOneLinerMaxChars '
+              'characters, saying what the whole capture is about, in the '
+              'language spoken. It labels the recording on the timeline of '
+              'the person it is about. No markdown, no leading label.',
+        },
         PersonCaptureSortToolArgs.items: {
           'type': 'array',
           'maxItems': personCaptureMaxItems,
@@ -150,7 +170,10 @@ const ChatCompletionTool personCaptureSortTool = ChatCompletionTool(
           },
         },
       },
-      'required': [PersonCaptureSortToolArgs.items],
+      'required': [
+        PersonCaptureSortToolArgs.oneLiner,
+        PersonCaptureSortToolArgs.items,
+      ],
       'additionalProperties': false,
     },
   ),
@@ -165,8 +188,10 @@ ChatCompletionToolChoiceOption? personCaptureSortToolChoiceFor(
   toolName: personCaptureSortToolName,
 );
 
-/// Decodes the [personCaptureSortToolName] call out of [toolCalls] into at
-/// most [personCaptureMaxItems] items.
+/// Decodes the [personCaptureSortToolName] call out of [toolCalls] into the
+/// capture's one-line summary and at most [personCaptureMaxItems] items.
+/// A missing or blank summary is null, never a reason to retry: the items
+/// are what the review needs.
 ///
 /// Throws [PersonCaptureSortToolException] only when the call as a whole is
 /// unreadable — missing, not JSON, no item list — which is worth one retry.
@@ -175,7 +200,7 @@ ChatCompletionToolChoiceOption? personCaptureSortToolChoiceFor(
 /// without a title, an unknown kind) is dropped, and a field that fails its
 /// check — a date that does not round-trip, a length out of range — is
 /// dropped from its item, never the item with it.
-List<PersonCaptureItem> parsePersonCaptureSortToolCall(
+PersonCaptureSortResult parsePersonCaptureSortToolCall(
   List<ChatCompletionMessageToolCall> toolCalls,
 ) {
   final call = toolCalls
@@ -199,10 +224,19 @@ List<PersonCaptureItem> parsePersonCaptureSortToolCall(
   if (items is! List) {
     throw const PersonCaptureSortToolException('items is not a list');
   }
-  return [
-    for (final raw in items)
-      if (raw is Map<String, dynamic>) ?_item(raw),
-  ].take(personCaptureMaxItems).toList();
+  final oneLiner = decoded[PersonCaptureSortToolArgs.oneLiner];
+  final summary = oneLiner is String ? oneLiner.trim() : '';
+  return (
+    summary: summary.isEmpty
+        ? null
+        : summary.length > personCaptureOneLinerMaxChars
+        ? summary.substring(0, personCaptureOneLinerMaxChars).trim()
+        : summary,
+    items: [
+      for (final raw in items)
+        if (raw is Map<String, dynamic>) ?_item(raw),
+    ].take(personCaptureMaxItems).toList(),
+  );
 }
 
 List<String> _topics(Object? raw) {

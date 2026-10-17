@@ -38,6 +38,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -65,6 +66,7 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/clipboard_images.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/journal_image_resolver.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -327,6 +329,16 @@ class _StubContactsService implements ContactsService {
 
 /// Opens a modal on a bare host, so a sheet can be captured in the same shell
 /// the app opens it in rather than as a detached widget.
+/// Serves fixed linked responses: the summary a capture's sort wrote.
+class _FixedResponses extends LinkedAiResponsesController {
+  _FixedResponses(super.entryId, this.responses);
+
+  final List<AiResponseEntry> responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => responses;
+}
+
 class _ModalHost extends StatelessWidget {
   const _ModalHost({required this.open});
 
@@ -660,7 +672,11 @@ void main() {
       entryText: const EntryText(
         plainText:
             'Pip mentioned the crew wants a proper send-off after the '
-            'launch. Worth offering to organise it.',
+            'launch. Worth offering to organise it. They were thinking of '
+            'the ice garden, maybe the Saturday after, with the whole pad-3 '
+            'crew and the families. Pip would like a short speech but does '
+            'not want to give it. Ask Skua whether the hangar is free that '
+            'evening, and whether we can borrow the long tables again.',
       ),
     ),
     buildJournalImage(
@@ -918,6 +934,30 @@ void main() {
     ),
     contactsServiceProvider.overrideWithValue(_StubContactsService(contacts)),
     contactRefKeyProvider.overrideWith((ref) async => 'ios:capture-host'),
+    // Pip's voice note carries the summary a sort wrote for it.
+    linkedAiResponsesControllerProvider('pip-voice-note').overrideWith(
+      () => _FixedResponses('pip-voice-note', [
+        JournalEntity.aiResponse(
+              meta: Metadata(
+                id: 'pip-voice-note-summary',
+                createdAt: _now,
+                updatedAt: _now,
+                dateFrom: _now,
+                dateTo: _now,
+              ),
+              data: const AiResponseData(
+                model: 'glm-5.2',
+                systemMessage: '',
+                prompt: '',
+                thoughts: '',
+                response: 'The crew wants a send-off after the launch.',
+                oneLiner: 'The crew wants a send-off after the launch.',
+                type: AiResponseType.audioSummary,
+              ),
+            )
+            as AiResponseEntry,
+      ]),
+    ),
     agentReportProvider(agentId).overrideWith((ref) async => report),
     agentStateProvider(agentId).overrideWith((ref) async => state),
     agentIsRunningProvider(
@@ -2169,6 +2209,7 @@ void main() {
                 function: ChatCompletionMessageFunctionCall(
                   name: personCaptureSortToolName,
                   arguments: jsonEncode({
+                    'oneLiner': 'Pip called about the launch countdown.',
                     'items': [
                       {
                         'kind': 'checkIn',

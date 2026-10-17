@@ -19,6 +19,9 @@ ChatCompletionMessageToolCall _call({
   ),
 );
 
+List<PersonCaptureItem> sortItems(List<ChatCompletionMessageToolCall> calls) =>
+    parsePersonCaptureSortToolCall(calls).items;
+
 void main() {
   String rejection(List<ChatCompletionMessageToolCall> calls) {
     try {
@@ -51,7 +54,7 @@ void main() {
   });
 
   test('reads every kind, trimmed, with its checked fields', () {
-    final items = parsePersonCaptureSortToolCall([
+    final items = sortItems([
       _call(
         items: [
           {
@@ -90,7 +93,7 @@ void main() {
   });
 
   test('a note keeps its words', () {
-    final items = parsePersonCaptureSortToolCall([
+    final items = sortItems([
       _call(
         items: [
           {'kind': 'note', 'text': ' Collects brass sextants. '},
@@ -105,7 +108,7 @@ void main() {
   });
 
   test('a field that fails its check drops, never the item', () {
-    final items = parsePersonCaptureSortToolCall([
+    final items = sortItems([
       _call(
         items: [
           {
@@ -140,7 +143,7 @@ void main() {
 
   test('an item without the words it is about, or of no known kind, '
       'drops; at most three are kept', () {
-    final items = parsePersonCaptureSortToolCall([
+    final items = sortItems([
       _call(
         items: [
           {'kind': 'checkIn', 'summary': '  '},
@@ -164,7 +167,7 @@ void main() {
   });
 
   test('over-long words are cut to their field', () {
-    final items = parsePersonCaptureSortToolCall([
+    final items = sortItems([
       _call(
         items: [
           {'kind': 'task', 'title': 'x' * 400},
@@ -181,6 +184,36 @@ void main() {
     expect((items[0] as PersonCaptureTask).title.length, 160);
     expect((items[1] as PersonCaptureNote).text.length, 2000);
     expect((items[2] as PersonCaptureCheckIn).topics.single.length, 160);
+  });
+
+  test("the capture's one line is read, trimmed and cut to its length; "
+      'missing or blank it is none, and the items still stand', () {
+    String? summary(Object? oneLiner) => parsePersonCaptureSortToolCall([
+      _call(
+        arguments: jsonEncode({
+          'oneLiner': ?oneLiner,
+          'items': [
+            {'kind': 'note', 'text': 'Sextants.'},
+          ],
+        }),
+      ),
+    ]).summary;
+
+    expect(summary('  Pip collects sextants.  '), 'Pip collects sextants.');
+    expect(summary('x' * 400)!.length, personCaptureOneLinerMaxChars);
+    expect(summary('   '), isNull);
+    expect(summary(7), isNull);
+    expect(summary(null), isNull);
+    expect(
+      parsePersonCaptureSortToolCall([
+        _call(
+          items: const [
+            {'kind': 'note', 'text': 'Sextants.'},
+          ],
+        ),
+      ]).items,
+      hasLength(1),
+    );
   });
 
   test('the tool is pinned for models that honour a pin', () {

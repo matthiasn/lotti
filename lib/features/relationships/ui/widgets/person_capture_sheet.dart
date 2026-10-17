@@ -165,6 +165,7 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
   Future<void> _sort() async {
     final phase = _phase;
     if (phase is! PersonCaptureSorting) return;
+    final timeline = ref.read(personTimelineRepositoryProvider);
     final sort = await ref
         .read(personCaptureSorterProvider)
         .sort(
@@ -172,6 +173,22 @@ class _PersonCaptureFlowViewState extends ConsumerState<PersonCaptureFlowView> {
           transcript: phase.transcript,
           now: clock.now(),
         );
+    // The one line the sort wrote is the voice note's label on the timeline,
+    // whatever the review does next: saved before it opens.
+    final summary = sort.summary;
+    final modelId = sort.modelId;
+    if (summary != null && modelId != null) {
+      try {
+        await timeline.saveVoiceNoteSummary(
+          audioId: phase.audioId,
+          summary: summary,
+          modelId: modelId,
+          categoryId: widget.person.meta.categoryId,
+        );
+      } catch (error, stackTrace) {
+        _log(error, stackTrace);
+      }
+    }
     _go(PersonCaptureSortedAs(sort));
   }
 
