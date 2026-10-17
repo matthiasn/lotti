@@ -293,10 +293,10 @@ packages:
     dependency: "direct main"
     description:
       name: camera_desktop
-      sha256: "4070ab1e2422c293a3d21a48b8bc361e0e1ce1682f404088b21ef414b921d4aa"
+      sha256: "280ce2b335f3a6d2bd4345c9906697d86de40065d52cd6090df28a8b52b32304"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.2"
+    version: "2.0.0"
   camera_platform_interface:
     dependency: "direct dev"
     description:
@@ -394,7 +394,7 @@ packages:
     source: hosted
     version: "1.1.3"
   code_assets:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: code_assets
       sha256: "828110d598123b5ea96c00c9f3c72105bf79f8ee36c20a39b26209ade421ec57"
@@ -413,10 +413,10 @@ packages:
     dependency: "direct main"
     description:
       name: connectivity_plus
-      sha256: "762c99f890ca8bf87f7337236f99edd42793843bc6c3631da294a76653a54bd0"
+      sha256: d7749fd36d8b404a4935612b94eca7c3ce3705377ab678e24ff2a4301436f741
       url: "https://pub.dev"
     source: hosted
-    version: "7.3.1"
+    version: "7.3.2"
   connectivity_plus_platform_interface:
     dependency: transitive
     description:
@@ -565,10 +565,10 @@ packages:
     dependency: "direct main"
     description:
       name: dbus
-      sha256: a48d5da28e89bd02196e80d81ed8d7954923d00a0f4a68cc20b575038f023383
+      sha256: f7db8504e715b835f5ebe5fe74604ccd961d504c73389a5d8e81bafc2e2f3612
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.15"
+    version: "0.8.0"
   dcli:
     dependency: transitive
     description:
@@ -1170,10 +1170,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_scene
-      sha256: "1cc32b5ed0d05296c1f7958e63168a750c05c2373d6769ad9b9eaa973b2f97fe"
+      sha256: "6d2a4acb76307b2cf45a6e458fdf61c6bcf02693514656433e5ae67eda9d4056"
       url: "https://pub.dev"
     source: hosted
-    version: "0.23.0"
+    version: "0.24.3"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -1401,10 +1401,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: e3cb3ee6b47fd2472c23de6da5744796a4da195137759ddb3fbcc9467b7b3c7d
+      sha256: fdbbfbbb1a62f376ab29fa9627561d389751fb984da0b630ce3326e272911c8a
       url: "https://pub.dev"
     source: hosted
-    version: "8.2.1"
+    version: "9.0.0"
   gpt_markdown:
     dependency: "direct main"
     description:
@@ -1814,10 +1814,10 @@ packages:
     dependency: "direct main"
     description:
       name: lucide_icons_flutter
-      sha256: d350446fb7a7ab3ef8550e3cb5aab72f4e9da54d54111244ab09489bb8a2a1ff
+      sha256: d2a7db37aa98536dc65bd6b4384aaa12baa94423a7a57b186011cf695ec2beb2
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.25"
+    version: "4.0.0"
   markdown:
     dependency: transitive
     description:
@@ -1854,10 +1854,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "3ac935337962776a730035ca6c059fb2b27c3a535ebd1491d6b4f8226d98d04f"
+      sha256: "5c7afb10467790769c87285545eb2de79c40696dcc1f4fe515b63c69674671da"
       url: "https://pub.dev"
     source: hosted
-    version: "12.0.1"
+    version: "14.1.0"
   media_kit:
     dependency: "direct main"
     description:
@@ -1971,13 +1971,13 @@ packages:
     source: hosted
     version: "0.8.0"
   native_toolchain_c:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: native_toolchain_c
-      sha256: "9d233b6f2d9c52e1a2b5fbe70451d2c10ac674d3bb419d0ec8de14989d437c26"
+      sha256: "90eaad8059ebc2004a63810a4696ea9acdb02473e47ed3b6b3bafb100ac77e31"
       url: "https://pub.dev"
     source: hosted
-    version: "0.19.4"
+    version: "0.19.5"
   nested:
     dependency: transitive
     description:
@@ -1990,10 +1990,10 @@ packages:
     dependency: transitive
     description:
       name: nm
-      sha256: "2c9aae4127bdc8993206464fcc063611e0e36e72018696cd9631023a31b24254"
+      sha256: "2ae480aa3379716b8bb58dfebb168e2919394c92b629efaaa0baaa5d140786e6"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0"
+    version: "0.6.0"
   node_preamble:
     dependency: transitive
     description:
@@ -2559,10 +2559,10 @@ packages:
     dependency: transitive
     description:
       name: scene
-      sha256: f14dd23ea3858041b644ec4824eca5cae817b42aca03c5ed2efcf1afa003d554
+      sha256: "2e80649db2f492eed634a656efb924b43ec8b02a985f92a21d86ab2591583f30"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.4.1"
   scope:
     dependency: transitive
     description:

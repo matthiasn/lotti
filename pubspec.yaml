@@ -25,7 +25,7 @@ dependencies:
   beamer: ^1.7.0
   cached_network_image: ^4.0.4
   camera: ^0.12.1
-  camera_desktop: ^1.2.2
+  camera_desktop: ^2.0.0
   clock: ^1.1.3
   collection: ^1.19.1
   connectivity_plus: ^7.3.1
@@ -33,7 +33,7 @@ dependencies:
   crypto: ^3.0.7
   cupertino_ui: ^1.1.3
   dart_geohash: ^2.1.0
-  dbus: ^0.7.15
+  dbus: ^0.8.0
   delta_markdown:
     git:
       url: https://github.com/matthiasn/delta_markdown.git
@@ -70,7 +70,7 @@ dependencies:
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^3.4.3
-  flutter_scene: ^0.23.0
+  flutter_scene: ^0.24.3
   flutter_secure_storage: ^10.3.4
   flutter_svg: ^2.3.0
   flutter_vodozemac: ^0.8.1
@@ -86,7 +86,7 @@ dependencies:
   geolocator_platform_interface: ^4.4.0
   get_it: ^9.3.0
   glass_kit: ^4.0.2
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
   gpt_markdown: ^1.3.4
   health: ^13.3.1
   http: ^1.6.0
@@ -97,9 +97,9 @@ dependencies:
   json_schema_builder: ^0.1.7
   just_waveform: ^0.0.7
   latlong2: ^0.10.1
-  lucide_icons_flutter: ^3.1.25
+  lucide_icons_flutter: ^4.0.0
   material_ui: ^1.7.0
-  matrix: ^12.0.1
+  matrix: ^14.1.0
   media_kit: ^1.2.6
   media_kit_libs_audio: ^1.0.7
   meta: ^1.19.0
@@ -150,12 +150,6 @@ dependency_overrides:
   # json_serializable >=6.13.2 requires analyzer >=10, while
   # objectbox_generator 5.x currently caps analyzer below 11.
   analyzer_plugin: '>=0.14.0 <0.14.5'
-  # flutter_scene 0.23 pins code_assets ^1.2.1, which would downgrade the
-  # native-assets toolchain for everyone else. Its build hook compiles fine
-  # against 2.x (verified by a full Linux build), so keep the toolchain
-  # current (with the matching native_toolchain_c below). Re-check on every
-  # flutter_scene bump.
-  code_assets: ^2.0.0
   # health >=13.2.0 requires device_info_plus ^12.1.0, while
   # super_native_extensions 0.9.1 still caps it below 12.0.0.
   device_info_plus: ^12.1.0
@@ -164,8 +158,6 @@ dependency_overrides:
   # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
   flutter_onnxruntime:
     path: third_party/flutter_onnxruntime
-  # Partner of the code_assets override above (0.19.4 needs code_assets 2.x).
-  native_toolchain_c: 0.19.4
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
   # See: https://github.com/flutter/flutter/issues/178915
   path_provider_foundation: 2.5.1

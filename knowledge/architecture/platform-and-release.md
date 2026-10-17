@@ -52,7 +52,7 @@ sources:
 | Linux | Flatpak (Flathub), AppImage and tarball on GitHub Releases |
 | Windows | MSIX |
 
-The Flutter SDK is **pinned in `.fvmrc`** (currently 3.47.0). *Locally*, every
+The Flutter SDK is **pinned in `.fvmrc`** (currently 3.47.7). *Locally*, every
 command is expected to run through FVM — `fvm flutter …`, `fvm dart …`. CI does
 not use that prefix: each provider selects the pinned SDK for the build machine
 and then invokes bare `flutter` and `dart`. The pin is honoured by SDK
@@ -74,7 +74,7 @@ written down. Most consumers follow it automatically; one does not:
 | [`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`](../../flatpak/com.matthiasn.lotti.flatpak-flutter.yml) | **No — hand-edit the Flutter `tag:`**, but CI fails if you forget |
 
 So a Flutter bump updates `.fvmrc`, the legacy FVM config, the VS Code SDK path,
-and the Flatpak manifest's Flutter `tag:`. All four currently read 3.47.0.
+and the Flatpak manifest's Flutter `tag:`. All four currently read 3.47.7.
 
 The manifest keeps a literal tag on purpose. Flathub builds from the committed
 file and reviewers read it, so deriving the tag at build time would make the
