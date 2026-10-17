@@ -1,6 +1,7 @@
 # Paid sync via web checkout (Paddle) — plan
 
-**Status:** in progress — backend, signing, production stack and app flow land together
+**Status:** implemented (M1–M4); M0 and M5 — Paddle account, legal pages,
+production key and domains — are the operator's, see §10
 **Date:** 2026-10-17
 **Supersedes:** the provider recommendation in
 [2026-08-07_matrix_provisioning_platform.md §7](2026-08-07_matrix_provisioning_platform.md#7-payment-providers)
@@ -180,3 +181,49 @@ localparts are derived from the random entitlement id.
 - [Polar fees](https://polar.sh/docs/merchant-of-record/fees) ·
   [Creem payment methods](https://docs.creem.io/merchant-of-record/finance/payment-methods) ·
   [Dodo payment methods](https://docs.dodopayments.com/features/payment-methods)
+
+## 10. What shipped, and what is left
+
+Built in this change:
+
+- **M1** Paddle adapter: `provider` column on the shared subscription table,
+  checkout sessions that name a plan (`monthly`/`annual`) resolved to Paddle
+  prices server-side, signed and idempotent webhooks, a cheap session-status
+  poll keyed by the session id, the web claim route, the portal link, and
+  Paddle refresh in the reconciler.
+- **M2** Ed25519-signed v3 bundles (server signing, app verification before
+  the session is touched, attestation carried into every handover and kept in
+  `MatrixConfig`).
+- **M3** `services/docker-compose.sync-prod.yml`, hardened Synapse template,
+  host-nginx site, static checkout pages and the
+  [runbook](../../services/sync-deploy/README.md); all three validated against
+  the real tools. Admin calls use an internal Synapse URL
+  (`MATRIX_ADMIN_API_URL`) while bundles keep the public one.
+- **M4** In-app *Get Lotti Sync* → browser checkout → automatic import, the
+  rotation proof retried until confirmed, and *Manage subscription*.
+- Lapsed-account erasure after 30 days of suspension.
+
+Changes from the plan above, made while building:
+
+- The app sends a plan name, not a price id, so sandbox and live prices never
+  reach a build.
+- The app polls a dedicated session-status route rather than the claim route:
+  the claim route is behind a 10-per-15-minutes scrypt quota.
+- The rotation proof is saved before the password rotates and retried from the
+  Devices page, because the claim reaper deactivates an unconfirmed account
+  after 24 hours.
+
+Left for the operator before the first payment:
+
+1. Paddle account, catalog, notification destination; legal pages on the
+   approved domain (legal seller still to be decided).
+2. Deploy per the runbook; choose the three hostnames.
+3. Build Flathub/AppImage/APK with `--dart-define=LOTTI_SYNC_API_URL=…`
+   (Play and TestFlight builds additionally `LOTTI_WEB_CHECKOUT=false`). Until
+   then the subscribe entry is absent from every build.
+4. Generate the production signing key, put its public half and the
+   homeserver into `kLottiSyncBundleTrust`, ship that release, then set
+   `BUNDLE_SIGNING_KEY_*` on the server.
+5. A `changelog.d` fragment goes with the release that sets the API URL —
+   the first build in which a user can see the feature.
+
