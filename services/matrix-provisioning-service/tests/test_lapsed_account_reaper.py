@@ -146,3 +146,20 @@ async def test_run_once_reaps(repository, admin):
     await reaper_for(repository, admin).run_once()
 
     assert len(admin.calls) == 3
+
+
+async def test_a_failed_claim_does_not_stop_the_batch(repository, admin, monkeypatch):
+    first = await paid_account(repository, "first", suspended_at=NOW - timedelta(days=40))
+    second = await paid_account(repository, "second", suspended_at=NOW - timedelta(days=35))
+    claim = repository.claim_erasure
+
+    async def locked_for_first(bundle_id, **kwargs):
+        if bundle_id == first.bundle_id:
+            raise RuntimeError("database is locked")
+        return await claim(bundle_id, **kwargs)
+
+    monkeypatch.setattr(repository, "claim_erasure", locked_for_first)
+
+    assert await reaper_for(repository, admin).reap_once() == 1
+
+    assert {call[1] for call in admin.calls if call[0] != "delete_room"} == {second.user_mxid}

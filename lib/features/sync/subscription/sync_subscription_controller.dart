@@ -121,12 +121,19 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
     if (sessionId == null) {
       // The session can be gone while the payment is not: a connect that
       // failed, or a checkout paid after its session timed out. The claim
-      // needs no session, so a device that does not sync yet, or still owes
-      // a rotation proof, asks for it; unpaid simply means nothing to resume.
-      if (record.pendingProof != null ||
-          !ref.read(matrixServiceProvider).isLoggedIn()) {
-        await _guarded(() => _claimAndConnect(record, quietIfUnpaid: true));
+      // needs no session. A device that already syncs only finishes the
+      // rotation proof it owes — reclaiming would log its live session out
+      // for a bootstrap credential it already rotated. A device that does
+      // not sync yet claims; unpaid simply means nothing to resume.
+      if (ref.read(matrixServiceProvider).isLoggedIn()) {
+        if (record.pendingProof != null) {
+          await _guarded(
+            () => ref.read(rotationConfirmerProvider).confirmPending(),
+          );
+        }
+        return;
       }
+      await _guarded(() => _claimAndConnect(record, quietIfUnpaid: true));
       return;
     }
     try {

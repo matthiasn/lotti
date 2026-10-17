@@ -134,18 +134,9 @@ class WebCheckoutService:
         ):
             # A second checkout would bill twice; the app claims instead.
             raise AlreadySubscribedException("This entitlement already has a subscription")
-        open_session = await self._repository.get_open_checkout_session(
-            entitlement_id,
-            price_id=price_id,
-            now=now,
-        )
-        if open_session is not None:
-            # A retry reuses the payable session rather than minting a second
-            # one a still-open browser tab could also complete.
-            return self._created(open_session)
         if len(claim_secret) < 32:
             raise BundleClaimConflictException("Claim secret is too short")
-        session = CheckoutSession(
+        candidate = CheckoutSession(
             session_id=secrets.token_urlsafe(24),
             entitlement_id=entitlement_id,
             claim_secret_hash=await asyncio.to_thread(self._secret_hasher.hash, claim_secret),
@@ -155,8 +146,9 @@ class WebCheckoutService:
             bound_at=None,
             created_at=now,
         )
-        await self._repository.create_checkout_session(session)
-        return self._created(session)
+        # A retry reuses the payable session rather than minting a second one
+        # a still-open browser tab could also complete.
+        return self._created(await self._repository.open_checkout_session(candidate))
 
     def _created(self, session: CheckoutSession) -> CreatedCheckoutSession:
         # A fragment never reaches a server log, so the session id stays

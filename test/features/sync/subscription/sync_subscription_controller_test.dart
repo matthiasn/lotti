@@ -539,23 +539,44 @@ void main() {
       });
     });
 
-    test('a proof still owed retries the connect', () {
+    const owed = PendingRotationProof(
+      bundleId: 'b-1',
+      roomId: '!room:example.com',
+      challenge: 'challenge',
+    );
+
+    test('a syncing device that owes a proof only confirms it', () {
       fakeAsync((async) {
-        bench.seed(
-          sessionless.withPendingProof(
-            const PendingRotationProof(
-              bundleId: 'b-1',
-              roomId: '!room:example.com',
-              challenge: 'challenge',
-            ),
-          ),
+        bench.seed(sessionless.withPendingProof(owed));
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+
+        // The live session is never logged out for the spent bootstrap code.
+        expect(bench.provisioning.configured, isEmpty);
+        verifyNever(
+          () => bench.api.claim(any(), claimSecret: any(named: 'claimSecret')),
         );
+        verify(
+          () => bench.api.confirmRotation(
+            any(),
+            claimSecret: 'claim-secret',
+            bundleId: 'b-1',
+          ),
+        ).called(1);
+        expect(bench.record!.containsKey('pendingProof'), isFalse);
+      });
+    });
+
+    test('a device whose connect failed retries it', () {
+      fakeAsync((async) {
+        when(bench.matrix.isLoggedIn).thenReturn(false);
+        bench.seed(sessionless.withPendingProof(owed));
 
         unawaited(bench.controller.resume());
         async.flushMicrotasks();
 
         expect(bench.provisioning.configured, [_bundle]);
-        expect(bench.state, isA<SyncSubscribeDone>());
       });
     });
 

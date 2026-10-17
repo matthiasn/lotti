@@ -178,6 +178,15 @@ class PaddleSubscriptionService:
             # change): leave the stored row alone, so its deadline still
             # fails closed, rather than grant access on an unknown plan.
             logger.warning("Paddle subscription moved to an unknown price; not refreshed")
+            now = self._now_provider()
+            # Due again only at the normal interval, so the row cannot keep the
+            # reconciler's batch busy with a refresh that will change nothing.
+            await self._repository.record_subscription_error(
+                stored.token_fingerprint,
+                last_error="Paddle reports a price this service does not sell",
+                now=now,
+                next_reconciliation_at=now + self._reconciliation_interval,
+            )
             return
         now = self._now_provider()
         await self._store(

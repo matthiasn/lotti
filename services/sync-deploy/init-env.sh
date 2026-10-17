@@ -17,20 +17,43 @@ if [[ -e "$target" ]]; then
   exit 1
 fi
 
+# Generated before anything is written: a failed openssl call must stop the
+# script, not leave a file with an empty secret that a re-run then refuses
+# to replace.
+secret() {
+  local value
+  value="$(openssl rand "$@")"
+  if [[ -z "$value" ]]; then
+    echo "openssl rand produced nothing" >&2
+    exit 1
+  fi
+  printf '%s' "$value"
+}
+db_password="$(secret -hex 24)"
+macaroon_secret="$(secret -hex 32)"
+form_secret="$(secret -hex 32)"
+registration_secret="$(secret -hex 32)"
+api_key="$(secret -hex 32)"
+admin_api_key="$(secret -hex 32)"
+escrow_key="$(secret -base64 32)"
+binding_key="$(secret -base64 32)"
+
 install -d -m 0700 "$(dirname "$target")"
 umask 077
-cat > "$target" <<EOF
+staging="$(mktemp "$(dirname "$target")/.sync.env.XXXXXX")"
+trap 'rm -f "$staging"' EXIT
+cat > "$staging" <<EOF
 SYNAPSE_SERVER_NAME=${server_name}
 MATRIX_PUBLIC_BASEURL=https://matrix.${server_name}
-SYNAPSE_DB_PASSWORD=$(openssl rand -hex 24)
-SYNAPSE_MACAROON_SECRET=$(openssl rand -hex 32)
-SYNAPSE_FORM_SECRET=$(openssl rand -hex 32)
-SYNAPSE_REGISTRATION_SECRET=$(openssl rand -hex 32)
-API_KEY=$(openssl rand -hex 32)
-ADMIN_API_KEY=$(openssl rand -hex 32)
+SYNAPSE_DB_PASSWORD=${db_password}
+SYNAPSE_MACAROON_SECRET=${macaroon_secret}
+SYNAPSE_FORM_SECRET=${form_secret}
+SYNAPSE_REGISTRATION_SECRET=${registration_secret}
+API_KEY=${api_key}
+ADMIN_API_KEY=${admin_api_key}
 SUBSCRIPTION_ENCRYPTION_KEY_ID=escrow-$(date +%Y-%m)
-SUBSCRIPTION_ENCRYPTION_KEY_BASE64=$(openssl rand -base64 32)
-ACCOUNT_BINDING_KEY_BASE64=$(openssl rand -base64 32)
+SUBSCRIPTION_ENCRYPTION_KEY_BASE64=${escrow_key}
+ACCOUNT_BINDING_KEY_BASE64=${binding_key}
 WEB_CHECKOUT_PAGE_URL=https://sync.${server_name}/checkout
 WEB_CHECKOUT_ORIGIN=https://sync.${server_name}
 PADDLE_ENVIRONMENT=sandbox
@@ -44,5 +67,7 @@ MATRIX_ADMIN_TOKEN=
 BUNDLE_SIGNING_KEY_BASE64=
 BUNDLE_SIGNING_KEY_ID=
 EOF
-chmod 0600 "$target"
+chmod 0600 "$staging"
+# Atomic, and fails rather than replace a file created in the meantime.
+ln "$staging" "$target"
 echo "Wrote $target — fill in the Paddle values and MATRIX_ADMIN_TOKEN, and keep an offline copy."

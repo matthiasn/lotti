@@ -414,3 +414,5 @@ async def test_refresh_leaves_a_row_alone_when_moved_to_an_unknown_price(
     after = await repository.get_current_subscription("entitlement-one")
     assert after.current_period_end == stored.current_period_end
     assert after.base_plan_id == MONTHLY_PRICE
+    assert after.last_error == "Paddle reports a price this service does not sell"
+    assert after.next_reconciliation_at == NOW + timedelta(hours=6)

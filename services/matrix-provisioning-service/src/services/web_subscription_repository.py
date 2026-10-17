@@ -73,27 +73,31 @@ class WebSubscriptionRepository(AccountErasureRepository):
             created_at=_parse(row["created_at"]),
         )
 
+    @staticmethod
+    def _insert_checkout_session(conn: sqlite3.Connection, session: CheckoutSession) -> None:
+        conn.execute(
+            "DELETE FROM checkout_sessions WHERE bound_token_fingerprint IS NULL "
+            "AND expires_at < ?",
+            (_iso(session.created_at - _UNBOUND_SESSION_RETENTION),),
+        )
+        conn.execute(
+            "INSERT INTO checkout_sessions (session_id, entitlement_id, "
+            "claim_secret_hash, price_id, expires_at, created_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (
+                session.session_id,
+                session.entitlement_id,
+                session.claim_secret_hash,
+                session.price_id,
+                _iso(session.expires_at),
+                _iso(session.created_at),
+            ),
+        )
+
     def _create_checkout_session_sync(self, session: CheckoutSession) -> None:
         conn = self._connect()
         try:
-            conn.execute(
-                "DELETE FROM checkout_sessions WHERE bound_token_fingerprint IS NULL "
-                "AND expires_at < ?",
-                (_iso(session.created_at - _UNBOUND_SESSION_RETENTION),),
-            )
-            conn.execute(
-                "INSERT INTO checkout_sessions (session_id, entitlement_id, "
-                "claim_secret_hash, price_id, expires_at, created_at) "
-                "VALUES (?,?,?,?,?,?)",
-                (
-                    session.session_id,
-                    session.entitlement_id,
-                    session.claim_secret_hash,
-                    session.price_id,
-                    _iso(session.expires_at),
-                    _iso(session.created_at),
-                ),
-            )
+            self._insert_checkout_session(conn, session)
             conn.commit()
         finally:
             conn.close()
@@ -101,6 +105,36 @@ class WebSubscriptionRepository(AccountErasureRepository):
     async def create_checkout_session(self, session: CheckoutSession) -> None:
         """Persist a new session, pruning long-expired unbound ones."""
         await asyncio.to_thread(self._create_checkout_session_sync, session)
+
+    def _open_checkout_session_sync(self, candidate: CheckoutSession) -> CheckoutSession:
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT * FROM checkout_sessions WHERE entitlement_id = ? AND price_id = ? "
+                "AND bound_token_fingerprint IS NULL AND expires_at > ? "
+                "ORDER BY created_at DESC LIMIT 1",
+                (candidate.entitlement_id, candidate.price_id, _iso(candidate.created_at)),
+            ).fetchone()
+            if row is not None:
+                conn.commit()
+                return self._row_to_checkout_session(row)
+            self._insert_checkout_session(conn, candidate)
+            conn.commit()
+            return candidate
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    async def open_checkout_session(self, candidate: CheckoutSession) -> CheckoutSession:
+        """Return the open session for this entitlement and price, else store ``candidate``.
+
+        One transaction, so two concurrent requests cannot both find nothing
+        and leave two payable sessions behind.
+        """
+        return await asyncio.to_thread(self._open_checkout_session_sync, candidate)
 
     def _get_checkout_session_sync(self, session_id: str) -> CheckoutSession | None:
         conn = self._connect()
@@ -116,39 +150,6 @@ class WebSubscriptionRepository(AccountErasureRepository):
     async def get_checkout_session(self, session_id: str) -> CheckoutSession | None:
         """Return a session by id, or ``None``."""
         return await asyncio.to_thread(self._get_checkout_session_sync, session_id)
-
-    def _get_open_checkout_session_sync(
-        self,
-        entitlement_id: str,
-        price_id: str,
-        now: datetime,
-    ) -> CheckoutSession | None:
-        conn = self._connect()
-        try:
-            row = conn.execute(
-                "SELECT * FROM checkout_sessions WHERE entitlement_id = ? AND price_id = ? "
-                "AND bound_token_fingerprint IS NULL AND expires_at > ? "
-                "ORDER BY created_at DESC LIMIT 1",
-                (entitlement_id, price_id, _iso(now)),
-            ).fetchone()
-            return self._row_to_checkout_session(row) if row else None
-        finally:
-            conn.close()
-
-    async def get_open_checkout_session(
-        self,
-        entitlement_id: str,
-        *,
-        price_id: str,
-        now: datetime,
-    ) -> CheckoutSession | None:
-        """The newest unpaid, unexpired session for this plan, if any."""
-        return await asyncio.to_thread(
-            self._get_open_checkout_session_sync,
-            entitlement_id,
-            price_id,
-            now,
-        )
 
     def _bind_checkout_session_sync(
         self,

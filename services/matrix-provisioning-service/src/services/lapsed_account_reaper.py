@@ -68,11 +68,14 @@ class LapsedAccountReaper(PeriodicTask):
             suspended_before=now - self._erase_after,
             limit=self._batch_size,
         ):
-            await self._repository.claim_erasure(
-                user.bundle_id,
-                suspended_before=now - self._erase_after,
-                now=now,
-            )
+            try:
+                await self._repository.claim_erasure(
+                    user.bundle_id,
+                    suspended_before=now - self._erase_after,
+                    now=now,
+                )
+            except Exception as exc:  # noqa: BLE001 - claim the rest, advance the open ones
+                logger.warning("Could not claim lapsed account %s: %s", user.user_mxid, exc)
         erased = 0
         for erasure in await self._repository.list_open_erasures(limit=self._batch_size):
             try:

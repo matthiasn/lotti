@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import timedelta
 
 import pytest
@@ -103,3 +104,25 @@ async def test_webhook_ledger_records_each_event_once(repository):
 
     assert await repository.webhook_event_processed("evt_01") is True
     assert await repository.webhook_event_processed("evt_02") is False
+
+
+async def test_opening_reuses_the_open_session_for_the_same_price(repository):
+    first = await repository.open_checkout_session(session("first"))
+    again = await repository.open_checkout_session(session("second"))
+    later = await repository.open_checkout_session(
+        session("later", created_at=NOW + timedelta(hours=1))
+    )
+
+    assert first.session_id == "first"
+    assert again.session_id == "first"
+    # Once the first has expired a new one is stored.
+    assert later.session_id == "later"
+    assert await repository.get_checkout_session("second") is None
+
+
+async def test_a_failed_open_stores_nothing(repository):
+    await repository.open_checkout_session(session("first"))
+    duplicate = session("first", created_at=NOW + timedelta(hours=1))
+
+    with pytest.raises(sqlite3.IntegrityError):
+        await repository.open_checkout_session(duplicate)
