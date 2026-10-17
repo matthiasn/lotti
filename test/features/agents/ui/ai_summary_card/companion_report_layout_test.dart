@@ -25,6 +25,22 @@ void main() {
       );
     });
 
+    test('needs a proportionally wider body at a larger text scale', () {
+      const min = CompanionPlacement.besideMinWidth;
+      const large = TextScaler.linear(TextScales.large);
+      expect(
+        CompanionPlacement.forBodyWidth(min, textScaler: large),
+        CompanionPlacement.header,
+      );
+      expect(
+        CompanionPlacement.forBodyWidth(
+          min * TextScales.large,
+          textScaler: large,
+        ),
+        CompanionPlacement.beside,
+      );
+    });
+
     test('draws her head to toe beside the prose and as a bust in the '
         'header', () {
       expect(CompanionPlacement.beside.framing, CompanionFraming.full);
@@ -105,10 +121,10 @@ void main() {
     expect(body.left, header.left);
     expect(header.right, layout.right);
     expect(body.top, header.bottom);
-    // A floor under her shoes: the row ends step3 below her, and the column
+    // A floor under her shoes: the row ends step4 below her, and the column
     // beside her is at least that tall, its footer at the foot — so under
     // short content the footer closes the card instead of floating.
-    expect(layout.bottom, her.bottom + spacing.step3);
+    expect(layout.bottom, her.bottom + spacing.step4);
     final footer = tester.getRect(find.byKey(_footerKey));
     expect(footer.left, header.left);
     expect(footer.bottom, layout.bottom);

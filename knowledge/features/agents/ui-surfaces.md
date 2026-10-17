@@ -93,16 +93,21 @@ Contents:
     `TldrHeader`, the report body and the freshness row, so the title, agent
     name, summary, links and *Out of date* share one edge. Her slot is the
     `bust` window's width; the rest of her `full` frame hangs into the card
-    padding and the column's leading inset, never further than either. A
-    `step3` floor keeps her shoes off the card's edge.
+    padding and the column's leading inset, never further than either. The
+    column is at least her rail's height with the freshness row at its foot,
+    and a `step4` floor under her shoes matches that row's bottom inset, so
+    under a short summary her feet and the status band end on one line.
   - **header** (narrower): her `bust` drawn inside the header's badge tile
     (`TldrHeader.figure`), grown to `ControlSizes.avatar`, with the tile's
-    accent fill and hairline, as far below the card's top as in from its
-    side; the summary keeps the full card width.
+    accent fill with the quiet decorative hairline (a portrait, not the
+    badge's accent border), as far below the card's top as in from its side;
+    the summary keeps the full card width.
 
   She is not a control at either width: her tile stands outside the
   header's tap-to-internals ink, so only the title and agent name (and the
-  *Open agent internals* link) open the internals.
+  *Open agent internals* link) open the internals; with no badge border in
+  that ink, the agent name takes the accent on hover and the ink draws its
+  focus ring.
 
   She is the read-aloud control's face: shown only while that control is,
   and speaking its utterance — the task id as `sourceId`, in the words the

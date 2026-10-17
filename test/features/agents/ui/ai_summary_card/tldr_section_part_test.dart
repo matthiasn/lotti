@@ -441,6 +441,36 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('without the badge border to answer hover, the name lifts '
+        'to the accent instead', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Task Laura', onAgentTap: () {}, badge: false),
+        ),
+      );
+
+      final ai = tester
+          .element(find.byType(TldrHeader))
+          .designTokens
+          .colors
+          .aiCard;
+      Color nameColor() => tester
+          .renderObject<RenderParagraph>(find.text('Task Laura'))
+          .text
+          .style!
+          .color!;
+      expect(nameColor(), ai.metaText);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Task Laura')));
+      await tester.pump();
+      expect(nameColor(), ai.accent);
+      await gesture.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('the tap target hugs the badge and title, not the whole row', (
       tester,
     ) async {

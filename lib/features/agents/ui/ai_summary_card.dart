@@ -735,6 +735,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         final placement = showCompanion
             ? CompanionPlacement.forBodyWidth(
                 constraints.maxWidth - 2 * tokens.spacing.cardPadding,
+                textScaler: MediaQuery.textScalerOf(context),
               )
             : null;
         // She is the card's identity mark at either width: the bust inside

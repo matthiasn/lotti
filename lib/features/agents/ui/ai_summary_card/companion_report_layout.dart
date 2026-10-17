@@ -23,12 +23,19 @@ enum CompanionPlacement {
   /// The framing she is drawn in for this placement.
   final CompanionFraming framing;
 
-  /// The narrowest card body that keeps her beside the prose: a 168-high
-  /// slot and its gap still leave the summary about 55 characters a line.
+  /// The narrowest card body, at the default text scale, that keeps her
+  /// beside the prose: her slot and its gap still leave the summary about
+  /// 55 characters a line.
   static const double besideMinWidth = 480;
 
-  static CompanionPlacement forBodyWidth(double width) =>
-      width >= besideMinWidth ? beside : header;
+  /// Beside the prose when the body keeps that measure at the reader's
+  /// [textScaler]: larger type needs a wider body for the same characters a
+  /// line, so on a mid-width card large text moves her into the header
+  /// rather than starving the summary.
+  static CompanionPlacement forBodyWidth(
+    double width, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) => width >= textScaler.scale(besideMinWidth) ? beside : header;
 }
 
 /// [companion] standing at the leading side of the card, heading the
@@ -44,7 +51,8 @@ enum CompanionPlacement {
 /// reach is never clipped by the card nor drawn over the prose.
 ///
 /// Her head starts where the header's content does, and the slot keeps a
-/// step3 floor under her shoes above the card's edge.
+/// step4 floor under her shoes, the freshness row's own bottom inset, so
+/// under a short summary her feet and the status band end on one line.
 class CompanionBesideReport extends StatelessWidget {
   const CompanionBesideReport({
     required this.companion,
@@ -78,7 +86,7 @@ class CompanionBesideReport extends StatelessWidget {
           padding: EdgeInsetsDirectional.only(
             start: spacing.cardPadding,
             top: spacing.step4,
-            bottom: spacing.step3,
+            bottom: spacing.step4,
           ),
           child: CompanionSlot(
             height: ControlSizes.companionCard,
@@ -93,7 +101,7 @@ class CompanionBesideReport extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
-                  spacing.step4 + ControlSizes.companionCard + spacing.step3,
+                  spacing.step4 + ControlSizes.companionCard + spacing.step4,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

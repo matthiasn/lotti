@@ -83,9 +83,10 @@ class TldrHeader extends StatelessWidget {
   /// A figure drawn inside the badge tile in place of its glyph — the
   /// companion's bust on a narrow task card, where she is the agent the
   /// caption names. The tile grows to [ControlSizes.avatar] around her and
-  /// keeps its fill, hairline and highlight, so she reads as the card's
-  /// badge rather than a sticker beside it. Decorative: the header's label
-  /// already says who she is.
+  /// keeps its accent fill under a quiet decorative hairline, so she reads
+  /// as the card's portrait rather than a sticker beside it — and, standing
+  /// outside the tap-to-internals ink, never as a button. Decorative: the
+  /// header's label already says who she is.
   final Widget? figure;
 
   /// False drops the badge tile and its gap, so the title starts on the
@@ -126,8 +127,10 @@ class TldrHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           tokens.radii.m,
         ),
+        // A figure's tile is a portrait, not a control: the quiet
+        // decorative hairline, never the badge's accent border.
         border: Border.all(
-          color: plain
+          color: plain || figure != null
               ? tokens.colors.decorative.level01
               : highlighted
               ? ai.accent
@@ -186,8 +189,9 @@ class TldrHeader extends StatelessWidget {
                   // No hover fill: a rectangle washing over the badge + title
                   // block made the card's identity read as a phantom button.
                   // Hover/focus/press answers on the block's own ink — the
-                  // badge border firms to the accent and the agent name
-                  // brightens a step.
+                  // sparkle badge's border firms to the accent and the agent
+                  // name brightens a step; without that badge in the ink, the
+                  // name takes the accent and the focus ring shows.
                   child: DsQuietInk(
                     onTap: onAgentTap,
                     // Without the badge tile in the ink, its border no longer
@@ -196,7 +200,7 @@ class TldrHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(tokens.radii.m),
                     builder: (context, highlighted) => ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: kMinInteractiveDimension,
+                        minHeight: TapTargets.minimum,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -239,9 +243,14 @@ class TldrHeader extends StatelessWidget {
                                           .others
                                           .caption
                                           .copyWith(
-                                            color: highlighted
-                                                ? ai.bodyText
-                                                : ai.metaText,
+                                            // With no badge border in the
+                                            // ink to answer hover, the name
+                                            // takes the accent instead.
+                                            color: !highlighted
+                                                ? ai.metaText
+                                                : figure != null || !badge
+                                                ? ai.accent
+                                                : ai.bodyText,
                                           ),
                                     ),
                                   ),
