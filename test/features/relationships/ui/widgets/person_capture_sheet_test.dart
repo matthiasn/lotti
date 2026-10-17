@@ -145,7 +145,7 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: any(named: 'audioId'),
         summary: any(named: 'summary'),
         modelId: any(named: 'modelId'),
@@ -295,7 +295,7 @@ void main() {
     await stop(tester);
 
     verify(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: 'audio-1',
         summary: 'Pip called about the launch.',
         modelId: 'gemini-2.5-flash',
@@ -309,7 +309,7 @@ void main() {
       'still opens', (tester) async {
     answer = () => [call(twoItems, oneLiner: 'Pip called.')];
     when(
-      () => timeline.saveVoiceNoteSummary(
+      () => timeline.saveRecordingSummary(
         audioId: any(named: 'audioId'),
         summary: any(named: 'summary'),
         modelId: any(named: 'modelId'),

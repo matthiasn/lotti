@@ -517,7 +517,7 @@ void main() {
     });
   });
 
-  group('saveVoiceNoteSummary', () {
+  group('saveRecordingSummary', () {
     test("writes the line as the recording's audio summary, linked from "
         'it, and answers whether it was written', () async {
       when(
@@ -529,7 +529,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       expect(
-        await repository.saveVoiceNoteSummary(
+        await repository.saveRecordingSummary(
           audioId: 'audio-1',
           summary: 'Pip wants a crew send-off.',
           modelId: 'glm-5.2',

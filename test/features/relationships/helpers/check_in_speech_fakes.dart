@@ -40,6 +40,9 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   int cancelCount = 0;
   final transcribeCalls = <String>[];
 
+  /// The recordings whose transcript was asked to be summarized too.
+  final summarizeCalls = <String>[];
+
   /// The person each transcript was asked for, in call order.
   final transcribePeople = <String>[];
 
@@ -60,9 +63,11 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
     required String audioEntryId,
     required String relationshipId,
     Duration timeout = checkInTranscriptTimeout,
+    bool summarize = false,
   }) {
     transcribeCalls.add(audioEntryId);
     transcribePeople.add(relationshipId);
+    if (summarize) summarizeCalls.add(audioEntryId);
     return _wait(audioEntryId);
   }
 

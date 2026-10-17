@@ -22,7 +22,7 @@ Override personTimelineOverride({
   );
   // A sort's one line is saved as the voice note's summary.
   when(
-    () => repository.saveVoiceNoteSummary(
+    () => repository.saveRecordingSummary(
       audioId: any(named: 'audioId'),
       summary: any(named: 'summary'),
       modelId: any(named: 'modelId'),

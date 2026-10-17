@@ -2651,7 +2651,7 @@ stateDiagram-v2
   leading with the summary of the first recording it holds, when there is
   one, and opening to its own words. The sort writes that summary: the
   tool's `oneLiner`, saved as an ordinary audio-summary response linked from
-  the recording (`saveVoiceNoteSummary`) before the review opens, so it
+  the recording (`saveRecordingSummary`) before the review opens, so it
   stands whatever the review does — and costs no second model call.
 - **Sort.** `PersonCaptureSorter`
   ([person_capture_sorter.dart](../../lib/features/relationships/service/person_capture_sorter.dart))

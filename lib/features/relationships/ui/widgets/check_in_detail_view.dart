@@ -350,6 +350,7 @@ class _CheckInDetailViewState extends ConsumerState<CheckInDetailView> {
     unawaited(
       transcription
           .transcribe(
+            summarize: true,
             audioEntryId: audioEntryId,
             relationshipId: widget.relationshipId,
           )
