@@ -364,12 +364,30 @@ class PersonTimelineRow extends StatelessWidget {
       ),
       body: switch (item) {
         // A voice note leads with its summary, and opens to its words.
-        final TimelineVoiceNote voice when !row.pending => PersonVoiceNoteWords(
-          audio: voice.audio,
+        final TimelineVoiceNote voice when !row.pending => PersonFoldedWords(
+          id: voice.audio.meta.id,
+          words: voice.audio.entryText?.plainText.trim() ?? '',
+          summaryOf: voice.audio.meta.id,
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
         ),
+        // A check-in leads with the summary of the recording it holds,
+        // and opens to its own words.
+        final TimelineCheckIn checkIn
+            when !row.pending && text != null && text.isNotEmpty =>
+          PersonFoldedWords(
+            id: checkIn.checkIn.meta.id,
+            words: text,
+            summaryOf: checkIn.entries
+                .whereType<JournalAudio>()
+                .firstOrNull
+                ?.meta
+                .id,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
         _ when text == null || text.isEmpty => null,
         _ => Text(
           text,
@@ -429,28 +447,34 @@ class PersonTimelineRow extends StatelessWidget {
   }
 }
 
-/// A voice note's words on its timeline row: the recording's summary when
-/// one was written (the newest audio summary's one-liner), else the first
-/// three lines of what was said — and, when there is more, *Show more* to
-/// read the whole transcript in place, *Show less* to fold it again. A
-/// minute of speech set out in full made every voice note the longest row
-/// on the page.
-class PersonVoiceNoteWords extends ConsumerStatefulWidget {
-  const PersonVoiceNoteWords({
-    required this.audio,
+/// A row's words, folded: the summary of the recording [summaryOf] when one
+/// was written (its newest audio summary's one-liner), else the first three
+/// lines of [words] — and, when there is more, *Show more* to read all of
+/// [words] in place, *Show less* to fold them again. A voice note passes its
+/// own recording; a check-in the recording it holds. A minute of speech set
+/// out in full made every spoken row the longest on the page.
+class PersonFoldedWords extends ConsumerStatefulWidget {
+  const PersonFoldedWords({
+    required this.id,
+    required this.words,
     required this.style,
+    this.summaryOf,
     super.key,
   });
 
-  final JournalAudio audio;
+  /// The row's entry, naming its keys.
+  final String id;
+  final String words;
+
+  /// The recording whose summary leads, or null for none.
+  final String? summaryOf;
   final TextStyle style;
 
   @override
-  ConsumerState<PersonVoiceNoteWords> createState() =>
-      _PersonVoiceNoteWordsState();
+  ConsumerState<PersonFoldedWords> createState() => _PersonFoldedWordsState();
 }
 
-class _PersonVoiceNoteWordsState extends ConsumerState<PersonVoiceNoteWords> {
+class _PersonFoldedWordsState extends ConsumerState<PersonFoldedWords> {
   static const _foldedLines = 3;
   var _expanded = false;
 
@@ -458,8 +482,9 @@ class _PersonVoiceNoteWordsState extends ConsumerState<PersonVoiceNoteWords> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final transcript = widget.audio.entryText?.plainText.trim() ?? '';
-    final summary = audioSummaryOneLiner(ref, widget.audio.meta.id);
+    final transcript = widget.words;
+    final source = widget.summaryOf;
+    final summary = source == null ? null : audioSummaryOneLiner(ref, source);
     return LayoutBuilder(
       builder: (context, constraints) {
         // More to read when there is a summary in front of the words, or
@@ -479,14 +504,14 @@ class _PersonVoiceNoteWordsState extends ConsumerState<PersonVoiceNoteWords> {
           children: [
             Text(
               words,
-              key: ValueKey('person-voice-note-words-${widget.audio.meta.id}'),
+              key: ValueKey('person-folded-words-${widget.id}'),
               maxLines: _expanded ? null : _foldedLines,
               overflow: _expanded ? null : TextOverflow.ellipsis,
               style: widget.style,
             ),
             if (overflows)
               DsQuietInk(
-                key: ValueKey('person-voice-note-more-${widget.audio.meta.id}'),
+                key: ValueKey('person-folded-more-${widget.id}'),
                 onTap: () => setState(() => _expanded = !_expanded),
                 builder: (context, highlighted) => Semantics(
                   button: true,

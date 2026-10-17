@@ -375,7 +375,7 @@ void main() {
       await tester.pumpAndSettle();
 
       Text words() => tester.widget<Text>(
-        find.byKey(const ValueKey('person-voice-note-words-spoken')),
+        find.byKey(const ValueKey('person-folded-words-spoken')),
       );
       expect(words().data, 'Pip wants a crew send-off.');
       expect(words().maxLines, 3);
@@ -391,7 +391,7 @@ void main() {
       expect(words().data, 'Pip wants a crew send-off.');
       // A way in, and it says so under a pointer.
       final tokens = tester
-          .element(find.byType(PersonVoiceNoteWords))
+          .element(find.byType(PersonFoldedWords))
           .designTokens;
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
@@ -402,6 +402,56 @@ void main() {
         tester.widget<Text>(find.text('Show more')).style?.color,
         tokens.colors.interactive.hover,
       );
+    });
+
+    testWidgets('a check-in holding a summarised recording leads with that '
+        'summary and opens to its own words', (tester) async {
+      final spoken = call.copyWith(
+        entryText: EntryText(plainText: longWords),
+      );
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            spoken.meta.id: [audio('take-1', DateTime(2026, 8, 1, 12, 44))],
+          },
+        ),
+        overrides: [summaryOf('take-1', 'Pip is calm about the slip.')],
+      );
+      await tester.pumpAndSettle();
+
+      Text words() => tester.widget<Text>(
+        find.byKey(ValueKey('person-folded-words-${spoken.meta.id}')),
+      );
+      expect(words().data, 'Pip is calm about the slip.');
+      await tester.tap(find.text('Show more'));
+      await tester.pumpAndSettle();
+      expect(words().data, longWords);
+    });
+
+    testWidgets('a check-in without a recording folds its long words to '
+        'three lines, and opens them on Show more', (tester) async {
+      setTestSurfaceSize(tester, const Size(390, 2400));
+      final typed = call.copyWith(
+        entryText: EntryText(plainText: longWords),
+      );
+      await pump(tester, timeline(checkIns: [typed], entries: [], tasks: []));
+      await tester.pumpAndSettle();
+
+      final words = find.byKey(
+        ValueKey('person-folded-words-${typed.meta.id}'),
+      );
+      expect(tester.widget<Text>(words).data, longWords);
+      expect(tester.widget<Text>(words).maxLines, 3);
+      await tester.tap(
+        find.byKey(ValueKey('person-folded-more-${typed.meta.id}')),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(words).maxLines, isNull);
     });
 
     testWidgets('without a summary a long transcript folds to three lines '
@@ -423,17 +473,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('person-voice-note-more-short')),
+        find.byKey(const ValueKey('person-folded-more-short')),
         findsNothing,
       );
-      final more = find.byKey(const ValueKey('person-voice-note-more-long'));
+      final more = find.byKey(const ValueKey('person-folded-more-long'));
       expect(more, findsOneWidget);
       await tester.tap(more);
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('person-voice-note-words-long')),
+              find.byKey(const ValueKey('person-folded-words-long')),
             )
             .maxLines,
         isNull,

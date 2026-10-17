@@ -2644,10 +2644,12 @@ stateDiagram-v2
   names corrected. The transcript becomes the voice note's own words
   (`entryText`).
 - **Its line on the timeline.** A voice note's row
-  ([`PersonVoiceNoteWords`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart))
+  ([`PersonFoldedWords`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart))
   leads with the recording's newest audio summary (`audioSummaryOneLiner`),
   else the first three lines of the transcript, and opens to the whole
-  transcript in place with *Show more*. The sort writes that summary: the
+  transcript in place with *Show more*. A check-in's row folds the same way,
+  leading with the summary of the first recording it holds, when there is
+  one, and opening to its own words. The sort writes that summary: the
   tool's `oneLiner`, saved as an ordinary audio-summary response linked from
   the recording (`saveVoiceNoteSummary`) before the review opens, so it
   stands whatever the review does — and costs no second model call.
