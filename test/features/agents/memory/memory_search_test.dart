@@ -45,6 +45,29 @@ void main() {
       expect(parseMemorySearchRequest({'query': 'x'})!.limit, 8);
     });
 
+    test('ids without a limit return every id asked for, up to 20; an '
+        'explicit limit is honoured for ids as for keywords', () {
+      expect(
+        parseMemorySearchRequest({
+          'ids': ['a', 'b', 'c'],
+        })!.limit,
+        3,
+      );
+      expect(
+        parseMemorySearchRequest({
+          'ids': [for (var i = 0; i < 30; i++) 'id$i'],
+        })!.limit,
+        20,
+      );
+      expect(
+        parseMemorySearchRequest({
+          'ids': ['a', 'b'],
+          'limit': 1,
+        })!.limit,
+        1,
+      );
+    });
+
     test('asks for something to search for', () {
       expect(parseMemorySearchRequest({}), isNull);
       expect(
@@ -71,6 +94,7 @@ void main() {
         () => compactor.resolveByIds(
           any(),
           ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
           extraKnownIds: any(named: 'extraKnownIds'),
         ),
       ).thenAnswer((_) async => [hit('i', 'id hit')]);
@@ -106,6 +130,7 @@ void main() {
         () => compactor.resolveByIds(
           'agent-1',
           ids: const {'i'},
+          limit: 5,
           extraKnownIds: const {'known'},
         ),
       ).called(1);
@@ -202,6 +227,32 @@ void main() {
           'by id.)',
         ),
       );
+    });
+
+    test('under a hit budget a note full of links lists eight and counts '
+        'the rest; unbudgeted, it lists them all', () {
+      final links = [
+        for (var i = 0; i < 12; i++)
+          ResolvedMemoryLink(
+            link: MemoryLink(relation: LinkRelation.relates, entryId: 'e$i'),
+            exists: true,
+            liveEntryId: 'e$i',
+          ),
+      ];
+      final note = hit('n', 'A note.', links: links);
+
+      final budgeted = formatMemorySearchResult(byKeyword, [
+        note,
+      ], hitTokenBudget: 250);
+      expect(
+        RegExp('relates:').allMatches(budgeted),
+        hasLength(memorySearchBudgetedLinksPerHit),
+      );
+      expect(budgeted, endsWith('(+4 more)'));
+
+      final whole = formatMemorySearchResult(byKeyword, [note]);
+      expect(RegExp('relates:').allMatches(whole), hasLength(12));
+      expect(whole, isNot(contains('more)')));
     });
 
     test('the first hit is always listed, even past a tiny total budget', () {

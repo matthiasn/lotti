@@ -46,8 +46,10 @@ const memorySearchFailedError = 'Error: memory search failed.';
 typedef MemorySearchRequest = ({String query, Set<String> ids, int limit});
 
 /// Parses a memory-search tool call, or null when it names neither keywords
-/// nor ids. A `limit` outside 1–20 is clamped; a missing or non-integer one
-/// defaults to 8. Tolerant of blank and non-string ids.
+/// nor ids. A `limit` outside 1–20 is clamped. A missing or non-integer one
+/// defaults to 8 for keywords, and to every id asked for (at most 20) for
+/// ids — pulling up three named entries returns all three. Tolerant of blank
+/// and non-string ids.
 MemorySearchRequest? parseMemorySearchRequest(Map<String, dynamic> args) {
   final rawIds = args['ids'];
   final ids = rawIds is List
@@ -60,7 +62,11 @@ MemorySearchRequest? parseMemorySearchRequest(Map<String, dynamic> args) {
   final query = rawQuery is String ? rawQuery.trim() : '';
   if (ids.isEmpty && query.isEmpty) return null;
   final rawLimit = args['limit'];
-  final limit = rawLimit is int ? rawLimit.clamp(1, 20) : 8;
+  final limit = rawLimit is int
+      ? rawLimit.clamp(1, 20)
+      : ids.isNotEmpty
+      ? ids.length.clamp(1, 20)
+      : 8;
   return (query: query, ids: ids, limit: limit);
 }
 
@@ -75,6 +81,7 @@ Future<List<MemoryLogHit>> runMemorySearch(
     ? compactor.resolveByIds(
         agentId,
         ids: request.ids,
+        limit: request.limit,
         extraKnownIds: extraKnownIds,
       )
     : compactor.searchLog(
@@ -83,6 +90,12 @@ Future<List<MemoryLogHit>> runMemorySearch(
         limit: request.limit,
         extraKnownIds: extraKnownIds,
       );
+
+/// How many of a hit's links are listed when a hit budget is in force — the
+/// rest are counted. Links are parsed from the hit's FULL text, so without a
+/// cap one note full of `[[relation:id]]` tokens would outgrow any budget its
+/// cut text keeps to.
+const int memorySearchBudgetedLinksPerHit = 8;
 
 /// The text the model reads back for [hits] of [request].
 ///
@@ -118,9 +131,14 @@ String formatMemorySearchResult(
       line.write(' [superseded by ${hit.supersededByEntryId}]');
     }
     if (hit.links.isNotEmpty) {
+      final shown = hitTokenBudget == null
+          ? hit.links
+          : hit.links.take(memorySearchBudgetedLinksPerHit).toList();
+      final unlisted = hit.links.length - shown.length;
       line
         ..writeln()
-        ..write('  links: ${hit.links.map(formatLink).join(', ')}');
+        ..write('  links: ${shown.map(formatLink).join(', ')}');
+      if (unlisted > 0) line.write(' (+$unlisted more)');
     }
     final rendered = line.toString();
     final cost = TextChunker.estimateTokens(rendered);
