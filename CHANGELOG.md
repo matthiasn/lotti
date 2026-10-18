@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.57]
+
+### Added
+
+- **Speak your mind about a person.** *Speak* on a person's page — or a long
+  press on them in the People list — records whatever is on your mind and
+  keeps it as a voice note at once. Its words are then sorted into a
+  check-in, a note, a meeting or a task for you to review and adjust;
+  nothing is filed until you save, and how a conversation felt is never
+  guessed. The recorder names the model that will sort it before anything is
+  sent. A voice note that was not sorted offers *Sort this* on its row.
+- **Spoken check-ins get a one-line summary on a person's timeline.** Once a
+  check-in's recording is transcribed, the model the briefing names writes
+  one line about it — for people with reminders on, whose briefing already
+  reads their check-ins — and the row opens to the full words with *Show
+  more*. Short and typed check-ins are left as they are.
+- **Plan a meeting with a person.** *+ Add* on a person's page, or a tap on
+  their overdue pill, opens a short sheet: a title, the day and time, and how
+  long. The meeting sits under *Upcoming* on their page, the notes to bring up
+  say *Bring up before* its day, and it shows on the Daily OS Day view — even
+  with the Events feature off.
+- **A birthday in the person editor.** Pick it from the calendar or clear
+  it; the agent's briefings know how far off it is.
+- **The companion on your goals.** With **Companion** on, each goal on the
+  Goals list shows her in place of its monogram, and her pose says how the
+  goal is going: a thumbs-up when it is on track, arms up once it is
+  achieved, a clap while it recovers, a hand to her cheek when it is at
+  risk, palms down — it is all right — when it is behind, and a hand at her
+  ear while there is nothing to go on yet.
+
+### Changed
+
+- **An opened check-in reads like a page, not a row of chips.** How, when,
+  how long and how it felt are words with their icons — each still opens its
+  picker on a tap — and *Edit check-in* moved into the page's ⋮ menu. The
+  notes for next time use the same card as the person's page: what to bring
+  up as its headline, what to avoid under it.
+- **The People list drops the sparkle beside names.** The section a person
+  sits in already says whether reminders are on.
+- **A person's page says they are overdue even when a meeting is booked,**
+  matching the People list.
+- **The companion stands better on the AI summary card.** On a wide card she
+  takes the place of the sparkle badge, standing taller beside the title and
+  the summary, which now share one left edge. On a phone her portrait sits in
+  the card's header badge instead, and the summary uses the full width of the
+  card rather than squeezing into a narrow column beside her.
+
 ## [1.1.56]
 
 ### Added
