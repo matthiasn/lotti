@@ -175,9 +175,9 @@ sync refuses late writes about them (see
   tell you", ADR 0022): the day planner's, and goal agents' facts (ADR 0141).
   **Compaction-exempt**; the active Head set is a pure recency-wins
   projection over the entries, with no separate Head entity. Carries
-  optional immutable author-time `tags`, set once at origin. The store, its
-  providers and the "What I've learned" panel live in
-  `lib/features/agents/knowledge/`, keyed by agent id.
+  optional immutable author-time `tags`, set once at origin. The store and
+  its providers live in `lib/features/agents/knowledge/`, the "What I've
+  learned" panel in `lib/features/agents/ui/knowledge/`, keyed by agent id.
 - Daily OS capture-pipeline and planning variants: `CaptureEntity`,
   `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`,
   `TomorrowNoteEntity` (the Shutdown note, one per day, newest `updatedAt`

@@ -2195,8 +2195,11 @@ stateDiagram-v2
   above it.
 - **Reviewed on the goal page.** `GoalKnowledgeSection` shows the shared
   `AgentKnowledgePanel` under *About this goal* once there is anything to
-  show; the panel confirms, edits and forgets. A wake's completion notifies
-  the agent id, which refreshes it.
+  show. A proposal is the agent asking — an agent-toned callout under "Did
+  I get this right?" with Confirm and Forget; a confirmed fact is plain text
+  with Edit and Forget behind its menu, and a fact past `reviewAfter` asks
+  "Still true?" in place, where confirming renews it (clears `reviewAfter`).
+  A wake's completion notifies the agent id, which refreshes it.
 
 ## Gotchas
 
