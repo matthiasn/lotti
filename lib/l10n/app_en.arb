@@ -4158,6 +4158,13 @@
       }
     }
   },
+  "goalCharterAdd": "Write about this goal",
+  "goalCharterEmpty": "Tell your agent what this goal is for and how you want to be coached. It reads this every time it writes to you.",
+  "goalCharterHint": "What is this goal for, what matters to you, and how should your agent coach you? For example: ask me one guided question each morning.",
+  "goalCharterOverBudget": "Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.",
+  "goalCharterRecord": "Record about this goal",
+  "goalCharterSaveFailed": "That didn't save. Try again.",
+  "goalCharterTitle": "About this goal",
   "goalChartSevenDayAverage": "7-day average",
   "goalChartStepsDaily": "Steps",
   "@goalChartStepsDaily": {

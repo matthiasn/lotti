@@ -54,6 +54,7 @@ void main() {
       expect(c.read(goalCheckInNotifierProvider), isNull);
       expect(c.read(goalCheckInSourceReaderProvider), isNull);
       expect(c.read(goalCriterionNameReaderProvider), isNull);
+      expect(c.read(goalCharterReaderProvider), isNull);
     });
   });
 
@@ -68,6 +69,7 @@ void main() {
       expect(c.read(goalCheckInNotifierProvider), isA<GoalCheckInNotifier>());
       expect(c.read(goalCheckInSourceReaderProvider), isNotNull);
       expect(c.read(goalCriterionNameReaderProvider), isNotNull);
+      expect(c.read(goalCharterReaderProvider), isNotNull);
     });
 
     test('the compactor is available wherever inference is', () {

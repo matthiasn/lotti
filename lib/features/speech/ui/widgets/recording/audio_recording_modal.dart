@@ -25,7 +25,11 @@ class AudioRecordingModal {
   /// the caller starts transcription after save. Shared preferences are unchanged.
   /// `modalVisible` is always cleared again once the sheet is dismissed — by
   /// the stop button, back gesture, or tapping outside. [useRootNavigator]
-  /// selects which navigator hosts the sheet.
+  /// selects which navigator hosts the sheet. A recording with no
+  /// [linkedId] opens as its own entry once saved, unless [openCreatedEntry]
+  /// is false — for a caller that links the recording itself afterwards (a
+  /// goal's charter recording, which must not take the parent link a
+  /// check-in has) and stays where it is.
   ///
   /// Returns the id of the audio entry the recording created, or `null` when
   /// the sheet was dismissed or the recording cancelled. Callers that want to
@@ -38,6 +42,7 @@ class AudioRecordingModal {
     String? categoryId,
     bool useRootNavigator = true,
     bool transcriptionHandledByCaller = false,
+    bool openCreatedEntry = true,
   }) async {
     // Get the controller before showing the modal
     final container = ProviderScope.containerOf(context);
@@ -72,7 +77,7 @@ class AudioRecordingModal {
     // Navigate only after Wolt has completed the modal route. Starting a page
     // navigation from inside the sheet's own teardown can make Flutter try to
     // reactivate an element that the nested navigator has already removed.
-    if (linkedId == null && createdId != null) {
+    if (openCreatedEntry && linkedId == null && createdId != null) {
       beamToNamed('/journal/$createdId');
     }
     return createdId;

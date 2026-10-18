@@ -205,6 +205,9 @@ class TaskLinkGroupsController extends AsyncNotifier<TaskLinkGroups> {
         relationship: (_) => throw StateError(
           'unexpected RelationshipLink from a task-relationship link query',
         ),
+        charter: (_) => throw StateError(
+          'unexpected CharterLink from a task-relationship link query',
+        ),
         blocks: (_) => TaskLinkKind.blocks,
         followsUp: (_) => TaskLinkKind.followsUp,
         duplicates: (_) => TaskLinkKind.duplicates,

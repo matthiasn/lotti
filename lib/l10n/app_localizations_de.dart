@@ -7158,6 +7158,31 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Über dieses Ziel schreiben';
+
+  @override
+  String get goalCharterEmpty =>
+      'Sag deinem Agenten, wofür dieses Ziel da ist und wie du gecoacht werden möchtest. Er liest das jedes Mal, wenn er dir schreibt.';
+
+  @override
+  String get goalCharterHint =>
+      'Wofür ist dieses Ziel da, was ist dir wichtig, und wie soll dein Agent dich coachen? Zum Beispiel: Stell mir jeden Morgen eine geführte Frage.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Dein Agent kann nur den ersten Teil davon lesen. Kürze Einträge oder fasse sie zusammen, damit er alles liest.';
+
+  @override
+  String get goalCharterRecord => 'Über dieses Ziel sprechen';
+
+  @override
+  String get goalCharterSaveFailed =>
+      'Das wurde nicht gespeichert. Versuch es noch einmal.';
+
+  @override
+  String get goalCharterTitle => 'Über dieses Ziel';
+
+  @override
   String get goalChartSevenDayAverage => '7-Tage-Durchschnitt';
 
   @override

@@ -44,6 +44,7 @@ export 'package:lotti/classes/directed_relation.dart';
     case EntryLinkType.rating:
     case EntryLinkType.project:
     case EntryLinkType.relationship:
+    case EntryLinkType.charter:
       return null;
   }
 }

@@ -128,13 +128,32 @@ abstract class EntryLink with _$EntryLink {
     DateTime? deletedAt,
   }) = RelationshipLink;
 
+  /// `fromId` constitutes `toId`: `fromId` is a charter entry — what the
+  /// user wrote about what a goal is for and how its agent should coach —
+  /// and `toId` is the goal's journal row. Deliberately the reverse of a
+  /// check-in's link, so no reader of the goal's outgoing links can take a
+  /// charter entry for a check-in, on this build or an older one. See
+  /// ADR 0140.
+  const factory EntryLink.charter({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    bool? hidden,
+    bool? collapsed,
+    DateTime? deletedAt,
+  }) = CharterLink;
+
   factory EntryLink.fromJson(Map<String, dynamic> json) =>
       _$EntryLinkFromJson(json);
 }
 
 /// The closed vocabulary of task-relationship semantics an [EntryLink] can
-/// carry, plus the pre-existing untyped variants. Growing this enum requires
-/// an ADR 0042 amendment (see "the typed vocabulary is closed by design").
+/// carry, plus the pre-existing untyped variants and the goal charter role
+/// (ADR 0140). Growing this enum requires an ADR 0042 amendment (see "the
+/// typed vocabulary is closed by design").
 enum EntryLinkType {
   basic,
   rating,
@@ -145,6 +164,7 @@ enum EntryLinkType {
   fixes,
   supersedes,
   relationship,
+  charter,
 }
 
 /// Builds the [EntryLink] union member matching this [EntryLinkType], so
@@ -271,6 +291,18 @@ extension EntryLinkTypeFactory on EntryLinkType {
           collapsed: collapsed,
           deletedAt: deletedAt,
         );
+      case EntryLinkType.charter:
+        return EntryLink.charter(
+          id: id,
+          fromId: fromId,
+          toId: toId,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          hidden: hidden,
+          collapsed: collapsed,
+          deletedAt: deletedAt,
+        );
     }
   }
 }
@@ -289,6 +321,7 @@ String entryLinkTypeDbName(EntryLinkType type) => switch (type) {
   EntryLinkType.fixes => 'FixesLink',
   EntryLinkType.supersedes => 'SupersedesLink',
   EntryLinkType.relationship => 'RelationshipLink',
+  EntryLinkType.charter => 'CharterLink',
 };
 
 /// The [EntryLinkType] of [link]'s union variant — the inverse of
@@ -305,6 +338,7 @@ EntryLinkType entryLinkTypeOf(EntryLink link) => link.map(
   fixes: (_) => EntryLinkType.fixes,
   supersedes: (_) => EntryLinkType.supersedes,
   relationship: (_) => EntryLinkType.relationship,
+  charter: (_) => EntryLinkType.charter,
 );
 
 /// The `linked_entries.type` column value for [link]'s union variant. Shared
@@ -320,6 +354,7 @@ String entryLinkTypeName(EntryLink link) => link.map(
   fixes: (_) => 'FixesLink',
   supersedes: (_) => 'SupersedesLink',
   relationship: (_) => 'RelationshipLink',
+  charter: (_) => 'CharterLink',
 );
 
 /// The `updatedAt` for a local edit of a link whose stored version is

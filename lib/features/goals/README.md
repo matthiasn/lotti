@@ -330,6 +330,19 @@ next*, and the Goals page opens with a **Today** card: every goal's one-line
 read and first next step, the goals that are behind first, composed from the
 briefings the agents already wrote rather than generated again.
 
+**About this goal** is the goal's **charter**: what the user writes the goal
+is *for* and how its agent should coach — "this is my journal for the season",
+"ask me one guided question each morning". It sits on the goal page under the
+agent's read, written and edited in a sheet that takes typing or dictation —
+or recorded, kept as a playable recording whose transcript the agent reads —
+never in the chat. The agent reads it word for word on every wake, the daily
+briefing included, so a goal with soft criteria still has somewhere to say
+what it is about. A charter shapes focus, questions and tone; it never changes
+the measured status. Charter entries are ordinary journal notes, never
+check-ins: they do not count toward check-in time and are not summarized away,
+and the page says when a charter has grown longer than the agent can read in
+one go.
+
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs
@@ -338,6 +351,7 @@ Decisions: ADRs
 [0055](../../../docs/adr/0055-banner-nudge-attention-channel.md),
 [0056](../../../docs/adr/0056-need-to-know-visual-brief-boundary.md),
 [0057](../../../docs/adr/0057-decade-scale-agent-memory.md),
-[0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md).
+[0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md),
+[0140](../../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md).
 The runtime's knowledge concept is
 [knowledge/features/goals.md](../../../knowledge/features/goals.md).

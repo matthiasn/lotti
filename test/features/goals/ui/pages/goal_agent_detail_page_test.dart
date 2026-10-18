@@ -36,8 +36,10 @@ import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_charter_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
@@ -4550,5 +4552,70 @@ void main() {
       expect(kGoalTimelineRailWidth, greaterThan(0));
       expect(kGoalTimelineRailFoldWidth, greaterThan(kGoalTimelineRailWidth));
     });
+  });
+
+  testWidgets("the goal page carries its charter under the agent's read", (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final charter = testTextEntryNoGeo.copyWith(
+      meta: testTextEntryNoGeo.meta.copyWith(id: 'charter-1'),
+      entryText: const EntryText(
+        plainText: 'Ask me one guided question each morning.',
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven.',
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalCharterEntriesProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [charter]),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('About this goal'), findsOneWidget);
+    expect(
+      find.text('Ask me one guided question each morning.'),
+      findsOneWidget,
+    );
+    expect(
+      tester.getTopLeft(find.byType(GoalCharterCard)).dy,
+      greaterThan(tester.getTopLeft(find.text('AI summary')).dy),
+    );
+    // An active goal's charter can be added to and edited from here.
+    expect(find.byKey(const ValueKey('goal-charter-add')), findsOneWidget);
   });
 }

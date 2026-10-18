@@ -179,7 +179,10 @@ returns the created entry id through the modal route.
 **The content pops the route exactly once, and an unlinked recording navigates to
 its new entry only after the Wolt route has completed.** Keeping navigation out of
 the sheet's teardown prevents nested task navigators from trying to reactivate an
-element that has already been removed.
+element that has already been removed. A caller that saves a recording with no
+parent on purpose and links it itself passes `openCreatedEntry: false` and stays
+where it is — a goal's charter recording, which must not take the parent link
+that would make it a check-in (ADR 0140).
 
 The persisted `JournalAudio` is created from `AudioData` through
 `PersistenceLogic`, and the file lives under `/audio/YYYY-MM-DD/`.

@@ -7081,6 +7081,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Write about this goal';
+
+  @override
+  String get goalCharterEmpty =>
+      'Tell your agent what this goal is for and how you want to be coached. It reads this every time it writes to you.';
+
+  @override
+  String get goalCharterHint =>
+      'What is this goal for, what matters to you, and how should your agent coach you? For example: ask me one guided question each morning.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.';
+
+  @override
+  String get goalCharterRecord => 'Record about this goal';
+
+  @override
+  String get goalCharterSaveFailed => 'That didn\'t save. Try again.';
+
+  @override
+  String get goalCharterTitle => 'About this goal';
+
+  @override
   String get goalChartSevenDayAverage => '7-day average';
 
   @override

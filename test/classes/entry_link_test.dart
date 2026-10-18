@@ -533,6 +533,27 @@ void main() {
             dbType: 'RelationshipLink',
             linkType: EntryLinkType.relationship,
           ),
+          (
+            label: 'charter',
+            build:
+                ({
+                  required id,
+                  required fromId,
+                  required toId,
+                  required createdAt,
+                  required updatedAt,
+                  required vectorClock,
+                }) => EntryLink.charter(
+                  id: id,
+                  fromId: fromId,
+                  toId: toId,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                  vectorClock: vectorClock,
+                ),
+            dbType: 'CharterLink',
+            linkType: EntryLinkType.charter,
+          ),
         ];
 
     for (final variant in variants) {
@@ -694,6 +715,7 @@ void main() {
         EntryLinkType.fixes: 'FixesLink',
         EntryLinkType.supersedes: 'SupersedesLink',
         EntryLinkType.relationship: 'RelationshipLink',
+        EntryLinkType.charter: 'CharterLink',
       };
       expect(expected.keys, containsAll(EntryLinkType.values));
       for (final entry in expected.entries) {

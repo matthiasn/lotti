@@ -13,6 +13,7 @@ import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_audio_transcript_status.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -68,55 +69,16 @@ class GoalCheckInTimeline extends ConsumerStatefulWidget {
 /// finishing a long recording is not accused of having stalled.
 const Duration kGoalCheckInTranscriptGrace = Duration(minutes: 10);
 
-class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
+class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
+    with GoalTranscriptGraceRebuild {
   static const _pageSize = 20;
 
   int _visibleCount = _pageSize;
 
   /// When the soonest beat still inside its grace window leaves it.
   ///
-  /// Collected while building the beats, then used to arm [_graceTimer].
+  /// Collected while building the beats, then used to arm the rebuild.
   DateTime? _nextGraceExpiry;
-
-  /// Rebuilds the rail the moment the soonest grace window closes.
-  ///
-  /// Without it the status is only recomputed when something else rebuilds —
-  /// a transcript arriving, an inference status changing, a database
-  /// notification. A user who records a check-in and stays on the page gets
-  /// none of those when the recording is exactly the one nothing picked up, so
-  /// the beat would sit on "Transcribing…" for as long as the page stayed
-  /// open: the one case the stalled state exists to catch is the one case
-  /// nothing would have refreshed.
-  Timer? _graceTimer;
-  DateTime? _armedFor;
-
-  @override
-  void dispose() {
-    _graceTimer?.cancel();
-    super.dispose();
-  }
-
-  /// Arms (or re-arms, or cancels) the rebuild for [deadline].
-  ///
-  /// Idempotent on the deadline, because this is called from `build` and must
-  /// not restart the timer on every unrelated rebuild — that would push the
-  /// wake-up further out each time and never fire.
-  void _armGraceTimer(DateTime? deadline) {
-    if (deadline == _armedFor) return;
-    _graceTimer?.cancel();
-    _armedFor = deadline;
-    if (deadline == null) return;
-    final remaining = deadline.difference(clock.now());
-    _graceTimer = Timer(
-      remaining.isNegative ? Duration.zero : remaining,
-      () {
-        if (!mounted) return;
-        // Cleared so the next build's deadline is never mistaken for the one
-        // just served, which would leave the following beat unarmed.
-        setState(() => _armedFor = null);
-      },
-    );
-  }
 
   @override
   void didUpdateWidget(covariant GoalCheckInTimeline oldWidget) {
@@ -150,7 +112,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
     ];
     // After the beats, because building them is what discovers the deadline.
     // Arming only changes a timer, so it is safe from inside build.
-    _armGraceTimer(_nextGraceExpiry);
+    armGraceRebuild(_nextGraceExpiry);
 
     return TimelineView(
       groups: built,
@@ -250,15 +212,13 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
             transcript: checkIn.transcript,
-            transcriptStatus: checkIn.transcript != null
-                ? TimelineTranscriptStatus.none
-                : inferenceStatus == InferenceStatus.running
-                ? TimelineTranscriptStatus.pending
-                : inferenceStatus == InferenceStatus.error || durableFailure
-                ? TimelineTranscriptStatus.failed
-                : graceExpiry.isAfter(clock.now())
-                ? TimelineTranscriptStatus.pending
-                : TimelineTranscriptStatus.stalled,
+            transcriptStatus: goalAudioTranscriptStatus(
+              hasTranscript: checkIn.transcript != null,
+              inference: inferenceStatus,
+              durableFailure: durableFailure,
+              graceExpiry: graceExpiry,
+              now: clock.now(),
+            ),
           ),
         );
 

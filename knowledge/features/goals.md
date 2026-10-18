@@ -36,6 +36,18 @@ sources:
     resource: ../../lib/features/goals/logic/goal_today_briefing.dart
     title: The Today card's roll-up and the stored next-steps reader
     last_modified: 2026-10-14
+  - id: charter
+    resource: ../../lib/features/goals/logic/goal_charter.dart
+    title: The charter — selection under budget, FACTS section, policy
+    last_modified: 2026-10-18
+  - id: charter-card
+    resource: ../../lib/features/goals/ui/charter/goal_charter_card.dart
+    title: About this goal — the charter on the goal page, and its sheet
+    last_modified: 2026-10-18
+  - id: adr-0140
+    resource: ../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md
+    title: ADR 0140 — A goal is constituted by its charter entries
+    last_modified: 2026-10-18
   - id: checkin-duration
     resource: ../../lib/features/goals/ui/checkins/goal_checkin_duration.dart
     title: A check-in's time — label, picker, beat chip
@@ -242,7 +254,7 @@ flowchart TD
     CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — never a wake,\nconsumed by the next cadence tick]
     CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
-    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
+    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 8-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
@@ -1990,6 +2002,81 @@ flowchart TD
   card, behind-first, from reports the agents already wrote; a report for a
   superseded spec is left out, and with no briefings yet the card takes no
   room.
+
+## The charter
+
+A goal says what it is *for* in its **charter** (ADR 0140): text entries the
+user writes under *About this goal* on the goal page. The criteria say what is
+measured; the charter says what the goal is about and how to coach, which is
+the only definition a journaling or purpose goal really has.
+
+```mermaid
+flowchart LR
+  subgraph Journal["journal database"]
+    G["GoalEntry (goal row)"]
+    C["JournalEntry / JournalAudio — charter entry"]
+    K["JournalEntry / JournalAudio — check-in"]
+    C -- "CharterLink\n(entry → goal)" --> G
+    G -- "BasicLink\n(goal → entry)" --> K
+  end
+  SHEET["About this goal sheet\ntext or dictation"] --> C
+  REC["recording sheet, no parent\nthen attachCharterRecording\nthen transcription"] --> C
+  G -. "outgoing links only" .-> READERS["check-in readers:\ntimeline, checkInSources,\ncheck-in minutes"]
+  C --> CL["JournalDb.charterLinksToGoal\n(to_id, type)"]
+  CL --> SEL["goalCharterSelection\nwritten order, 1,200 tokens"]
+  SEL --> F["FACTS charter section\n+ interpretationPolicy"]
+  SEL --> WARN["page: over-budget notice"]
+```
+
+- **The direction is the invariant.** A check-in is linked *from* the goal
+  (`createDbEntity(linkedId:)`); a charter entry links *to* it
+  (`EntryLink.charter`, `fromId` = entry). Every check-in reader starts from
+  the goal's outgoing links, so a charter entry is never a check-in — not on
+  the timeline, not in check-in time, not compacted — without any reader
+  filtering by type. An older build folds `CharterLink` into a `BasicLink`
+  that still points into the goal, so it shows a plain note there and never
+  a check-in. It stores the folded row as basic and keeps the charter-derived
+  id, so once that device upgrades `charterLinksToGoal` recognizes the row by
+  its id (`entryLinkId` with the charter type) — sync will not replay it.
+- **Writes go through `GoalRepository`.** `createCharterEntry` writes the note
+  in the goal's category and privacy, then the link, and deletes the note
+  again if the link is refused. Edits and deletes pass the goal id as
+  `linkedId`: the goal is not the entry's parent, so without it neither the
+  page (`goalCharterEntriesProvider`) nor `GoalCheckInNotifier` would hear of
+  the change. A new entry notifies the goal through its link.
+- **Dictation, or a recording kept.** The sheet drives the shared
+  `ChatRecorderController` and adds the transcript to the field, answering
+  only to a take it started — the goal chat shares that recorder. A
+  recording made from the card (`recordGoalCharterEntry`) is saved by the
+  shared recording sheet with **no parent** and `openCreatedEntry: false`,
+  linked by `GoalRepository.attachCharterRecording`, then transcribed by
+  the caller, since the recorder's own automation keys on a parent. Its
+  transcript is what the agent reads, so `charter()` leaves a recording out
+  until it has words; the card plays it and shows the transcript state with
+  the check-in rail's rule (`goalAudioTranscriptStatus`) and Retry. The chat
+  has no write path and the agent no tool for the charter.
+- **A transcript landing marks nothing stale.** It is written to the
+  recording, whose parents do not include the goal; linking the recording
+  already marked the report stale. `goalCharterEntriesProvider` listens on
+  its entries' own ids as well as the goal's for that reason.
+- **Every wake reads it.** `GoalAgentWorkflow` reads it through the injected
+  `GoalCharterReader` and renders `charter` right after `goal` — briefings,
+  escalations and chat turns alike. A goal without one renders exactly as
+  before, and a read that throws is logged and costs only the charter.
+- **Bounded, and honest about it.** `goalCharterSelection` keeps entries in
+  written order until the next would exceed `goalCharterTokenBudget` (1,200
+  of the wake's 8k); a first entry larger than the budget is cut rather than
+  dropped. FACTS carry `omittedEntries` / `firstEntryTruncated`, and the page
+  runs the same selection (`goalCharterFitsBudget`) to say when the agent
+  cannot read it all.
+- **Coaching, not measurement.** The section's `interpretationPolicy` lets
+  the charter set focus, framing, questions (into `nextActions.later`) and
+  tone, and never the track status, the criteria or the contract's rules. The
+  system prompt is unchanged; the rule rides with the data, as `userVoice`'s
+  does.
+- **A charter edit marks the report stale; it does not wake the agent.** For
+  a goal that measures check-in time it also re-runs the €0 evaluator, since
+  any write notifying the goal row is that goal's immediate token.
 
 ## Gotchas
 

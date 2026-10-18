@@ -19,6 +19,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/vector_clock_rows.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/domain_logging.dart';

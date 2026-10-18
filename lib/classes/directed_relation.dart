@@ -58,8 +58,9 @@ class DirectedRelation {
   ///
   /// This is the value agent tool schemas enumerate and LLM tool calls carry;
   /// it must stay stable because persisted change-set proposals reference it.
-  /// Throws [StateError] for `rating`/`project`, which are not task
-  /// relationships and never appear in [relationshipDirectedOptions].
+  /// Throws [StateError] for `rating`/`project`/`relationship`/`charter`,
+  /// which are not task relationships and never appear in
+  /// [relationshipDirectedOptions].
   String get wireName {
     switch (type) {
       case EntryLinkType.basic:
@@ -77,6 +78,7 @@ class DirectedRelation {
       case EntryLinkType.rating:
       case EntryLinkType.project:
       case EntryLinkType.relationship:
+      case EntryLinkType.charter:
         throw StateError('$type is not a task relationship');
     }
   }
@@ -105,6 +107,7 @@ class DirectedRelation {
       case EntryLinkType.rating:
       case EntryLinkType.project:
       case EntryLinkType.relationship:
+      case EntryLinkType.charter:
         throw StateError('$type is not a task relationship');
     }
   }

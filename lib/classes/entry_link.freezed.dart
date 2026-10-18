@@ -47,6 +47,10 @@ EntryLink _$EntryLinkFromJson(
           return RelationshipLink.fromJson(
             json
           );
+                case 'charter':
+          return CharterLink.fromJson(
+            json
+          );
         
           default:
             return BasicLink.fromJson(
@@ -141,7 +145,7 @@ extension EntryLinkPatterns on EntryLink {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicLink value)?  basic,TResult Function( RatingLink value)?  rating,TResult Function( ProjectLink value)?  project,TResult Function( BlocksLink value)?  blocks,TResult Function( FollowsUpLink value)?  followsUp,TResult Function( DuplicatesLink value)?  duplicates,TResult Function( FixesLink value)?  fixes,TResult Function( SupersedesLink value)?  supersedes,TResult Function( RelationshipLink value)?  relationship,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BasicLink value)?  basic,TResult Function( RatingLink value)?  rating,TResult Function( ProjectLink value)?  project,TResult Function( BlocksLink value)?  blocks,TResult Function( FollowsUpLink value)?  followsUp,TResult Function( DuplicatesLink value)?  duplicates,TResult Function( FixesLink value)?  fixes,TResult Function( SupersedesLink value)?  supersedes,TResult Function( RelationshipLink value)?  relationship,TResult Function( CharterLink value)?  charter,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
@@ -153,7 +157,8 @@ return followsUp(_that);case DuplicatesLink() when duplicates != null:
 return duplicates(_that);case FixesLink() when fixes != null:
 return fixes(_that);case SupersedesLink() when supersedes != null:
 return supersedes(_that);case RelationshipLink() when relationship != null:
-return relationship(_that);case _:
+return relationship(_that);case CharterLink() when charter != null:
+return charter(_that);case _:
   return orElse();
 
 }
@@ -171,7 +176,7 @@ return relationship(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicLink value)  basic,required TResult Function( RatingLink value)  rating,required TResult Function( ProjectLink value)  project,required TResult Function( BlocksLink value)  blocks,required TResult Function( FollowsUpLink value)  followsUp,required TResult Function( DuplicatesLink value)  duplicates,required TResult Function( FixesLink value)  fixes,required TResult Function( SupersedesLink value)  supersedes,required TResult Function( RelationshipLink value)  relationship,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BasicLink value)  basic,required TResult Function( RatingLink value)  rating,required TResult Function( ProjectLink value)  project,required TResult Function( BlocksLink value)  blocks,required TResult Function( FollowsUpLink value)  followsUp,required TResult Function( DuplicatesLink value)  duplicates,required TResult Function( FixesLink value)  fixes,required TResult Function( SupersedesLink value)  supersedes,required TResult Function( RelationshipLink value)  relationship,required TResult Function( CharterLink value)  charter,}){
 final _that = this;
 switch (_that) {
 case BasicLink():
@@ -183,7 +188,8 @@ return followsUp(_that);case DuplicatesLink():
 return duplicates(_that);case FixesLink():
 return fixes(_that);case SupersedesLink():
 return supersedes(_that);case RelationshipLink():
-return relationship(_that);case _:
+return relationship(_that);case CharterLink():
+return charter(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,7 +206,7 @@ return relationship(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicLink value)?  basic,TResult? Function( RatingLink value)?  rating,TResult? Function( ProjectLink value)?  project,TResult? Function( BlocksLink value)?  blocks,TResult? Function( FollowsUpLink value)?  followsUp,TResult? Function( DuplicatesLink value)?  duplicates,TResult? Function( FixesLink value)?  fixes,TResult? Function( SupersedesLink value)?  supersedes,TResult? Function( RelationshipLink value)?  relationship,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BasicLink value)?  basic,TResult? Function( RatingLink value)?  rating,TResult? Function( ProjectLink value)?  project,TResult? Function( BlocksLink value)?  blocks,TResult? Function( FollowsUpLink value)?  followsUp,TResult? Function( DuplicatesLink value)?  duplicates,TResult? Function( FixesLink value)?  fixes,TResult? Function( SupersedesLink value)?  supersedes,TResult? Function( RelationshipLink value)?  relationship,TResult? Function( CharterLink value)?  charter,}){
 final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
@@ -212,7 +218,8 @@ return followsUp(_that);case DuplicatesLink() when duplicates != null:
 return duplicates(_that);case FixesLink() when fixes != null:
 return fixes(_that);case SupersedesLink() when supersedes != null:
 return supersedes(_that);case RelationshipLink() when relationship != null:
-return relationship(_that);case _:
+return relationship(_that);case CharterLink() when charter != null:
+return charter(_that);case _:
   return null;
 
 }
@@ -229,7 +236,7 @@ return relationship(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  relationship,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  relationship,TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  charter,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink() when rating != null:
@@ -240,7 +247,8 @@ return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedA
 return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink() when fixes != null:
 return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink() when supersedes != null:
 return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RelationshipLink() when relationship != null:
-return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case CharterLink() when charter != null:
+return charter(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   return orElse();
 
 }
@@ -258,7 +266,7 @@ return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  rating,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  project,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  blocks,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  followsUp,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  duplicates,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  fixes,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  supersedes,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  relationship,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  basic,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  rating,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  project,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  blocks,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  followsUp,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  duplicates,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  fixes,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  supersedes,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  relationship,required TResult Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)  charter,}) {final _that = this;
 switch (_that) {
 case BasicLink():
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink():
@@ -269,7 +277,8 @@ return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedA
 return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink():
 return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink():
 return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RelationshipLink():
-return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case CharterLink():
+return charter(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -286,7 +295,7 @@ return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  relationship,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  basic,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  rating,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  project,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  blocks,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  followsUp,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  duplicates,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  fixes,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  supersedes,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  relationship,TResult? Function( String id,  String fromId,  String toId,  DateTime createdAt,  DateTime updatedAt,  VectorClock? vectorClock,  bool? hidden,  bool? collapsed,  DateTime? deletedAt)?  charter,}) {final _that = this;
 switch (_that) {
 case BasicLink() when basic != null:
 return basic(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RatingLink() when rating != null:
@@ -297,7 +306,8 @@ return followsUp(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedA
 return duplicates(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case FixesLink() when fixes != null:
 return fixes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case SupersedesLink() when supersedes != null:
 return supersedes(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case RelationshipLink() when relationship != null:
-return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
+return relationship(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case CharterLink() when charter != null:
+return charter(_that.id,_that.fromId,_that.toId,_that.createdAt,_that.updatedAt,_that.vectorClock,_that.hidden,_that.collapsed,_that.deletedAt);case _:
   return null;
 
 }
@@ -1090,6 +1100,95 @@ class _$RelationshipLinkCopyWithImpl<$Res>
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
   return _then(RelationshipLink(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
+as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,hidden: freezed == hidden ? _self.hidden : hidden // ignore: cast_nullable_to_non_nullable
+as bool?,collapsed: freezed == collapsed ? _self.collapsed : collapsed // ignore: cast_nullable_to_non_nullable
+as bool?,deletedAt: freezed == deletedAt ? _self.deletedAt : deletedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class CharterLink implements EntryLink {
+  const CharterLink({required this.id, required this.fromId, required this.toId, required this.createdAt, required this.updatedAt, required this.vectorClock, this.hidden, this.collapsed, this.deletedAt, final  String? $type}): $type = $type ?? 'charter';
+  factory CharterLink.fromJson(Map<String, dynamic> json) => _$CharterLinkFromJson(json);
+
+@override final  String id;
+@override final  String fromId;
+@override final  String toId;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
+@override final  VectorClock? vectorClock;
+@override final  bool? hidden;
+@override final  bool? collapsed;
+@override final  DateTime? deletedAt;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CharterLinkCopyWith<CharterLink> get copyWith => _$CharterLinkCopyWithImpl<CharterLink>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CharterLinkToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CharterLink&&(identical(other.id, id) || other.id == id)&&(identical(other.fromId, fromId) || other.fromId == fromId)&&(identical(other.toId, toId) || other.toId == toId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.hidden, hidden) || other.hidden == hidden)&&(identical(other.collapsed, collapsed) || other.collapsed == collapsed)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,fromId,toId,createdAt,updatedAt,vectorClock,hidden,collapsed,deletedAt);
+
+@override
+String toString() {
+  return 'EntryLink.charter(id: $id, fromId: $fromId, toId: $toId, createdAt: $createdAt, updatedAt: $updatedAt, vectorClock: $vectorClock, hidden: $hidden, collapsed: $collapsed, deletedAt: $deletedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CharterLinkCopyWith<$Res> implements $EntryLinkCopyWith<$Res> {
+  factory $CharterLinkCopyWith(CharterLink value, $Res Function(CharterLink) _then) = _$CharterLinkCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String fromId, String toId, DateTime createdAt, DateTime updatedAt, VectorClock? vectorClock, bool? hidden, bool? collapsed, DateTime? deletedAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$CharterLinkCopyWithImpl<$Res>
+    implements $CharterLinkCopyWith<$Res> {
+  _$CharterLinkCopyWithImpl(this._self, this._then);
+
+  final CharterLink _self;
+  final $Res Function(CharterLink) _then;
+
+/// Create a copy of EntryLink
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromId = null,Object? toId = null,Object? createdAt = null,Object? updatedAt = null,Object? vectorClock = freezed,Object? hidden = freezed,Object? collapsed = freezed,Object? deletedAt = freezed,}) {
+  return _then(CharterLink(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fromId: null == fromId ? _self.fromId : fromId // ignore: cast_nullable_to_non_nullable
 as String,toId: null == toId ? _self.toId : toId // ignore: cast_nullable_to_non_nullable

@@ -7193,6 +7193,30 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Escribir sobre este objetivo';
+
+  @override
+  String get goalCharterEmpty =>
+      'Cuéntale a tu agente para qué es este objetivo y cómo quieres que te acompañe. Lo lee cada vez que te escribe.';
+
+  @override
+  String get goalCharterHint =>
+      '¿Para qué es este objetivo, qué te importa y cómo debería acompañarte tu agente? Por ejemplo: hazme una pregunta guiada cada mañana.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Tu agente solo puede leer la primera parte. Acorta o combina entradas para que lo lea todo.';
+
+  @override
+  String get goalCharterRecord => 'Grabar sobre este objetivo';
+
+  @override
+  String get goalCharterSaveFailed => 'No se ha guardado. Inténtalo de nuevo.';
+
+  @override
+  String get goalCharterTitle => 'Sobre este objetivo';
+
+  @override
   String get goalChartSevenDayAverage => 'Media de 7 días';
 
   @override
