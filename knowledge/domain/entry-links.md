@@ -1,7 +1,7 @@
 ---
 type: Domain Model
 title: Entry links
-description: One row per relationship, nine variants sharing one shape, and why the type column is what keeps old consumers working.
+description: One row per relationship, ten variants sharing one shape, and why the type column is what keeps old consumers working.
 resource: ../../lib/classes/entry_link.dart
 tags: [domain, links, relationships]
 status: stable
@@ -20,6 +20,10 @@ sources:
     resource: ../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
     last_modified: 2026-07-24
+  - id: adr-0140
+    resource: ../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md
+    title: ADR 0140 — the charter link, pointing from the entry into its goal
+    last_modified: 2026-10-18
   - id: link-upsert
     resource: ../../lib/database/database_links_ratings.dart
     title: JournalDb.upsertEntryLink, linksBetween and the live-link reads
@@ -46,11 +50,11 @@ sources:
     last_modified: 2026-09-27
 ---
 
-# Nine variants, one shape
+# Ten variants, one shape
 
 `EntryLink` is a union of `basic`, `rating`, `project`, `relationship`,
-`blocks`, `followsUp`, `duplicates`, `fixes`, `supersedes` — mirrored by
-`EntryLinkType`.
+`charter`, `blocks`, `followsUp`, `duplicates`, `fixes`, `supersedes` —
+mirrored by `EntryLinkType`.
 
 **Every variant has the same shape**: id, `fromId`, `toId`, timestamps, vector
 clock. The relationship lives entirely in the **type column**.
@@ -86,6 +90,13 @@ relationships while keeping each one singular.
 of the two must resolve the endpoint's journal `type` — see
 `JournalDb.getLiveTasksByIds`, which filters on the indexed column so a
 person's whole check-in history is never deserialized just to be discarded.
+
+**Direction can carry the meaning too.** A goal's check-ins are `BasicLink`s
+*from* the goal; its charter entries are `CharterLink`s *to* it (ADR 0140).
+Every check-in reader walks the goal's outgoing links, so a charter entry can
+never be read as a check-in — and an older build, which folds the unknown
+variant into a `BasicLink`, keeps the direction and so keeps that guarantee.
+`JournalDb.charterLinksToGoal` reads them by `(to_id, type)`.
 
 **Only these columns are queryable.** Everything else an `EntryLink` carries —
 `vectorClock`, `collapsed`, `deletedAt` — lives inside `serialized`.
