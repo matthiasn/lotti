@@ -16,6 +16,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/entry_link_creation.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1000,6 +1001,44 @@ void main() {
         expect(links.map((l) => l.id), ['live']);
         expect(links.single, isA<CharterLink>());
         expect(links.single.fromId, 'about');
+      });
+
+      test('reads a charter link an older build stored as a BasicLink, by the '
+          'id it was derived with — and no other basic link into the '
+          'goal', () async {
+        // What an older build writes on receiving a charter link: the
+        // fallback union decodes it as `basic`, and it is stored as one —
+        // type column and payload — keeping only its derived id.
+        final foldedId = entryLinkId(
+          fromId: 'folded-about',
+          toId: 'goal',
+          type: 'CharterLink',
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: foldedId,
+            fromId: 'folded-about',
+            toId: 'goal',
+            timestamp: at,
+          ),
+        );
+        // An ordinary plain link into the goal, with a basic-derived id.
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: entryLinkId(
+              fromId: 'unrelated',
+              toId: 'goal',
+              type: 'BasicLink',
+            ),
+            fromId: 'unrelated',
+            toId: 'goal',
+            timestamp: at,
+          ),
+        );
+
+        final links = await db!.charterLinksToGoal('goal');
+
+        expect(links.map((l) => l.fromId).toSet(), {'about', 'folded-about'});
       });
 
       test("is invisible to a reader of the goal's outgoing links — the "

@@ -283,17 +283,39 @@ mixin _JournalDbLinksRatings
   /// pointing from the entry to the goal (ADR 0140). Served by the
   /// `(to_id, type)` index. Hidden links are left out — a charter link is
   /// never hidden by this app, so a hidden one is a removal in flight.
+  ///
+  /// Also a charter link an OLDER build received before this device
+  /// upgraded: that build decoded the unknown variant as a `BasicLink` and
+  /// stored it so, type column and payload both. Its id survives, though —
+  /// derived from the charter type and the pair — so a basic row into the
+  /// goal carrying exactly that id can only be a folded charter link, and
+  /// is read as one. Without this, the entry would stay out of the charter
+  /// on that device for good: the row's vector clock stops sync replaying it.
   Future<List<EntryLink>> charterLinksToGoal(String goalId) async {
+    final charterType = entryLinkTypeDbName(EntryLinkType.charter);
     final rows =
         await (select(linkedEntries)..where(
               (t) =>
                   t.toId.equals(goalId) &
-                  t.type.equals(entryLinkTypeDbName(EntryLinkType.charter)) &
+                  t.type.isIn([
+                    charterType,
+                    entryLinkTypeDbName(EntryLinkType.basic),
+                  ]) &
                   (t.hidden.isNull() | t.hidden.equals(false)) &
                   _linkIsLive,
             ))
             .get();
-    return rows.map(entryLinkFromLinkedDbEntry).toList();
+    return [
+      for (final row in rows)
+        if (row.type == charterType ||
+            row.id ==
+                entryLinkId(
+                  fromId: row.fromId,
+                  toId: goalId,
+                  type: charterType,
+                ))
+          entryLinkFromLinkedDbEntry(row),
+    ];
   }
 
   /// Every stored version of a link from [fromId] to [toId] — of [type]
