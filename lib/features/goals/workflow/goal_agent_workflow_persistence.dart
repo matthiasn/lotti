@@ -539,7 +539,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
       // The strategy validated them already; one the store still refuses —
       // or cannot read its prior version for — is logged and dropped, never
       // the rest of the wake's output, the user's reply above all.
-      for (final fact in strategy.factRequests) {
+      for (final (:fact, :confirmed) in strategy.rememberedFacts) {
         try {
           await _knowledge.propose(
             agentId: agentId,
@@ -547,10 +547,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
             hook: fact.hook,
             statement: fact.statement,
             source: fact.source,
-            userConfirmed: goalFactIsUserConfirmed(
-              fact,
-              answeringUser: replyToUser,
-            ),
+            userConfirmed: confirmed,
           );
         } catch (error, stackTrace) {
           logError(

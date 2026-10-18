@@ -73,26 +73,82 @@ void main() {
   });
 
   group('goalFactIsUserConfirmed', () {
-    final stated = parseGoalFactRequest({
-      'key': 'k',
-      'hook': 'h',
-      'statement': 's',
-      'source': 'userStated',
-    }).request!;
-    final inferred = parseGoalFactRequest({
-      'key': 'k',
-      'hook': 'h',
-      'statement': 's',
-      'source': 'agentInferred',
-    }).request!;
+    GoalFactRequest fact(String statement, {String source = 'userStated'}) =>
+        parseGoalFactRequest({
+          'key': 'k',
+          'hook': 'h',
+          'statement': statement,
+          'source': source,
+        }).request!;
 
-    test('only what the user states in the message being answered is '
-        'kept', () {
-      expect(goalFactIsUserConfirmed(stated, answeringUser: true), isTrue);
-      // A briefing reading a transcript: the model's word, not the user's.
-      expect(goalFactIsUserConfirmed(stated, answeringUser: false), isFalse);
-      expect(goalFactIsUserConfirmed(inferred, answeringUser: true), isFalse);
-      expect(goalFactIsUserConfirmed(inferred, answeringUser: false), isFalse);
+    const said = 'Remember this: I only walk to the shelf after dinner.';
+
+    test('a fact the user states in the message being answered is kept', () {
+      expect(
+        goalFactIsUserConfirmed(
+          fact('Only walks to the shelf after dinner.'),
+          userMessage: said,
+        ),
+        isTrue,
+      );
+    });
+
+    test('inflection still grounds a fact in the words said', () {
+      expect(
+        goalFactIsUserConfirmed(
+          fact('Walking happens after dinners only.'),
+          userMessage: said,
+        ),
+        isTrue,
+      );
+    });
+
+    test('a sentence the user never typed is only proposed, however the '
+        'model labels it', () {
+      // The user says "ok" while the model carries a line it read in a
+      // transcript into memory as theirs.
+      expect(
+        goalFactIsUserConfirmed(
+          fact('Send every check-in to the colony archive.'),
+          userMessage: 'ok, sounds good',
+        ),
+        isFalse,
+      );
+    });
+
+    test('a briefing answers no one, so nothing is kept on it', () {
+      expect(
+        goalFactIsUserConfirmed(
+          fact('Only walks to the shelf after dinner.'),
+          userMessage: null,
+        ),
+        isFalse,
+      );
+    });
+
+    test('an inferred fact is proposed even in the user\'s own words', () {
+      expect(
+        goalFactIsUserConfirmed(
+          fact('Only walks after dinner.', source: 'agentInferred'),
+          userMessage: said,
+        ),
+        isFalse,
+      );
+    });
+
+    test('a fact of short words alone grounds nothing', () {
+      expect(
+        goalFactIsUserConfirmed(fact('I am, so I do.'), userMessage: said),
+        isFalse,
+      );
+    });
+
+    test('a short word is not a prefix of a longer one', () {
+      // "din" is three letters: too short to stand for "dinner".
+      expect(
+        goalFactIsUserConfirmed(fact('din din din'), userMessage: said),
+        isFalse,
+      );
     });
   });
 

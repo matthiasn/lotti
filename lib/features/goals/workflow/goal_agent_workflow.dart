@@ -428,7 +428,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       facts: facts,
       reference: reference,
       overdueEscalation: overdueEscalation,
-      answeringUser: pendingUserMessage != null,
+      userMessage: pendingUserMessage,
     );
 
     final allTools = [

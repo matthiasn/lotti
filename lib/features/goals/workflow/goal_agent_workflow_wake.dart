@@ -256,7 +256,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required GoalWakeFacts facts,
     required DateTime reference,
     required bool overdueEscalation,
-    required bool answeringUser,
+    required String? userMessage,
   }) {
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
@@ -290,7 +290,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         facts.evaluation.results,
       ),
       memorySearcher: _memorySearch.forAgent(agentId),
-      answeringUser: answeringUser,
+      userMessage: userMessage,
     );
   }
 

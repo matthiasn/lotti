@@ -686,9 +686,10 @@ final List<AgentToolDefinition> goalAgentTools = [
         'shape coaching for months: a constraint, a preference, how they '
         'want to be coached. Use a stable key (e.g. "walks-after-dinner"); '
         're-using a key replaces that fact. Set source to "userStated" only '
-        'when the user says it in the message you are answering; a fact the '
-        'user just told you is kept, anything else waits for their '
-        'confirmation on the goal page. Not for progress or one-off events.',
+        'when the user says it in the message you are answering, and keep '
+        'their words in the statement; a fact the user just told you is '
+        'kept, anything else waits for their confirmation on the goal '
+        'page. Not for progress or one-off events.',
     parameters: {
       'type': 'object',
       'properties': {

@@ -59,7 +59,7 @@ class GoalAgentStrategy extends ConversationStrategy
     this.expectedStatus,
     this.expectedRollingAggregates = const [],
     this._memorySearcher,
-    this.answeringUser = false,
+    this.userMessage,
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -127,14 +127,17 @@ class GoalAgentStrategy extends ConversationStrategy
   /// conversation goes on, so the model reads what it asked for.
   var _recalledThisBatch = false;
 
-  /// Whether this wake answers the user's own chat message — the one case a
-  /// fact they state is kept rather than proposed (`goalFactIsUserConfirmed`).
-  final bool answeringUser;
+  /// The user's chat message this wake answers, or null on any other wake —
+  /// the only words a fact can be kept on (`goalFactIsUserConfirmed`).
+  final String? userMessage;
 
-  final _factRequests = <GoalFactRequest>[];
+  final _rememberedFacts = <({GoalFactRequest fact, bool confirmed})>[];
 
-  /// The facts this wake asked to remember, for the workflow to store.
-  List<GoalFactRequest> get factRequests => List.unmodifiable(_factRequests);
+  /// The facts this wake asked to remember, each with whether it is kept at
+  /// once — decided here, where the model was told, for the workflow to
+  /// store exactly as answered.
+  List<({GoalFactRequest fact, bool confirmed})> get rememberedFacts =>
+      List.unmodifiable(_rememberedFacts);
 
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
@@ -823,13 +826,15 @@ class GoalAgentStrategy extends ConversationStrategy
       await _accept(call, manager, parsed.error!);
       return;
     }
-    _factRequests.add(request);
+    final confirmed = goalFactIsUserConfirmed(
+      request,
+      userMessage: userMessage,
+    );
+    _rememberedFacts.add((fact: request, confirmed: confirmed));
     await _accept(
       call,
       manager,
-      goalFactIsUserConfirmed(request, answeringUser: answeringUser)
-          ? goalFactKeptAnswer
-          : goalFactProposedAnswer,
+      confirmed ? goalFactKeptAnswer : goalFactProposedAnswer,
     );
   }
 

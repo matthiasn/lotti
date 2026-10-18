@@ -66,15 +66,50 @@ typedef GoalFactRequest = ({
   );
 }
 
+/// The share of a fact's words that must stand in the user's own message
+/// for it to count as theirs.
+const double goalFactGroundingShare = 0.5;
+
 /// Whether [request] is kept at once, or waits for the user on the goal
-/// page. Kept only when the user stated it in the message being answered:
-/// a fact the model attests on any other wake — a briefing reading a
-/// check-in transcript, say — is the model's word, and words quoted in a
-/// transcript must not write themselves into memory every wake reads.
+/// page (ADR 0141). Kept only when the model attests the user stated it,
+/// on a wake answering the user's [userMessage], and the fact is grounded
+/// in that message: at least [goalFactGroundingShare] of its words appear
+/// in it. The source is the model's word, and the model has read
+/// transcripts, check-ins and the charter too — without the grounding, a
+/// user's "ok" could carry a sentence planted in a transcript into memory
+/// every wake reads. A fact that fails it is only proposed, never lost.
 bool goalFactIsUserConfirmed(
   GoalFactRequest request, {
-  required bool answeringUser,
-}) => answeringUser && request.source == KnowledgeSource.userStated;
+  required String? userMessage,
+}) {
+  if (userMessage == null || request.source != KnowledgeSource.userStated) {
+    return false;
+  }
+  final factWords = _contentWords(request.statement);
+  if (factWords.isEmpty) return false;
+  final said = _contentWords(userMessage);
+  final grounded = factWords.where(
+    (word) => said.any((other) => _sameWord(word, other)),
+  );
+  return grounded.length >= factWords.length * goalFactGroundingShare;
+}
+
+final _word = RegExp(r'[\p{L}\p{N}]+', unicode: true);
+
+/// The distinct words of [text] that carry content: three letters or more,
+/// so "a", "I" and "is" ground nothing.
+Set<String> _contentWords(String text) => {
+  for (final match in _word.allMatches(text.toLowerCase()))
+    if (match[0]!.length >= 3) match[0]!,
+};
+
+/// One word, allowing for inflection: equal, or one a prefix of the other
+/// past four letters ("walk", "walks", "walking").
+bool _sameWord(String a, String b) {
+  if (a == b) return true;
+  final (short, long) = a.length <= b.length ? (a, b) : (b, a);
+  return short.length >= 4 && long.startsWith(short);
+}
 
 /// The tool's answer to a fact the user stated in their own message.
 const goalFactKeptAnswer =

@@ -1891,16 +1891,15 @@ void main() {
   });
 
   group('remember_goal_fact', () {
-    GoalAgentStrategy remembering({required bool answeringUser}) =>
-        GoalAgentStrategy(
-          domainLogger: domainLogger,
-          syncService: syncService,
-          agentId: 'goal-1',
-          threadId: 'thread-1',
-          runKey: 'run-1',
-          knownAdIds: const {},
-          answeringUser: answeringUser,
-        );
+    GoalAgentStrategy remembering({String? userMessage}) => GoalAgentStrategy(
+      domainLogger: domainLogger,
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      userMessage: userMessage,
+    );
 
     Future<void> remember(
       GoalAgentStrategy strategy,
@@ -1919,15 +1918,19 @@ void main() {
       'source': 'userStated',
     };
 
+    const said = 'Remember: I walk after dinner, never before.';
+
     test(
       'a fact the user states in the message being answered is kept',
       () async {
-        final strategy = remembering(answeringUser: true);
+        final strategy = remembering(userMessage: said);
 
         await remember(strategy, stated);
 
         expect(rejection(), goalFactKeptAnswer);
-        expect(strategy.factRequests.single.key, 'walks-after-dinner');
+        final remembered = strategy.rememberedFacts.single;
+        expect(remembered.fact.key, 'walks-after-dinner');
+        expect(remembered.confirmed, isTrue);
         expect(strategy.unresolvedRejectedTools, isEmpty);
       },
     );
@@ -1935,19 +1938,31 @@ void main() {
     test(
       'the same fact on a wake that answers no one is only proposed',
       () async {
-        final strategy = remembering(answeringUser: false);
+        final strategy = remembering();
 
         await remember(strategy, stated);
 
         expect(rejection(), goalFactProposedAnswer);
-        expect(strategy.factRequests, hasLength(1));
+        expect(strategy.rememberedFacts.single.confirmed, isFalse);
+      },
+    );
+
+    test(
+      'a fact the user did not say is proposed, even labelled as theirs',
+      () async {
+        final strategy = remembering(userMessage: 'ok, thanks');
+
+        await remember(strategy, stated);
+
+        expect(rejection(), goalFactProposedAnswer);
+        expect(strategy.rememberedFacts.single.confirmed, isFalse);
       },
     );
 
     test(
       'an inferred fact is proposed even while answering the user',
       () async {
-        final strategy = remembering(answeringUser: true);
+        final strategy = remembering(userMessage: said);
 
         await remember(strategy, {...stated, 'source': 'agentInferred'});
 
@@ -1957,12 +1972,12 @@ void main() {
 
     test('a malformed fact is answered, not rejected, and nothing is '
         'kept', () async {
-      final strategy = remembering(answeringUser: true);
+      final strategy = remembering(userMessage: said);
 
       await remember(strategy, {...stated, 'hook': ' '});
 
       expect(rejection(), startsWith('Not remembered:'));
-      expect(strategy.factRequests, isEmpty);
+      expect(strategy.rememberedFacts, isEmpty);
       expect(strategy.unresolvedRejectedTools, isEmpty);
     });
   });
