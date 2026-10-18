@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -53,9 +55,11 @@ class AgentKnowledgePanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The same header tier as the goal page's "About this goal" card
+          // beside it, so the two read as siblings.
           Text(
             context.messages.agentKnowledgeTitle,
-            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),
           ),
@@ -67,21 +71,22 @@ class AgentKnowledgePanel extends ConsumerWidget {
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
-          if (view.proposed.isNotEmpty) ...[
-            _SectionHeader(
+          if (view.proposed.isNotEmpty)
+            _KnowledgeGroup(
+              agentId: agentId,
               label: context.messages.agentKnowledgeProposedHeader,
+              entries: view.proposed,
+              proposed: true,
             ),
-            for (final entry in view.proposed)
-              _KnowledgeRow(agentId: agentId, entry: entry, proposed: true),
-          ],
           if (view.confirmed.isNotEmpty) ...[
             if (view.proposed.isNotEmpty)
-              SizedBox(height: tokens.spacing.step4),
-            _SectionHeader(
+              SizedBox(height: tokens.spacing.step5),
+            _KnowledgeGroup(
+              agentId: agentId,
               label: context.messages.agentKnowledgeConfirmedHeader,
+              entries: view.confirmed,
+              proposed: false,
             ),
-            for (final entry in view.confirmed)
-              _KnowledgeRow(agentId: agentId, entry: entry, proposed: false),
           ],
         ],
       ),
@@ -89,23 +94,43 @@ class AgentKnowledgePanel extends ConsumerWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
+/// One status group: a caption-tier label over its facts, a rule between
+/// facts as between the charter's entries.
+class _KnowledgeGroup extends StatelessWidget {
+  const _KnowledgeGroup({
+    required this.agentId,
+    required this.label,
+    required this.entries,
+    required this.proposed,
+  });
 
+  final String agentId;
   final String label;
+  final List<PlannerKnowledgeEntity> entries;
+  final bool proposed;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
-      child: Text(
-        label.toUpperCase(),
-        style: tokens.typography.styles.body.bodySmall.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
-          letterSpacing: 0.8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
         ),
-      ),
+        SizedBox(height: tokens.spacing.step2),
+        for (final (index, entry) in entries.indexed) ...[
+          if (index > 0)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+              child: const DesignSystemDivider(),
+            ),
+          _KnowledgeRow(agentId: agentId, entry: entry, proposed: proposed),
+        ],
+      ],
     );
   }
 }
@@ -127,60 +152,63 @@ class _KnowledgeRow extends ConsumerWidget {
     final isStale =
         entry.reviewAfter != null && !entry.reviewAfter!.isAfter(clock.now());
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          entry.statementText,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        if (isStale) ...[
+          SizedBox(height: tokens.spacing.step1),
           Text(
-            entry.statementText,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.highEmphasis,
+            context.messages.agentKnowledgeStale,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.alert.warning.ink,
             ),
           ),
-          if (isStale) ...[
-            SizedBox(height: tokens.spacing.step1),
-            Text(
-              context.messages.agentKnowledgeStale,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.alert.warning.ink,
-              ),
-            ),
-          ],
-          if (entry.tags.isNotEmpty) ...[
-            SizedBox(height: tokens.spacing.step2),
-            Wrap(
-              spacing: tokens.spacing.step2,
-              runSpacing: tokens.spacing.step2,
-              children: [
-                for (final tag in entry.tags)
-                  DsPill(variant: DsPillVariant.filled, label: tag),
-              ],
-            ),
-          ],
+        ],
+        if (entry.tags.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.step2),
-          Row(
+          Wrap(
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
             children: [
-              if (proposed)
-                _Action(
-                  label: context.messages.agentKnowledgeConfirm,
-                  emphasized: true,
-                  onPressed: () => _confirm(ref),
-                )
-              else
-                _Action(
-                  label: context.messages.agentKnowledgeEdit,
-                  onPressed: () => _edit(context, ref),
-                ),
-              SizedBox(width: tokens.spacing.step3),
-              _Action(
-                label: context.messages.agentKnowledgeRetract,
-                onPressed: () => _retract(ref),
-              ),
+              for (final tag in entry.tags)
+                DsPill(variant: DsPillVariant.filled, label: tag),
             ],
           ),
         ],
-      ),
+        SizedBox(height: tokens.spacing.step1),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (proposed)
+              DesignSystemButton(
+                label: context.messages.agentKnowledgeConfirm,
+                size: DesignSystemButtonSize.dense,
+                variant: DesignSystemButtonVariant.tertiary,
+                onPressed: () => _confirm(ref),
+              )
+            else
+              DesignSystemButton(
+                label: context.messages.agentKnowledgeEdit,
+                size: DesignSystemButtonSize.dense,
+                variant: DesignSystemButtonVariant.quiet,
+                onPressed: () => _edit(context, ref),
+              ),
+            SizedBox(width: tokens.spacing.step2),
+            DesignSystemButton(
+              label: context.messages.agentKnowledgeRetract,
+              size: DesignSystemButtonSize.dense,
+              variant: DesignSystemButtonVariant.quiet,
+              onPressed: () => _retract(ref),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -208,40 +236,6 @@ class _KnowledgeRow extends ConsumerWidget {
           statement: result.statement,
         );
     ref.invalidate(agentKnowledgeProvider(agentId));
-  }
-}
-
-class _Action extends StatelessWidget {
-  const _Action({
-    required this.label,
-    required this.onPressed,
-    this.emphasized = false,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = emphasized
-        ? tokens.colors.interactive.enabled
-        : tokens.colors.text.mediumEmphasis;
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: color,
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step3,
-          vertical: tokens.spacing.step1,
-        ),
-        textStyle: tokens.typography.styles.body.bodySmall,
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: Text(label),
-    );
   }
 }
 

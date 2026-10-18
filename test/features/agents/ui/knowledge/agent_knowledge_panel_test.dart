@@ -96,9 +96,9 @@ void main() {
 
     expect(find.text('No deep work before 10.'), findsOneWidget);
     expect(find.text('You seem to work out on Tuesdays.'), findsOneWidget);
-    expect(find.text('Confirmed'.toUpperCase()), findsOneWidget);
+    expect(find.text('Confirmed'), findsOneWidget);
     expect(
-      find.text('Awaiting your confirmation'.toUpperCase()),
+      find.text('Awaiting your confirmation'),
       findsOneWidget,
     );
   });
