@@ -510,6 +510,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentKnowledgeRetract => 'Glem det';
 
   @override
+  String get agentKnowledgeRetry => 'Prøv igen';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Det blev ikke gemt. Prøv igen.';
+
+  @override
   String get agentKnowledgeStale => 'Er det stadig sandt?';
 
   @override

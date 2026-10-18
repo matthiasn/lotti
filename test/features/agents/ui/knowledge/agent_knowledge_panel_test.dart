@@ -386,6 +386,86 @@ void main() {
     );
   });
 
+  testWidgets('a failed save keeps the sheet open on the draft, with why', (
+    tester,
+  ) async {
+    final service = MockAgentKnowledgeService();
+    var attempts = 0;
+    when(
+      () => service.editStatement(
+        'c',
+        hook: any(named: 'hook'),
+        statement: any(named: 'statement'),
+      ),
+    ).thenAnswer((_) async {
+      attempts++;
+      if (attempts == 1) throw Exception('write refused');
+      return null;
+    });
+    final view = AgentKnowledgeView(
+      confirmed: [entry(id: 'c', key: 'k', statement: 'old statement')],
+      proposed: const [],
+    );
+
+    await tester.pumpWidget(panel(view, service));
+    await tester.pump();
+    await openMenu(tester, 'c');
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(1), 'my new words');
+    await tester.tap(find.byKey(const ValueKey('agent-knowledge-edit-save')));
+    await tester.pumpAndSettle();
+
+    // Still open, the words still there, the reason under them.
+    expect(find.byKey(const ValueKey('agent-knowledge-edit-save')), findsOne);
+    expect(find.text('my new words'), findsOneWidget);
+    expect(find.text("That didn't save. Try again."), findsOneWidget);
+
+    // The second try lands and closes the sheet.
+    await tester.tap(find.byKey(const ValueKey('agent-knowledge-edit-save')));
+    await tester.pumpAndSettle();
+
+    expect(attempts, 2);
+    expect(
+      find.byKey(const ValueKey('agent-knowledge-edit-save')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('a failed load offers a retry that reads again', (tester) async {
+    var reads = 0;
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
+        overrides: [
+          agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith((
+            ref,
+          ) async {
+            reads++;
+            if (reads == 1) throw Exception('store unavailable');
+            return const AgentKnowledgeView(confirmed: [], proposed: []);
+          }),
+          agentKnowledgeServiceProvider.overrideWithValue(
+            MockAgentKnowledgeService(),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text("Couldn't load what I've learned."), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('agent-knowledge-retry')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(reads, 2);
+    expect(
+      find.text("Nothing yet — I'll remember what you tell me."),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('cancelling the edit dialog does not call the service', (
     tester,
   ) async {

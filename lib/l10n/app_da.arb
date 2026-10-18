@@ -278,6 +278,8 @@
   "agentKnowledgeLoadError": "Kunne ikke indlæse, hvad jeg har lært.",
   "agentKnowledgeProposedHeader": "Har jeg forstået det rigtigt?",
   "agentKnowledgeRetract": "Glem det",
+  "agentKnowledgeRetry": "Prøv igen",
+  "agentKnowledgeSaveFailed": "Det blev ikke gemt. Prøv igen.",
   "agentKnowledgeStale": "Er det stadig sandt?",
   "agentKnowledgeStillTrueYes": "Ja",
   "agentKnowledgeTitle": "Hvad jeg har lært",

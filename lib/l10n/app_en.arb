@@ -277,6 +277,8 @@
   "agentKnowledgeLoadError": "Couldn't load what I've learned.",
   "agentKnowledgeProposedHeader": "Did I get this right?",
   "agentKnowledgeRetract": "Forget",
+  "agentKnowledgeRetry": "Try again",
+  "agentKnowledgeSaveFailed": "That didn't save. Try again.",
   "agentKnowledgeStale": "Still true?",
   "agentKnowledgeStillTrueYes": "Yes",
   "agentKnowledgeTitle": "What I've learned",

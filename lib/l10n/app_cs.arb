@@ -278,6 +278,8 @@
   "agentKnowledgeLoadError": "Nepodařilo se načíst, co jsem se naučil.",
   "agentKnowledgeProposedHeader": "Pochopil jsem to správně?",
   "agentKnowledgeRetract": "Zapomenout",
+  "agentKnowledgeRetry": "Zkusit znovu",
+  "agentKnowledgeSaveFailed": "Neuložilo se to. Zkus to znovu.",
   "agentKnowledgeStale": "Platí to stále?",
   "agentKnowledgeStillTrueYes": "Ano",
   "agentKnowledgeTitle": "Co jsem se naučil",

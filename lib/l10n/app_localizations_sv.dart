@@ -512,6 +512,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentKnowledgeRetract => 'Glöm';
 
   @override
+  String get agentKnowledgeRetry => 'Försök igen';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Det sparades inte. Försök igen.';
+
+  @override
   String get agentKnowledgeStale => 'Stämmer det fortfarande?';
 
   @override

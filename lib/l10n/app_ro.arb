@@ -271,6 +271,8 @@
   "agentKnowledgeLoadError": "Nu s-a putut încărca ce am învățat.",
   "agentKnowledgeProposedHeader": "Am înțeles corect?",
   "agentKnowledgeRetract": "Uitați",
+  "agentKnowledgeRetry": "Încercați din nou",
+  "agentKnowledgeSaveFailed": "Nu s-a salvat. Încercați din nou.",
   "agentKnowledgeStale": "Mai este valabil?",
   "agentKnowledgeStillTrueYes": "Da",
   "agentKnowledgeTitle": "Ce am învățat",

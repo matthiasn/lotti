@@ -278,6 +278,8 @@
   "agentKnowledgeLoadError": "Det gick inte att läsa in vad jag har lärt mig.",
   "agentKnowledgeProposedHeader": "Har jag förstått rätt?",
   "agentKnowledgeRetract": "Glöm",
+  "agentKnowledgeRetry": "Försök igen",
+  "agentKnowledgeSaveFailed": "Det sparades inte. Försök igen.",
   "agentKnowledgeStale": "Stämmer det fortfarande?",
   "agentKnowledgeStillTrueYes": "Ja",
   "agentKnowledgeTitle": "Vad jag har lärt mig",

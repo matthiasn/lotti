@@ -10,8 +10,10 @@ import 'package:material_ui/material_ui.dart';
 /// forgotten.
 ///
 /// Takes no room until the agent has learned something — a goal page is
-/// long, and an empty panel would be one more card saying nothing. It owns
-/// the gap above it, so rendering nothing leaves no hole in the page.
+/// long, and an empty panel would be one more card saying nothing. A first
+/// read that fails is the exception: the panel shows why, with a retry, so
+/// the facts are never silently out of reach. It owns the gap above it, so
+/// rendering nothing leaves no hole in the page.
 class GoalKnowledgeSection extends ConsumerWidget {
   const GoalKnowledgeSection({required this.agentId, super.key});
 
@@ -21,8 +23,12 @@ class GoalKnowledgeSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // `.value`: a re-read after a confirm or a synced edit keeps the panel
     // on screen rather than flashing it away.
-    final view = ref.watch(agentKnowledgeProvider(agentId)).value;
-    if (view == null || view.isEmpty) return const SizedBox.shrink();
+    final async = ref.watch(agentKnowledgeProvider(agentId));
+    final view = async.value;
+    final failed = view == null && async.hasError;
+    if (!failed && (view == null || view.isEmpty)) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       key: const ValueKey('goal-knowledge-section'),
       padding: EdgeInsets.only(

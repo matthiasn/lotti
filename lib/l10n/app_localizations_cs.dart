@@ -512,6 +512,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentKnowledgeRetract => 'Zapomenout';
 
   @override
+  String get agentKnowledgeRetry => 'Zkusit znovu';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Neuložilo se to. Zkus to znovu.';
+
+  @override
   String get agentKnowledgeStale => 'Platí to stále?';
 
   @override

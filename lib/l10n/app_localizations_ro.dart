@@ -515,6 +515,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentKnowledgeRetract => 'Uitați';
 
   @override
+  String get agentKnowledgeRetry => 'Încercați din nou';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Nu s-a salvat. Încercați din nou.';
+
+  @override
   String get agentKnowledgeStale => 'Mai este valabil?';
 
   @override

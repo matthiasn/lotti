@@ -271,6 +271,8 @@
   "agentKnowledgeLoadError": "Impossible de charger ce que j'ai appris.",
   "agentKnowledgeProposedHeader": "Est-ce que j'ai bien compris ?",
   "agentKnowledgeRetract": "Oublier",
+  "agentKnowledgeRetry": "Réessayer",
+  "agentKnowledgeSaveFailed": "Ça n'a pas été enregistré. Réessaie.",
   "agentKnowledgeStale": "Toujours vrai ?",
   "agentKnowledgeStillTrueYes": "Oui",
   "agentKnowledgeTitle": "Ce que j'ai appris",

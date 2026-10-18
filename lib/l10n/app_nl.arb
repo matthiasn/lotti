@@ -277,6 +277,8 @@
   "agentKnowledgeLoadError": "Wat ik heb geleerd kon niet worden geladen.",
   "agentKnowledgeProposedHeader": "Heb ik dit goed begrepen?",
   "agentKnowledgeRetract": "Vergeten",
+  "agentKnowledgeRetry": "Opnieuw proberen",
+  "agentKnowledgeSaveFailed": "Dat is niet opgeslagen. Probeer het opnieuw.",
   "agentKnowledgeStale": "Nog steeds waar?",
   "agentKnowledgeStillTrueYes": "Ja",
   "agentKnowledgeTitle": "Wat ik heb geleerd",

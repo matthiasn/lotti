@@ -78,4 +78,26 @@ void main() {
     expect(find.text('I walk after dinner, never before.'), findsOneWidget);
     expect(find.text('Confirm'), findsOneWidget);
   });
+
+  testWidgets('a failed first read shows why, with a retry that reloads', (
+    tester,
+  ) async {
+    var reads = 0;
+    await pump(tester, () async {
+      reads++;
+      if (reads == 1) throw Exception('store unavailable');
+      return AgentKnowledgeView(confirmed: const [], proposed: [proposed]);
+    });
+
+    // The facts are not silently out of reach: the panel says so.
+    expect(find.byKey(const ValueKey('goal-knowledge-section')), findsOne);
+    expect(find.text("Couldn't load what I've learned."), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('agent-knowledge-retry')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(reads, 2);
+    expect(find.text('I walk after dinner, never before.'), findsOneWidget);
+  });
 }

@@ -985,6 +985,18 @@ abstract class AppLocalizations {
   /// **'Forget'**
   String get agentKnowledgeRetract;
 
+  /// No description provided for @agentKnowledgeRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get agentKnowledgeRetry;
+
+  /// No description provided for @agentKnowledgeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save. Try again.'**
+  String get agentKnowledgeSaveFailed;
+
   /// No description provided for @agentKnowledgeStale.
   ///
   /// In en, this message translates to:

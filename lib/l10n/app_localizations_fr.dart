@@ -518,6 +518,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentKnowledgeRetract => 'Oublier';
 
   @override
+  String get agentKnowledgeRetry => 'Réessayer';
+
+  @override
+  String get agentKnowledgeSaveFailed =>
+      'Ça n\'a pas été enregistré. Réessaie.';
+
+  @override
   String get agentKnowledgeStale => 'Toujours vrai ?';
 
   @override

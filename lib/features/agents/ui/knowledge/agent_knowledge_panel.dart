@@ -54,12 +54,25 @@ class AgentKnowledgePanel extends ConsumerWidget {
         padding: EdgeInsets.all(tokens.spacing.step6),
         child: Center(
           child: async.hasError
-              ? Text(
-                  messages.agentKnowledgeLoadError,
-                  textAlign: TextAlign.center,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      messages.agentKnowledgeLoadError,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step3),
+                    DesignSystemButton(
+                      key: const ValueKey('agent-knowledge-retry'),
+                      label: messages.agentKnowledgeRetry,
+                      variant: DesignSystemButtonVariant.secondary,
+                      onPressed: () =>
+                          ref.invalidate(agentKnowledgeProvider(agentId)),
+                    ),
+                  ],
                 )
               : const DesignSystemSpinner(size: IconSizes.l),
         ),
@@ -315,21 +328,23 @@ class _ConfirmedFact extends ConsumerWidget {
     );
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref) async {
-    final result = await DsActionModal.show<({String hook, String statement})>(
+  Future<void> _edit(BuildContext context, WidgetRef ref) {
+    final service = ref.read(agentKnowledgeServiceProvider);
+    return DsActionModal.show<void>(
       context: context,
       title: context.messages.agentKnowledgeEditTitle,
-      builder: (_) => _KnowledgeEditForm(entry: entry),
+      builder: (_) => _KnowledgeEditForm(
+        entry: entry,
+        onSave: (hook, statement) async {
+          await service.editStatement(
+            entry.id,
+            hook: hook,
+            statement: statement,
+          );
+          ref.invalidate(agentKnowledgeProvider(agentId));
+        },
+      ),
     );
-    if (result == null) return;
-    await ref
-        .read(agentKnowledgeServiceProvider)
-        .editStatement(
-          entry.id,
-          hook: result.hook,
-          statement: result.statement,
-        );
-    ref.invalidate(agentKnowledgeProvider(agentId));
   }
 }
 
@@ -352,11 +367,16 @@ Future<void> _retract(
 }
 
 /// The edit sheet's body: the one-line hook and the fact in full, saved only
-/// when both say something. It pops its own result; the caller writes it.
+/// when both say something. It writes through [_KnowledgeEditForm.onSave]
+/// and closes only once that succeeds; a save that fails keeps the sheet
+/// open on the user's words with the reason under them.
 class _KnowledgeEditForm extends StatefulWidget {
-  const _KnowledgeEditForm({required this.entry});
+  const _KnowledgeEditForm({required this.entry, required this.onSave});
 
   final PlannerKnowledgeEntity entry;
+
+  /// Writes the edited hook and statement; throws when it could not.
+  final Future<void> Function(String hook, String statement) onSave;
 
   @override
   State<_KnowledgeEditForm> createState() => _KnowledgeEditFormState();
@@ -377,10 +397,34 @@ class _KnowledgeEditFormState extends State<_KnowledgeEditForm> {
     _statement.addListener(_changed);
   }
 
-  void _changed() => setState(() {});
+  var _saving = false;
+
+  /// Why the last save failed, until the words change.
+  String? _error;
+
+  void _changed() => setState(() => _error = null);
 
   bool get _canSave =>
-      _hook.text.trim().isNotEmpty && _statement.text.trim().isNotEmpty;
+      !_saving &&
+      _hook.text.trim().isNotEmpty &&
+      _statement.text.trim().isNotEmpty;
+
+  Future<void> _save() async {
+    final failed = context.messages.agentKnowledgeSaveFailed;
+    setState(() => _saving = true);
+    try {
+      await widget.onSave(_hook.text.trim(), _statement.text.trim());
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = failed;
+        });
+      }
+      return;
+    }
+    if (mounted) Navigator.of(context).pop();
+  }
 
   @override
   void dispose() {
@@ -414,6 +458,7 @@ class _KnowledgeEditFormState extends State<_KnowledgeEditForm> {
           key: const ValueKey('agent-knowledge-edit-statement'),
           controller: _statement,
           label: messages.agentKnowledgeEditStatementHint,
+          errorText: _error,
           growWithContent: true,
         ),
         SizedBox(height: tokens.spacing.step5),
@@ -423,12 +468,7 @@ class _KnowledgeEditFormState extends State<_KnowledgeEditForm> {
             label: messages.agentKnowledgeEditSave,
             size: DesignSystemButtonSize.large,
             fullWidth: true,
-            onPressed: _canSave
-                ? () => Navigator.of(context).pop((
-                    hook: _hook.text.trim(),
-                    statement: _statement.text.trim(),
-                  ))
-                : null,
+            onPressed: _canSave ? _save : null,
           ),
           secondary: [
             DesignSystemButton(

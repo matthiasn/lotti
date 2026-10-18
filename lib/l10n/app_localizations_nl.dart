@@ -509,6 +509,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentKnowledgeRetract => 'Vergeten';
 
   @override
+  String get agentKnowledgeRetry => 'Opnieuw proberen';
+
+  @override
+  String get agentKnowledgeSaveFailed =>
+      'Dat is niet opgeslagen. Probeer het opnieuw.';
+
+  @override
   String get agentKnowledgeStale => 'Nog steeds waar?';
 
   @override

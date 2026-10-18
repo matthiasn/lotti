@@ -277,6 +277,8 @@
   "agentKnowledgeLoadError": "Não foi possível carregar o que aprendi.",
   "agentKnowledgeProposedHeader": "Percebi bem?",
   "agentKnowledgeRetract": "Esquece",
+  "agentKnowledgeRetry": "Tentar outra vez",
+  "agentKnowledgeSaveFailed": "Não ficou guardado. Tenta outra vez.",
   "agentKnowledgeStale": "Ainda é verdade?",
   "agentKnowledgeStillTrueYes": "Sim",
   "agentKnowledgeTitle": "O que eu aprendi",
