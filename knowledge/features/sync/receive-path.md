@@ -682,8 +682,10 @@ the page:
   out through a second `ValueListenable<int>` that notifies only when it
   changes; the statistics ledger's *Skipped* row listens to that alone, so
   the rest of the ledger never rebuilds on a depth signal. It counts
-  skipped Matrix messages, not entries — nothing a user can act on — so it
+  skipped Matrix messages, not entries, and a large count is routine, so it
   sits in the ledger in the low-emphasis tone rather than in the status row.
+  The remedy stays where it was: while the count is non-zero, the recovery
+  group offers *Retry skipped events* (`InboundQueue.resurrectAll`).
 - The desktop Settings destination reuses the same live depth through
   `inboundQueueDepthProvider` for its neutral outlined `↓ count` badge.
 - `_AdvancedRecoveryGroup` drives
