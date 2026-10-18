@@ -348,6 +348,12 @@ writing a briefing that needs it, it searches every check-in in the user's
 own words, the whole chat and its own notes — not only the recent slice each
 wake carries — and reads the matches before it answers.
 
+And it **remembers**: tell it in the chat "I only walk after dinner" and it
+keeps that as a fact read on every wake from then on. Something it only
+inferred — or picked up from a check-in — waits under *What I've learned* on
+the goal page for the user to confirm, and every fact there can be edited or
+forgotten.
+
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs
@@ -357,6 +363,7 @@ Decisions: ADRs
 [0056](../../../docs/adr/0056-need-to-know-visual-brief-boundary.md),
 [0057](../../../docs/adr/0057-decade-scale-agent-memory.md),
 [0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md),
-[0140](../../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md).
+[0140](../../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md),
+[0141](../../../docs/adr/0141-a-goal-agent-keeps-a-fact-only-from-the-users-own-turn.md).
 The runtime's knowledge concept is
 [knowledge/features/goals.md](../../../knowledge/features/goals.md).

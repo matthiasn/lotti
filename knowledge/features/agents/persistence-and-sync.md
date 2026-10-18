@@ -171,10 +171,13 @@ sync refuses late writes about them (see
   `pending | consumed` status. Several outstanding day pre-warms therefore
   survive a restart with full day context, instead of sharing one clobberable
   `AgentState.scheduledWakeAt`.
-- `PlannerKnowledgeEntity` — the planner's durable knowledge ("memorize what I
-  tell you", ADR 0022). **Compaction-exempt**; the active Head set is a pure
-  recency-wins projection over the entries, with no separate Head entity.
-  Carries optional immutable author-time `tags`, set once at origin.
+- `PlannerKnowledgeEntity` — an agent's durable knowledge ("memorize what I
+  tell you", ADR 0022): the day planner's, and goal agents' facts (ADR 0141).
+  **Compaction-exempt**; the active Head set is a pure recency-wins
+  projection over the entries, with no separate Head entity. Carries
+  optional immutable author-time `tags`, set once at origin. The store, its
+  providers and the "What I've learned" panel live in
+  `lib/features/agents/knowledge/`, keyed by agent id.
 - Daily OS capture-pipeline and planning variants: `CaptureEntity`,
   `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`,
   `TomorrowNoteEntity` (the Shutdown note, one per day, newest `updatedAt`
