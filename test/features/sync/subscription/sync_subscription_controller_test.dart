@@ -313,6 +313,8 @@ void main() {
       fakeAsync((async) {
         final release = Completer<void>();
         bench.provisioning.onConfigureAsync = () => release.future;
+        // The connect page watches the provisioning flow, as in the app.
+        bench.container.listen(provisioningControllerProvider, (_, _) {});
         when(
           () => bench.api.checkoutState('s1'),
         ).thenAnswer((_) async => SyncCheckoutState.paid);
@@ -320,9 +322,10 @@ void main() {
 
         unawaited(bench.controller.resume());
         async.flushMicrotasks();
-        // The sheet moved to the connect page: nothing watches any more.
+        // The sheet moved to the connect page: nothing watches any more, and
+        // Riverpod disposes an unwatched provider on its next tick.
         bench.watcher.close();
-        async.flushMicrotasks();
+        async.elapse(const Duration(seconds: 1));
         release.complete();
         async.flushMicrotasks();
 
