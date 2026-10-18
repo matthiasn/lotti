@@ -37,6 +37,7 @@ class _FakeProvisioning extends ProvisioningController {
   bool rejectDecode = false;
   final configured = <SyncProvisioningBundle>[];
   void Function()? onConfigure;
+  Future<void> Function()? onConfigureAsync;
 
   @override
   ProvisioningState build() => const ProvisioningState.initial();
@@ -50,6 +51,7 @@ class _FakeProvisioning extends ProvisioningController {
   @override
   Future<void> configureFromBundle(SyncProvisioningBundle bundle) async {
     onConfigure?.call();
+    await onConfigureAsync?.call();
     configured.add(bundle);
     state = outcome;
   }
@@ -113,6 +115,8 @@ class _Bench {
           SyncSubscriptionStore(storage),
         ),
         syncCheckoutLauncherProvider.overrideWithValue((url) async {
+          final error = launcherThrows;
+          if (error != null) throw error;
           launched.add(url);
           return launcherWorks;
         }),
@@ -121,7 +125,7 @@ class _Bench {
       ],
     );
     // The provider is autoDispose; the sheet keeps it alive in the app.
-    container.listen(syncSubscriptionControllerProvider, (_, next) {
+    watcher = container.listen(syncSubscriptionControllerProvider, (_, next) {
       states.add(next);
     });
   }
@@ -133,8 +137,10 @@ class _Bench {
   final launched = <Uri>[];
   final states = <SyncSubscribeState>[];
   bool launcherWorks = true;
+  Exception? launcherThrows;
   String? stored;
   late final ProviderContainer container;
+  late final ProviderSubscription<SyncSubscribeState> watcher;
 
   SyncSubscriptionController get controller =>
       container.read(syncSubscriptionControllerProvider.notifier);
@@ -270,6 +276,64 @@ void main() {
         expect(bench.launched, isEmpty);
         expect(bench.provisioning.configured, [_bundle]);
         expect(bench.state, isA<SyncSubscribeDone>());
+      });
+    });
+
+    test('a launcher that throws is a browser that cannot open', () {
+      fakeAsync((async) {
+        bench.launcherThrows = Exception('no handler for https');
+
+        unawaited(bench.controller.subscribe(SyncSubscriptionPlan.annual));
+        async.flushMicrotasks();
+
+        expect(
+          (bench.state as SyncSubscribeFailed).failure,
+          SyncSubscribeFailure.browserUnavailable,
+        );
+      });
+    });
+
+    test('an unexpected keystore failure brings the plans back', () {
+      fakeAsync((async) {
+        when(
+          () => bench.storage.read(key: syncSubscriptionKey),
+        ).thenAnswer((_) async => throw StateError('keystore locked'));
+
+        unawaited(bench.controller.subscribe(SyncSubscriptionPlan.annual));
+        async.flushMicrotasks();
+
+        expect(
+          (bench.state as SyncSubscribeFailed).failure,
+          SyncSubscribeFailure.service,
+        );
+      });
+    });
+
+    test('provisioning finishes after the sheet stops watching', () {
+      fakeAsync((async) {
+        final release = Completer<void>();
+        bench.provisioning.onConfigureAsync = () => release.future;
+        when(
+          () => bench.api.checkoutState('s1'),
+        ).thenAnswer((_) async => SyncCheckoutState.paid);
+        bench.seed(_seeded);
+
+        unawaited(bench.controller.resume());
+        async.flushMicrotasks();
+        // The sheet moved to the connect page: nothing watches any more.
+        bench.watcher.close();
+        async.flushMicrotasks();
+        release.complete();
+        async.flushMicrotasks();
+
+        verify(
+          () => bench.api.confirmRotation(
+            any(),
+            claimSecret: any(named: 'claimSecret'),
+            bundleId: 'b-1',
+          ),
+        ).called(1);
+        expect(bench.record!.containsKey('pendingProof'), isFalse);
       });
     });
 

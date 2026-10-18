@@ -189,7 +189,16 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
       }
       final withSession = record.withSession(session.id);
       await _store.save(withSession);
-      if (!await ref.read(syncCheckoutLauncherProvider)(session.checkoutUrl)) {
+      bool opened;
+      try {
+        opened = await ref.read(syncCheckoutLauncherProvider)(
+          session.checkoutUrl,
+        );
+      } on Object {
+        // A platform exception from the launcher means the same as `false`.
+        opened = false;
+      }
+      if (!opened) {
         state = const SyncSubscribeFailed(
           SyncSubscribeFailure.browserUnavailable,
         );
@@ -199,6 +208,10 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
       _startPolling(withSession);
     } on SyncSubscriptionException catch (e) {
       state = SyncSubscribeFailed(_failureOf(e));
+    } on Object {
+      // A keystore or other unexpected failure must not leave the sheet on
+      // a spinner: the plans come back with an error and a retry.
+      state = const SyncSubscribeFailed(SyncSubscribeFailure.service);
     }
   }
 
@@ -280,6 +293,22 @@ class SyncSubscriptionController extends Notifier<SyncSubscribeState> {
   Future<void> _claimAndConnect(
     SyncSubscriptionRecord record, {
     bool quietIfUnpaid = false,
+  }) async {
+    // Once provisioning starts the sheet moves to the connect page, which
+    // drops this auto-disposed provider's last watcher. The claim, connect and
+    // proof must still finish, or the service deactivates the paid account a
+    // day later, so the provider is held until they do.
+    final link = ref.keepAlive();
+    try {
+      await _claimAndConnectHeld(record, quietIfUnpaid: quietIfUnpaid);
+    } finally {
+      link.close();
+    }
+  }
+
+  Future<void> _claimAndConnectHeld(
+    SyncSubscriptionRecord record, {
+    required bool quietIfUnpaid,
   }) async {
     state = const SyncSubscribeClaiming();
     final SyncPaidBundle paid;
