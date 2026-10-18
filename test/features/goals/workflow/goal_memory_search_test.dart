@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
@@ -198,6 +199,29 @@ void main() {
       'ids': ['checkin-long'],
     });
     expect(byId.text, contains(long));
+  });
+
+  test('a huge entry pulled up by id still keeps the whole response — text, '
+      'details and links — within the recall budget', () async {
+    final links = [for (var i = 0; i < 12; i++) '[[relates:note-$i]]'];
+    checkIns = [
+      GoalCheckInSource(
+        entryId: 'checkin-huge',
+        recordedAt: DateTime(2026, 8),
+        text: '${links.join(' ')} ${List.filled(3000, 'colony').join(' ')}',
+      ),
+    ];
+
+    final byId = await searcher().search(agentId, {
+      'ids': ['checkin-huge'],
+    });
+
+    expect(byId.text, contains('(id: checkin-huge)'));
+    expect(byId.text, contains('links: '));
+    expect(
+      TextChunker.estimateTokens(byId.text),
+      lessThanOrEqualTo(goalMemoryResultTokenBudget),
+    );
   });
 
   test('asks for keywords or ids when given neither', () async {

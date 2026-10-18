@@ -15,6 +15,12 @@ const int goalMemoryHitTokenBudget = 250;
 /// wake targets (ADR 0057). Hits past it are counted, not listed.
 const int goalMemoryResultTokenBudget = 1500;
 
+/// What a single pulled-up entry leaves of [goalMemoryResultTokenBudget] for
+/// everything around its text — the result's header, the entry's date, kind
+/// and id, and up to `memorySearchBudgetedLinksPerHit` links — so the whole
+/// response, not only its text, stays within the recall budget.
+const int goalMemoryRenderReserveTokens = 200;
+
 /// How many recalls one wake may make. A wake that needs more is fishing.
 const int goalMemorySearchesPerWake = 3;
 
@@ -157,7 +163,7 @@ class GoalMemorySearch {
           // cut text both point there — so an id gets the recall's whole
           // budget rather than the keyword hit's slice it already showed.
           hitTokenBudget: request.ids.isNotEmpty
-              ? goalMemoryResultTokenBudget
+              ? goalMemoryResultTokenBudget - goalMemoryRenderReserveTokens
               : goalMemoryHitTokenBudget,
           totalTokenBudget: goalMemoryResultTokenBudget,
         ),

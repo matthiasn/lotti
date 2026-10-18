@@ -2128,8 +2128,9 @@ sequenceDiagram
   batch withholds its reply — a search must never cost the user their answer.
 - **Bounded output.** A keyword hit is cut to `goalMemoryHitTokenBudget`
   (250); pulling it up by id reads it whole, up to
-  `goalMemoryResultTokenBudget` (1,500), where every recall's result also
-  stops, counting what it left out.
+  `goalMemoryResultTokenBudget` (1,500) less a 200-token reserve for the
+  entry's details and links, so the whole response stays inside the budget
+  every recall's result also stops at, counting what it left out.
 - **The evals.** The outcome evals tolerate a recall like an observation; the
   compaction eval withholds the tool, because its probes measure what each
   compaction arm leaves in `userVoice`. The system prompt is unchanged — the
