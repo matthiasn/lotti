@@ -1530,6 +1530,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcripción';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Ver a la compañera en pantalla completa';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Compañera en pantalla completa';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historial · $count';
   }
@@ -1542,10 +1549,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiCardMenuTooltip => 'Más acciones';
-
-  @override
-  String get aiCardCompanionOpenFullScreen =>
-      'Ver a la compañera en pantalla completa';
 
   @override
   String get aiCardOpenAgentInternals => 'Abrir interior del agente';

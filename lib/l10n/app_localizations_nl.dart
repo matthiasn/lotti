@@ -1522,6 +1522,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Omschrijving';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Metgezel op volledig scherm bekijken';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Metgezel op volledig scherm';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Geschiedenis · $count';
   }
@@ -1534,10 +1541,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get aiCardMenuTooltip => 'Meer acties';
-
-  @override
-  String get aiCardCompanionOpenFullScreen =>
-      'Metgezel op volledig scherm bekijken';
 
   @override
   String get aiCardOpenAgentInternals => 'Open agent internals';

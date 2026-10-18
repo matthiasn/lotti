@@ -626,6 +626,7 @@
   "aiCapabilityChipThinking": "Uvažování",
   "aiCapabilityChipTranscription": "Přepis",
   "aiCardCompanionOpenFullScreen": "Zobrazit společnici na celé obrazovce",
+  "aiCardCompanionStageTitle": "Společnice na celé obrazovce",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

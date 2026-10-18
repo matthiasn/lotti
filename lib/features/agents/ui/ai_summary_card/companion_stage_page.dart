@@ -1,8 +1,14 @@
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the companion full screen, head to toe on her stage — the place a
@@ -32,8 +38,13 @@ Future<void> openCompanionStage(
 ///
 /// The stage is dark whatever the app theme, like the tutorial videos she
 /// stands on it in, so the page wears the dark design-system theme for its
-/// own controls.
-class CompanionStagePage extends StatelessWidget {
+/// own controls and light system-bar icons over the stage.
+///
+/// The read-aloud control follows the same gate as the card's: a synced
+/// change that turns read-aloud off, or a voice the device lacks, takes it
+/// away here too rather than leaving a control that would start speech the
+/// user has switched off.
+class CompanionStagePage extends ConsumerWidget {
   const CompanionStagePage({
     required this.sourceId,
     required this.spokenText,
@@ -44,52 +55,69 @@ class CompanionStagePage extends StatelessWidget {
   final String spokenText;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canReadAloud =
+        spokenText.isNotEmpty &&
+        (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
+            false) &&
+        ref.watch(ttsEngineProvider).isSupported;
     return Theme(
       data: DesignSystemTheme.dark(),
       child: Builder(
         builder: (context) {
           final tokens = context.designTokens;
-          return Scaffold(
-            backgroundColor: tokens.colors.background.level01,
-            body: Stack(
-              children: [
-                // Decorative: the close and read-aloud controls carry the
-                // page's meaning, and she says nothing a reader would miss.
-                Positioned.fill(
-                  child: ExcludeSemantics(
-                    child: CompanionSpeaker(
-                      key: const ValueKey('companionStageFigure'),
-                      sourceId: sourceId,
-                      stage: true,
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.cardPadding),
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: DsAiDiscButton(
-                            icon: LottiIcons.close,
-                            label: MaterialLocalizations.of(
-                              context,
-                            ).closeButtonTooltip,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                        const Spacer(),
-                        SummaryReadAloudButton(
+          // Light icons over the dark stage, whatever the app's chrome; and a
+          // route name, so a screen reader says where it has arrived.
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light,
+            child: Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              explicitChildNodes: true,
+              label: context.messages.aiCardCompanionStageTitle,
+              child: Scaffold(
+                backgroundColor: tokens.colors.background.level01,
+                body: Stack(
+                  children: [
+                    // Decorative: the close and read-aloud controls carry the
+                    // page's meaning, and she says nothing a reader would miss.
+                    Positioned.fill(
+                      child: ExcludeSemantics(
+                        child: CompanionSpeaker(
+                          key: const ValueKey('companionStageFigure'),
                           sourceId: sourceId,
-                          text: spokenText,
+                          stage: true,
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: AlignmentDirectional.centerEnd,
+                              child: DsAiDiscButton(
+                                icon: LottiIcons.close,
+                                label: MaterialLocalizations.of(
+                                  context,
+                                ).closeButtonTooltip,
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            ),
+                            const Spacer(),
+                            if (canReadAloud)
+                              SummaryReadAloudButton(
+                                sourceId: sourceId,
+                                text: spokenText,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },

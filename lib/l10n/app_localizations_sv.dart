@@ -1524,6 +1524,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transkription';
 
   @override
+  String get aiCardCompanionOpenFullScreen => 'Visa följeslagaren i helskärm';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Följeslagaren i helskärm';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historia · $count';
   }
@@ -1536,9 +1542,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiCardMenuTooltip => 'Fler åtgärder';
-
-  @override
-  String get aiCardCompanionOpenFullScreen => 'Visa följeslagaren i helskärm';
 
   @override
   String get aiCardOpenAgentInternals => 'Öppna agent-interna funktioner';

@@ -1516,6 +1516,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Udskrift';
 
   @override
+  String get aiCardCompanionOpenFullScreen => 'Vis følgesvend i fuld skærm';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Følgesvend i fuld skærm';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
@@ -1528,9 +1534,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiCardMenuTooltip => 'Flere aktioner';
-
-  @override
-  String get aiCardCompanionOpenFullScreen => 'Vis følgesvend i fuld skærm';
 
   @override
   String get aiCardOpenAgentInternals => 'Åbne agent-internals';

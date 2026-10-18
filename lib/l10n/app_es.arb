@@ -619,6 +619,7 @@
   "aiCapabilityChipThinking": "Razonamiento",
   "aiCapabilityChipTranscription": "Transcripción",
   "aiCardCompanionOpenFullScreen": "Ver a la compañera en pantalla completa",
+  "aiCardCompanionStageTitle": "Compañera en pantalla completa",
   "aiCardHistoryToggle": "Historial · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

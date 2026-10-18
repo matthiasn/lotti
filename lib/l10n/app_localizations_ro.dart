@@ -1537,6 +1537,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcriere';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Vizualizați însoțitoarea pe tot ecranul';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Însoțitoare pe tot ecranul';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Istoric · $count';
   }
@@ -1549,10 +1556,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardMenuTooltip => 'Mai multe acțiuni';
-
-  @override
-  String get aiCardCompanionOpenFullScreen =>
-      'Vizualizați însoțitoarea pe tot ecranul';
 
   @override
   String get aiCardOpenAgentInternals =>
