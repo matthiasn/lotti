@@ -1549,6 +1549,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get aiCardMenuTooltip => 'Altre azioni';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Mostra la compagna a schermo intero';
+
+  @override
   String get aiCardOpenAgentInternals => 'Interni di agente aperto';
 
   @override

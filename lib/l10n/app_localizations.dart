@@ -2664,6 +2664,12 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get aiCardMenuTooltip;
 
+  /// Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view.
+  ///
+  /// In en, this message translates to:
+  /// **'View companion full screen'**
+  String get aiCardCompanionOpenFullScreen;
+
   /// No description provided for @aiCardOpenAgentInternals.
   ///
   /// In en, this message translates to:

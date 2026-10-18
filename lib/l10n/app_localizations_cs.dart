@@ -1540,6 +1540,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardMenuTooltip => 'Další akce';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Zobrazit společnici na celé obrazovce';
+
+  @override
   String get aiCardOpenAgentInternals => 'Otevřít interní informace agenta';
 
   @override

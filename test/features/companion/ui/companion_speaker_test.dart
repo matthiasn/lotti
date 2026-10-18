@@ -84,6 +84,7 @@ void main() {
     TtsPlaybackState? initial,
     CompanionController? controller,
     GestureName? holding,
+    bool stage = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -96,6 +97,7 @@ void main() {
             mood: CompanionMood.bright,
             controller: controller,
             holding: holding,
+            stage: stage,
           ),
         ),
         overrides: [
@@ -139,6 +141,13 @@ void main() {
     expect(shown.look, CompanionLook.cat);
     expect(shown.mood, CompanionMood.bright);
     expect(shown.framing, CompanionFraming.full);
+    expect(shown.stage, isFalse);
+  });
+
+  testWidgets('stands her on the stage when the host asks', (tester) async {
+    await pumpSpeaker(tester, stage: true);
+
+    expect(view(tester).stage, isTrue);
   });
 
   testWidgets('hands her view the controller and the held gesture', (

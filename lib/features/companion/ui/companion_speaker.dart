@@ -33,6 +33,7 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
     this.look = CompanionLook.grandma,
     this.mood = CompanionMood.calm,
     this.framing = CompanionFraming.full,
+    this.stage = false,
     this.controller,
     this.holding,
     super.key,
@@ -45,6 +46,9 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
   final CompanionLook look;
   final CompanionMood mood;
   final CompanionFraming framing;
+
+  /// Passed through to [CompanionView]: stands her on the dark stage.
+  final bool stage;
 
   /// Passed through to [CompanionView]: cues a gesture now.
   final CompanionController? controller;
@@ -142,6 +146,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     look: widget.look,
     mood: widget.mood,
     framing: widget.framing,
+    stage: widget.stage,
     controller: widget.controller,
     holding: widget.holding,
     track: _track,

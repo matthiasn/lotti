@@ -618,6 +618,7 @@
   "aiCapabilityChipImageRecognition": "Reconnaissance d'images",
   "aiCapabilityChipThinking": "Réflexion",
   "aiCapabilityChipTranscription": "Transcription",
+  "aiCardCompanionOpenFullScreen": "Afficher la compagne en plein écran",
   "aiCardHistoryToggle": "Historique · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

@@ -102,10 +102,16 @@ Contents:
     accent fill with the quiet decorative hairline (a portrait, not the
     badge's accent border), as far below the card's top as in from its side;
     the summary keeps the full card width.
+    A tap on that tile (`TldrHeader.onFigureTap`, its own control apart from
+    the title's tap-to-internals ink) opens `CompanionStagePage`: her `full`
+    framing head to toe on the dark stage, with a close control and the same
+    read-aloud control (`SummaryReadAloudButton`) for the words the card
+    showed. She speaks the task's utterance there too, so a summary being
+    read aloud carries on in her mouth.
 
-  She is not a control at either width: her tile stands outside the
-  header's tap-to-internals ink, so only the title and agent name (and the
-  *Open agent internals* link) open the internals; with no badge border in
+  Her tile stands outside the header's tap-to-internals ink at either
+  width, so only the title and agent name (and the *Open agent internals*
+  link) open the internals; on a wide card she is no control at all; with no badge border in
   that ink, the agent name takes the accent on hover and the ink draws its
   focus ring.
 

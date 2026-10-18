@@ -1530,6 +1530,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiCardMenuTooltip => 'Flere aktioner';
 
   @override
+  String get aiCardCompanionOpenFullScreen => 'Vis følgesvend i fuld skærm';
+
+  @override
   String get aiCardOpenAgentInternals => 'Åbne agent-internals';
 
   @override

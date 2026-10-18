@@ -1538,6 +1538,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardMenuTooltip => 'Fler åtgärder';
 
   @override
+  String get aiCardCompanionOpenFullScreen => 'Visa följeslagaren i helskärm';
+
+  @override
   String get aiCardOpenAgentInternals => 'Öppna agent-interna funktioner';
 
   @override

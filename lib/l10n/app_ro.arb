@@ -618,6 +618,7 @@
   "aiCapabilityChipImageRecognition": "Recunoaștere de imagini",
   "aiCapabilityChipThinking": "Gândire",
   "aiCapabilityChipTranscription": "Transcriere",
+  "aiCardCompanionOpenFullScreen": "Vizualizați însoțitoarea pe tot ecranul",
   "aiCardHistoryToggle": "Istoric · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

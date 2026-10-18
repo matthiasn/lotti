@@ -1551,6 +1551,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiCardMenuTooltip => 'Mai multe acțiuni';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Vizualizați însoțitoarea pe tot ecranul';
+
+  @override
   String get aiCardOpenAgentInternals =>
       'Deschideți componentele interne ale agentului';
 

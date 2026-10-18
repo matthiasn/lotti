@@ -736,6 +736,7 @@
   "aiCapabilityChipImageRecognition": "Billedgenkendelse",
   "aiCapabilityChipThinking": "Tænkning",
   "aiCapabilityChipTranscription": "Udskrift",
+  "aiCardCompanionOpenFullScreen": "Vis følgesvend i fuld skærm",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

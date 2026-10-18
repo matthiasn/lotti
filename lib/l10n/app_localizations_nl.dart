@@ -1536,6 +1536,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get aiCardMenuTooltip => 'Meer acties';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Metgezel op volledig scherm bekijken';
+
+  @override
   String get aiCardOpenAgentInternals => 'Open agent internals';
 
   @override
