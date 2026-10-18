@@ -39,9 +39,14 @@ String? resolveReportAdditional(AgentReportEntity? report) {
 ///
 /// Report freshness lives in the strip under the summary, and the schedule,
 /// switch and model identity in the agent internals panel; the header keeps
-/// only the report identity and the optional chat and playback controls. The whole badge + title + agent-name block is one
-/// tap target that opens the agent internals, so the name no longer needs its
-/// own oversized touch area.
+/// only the report identity and the optional chat and playback controls.
+///
+/// The badge comes in three forms: the sparkle tile (the default, or
+/// [icon]), a [figure] inside a grown tile, or none ([badge] false). The
+/// badge + title + agent-name block is one tap target that opens the agent
+/// internals, so the name needs no oversized touch area of its own — except
+/// that a figure stands outside it: she is not a control, and tapping her
+/// must mean the same at every width.
 class TldrHeader extends StatelessWidget {
   const TldrHeader({
     required this.agentName,
@@ -50,6 +55,8 @@ class TldrHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.icon,
+    this.figure,
+    this.badge = true,
     this.plain = false,
     super.key,
   });
@@ -73,6 +80,20 @@ class TldrHeader extends StatelessWidget {
   /// surface — the unenrolled person's plain card — passes its own.
   final IconData? icon;
 
+  /// A figure drawn inside the badge tile in place of its glyph — the
+  /// companion's bust on a narrow task card, where she is the agent the
+  /// caption names. The tile grows to [ControlSizes.avatar] around her and
+  /// keeps its accent fill under a quiet decorative hairline, so she reads
+  /// as the card's portrait rather than a sticker beside it — and, standing
+  /// outside the tap-to-internals ink, never as a button. Decorative: the
+  /// header's label already says who she is.
+  final Widget? figure;
+
+  /// False drops the badge tile and its gap, so the title starts on the
+  /// header's leading edge — for a card whose identity stands elsewhere,
+  /// as the companion does beside a wide task card.
+  final bool badge;
+
   /// The card's own name, when it is not the task/goal agent's
   /// `aiCardTitle`. The relationship briefing is the same panel wearing a
   /// different noun ("Briefing"), so it passes its own title rather than
@@ -94,17 +115,61 @@ class TldrHeader extends StatelessWidget {
     final displayName = agentName?.trim();
     final hasName =
         subtitle == null && displayName != null && displayName.isNotEmpty;
+    final tileSize = figure == null
+        ? ControlSizes.iconChip
+        : ControlSizes.avatar;
+    Widget tile({required bool highlighted}) => Container(
+      width: tileSize,
+      height: tileSize,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: plain ? tokens.colors.background.level03 : ai.accentSoft,
+        borderRadius: BorderRadius.circular(
+          tokens.radii.m,
+        ),
+        // A figure's tile is a portrait, not a control: the quiet
+        // decorative hairline, never the badge's accent border.
+        border: Border.all(
+          color: plain || figure != null
+              ? tokens.colors.decorative.level01
+              : highlighted
+              ? ai.accent
+              : ai.border,
+        ),
+      ),
+      clipBehavior: figure == null ? Clip.none : Clip.antiAlias,
+      child: ExcludeSemantics(
+        child:
+            figure ??
+            Icon(
+              icon ?? LottiIcons.aiSpark,
+              size: IconSizes.l,
+              color: plain ? tokens.colors.text.mediumEmphasis : ai.accent,
+            ),
+      ),
+    );
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.cardPadding,
-        tokens.spacing.step4,
+        // The grown figure tile sits in the card's corner: the same inset
+        // above it as beside it, or it reads as pushed against the top.
+        figure != null && badge
+            ? tokens.spacing.cardPadding
+            : tokens.spacing.step4,
         tokens.spacing.cardPadding,
         tokens.spacing.step4,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) => Row(
           children: [
+            // A figure is not a control: her tile stands outside the
+            // tap-to-internals ink, so tapping her means the same at every
+            // width — nothing yet — and the title and name stay the target.
+            if (badge && figure != null) ...[
+              tile(highlighted: false),
+              SizedBox(width: tokens.spacing.step3),
+            ],
             // `Expanded` keeps the slot so the playback control stays pinned to
             // the card's trailing edge, while `Align` hands the button loose
             // constraints — without it the ink target stretches across the whole
@@ -124,48 +189,26 @@ class TldrHeader extends StatelessWidget {
                   // No hover fill: a rectangle washing over the badge + title
                   // block made the card's identity read as a phantom button.
                   // Hover/focus/press answers on the block's own ink — the
-                  // badge border firms to the accent and the agent name
-                  // brightens a step.
+                  // sparkle badge's border firms to the accent and the agent
+                  // name brightens a step; without that badge in the ink, the
+                  // name takes the accent and the focus ring shows.
                   child: DsQuietInk(
                     onTap: onAgentTap,
+                    // Without the badge tile in the ink, its border no longer
+                    // answers focus; the ring does instead.
+                    focusRing: figure != null || !badge,
                     borderRadius: BorderRadius.circular(tokens.radii.m),
                     builder: (context, highlighted) => ConstrainedBox(
                       constraints: const BoxConstraints(
-                        minHeight: kMinInteractiveDimension,
+                        minHeight: TapTargets.minimum,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: tokens.spacing.step8,
-                            height: tokens.spacing.step8,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: plain
-                                  ? tokens.colors.background.level03
-                                  : ai.accentSoft,
-                              borderRadius: BorderRadius.circular(
-                                tokens.radii.m,
-                              ),
-                              border: Border.all(
-                                color: plain
-                                    ? tokens.colors.decorative.level01
-                                    : highlighted
-                                    ? ai.accent
-                                    : ai.border,
-                              ),
-                            ),
-                            child: ExcludeSemantics(
-                              child: Icon(
-                                icon ?? LottiIcons.aiSpark,
-                                size: IconSizes.l,
-                                color: plain
-                                    ? tokens.colors.text.mediumEmphasis
-                                    : ai.accent,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: tokens.spacing.step3),
+                          if (badge && figure == null) ...[
+                            tile(highlighted: highlighted),
+                            SizedBox(width: tokens.spacing.step3),
+                          ],
                           // `Flexible` + single-line text is what makes the
                           // shrink-wrap real: text allowed to wrap would
                           // report the full available width straight back and
@@ -200,9 +243,14 @@ class TldrHeader extends StatelessWidget {
                                           .others
                                           .caption
                                           .copyWith(
-                                            color: highlighted
-                                                ? ai.bodyText
-                                                : ai.metaText,
+                                            // With no badge border in the
+                                            // ink to answer hover, the name
+                                            // takes the accent instead.
+                                            color: !highlighted
+                                                ? ai.metaText
+                                                : figure != null || !badge
+                                                ? ai.accent
+                                                : ai.bodyText,
                                           ),
                                     ),
                                   ),

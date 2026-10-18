@@ -19,12 +19,12 @@ import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
-import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
@@ -567,18 +567,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // the voice was given when it was tapped.
     final companionEnabled =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
-    final companion = companionEnabled && playbackControl != null
-        ? SizedBox(
-            height: ControlSizes.companionCard,
-            child: AspectRatio(
-              aspectRatio: CompanionFraming.full.aspectRatio,
-              child: CompanionSpeaker(
-                key: const ValueKey('taskAgentCompanion'),
-                sourceId: widget.taskId,
-              ),
-            ),
-          )
-        : null;
+    final showCompanion = companionEnabled && playbackControl != null;
+    Widget companionFor(CompanionPlacement placement) => CompanionSpeaker(
+      key: const ValueKey('taskAgentCompanion'),
+      sourceId: widget.taskId,
+      framing: placement.framing,
+    );
 
     // Surface a toast when playback fails for this card's summary.
     listenForPlaybackFailure(ref, context, widget.taskId);
@@ -734,11 +728,26 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           )
         : null;
 
-    return AgentSummaryCardSurface(
-      children: [
-        TldrHeader(
+    // Where she stands follows the room the card body has, not the window:
+    // a desktop pane can still give the card a phone's width.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final placement = showCompanion
+            ? CompanionPlacement.forBodyWidth(
+                constraints.maxWidth - 2 * tokens.spacing.cardPadding,
+                textScaler: MediaQuery.textScalerOf(context),
+              )
+            : null;
+        // She is the card's identity mark at either width: the bust inside
+        // the badge tile on a narrow card, the full figure in place of the
+        // badge beside a wide one, heading the header and body she stands by.
+        final header = TldrHeader(
           agentName: subtitle,
           onAgentTap: () => _openInternals(agentName: subtitle),
+          figure: placement == CompanionPlacement.header
+              ? companionFor(CompanionPlacement.header)
+              : null,
+          badge: placement != CompanionPlacement.beside,
           trailing: headerControls.isEmpty
               ? null
               : Row(
@@ -746,45 +755,55 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                   spacing: tokens.spacing.step2,
                   children: headerControls,
                 ),
-        ),
-        // Reading order: the summary first, then the update CTA for the
-        // summary just read, then the proposals. Quiet links already own
-        // their compact row height, so the section needs only step3 below.
-        if (hasReportContent)
-          Padding(
-            // No bottom inset here: the body's own disclosure row carries
-            // the trailing optical gap inside its tap target, and supplies
-            // an explicit one when it renders no row at all.
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.cardPadding,
-            ),
-            child: companion == null
-                ? reportBody
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: tokens.spacing.step3,
-                    children: [
-                      companion,
-                      Expanded(child: reportBody),
-                    ],
-                  ),
+        );
+        // No bottom inset on the body: its own disclosure row carries the
+        // trailing optical gap inside its tap target, and supplies an
+        // explicit one when it renders no row at all.
+        final paddedBody = Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.cardPadding,
           ),
+          child: reportBody,
+        );
         // The freshness word sits with the summary it describes, on the same
         // leading edge. The dense trigger is a 24-high box and the word
         // beside it bare text, so the row brings no air of its own: the card
         // pays the bottom inset, or the status sits four pixels off its edge.
-        Padding(
+        // The step2 above it makes the gap before the row larger than the
+        // one before the links, so the links group with the prose they open
+        // and the status reads as the card's own band.
+        final footer = Padding(
           padding: EdgeInsets.only(
             left: tokens.spacing.cardPadding,
+            top: tokens.spacing.step2,
             right: tokens.spacing.cardPadding,
             bottom: tokens.spacing.step4,
           ),
           child: freshnessStrip,
-        ),
-        // Both hidden until the first value to avoid flashing empty state.
-        ?proposalsBand,
-        ?historySection,
-      ],
+        );
+        return AgentSummaryCardSurface(
+          children: [
+            // Reading order: the summary first, then the update CTA for the
+            // summary just read, then the proposals. Quiet links already own
+            // their compact row height, so the section needs only step3 below.
+            if (placement == CompanionPlacement.beside)
+              CompanionBesideReport(
+                companion: companionFor(CompanionPlacement.beside),
+                header: header,
+                body: paddedBody,
+                footer: footer,
+              )
+            else ...[
+              header,
+              if (hasReportContent) paddedBody,
+            ],
+            if (placement != CompanionPlacement.beside) footer,
+            // Both hidden until the first value to avoid flashing empty state.
+            ?proposalsBand,
+            ?historySection,
+          ],
+        );
+      },
     );
   }
 

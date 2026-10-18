@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -16,6 +18,10 @@ import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
 const _tldr = 'Two items left: the review and the release notes.';
+
+/// A phone's card: below [CompanionPlacement.besideMinWidth] once the
+/// card padding is taken off.
+const _narrowCard = 360.0;
 
 /// Her ticker runs for as long as she is on screen, so these tests pump a
 /// fixed number of frames instead of settling.
@@ -31,6 +37,7 @@ Future<void> _pumpCard(
   bool enableSummaryTts = true,
   bool engineSupported = true,
   String? content,
+  double? width,
   List<({String clip, String text})>? loads,
   Future<File>? pendingSynthesis,
 }) async {
@@ -44,6 +51,7 @@ Future<void> _pumpCard(
     report: content == null
         ? makeTestReport(tldr: _tldr)
         : makeTestReport(tldr: _tldr, content: content),
+    width: width,
     extraOverrides: [
       spokenTrackLoaderProvider.overrideWithValue((clip, text) {
         loads?.add((clip: clip, text: text));
@@ -136,10 +144,13 @@ void main() {
       expect(loads, [(clip: '/tmp/fake_tts_output.wav', text: _tldr)]);
     });
 
-    testWidgets('stands in her box, beside the summary on its left', (
+    testWidgets('stands head to toe beside the summary on a wide card', (
       tester,
     ) async {
       await _pumpCard(tester);
+
+      // She is the identity mark: no badge beside her.
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
 
       final her = tester.getRect(find.byType(CompanionView));
       expect(her.height, ControlSizes.companionCard);
@@ -151,8 +162,46 @@ void main() {
         ),
       );
       final summary = tester.getRect(find.text(_tldr));
-      expect(her.right, lessThan(summary.left));
-      expect(her.top, summary.top);
+      final overhang = CompanionSlot.overhang(ControlSizes.companionCard);
+      final title = tester.getRect(find.text('AI summary'));
+      // Title and summary share one edge, one card padding past her slot.
+      final padding = tester
+          .element(find.byType(CompanionSpeaker))
+          .designTokens
+          .spacing
+          .cardPadding;
+      expect(title.left, summary.left);
+      expect(title.left, closeTo(her.right - overhang + padding, 0.01));
+      expect(her.top, lessThan(title.top));
+      // The freshness row joins the column, on the same edge.
+      expect(
+        tester.getRect(find.byType(AgentAutomationRow)).left,
+        summary.left,
+      );
+    });
+
+    testWidgets('stands in the header as a bust on a narrow card, in place '
+        'of the badge', (tester) async {
+      await _pumpCard(tester, width: _narrowCard);
+
+      expect(_speaker(tester).framing, CompanionFraming.bust);
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      final her = tester.getRect(find.byType(CompanionView));
+      // Inside the badge tile, which grows to the avatar size around her.
+      final tile = tester.getRect(
+        find
+            .ancestor(
+              of: find.byType(CompanionView),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(tile.size, const Size.square(ControlSizes.avatar));
+      expect(her.center, tile.center);
+      expect(her.width, lessThan(tile.width));
+      final title = tester.getRect(find.text('AI summary'));
+      expect(her.right, lessThan(title.left));
+      expect(her.bottom, lessThan(tester.getRect(find.text(_tldr)).top));
     });
 
     testWidgets('mouths the clip the read-aloud control plays', (
@@ -168,7 +217,7 @@ void main() {
     });
   });
 
-  testWidgets('the summary gives way to her by her width and one gap', (
+  testWidgets('on a wide card the summary gives way to her slot and one gap', (
     tester,
   ) async {
     await _pumpCard(tester, enableCompanion: false);
@@ -180,8 +229,23 @@ void main() {
     final beside = tester.getRect(find.text(_tldr)).left;
 
     final context = tester.element(find.byType(CompanionSpeaker));
-    final gap = context.designTokens.spacing.step3;
-    final width = tester.getSize(find.byType(CompanionView)).width;
-    expect(beside - alone, closeTo(width + gap, 0.01));
+    final gap = context.designTokens.spacing.step5;
+    final slot = tester.getSize(find.byType(CompanionSlot)).width;
+    expect(beside - alone, closeTo(slot + gap, 0.01));
+  });
+
+  testWidgets('on a narrow card the summary keeps the full width', (
+    tester,
+  ) async {
+    await _pumpCard(tester, enableCompanion: false, width: _narrowCard);
+    final alone = tester.getRect(find.text(_tldr));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpCard(tester, width: _narrowCard);
+
+    expect(find.byType(CompanionView), findsOneWidget);
+    final beside = tester.getRect(find.text(_tldr));
+    expect(beside.left, alone.left);
+    expect(beside.width, alone.width);
   });
 }

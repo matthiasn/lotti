@@ -53,14 +53,21 @@ abstract final class ControlSizes {
   /// `spacing.step8`, `step9` and `step11` — the same 40, 48 and 80 today.
   static const double avatarHero = 80;
 
-  /// 136 — the height of the companion character beside the AI summary she
-  /// reads aloud, head to toe: tall enough for her face and hands to read
-  /// as gestures at full length. Her width follows from the framing she is
+  /// 168 — the height of the companion character beside the AI summary she
+  /// reads aloud on a wide card, head to toe: tall enough to stand level with
+  /// a three-line summary and its links, with her face and hands reading as
+  /// gestures at full length. Her width follows from the framing she is
   /// shown in.
+  ///
+  /// Bounded above by the card's gutter: the side room of her framing hangs
+  /// into the card padding, and at 168 that room (15.6) still fits inside
+  /// it (16).
+  ///
+  /// A narrow card shows her bust in its header at [avatar] instead.
   ///
   /// A container dimension like [avatarHero]: she is a figure on the
   /// screen, and must not resize when the spacing scale is retuned.
-  static const double companionCard = 136;
+  static const double companionCard = 168;
 
   /// 64 — the square thumbnail standing in for a media entry that has been
   /// collapsed (the collapsed image card's preview).

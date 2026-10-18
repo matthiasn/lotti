@@ -3,9 +3,11 @@
 /// come back.
 ///
 /// These are the states proposed in
-/// `docs/implementation_plans/2026-10-12_in_app_agent_avatar.md`. Nothing
-/// derives them from the record yet: in this proof of concept the mood is
-/// chosen by hand.
+/// `docs/implementation_plans/2026-10-12_in_app_agent_avatar.md`. The goal
+/// card derives one from a goal's track status (`goalCompanionPose`); every
+/// other host leaves her [calm]. A mood changes her face by a few pixels at
+/// avatar sizes, so a host that needs its verdict read at a glance pairs it
+/// with a held gesture, as the goal card does.
 enum CompanionMood {
   /// The default: an easy smile.
   calm(),

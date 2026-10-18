@@ -120,11 +120,11 @@ AgentTemplateEntity _template() =>
         )
         as AgentTemplateEntity;
 
-AgentReportEntity _report() => makeTestReport(
+AgentReportEntity _report({String summary = _summary}) => makeTestReport(
   createdAt: _now.subtract(const Duration(minutes: 4)),
-  tldr: _summary,
+  tldr: summary,
   content:
-      '$_summary\n\n## Current focus\n\n'
+      '$summary\n\n## Current focus\n\n'
       'The agent is coordinating implementation, documentation, review, and '
       'release preparation.',
   provenance: ReportInferenceProvenance(
@@ -189,6 +189,8 @@ Future<void> _capture(
   Locale? locale,
   TextScaler textScaler = TextScaler.noScaling,
   bool companion = false,
+  bool expanded = false,
+  String summary = _summary,
   String? nameSuffix,
 }) async {
   // The toggle and entrance widgets are stateful. Explicitly unmount the
@@ -227,7 +229,7 @@ Future<void> _capture(
       RepaintBoundary(
         key: screenshotBoundaryKey,
         child: AgentTestBench(
-          report: _report(),
+          report: _report(summary: summary),
           suggestions: _suggestions(withOpen: mode == _Mode.proposals),
           state: state,
           identity: identity,
@@ -258,12 +260,17 @@ Future<void> _capture(
       case _Hover.header:
         await _hoverOver(tester, find.byIcon(LottiIcons.aiSpark));
     }
+    if (expanded) {
+      await tester.tap(find.text('Read more'));
+      await settleFrames(tester, 6);
+    }
   });
 
   // Guard the fixture itself: a capture of the wrong content is worse than no
   // capture, because a review panel scores it as if it were real. The chrome
   // strings are only asserted in the default locale.
-  expect(find.text(_summary), findsOneWidget);
+  // Expanded, the full report opens with the summary again.
+  expect(find.text(summary), expanded ? findsNWidgets(2) : findsOneWidget);
   if (locale == null) {
     expect(find.text('AI summary'), findsOneWidget);
     expect(find.text('Task Laura'), findsOneWidget);
@@ -379,5 +386,48 @@ void main() {
         });
       }
     }
+
+    // The two bodies that stress her fixed height beside the column: a
+    // one-line summary (does she leave a band under it?) and the report read
+    // in full (does the rail under her read as intended?).
+    testWidgets('desktop manual companion short dark', (tester) async {
+      await _capture(
+        tester,
+        device: desktopDevice,
+        brightness: Brightness.dark,
+        mode: _Mode.manual,
+        companion: true,
+        summary: 'Two checklist items left: the review and the release notes.',
+        nameSuffix: 'companion-short',
+      );
+    });
+    // Large text: the column beside her and the header tile must hold
+    // together when the type grows.
+    for (final device in [desktopDevice, proDevice]) {
+      testWidgets('${device.name} manual companion large text dark', (
+        tester,
+      ) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: Brightness.dark,
+          mode: _Mode.manual,
+          companion: true,
+          textScaler: const TextScaler.linear(1.3),
+          nameSuffix: 'companion-large',
+        );
+      });
+    }
+    testWidgets('desktop manual companion expanded dark', (tester) async {
+      await _capture(
+        tester,
+        device: desktopDevice,
+        brightness: Brightness.dark,
+        mode: _Mode.manual,
+        companion: true,
+        expanded: true,
+        nameSuffix: 'companion-expanded',
+      );
+    });
   });
 }

@@ -218,6 +218,110 @@ void main() {
     });
   });
 
+  group('TldrHeader badge', () {
+    const figureKey = ValueKey('figure');
+
+    testWidgets('a figure stands inside the tile in place of the glyph, the '
+        'tile grown to the avatar size, and adds nothing to the label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            onAgentTap: () {},
+            figure: const SizedBox.expand(key: figureKey),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      final tile = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.byKey(figureKey),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(tile.clipBehavior, Clip.antiAlias);
+      expect(
+        tester.getSize(find.byWidget(tile)),
+        const Size.square(ControlSizes.avatar),
+      );
+      expect(
+        tester.getRect(find.byKey(figureKey)).right,
+        lessThan(tester.getRect(find.text('AI summary')).left),
+      );
+      expect(find.bySemanticsLabel('AI summary. Laura'), findsOneWidget);
+    });
+
+    testWidgets('a figure is not a control: tapping her does nothing, the '
+        'title still opens the internals', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            onAgentTap: () => taps++,
+            figure: const SizedBox.expand(key: figureKey),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(figureKey));
+      expect(taps, 0);
+      await tester.tap(find.text('AI summary'));
+      expect(taps, 1);
+    });
+
+    testWidgets('a figure tile sits as far below the top as in from the side', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const TldrHeader(
+            agentName: 'Laura',
+            figure: SizedBox.expand(key: figureKey),
+          ),
+        ),
+      );
+
+      final header = tester.getRect(find.byType(TldrHeader));
+      final tile = tester.getRect(
+        find
+            .ancestor(
+              of: find.byKey(figureKey),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(tile.top - header.top, tile.left - header.left);
+    });
+
+    testWidgets('without a badge the title starts on the leading inset', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Laura', onAgentTap: () {}, badge: false),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+      final header = tester.getRect(find.byType(TldrHeader));
+      final padding = tester
+          .element(find.byType(TldrHeader))
+          .designTokens
+          .spacing
+          .cardPadding;
+      expect(
+        tester.getRect(find.text('AI summary')).left,
+        header.left + padding,
+      );
+    });
+  });
+
   group('TldrHeader', () {
     testWidgets('a subtitle widget stands in for the name caption, and the '
         'badge can wear another glyph', (tester) async {
@@ -333,6 +437,36 @@ void main() {
       // The block answers on its own ink — there is no hover fill to answer
       // with, by design.
       expect(nameColor(), ai.bodyText);
+      await gesture.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('without the badge border to answer hover, the name lifts '
+        'to the accent instead', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(agentName: 'Task Laura', onAgentTap: () {}, badge: false),
+        ),
+      );
+
+      final ai = tester
+          .element(find.byType(TldrHeader))
+          .designTokens
+          .colors
+          .aiCard;
+      Color nameColor() => tester
+          .renderObject<RenderParagraph>(find.text('Task Laura'))
+          .text
+          .style!
+          .color!;
+      expect(nameColor(), ai.metaText);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Task Laura')));
+      await tester.pump();
+      expect(nameColor(), ai.accent);
       await gesture.moveTo(Offset.zero);
       await tester.pumpAndSettle();
     });
