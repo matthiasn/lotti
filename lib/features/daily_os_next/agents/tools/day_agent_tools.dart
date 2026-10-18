@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -45,29 +46,7 @@ final dayAgentTools = <AgentToolDefinition>[
         'the given keywords. With `ids`, pulls up specific entries by id, e.g. '
         'to follow a [[relation:id]] link surfaced in a prior result. Provide '
         'either `query` or `ids`.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'query': {
-          'type': 'string',
-          'description': 'Keywords to match (all must appear, any order).',
-        },
-        'ids': {
-          'type': 'array',
-          'items': {'type': 'string'},
-          'description':
-              'Specific entry ids to pull up (e.g. to follow a '
-              '[[relation:id]] link). Provide query or ids.',
-        },
-        'limit': {
-          'type': 'integer',
-          'description': 'Max entries to return (1-20, default 8).',
-          'minimum': 1,
-          'maximum': 20,
-        },
-      },
-      'additionalProperties': false,
-    },
+    parameters: memorySearchParameters,
   ),
   const AgentToolDefinition(
     name: DayAgentToolNames.submitCapture,

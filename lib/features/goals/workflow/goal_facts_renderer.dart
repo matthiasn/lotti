@@ -11,7 +11,6 @@ import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
-import 'package:lotti/features/goals/logic/goal_evidence_text.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -125,7 +124,7 @@ class GoalFactsRenderer {
             'countedFromLocal': entry.evidence.dateFrom.toIso8601String(),
             'countedToLocal': entry.evidence.dateTo.toIso8601String(),
             'countedMinutes': _minutes(entry.evidence.duration.inSeconds),
-            'markdown': truncateGoalEvidenceText(
+            'markdown': TextChunker.truncateToTokens(
               entry.evidence.markdown,
               goalLabelTimeMarkdownTokenBudget,
             ),

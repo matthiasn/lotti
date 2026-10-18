@@ -247,4 +247,39 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('formatLink', () {
+    const link = MemoryLink(relation: LinkRelation.refines, entryId: 'e1');
+
+    test('a live link reads as its wire token', () {
+      expect(
+        formatLink(
+          const ResolvedMemoryLink(link: link, exists: true, liveEntryId: 'e1'),
+        ),
+        'refines:e1',
+      );
+    });
+
+    test('a dead link says so', () {
+      expect(
+        formatLink(
+          const ResolvedMemoryLink(
+            link: link,
+            exists: false,
+            liveEntryId: 'e1',
+          ),
+        ),
+        'refines:e1 (not found)',
+      );
+    });
+
+    test('a superseded link points at the live entry', () {
+      expect(
+        formatLink(
+          const ResolvedMemoryLink(link: link, exists: true, liveEntryId: 'e9'),
+        ),
+        'refines:e1 → e9',
+      );
+    });
+  });
 }

@@ -317,23 +317,13 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     required String dayId,
     required Map<String, dynamic> args,
   }) async {
-    final rawIds = args['ids'];
-    final ids = rawIds is List
-        ? <String>{
-            for (final e in rawIds)
-              if (e is String && e.trim().isNotEmpty) e.trim(),
-          }
-        : const <String>{};
-    final rawQuery = args['query'];
-    final query = rawQuery is String ? rawQuery.trim() : '';
-    if (ids.isEmpty && query.isEmpty) {
+    final request = parseMemorySearchRequest(args);
+    if (request == null) {
       return const DayAgentToolResult(
         success: false,
-        output: 'Error: provide "query" keywords or "ids" to recall.',
+        output: memorySearchMissingTermsError,
       );
     }
-    final rawLimit = args['limit'];
-    final limit = rawLimit is int ? rawLimit.clamp(1, 20) : 8;
 
     var captureMetas = const <CaptureEventMeta>[];
     try {
@@ -371,54 +361,23 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
 
     final List<MemoryLogHit> hits;
     try {
-      hits = ids.isNotEmpty
-          ? await compactor.resolveByIds(
-              agentId,
-              ids: ids,
-              extraKnownIds: extraKnownIds,
-            )
-          : await compactor.searchLog(
-              agentId,
-              query: query,
-              limit: limit,
-              extraKnownIds: extraKnownIds,
-            );
+      hits = await runMemorySearch(
+        compactor,
+        agentId,
+        request,
+        extraKnownIds: extraKnownIds,
+      );
     } catch (e, s) {
       logError('search_memory failed', error: e, stackTrace: s);
       return const DayAgentToolResult(
         success: false,
-        output: 'Error: memory search failed.',
+        output: memorySearchFailedError,
       );
     }
 
-    final subject = ids.isNotEmpty ? 'ids ${ids.join(', ')}' : '"$query"';
-    if (hits.isEmpty) {
-      return DayAgentToolResult(
-        success: true,
-        output: 'No memory entries match $subject.',
-      );
-    }
-
-    final buf = StringBuffer(
-      'Found ${hits.length} memory match(es) for $subject (most recent first):',
+    return DayAgentToolResult(
+      success: true,
+      output: formatMemorySearchResult(request, hits),
     );
-    for (final hit in hits) {
-      buf
-        ..writeln()
-        ..write(
-          '- [${hit.at.toIso8601String()}] '
-          '(${hit.type}${hit.edited ? ', edited' : ''}) '
-          '(id: ${hit.contentEntryId}) ${hit.text}',
-        );
-      if (hit.supersededByEntryId != null) {
-        buf.write(' [superseded by ${hit.supersededByEntryId}]');
-      }
-      if (hit.links.isNotEmpty) {
-        buf
-          ..writeln()
-          ..write('  links: ${hit.links.map(formatLink).join(', ')}');
-      }
-    }
-    return DayAgentToolResult(success: true, output: buf.toString());
   }
 }

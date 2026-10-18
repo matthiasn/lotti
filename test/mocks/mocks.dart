@@ -55,6 +55,7 @@ import 'package:lotti/features/agents/service/suggestion_retraction_service.dart
 import 'package:lotti/features/agents/service/task_agent_retirement.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
@@ -2039,3 +2040,5 @@ class FixedInferenceStatusController extends InferenceStatusController {
   @override
   InferenceStatus build() => status;
 }
+
+class MockAgentLogCompactor extends Mock implements AgentLogCompactor {}
