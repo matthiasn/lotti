@@ -116,10 +116,15 @@ class AgentKnowledgePanel extends ConsumerWidget {
           if (view.confirmed.isNotEmpty) ...[
             // No label of their own — plain text is what is settled — but a
             // rule closes the agent's question above, so it does not seem
-            // to ask about these too.
+            // to ask about these too. Less air under it than over it: a
+            // fact's row is a full tap target high, and its words already
+            // sit lower in it.
             if (view.proposed.isNotEmpty)
               Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.spacing.step5),
+                padding: EdgeInsets.only(
+                  top: tokens.spacing.step5,
+                  bottom: tokens.spacing.step2,
+                ),
                 child: const DesignSystemDivider(),
               ),
             for (final (index, entry) in view.confirmed.indexed) ...[
@@ -183,7 +188,6 @@ class _Proposal extends ConsumerWidget {
         DesignSystemButton(
           label: messages.agentKnowledgeRetract,
           variant: DesignSystemButtonVariant.quiet,
-          tapTargetSize: MaterialTapTargetSize.padded,
           semanticsLabel:
               '${messages.agentKnowledgeRetract}: ${entry.statementText}',
           onPressed: () => _retract(ref, agentId, entry),
@@ -192,7 +196,6 @@ class _Proposal extends ConsumerWidget {
           label: messages.agentKnowledgeConfirm,
           leadingIcon: LottiIcons.confirm,
           variant: DesignSystemButtonVariant.constructiveOutlined,
-          tapTargetSize: MaterialTapTargetSize.padded,
           semanticsLabel:
               '${messages.agentKnowledgeConfirm}: ${entry.statementText}',
           onPressed: () => _confirm(ref, agentId, entry),
@@ -269,7 +272,6 @@ class _ConfirmedFact extends ConsumerWidget {
                         leadingIcon: LottiIcons.confirm,
                         size: DesignSystemButtonSize.dense,
                         variant: DesignSystemButtonVariant.tertiary,
-                        tapTargetSize: MaterialTapTargetSize.padded,
                         semanticsLabel:
                             '${messages.agentKnowledgeConfirm}: '
                             '${entry.statementText}',
