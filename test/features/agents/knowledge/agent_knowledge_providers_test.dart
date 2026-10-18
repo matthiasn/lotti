@@ -4,7 +4,11 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/providers/agent_repository_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
@@ -59,6 +63,34 @@ void main() {
     addTearDown(container.dispose);
     return container.read(agentKnowledgeProvider(dailyOsPlannerAgentId).future);
   }
+
+  test('the shared service writes through the app stores and announces '
+      'each change for the agent it belongs to', () {
+    final repository = MockAgentRepository();
+    final syncService = MockAgentSyncService();
+    final domainLogger = MockDomainLogger();
+    final container = ProviderContainer(
+      overrides: withServiceOverrides([
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]),
+    );
+    addTearDown(container.dispose);
+
+    final service = container.read(agentKnowledgeServiceProvider);
+
+    expect(service.agentRepository, same(repository));
+    expect(service.syncService, same(syncService));
+    expect(service.domainLogger, same(domainLogger));
+    // A change to a goal agent's knowledge refreshes that agent's panel —
+    // the id the panel's provider listens on, any agent at all.
+    service.onPersistedStateChanged!('goal-agent-7');
+    verify(
+      () => notifications.notifyUiOnly({'goal-agent-7', agentNotification}),
+    ).called(1);
+  });
 
   test('splits the active Head set from pending proposals', () async {
     final view = await read([

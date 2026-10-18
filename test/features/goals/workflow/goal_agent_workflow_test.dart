@@ -1693,6 +1693,85 @@ void main() {
     });
 
     test(
+      'a fact the store refuses is logged, and the reply still lands',
+      () async {
+        stubSpec();
+        stubGlmResolution();
+        final logger = MockDomainLogger();
+        when(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        ).thenReturn(null);
+        workflow = GoalAgentWorkflow(
+          repository: repository,
+          syncService: syncService,
+          phaseA: GoalAgentPhaseA(
+            repository: repository,
+            syncService: syncService,
+            signalReader: _FakeReader(),
+          ),
+          conversationRepository: conversationRepository,
+          cloudInferenceRepository: cloudInferenceRepository,
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: logger,
+        );
+        // The knowledge store is unreadable: the fact cannot be written.
+        final unavailable = StateError('knowledge store unavailable');
+        when(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.plannerKnowledge,
+          ),
+        ).thenThrow(unavailable);
+        await answering([
+          toolCall(GoalAgentToolNames.replyToUser, {'message': 'Noted.'}),
+          toolCall(
+            GoalAgentToolNames.rememberGoalFact,
+            statedFact,
+            id: 'call-2',
+          ),
+        ]);
+
+        final result = await withClock(
+          fixedClock,
+          () => workflow.execute(
+            agentIdentity: identity,
+            runKey: 'chat-refused',
+            triggerTokens: const {},
+            threadId: 'chat-refused',
+            pendingUserMessage: 'Remember: I walk after dinner.',
+            chatMessageId: 'source-message',
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(storedFacts(), isEmpty);
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            unavailable,
+            message: 'goal fact not remembered',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        // The user's answer is never the price of a fact that did not keep.
+        expect(
+          upserts.whereType<AgentMessageEntity>().where(
+            (message) =>
+                message.id == goalAgentReplyMessageId(agentId, 'chat-refused'),
+          ),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
       'the same fact on a wake that answers no one is only proposed',
       () async {
         stubSpec();
