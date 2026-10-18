@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../ai/eval/support/eval_text_matchers.dart';
@@ -358,6 +359,17 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     return GoalAgentEvalFailureCategory.invalidToolArguments;
   }
 
+  // A remembered fact is held to the parser production runs: one it would
+  // answer "Not remembered" — no key, a bad source, an over-long hook — is
+  // a failed write, not a tolerated extra call.
+  if (toolCalls.any(
+    (call) =>
+        call.name == GoalAgentToolNames.rememberGoalFact &&
+        parseGoalFactRequest(call.jsonObjectArguments!).request == null,
+  )) {
+    return GoalAgentEvalFailureCategory.invalidToolArguments;
+  }
+
   // The banner contract is enforced, not just advertised: a create call
   // whose arguments cannot decode into NudgeBrief must not score as a
   // success just because its name matched (JSON-schema enums are advisory
@@ -445,7 +457,9 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     // never an unexpected call — unless a scenario forbids it outright.
     GoalAgentToolNames.searchGoalMemory,
     // A remembered fact is the observation's durable sibling: tolerated
-    // likewise, and it never confirms itself outside the user's own turn.
+    // likewise once it parses (checked above), and it never confirms itself
+    // outside the user's own words. A scenario forbids it outright where a
+    // write would be wrong.
     GoalAgentToolNames.rememberGoalFact,
     if (scenario.hasPendingUserMessage) GoalAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);

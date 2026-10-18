@@ -54,6 +54,42 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.none);
     });
 
+    test('a remembered fact is held to the parser production runs', () {
+      GoalAgentEvalFailureCategory classifyFact(String arguments) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('gp_on_track'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                '{"status":"onTrack","oneLiner":"Cruising at 11k.", '
+                '"tldr":"Comfortably above target all week."}',
+              ),
+              call(GoalAgentToolNames.rememberGoalFact, arguments),
+            ],
+            assistantContent: 'Report updated.',
+          );
+
+      for (final bad in [
+        '{}',
+        '{"key":"k","hook":"h","statement":"s","source":"userSaid"}',
+        '{"key":"k","hook":"${'h' * 121}","statement":"s",'
+            '"source":"agentInferred"}',
+      ]) {
+        expect(
+          classifyFact(bad),
+          GoalAgentEvalFailureCategory.invalidToolArguments,
+          reason: bad,
+        );
+      }
+      expect(
+        classifyFact(
+          '{"key":"walks-after-dinner","hook":"Walks after dinner",'
+          '"statement":"Walks after dinner.","source":"agentInferred"}',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('any tool call on the no-op wake is the churn failure', () {
       final category = classifyGoalAgentResult(
         scenario: scenarioById('gp_noop'),
