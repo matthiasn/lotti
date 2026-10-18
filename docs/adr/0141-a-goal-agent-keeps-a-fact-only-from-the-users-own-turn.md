@@ -36,11 +36,17 @@ could not use them.
    scheme and its sync are unchanged.
 2. **A goal fact is kept only from the user's own turn.**
    `remember_goal_fact` records a fact `confirmed` when its `source` is
-   `userStated` **and** the wake is answering the user's own chat message.
-   Every other fact — inferred, or "user-stated" on a briefing or any other
-   automatic wake — is `proposed`. The caller vouches, never the model: the
-   service records a fact confirmed only when the goal workflow passes
-   `userConfirmed`, from what it knows about the wake.
+   `userStated`, the wake is answering the user's own chat message, **and**
+   the fact is grounded in that message: at least half of its content words
+   (three letters or more, inflection allowed) appear in what the user
+   typed. Every other fact — inferred, "user-stated" on a briefing or any
+   other automatic wake, or labelled the user's on their turn without their
+   words — is `proposed`. The caller vouches, never the model: the source is
+   the model's claim, and the model has read transcripts, check-ins and the
+   charter as well, so a user's "ok" must not carry a sentence planted in a
+   transcript into memory. The service records a fact confirmed only when
+   the goal workflow passes `userConfirmed`, decided once in the strategy
+   from the pending message itself.
 3. **The user reviews on the goal page.** The shared panel appears on the
    goal page once the agent has learned something, to confirm a proposal and
    to edit or forget any fact.
@@ -62,6 +68,9 @@ could not use them.
 - An agent that mis-remembers on the user's own turn writes a confirmed fact
   the user has to forget on the goal page. The tool's answer says it was
   kept, and the panel shows it.
+- A fact the user did say, paraphrased past the grounding share, waits as a
+  proposal. The rule errs that way on purpose: a missed confirmation costs
+  one tap, a planted one shapes every briefing.
 
 ## Related
 

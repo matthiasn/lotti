@@ -2165,7 +2165,7 @@ facts are the shared knowledge store's entries (`PlannerKnowledgeEntity`,
 ```mermaid
 stateDiagram-v2
     [*] --> proposed: remember_goal_fact,\nany other wake or inferred
-    [*] --> confirmed: remember_goal_fact,\nuserStated on the user's own chat turn
+    [*] --> confirmed: remember_goal_fact, userStated on the\nuser's own chat turn, grounded in their words
     proposed --> confirmed: Confirm on the goal page
     proposed --> retracted: Forget
     confirmed --> confirmed: Edit (re-confirms)
@@ -2174,10 +2174,14 @@ stateDiagram-v2
 ```
 
 - **The caller vouches, never the model.** `goalFactIsUserConfirmed` keeps a
-  fact only when its `source` is `userStated` *and* the wake answers the
-  user's own chat message; the workflow passes that as `userConfirmed` to
-  `AgentKnowledgeService.propose`. A briefing that reads a check-in quoting
-  someone can therefore only propose. Re-using a key supersedes (recency
+  fact only when its `source` is `userStated`, the wake answers the user's
+  own chat message, *and* at least `goalFactGroundingShare` (half) of the
+  fact's content words appear in that message. `GoalAgentStrategy` decides
+  once, from the pending message, and both answers the model and hands the
+  decision to persistence (`rememberedFacts`), which passes it as
+  `userConfirmed` to `AgentKnowledgeService.propose`. A briefing that reads a
+  check-in quoting someone can therefore only propose, and so can a chat
+  turn whose "ok" the model pairs with a sentence it read elsewhere. Re-using a key supersedes (recency
   wins in `activePlannerKnowledge`).
 - **Written with the wake's outputs.** Facts are stored in the output
   transaction beside observations. A fact the store refuses — or cannot read
