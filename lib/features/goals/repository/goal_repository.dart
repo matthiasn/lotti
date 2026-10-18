@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_entry_ids.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
@@ -128,6 +129,17 @@ class GoalRepository {
       return byDate != 0 ? byDate : a.meta.id.compareTo(b.meta.id);
     });
   }
+
+  /// [charterEntries] in the plain shape the headless workflow reads — the
+  /// [GoalCharterReader] the agent wakes with.
+  Future<List<GoalCharterEntry>> charter(String agentId) async => [
+    for (final entry in await charterEntries(agentId))
+      GoalCharterEntry(
+        entryId: entry.meta.id,
+        writtenAt: entry.meta.dateFrom,
+        text: entry.entryText!.plainText.trim(),
+      ),
+  ];
 
   /// Writes [text] as a new charter entry of [agentId]'s goal, in the goal's
   /// category and privacy. Returns null when nothing was written: blank

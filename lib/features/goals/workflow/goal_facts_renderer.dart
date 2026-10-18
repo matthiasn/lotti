@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_evidence_text.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -52,9 +52,9 @@ typedef GoalObservationFact = ({DateTime? recordedAt, String text});
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
 /// model-against-model (`goal_agent_eval_fixtures.dart`): a labelled JSON
-/// fence with `goal` / `evaluation` / optional raw `signals` / `reporting` /
-/// `ads` / `personaTone` / `unansweredUserMessages` / `observations`
-/// sections. Every verdict is pre-computed here — the prompt instructs the
+/// fence with `goal` / optional `charter` / `evaluation` / optional raw
+/// `signals` / `reporting` / `ads` / `personaTone` /
+/// `unansweredUserMessages` / `observations` sections. Every verdict is pre-computed here — the prompt instructs the
 /// model to restate, never derive, so this renderer is the single place the
 /// model's worldview is assembled.
 class GoalFactsRenderer {
@@ -73,6 +73,7 @@ class GoalFactsRenderer {
     Map<String, String> criterionNames = const {},
     bool dailyBriefing = false,
     Map<String, Object?>? previousBriefing,
+    Map<String, Object?>? charter,
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -146,6 +147,9 @@ class GoalFactsRenderer {
         'statement': version.statement,
         'criteria': criterionJson(version.criteria, names: criterionNames),
       },
+      // What the user wrote the goal is FOR (ADR 0140), verbatim. Absent for
+      // a goal without a charter, which renders exactly as before.
+      'charter': ?charter,
       'evaluation': {
         'referenceIsCurrentDay': _isToday(evaluationReference, now),
         'todayGuidance': _todayGuidanceJson(
@@ -762,32 +766,6 @@ List<Map<String, Object>> _boundedCategorySummariesByTokens(
       b['categoryId']! as String,
     ),
   );
-}
-
-/// Clips one journal markdown field before it enters the model context.
-///
-/// The complete text remains in the journal and in the freshness digest. The
-/// model only needs a recent semantic excerpt, and one pathological entry must
-/// not consume the entire wake budget.
-@visibleForTesting
-String truncateGoalEvidenceText(String text, int tokenBudget) {
-  final trimmed = text.trim();
-  if (tokenBudget <= 0 || trimmed.isEmpty) return '';
-  if (TextChunker.estimateTokens(trimmed) <= tokenBudget) return trimmed;
-
-  final runes = trimmed.runes.toList(growable: false);
-  var low = 0;
-  var high = runes.length;
-  while (low < high) {
-    final mid = (low + high + 1) ~/ 2;
-    final candidate = '${String.fromCharCodes(runes.take(mid))}…';
-    if (TextChunker.estimateTokens(candidate) <= tokenBudget) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return '${String.fromCharCodes(runes.take(low)).trimRight()}…';
 }
 
 /// A JSON rendering of the criteria tree, mirroring the eval fixtures'

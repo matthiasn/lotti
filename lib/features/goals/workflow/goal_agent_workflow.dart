@@ -38,6 +38,7 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/logic/goal_aggregate_rounding.dart';
+import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
@@ -117,6 +118,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._checkInDigestService,
     this._criterionNameReader,
     this._alertCopy,
+    this._charterReader,
   }) : _chatHistoryService =
            chatHistoryService ?? GoalChatHistoryService(_repository);
 
@@ -153,6 +155,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// Writes the span digests the hierarchical compaction reads. Null keeps
   /// the truncating selection: the recent tail only.
   final GoalCheckInDigestService? _checkInDigestService;
+
+  /// Resolves the goal's charter from the journal (ADR 0140). Optional and
+  /// injected like [_checkInSourceReader]: without it a wake carries no
+  /// charter, which is where every goal stood before charters existed.
+  final GoalCharterReader? _charterReader;
   final DomainLogger _domainLogger;
 
   @override
@@ -367,6 +374,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       facts: facts,
       dailyBriefing: dailyBriefing,
       previousBriefing: previousBriefing,
+      charter: await _charterFacts(agentId),
       derivation: derivation,
       nudges: nudges,
       reference: reference,
@@ -869,6 +877,26 @@ class GoalAgentWorkflow with AgentErrorLogging {
         stackTrace: stackTrace,
       );
       return const {};
+    }
+  }
+
+  /// The `charter` FACTS section, or null for a goal without one.
+  ///
+  /// Contained like user voice: the charter shapes coaching, but the wake is
+  /// accountable to the measured FACTS, so a charter that cannot be read
+  /// costs this wake its charter and is logged — never the wake itself.
+  Future<Map<String, Object?>?> _charterFacts(String agentId) async {
+    final reader = _charterReader;
+    if (reader == null) return null;
+    try {
+      return goalCharterFacts(await reader(agentId));
+    } catch (error, stackTrace) {
+      logError(
+        'goal charter unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 

@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
@@ -218,6 +219,16 @@ final Provider<GoalCriterionNameReader?> goalCriterionNameReaderProvider =
       return repository.criterionNames;
     }, name: 'goalCriterionNameReaderProvider');
 
+/// Reads a goal's charter out of the journal for the headless workflow
+/// (ADR 0140) — null without a journal stack, in which case wakes carry no
+/// charter rather than failing.
+final Provider<GoalCharterReader?> goalCharterReaderProvider =
+    Provider<GoalCharterReader?>((ref) {
+      final repository = ref.watch(goalRepositoryProvider);
+      if (repository == null) return null;
+      return repository.charter;
+    }, name: 'goalCharterReaderProvider');
+
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
   (ref) => GoalAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -231,6 +242,7 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
     checkInSourceReader: ref.watch(goalCheckInSourceReaderProvider),
     checkInDigestService: ref.watch(goalCheckInDigestServiceProvider),
     criterionNameReader: ref.watch(goalCriterionNameReaderProvider),
+    charterReader: ref.watch(goalCharterReaderProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     alertCopy: AgentAlertCopy.fromFlags(
       alerts: ref.watch(goalOffTrackAlertServiceProvider),

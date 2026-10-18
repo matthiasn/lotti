@@ -23,6 +23,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
@@ -1491,6 +1492,96 @@ void main() {
         expect(asked, isFalse);
       },
     );
+  });
+
+  group('the charter', () {
+    late MockDomainLogger logger;
+
+    Future<String?> factsWith(GoalCharterReader? reader) async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      logger = MockDomainLogger();
+      workflow = GoalAgentWorkflow(
+        domainLogger: logger,
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        charterReader: reader,
+      );
+      String? sentFacts;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            sentFacts ??= message;
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+      await workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-charter',
+        triggerTokens: const {'goal-escalation:2026-08-11'},
+        threadId: 'thread-charter',
+      );
+      return sentFacts;
+    }
+
+    test('reaches the model verbatim, read for this goal', () async {
+      String? askedFor;
+      final facts = await factsWith((id) async {
+        askedFor = id;
+        return [
+          GoalCharterEntry(
+            entryId: 'about',
+            writtenAt: DateTime(2026, 8),
+            text: 'Ask me one guided question each morning.',
+          ),
+        ];
+      });
+
+      expect(askedFor, agentId);
+      expect(facts, contains('"charter": {'));
+      expect(facts, contains('Ask me one guided question each morning.'));
+      expect(facts, contains(goalCharterInterpretationPolicy));
+    });
+
+    test('a goal without a charter sends no charter section', () async {
+      final facts = await factsWith((_) async => const []);
+
+      expect(facts, isNotNull);
+      expect(facts, isNot(contains('"charter"')));
+    });
+
+    test('a charter that cannot be read costs the wake its charter, is '
+        'logged, and never fails the wake', () async {
+      final facts = await factsWith((_) async => throw StateError('db gone'));
+
+      expect(facts, isNotNull);
+      expect(facts, isNot(contains('"charter"')));
+      verify(
+        () => logger.error(
+          LogDomain.agentWorkflow,
+          any(that: isA<StateError>()),
+          message: 'goal charter unavailable for this wake',
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+        ),
+      ).called(1);
+    });
   });
 
   group('hierarchical user voice', () {

@@ -331,6 +331,24 @@ void main() {
       ).called(1);
     });
 
+    test('the workflow reads the charter as plain trimmed text with the '
+        'moment it was written', () async {
+      when(
+        () => mockDb.charterLinksToGoal(goalId),
+      ).thenAnswer((_) async => [charterLink('about')]);
+      when(() => mockDb.getJournalEntitiesForIds(any())).thenAnswer(
+        (_) async => [
+          note('about', text: '  Coach me gently.\n', at: DateTime(2026, 8)),
+        ],
+      );
+
+      final charter = await repository.charter('agent-1');
+
+      expect(charter.single.entryId, 'about');
+      expect(charter.single.text, 'Coach me gently.');
+      expect(charter.single.writtenAt, DateTime(2026, 8));
+    });
+
     test('a goal without a charter reads no entries at all', () async {
       when(
         () => mockDb.charterLinksToGoal(goalId),

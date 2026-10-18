@@ -195,6 +195,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required bool userRequestedAd,
     bool dailyBriefing = false,
     Map<String, Object?>? previousBriefing,
+    Map<String, Object?>? charter,
   }) async {
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -212,6 +213,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       criterionNames: await _criterionNames(version.criteria),
       dailyBriefing: dailyBriefing,
       previousBriefing: previousBriefing,
+      charter: charter,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
