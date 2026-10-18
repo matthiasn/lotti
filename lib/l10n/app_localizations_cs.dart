@@ -7189,6 +7189,27 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Napsat o tomto cíli';
+
+  @override
+  String get goalCharterEmpty =>
+      'Řekni svému agentovi, k čemu tento cíl je a jak chceš, aby tě koučoval. Čte to pokaždé, když ti píše.';
+
+  @override
+  String get goalCharterHint =>
+      'K čemu tento cíl je, na čem ti záleží a jak by tě měl tvůj agent koučovat? Například: polož mi každé ráno jednu otázku k zamyšlení.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Tvůj agent dokáže přečíst jen první část. Zkrať záznamy nebo je spoj, aby přečetl všechno.';
+
+  @override
+  String get goalCharterSaveFailed => 'Neuložilo se to. Zkus to znovu.';
+
+  @override
+  String get goalCharterTitle => 'O tomto cíli';
+
+  @override
   String get goalChartSevenDayAverage => '7denní průměr';
 
   @override

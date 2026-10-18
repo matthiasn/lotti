@@ -7139,6 +7139,28 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Schrijf over dit doel';
+
+  @override
+  String get goalCharterEmpty =>
+      'Vertel je agent waar dit doel voor is en hoe je begeleid wilt worden. Hij leest dit elke keer dat hij je schrijft.';
+
+  @override
+  String get goalCharterHint =>
+      'Waar is dit doel voor, wat is belangrijk voor je, en hoe moet je agent je begeleiden? Bijvoorbeeld: stel me elke ochtend één begeleidende vraag.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Je agent kan alleen het eerste deel lezen. Kort items in of voeg ze samen zodat hij alles leest.';
+
+  @override
+  String get goalCharterSaveFailed =>
+      'Dat is niet opgeslagen. Probeer het opnieuw.';
+
+  @override
+  String get goalCharterTitle => 'Over dit doel';
+
+  @override
   String get goalChartSevenDayAverage => '7-daags gemiddelde';
 
   @override

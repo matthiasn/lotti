@@ -134,11 +134,7 @@ class GoalRepository {
   /// [GoalCharterReader] the agent wakes with.
   Future<List<GoalCharterEntry>> charter(String agentId) async => [
     for (final entry in await charterEntries(agentId))
-      GoalCharterEntry(
-        entryId: entry.meta.id,
-        writtenAt: entry.meta.dateFrom,
-        text: entry.entryText!.plainText.trim(),
-      ),
+      GoalCharterEntry.of(entry),
   ];
 
   /// Writes [text] as a new charter entry of [agentId]'s goal, in the goal's

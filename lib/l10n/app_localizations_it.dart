@@ -7195,6 +7195,27 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Scrivi su questo obiettivo';
+
+  @override
+  String get goalCharterEmpty =>
+      'Racconta al tuo agente a cosa serve questo obiettivo e come vuoi essere seguito. Lo legge ogni volta che ti scrive.';
+
+  @override
+  String get goalCharterHint =>
+      'A cosa serve questo obiettivo, cosa conta per te e come dovrebbe seguirti il tuo agente? Per esempio: fammi una domanda guidata ogni mattina.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Il tuo agente può leggere solo la prima parte. Accorcia o unisci le voci perché le legga tutte.';
+
+  @override
+  String get goalCharterSaveFailed => 'Non è stato salvato. Riprova.';
+
+  @override
+  String get goalCharterTitle => 'Su questo obiettivo';
+
+  @override
   String get goalChartSevenDayAverage => 'Media su 7 giorni';
 
   @override

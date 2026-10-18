@@ -12011,6 +12011,42 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}'**
   String goalBufferDays(int count);
 
+  /// No description provided for @goalCharterAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Write about this goal'**
+  String get goalCharterAdd;
+
+  /// No description provided for @goalCharterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell your agent what this goal is for and how you want to be coached. It reads this every time it writes to you.'**
+  String get goalCharterEmpty;
+
+  /// No description provided for @goalCharterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What is this goal for, what matters to you, and how should your agent coach you? For example: ask me one guided question each morning.'**
+  String get goalCharterHint;
+
+  /// No description provided for @goalCharterOverBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.'**
+  String get goalCharterOverBudget;
+
+  /// No description provided for @goalCharterSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save. Try again.'**
+  String get goalCharterSaveFailed;
+
+  /// No description provided for @goalCharterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About this goal'**
+  String get goalCharterTitle;
+
   /// No description provided for @goalChartSevenDayAverage.
   ///
   /// In en, this message translates to:

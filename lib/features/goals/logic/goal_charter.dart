@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/logic/goal_evidence_text.dart';
 
@@ -16,6 +17,13 @@ class GoalCharterEntry {
     required this.writtenAt,
     required this.text,
   });
+
+  /// The charter entry a journal [entry] stands for: its words, trimmed, and
+  /// the moment it was written.
+  GoalCharterEntry.of(JournalEntry entry)
+    : entryId = entry.meta.id,
+      writtenAt = entry.meta.dateFrom,
+      text = entry.entryText?.plainText.trim() ?? '';
 
   final String entryId;
 

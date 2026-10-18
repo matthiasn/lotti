@@ -7232,6 +7232,27 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Scrieți despre acest obiectiv';
+
+  @override
+  String get goalCharterEmpty =>
+      'Spuneți-i agentului la ce servește acest obiectiv și cum doriți să fiți îndrumat. Îl citește de fiecare dată când vă scrie.';
+
+  @override
+  String get goalCharterHint =>
+      'La ce servește acest obiectiv, ce contează pentru dvs. și cum ar trebui să vă îndrume agentul? De exemplu: pune-mi o întrebare ghidată în fiecare dimineață.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Agentul poate citi doar prima parte. Scurtați sau combinați înregistrările ca să le citească pe toate.';
+
+  @override
+  String get goalCharterSaveFailed => 'Nu s-a salvat. Încercați din nou.';
+
+  @override
+  String get goalCharterTitle => 'Despre acest obiectiv';
+
+  @override
   String get goalChartSevenDayAverage => 'Media pe 7 zile';
 
   @override

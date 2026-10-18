@@ -7109,6 +7109,27 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Skriv om dette mål';
+
+  @override
+  String get goalCharterEmpty =>
+      'Fortæl din agent, hvad dette mål er til, og hvordan du vil coaches. Den læser det, hver gang den skriver til dig.';
+
+  @override
+  String get goalCharterHint =>
+      'Hvad er dette mål til, hvad betyder noget for dig, og hvordan skal din agent coache dig? For eksempel: stil mig ét guidet spørgsmål hver morgen.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Din agent kan kun læse den første del. Forkort eller saml indlæg, så den læser det hele.';
+
+  @override
+  String get goalCharterSaveFailed => 'Det blev ikke gemt. Prøv igen.';
+
+  @override
+  String get goalCharterTitle => 'Om dette mål';
+
+  @override
   String get goalChartSevenDayAverage => '7-dages gennemsnit';
 
   @override

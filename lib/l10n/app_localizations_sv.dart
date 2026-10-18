@@ -7119,6 +7119,27 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCharterAdd => 'Skriv om det här målet';
+
+  @override
+  String get goalCharterEmpty =>
+      'Berätta för din agent vad det här målet är till för och hur du vill bli coachad. Den läser det varje gång den skriver till dig.';
+
+  @override
+  String get goalCharterHint =>
+      'Vad är det här målet till för, vad är viktigt för dig, och hur ska din agent coacha dig? Till exempel: ställ en guidad fråga till mig varje morgon.';
+
+  @override
+  String get goalCharterOverBudget =>
+      'Din agent kan bara läsa den första delen. Korta ner eller slå ihop inlägg så att den läser allt.';
+
+  @override
+  String get goalCharterSaveFailed => 'Det sparades inte. Försök igen.';
+
+  @override
+  String get goalCharterTitle => 'Om det här målet';
+
+  @override
   String get goalChartSevenDayAverage => '7-dagarsgenomsnitt';
 
   @override
