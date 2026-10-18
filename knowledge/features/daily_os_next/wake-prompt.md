@@ -304,7 +304,10 @@ Week context builds **only** on wakes whose day came from day-carrying tokens
 # Recall
 
 `search_memory` is the planner's recall and memory-linking tool, handled by
-`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`.
+`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`. Its parameters,
+parsing and rendering are the shared helper in
+`lib/features/agents/memory/memory_search.dart`, which goal agents recall
+through as well; the planner supplies only its captures as the corpus.
 
 - With `query` it keyword-scans the **full** immutable capture-and-observation
   log — including detail folded out of the current summary — newest-first and

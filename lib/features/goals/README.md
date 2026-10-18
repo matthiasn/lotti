@@ -343,6 +343,11 @@ check-ins: they do not count toward check-in time and are not summarized away,
 and the page says when a charter has grown longer than the agent can read in
 one go.
 
+The agent can also **recall**: asked about something said months ago, or
+writing a briefing that needs it, it searches every check-in in the user's
+own words, the whole chat and its own notes — not only the recent slice each
+wake carries — and reads the matches before it answers.
+
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs

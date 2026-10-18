@@ -48,6 +48,14 @@ sources:
     resource: ../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md
     title: ADR 0140 — A goal is constituted by its charter entries
     last_modified: 2026-10-18
+  - id: memory-search
+    resource: ../../lib/features/goals/workflow/goal_memory_search.dart
+    title: GoalMemorySearch — recall over check-ins, chat and observations
+    last_modified: 2026-10-18
+  - id: shared-memory-search
+    resource: ../../lib/features/agents/memory/memory_search.dart
+    title: The shared memory-search tool — schema, parsing, rendering
+    last_modified: 2026-10-18
   - id: checkin-duration
     resource: ../../lib/features/goals/ui/checkins/goal_checkin_duration.dart
     title: A check-in's time — label, picker, beat chip
@@ -255,7 +263,7 @@ flowchart TD
     CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
-    FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 8-tool contract]
+    FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 9-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
@@ -2077,6 +2085,53 @@ flowchart LR
 - **A charter edit marks the report stale; it does not wake the agent.** For
   a goal that measures check-in time it also re-runs the €0 evaluator, since
   any write notifying the goal row is that goal's immediate token.
+
+## Recall
+
+A wake carries a bounded slice of the past: the check-in summaries that fit
+`userVoice`, the long-range digests, twelve observations. `search_goal_memory`
+reaches the rest (ADR 0057 decision 1): every check-in in the user's own
+words, the whole chat, and the agent's observations.
+
+```mermaid
+sequenceDiagram
+    participant M as model
+    participant S as GoalAgentStrategy
+    participant R as GoalMemorySearch
+    participant C as AgentLogCompactor
+    M->>S: search_goal_memory {query | ids}
+    S->>R: searcher(args) — at most 3 per wake
+    R->>R: read check-ins (full text) and allDialogue
+    R->>C: inline events beside the agent's observations
+    C-->>R: hits, newest first
+    R-->>S: formatMemorySearchResult — 250 tokens a hit, 1,500 in all
+    S-->>M: tool result, then one continuation turn
+    M->>S: the calls the wake still needs
+```
+
+- **One helper, two agents.** The tool's schema, parsing and rendering are
+  `lib/features/agents/memory/memory_search.dart`, shared with the day
+  agent's `search_memory`; the goal supplies its corpus
+  (`goalMemoryEvents`) and the wake budget it renders within.
+- **Read on demand, nothing captured.** The sources are read when a recall
+  runs: `GoalRepository.checkInSources` and
+  `GoalChatHistoryService.allDialogue`, both unbounded and both only here.
+  Each is contained — one that cannot be read costs the recall that source,
+  logged, never the wake.
+- **The loop takes one more turn, and only then.** The strategy's
+  `getContinuationPrompt` stays null — the contract's "never nags" — except
+  right after a batch that recalled, so the model reads what it asked for.
+- **Every outcome is an answer.** No recall wired, the per-wake cap reached,
+  a search that failed: each is returned as the tool's answer, never a
+  rejection. A rejected call stays unresolved, and an unresolved interactive
+  batch withholds its reply — a search must never cost the user their answer.
+- **Bounded output.** A hit is cut to `goalMemoryHitTokenBudget` (250) with
+  the whole entry pullable by id, and the result stops at
+  `goalMemoryResultTokenBudget` (1,500), counting what it left out.
+- **The evals.** The outcome evals tolerate a recall like an observation; the
+  compaction eval withholds the tool, because its probes measure what each
+  compaction arm leaves in `userVoice`. The system prompt is unchanged — the
+  tool's description says when to recall.
 
 ## Gotchas
 
