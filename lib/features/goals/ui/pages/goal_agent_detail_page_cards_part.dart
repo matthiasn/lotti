@@ -490,10 +490,13 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
               : null,
           // Her bust is only her head and shoulders: a tap stands her up
           // head to toe, full screen, reading this report.
+          // …in the goal's pose, as the bust that was tapped wears it.
           onFigureTap: () => openCompanionStage(
             context,
             sourceId: sourceId,
             spokenText: spokenText,
+            mood: pose.mood,
+            holding: pose.gesture,
           ),
           // The same header as the task agent section: the badge (or her),
           // the shared card title, the persona underneath, tap → internals.

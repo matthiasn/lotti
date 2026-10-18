@@ -4782,6 +4782,10 @@ void main() {
       );
       expect(stage.sourceId, goalReportSpeechSourceId('goal-1'));
       expect(stage.spokenText, tldr);
+      // She stands up in the goal's pose, as the bust wore it.
+      final pose = goalCompanionPose(GoalTrackStatus.atRisk, resolved: true);
+      expect(stage.mood, pose.mood);
+      expect(stage.holding, pose.gesture);
     });
 
     testWidgets('offers the read-aloud disc for the read while there is a '
