@@ -798,6 +798,10 @@ class _ErrorView extends StatelessWidget {
         messages.syncCredentialsErrorLoginFailed,
       (SyncSetupEntry.credentials, ProvisioningError.configurationError) =>
         messages.syncCredentialsErrorConfigurationFailed,
+      // Only a pairing code can carry a signature, but the message holds for
+      // either entry: nothing was changed and the code must not be used.
+      (_, ProvisioningError.untrustedBundle) =>
+        messages.provisionedSyncErrorUntrusted,
     };
 
     return Column(

@@ -110,9 +110,8 @@ How it works:
   but not read or alter it, and your devices still hold the full record.
 - **The relay is not an archive.** Sync rooms carry a 30-day
   `m.room.retention` policy. Synapse only enforces that when the operator turns
-  retention on (and media retention separately); the optional
-  [provisioning service](services/matrix-provisioning-service/README.md) runs
-  its own purge by default. Either way, the durable copy of your record is on
+  retention on (and media retention separately); the hosted Lotti Sync
+  service runs its own purge as well. Either way, the durable copy of your record is on
   your devices, not on the relay.
 - **Conflicts are resolved, not overwritten.** Every entry carries a vector
   clock keyed by device, so a device that was offline for a week rejoins
@@ -395,10 +394,10 @@ with FUSE, which desktops ship by default; where FUSE is missing, run it with
   homeserver whose operator never holds a key — see
   [the vision](#2-end-to-end-encrypted-sync-through-a-zero-trust-relay) for how it works.
 - The first device is set up against a homeserver with the included
-  [`tools/matrix_provisioner`](tools/matrix_provisioner) CLI or the optional
-  [provisioning service](services/matrix-provisioning-service/README.md), which
-  create the sync account and encrypted room and produce a single-use pairing
-  bundle. On Linux you can also enter an existing Matrix account directly.
+  [`tools/matrix_provisioner`](tools/matrix_provisioner) CLI, which creates
+  the sync account and encrypted room and produces a single-use pairing
+  bundle — or, in builds that offer it, by subscribing to the hosted Lotti
+  Sync service from the app. On Linux you can also enter an existing Matrix account directly.
 - Every device after that pairs from one you already use: scan a QR code,
   compare a check code shown on both screens, then complete emoji verification.
   The pairing QR carries the sync account's credentials, so treat it like a

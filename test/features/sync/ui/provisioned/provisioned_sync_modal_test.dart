@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart'
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_controller.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/manual_credentials_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
+import 'package:lotti/features/sync/ui/subscription/subscribe_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/platform.dart';
@@ -14,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../subscription/fake_sync_subscription_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,18 +66,78 @@ void main() {
     });
   }
 
-  Future<void> pumpEmptyState(WidgetTester tester) {
+  Future<void> pumpEmptyState(
+    WidgetTester tester, {
+    bool subscriptionAvailable = false,
+    FakeSyncSubscriptionController? subscription,
+  }) {
     return tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const SyncSetupEmptyState(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
+          syncSubscriptionAvailableProvider.overrideWithValue(
+            subscriptionAvailable,
+          ),
+          if (subscription != null)
+            syncSubscriptionControllerProvider.overrideWith(() => subscription),
         ],
       ),
     );
   }
 
   group('SyncSetupEmptyState', () {
+    group('Lotti Sync subscription entry', () {
+      testWidgets('is absent from builds without the service', (tester) async {
+        await pumpEmptyState(tester);
+
+        expect(find.byKey(const Key('sync_setup_subscribe')), findsNothing);
+      });
+
+      testWidgets('sits below the pairing code and opens the subscribe sheet', (
+        tester,
+      ) async {
+        final subscription = FakeSyncSubscriptionController();
+        await pumpEmptyState(
+          tester,
+          subscriptionAvailable: true,
+          subscription: subscription,
+        );
+
+        final entry = find.byKey(const Key('sync_setup_subscribe'));
+        expect(
+          tester.getTopLeft(entry).dy,
+          greaterThan(
+            tester.getTopLeft(find.byKey(const Key('sync_setup_cta'))).dy,
+          ),
+        );
+
+        await tester.tap(entry);
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SubscribeBody));
+        expect(
+          find.text(context.messages.syncSubscribeIntro),
+          findsOneWidget,
+        );
+        expect(subscription.calls, ['resume']);
+      });
+
+      testWidgets('the footnote names both ways to sync', (tester) async {
+        await pumpEmptyState(tester, subscriptionAvailable: true);
+
+        final context = tester.element(find.byType(SyncSetupEmptyState));
+        expect(
+          find.text(context.messages.syncSetupEmptyFootnoteHosted),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.syncSetupEmptyFootnote),
+          findsNothing,
+        );
+      });
+    });
+
     testWidgets('explains sync and leads with the one setup action', (
       tester,
     ) async {

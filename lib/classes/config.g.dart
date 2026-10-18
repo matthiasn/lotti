@@ -11,6 +11,11 @@ _MatrixConfig _$MatrixConfigFromJson(Map<String, dynamic> json) =>
       homeServer: json['homeServer'] as String,
       user: json['user'] as String,
       password: json['password'] as String,
+      attestation: json['attestation'] == null
+          ? null
+          : BundleAttestation.fromJson(
+              json['attestation'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$MatrixConfigToJson(_MatrixConfig instance) =>
@@ -18,6 +23,23 @@ Map<String, dynamic> _$MatrixConfigToJson(_MatrixConfig instance) =>
       'homeServer': instance.homeServer,
       'user': instance.user,
       'password': instance.password,
+      'attestation': ?instance.attestation,
+    };
+
+_BundleAttestation _$BundleAttestationFromJson(Map<String, dynamic> json) =>
+    _BundleAttestation(
+      kid: json['kid'] as String,
+      iat: (json['iat'] as num).toInt(),
+      exp: (json['exp'] as num).toInt(),
+      sig: json['sig'] as String,
+    );
+
+Map<String, dynamic> _$BundleAttestationToJson(_BundleAttestation instance) =>
+    <String, dynamic>{
+      'kid': instance.kid,
+      'iat': instance.iat,
+      'exp': instance.exp,
+      'sig': instance.sig,
     };
 
 _SyncProvisioningBundle _$SyncProvisioningBundleFromJson(
@@ -29,6 +51,9 @@ _SyncProvisioningBundle _$SyncProvisioningBundleFromJson(
   user: json['user'] as String,
   password: json['password'] as String,
   roomId: json['roomId'] as String,
+  att: json['att'] == null
+      ? null
+      : BundleAttestation.fromJson(json['att'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$SyncProvisioningBundleToJson(
@@ -40,6 +65,7 @@ Map<String, dynamic> _$SyncProvisioningBundleToJson(
   'user': instance.user,
   'password': instance.password,
   'roomId': instance.roomId,
+  'att': ?instance.att,
 };
 
 const _$SyncBundleKindEnumMap = {

@@ -5,10 +5,9 @@ Creates a Matrix user account and sync room on a Synapse homeserver, then
 outputs a Base64url-encoded provisioning bundle that can be imported by the
 Lotti desktop client.
 
-The provisioning flow itself lives in ``services/shared/matrix`` so that this
-CLI and the matrix-provisioning-service web API cannot drift apart. This module
-is the command-line front end: argument parsing, credential resolution, stderr
-progress and file output.
+The provisioning flow itself lives in ``services/shared/matrix``. This
+module is the command-line front end: argument parsing, credential resolution,
+stderr progress and file output.
 """
 
 import argparse

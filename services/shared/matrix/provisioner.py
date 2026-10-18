@@ -1,8 +1,7 @@
 """Reusable Synapse provisioning flow.
 
-This is the shared core behind both the ``matrix_provisioner`` CLI and the
-matrix-provisioning-service web API. It creates a Matrix user and an encrypted
-Lotti sync room, and returns the provisioning bundle.
+This is the core of the ``matrix_provisioner`` CLI. It creates a Matrix
+user and an encrypted Lotti sync room, and returns the provisioning bundle.
 
 The flow is deliberately identical to the original CLI implementation, including
 its rollback behaviour: if anything fails after the user has been created, the

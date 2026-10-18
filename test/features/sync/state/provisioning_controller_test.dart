@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/provenance/crypto/ed25519.dart';
+import 'package:lotti/features/sync/state/bundle_attestation.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -450,7 +453,8 @@ void main() {
           // one validated field each. Padding stripping exercises
           // _normalizeBase64 on every iteration.
           final json = <String, dynamic>{
-            'v': corruption == 1 ? 3 + (seed % 7) : 2,
+            // 3 is the signed schema, so unsupported versions start at 4.
+            'v': corruption == 1 ? 4 + (seed % 7) : 2,
             if (corruption != 2) 'kind': 'provisioned' else 'kind': seed,
             'homeServer': corruption == 5
                 ? 'http://matrix-$seed.example.com'
@@ -1431,6 +1435,226 @@ void main() {
             .decodeBundle(encoded);
 
         expect(decoded, provisionedBundle);
+      });
+    });
+
+    group('signed bundles (schema v3)', () {
+      const vectorKid = 'test-2026-10';
+      const attestation = BundleAttestation(
+        kid: vectorKid,
+        iat: 1792238400,
+        exp: 1792324800,
+        sig:
+            'Z2wBDGKnlkDUy8V2UiZwcLnyPZ8XQ_S23F4Q10C98F3D3n8k_QnaJztuNo0qxtWSUsAc6SrgQT7azvEAnfjiCA',
+      );
+      // The cross-language vector from bundle_attestation_test.dart.
+      const signedBundle = SyncProvisioningBundle(
+        v: 3,
+        kind: SyncBundleKind.provisioned,
+        homeServer: 'https://matrix.example.com',
+        user: '@sync_vector:example.com',
+        password: 'bootstrap-password',
+        roomId: '!vector:example.com',
+        att: attestation,
+      );
+      const operatorTrust = BundleTrust(
+        keys: {vectorKid: 'A6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg'},
+        signedHomeservers: {'https://matrix.example.com'},
+      );
+      final issuedAt = DateTime.utc(2026, 10, 17, 12);
+
+      late ProviderContainer signedContainer;
+
+      setUp(() {
+        signedContainer = ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => ProvisioningController(
+                onboardingSyncService: mockOnboardingSyncService,
+                trust: operatorTrust,
+                clock: () => issuedAt,
+              ),
+            ),
+          ],
+        );
+      });
+
+      tearDown(() => signedContainer.dispose());
+
+      ProvisioningController controller() =>
+          signedContainer.read(provisioningControllerProvider.notifier);
+
+      SyncProvisioningBundle readyHandover() {
+        final state = signedContainer.read(provisioningControllerProvider);
+        final encoded = state.maybeWhen(
+          ready: (handover) => handover,
+          orElse: () => fail('Expected ready, got $state'),
+        );
+        final json =
+            jsonDecode(
+                  utf8.decode(base64Url.decode(base64Url.normalize(encoded))),
+                )
+                as Map<String, dynamic>;
+        return SyncProvisioningBundle.fromJson(json);
+      }
+
+      test('libsodium is loaded only for a bundle that is signed', () async {
+        var loads = 0;
+        final counting = ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            provisioningControllerProvider.overrideWith(
+              () => ProvisioningController(
+                onboardingSyncService: mockOnboardingSyncService,
+                trust: operatorTrust,
+                clock: () => issuedAt,
+                ed25519Loader: () {
+                  loads++;
+                  return SodiumEd25519.bundled();
+                },
+              ),
+            ),
+          ],
+        );
+        addTearDown(counting.dispose);
+        final controller = counting.read(
+          provisioningControllerProvider.notifier,
+        );
+
+        await controller.configureFromBundle(provisionedBundle);
+        expect(loads, 0);
+
+        await controller.configureFromBundle(signedBundle);
+        expect(loads, 1);
+      });
+
+      test('a v3 bundle decodes with its attestation', () {
+        final decoded = controller().decodeBundle(
+          encodeBundle(
+            jsonDecode(jsonEncode(signedBundle)) as Map<String, dynamic>,
+          ),
+        );
+
+        expect(decoded, signedBundle);
+      });
+
+      test('a v3 bundle without its attestation is malformed', () {
+        final stripped =
+            jsonDecode(jsonEncode(signedBundle)) as Map<String, dynamic>
+              ..remove('att');
+
+        expect(
+          () => controller().decodeBundle(encodeBundle(stripped)),
+          throwsA(
+            isA<BundleDecodeException>().having(
+              (e) => e.error,
+              'error',
+              BundleDecodeError.malformedPayload,
+            ),
+          ),
+        );
+      });
+
+      test('a v2 bundle is unsigned whatever it carries', () {
+        final downgraded =
+            jsonDecode(jsonEncode(signedBundle)) as Map<String, dynamic>
+              ..['v'] = 2;
+
+        final decoded = controller().decodeBundle(encodeBundle(downgraded));
+
+        expect(decoded.att, isNull);
+      });
+
+      test(
+        'an unsigned bundle for the operator homeserver is refused before '
+        'the current session is touched',
+        () async {
+          when(() => mockMatrixService.isLoggedIn()).thenReturn(true);
+          final unsigned = signedBundle.copyWith(v: 2, att: null);
+
+          await controller().configureFromBundle(unsigned);
+
+          expect(
+            signedContainer.read(provisioningControllerProvider),
+            const ProvisioningState.error(ProvisioningError.untrustedBundle),
+          );
+          verifyNever(() => mockMatrixService.logout());
+          verifyNever(() => mockMatrixService.setConfig(any()));
+          verifyNever(
+            () => mockMatrixService.login(
+              waitForLifecycle: any(named: 'waitForLifecycle'),
+            ),
+          );
+          verify(
+            () => mockLoggingService.log(
+              LogDomain.sync,
+              'Refused untrusted bundle: unsigned',
+              subDomain: 'configureFromBundle.verify',
+              level: InsightLevel.warn,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('a forged bundle is refused', () async {
+        await controller().configureFromBundle(
+          signedBundle.copyWith(user: '@attacker:example.com'),
+        );
+
+        expect(
+          signedContainer.read(provisioningControllerProvider),
+          const ProvisioningState.error(ProvisioningError.untrustedBundle),
+        );
+        verifyNever(() => mockMatrixService.setConfig(any()));
+      });
+
+      test(
+        'a signed bundle stores its attestation and hands it on with the '
+        'rotated password',
+        () async {
+          await controller().configureFromBundle(signedBundle);
+
+          final stored =
+              verify(
+                    () => mockMatrixService.setConfig(captureAny()),
+                  ).captured.single
+                  as MatrixConfig;
+          expect(stored.attestation, attestation);
+
+          final handover = readyHandover();
+          expect(handover.v, 3);
+          expect(handover.kind, SyncBundleKind.handover);
+          expect(handover.att, attestation);
+          expect(handover.password, isNot(signedBundle.password));
+        },
+      );
+
+      test('a regenerated handover carries the stored attestation', () async {
+        when(() => mockMatrixService.loadConfig()).thenAnswer(
+          (_) async => MatrixConfig(
+            homeServer: signedBundle.homeServer,
+            user: signedBundle.user,
+            password: 'rotated-password',
+            attestation: attestation,
+          ),
+        );
+        when(
+          () => mockMatrixService.syncRoomId,
+        ).thenReturn(signedBundle.roomId);
+
+        final encoded = await controller().regenerateHandover();
+
+        final json =
+            jsonDecode(
+                  utf8.decode(base64Url.decode(base64Url.normalize(encoded!))),
+                )
+                as Map<String, dynamic>;
+        final handover = SyncProvisioningBundle.fromJson(json);
+        expect(handover.v, 3);
+        expect(handover.att, attestation);
+        // Decoding it again, as the next device does, keeps the signature.
+        expect(controller().decodeBundle(encoded).att, attestation);
       });
     });
   });

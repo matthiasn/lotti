@@ -1,45 +1,51 @@
 ---
 type: Architecture
 title: Backend services
-description: What lives under services/, which parts the app talks to, which are built and tested in CI, and which are unmaintained proofs of concept.
+description: What lives under services/ and tools/ for running beside the app, what the app talks to over the network, and where the hosted services are kept.
 resource: ../../services
-tags: [services, backend, ai-proxy, credits, matrix-provisioning, whisper, voxtral, ci]
+tags: [services, backend, matrix-provisioning, whisper, voxtral, ci]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-10-04T12:00:00Z }
-stale_after: 2027-01-11
+generated: { by: claude-code/opus-5.5, at: 2026-10-18T12:00:00Z }
+stale_after: 2027-01-18
 sources:
   - id: provider-config
     resource: ../../lib/features/ai/constants/provider_config.dart
     title: Default provider base URLs and names
     last_modified: 2026-09-19
-  - id: matrix-admin-ci
-    resource: ../../.github/workflows/matrix-admin-ci.yml
-    title: Matrix Admin CI
-    last_modified: 2026-10-03
   - id: python-services-release
     resource: ../../.github/workflows/python-services-release.yml
     title: Python services release
     last_modified: 2026-10-03
-  - id: deployment-guide
-    resource: ../../services/DEPLOYMENT_GUIDE.md
-    title: AI proxy and credits deployment guide
-    last_modified: 2025-12-03
+  - id: python-tools-ci
+    resource: ../../.github/workflows/python-tools-ci.yml
+    title: CI for the provisioning CLI and the shared Matrix package
+    last_modified: 2026-10-03
+  - id: provisioner-cli
+    resource: ../../tools/matrix_provisioner
+    title: Self-hosting provisioning CLI
+    last_modified: 2026-10-03
+  - id: subscription-client
+    resource: ../../lib/features/sync/subscription
+    title: The app's client for the hosted sync service
+    last_modified: 2026-10-18
 ---
 
-# Three kinds of service
+# What is here, and what is not
 
-`services/` holds everything that is not the Flutter app. The directories look
-alike, but they fall into three groups that differ in whether the app depends on
-them and whether anything keeps them working:
+This repository holds the app and what a user runs **beside** it. The hosted
+services an operator runs **for** users — paid sync provisioning with its
+deploy stack, the AI proxy, the credits ledger and their dashboard — live in a
+separate private repository, because they are how one operator runs paid
+features rather than part of what people install.
 
-| Group | Directories | App depends on it | Built or tested in CI |
-|-------|-------------|-------------------|-----------------------|
-| **Local inference servers** the user installs beside the app | `whisper_server`, `voxtral-local` | Yes, as optional providers at a default `localhost` URL | Released as binaries by `python-services-release.yml` on a version tag |
-| **Sync account provisioning** run by whoever hosts the homeserver | `matrix-provisioning-service`, `matrix-admin`, `shared` | Indirectly: the app redeems the bundles it issues, and never calls it over HTTP | Tested on every push touching them by `matrix-admin-ci.yml` |
-| **Hosted-AI billing proof of concept** | `ai-proxy-service`, `credits-service`, `dashboard` | No: the proxy is reachable as an optional generic OpenAI-compatible provider, and nothing requires it | No |
+| Group | Where | App depends on it | Built or tested in CI |
+|-------|-------|-------------------|-----------------------|
+| **Local inference servers** the user installs beside the app | `services/whisper_server`, `services/voxtral-local` | Yes, as optional providers at a default `localhost` URL | Released as binaries by `python-services-release.yml` on a version tag |
+| **Self-hosting provisioning** for someone running their own homeserver | `tools/matrix_provisioner`, `services/shared/matrix` | Indirectly: the app redeems the bundles it prints | Tested by `python-tools-ci.yml` |
+| **Hosted services** of the paid offering | Private repository | Paid Lotti Sync only, over HTTP, in builds that set `LOTTI_SYNC_API_URL`; the AI proxy only if a user points a generic provider at it | In that repository |
 
-`qwen/` is not a service: it is a README recipe for running a Qwen model locally
-with `mlx_vlm`.
+`services/qwen/` is not a service: it is a README recipe for running a Qwen
+model locally with `mlx_vlm`.
 
 ```mermaid
 flowchart LR
@@ -48,26 +54,22 @@ flowchart LR
     Whisper["whisper_server<br/>localhost:8084"]
     Voxtral["voxtral-local<br/>localhost:11344"]
   end
-  subgraph Host["Homeserver operator"]
-    Prov["matrix-provisioning-service"]
-    Admin["matrix-admin SPA"]
-    Synapse["Synapse"]
+  subgraph Self["Self-hosted homeserver"]
+    CLI["tools/matrix_provisioner"]
+    OwnSynapse["Synapse"]
   end
-  subgraph PoC["Proof of concept — optional, unmaintained"]
-    Proxy["ai-proxy-service<br/>Gemini forwarder"]
-    Credits["credits-service<br/>TigerBeetle ledger"]
-    Dash["dashboard"]
+  subgraph Hosted["Hosted service (private repository)"]
+    Prov["sync provisioning service"]
+    Synapse["Synapse"]
   end
   App -->|OpenAI-compatible transcription| Whisper
   App -->|OpenAI-compatible transcription| Voxtral
-  App -.->|only if a generic provider<br/>points at it| Proxy
-  Admin --> Prov
+  CLI -->|creates account and room| OwnSynapse
+  CLI -.->|unsigned bundle, out of band| App
+  App -->|entitlement, checkout, claim| Prov
   Prov -->|creates accounts| Synapse
-  Prov -.->|one-time credential bundle,<br/>handed over out of band| App
+  App -->|Matrix sync| OwnSynapse
   App -->|Matrix sync| Synapse
-  Proxy --> Credits
-  Dash --> Credits
-  Dash --> Proxy
 ```
 
 # Local inference servers
@@ -81,36 +83,27 @@ node advertises them in [node profiles](../features/sync/node-profiles-and-auto-
 Their release is part of the tag pipeline in
 [Platform targets, CI and release](platform-and-release.md).
 
-# Sync account provisioning
+# Self-hosting provisioning
 
-`matrix-provisioning-service` creates sync accounts on a Synapse homeserver and
-tracks the one-time bundles that grant access to them; `matrix-admin` is its
-admin UI, and `shared` is the Python package both it and the
-`tools/matrix_provisioner` CLI import. The three are one deployable unit with
-their own CI workflow. The app's side — redeeming a bundle, and what it trusts
-afterwards — is in the [sync overview](../features/sync/overview.md).
+`tools/matrix_provisioner` creates a sync account and its encrypted room on
+the user's own Synapse and prints the bundle a first device imports; its
+provisioning flow and bundle codec are the `services/shared/matrix` package.
+It issues unsigned (v2) bundles, which the app accepts for every homeserver
+that is not the hosted service's — self-hosting needs nothing from the
+operator. The user-facing walkthrough is the manual's *First device* page.
 
-# The billing proof of concept
+# The hosted services, seen from the app
 
-`ai-proxy-service` forwards OpenAI-style requests to Gemini and records usage,
-`credits-service` keeps balances in TigerBeetle with a SQLite registry, and
-`dashboard` is a customer-care UI over both. `services/DEPLOYMENT_GUIDE.md`
-describes how to deploy the proxy and the credits service.
+The app's only contract with the hosted side is the one it needs for paid
+sync: the HTTP routes under `/api/v1/client/` that `lib/features/sync/subscription/`
+calls (entitlement, checkout session, session status, claim, rotation
+confirmation, portal link), and the bundle wire format — v2 unsigned, v3 with
+an Ed25519 attestation the app verifies against `kLottiSyncBundleTrust`. Both
+are described in the [sync overview](../features/sync/overview.md#paid-sync-web-checkout-and-signed-bundles).
 
-What the repository shows about them:
-
-- **An optional integration, not a dependency.** The app reaches the proxy
-  only through the generic OpenAI-compatible provider: adding one fills in the
-  default base URL `http://localhost:8002/v1`, named "AI Proxy (local)" — the
-  proxy's local port — and chat completions then go there like to any other
-  OpenAI-compatible endpoint. Nothing in the app is specific to the proxy, and
-  the credits service and dashboard are not reached at all.
-- **No CI.** No workflow, Makefile target or Buildkite step builds, tests or
-  deploys any of the three. Their recent commits are dependency bumps.
-- **No deployment record.** Nothing in the repository says whether an instance
-  runs anywhere. Treat the three as unmaintained proofs of concept: their
-  security findings are exposure only for someone who deploys them, and anyone
-  who does should first bring them under CI.
+The AI proxy is not a dependency at all: the generic OpenAI-compatible
+provider offers a default base URL of `http://localhost:8002/v1`, named
+"AI Proxy (local)", and nothing else in the app is specific to it.
 
 # Related
 
