@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/backfill_stats.dart';
@@ -30,7 +31,7 @@ void main() {
     Future<DsTokens> pumpRow(WidgetTester tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
-          const StatusRow(inbound: 120, missing: 4, skipped: 2),
+          const StatusRow(inbound: 120, missing: 4),
         ),
       );
       await tester.pump();
@@ -42,7 +43,22 @@ void main() {
 
       expect(find.text('120'), findsOneWidget);
       expect(find.text('4'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('holds two cells, without the skipped count', (tester) async {
+      await pumpRow(tester);
+      final messages = tester.element(find.byType(StatusRow)).messages;
+
+      expect(find.text(messages.backfillStatsSkipped), findsNothing);
+      expect(find.byIcon(LottiIcons.error), findsNothing);
+      expect(find.byType(Expanded), findsNWidgets(2));
+      expect(find.byType(VerticalDivider), findsOneWidget);
+      // Evenly sized: each cell takes half the row.
+      final widths = tester
+          .widgetList<Expanded>(find.byType(Expanded))
+          .map((e) => e.flex)
+          .toSet();
+      expect(widths, {1});
     });
 
     testWidgets('weights its values on the type ramp, not at w500', (
@@ -50,7 +66,7 @@ void main() {
     ) async {
       final tokens = await pumpRow(tester);
 
-      for (final value in ['120', '4', '2']) {
+      for (final value in ['120', '4']) {
         final text = tester.widget<Text>(find.text(value));
         expect(
           text.style!.fontWeight,
@@ -88,7 +104,7 @@ void main() {
             ),
           )
           .toList();
-      expect(glyphs, hasLength(3));
+      expect(glyphs, hasLength(2));
       for (final glyph in glyphs) {
         expect(glyph.size, IconSizes.xs);
       }
@@ -101,7 +117,6 @@ void main() {
       for (final label in [
         messages.backfillStatusInboundQueue,
         messages.backfillStatusMissing,
-        messages.backfillStatusSkipped,
       ]) {
         final text = tester.widget<Text>(find.text(label));
         expect(
@@ -116,13 +131,17 @@ void main() {
   });
 
   group('SyncStatsCard ledger', () {
-    Future<DsTokens> pumpCard(WidgetTester tester) async {
+    Future<DsTokens> pumpCard(
+      WidgetTester tester, {
+      ValueListenable<int>? skipped,
+    }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           SingleChildScrollView(
             child: SyncStatsCard(
               stats: stats,
               missingCount: 4,
+              skippedCount: skipped ?? ValueNotifier(0),
               isLoading: false,
               onRefresh: () {},
             ),
@@ -139,6 +158,34 @@ void main() {
       expect(find.text('120'), findsOneWidget);
       expect(find.text('96'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
+    });
+
+    testWidgets('lists skipped messages last, low-emphasis however many, '
+        'and follows the count as it changes', (tester) async {
+      final skipped = ValueNotifier(1357);
+      addTearDown(skipped.dispose);
+      final tokens = await pumpCard(tester, skipped: skipped);
+      final messages = tester.element(find.byType(SyncStatsCard)).messages;
+
+      final label = find.text(messages.backfillStatsSkipped);
+      expect(label, findsOneWidget);
+      final value = tester.widget<Text>(find.text('1,357'));
+      expect(
+        value.style!.color,
+        tokens.colors.text.lowEmphasis,
+        reason: 'nothing to act on, so never the error tone',
+      );
+      expect(
+        tester.getTopLeft(label).dy,
+        greaterThan(
+          tester.getTopLeft(find.text(messages.backfillStatsBurned)).dy,
+        ),
+      );
+
+      skipped.value = 3;
+      await tester.pump();
+      expect(find.text('1,357'), findsNothing);
+      expect(find.text('3'), findsNWidgets(2), reason: 'deleted and skipped');
     });
 
     testWidgets('leads its header with a control-tier glyph', (tester) async {
@@ -215,6 +262,7 @@ void main() {
               child: SyncStatsCard(
                 stats: stats,
                 missingCount: 4,
+                skippedCount: ValueNotifier(0),
                 isLoading: false,
                 onRefresh: () {},
               ),
@@ -268,6 +316,7 @@ void main() {
             child: SyncStatsCard(
               stats: BackfillStats.fromHostStats(hosts),
               missingCount: 0,
+              skippedCount: ValueNotifier(0),
               isLoading: false,
               onRefresh: () {},
               hostNames: const {'aaaa-1111-laptop': 'Laptop'},

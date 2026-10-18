@@ -3046,7 +3046,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillStatusMissing => 'Ontbrekend';
 
   @override
-  String get backfillStatusSkipped => 'Overgeslagen';
+  String get backfillStatsSkipped => 'Overgeslagen';
 
   @override
   String get backfillToggleDescription =>

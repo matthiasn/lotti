@@ -5106,11 +5106,11 @@ abstract class AppLocalizations {
   /// **'Missing'**
   String get backfillStatusMissing;
 
-  /// No description provided for @backfillStatusSkipped.
+  /// No description provided for @backfillStatsSkipped.
   ///
   /// In en, this message translates to:
   /// **'Skipped'**
-  String get backfillStatusSkipped;
+  String get backfillStatsSkipped;
 
   /// No description provided for @backfillToggleDescription.
   ///

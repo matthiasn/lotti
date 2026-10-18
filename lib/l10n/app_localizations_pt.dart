@@ -3064,7 +3064,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillStatusMissing => 'Desaparecido';
 
   @override
-  String get backfillStatusSkipped => 'Ignorado';
+  String get backfillStatsSkipped => 'Ignorado';
 
   @override
   String get backfillToggleDescription =>

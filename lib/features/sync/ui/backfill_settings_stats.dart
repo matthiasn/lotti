@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/backfill_stats.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -6,21 +7,17 @@ import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Three welded cells in a single rounded rectangle: inbound queue,
-/// missing count, skipped count. Each cell colours its value based
-/// on state: missing turns warning when > 0; skipped turns error
-/// when > 0.
+/// Two welded cells in a single rounded rectangle: inbound queue and
+/// missing count. The missing value turns warning when > 0.
 class StatusRow extends StatelessWidget {
   const StatusRow({
     required this.inbound,
     required this.missing,
-    required this.skipped,
     super.key,
   });
 
   final int inbound;
   final int missing;
-  final int skipped;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +26,6 @@ class StatusRow extends StatelessWidget {
     final divider = tokens.colors.decorative.level01;
 
     final missingActive = missing > 0;
-    final skippedActive = skipped > 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -62,20 +58,6 @@ class StatusRow extends StatelessWidget {
                     : tokens.colors.text.highEmphasis,
               ),
             ),
-            VerticalDivider(width: 1, thickness: 1, color: divider),
-            Expanded(
-              child: _StatusCell(
-                icon: LottiIcons.error,
-                label: messages.backfillStatusSkipped,
-                value: skipped,
-                labelColor: skippedActive
-                    ? tokens.colors.alert.error.ink
-                    : null,
-                valueColor: skippedActive
-                    ? tokens.colors.alert.error.ink
-                    : tokens.colors.text.highEmphasis,
-              ),
-            ),
           ],
         ),
       ),
@@ -89,19 +71,17 @@ class _StatusCell extends StatelessWidget {
     required this.label,
     required this.value,
     required this.valueColor,
-    this.labelColor,
   });
 
   final IconData icon;
   final String label;
   final int value;
   final Color valueColor;
-  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final resolvedLabelColor = labelColor ?? tokens.colors.text.mediumEmphasis;
+    final labelColor = tokens.colors.text.mediumEmphasis;
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,
@@ -113,13 +93,13 @@ class _StatusCell extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: IconSizes.xs, color: resolvedLabelColor),
+              Icon(icon, size: IconSizes.xs, color: labelColor),
               SizedBox(width: tokens.spacing.step2),
               Flexible(
                 child: Text(
                   label,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: resolvedLabelColor,
+                    color: labelColor,
                     fontWeight: tokens.typography.weight.semiBold,
                   ),
                   maxLines: 1,
@@ -144,11 +124,12 @@ class _StatusCell extends StatelessWidget {
 }
 
 /// Sync statistics ledger card. Header (chart icon · title · device
-/// count meta · refresh) above eight leader-dot rows.
+/// count meta · refresh) above nine leader-dot rows.
 class SyncStatsCard extends StatelessWidget {
   const SyncStatsCard({
     required this.stats,
     required this.missingCount,
+    required this.skippedCount,
     required this.isLoading,
     required this.onRefresh,
     this.hostNames = const {},
@@ -158,6 +139,11 @@ class SyncStatsCard extends StatelessWidget {
 
   final BackfillStats? stats;
   final int missingCount;
+
+  /// Inbound Matrix messages the queue gave up on. A listenable rather than
+  /// a value: it changes with the queue, which signals several times a
+  /// second during a sync, and only its own row should rebuild then.
+  final ValueListenable<int> skippedCount;
   final bool isLoading;
   final VoidCallback onRefresh;
 
@@ -228,6 +214,7 @@ class SyncStatsCard extends StatelessWidget {
             _Ledger(
               stats: stats!,
               missingCount: missingCount,
+              skippedCount: skippedCount,
               hostNames: hostNames,
               selfHostId: selfHostId,
             ),
@@ -241,12 +228,14 @@ class _Ledger extends StatelessWidget {
   const _Ledger({
     required this.stats,
     required this.missingCount,
+    required this.skippedCount,
     required this.hostNames,
     required this.selfHostId,
   });
 
   final BackfillStats stats;
   final int missingCount;
+  final ValueListenable<int> skippedCount;
   final Map<String, String> hostNames;
   final String? selfHostId;
 
@@ -319,6 +308,16 @@ class _Ledger extends StatelessWidget {
           label: messages.backfillStatsBurned,
           value: stats.totalBurned,
           color: lowEmphasis,
+        ),
+        // Skipped Matrix messages, not entries: they are gone and there is
+        // nothing to act on, so the count stays low-emphasis however large.
+        ValueListenableBuilder<int>(
+          valueListenable: skippedCount,
+          builder: (context, skipped, _) => _LedgerRow(
+            label: messages.backfillStatsSkipped,
+            value: skipped,
+            color: lowEmphasis,
+          ),
         ),
         if (stats.hostStats.isNotEmpty) ...[
           Padding(

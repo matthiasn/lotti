@@ -83,7 +83,7 @@ class BackfillSettingsBody extends StatelessWidget {
 
     return _QueueDepthScope(
       queue: coordinator?.queue,
-      builder: (context, depth) {
+      builder: (context, depth, skipped) {
         return Padding(
           // Breathing room below the host's page title (desktop leaf panel
           // or legacy `SettingsPageHeader`) before the first card.
@@ -95,7 +95,7 @@ class BackfillSettingsBody extends StatelessWidget {
               SizedBox(height: tokens.spacing.step4),
               _StatusSection(depth: depth),
               SizedBox(height: tokens.spacing.step4),
-              const _StatsSection(),
+              _StatsSection(skipped: skipped),
               SizedBox(height: tokens.spacing.step4),
               const _AutomaticBackfillSection(),
               SizedBox(height: tokens.spacing.step4),
@@ -141,14 +141,15 @@ class _StatusSection extends ConsumerWidget {
       builder: (context, depth, _) => StatusRow(
         inbound: depth?.total ?? 0,
         missing: missing,
-        skipped: depth?.abandoned ?? 0,
       ),
     );
   }
 }
 
 class _StatsSection extends ConsumerWidget {
-  const _StatsSection();
+  const _StatsSection({required this.skipped});
+
+  final ValueListenable<int> skipped;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,6 +165,7 @@ class _StatsSection extends ConsumerWidget {
     return SyncStatsCard(
       stats: stats.stats,
       missingCount: _missingCount(ref),
+      skippedCount: skipped,
       isLoading: stats.isLoading,
       onRefresh: () =>
           ref.read(backfillStatsControllerProvider.notifier).refresh(),
@@ -209,9 +211,11 @@ class _RecoverySection extends ConsumerWidget {
 }
 
 /// Listens to [InboundQueue.depthChanges] and publishes the latest signal
-/// through a [ValueListenable]. The subtree is built once; only the
-/// listeners of that value rebuild on a signal — during a sync the queue
-/// emits several a second. Mirrors the binding pattern in `QueueDepthCard`.
+/// through a [ValueListenable], plus its skipped (abandoned) count through a
+/// second one that only notifies when that count changes. The subtree is
+/// built once; only the listeners of those values rebuild on a signal —
+/// during a sync the queue emits several a second. Mirrors the binding
+/// pattern in `QueueDepthCard`.
 class _QueueDepthScope extends StatefulWidget {
   const _QueueDepthScope({required this.queue, required this.builder});
 
@@ -219,6 +223,7 @@ class _QueueDepthScope extends StatefulWidget {
   final Widget Function(
     BuildContext context,
     ValueListenable<QueueDepthSignal?> depth,
+    ValueListenable<int> skipped,
   )
   builder;
 
@@ -229,11 +234,13 @@ class _QueueDepthScope extends StatefulWidget {
 class _QueueDepthScopeState extends State<_QueueDepthScope> {
   StreamSubscription<QueueDepthSignal>? _sub;
   final ValueNotifier<QueueDepthSignal?> _latest = ValueNotifier(null);
+  final ValueNotifier<int> _skipped = ValueNotifier(0);
   bool _liveSignalSeen = false;
 
   @override
   void initState() {
     super.initState();
+    _latest.addListener(_publishSkipped);
     _bind(widget.queue);
   }
 
@@ -284,15 +291,19 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
     }
   }
 
+  void _publishSkipped() => _skipped.value = _latest.value?.abandoned ?? 0;
+
   @override
   void dispose() {
     _sub?.cancel();
     _latest.dispose();
+    _skipped.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, _latest);
+  Widget build(BuildContext context) =>
+      widget.builder(context, _latest, _skipped);
 }
 
 class _AutomaticBackfillCard extends StatelessWidget {

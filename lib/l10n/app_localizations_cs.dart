@@ -3071,7 +3071,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatusMissing => 'Chybí';
 
   @override
-  String get backfillStatusSkipped => 'Přeskočeno';
+  String get backfillStatsSkipped => 'Přeskočeno';
 
   @override
   String get backfillToggleDescription =>

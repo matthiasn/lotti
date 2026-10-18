@@ -3087,7 +3087,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatusMissing => 'Lipsă';
 
   @override
-  String get backfillStatusSkipped => 'Omis';
+  String get backfillStatsSkipped => 'Omis';
 
   @override
   String get backfillToggleDescription =>

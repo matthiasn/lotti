@@ -678,7 +678,12 @@ the page:
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
   one-shot `depthSnapshot()`) and publishes the latest signal through a
   `ValueListenable`: its subtree builds once, and only the status row
-  (inbound total and abandoned count) and the recovery group listen.
+  (inbound total) and the recovery group listen. The abandoned count goes
+  out through a second `ValueListenable<int>` that notifies only when it
+  changes; the statistics ledger's *Skipped* row listens to that alone, so
+  the rest of the ledger never rebuilds on a depth signal. It counts
+  skipped Matrix messages, not entries — nothing a user can act on — so it
+  sits in the ledger in the low-emphasis tone rather than in the status row.
 - The desktop Settings destination reuses the same live depth through
   `inboundQueueDepthProvider` for its neutral outlined `↓ count` badge.
 - `_AdvancedRecoveryGroup` drives
