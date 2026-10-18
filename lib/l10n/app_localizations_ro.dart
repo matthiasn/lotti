@@ -7236,11 +7236,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalCharterEmpty =>
-      'Spuneți-i agentului la ce servește acest obiectiv și cum doriți să fiți îndrumat. Îl citește de fiecare dată când vă scrie.';
+      'Spuneți-i agentului la ce servește acest obiectiv și cum doriți să fiți îndrumat. Citește aceste informații de fiecare dată când vă scrie.';
 
   @override
   String get goalCharterHint =>
-      'La ce servește acest obiectiv, ce contează pentru dvs. și cum ar trebui să vă îndrume agentul? De exemplu: pune-mi o întrebare ghidată în fiecare dimineață.';
+      'La ce servește acest obiectiv, ce contează pentru dvs. și cum ar trebui să vă îndrume agentul? De exemplu: puneți-mi o întrebare ghidată în fiecare dimineață.';
 
   @override
   String get goalCharterOverBudget =>
