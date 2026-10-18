@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,28 +36,28 @@ PlannerKnowledgeEntity _entry({
 
 void main() {
   late MockUpdateNotifications notifications;
-  late MockDayAgentKnowledgeService knowledgeService;
+  late MockAgentKnowledgeService knowledgeService;
 
   setUp(() {
     notifications = MockUpdateNotifications();
-    knowledgeService = MockDayAgentKnowledgeService();
+    knowledgeService = MockAgentKnowledgeService();
     when(
       () => notifications.updateStream,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
   });
 
-  Future<PlannerKnowledgeView> read(List<PlannerKnowledgeEntity> all) async {
+  Future<AgentKnowledgeView> read(List<PlannerKnowledgeEntity> all) async {
     when(
       () => knowledgeService.allFor('daily_os_planner'),
     ).thenAnswer((_) async => all);
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         updateNotificationsProvider.overrideWithValue(notifications),
-        dayAgentKnowledgeServiceProvider.overrideWithValue(knowledgeService),
+        agentKnowledgeServiceProvider.overrideWithValue(knowledgeService),
       ]),
     );
     addTearDown(container.dispose);
-    return container.read(plannerKnowledgeProvider.future);
+    return container.read(agentKnowledgeProvider(dailyOsPlannerAgentId).future);
   }
 
   test('splits the active Head set from pending proposals', () async {

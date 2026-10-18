@@ -129,7 +129,7 @@ class DayHeader extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(LottiIcons.aiSpark),
                     title: Text(
-                      popupContext.messages.dailyOsNextKnowledgeTitle,
+                      popupContext.messages.agentKnowledgeTitle,
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),

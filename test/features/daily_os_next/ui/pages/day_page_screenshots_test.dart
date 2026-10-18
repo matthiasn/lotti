@@ -22,7 +22,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/services/day_activity_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
@@ -31,7 +33,6 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_activity_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
@@ -556,7 +557,7 @@ PlannerKnowledgeEntity _knowledge(
         )
         as PlannerKnowledgeEntity;
 
-PlannerKnowledgeView _knowledgeView() => PlannerKnowledgeView(
+AgentKnowledgeView _knowledgeView() => AgentKnowledgeView(
   proposed: [
     _knowledge(
       'kn-1',
@@ -934,12 +935,12 @@ Future<void> _pumpDayPage(
             (ref, date) async => actuals,
           ),
           captureControllerProvider.overrideWith(_stubCapture),
-          plannerKnowledgeProvider.overrideWith(
+          agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
             (ref) async {
               final view = _knowledgeView();
               return showPlannerReview
                   ? view
-                  : PlannerKnowledgeView(
+                  : AgentKnowledgeView(
                       proposed: const [],
                       confirmed: view.confirmed,
                     );
@@ -1006,7 +1007,7 @@ Future<void> _pumpManualDailyOsSurface(
         overrides: [
           captureControllerProvider.overrideWith(_stubCapture),
           dayAgentProvider.overrideWithValue(agent),
-          plannerKnowledgeProvider.overrideWith(
+          agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
             (ref) async => _knowledgeView(),
           ),
           dailyOsPreferencesControllerProvider.overrideWith(

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/ui/knowledge/agent_knowledge_panel.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -40,14 +40,18 @@ void main() {
   }
 
   Widget panel(
-    PlannerKnowledgeView view,
-    MockDayAgentKnowledgeService service,
+    AgentKnowledgeView view,
+    MockAgentKnowledgeService service,
   ) {
     return makeTestableWidget(
-      const SingleChildScrollView(child: KnowledgePanel()),
+      const SingleChildScrollView(
+        child: const AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
+      ),
       overrides: [
-        plannerKnowledgeProvider.overrideWith((ref) async => view),
-        dayAgentKnowledgeServiceProvider.overrideWithValue(service),
+        agentKnowledgeProvider(
+          dailyOsPlannerAgentId,
+        ).overrideWith((ref) async => view),
+        agentKnowledgeServiceProvider.overrideWithValue(service),
       ],
     );
   }
@@ -57,8 +61,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       panel(
-        const PlannerKnowledgeView(confirmed: [], proposed: []),
-        MockDayAgentKnowledgeService(),
+        const AgentKnowledgeView(confirmed: [], proposed: []),
+        MockAgentKnowledgeService(),
       ),
     );
     await tester.pump();
@@ -73,7 +77,7 @@ void main() {
   testWidgets('lists confirmed and proposed entries under their headers', (
     tester,
   ) async {
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: [
         entry(id: 'c', key: 'deep-work', statement: 'No deep work before 10.'),
       ],
@@ -87,7 +91,7 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(panel(view, MockDayAgentKnowledgeService()));
+    await tester.pumpWidget(panel(view, MockAgentKnowledgeService()));
     await tester.pump();
 
     expect(find.text('No deep work before 10.'), findsOneWidget);
@@ -102,7 +106,7 @@ void main() {
   testWidgets('renders tags as chips, and none when an entry has no tags', (
     tester,
   ) async {
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: [
         entry(
           id: 'c',
@@ -115,7 +119,7 @@ void main() {
       proposed: const [],
     );
 
-    await tester.pumpWidget(panel(view, MockDayAgentKnowledgeService()));
+    await tester.pumpWidget(panel(view, MockAgentKnowledgeService()));
     await tester.pump();
 
     // Two chips for the tagged entry; the untagged entry adds none.
@@ -125,9 +129,9 @@ void main() {
   });
 
   testWidgets('confirming a proposal calls the service', (tester) async {
-    final service = MockDayAgentKnowledgeService();
+    final service = MockAgentKnowledgeService();
     when(() => service.confirm('p')).thenAnswer((_) async => null);
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: const [],
       proposed: [
         entry(
@@ -149,9 +153,9 @@ void main() {
   });
 
   testWidgets('forgetting a confirmed entry calls retract', (tester) async {
-    final service = MockDayAgentKnowledgeService();
+    final service = MockAgentKnowledgeService();
     when(() => service.retract('c')).thenAnswer((_) async => null);
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: [entry(id: 'c', key: 'k', statement: 'A preference.')],
       proposed: const [],
     );
@@ -168,7 +172,7 @@ void main() {
   testWidgets('flags only past-review entries for re-confirmation', (
     tester,
   ) async {
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: [
         entry(
           id: 'stale',
@@ -188,7 +192,7 @@ void main() {
       proposed: const [],
     );
 
-    await tester.pumpWidget(panel(view, MockDayAgentKnowledgeService()));
+    await tester.pumpWidget(panel(view, MockAgentKnowledgeService()));
     await tester.pump();
 
     // Exactly one badge — for the stale entry only.
@@ -200,7 +204,7 @@ void main() {
   testWidgets('editing a confirmed entry saves the new hook and statement', (
     tester,
   ) async {
-    final service = MockDayAgentKnowledgeService();
+    final service = MockAgentKnowledgeService();
     when(
       () => service.editStatement(
         'c',
@@ -208,7 +212,7 @@ void main() {
         statement: any(named: 'statement'),
       ),
     ).thenAnswer((_) async => null);
-    final view = PlannerKnowledgeView(
+    final view = AgentKnowledgeView(
       confirmed: [entry(id: 'c', key: 'k', statement: 'old statement')],
       proposed: const [],
     );
@@ -240,8 +244,8 @@ void main() {
   testWidgets('cancelling the edit dialog does not call the service', (
     tester,
   ) async {
-    final service = MockDayAgentKnowledgeService();
-    final view = PlannerKnowledgeView(
+    final service = MockAgentKnowledgeService();
+    final view = AgentKnowledgeView(
       confirmed: [entry(id: 'c', key: 'k', statement: 'keep me')],
       proposed: const [],
     );
@@ -268,19 +272,19 @@ void main() {
   ) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        const KnowledgePanel(),
+        const AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
         overrides: [
           // A provider that never resolves: .value stays null → SizedBox.shrink
           // rather than a flash of an empty panel.
-          plannerKnowledgeProvider.overrideWith(
-            (ref) => Completer<PlannerKnowledgeView>().future,
+          agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
+            (ref) => Completer<AgentKnowledgeView>().future,
           ),
         ],
       ),
     );
     await tester.pump();
 
-    expect(find.byType(KnowledgePanel), findsOneWidget);
+    expect(find.byType(AgentKnowledgePanel), findsOneWidget);
     expect(find.text("What I've learned"), findsNothing);
   });
 }

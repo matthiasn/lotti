@@ -472,6 +472,43 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Ikke tildelt';
 
   @override
+  String get agentKnowledgeConfirm => 'Bekræft';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Bekræftet';
+
+  @override
+  String get agentKnowledgeEdit => 'Redigering';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annuller';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Énlinjes resumé';
+
+  @override
+  String get agentKnowledgeEditSave => 'Gem';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Hvad skal jeg huske?';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Intet endnu — jeg vil huske, hvad du fortæller mig.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Afventer din bekræftelse';
+
+  @override
+  String get agentKnowledgeRetract => 'Glem det';
+
+  @override
+  String get agentKnowledgeStale => 'Er det stadig sandt?';
+
+  @override
+  String get agentKnowledgeTitle => 'Hvad jeg har lært';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -4889,31 +4926,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Godmorgen.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bekræft';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bekræftet';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Redigering';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annuller';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Énlinjes resumé';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Gem';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Hvad skal jeg huske?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Intet endnu — jeg vil huske, hvad du fortæller mig.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4923,18 +4935,6 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Afventer din bekræftelse';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Glem det';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Er det stadig sandt?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Hvad jeg har lært';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Break link';

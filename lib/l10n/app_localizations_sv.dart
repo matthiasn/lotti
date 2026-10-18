@@ -474,6 +474,43 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Otilldelat';
 
   @override
+  String get agentKnowledgeConfirm => 'Bekräfta';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Bekräftat';
+
+  @override
+  String get agentKnowledgeEdit => 'Redigering';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Avbryt';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Enradssammanfattning';
+
+  @override
+  String get agentKnowledgeEditSave => 'Spara';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Vad ska jag komma ihåg?';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Inget än — jag kommer ihåg vad du berättar för mig.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Väntar på din bekräftelse';
+
+  @override
+  String get agentKnowledgeRetract => 'Glöm';
+
+  @override
+  String get agentKnowledgeStale => 'Stämmer det fortfarande?';
+
+  @override
+  String get agentKnowledgeTitle => 'Vad jag har lärt mig';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -4897,31 +4934,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'God morgon.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bekräfta';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bekräftat';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Redigering';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Avbryt';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Enradssammanfattning';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Spara';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Vad ska jag komma ihåg?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Inget än — jag kommer ihåg vad du berättar för mig.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4931,18 +4943,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Väntar på din bekräftelse';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Glöm';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Stämmer det fortfarande?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Vad jag har lärt mig';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Brytlänk';

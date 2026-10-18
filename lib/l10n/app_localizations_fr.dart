@@ -480,6 +480,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Non attribué';
 
   @override
+  String get agentKnowledgeConfirm => 'Confirmer';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Confirmé';
+
+  @override
+  String get agentKnowledgeEdit => 'Modifier';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annuler';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Résumé en une ligne';
+
+  @override
+  String get agentKnowledgeEditSave => 'Enregistrer';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Que dois-je retenir ?';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Rien pour l\'instant — je retiendrai ce que tu me dis.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'En attente de ta confirmation';
+
+  @override
+  String get agentKnowledgeRetract => 'Oublier';
+
+  @override
+  String get agentKnowledgeStale => 'Toujours vrai ?';
+
+  @override
+  String get agentKnowledgeTitle => 'Ce que j\'ai appris';
+
+  @override
   String get agentLifecycleActive => 'Actif';
 
   @override
@@ -4961,31 +4998,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bonjour.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Confirmer';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmé';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Modifier';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annuler';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Résumé en une ligne';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Enregistrer';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Que dois-je retenir ?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Rien pour l\'instant — je retiendrai ce que tu me dis.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4995,19 +5007,6 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader =>
-      'En attente de ta confirmation';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Oublier';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Toujours vrai ?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Ce que j\'ai appris';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Dissocier';

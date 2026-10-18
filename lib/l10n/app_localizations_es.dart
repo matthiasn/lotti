@@ -477,6 +477,42 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Sin asignar';
 
   @override
+  String get agentKnowledgeConfirm => 'Confirmar';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Confirmado';
+
+  @override
+  String get agentKnowledgeEdit => 'Editar';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Cancelar';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Resumen de una línea';
+
+  @override
+  String get agentKnowledgeEditSave => 'Guardar';
+
+  @override
+  String get agentKnowledgeEditStatementHint => '¿Qué debo recordar?';
+
+  @override
+  String get agentKnowledgeEmpty => 'Nada aún — recordaré lo que me digas.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Esperando tu confirmación';
+
+  @override
+  String get agentKnowledgeRetract => 'Olvidar';
+
+  @override
+  String get agentKnowledgeStale => '¿Sigue siendo así?';
+
+  @override
+  String get agentKnowledgeTitle => 'Lo que he aprendido';
+
+  @override
   String get agentLifecycleActive => 'Activo';
 
   @override
@@ -4950,31 +4986,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Buenos días.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Confirmar';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmado';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Editar';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Cancelar';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Resumen de una línea';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Guardar';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => '¿Qué debo recordar?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Nada aún — recordaré lo que me digas.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4984,18 +4995,6 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Esperando tu confirmación';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Olvidar';
-
-  @override
-  String get dailyOsNextKnowledgeStale => '¿Sigue siendo así?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Lo que he aprendido';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Romper enlace';

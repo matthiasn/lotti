@@ -1,0 +1,455 @@
+import 'package:clock/clock.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+
+void main() {
+  setUpAll(registerAllFallbackValues);
+
+  late MockAgentRepository repository;
+  late MockAgentSyncService syncService;
+  late MockDomainLogger domainLogger;
+  late AgentKnowledgeService service;
+  late List<AgentDomainEntity> upserts;
+  late List<String> changed;
+
+  const agentId = 'daily_os_planner';
+  final now = DateTime(2026, 5, 25, 8);
+
+  PlannerKnowledgeEntity knowledge({
+    required String id,
+    required String key,
+    KnowledgeStatus status = KnowledgeStatus.confirmed,
+    DateTime? updatedAt,
+  }) {
+    final at = updatedAt ?? now;
+    return AgentDomainEntity.plannerKnowledge(
+          id: id,
+          agentId: agentId,
+          key: key,
+          hook: 'hook',
+          statementText: 'statement',
+          source: KnowledgeSource.userStated,
+          status: status,
+          createdAt: at,
+          updatedAt: at,
+          vectorClock: null,
+        )
+        as PlannerKnowledgeEntity;
+  }
+
+  setUp(() {
+    repository = MockAgentRepository();
+    syncService = MockAgentSyncService();
+    domainLogger = MockDomainLogger();
+    upserts = [];
+    changed = [];
+
+    when(
+      () => domainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+      ),
+    ).thenReturn(null);
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      upserts.add(invocation.positionalArguments.single as AgentDomainEntity);
+    });
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.plannerKnowledge,
+      ),
+    ).thenAnswer((_) async => []);
+
+    service = AgentKnowledgeService(
+      agentRepository: repository,
+      syncService: syncService,
+      domainLogger: domainLogger,
+      onPersistedStateChanged: changed.add,
+    );
+  });
+
+  group('propose', () {
+    test('model-attested userStated lands proposed — never auto-confirms '
+        '(ADR 0022 D10)', () async {
+      // The source is a model attestation, not a user action: capture
+      // transcripts flow into the prompt, so auto-confirming would let
+      // transcript content write straight into durable memory. Only the
+      // panel confirm() flow may confirm.
+      final entry = await withClock(
+        Clock.fixed(now),
+        () => service.propose(
+          agentId: agentId,
+          key: 'deep-work',
+          hook: 'no deep work before 10',
+          statement: 'Never schedule deep work before 10:00.',
+          source: KnowledgeSource.userStated,
+        ),
+      );
+
+      expect(entry.status, KnowledgeStatus.proposed);
+      expect(entry.confirmedAt, isNull);
+      // The attested source survives as provenance for the panel.
+      expect(entry.source, KnowledgeSource.userStated);
+      expect(entry.supersedesId, isNull);
+      expect(upserts.single, isA<PlannerKnowledgeEntity>());
+      expect(changed, [agentId]);
+    });
+
+    test('an agent-inferred entry lands proposed, awaiting the gate', () async {
+      final entry = await service.propose(
+        agentId: agentId,
+        key: 'k',
+        hook: 'h',
+        statement: 's',
+      );
+      expect(entry.status, KnowledgeStatus.proposed);
+      expect(entry.confirmedAt, isNull);
+    });
+
+    test('records supersedesId when a confirmed entry exists for the key', () {
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.plannerKnowledge,
+        ),
+      ).thenAnswer((_) async => [knowledge(id: 'prior', key: 'deep-work')]);
+
+      return service
+          .propose(
+            agentId: agentId,
+            key: 'deep-work',
+            hook: 'h',
+            statement: 'updated',
+            source: KnowledgeSource.userStated,
+          )
+          .then((entry) {
+            expect(entry.supersedesId, 'prior');
+          });
+    });
+
+    test('stores normalized tags (trim, drop empty, dedup, cap)', () async {
+      final entry = await service.propose(
+        agentId: agentId,
+        key: 'k',
+        hook: 'h',
+        statement: 's',
+        tags: const ['  mornings  ', 'Mornings', '', 'deep-work'],
+      );
+      // Trimmed, empties dropped, case-insensitive dedup keeps first-seen.
+      expect(entry.tags, const ['mornings', 'deep-work']);
+
+      final longTag = 'penguin-logistics-${'x' * 40}';
+      final capped = await service.propose(
+        agentId: agentId,
+        key: 'k2',
+        hook: 'h',
+        statement: 's',
+        tags: [
+          longTag,
+          // Differs only past the 40-character cap, so it collapses into
+          // the first once both are truncated.
+          '${longTag}y',
+          for (var i = 0; i < 10; i++) 'tag-$i',
+        ],
+      );
+      expect(capped.tags.first, longTag.substring(0, 40));
+      expect(capped.tags, hasLength(8));
+      expect(capped.tags.skip(1), [for (var i = 0; i < 7; i++) 'tag-$i']);
+    });
+
+    test('rejects a malformed scope at the public choke point', () async {
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'h',
+          statement: 's',
+          scope: 'focus', // missing category:/project: prefix
+        ),
+        throwsA(isA<AgentKnowledgeException>()),
+      );
+      // Validation runs before any write, so nothing is persisted.
+      expect(upserts, isEmpty);
+    });
+
+    test('rejects a whitespace-only scope id that could never match', () async {
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'h',
+          statement: 's',
+          scope: 'category:   ', // prefix present, but the id is blank
+        ),
+        throwsA(isA<AgentKnowledgeException>()),
+      );
+      expect(upserts, isEmpty);
+    });
+
+    test('normalizes a scope id by trimming surrounding whitespace', () async {
+      final entry = await service.propose(
+        agentId: agentId,
+        key: 'k',
+        hook: 'h',
+        statement: 's',
+        scope: 'category: focus ', // matches the trimmed touched-scope key
+      );
+      expect(entry.scope, 'category:focus');
+    });
+
+    test('rejects an over-long hook at the public choke point', () async {
+      // The tool wrapper delegates hook validation here, so a programmatic
+      // caller that bypasses the tool is still bounded.
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'x' * 200,
+          statement: 's',
+        ),
+        throwsA(
+          isA<AgentKnowledgeException>().having(
+            (e) => e.message,
+            'message',
+            contains('hook'),
+          ),
+        ),
+      );
+      expect(upserts, isEmpty);
+    });
+  });
+
+  group('AgentKnowledgeException', () {
+    test('toString returns the message', () {
+      expect(
+        const AgentKnowledgeException('bad scope').toString(),
+        'bad scope',
+      );
+    });
+  });
+
+  group('confirm / retract / edit', () {
+    test('confirm promotes a proposed entry', () async {
+      final proposed = knowledge(
+        id: 'e1',
+        key: 'k',
+        status: KnowledgeStatus.proposed,
+      );
+      when(() => repository.getEntity('e1')).thenAnswer((_) async => proposed);
+
+      final updated = await withClock(
+        Clock.fixed(now),
+        () => service.confirm('e1'),
+      );
+
+      expect(updated!.status, KnowledgeStatus.confirmed);
+      expect(updated.confirmedAt, now);
+    });
+
+    test('retract removes an entry from the active Head set', () async {
+      final confirmed = knowledge(id: 'e2', key: 'k');
+      when(() => repository.getEntity('e2')).thenAnswer((_) async => confirmed);
+
+      final updated = await service.retract('e2');
+
+      expect(updated!.status, KnowledgeStatus.retracted);
+      expect(updated.retractedAt, isNotNull);
+    });
+
+    test('edit updates the statement, re-confirms, and clears staleness', () {
+      final stale =
+          AgentDomainEntity.plannerKnowledge(
+                id: 'e3',
+                agentId: agentId,
+                key: 'k',
+                hook: 'h',
+                statementText: 'old',
+                source: KnowledgeSource.userStated,
+                status: KnowledgeStatus.confirmed,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+                reviewAfter: DateTime(2026, 5, 2),
+                tags: const ['mornings'],
+              )
+              as PlannerKnowledgeEntity;
+      when(() => repository.getEntity('e3')).thenAnswer((_) async => stale);
+
+      return service
+          .editStatement('e3', hook: 'new hook', statement: 'new statement')
+          .then((updated) {
+            expect(updated!.hook, 'new hook');
+            expect(updated.statementText, 'new statement');
+            expect(updated.status, KnowledgeStatus.confirmed);
+            // The stale review flag is cleared by a fresh edit.
+            expect(updated.reviewAfter, isNull);
+            // Tags are immutable across an edit — carried forward, not dropped.
+            expect(updated.tags, const ['mornings']);
+          });
+    });
+
+    test('confirm of a missing entry returns null without writing', () async {
+      when(() => repository.getEntity('gone')).thenAnswer((_) async => null);
+      expect(await service.confirm('gone'), isNull);
+      expect(upserts, isEmpty);
+    });
+
+    test('editStatement rejects an over-long hook without writing', () async {
+      final confirmed = knowledge(id: 'e4', key: 'k');
+      when(() => repository.getEntity('e4')).thenAnswer((_) async => confirmed);
+
+      await expectLater(
+        service.editStatement('e4', hook: 'x' * 200, statement: 'new'),
+        throwsA(
+          isA<AgentKnowledgeException>().having(
+            (e) => e.message,
+            'message',
+            contains('hook'),
+          ),
+        ),
+      );
+      expect(upserts, isEmpty);
+    });
+  });
+
+  group('end-to-end recency supersession', () {
+    test('propose X, confirm, then propose + confirm not-X yields not-X as '
+        'the active head', () async {
+      // Stateful fake keyed by id: upserts replace, getEntitiesByAgentId and
+      // getEntity reflect the store. Nothing auto-confirms (ADR 0022 D10), so
+      // each proposal needs the user's panel confirm before it joins the
+      // active Head set and can be superseded by recency.
+      final store = <String, AgentDomainEntity>{};
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        store[entity.id] = entity;
+      });
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.plannerKnowledge,
+        ),
+      ).thenAnswer((_) async => store.values.toList());
+      when(() => repository.getEntity(any())).thenAnswer(
+        (invocation) async =>
+            store[invocation.positionalArguments.single as String],
+      );
+
+      final first = await withClock(
+        Clock.fixed(DateTime(2026, 5, 20)),
+        () => service.propose(
+          agentId: agentId,
+          key: 'deep-work',
+          hook: 'before 9',
+          statement: 'Never before 09:00.',
+          source: KnowledgeSource.userStated,
+        ),
+      );
+      // Nothing is active until the user confirms in the panel.
+      expect(await service.activeFor(agentId), isEmpty);
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 21)),
+        () => service.confirm(first.id),
+      );
+
+      final second = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24)),
+        () => service.propose(
+          agentId: agentId,
+          key: 'deep-work',
+          hook: 'before 10',
+          statement: 'Never before 10:00.',
+          source: KnowledgeSource.userStated,
+        ),
+      );
+      // The second entry records the confirmed first as superseded
+      // provenance.
+      expect(second.supersedesId, first.id);
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 25)),
+        () => service.confirm(second.id),
+      );
+
+      final active = await service.activeFor(agentId);
+      expect(active, hasLength(1));
+      expect(active.single.statementText, 'Never before 10:00.');
+    });
+  });
+
+  group('activeFor', () {
+    test('returns the Head set (most recent confirmed per key)', () async {
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.plannerKnowledge,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          knowledge(id: 'old', key: 'k', updatedAt: DateTime(2026, 5, 20)),
+          knowledge(id: 'new', key: 'k', updatedAt: DateTime(2026, 5, 24)),
+          knowledge(id: 'r', key: 'gone', status: KnowledgeStatus.retracted),
+        ],
+      );
+
+      final active = await service.activeFor(agentId);
+      expect(active.map((e) => e.id), ['new']);
+    });
+  });
+
+  group('userConfirmed', () {
+    test('records an entry confirmed when its caller vouches for the user, '
+        'and only then', () async {
+      final vouched = await withClock(
+        Clock.fixed(now),
+        () => service.propose(
+          agentId: agentId,
+          key: 'evening-walks',
+          hook: 'Walks after dinner',
+          statement: 'I walk after dinner, never before.',
+          source: KnowledgeSource.userStated,
+          userConfirmed: true,
+        ),
+      );
+      expect(vouched.status, KnowledgeStatus.confirmed);
+      expect(vouched.confirmedAt, now);
+
+      // The model's word alone — userStated without the caller's vouching —
+      // still lands proposed.
+      final attested = await service.propose(
+        agentId: agentId,
+        key: 'evening-walks-2',
+        hook: 'h',
+        statement: 's',
+        source: KnowledgeSource.userStated,
+      );
+      expect(attested.status, KnowledgeStatus.proposed);
+      expect(attested.confirmedAt, isNull);
+    });
+
+    test('a vouched entry is validated like any other', () async {
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'x' * 121,
+          statement: 's',
+          userConfirmed: true,
+        ),
+        throwsA(isA<AgentKnowledgeException>()),
+      );
+      expect(upserts, isEmpty);
+    });
+  });
+}

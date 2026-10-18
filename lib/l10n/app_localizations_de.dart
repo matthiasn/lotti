@@ -478,6 +478,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Nicht zugewiesen';
 
   @override
+  String get agentKnowledgeConfirm => 'Bestätigen';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Bestätigt';
+
+  @override
+  String get agentKnowledgeEdit => 'Bearbeiten';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Abbrechen';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Einzeilige Zusammenfassung';
+
+  @override
+  String get agentKnowledgeEditSave => 'Speichern';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Woran soll ich mich erinnern?';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Noch nichts — ich merke mir, was du mir sagst.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Wartet auf deine Bestätigung';
+
+  @override
+  String get agentKnowledgeRetract => 'Vergessen';
+
+  @override
+  String get agentKnowledgeStale => 'Stimmt das noch?';
+
+  @override
+  String get agentKnowledgeTitle => 'Was ich gelernt habe';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -4924,32 +4961,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Guten Morgen.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bestätigen';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bestätigt';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Bearbeiten';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Abbrechen';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Einzeilige Zusammenfassung';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Speichern';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint =>
-      'Woran soll ich mich erinnern?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Noch nichts — ich merke mir, was du mir sagst.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4959,19 +4970,6 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader =>
-      'Wartet auf deine Bestätigung';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Vergessen';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Stimmt das noch?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Was ich gelernt habe';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Verknüpfung lösen';

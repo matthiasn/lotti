@@ -1,19 +1,24 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The "What I've learned" panel (ADR 0022 Decisions 9–10): the durable things
-/// the planner remembers about how the user wants to be planned, surfaced for
-/// the user to confirm, edit, or forget. Proposals (agent-inferred) await the
-/// user's confirmation; confirmed entries are the active Head set.
-class KnowledgePanel extends ConsumerWidget {
-  const KnowledgePanel({super.key});
+/// an agent remembers — the day planner about how the user wants to be
+/// planned, a goal's agent about the goal — surfaced for the user to confirm,
+/// edit, or forget. Proposals await the user's confirmation; confirmed entries
+/// are the active Head set.
+class AgentKnowledgePanel extends ConsumerWidget {
+  const AgentKnowledgePanel({required this.agentId, super.key});
+
+  /// Whose knowledge this is.
+  final String agentId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +26,7 @@ class KnowledgePanel extends ConsumerWidget {
     // Use the last resolved value (not maybeWhen) so a confirm/retract/edit
     // invalidation keeps the panel rendered during the background refresh
     // instead of flashing to empty (repo no-flash rule).
-    final async = ref.watch(plannerKnowledgeProvider);
+    final async = ref.watch(agentKnowledgeProvider(agentId));
     final view = async.value;
     if (view == null) {
       // First load / error with no prior value: the panel is sometimes the
@@ -38,10 +43,7 @@ class KnowledgePanel extends ConsumerWidget {
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 )
-              : const SizedBox.square(
-                  dimension: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+              : const DesignSystemSpinner(size: IconSizes.l),
         ),
       );
     }
@@ -57,7 +59,7 @@ class KnowledgePanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            context.messages.dailyOsNextKnowledgeTitle,
+            context.messages.agentKnowledgeTitle,
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),
@@ -65,26 +67,26 @@ class KnowledgePanel extends ConsumerWidget {
           SizedBox(height: tokens.spacing.step4),
           if (view.isEmpty)
             Text(
-              context.messages.dailyOsNextKnowledgeEmpty,
+              context.messages.agentKnowledgeEmpty,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           if (view.proposed.isNotEmpty) ...[
             _SectionHeader(
-              label: context.messages.dailyOsNextKnowledgeProposedHeader,
+              label: context.messages.agentKnowledgeProposedHeader,
             ),
             for (final entry in view.proposed)
-              _KnowledgeRow(entry: entry, proposed: true),
+              _KnowledgeRow(agentId: agentId, entry: entry, proposed: true),
           ],
           if (view.confirmed.isNotEmpty) ...[
             if (view.proposed.isNotEmpty)
               SizedBox(height: tokens.spacing.step4),
             _SectionHeader(
-              label: context.messages.dailyOsNextKnowledgeConfirmedHeader,
+              label: context.messages.agentKnowledgeConfirmedHeader,
             ),
             for (final entry in view.confirmed)
-              _KnowledgeRow(entry: entry, proposed: false),
+              _KnowledgeRow(agentId: agentId, entry: entry, proposed: false),
           ],
         ],
       ),
@@ -114,8 +116,13 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _KnowledgeRow extends ConsumerWidget {
-  const _KnowledgeRow({required this.entry, required this.proposed});
+  const _KnowledgeRow({
+    required this.agentId,
+    required this.entry,
+    required this.proposed,
+  });
 
+  final String agentId;
   final PlannerKnowledgeEntity entry;
   final bool proposed;
 
@@ -123,8 +130,7 @@ class _KnowledgeRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final isStale =
-        entry.reviewAfter != null &&
-        !entry.reviewAfter!.isAfter(DateTime.now());
+        entry.reviewAfter != null && !entry.reviewAfter!.isAfter(clock.now());
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step3),
@@ -140,7 +146,7 @@ class _KnowledgeRow extends ConsumerWidget {
           if (isStale) ...[
             SizedBox(height: tokens.spacing.step1),
             Text(
-              context.messages.dailyOsNextKnowledgeStale,
+              context.messages.agentKnowledgeStale,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.alert.warning.ink,
               ),
@@ -162,18 +168,18 @@ class _KnowledgeRow extends ConsumerWidget {
             children: [
               if (proposed)
                 _Action(
-                  label: context.messages.dailyOsNextKnowledgeConfirm,
+                  label: context.messages.agentKnowledgeConfirm,
                   emphasized: true,
                   onPressed: () => _confirm(ref),
                 )
               else
                 _Action(
-                  label: context.messages.dailyOsNextKnowledgeEdit,
+                  label: context.messages.agentKnowledgeEdit,
                   onPressed: () => _edit(context, ref),
                 ),
               SizedBox(width: tokens.spacing.step3),
               _Action(
-                label: context.messages.dailyOsNextKnowledgeRetract,
+                label: context.messages.agentKnowledgeRetract,
                 onPressed: () => _retract(ref),
               ),
             ],
@@ -184,13 +190,13 @@ class _KnowledgeRow extends ConsumerWidget {
   }
 
   Future<void> _confirm(WidgetRef ref) async {
-    await ref.read(dayAgentKnowledgeServiceProvider).confirm(entry.id);
-    ref.invalidate(plannerKnowledgeProvider);
+    await ref.read(agentKnowledgeServiceProvider).confirm(entry.id);
+    ref.invalidate(agentKnowledgeProvider(agentId));
   }
 
   Future<void> _retract(WidgetRef ref) async {
-    await ref.read(dayAgentKnowledgeServiceProvider).retract(entry.id);
-    ref.invalidate(plannerKnowledgeProvider);
+    await ref.read(agentKnowledgeServiceProvider).retract(entry.id);
+    ref.invalidate(agentKnowledgeProvider(agentId));
   }
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
@@ -200,13 +206,13 @@ class _KnowledgeRow extends ConsumerWidget {
     );
     if (result == null) return;
     await ref
-        .read(dayAgentKnowledgeServiceProvider)
+        .read(agentKnowledgeServiceProvider)
         .editStatement(
           entry.id,
           hook: result.hook,
           statement: result.statement,
         );
-    ref.invalidate(plannerKnowledgeProvider);
+    ref.invalidate(agentKnowledgeProvider(agentId));
   }
 }
 
@@ -272,7 +278,7 @@ class _EditDialogState extends State<_EditDialog> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return AlertDialog(
-      title: Text(context.messages.dailyOsNextKnowledgeEdit),
+      title: Text(context.messages.agentKnowledgeEdit),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -283,7 +289,7 @@ class _EditDialogState extends State<_EditDialog> {
             // user gets a live character counter.
             maxLength: knowledgeHookMaxLength,
             decoration: InputDecoration(
-              hintText: context.messages.dailyOsNextKnowledgeEditHookHint,
+              hintText: context.messages.agentKnowledgeEditHookHint,
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -291,7 +297,7 @@ class _EditDialogState extends State<_EditDialog> {
             controller: _statement,
             maxLines: 3,
             decoration: InputDecoration(
-              hintText: context.messages.dailyOsNextKnowledgeEditStatementHint,
+              hintText: context.messages.agentKnowledgeEditStatementHint,
             ),
           ),
         ],
@@ -299,7 +305,7 @@ class _EditDialogState extends State<_EditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.messages.dailyOsNextKnowledgeEditCancel),
+          child: Text(context.messages.agentKnowledgeEditCancel),
         ),
         FilledButton(
           onPressed: () {
@@ -308,7 +314,7 @@ class _EditDialogState extends State<_EditDialog> {
             if (hook.isEmpty || statement.isEmpty) return;
             Navigator.of(context).pop((hook: hook, statement: statement));
           },
-          child: Text(context.messages.dailyOsNextKnowledgeEditSave),
+          child: Text(context.messages.agentKnowledgeEditSave),
         ),
       ],
     );

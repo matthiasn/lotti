@@ -479,6 +479,43 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Non firmata';
 
   @override
+  String get agentKnowledgeConfirm => 'Conferma';
+
+  @override
+  String get agentKnowledgeConfirmedHeader => 'Confermato';
+
+  @override
+  String get agentKnowledgeEdit => 'Modifica';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annullamento';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Riepilogo di una linea';
+
+  @override
+  String get agentKnowledgeEditSave => 'Salva';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Cosa dovrei ricordare?';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Ancora niente. Mi ricordero\' cosa mi dirai.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Risvegliare la conferma';
+
+  @override
+  String get agentKnowledgeRetract => 'Dimenticati.';
+
+  @override
+  String get agentKnowledgeStale => 'E\' ancora vero?';
+
+  @override
+  String get agentKnowledgeTitle => 'Quello che ho imparato';
+
+  @override
   String get agentLifecycleActive => 'Attivo';
 
   @override
@@ -4951,31 +4988,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Buongiorno.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Conferma';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confermato';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Modifica';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annullamento';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Riepilogo di una linea';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Salva';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Cosa dovrei ricordare?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Ancora niente. Mi ricordero\' cosa mi dirai.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4985,18 +4997,6 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Risvegliare la conferma';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Dimenticati.';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'E\' ancora vero?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Quello che ho imparato';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Collegamento di rottura';
