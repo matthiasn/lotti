@@ -2014,12 +2014,13 @@ the only definition a journaling or purpose goal really has.
 flowchart LR
   subgraph Journal["journal database"]
     G["GoalEntry (goal row)"]
-    C["JournalEntry — charter entry"]
+    C["JournalEntry / JournalAudio — charter entry"]
     K["JournalEntry / JournalAudio — check-in"]
     C -- "CharterLink\n(entry → goal)" --> G
     G -- "BasicLink\n(goal → entry)" --> K
   end
   SHEET["About this goal sheet\ntext or dictation"] --> C
+  REC["recording sheet, no parent\nthen attachCharterRecording\nthen transcription"] --> C
   G -. "outgoing links only" .-> READERS["check-in readers:\ntimeline, checkInSources,\ncheck-in minutes"]
   C --> CL["JournalDb.charterLinksToGoal\n(to_id, type)"]
   CL --> SEL["goalCharterSelection\nwritten order, 1,200 tokens"]
@@ -2043,10 +2044,21 @@ flowchart LR
   `linkedId`: the goal is not the entry's parent, so without it neither the
   page (`goalCharterEntriesProvider`) nor `GoalCheckInNotifier` would hear of
   the change. A new entry notifies the goal through its link.
-- **Dictation, never a recording.** The sheet drives the shared
-  `ChatRecorderController` and adds the transcript to the field, so what the
-  agent reads word for word is what the user saw and could correct. The chat
+- **Dictation, or a recording kept.** The sheet drives the shared
+  `ChatRecorderController` and adds the transcript to the field, answering
+  only to a take it started — the goal chat shares that recorder. A
+  recording made from the card (`recordGoalCharterEntry`) is saved by the
+  shared recording sheet with **no parent** and `openCreatedEntry: false`,
+  linked by `GoalRepository.attachCharterRecording`, then transcribed by
+  the caller, since the recorder's own automation keys on a parent. Its
+  transcript is what the agent reads, so `charter()` leaves a recording out
+  until it has words; the card plays it and shows the transcript state with
+  the check-in rail's rule (`goalAudioTranscriptStatus`) and Retry. The chat
   has no write path and the agent no tool for the charter.
+- **A transcript landing marks nothing stale.** It is written to the
+  recording, whose parents do not include the goal; linking the recording
+  already marked the report stale. `goalCharterEntriesProvider` listens on
+  its entries' own ids as well as the goal's for that reason.
 - **Every wake reads it.** `GoalAgentWorkflow` reads it through the injected
   `GoalCharterReader` and renders `charter` right after `goal` — briefings,
   escalations and chat turns alike. A goal without one renders exactly as

@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_charter_providers.dart';
@@ -128,7 +129,16 @@ class GoalCharterCard extends ConsumerWidget {
               ),
             ] else ...[
               for (final (index, entry) in entries.indexed) ...[
-                if (index > 0) SizedBox(height: tokens.spacing.step3),
+                // A rule between entries, with more air around it than any
+                // gap inside one: a recording's transcript must read as its
+                // own, not as the caption of the player below it.
+                if (index > 0)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: tokens.spacing.step4,
+                    ),
+                    child: const DesignSystemDivider(),
+                  ),
                 if (entry is JournalAudio)
                   _GoalCharterRecordingTile(
                     recording: entry,

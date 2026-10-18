@@ -33,8 +33,8 @@ a definition, and nothing guarantees that it reaches a later wake.
 
 ## Decision
 
-1. **A charter entry is a text entry linked to the goal by a `charter`
-   link.**
+1. **A charter entry is a note or a recording linked to the goal by a
+   `charter` link.**
    - `EntryLink.charter` (`CharterLink` in the `type` column) is a new
      union variant. It reads *fromId constitutes toId*: `fromId` is the
      charter entry, `toId` is the goal's journal row.
@@ -52,9 +52,17 @@ a definition, and nothing guarantees that it reaches a later wake.
    - The goal page gains an *About this goal* section. It lists the charter
      entries and adds, edits and deletes them in a sheet.
    - The sheet takes text, and voice as dictation: speech is transcribed
-     into the field and can be edited before saving. It never saves an
-     audio entry, because the agent reads the charter word for word and an
-     audio entry linked from the goal would be a check-in.
+     into the field and can be edited before saving.
+   - A charter entry can also be a **recording**, kept and playable. The
+     shared recording sheet saves it with no parent — the recorder links a
+     recording *from* its parent, and a recording linked from the goal is a
+     check-in — and only then is it linked into the goal and transcribed.
+     Its transcript is what the agent reads; until it has one, there is
+     nothing to read, and the card says why. The transcript is corrected in
+     the same sheet a note is edited in.
+   - Recording for the charter is the consent to transcribe it. The goal's
+     automatic-updates switch, which gates a check-in's transcription,
+     does not apply.
    - The chat has no write path, and the agent has no tool that writes a
      charter entry. Agent-proposed amendments are future work and would go
      through the same approval as a goal revision.
@@ -101,6 +109,10 @@ a definition, and nothing guarantees that it reaches a later wake.
   together rather than a release apart.
 - `JournalDb.charterLinksToGoal` reads the links by `(to_id, type)`, which
   the existing composite index serves.
+- A recording's transcript lands on the recording alone, and the goal is
+  not its parent, so the transcript arriving does not mark the report
+  stale. Linking the recording already did, and the next wake reads the
+  transcript. The goal page re-reads on the recording's own notification.
 - Charter entries appear in the Logbook and in search like any note.
 
 ## Related

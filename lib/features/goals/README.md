@@ -333,7 +333,8 @@ briefings the agents already wrote rather than generated again.
 **About this goal** is the goal's **charter**: what the user writes the goal
 is *for* and how its agent should coach — "this is my journal for the season",
 "ask me one guided question each morning". It sits on the goal page under the
-agent's read, written and edited in a sheet that takes typing or dictation,
+agent's read, written and edited in a sheet that takes typing or dictation —
+or recorded, kept as a playable recording whose transcript the agent reads —
 never in the chat. The agent reads it word for word on every wake, the daily
 briefing included, so a goal with soft criteria still has somewhere to say
 what it is about. A charter shapes focus, questions and tone; it never changes
