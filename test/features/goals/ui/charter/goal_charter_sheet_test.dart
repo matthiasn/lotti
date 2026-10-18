@@ -280,56 +280,112 @@ void main() {
   });
 
   group('dictation', () {
-    testWidgets('Dictate starts the shared recorder', (tester) async {
-      var started = 0;
-      await openSheet(
-        tester,
-        recorder: () => IdleCallbackController(onStartCalled: () => started++),
-      );
+    late StartableTranscriptController recorder;
 
+    Future<void> openWithRecorder(
+      WidgetTester tester, {
+      JournalEntry? entry,
+    }) => openSheet(
+      tester,
+      entry: entry,
+      recorder: () => recorder = StartableTranscriptController(),
+    );
+
+    Future<void> dictate(WidgetTester tester) async {
       await tester.tap(find.byKey(const ValueKey('goal-charter-dictate')));
       await tester.pump();
+    }
 
-      expect(started, 1);
+    String fieldText(WidgetTester tester) => tester
+        .widget<TextField>(
+          find.descendant(
+            of: find.byKey(const ValueKey('goal-charter-text')),
+            matching: find.byType(TextField),
+          ),
+        )
+        .controller!
+        .text;
+
+    testWidgets('Dictate starts a take the sheet then shows', (tester) async {
+      await openWithRecorder(tester);
+
+      await dictate(tester);
+
+      expect(recorder.startCalls, 1);
+      expect(find.byType(WaveformBars), findsOneWidget);
     });
 
     testWidgets('a transcript is added after what is written, never '
         'replacing it', (tester) async {
-      late TranscriptEmittingController recorder;
-      await openSheet(
-        tester,
-        recorder: () => recorder = TranscriptEmittingController(),
-      );
+      await openWithRecorder(tester);
       await tester.enterText(
         find.byKey(const ValueKey('goal-charter-text')),
         'This goal is my journal.',
       );
+      await dictate(tester);
 
       recorder.emitTranscript('Ask me one question each morning.');
       await tester.pump();
       await tester.pump();
 
-      final field = tester.widget<TextField>(
-        find.descendant(
-          of: find.byKey(const ValueKey('goal-charter-text')),
-          matching: find.byType(TextField),
-        ),
-      );
       expect(
-        field.controller!.text,
+        fieldText(tester),
         'This goal is my journal.\n\nAsk me one question each morning.',
       );
       expect(recorder.clearResultCalls, 1);
     });
 
+    testWidgets('a take another surface started never lands in the charter, '
+        'nor shows here', (tester) async {
+      await openWithRecorder(tester);
+
+      // The goal's chat composer shares the recorder.
+      recorder.emitRecording();
+      await tester.pump();
+      expect(find.byType(WaveformBars), findsNothing);
+      expect(
+        button(tester, 'goal-charter-dictate').onPressed,
+        isNull,
+        reason: 'the shared recorder is busy',
+      );
+
+      recorder.emitTranscript('A message for the chat.');
+      await tester.pump();
+      await tester.pump();
+
+      expect(fieldText(tester), isEmpty);
+      expect(recorder.clearResultCalls, 0);
+    });
+
+    testWidgets('closing the sheet cancels its own take', (tester) async {
+      await openWithRecorder(tester);
+      await dictate(tester);
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalCharterForm), findsNothing);
+      expect(recorder.cancelCalls, 1);
+    });
+
+    testWidgets("closing the sheet leaves another surface's take alone", (
+      tester,
+    ) async {
+      await openWithRecorder(tester);
+      recorder.emitRecording();
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(recorder.cancelCalls, 0);
+    });
+
     testWidgets('a failed dictation says why under the field', (
       tester,
     ) async {
-      late TranscriptEmittingController recorder;
-      await openSheet(
-        tester,
-        recorder: () => recorder = TranscriptEmittingController(),
-      );
+      await openWithRecorder(tester);
+      await dictate(tester);
 
       recorder.emitError(
         'mic denied',
@@ -347,67 +403,46 @@ void main() {
     testWidgets('while recording, Save waits and Stop transcribes', (
       tester,
     ) async {
-      var stopped = 0;
-      var cancelled = 0;
-      await openSheet(
-        tester,
-        entry: existing,
-        recorder: () => RecordingCallbackController(
-          onStopCalled: () => stopped++,
-          onCancelCalled: () => cancelled++,
-        ),
-      );
+      await openWithRecorder(tester, entry: existing);
+      await dictate(tester);
 
       expect(button(tester, 'goal-charter-save').onPressed, isNull);
-      expect(find.byType(WaveformBars), findsOneWidget);
 
       await tester.tap(
         find.byKey(const ValueKey('goal-charter-dictation-stop')),
       );
       await tester.pump();
-      expect(stopped, 1);
-      expect(cancelled, 0);
+      expect(recorder.stopCalls, 1);
+      expect(find.text('Transcribing…'), findsOneWidget);
+      expect(button(tester, 'goal-charter-save').onPressed, isNull);
+
+      recorder.emitTranscript('More words.');
+      await tester.pump();
+      await tester.pump();
       // Back to idle: the field's words can be saved again.
       expect(button(tester, 'goal-charter-save').onPressed, isNotNull);
     });
 
-    testWidgets('Cancel throws the recording away', (tester) async {
-      var cancelled = 0;
-      await openSheet(
-        tester,
-        recorder: () =>
-            RecordingCallbackController(onCancelCalled: () => cancelled++),
-      );
+    testWidgets('Cancel throws the take away and frees the sheet', (
+      tester,
+    ) async {
+      await openWithRecorder(tester);
+      await dictate(tester);
 
       await tester.tap(
         find.byKey(const ValueKey('goal-charter-dictation-cancel')),
       );
       await tester.pump();
 
-      expect(cancelled, 1);
+      expect(recorder.cancelCalls, 1);
       expect(find.byKey(const ValueKey('goal-charter-dictate')), findsOne);
-    });
-
-    testWidgets('while transcribing, the sheet says so and Save waits', (
-      tester,
-    ) async {
-      await openSheet(
-        tester,
-        entry: existing,
-        recorder: () => ProcessingTestController(partialTranscript: null),
-      );
-
-      expect(find.text('Transcribing…'), findsOneWidget);
-      expect(button(tester, 'goal-charter-save').onPressed, isNull);
+      expect(button(tester, 'goal-charter-dictate').onPressed, isNotNull);
     });
 
     testWidgets('the elapsed clock changes digits without moving the '
         'waveform or the buttons', (tester) async {
-      late RecordingCallbackController recorder;
-      await openSheet(
-        tester,
-        recorder: () => recorder = RecordingCallbackController(),
-      );
+      await openWithRecorder(tester);
+      await dictate(tester);
 
       Rect rectOf(Finder finder) => tester.getRect(finder);
       final waveform = find.byType(WaveformBars);

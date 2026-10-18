@@ -147,3 +147,42 @@ class IdleCallbackController extends ChatRecorderController {
     onStartCalled?.call();
   }
 }
+
+/// [TranscriptEmittingController] whose [start] enters recording instead of
+/// opening a microphone, counting starts and cancels — for surfaces that
+/// must tell a recording they started from one another consumer started.
+class StartableTranscriptController extends TranscriptEmittingController {
+  int startCalls = 0;
+  int cancelCalls = 0;
+  int stopCalls = 0;
+
+  @override
+  Future<void> start({
+    ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
+  }) async {
+    startCalls++;
+    emitRecording();
+  }
+
+  /// Counts every call; like the real recorder, does nothing once disposed.
+  @override
+  Future<void> cancel() async {
+    cancelCalls++;
+    if (!ref.mounted) return;
+    state = state.copyWith(status: ChatRecorderStatus.idle);
+  }
+
+  /// Stops into transcription; a test then emits the transcript.
+  @override
+  Future<void> stopAndTranscribe() async {
+    stopCalls++;
+    state = state.copyWith(status: ChatRecorderStatus.processing);
+  }
+
+  void updateElapsed(Duration elapsed) {
+    state = state.copyWith(elapsed: elapsed);
+  }
+
+  @override
+  List<double> getNormalizedAmplitudeHistory() => [];
+}

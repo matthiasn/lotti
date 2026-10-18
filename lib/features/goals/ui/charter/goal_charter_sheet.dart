@@ -57,20 +57,33 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
   /// field — a toast raised from here would render behind the sheet.
   String? _error;
 
+  /// The shared voice recorder. Read once, here, so [dispose] can still
+  /// reach it; the sheet watches the provider, which keeps it alive.
+  late final ChatRecorderController _recorder;
+
+  /// Whether the recorder's current take is one this sheet started.
+  ///
+  /// The recorder is shared — the goal's chat composer uses the same one —
+  /// so a take someone else started must neither land in the charter nor be
+  /// shown or stopped here, and closing the sheet cancels only its own.
+  var _ownsRecording = false;
+
   @override
   void initState() {
     super.initState();
+    _recorder = ref.read(chatRecorderControllerProvider.notifier);
     _text.addListener(_changed);
     ref.listenManual<ChatRecorderState>(chatRecorderControllerProvider, (
       previous,
       next,
     ) {
-      final recorder = ref.read(chatRecorderControllerProvider.notifier);
+      if (!_ownsRecording) return;
       if (next.error != null && next.error != previous?.error) {
-        setState(
-          () => _error = chatRecorderErrorMessage(context, next.errorKind),
-        );
-        Future.microtask(recorder.clearResult);
+        setState(() {
+          _error = chatRecorderErrorMessage(context, next.errorKind);
+          _ownsRecording = false;
+        });
+        Future.microtask(_recorder.clearResult);
         return;
       }
       final transcript = next.transcript?.trim();
@@ -78,17 +91,42 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
           transcript.isNotEmpty &&
           next.transcript != previous?.transcript) {
         _append(transcript);
-        Future.microtask(recorder.clearResult);
+        setState(() => _ownsRecording = false);
+        Future.microtask(_recorder.clearResult);
+        return;
+      }
+      // Back to idle with nothing to show: cancelled, or silence.
+      if (next.status == ChatRecorderStatus.idle &&
+          previous?.status != ChatRecorderStatus.idle) {
+        setState(() => _ownsRecording = false);
       }
     });
   }
 
   @override
   void dispose() {
+    // A take this sheet started must not outlive it and land elsewhere.
+    // Deferred, because a provider may not change while the tree is being
+    // torn down; when the sheet was its only listener the provider disposes
+    // first, which ends the take itself, and `cancel` returns unmounted.
+    // Ownership drops first, so the idle the cancel publishes reaches a
+    // listener that ignores it rather than one that rebuilds a dead sheet.
+    if (_ownsRecording) {
+      _ownsRecording = false;
+      Future.microtask(_recorder.cancel);
+    }
     _text
       ..removeListener(_changed)
       ..dispose();
     super.dispose();
+  }
+
+  void _startDictation() {
+    setState(() {
+      _ownsRecording = true;
+      _error = null;
+    });
+    _recorder.start();
   }
 
   void _changed() => setState(() => _error = null);
@@ -102,8 +140,9 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
   }
 
   bool get _recorderBusy =>
+      _ownsRecording &&
       ref.read(chatRecorderControllerProvider).status !=
-      ChatRecorderStatus.idle;
+          ChatRecorderStatus.idle;
 
   bool get _canSave =>
       !_saving && !_recorderBusy && _text.text.trim().isNotEmpty;
@@ -189,6 +228,9 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
     final status = ref.watch(
       chatRecorderControllerProvider.select((state) => state.status),
     );
+    // Another consumer's take reads as idle here, with Dictate unavailable
+    // until the shared recorder is free.
+    final shown = _ownsRecording ? status : ChatRecorderStatus.idle;
     void saveIfReady() {
       if (_canSave) _save();
     }
@@ -212,11 +254,14 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
             errorText: _error,
             minLines: 5,
             growWithContent: true,
-            enabled: status == ChatRecorderStatus.idle,
+            enabled: shown == ChatRecorderStatus.idle,
             semanticsLabel: messages.goalCharterTitle,
           ),
           SizedBox(height: tokens.spacing.step3),
-          GoalCharterDictation(status: status),
+          GoalCharterDictation(
+            status: shown,
+            onStart: status == ChatRecorderStatus.idle ? _startDictation : null,
+          ),
           SizedBox(height: tokens.spacing.step5),
           DesignSystemModalActionBar(
             primary: DesignSystemButton(
@@ -254,9 +299,18 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
 /// slot of tabular figures — so the waveform never shifts as digits change —
 /// the waveform, then Cancel and Stop. Transcribing: a spinner and its label.
 class GoalCharterDictation extends ConsumerWidget {
-  const GoalCharterDictation({required this.status, super.key});
+  const GoalCharterDictation({
+    required this.status,
+    required this.onStart,
+    super.key,
+  });
 
+  /// The phase of the sheet's own take — idle while there is none.
   final ChatRecorderStatus status;
+
+  /// Starts a take owned by the sheet; null while the shared recorder is
+  /// busy with someone else's.
+  final VoidCallback? onStart;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -273,7 +327,7 @@ class GoalCharterDictation extends ConsumerWidget {
             leadingIcon: LottiIcons.mic,
             variant: DesignSystemButtonVariant.quiet,
             alignsLabelToTrailingEdge: true,
-            onPressed: recorder.start,
+            onPressed: onStart,
           ),
         );
       case ChatRecorderStatus.recording:
