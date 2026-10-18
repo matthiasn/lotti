@@ -31,7 +31,7 @@ void main() {
       final ten = words(10);
       final selection = goalCharterSelection(
         [
-          entry('a', ten, day: 1),
+          entry('a', ten),
           entry('b', ten, day: 2),
           entry('c', ten, day: 3),
           // Small enough to fit after `b`, but the charter is read in order:

@@ -358,7 +358,7 @@ void main() {
       verifyNever(() => mockDb.getJournalEntitiesForIds(any()));
     });
 
-    test('a new entry is written in the goal\'s category and privacy, then '
+    test("a new entry is written in the goal's category and privacy, then "
         'linked from the entry into the goal', () async {
       stubGoal(categoryId: 'cat-journal', private: true);
       stubCreateMetadata();
