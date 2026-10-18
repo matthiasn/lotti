@@ -33,11 +33,13 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
@@ -190,6 +192,7 @@ Future<void> _capture(
   TextScaler textScaler = TextScaler.noScaling,
   bool companion = false,
   bool expanded = false,
+  bool stage = false,
   String summary = _summary,
   String? nameSuffix,
 }) async {
@@ -264,14 +267,23 @@ Future<void> _capture(
       await tester.tap(find.text('Read more'));
       await settleFrames(tester, 6);
     }
+    if (stage) {
+      await tester.tap(findMaterialTooltip('View companion full screen'));
+      await settleFrames(tester, 10);
+    }
   });
 
   // Guard the fixture itself: a capture of the wrong content is worse than no
   // capture, because a review panel scores it as if it were real. The chrome
   // strings are only asserted in the default locale.
-  // Expanded, the full report opens with the summary again.
-  expect(find.text(summary), expanded ? findsNWidgets(2) : findsOneWidget);
-  if (locale == null) {
+  if (stage) {
+    // The card is offstage under her full-screen route.
+    expect(find.byType(CompanionStagePage), findsOneWidget);
+  } else {
+    // Expanded, the full report opens with the summary again.
+    expect(find.text(summary), expanded ? findsNWidgets(2) : findsOneWidget);
+  }
+  if (locale == null && !stage) {
     expect(find.text('AI summary'), findsOneWidget);
     expect(find.text('Task Laura'), findsOneWidget);
   }
@@ -415,6 +427,21 @@ void main() {
           companion: true,
           textScaler: const TextScaler.linear(1.3),
           nameSuffix: 'companion-large',
+        );
+      });
+    }
+    // Her bust tapped on a phone: the full-screen stage it opens.
+    for (final brightness in [Brightness.dark, Brightness.light]) {
+      final theme = brightness == Brightness.dark ? 'dark' : 'light';
+      testWidgets('pro manual companion stage $theme', (tester) async {
+        await _capture(
+          tester,
+          device: proDevice,
+          brightness: brightness,
+          mode: _Mode.manual,
+          companion: true,
+          stage: true,
+          nameSuffix: 'companion-stage',
         );
       });
     }

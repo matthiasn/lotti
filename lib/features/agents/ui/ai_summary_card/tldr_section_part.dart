@@ -56,6 +56,8 @@ class TldrHeader extends StatelessWidget {
     this.trailing,
     this.icon,
     this.figure,
+    this.onFigureTap,
+    this.figureLabel,
     this.badge = true,
     this.plain = false,
     super.key,
@@ -88,6 +90,15 @@ class TldrHeader extends StatelessWidget {
   /// outside the tap-to-internals ink, never as a button. Decorative: the
   /// header's label already says who she is.
   final Widget? figure;
+
+  /// Makes the [figure]'s tile a control of its own — the companion's bust
+  /// opening her full-screen view — apart from the title's tap-to-internals
+  /// ink, announced and tooltipped as [figureLabel]. Null leaves her an
+  /// inert portrait.
+  final VoidCallback? onFigureTap;
+
+  /// What tapping the [figure] does, for the tooltip and screen readers.
+  final String? figureLabel;
 
   /// False drops the badge tile and its gap, so the title starts on the
   /// header's leading edge — for a card whose identity stands elsewhere,
@@ -127,13 +138,15 @@ class TldrHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(
           tokens.radii.m,
         ),
-        // A figure's tile is a portrait, not a control: the quiet
-        // decorative hairline, never the badge's accent border.
+        // A figure's tile is a portrait: the quiet decorative hairline at
+        // rest, firming to the accent only when it answers a tap.
         border: Border.all(
-          color: plain || figure != null
+          color: plain
               ? tokens.colors.decorative.level01
               : highlighted
               ? ai.accent
+              : figure != null
+              ? tokens.colors.decorative.level01
               : ai.border,
         ),
       ),
@@ -167,7 +180,31 @@ class TldrHeader extends StatelessWidget {
             // tap-to-internals ink, so tapping her means the same at every
             // width — nothing yet — and the title and name stay the target.
             if (badge && figure != null) ...[
-              tile(highlighted: false),
+              if (onFigureTap case final onTap?)
+                Tooltip(
+                  message: figureLabel ?? '',
+                  // The tooltip names the action for screen readers; a
+                  // label here as well would be read twice.
+                  excludeFromSemantics: true,
+                  // One node, named, that a screen reader can also press:
+                  // excluding the ink's own node drops its tap action, so
+                  // the node carries the tap itself.
+                  child: Semantics(
+                    button: true,
+                    label: figureLabel,
+                    onTap: onTap,
+                    excludeSemantics: true,
+                    child: DsQuietInk(
+                      onTap: onTap,
+                      focusRing: true,
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                      builder: (context, highlighted) =>
+                          tile(highlighted: highlighted),
+                    ),
+                  ),
+                )
+              else
+                tile(highlighted: false),
               SizedBox(width: tokens.spacing.step3),
             ],
             // `Expanded` keeps the slot so the playback control stays pinned to

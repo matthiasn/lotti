@@ -1530,6 +1530,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transkription';
 
   @override
+  String get aiCardCompanionOpenFullScreen => 'Begleiterin im Vollbild ansehen';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Begleiterin im Vollbild';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Verlauf · $count';
   }

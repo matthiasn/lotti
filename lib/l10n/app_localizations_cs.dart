@@ -1526,6 +1526,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Přepis';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Zobrazit společnici na celé obrazovce';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Společnice na celé obrazovce';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }

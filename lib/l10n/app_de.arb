@@ -618,6 +618,8 @@
   "aiCapabilityChipImageRecognition": "Bilderkennung",
   "aiCapabilityChipThinking": "Denken",
   "aiCapabilityChipTranscription": "Transkription",
+  "aiCardCompanionOpenFullScreen": "Begleiterin im Vollbild ansehen",
+  "aiCardCompanionStageTitle": "Begleiterin im Vollbild",
   "aiCardHistoryToggle": "Verlauf · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

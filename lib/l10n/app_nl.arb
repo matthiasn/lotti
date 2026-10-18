@@ -735,6 +735,8 @@
   "aiCapabilityChipImageRecognition": "Beeldherkenning",
   "aiCapabilityChipThinking": "Denken",
   "aiCapabilityChipTranscription": "Omschrijving",
+  "aiCardCompanionOpenFullScreen": "Metgezel op volledig scherm bekijken",
+  "aiCardCompanionStageTitle": "Metgezel op volledig scherm",
   "aiCardHistoryToggle": "Geschiedenis · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

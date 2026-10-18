@@ -1101,6 +1101,14 @@
   "aiCapabilityChipImageRecognition": "Image recognition",
   "aiCapabilityChipThinking": "Thinking",
   "aiCapabilityChipTranscription": "Transcription",
+  "aiCardCompanionOpenFullScreen": "View companion full screen",
+  "@aiCardCompanionOpenFullScreen": {
+    "description": "Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view."
+  },
+  "aiCardCompanionStageTitle": "Companion, full screen",
+  "@aiCardCompanionStageTitle": {
+    "description": "Screen-reader name of the companion's full-screen view, announced when it opens."
+  },
   "aiCardHistoryToggle": "History · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {

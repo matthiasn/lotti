@@ -2640,6 +2640,18 @@ abstract class AppLocalizations {
   /// **'Transcription'**
   String get aiCapabilityChipTranscription;
 
+  /// Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view.
+  ///
+  /// In en, this message translates to:
+  /// **'View companion full screen'**
+  String get aiCardCompanionOpenFullScreen;
+
+  /// Screen-reader name of the companion's full-screen view, announced when it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion, full screen'**
+  String get aiCardCompanionStageTitle;
+
   /// No description provided for @aiCardHistoryToggle.
   ///
   /// In en, this message translates to:

@@ -9,6 +9,7 @@ import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../test_utils/screenshot_harness.dart' show loadAppFonts;
 import '../../../../widget_test_utils.dart';
 import '../../../tts/test_utils.dart';
@@ -273,6 +274,80 @@ void main() {
       expect(taps, 0);
       await tester.tap(find.text('AI summary'));
       expect(taps, 1);
+    });
+
+    testWidgets('with a figure tap the tile is a control of its own, named, '
+        'apart from the title', (tester) async {
+      var figureTaps = 0;
+      var titleTaps = 0;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            onAgentTap: () => titleTaps++,
+            figure: const SizedBox.expand(key: figureKey),
+            onFigureTap: () => figureTaps++,
+            figureLabel: 'View companion full screen',
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(figureKey));
+      expect((figureTaps, titleTaps), (1, 0));
+      await tester.tap(find.text('AI summary'));
+      expect((figureTaps, titleTaps), (1, 1));
+      expect(findMaterialTooltip('View companion full screen'), findsOneWidget);
+      expect(
+        tester.getSemantics(
+          find.bySemanticsLabel('View companion full screen'),
+        ),
+        matchesSemantics(
+          label: 'View companion full screen',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+    });
+
+    testWidgets('a tappable figure tile firms its hairline to the accent '
+        'under the pointer', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          TldrHeader(
+            agentName: 'Laura',
+            figure: const SizedBox.expand(key: figureKey),
+            onFigureTap: () {},
+            figureLabel: 'View companion full screen',
+          ),
+        ),
+      );
+      Color border() =>
+          ((tester
+                              .widget<Container>(
+                                find
+                                    .ancestor(
+                                      of: find.byKey(figureKey),
+                                      matching: find.byType(Container),
+                                    )
+                                    .first,
+                              )
+                              .decoration!
+                          as BoxDecoration)
+                      .border!
+                  as Border)
+              .top
+              .color;
+      final tokens = tester.element(find.byType(TldrHeader)).designTokens;
+      expect(border(), tokens.colors.decorative.level01);
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer();
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.byKey(figureKey)));
+      await tester.pump();
+      expect(border(), tokens.colors.aiCard.accent);
+      await gesture.moveTo(Offset.zero);
+      await tester.pumpAndSettle();
     });
 
     testWidgets('a figure tile sits as far below the top as in from the side', (

@@ -1538,6 +1538,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCapabilityChipTranscription => 'Transcription';
 
   @override
+  String get aiCardCompanionOpenFullScreen =>
+      'Afficher la compagne en plein écran';
+
+  @override
+  String get aiCardCompanionStageTitle => 'Compagne en plein écran';
+
+  @override
   String aiCardHistoryToggle(int count) {
     return 'Historique · $count';
   }

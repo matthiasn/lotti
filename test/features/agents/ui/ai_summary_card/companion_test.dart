@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../tts/test_utils.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
@@ -202,6 +204,31 @@ void main() {
       final title = tester.getRect(find.text('AI summary'));
       expect(her.right, lessThan(title.left));
       expect(her.bottom, lessThan(tester.getRect(find.text(_tldr)).top));
+    });
+
+    testWidgets('on a narrow card her bust opens her full screen, head to toe, '
+        'reading this summary', (tester) async {
+      await _pumpCard(tester, width: _narrowCard);
+
+      await tester.tap(findMaterialTooltip('View companion full screen'));
+      await _pumpFrames(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final stage = tester.widget<CompanionStagePage>(
+        find.byType(CompanionStagePage),
+      );
+      expect(stage.sourceId, AgentTestBench.taskId);
+      expect(stage.spokenText, _tldr);
+    });
+
+    testWidgets('on a wide card her full figure is already shown, and is no '
+        'control', (tester) async {
+      await _pumpCard(tester);
+
+      expect(findMaterialTooltip('View companion full screen'), findsNothing);
+      await tester.tap(find.byType(CompanionView), warnIfMissed: false);
+      await _pumpFrames(tester);
+      expect(find.byType(CompanionStagePage), findsNothing);
     });
 
     testWidgets('mouths the clip the read-aloud control plays', (

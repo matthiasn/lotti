@@ -20,7 +20,9 @@ import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
@@ -31,11 +33,8 @@ import 'package:lotti/features/design_system/components/motion/size_fade_entranc
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
-import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
-import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -483,36 +482,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
-  /// Builds the Supertonic playback control that reads [text] aloud, deriving
-  /// its mode and progress from the app-wide [TtsPlaybackController]. [text] is
-  /// whatever the body currently shows (TL;DR alone when collapsed, TL;DR plus
-  /// the full report when expanded). Only reflects an active state when this
-  /// card's task is the playing source so multiple cards never animate for one
-  /// utterance.
-  Widget _buildPlaybackControl(TtsPlaybackState playback, String text) {
-    final taskId = widget.taskId;
-    final active = playback.isActiveFor(taskId);
-    final mode = !active
-        ? TtsButtonMode.idle
-        : switch (playback.status) {
-            TtsPlaybackStatus.downloadingModel ||
-            TtsPlaybackStatus.synthesizing => TtsButtonMode.preparing,
-            TtsPlaybackStatus.playing => TtsButtonMode.playing,
-            _ => TtsButtonMode.idle,
-          };
-    final durationMs = playback.duration.inMilliseconds;
-    final progress = (mode == TtsButtonMode.playing && durationMs > 0)
-        ? playback.position.inMilliseconds / durationMs
-        : null;
-    final notifier = ref.read(ttsPlaybackControllerProvider.notifier);
-    return TtsPlayButton(
-      mode: mode,
-      progress: progress,
-      onPlay: () => notifier.speak(sourceId: taskId, text: text),
-      onStop: notifier.stop,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -553,14 +522,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final ttsEnabled =
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
     final ttsEngineSupported = ref.watch(ttsEngineProvider).isSupported;
-    final playback = ref.watch(ttsPlaybackControllerProvider);
     // Read aloud exactly what the body shows: the TL;DR when collapsed, the
     // TL;DR followed by the full report once expanded.
     final spokenText = _expanded && additionalReport != null
         ? '$tldr\n\n$additionalReport'
         : tldr;
     final playbackControl = ttsEnabled && tldr.isNotEmpty && ttsEngineSupported
-        ? _buildPlaybackControl(playback, spokenText)
+        ? SummaryReadAloudButton(sourceId: widget.taskId, text: spokenText)
         : null;
     // The companion is the face of the read-aloud control, so she comes and
     // goes with it, and speaks the same utterance: this task's, in the words
@@ -747,6 +715,14 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           figure: placement == CompanionPlacement.header
               ? companionFor(CompanionPlacement.header)
               : null,
+          // Her bust is only her head and shoulders: a tap stands her up
+          // head to toe, full screen, still speaking this summary.
+          onFigureTap: () => openCompanionStage(
+            context,
+            sourceId: widget.taskId,
+            spokenText: spokenText,
+          ),
+          figureLabel: context.messages.aiCardCompanionOpenFullScreen,
           badge: placement != CompanionPlacement.beside,
           trailing: headerControls.isEmpty
               ? null
