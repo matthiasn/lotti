@@ -7,6 +7,10 @@ import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_controller.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
+import 'package:lotti/features/sync/subscription/sync_subscription_store.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/diagnostic_info_button.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
@@ -357,5 +361,102 @@ void main() {
         expect(buildCount[0], greaterThan(buildsBeforeClose));
       },
     );
+  });
+
+  group('Lotti Sync subscription', () {
+    const record = SyncSubscriptionRecord(
+      entitlement: SyncEntitlement(id: 'ent-1', authSecret: 'auth'),
+      claimSecret: 'claim',
+    );
+
+    Future<void> pumpWithSubscription(
+      WidgetTester tester, {
+      required bool available,
+      SyncSubscriptionRecord? stored,
+      Future<bool> Function()? openPortal,
+      List<String>? recoveries,
+    }) async {
+      ensureDomainLoggerRegistered();
+      addTearDown(tearDownTestGetIt);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ProvisionedStatusWidget(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixUnverifiedControllerProvider.overrideWith(
+              () => FakeMatrixUnverifiedController(const []),
+            ),
+            syncSubscriptionAvailableProvider.overrideWithValue(available),
+            syncSubscriptionRecordProvider.overrideWith((ref) async => stored),
+            openSyncSubscriptionPortalProvider.overrideWithValue(
+              openPortal ?? () async => true,
+            ),
+            pendingRotationRecoveryProvider.overrideWith((ref) async {
+              recoveries?.add('confirm');
+              return false;
+            }),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('opening the page retries a pending rotation proof', (
+      tester,
+    ) async {
+      final recoveries = <String>[];
+
+      await pumpWithSubscription(
+        tester,
+        available: true,
+        recoveries: recoveries,
+      );
+
+      expect(recoveries, ['confirm']);
+    });
+
+    testWidgets('manage appears only for an install that subscribed', (
+      tester,
+    ) async {
+      await pumpWithSubscription(tester, available: true);
+      expect(find.byKey(const Key('sync_manage_subscription')), findsNothing);
+
+      await pumpWithSubscription(tester, available: false, stored: record);
+      expect(find.byKey(const Key('sync_manage_subscription')), findsNothing);
+
+      await pumpWithSubscription(tester, available: true, stored: record);
+      expect(find.byKey(const Key('sync_manage_subscription')), findsOneWidget);
+    });
+
+    testWidgets('manage opens the portal, and says so when it cannot', (
+      tester,
+    ) async {
+      var opened = 0;
+      var works = true;
+      await pumpWithSubscription(
+        tester,
+        available: true,
+        stored: record,
+        openPortal: () async {
+          opened++;
+          return works;
+        },
+      );
+      final messages = tester
+          .element(find.byType(ProvisionedStatusWidget))
+          .messages;
+
+      await tester.tap(find.byKey(const Key('sync_manage_subscription')));
+      await tester.pump();
+      expect(opened, 1);
+      expect(find.text(messages.syncManageSubscriptionFailed), findsNothing);
+
+      works = false;
+      await tester.tap(find.byKey(const Key('sync_manage_subscription')));
+      await tester.pump();
+      expect(opened, 2);
+      expect(find.text(messages.syncManageSubscriptionFailed), findsOneWidget);
+    });
   });
 }

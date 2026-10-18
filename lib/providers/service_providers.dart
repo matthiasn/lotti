@@ -11,6 +11,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
@@ -69,6 +70,15 @@ final domainLoggerProvider = Provider<DomainLogger>(
 final entitiesCacheServiceProvider = Provider<EntitiesCacheService?>(
   (ref) => null,
   name: 'entitiesCacheServiceProvider',
+);
+
+/// Provides the shared [SecureStorage] (the OS keystore). Must be overridden
+/// in [ProviderScope].
+final secureStorageProvider = Provider<SecureStorage>(
+  (ref) => throw UnimplementedError(
+    'secureStorageProvider must be overridden before use.',
+  ),
+  name: 'secureStorageProvider',
 );
 
 /// Provides the shared [SettingsDb]. Must be overridden in [ProviderScope].

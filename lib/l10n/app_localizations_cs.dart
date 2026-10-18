@@ -12063,6 +12063,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Server nepřijal přihlašovací údaje z kódu. Kód přestane fungovat, jakmile se změní heslo účtu — vezmi si nový kód z druhého zařízení, nebo to prostě zkus znovu, pokud jen vypadlo připojení.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Tento kód není podepsaný službou Lotti Sync, proto nebyl použit a na tomto zařízení se nic nezměnilo. Získej nový kód ze svého předplatného nebo z některého ze svých zařízení.';
+
+  @override
   String get provisionedSyncImportButton => 'Pokračovat';
 
   @override
@@ -15766,6 +15770,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncListUnknownPayload => 'Neznámý obsah';
 
   @override
+  String get syncManageSubscription => 'Spravovat předplatné';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Stránku předplatného se nepodařilo otevřít. Zkus to později.';
+
+  @override
   String get syncNotLoggedInToast => 'Synchronizace není přihlášena';
 
   @override
@@ -16042,6 +16053,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží na tvém vlastním synchronizačním serveru · nic neopouští tvá zařízení nešifrované';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Tvůj vlastní synchronizační server nebo Lotti Sync · nic neopustí tvá zařízení nešifrované';
+
+  @override
   String get syncSetupEmptyHint =>
       'Tvůj deník na každém tvém zařízení. End-to-end šifrovaný, jen mezi tvými zařízeními — bez cloudového účtu.';
 
@@ -16077,6 +16092,64 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Slovník pro přepis řeči';
+
+  @override
+  String get syncSubscribeAnnual => 'Předplatit na rok';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Dokonči platbu v prohlížeči. Jakmile dorazí, tahle obrazovka bude pokračovat sama.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Platba přijata. Nastavuji tvůj účet pro synchronizaci…';
+
+  @override
+  String get syncSubscribeEntry => 'Pořídit Lotti Sync';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Účet tohoto předplatného už je nastavený. Přidej toto zařízení z některého zařízení, které už synchronizuje.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Pro platbu se nepodařilo otevřít žádný prohlížeč.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Tahle aplikace odmítla účet, který tvé předplatné doručilo. Aktualizuj Lotti a zkus to znovu.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Nepodařilo se spojit s Lotti Sync. Zkontroluj připojení a zkus to znovu.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync to teď nedokázal dokončit. Zkus to znovu za pár minut.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Platba vypršela dřív, než byla zaplacena. Vyber si plán a začni znovu.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Platba kartou nebo přes PayPal přes Paddle, našeho poskytovatele plateb. Zrušit můžeš kdykoli.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti zajistí synchronizaci mezi tvými zařízeními. Vše zůstává koncově šifrované, takže tvé záznamy můžou číst jen tvá vlastní zařízení — ani Lotti ne.';
+
+  @override
+  String get syncSubscribeMonthly => 'Předplatit na měsíc';
+
+  @override
+  String get syncSubscribeOpening => 'Otevírám zabezpečenou platbu…';
+
+  @override
+  String get syncSubscribeReopen => 'Znovu otevřít platbu';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>

@@ -1,1 +1,0 @@
-"""Tests for credits service"""

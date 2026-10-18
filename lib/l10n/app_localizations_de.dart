@@ -11980,6 +11980,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Der Server hat die Zugangsdaten aus dem Code nicht akzeptiert. Ein Code funktioniert nicht mehr, sobald sich das Passwort des Kontos ändert — hol dir einen frischen Code von deinem anderen Gerät, oder versuch es einfach nochmal, falls nur die Verbindung abgebrochen ist.';
 
   @override
+  String get provisionedSyncErrorUntrusted =>
+      'Dieser Code ist nicht von Lotti Sync signiert. Er wurde deshalb nicht verwendet, und auf diesem Gerät hat sich nichts geändert. Hol dir einen neuen Code aus deinem Abo oder von einem deiner eigenen Geräte.';
+
+  @override
   String get provisionedSyncImportButton => 'Weiter';
 
   @override
@@ -15673,6 +15677,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncListUnknownPayload => 'Unbekannte Nutzlast';
 
   @override
+  String get syncManageSubscription => 'Abo verwalten';
+
+  @override
+  String get syncManageSubscriptionFailed =>
+      'Die Abo-Seite konnte nicht geöffnet werden. Versuch es später noch einmal.';
+
+  @override
   String get syncNotLoggedInToast => 'Sync ist nicht angemeldet';
 
   @override
@@ -15954,6 +15965,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Läuft auf deinem eigenen Sync-Server · nichts verlässt deine Geräte unverschlüsselt';
 
   @override
+  String get syncSetupEmptyFootnoteHosted =>
+      'Dein eigener Sync-Server oder Lotti Sync · nichts verlässt deine Geräte unverschlüsselt';
+
+  @override
   String get syncSetupEmptyHint =>
       'Dein Tagebuch auf jedem deiner Geräte. Ende-zu-Ende-verschlüsselt, nur zwischen deinen Geräten — ohne Cloud-Konto.';
 
@@ -15990,6 +16005,64 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepSpeechDictionary => 'Sprachwörterbuch';
+
+  @override
+  String get syncSubscribeAnnual => 'Jährlich abonnieren';
+
+  @override
+  String get syncSubscribeAwaiting =>
+      'Schließ die Zahlung in deinem Browser ab. Sobald sie eingegangen ist, geht es hier von selbst weiter.';
+
+  @override
+  String get syncSubscribeClaiming =>
+      'Zahlung eingegangen. Dein Sync-Konto wird eingerichtet …';
+
+  @override
+  String get syncSubscribeEntry => 'Lotti Sync holen';
+
+  @override
+  String get syncSubscribeErrorAlreadySetUp =>
+      'Das Konto dieses Abos ist schon eingerichtet. Füg dieses Gerät von einem deiner Geräte hinzu, das bereits synchronisiert.';
+
+  @override
+  String get syncSubscribeErrorBrowser =>
+      'Für die Bezahlung konnte kein Browser geöffnet werden.';
+
+  @override
+  String get syncSubscribeErrorInvalidBundle =>
+      'Diese App hat das Konto abgelehnt, das dein Abo geliefert hat. Aktualisier Lotti und versuch es noch einmal.';
+
+  @override
+  String get syncSubscribeErrorOffline =>
+      'Lotti Sync ist nicht erreichbar. Prüf deine Verbindung und versuch es noch einmal.';
+
+  @override
+  String get syncSubscribeErrorService =>
+      'Lotti Sync konnte das gerade nicht abschließen. Versuch es in ein paar Minuten noch einmal.';
+
+  @override
+  String get syncSubscribeExpired =>
+      'Diese Bezahlseite ist abgelaufen, bevor bezahlt wurde. Wähl einen Tarif, um neu zu starten.';
+
+  @override
+  String get syncSubscribeFootnote =>
+      'Bezahlt per Karte oder PayPal über Paddle, unseren Zahlungsanbieter. Jederzeit kündbar.';
+
+  @override
+  String get syncSubscribeIntro =>
+      'Lotti betreibt die Synchronisierung zwischen deinen Geräten. Alles bleibt Ende-zu-Ende-verschlüsselt, sodass nur deine eigenen Geräte deine Einträge lesen können — nicht einmal Lotti.';
+
+  @override
+  String get syncSubscribeMonthly => 'Monatlich abonnieren';
+
+  @override
+  String get syncSubscribeOpening => 'Sichere Bezahlseite wird geöffnet …';
+
+  @override
+  String get syncSubscribeReopen => 'Bezahlseite erneut öffnen';
+
+  @override
+  String get syncSubscribeTitle => 'Lotti Sync';
 
   @override
   String get syncVerifiedCelebrationBody =>

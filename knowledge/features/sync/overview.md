@@ -32,10 +32,18 @@ sources:
     resource: ../../../lib/services/domain_logging.dart
     title: DomainLogger counted sampling
     last_modified: 2026-08-01
-  - id: subscription-provisioner
-    resource: ../../../services/matrix-provisioning-service/src/services
-    title: Google Play subscription verification and Matrix provisioning services
-    last_modified: 2026-08-30
+  - id: provisioner-cli
+    resource: ../../../tools/matrix_provisioner
+    title: Self-hosting provisioning CLI
+    last_modified: 2026-10-03
+  - id: app-subscription
+    resource: ../../../lib/features/sync/subscription
+    title: In-app web checkout, claim and rotation proof
+    last_modified: 2026-10-17
+  - id: bundle-attestation
+    resource: ../../../lib/features/sync/state/bundle_attestation.dart
+    title: Signed provisioning bundle verification
+    last_modified: 2026-10-17
   - id: verification-launch-model
     resource: ../../../specs/tla/VerificationLaunch.tla
     title: VerificationLaunch — TLA+ model of opening the emoji ceremony, and crossing requests
@@ -124,221 +132,128 @@ full journal, agent or attachment payloads.
 | `queue/` | Persistent inbound queue, per-room worker, `onSync` catch-up bridge, durable late-key resume floor |
 | `sequence/` | Record `(hostId, counter)` coverage, detect gaps, track lifecycle states |
 | `backfill/` | Send missing-counter requests; answer peer requests with resend, deleted, unresolvable or covering-payload hints |
-| `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens |
+| `state/`, `ui/` | Riverpod controllers and the settings, stats, diagnostics, provisioning and maintenance screens; `state/bundle_attestation.dart` verifies signed bundles |
+| `subscription/` | Paid Lotti Sync from the app: checkout sessions, claim, rotation proof, portal link ([below](#paid-sync-web-checkout-and-signed-bundles)) |
 | `services/`, `repository/` | Node capability probe, profile broadcaster, node-profile persistence, maintenance repository, synced-audio inference listener and dispatcher |
 
-# Provisioned access and subscription state
+# Provisioned access
 
-The Matrix provisioning service has two credential-delivery modes. Admin and
-CLI provisioning return a credential once and retain only its fingerprint. The
-Google Play path, gated by `ENABLE_PLAY_SUBSCRIPTIONS`, binds a verified purchase
-to a stable anonymous entitlement and retains the paid bundle in short-lived
-authenticated encryption so a lost HTTP response can return the same bundle
-rather than create a second Matrix account. After confirmed rotation destroys
-that escrow, a replacement purchase returns a no-import recovery result and
-unsuspends the existing Matrix account before responding; it never recreates
-the bootstrap credential. The Android Billing client is not wired yet, so this
-backend path is dormant while the feature flag remains off.
-For local-JSON deployments, the bundled Compose stack treats
-`GOOGLE_APPLICATION_CREDENTIALS` as a host path and binds it read-only to the
-stable Application Default Credentials path inside the service container; the
-subscription-disabled fallback cannot become usable Google credentials.
+A first device gets its account from a **provisioning bundle**, minted by
+whoever runs the homeserver:
 
-The anonymous entitlement endpoint consumes a durable, HMAC-pseudonymized
-per-client quota before it creates any identity row. Purchase-intent requests
-consume a durable per-entitlement attempt quota before scrypt verifies the
-app-held secret, followed by a separate post-authentication issuance quota
-before hashing and storing another one-time secret; the latter transaction
-also prunes expired intents and their Integrity replay markers. Purchase
-verification has its own durable attempt scope, consumed before entitlement or
-intent scrypt checks and before either Google API call. The purchase intent is
-consumed with the fresh post-Google verification timestamp, so authentication
-and network time cannot extend its exact TTL. Paid-bundle delivery and
-rotation share another durable attempt scope, consumed before entitlement or
-claim-secret scrypt work. Expired-attempt cleanup stays within the current
-operation because those scopes can have independently configured windows. Paid
-provisioning then takes a token-owned SQLite reservation keyed by entitlement
-before it touches Matrix. Pending escrow records the purchase-token fingerprint
-that authorized their current claim secret: only a verified replacement token
-can rebind it, while a second request for the same token must prove the existing
-secret.
-Application Default Credentials refresh failures caused by Google transport or
-credential errors are mapped to the same retryable service-unavailable response
-as transient Publisher API failures, so verification and RTDN callers receive
-HTTP 503 rather than an unclassified server error.
-A linked replacement must grant access before the repository can store it or
-retire the current token. First observations and the same-token path still
-persist denial state so reconciliation can suspend Matrix. Replacement audit
-events use the retired predecessor as their before-state, preserving recovery
-and other lifecycle transitions across token rotation, including active
-out-of-app resubscription after expiry and canceled-but-unexpired replacement
-access.
-Requests in another service object or process wait for the owner's durable
-claim and reuse it; a killed owner becomes recoverable after five minutes. A
-replacement that takes over a stale paid-provisioning reservation receives a
-fresh suffixed Matrix localpart. This fences it from the late owner: if the
-late Synapse call eventually returns and its database write loses ownership,
-orphan cleanup deactivates only the late owner's account and cannot deactivate
-the replacement's winning account.
-Cancellation after Matrix account creation is also fenced from SQLite commit:
-the shared bundle service shields both the standard record write and paid atomic
-escrow write, drains through repeated cancellation until the persistence
-outcome is terminal, and deactivates only after a failure. Cancellation after a
-successful commit therefore preserves the durable account instead of leaving
-stored credentials for a deactivated user.
-Admin bundle revocation destroys any paid bootstrap escrow in the same SQLite
-transaction and clears its operation lease, so later and in-flight delivery
-cannot return credentials after revocation wins the transaction order. Only a
-claim revoked by the expiry reaper receives the durable abandonment marker that
-permits a later verified purchase to detach it and create a replacement account;
-an administrator-revoked claim remains linked and terminal.
-These are database invariants, with reverse-proxy throttling kept as an
-additional outer boundary. The bundled nginx forwards the original client
-chain and Uvicorn trusts only nginx's fixed Compose address, so direct callers
-cannot forge the quota identity through `X-Forwarded-For`.
+- **Self-hosted**: the `tools/matrix_provisioner` CLI creates the Matrix user
+  and the encrypted, non-federated sync room on the user's own Synapse and
+  prints an unsigned (v2) `provisioned` bundle.
+- **Hosted (paid Lotti Sync)**: the operator's provisioning service, kept in a
+  separate private repository, creates the account once a subscription is paid
+  and hands the app a signed (v3) bundle over HTTP — [below](#paid-sync-web-checkout-and-signed-bundles).
 
-Play RTDN is only a refresh signal. An authenticated Pub/Sub push resolves an
-already-known token and causes a new `purchases.subscriptionsv2.get`; a periodic
-reconciler performs the same authoritative refresh when notifications are lost.
-One configured interval drives both its wake cadence and the
-`next_reconciliation_at` deadline written into successful snapshots, so polling
-frequency and durable scheduling cannot diverge.
-Authenticated notifications for unbound tokens are acknowledged without a
-Google query or state mutation because they may arrive before client
-verification establishes the binding; that later verification is itself an
-authoritative Google query. Authenticated Play `testNotification` probes are
-also acknowledged without looking up a purchase token or mutating subscription
-state. RTDN handling refreshes its wall clock after the Google query before
-enforcing the current durable state, so work done during that refresh cannot
-extend access past the authoritative expiry.
-The Play-configured three-day grace deadline arrives as the line item's extended
-`expiryTime`. Lotti uses that timestamp directly and never adds another local
-grace window. Loss of entitlement suspends the Matrix user reversibly, while a
-renewal or payment recovery unsuspends it without discarding device or E2EE
-state. Client verification enforces the newly persisted current state before
-attempting bundle delivery, including when that state denies access. The route
-refreshes wall-clock time after Google verification and again before returning;
-paid provisioning also refreshes time at every access boundary, including after
-Matrix account creation, after claim-secret verification, and immediately before
-decrypting escrow. If access expires during either operation, credential delivery
-fails closed and the route runs one final enforcement pass against the freshly
-reloaded subscription before returning credentials, so a concurrently suspended
-purchase cannot leak escrow and an existing Matrix account does not remain
-unsuspended. Reconciliation failure
-handling also refreshes its clock before enforcing the durable snapshot and
-scheduling its retry, so time spent waiting on Google cannot extend access.
-The repository records the last observed Matrix suspension state separately
-from Google's next refresh deadline. Any provisioned subscription whose desired
-state differs remains due for reconciliation until successful enforcement is
-recorded, including after a restart or after an access deadline passes. A newly
-observed mismatch is selected ahead of ordinary Google refresh work, while a
-failed Synapse attempt receives a five-minute retry deadline and is excluded
-until then so repeated failures cannot monopolize a reconciliation batch. Access
-enforcement reloads the authoritative subscription after the Synapse activity
-lookup and before mutation, then refreshes its wall clock after the final
-activity lookup before deciding and recording suspension. An expiry crossed
-while Synapse responds therefore fails closed. After every suspension mutation,
-enforcement reloads the entitlement and clock and immediately reconverges if
-the account expired during the Synapse request; repeated concurrent state churn
-is bounded and retried instead of looping indefinitely. The resulting observed
-state is recorded on the current entitlement row even if its purchase token
-changed during the request, so a late stale mutation remains visibly due for
-correction.
-Subscription reconciliation and paid-claim cleanup reject zero or negative
-worker intervals during startup, preventing a configuration error from creating
-a tight retry loop.
-Suspension
-requires Synapse 1.110.0 or newer with MSC3823 enabled; when
-subscriptions are enabled, startup authenticates to Synapse and validates that
-version, then probes the configured suspension endpoint with an invalid MXID
-before workers start or purchase traffic is accepted. The expected
-`M_INVALID_PARAM` proves that the route is registered without targeting an
-account; an unrecognized route fails startup. Startup also constructs the paid
-delivery service eagerly, so invalid provisioning wait, polling, or operation
-timeout settings fail before any purchase intent can be consumed. Each enforcement
-reloads the current purchase token while holding the entitlement's
-serialization stripe, so an older refresh cannot suspend the account after a
-replacement refresh restored it. Same-token persistence rejects snapshots
-whose Publisher-response observation timestamp is older than the stored row.
-The timestamp is captured after Google responds, so a request that started
-earlier but returned later with newer evidence is not discarded.
-Material lifecycle changes are also inserted into an append-only subscription
-audit table before the snapshot upsert commits. The event and snapshot therefore
-succeed or roll back together; SQLite triggers reject later event updates and
-deletes, and audit rows retain only token fingerprints plus before/after state
-rather than purchase secrets. The transition from a pending purchase to granted
-access is recorded as recovery, preserving the point at which SYNC was enabled.
+Either way the bundle carries a one-time bootstrap password. Importing it
+rotates that password to 32 random bytes the server never sees, so a copy of
+the bundle stops working as soon as it is used, and from then on the account's
+credential lives only in the devices' keystores. What the app does with a
+bundle is in [Pairing a new device](#pairing-a-new-device).
+
+The hosted service suspends an account whose subscription lapses — reversibly,
+so a renewal restores sync with everything intact — and erases it after 30
+days of suspension. The user's devices keep their full record either way; only
+the server's copy goes.
+
+# Paid sync: web checkout and signed bundles
+
+The operator's paid service sells sync through **Paddle**, the merchant of
+record. The service itself — checkout sessions, the Paddle webhook, account
+creation and escrow, suspension — lives in the operator's private backend
+repository; this section is the app's side of the contract.
+
+The app side is `lib/features/sync/subscription/`. Nothing in it carries a
+name, email or payment detail: the keystore record
+(`SyncSubscriptionStore`, key `LOTTI_SYNC_SUBSCRIPTION`) holds an anonymous
+entitlement id and secret, a client-generated claim secret, the last checkout
+session id and any rotation proof still owed to the service.
+
+```mermaid
+sequenceDiagram
+  participant App as SyncSubscriptionController
+  participant API as provisioning service
+  participant Browser as checkout page + Paddle
+  participant Prov as ProvisioningController
+  App->>API: entitlement (once per install)
+  App->>API: checkout session (plan, claim secret)
+  App->>Browser: open URL, session id in the fragment
+  Browser-->>API: signed webhook binds the subscription to the session
+  loop every 3 s
+    App->>API: session-status (no secret, cheap)
+  end
+  App->>API: claim → bundle + rotation challenge
+  App->>App: store pending proof
+  App->>Prov: decodeBundle + configureFromBundle (verify, login, rotate)
+  App->>API: room state com.lotti.sync.provisioning.rotation, then confirm-rotation
+```
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Pending: verified purchase is pending
-  Pending --> Active: Google grants access
-  Active --> Grace: renewal payment fails within Play grace
-  Active --> CanceledActive: canceled before expiryTime
-  Grace --> Active: payment recovers
-  Grace --> Suspended: Google removes access or expiryTime reached
-  CanceledActive --> Expired: expiryTime reached
-  Active --> Suspended: paused, on hold, revoked, or expired
-  Suspended --> Active: renewal or recovery verified
-  Suspended --> Expired: Google reports expired
+  [*] --> Idle
+  Idle --> Opening: subscribe(plan)
+  Opening --> AwaitingPayment: browser opened
+  Opening --> Failed: offline, service error or no browser
+  AwaitingPayment --> Claiming: session paid
+  AwaitingPayment --> CheckoutExpired: session expired unpaid
+  AwaitingPayment --> Failed: session lost
+  AwaitingPayment --> Idle: cancel
+  Claiming --> Connecting: bundle accepted
+  Claiming --> Failed: claim refused, already set up or bundle invalid
+  Connecting --> Done: provisioning ready and proof confirmed
+  CheckoutExpired --> Opening: subscribe(plan)
+  Failed --> Opening: subscribe(plan)
 ```
 
-A paid bundle claim has a separate security boundary: delivery retries and
-rotation confirmations share a pre-authentication attempt quota, and successful
-requests are authorized by the entitlement and claim secret. Escrow is
-destroyed only after the bound Matrix user publishes the server-derived rotation
-challenge in the provisioned room and the bootstrap password no longer
-authenticates. The legacy client rotation callback rejects every bundle backed
-by a paid claim, so it cannot mark the user rotated while leaving escrow
-unconfirmed and eligible for reaping. The
-claim reaper deactivates an account that never reaches that proof before its
-24-hour TTL. Its first destructive batch waits for an operator-configurable
-non-negative startup delay; a negative configuration fails service startup.
-Rotation verification and reaping first acquire mutually exclusive tokenized
-database leases; failed or crashed workers release or age out their
-lease, and a late worker cannot clear a newer owner's lease. Reaper
-finalization requires the same operation token that reserved the claim, so an
-administrator who revokes the bundle while Synapse deactivation is in flight
-wins permanently instead of having the worker relabel the claim as abandoned.
-Failed reaper
-attempts receive a separate bounded retry time so one broken account cannot
-starve later claims; this never extends the escrow TTL. Authenticated delivery
-retries acquire the same mutually exclusive operation lease before claim-secret
-verification and complete the delivery stamp only while retaining ownership,
-so the reaper cannot revoke the account behind an in-flight response. A linked
-replacement purchase reauthorizes still-pending escrow with its verified claim
-secret only while that purchase token remains current. A later verified payment
-may detach an abandoned, revoked claim and provision a
-fresh Matrix account, retrying with a suffixed localpart if the deterministic
-name survived an earlier rollback. A rotation confirmation is idempotent only
-when the claim has a real `confirmed_at`; a late request cannot turn a
-reaper-destroyed claim into apparent success. Confirmed claims recover only a
-still-non-revoked account, checked both before and after the purchase
-acknowledgement path, without recreating bootstrap credentials. Pending plaintext
-delivery is also revalidated immediately before return: its account must remain
-non-revoked and its claim current, nonterminal, encrypted, and within TTL even if
-Google acknowledgement was slow. The local acknowledgement timestamp is
-monotonic metadata: same-token verification and reconciliation upserts preserve
-it when Google's acknowledged snapshot supplies state but no local time, and
-the first authoritative acknowledged observation stamps it when the original
-local marker write was lost. Lost-response
-delivery retries reload the current subscription and reject non-granting state
-or an elapsed authoritative expiry before decrypting escrow. The retry route
-refreshes its clock after entitlement authentication and stops before claim
-delivery when enforcement suspends the account. It then reloads and re-enforces
-the current row once more after delivery so a concurrent
-replacement purchase's entitlement state, rather than its predecessor's stale
-state, is returned only when it still grants access. Both this retry path and the
-purchase-verification path revalidate the cached plaintext delivery against the
-current subscription, account status and nonterminal claim from one SQLite read
-snapshot immediately after their final Matrix enforcement. The fresh entitlement
-state and deadline are checked before building the response, with no intervening
-await. An administrator revocation or entitlement loss that wins after the
-delivery lease is released therefore cannot return bootstrap credentials.
-Rotation refreshes its wall clock
-after entitlement and claim-secret authentication and rejects an exact-TTL expiry
-before reserving the claim, so authentication time cannot extend the escrow
-window or exclude the reaper after expiry.
+Rules the code keeps:
+
+- **The session id is the poll credential.** Checkout status is read without
+  the entitlement secret, so polling never touches the scrypt-guarded claim
+  quota; the id travels in the URL fragment, which no server logs.
+- **The proof is durable before the password rotates.** The pending
+  `PendingRotationProof` is written before `configureFromBundle`; the claim
+  reaper deactivates an account whose rotation is unconfirmed after 24 hours,
+  so `RotationConfirmer` retries it on every visit to the Devices page
+  (`pendingRotationRecoveryProvider`) until the service accepts it.
+- **One checkout per entitlement.** A retry reuses the open session for the
+  same plan, and once a Paddle subscription grants access the service refuses
+  a new checkout (409); the app then claims instead of paying again.
+- **A paid claim outlives its session.** The session id is kept until the
+  connect succeeds; without it, `resume` still claims when a proof is owed or
+  the device does not sync yet, so a failed connect or a late payment is
+  picked up on the next visit.
+- **A paid bundle goes through the pairing flow.** The subscription controller
+  only obtains the bundle; verification, login, room join and rotation are
+  `ProvisioningController`'s, unchanged.
+- **Builds decide whether the entry exists.** `LOTTI_SYNC_API_URL` must be an
+  `https://` URL and `LOTTI_WEB_CHECKOUT` not `false`; store builds whose
+  rules require their own billing switch it off. Without both, the subscribe
+  button is absent and no request is made.
+
+## Signed provisioning bundles (schema v3)
+
+A v3 bundle adds `att` — `{kid, iat, exp, sig}` — an Ed25519 signature by the
+provisioning service over canonical JSON of `{exp, homeServer, iat, kid,
+roomId, user, v}`. The password and `kind` are **not** signed, so a device
+that rotated the password hands the same attestation on: the handover it mints
+is v3 with the original `att`, `MatrixConfig.attestation` keeps it in the
+keystore, and `regenerateHandover` carries it to every later device.
+`attestationPayload` must stay byte-identical to the canonical bytes the
+service signs; a test vector produced by the service's signer is pinned in
+`bundle_attestation_test.dart`, and the same vector in the service's own suite.
+
+`BundleAttestationVerifier` runs at the start of `configureFromBundle`,
+**before the current session is touched**. A present attestation is always
+checked; a homeserver in `kLottiSyncBundleTrust.signedHomeservers` additionally
+requires one; an expired attestation refuses only a `provisioned` bundle. A
+refusal ends in `ProvisioningError.untrustedBundle`. Unsigned v2 bundles keep
+working for every other homeserver, so self-hosting is unaffected. The
+signature protects users from forged or phishing bundles; payment itself is
+enforced by the homeserver, where only the provisioning service can create
+accounts.
 
 # Pairing a new device
 
@@ -348,7 +263,8 @@ Base64url-encoded — from a device that already syncs to one that does not.
 by the provisioning service through admin or verified-subscription flows, or
 by the CLI) rotates the account password and persists the new one; a `handover`
 bundle (minted by a peer) joins without rotating, so every peer shares one live
-credential. The controller's state transitions expose that distinction directly:
+credential. Either may be a signed v3 bundle, verified before anything else
+happens ([signed bundles](#signed-provisioning-bundles-schema-v3)). The controller's state transitions expose that distinction directly:
 a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds
 from room join to `done`. The behavior derives from bundle kind, never platform.
 

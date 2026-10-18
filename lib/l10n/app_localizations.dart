@@ -19879,6 +19879,12 @@ abstract class AppLocalizations {
   /// **'The server didn\'t accept that code\'s sign-in details. A code stops working once the account password changes — get a fresh one from your other device, or just retry if the connection dropped.'**
   String get provisionedSyncErrorLoginFailed;
 
+  /// No description provided for @provisionedSyncErrorUntrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'This code isn\'t signed by Lotti Sync, so it wasn\'t used and nothing on this device changed. Get a fresh code from your subscription or from one of your own devices.'**
+  String get provisionedSyncErrorUntrusted;
+
   /// No description provided for @provisionedSyncImportButton.
   ///
   /// In en, this message translates to:
@@ -25721,6 +25727,18 @@ abstract class AppLocalizations {
   /// **'Unknown payload'**
   String get syncListUnknownPayload;
 
+  /// No description provided for @syncManageSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get syncManageSubscription;
+
+  /// No description provided for @syncManageSubscriptionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the subscription page. Try again later.'**
+  String get syncManageSubscriptionFailed;
+
   /// No description provided for @syncNotLoggedInToast.
   ///
   /// In en, this message translates to:
@@ -26201,6 +26219,12 @@ abstract class AppLocalizations {
   /// **'Runs on your own sync server · nothing leaves your devices unencrypted'**
   String get syncSetupEmptyFootnote;
 
+  /// No description provided for @syncSetupEmptyFootnoteHosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your own sync server or Lotti Sync · nothing leaves your devices unencrypted'**
+  String get syncSetupEmptyFootnoteHosted;
+
   /// No description provided for @syncSetupEmptyHint.
   ///
   /// In en, this message translates to:
@@ -26272,6 +26296,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speech dictionary'**
   String get syncStepSpeechDictionary;
+
+  /// No description provided for @syncSubscribeAnnual.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe yearly'**
+  String get syncSubscribeAnnual;
+
+  /// No description provided for @syncSubscribeAwaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish the payment in your browser. This screen carries on by itself once it arrives.'**
+  String get syncSubscribeAwaiting;
+
+  /// No description provided for @syncSubscribeClaiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment received. Setting up your sync account…'**
+  String get syncSubscribeClaiming;
+
+  /// No description provided for @syncSubscribeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Lotti Sync'**
+  String get syncSubscribeEntry;
+
+  /// No description provided for @syncSubscribeErrorAlreadySetUp.
+  ///
+  /// In en, this message translates to:
+  /// **'This subscription\'s account is already set up. Add this device from one of your devices that already syncs.'**
+  String get syncSubscribeErrorAlreadySetUp;
+
+  /// No description provided for @syncSubscribeErrorBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'No browser could be opened for the checkout.'**
+  String get syncSubscribeErrorBrowser;
+
+  /// No description provided for @syncSubscribeErrorInvalidBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'This app refused the account your subscription delivered. Update Lotti and try again.'**
+  String get syncSubscribeErrorInvalidBundle;
+
+  /// No description provided for @syncSubscribeErrorOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach Lotti Sync. Check your connection and try again.'**
+  String get syncSubscribeErrorOffline;
+
+  /// No description provided for @syncSubscribeErrorService.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti Sync couldn\'t complete that right now. Try again in a few minutes.'**
+  String get syncSubscribeErrorService;
+
+  /// No description provided for @syncSubscribeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'That checkout timed out before it was paid. Pick a plan to start again.'**
+  String get syncSubscribeExpired;
+
+  /// No description provided for @syncSubscribeFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by card or PayPal through Paddle, our payment provider. Cancel any time.'**
+  String get syncSubscribeFootnote;
+
+  /// No description provided for @syncSubscribeIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti hosts the sync between your devices. Everything stays end-to-end encrypted, so only your own devices — not even Lotti — can read your entries.'**
+  String get syncSubscribeIntro;
+
+  /// No description provided for @syncSubscribeMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe monthly'**
+  String get syncSubscribeMonthly;
+
+  /// No description provided for @syncSubscribeOpening.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the secure checkout…'**
+  String get syncSubscribeOpening;
+
+  /// No description provided for @syncSubscribeReopen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open checkout again'**
+  String get syncSubscribeReopen;
+
+  /// No description provided for @syncSubscribeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti Sync'**
+  String get syncSubscribeTitle;
 
   /// No description provided for @syncVerifiedCelebrationBody.
   ///

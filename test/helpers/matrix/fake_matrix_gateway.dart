@@ -71,6 +71,14 @@ class FakeMatrixGateway implements MatrixSyncGateway {
   Future<bool> ensureRoomRetention(String roomId) async => false;
 
   @override
+  Future<void> setRoomState({
+    required String roomId,
+    required String eventType,
+    required String stateKey,
+    required Map<String, Object?> content,
+  }) async {}
+
+  @override
   Room? getRoomById(String roomId) => null;
 
   @override

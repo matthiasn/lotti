@@ -2,11 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:clock/clock.dart' as system_clock;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/provenance/crypto/ed25519.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
+import 'package:lotti/features/sync/state/bundle_attestation.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
@@ -36,8 +40,9 @@ sealed class ProvisioningState with _$ProvisioningState {
   const factory ProvisioningState.error(ProvisioningError error) = _Error;
 }
 
-/// Current bundle schema version. Bumped from 1 to 2 when the `kind`
-/// discriminator became required.
+/// Unsigned bundle schema version. Bumped from 1 to 2 when the `kind`
+/// discriminator became required; [kSignedSyncBundleVersion] adds the
+/// operator attestation.
 const int kSyncBundleVersion = 2;
 
 final NotifierProvider<ProvisioningController, ProvisioningState>
@@ -48,10 +53,20 @@ provisioningControllerProvider =
     );
 
 class ProvisioningController extends Notifier<ProvisioningState> {
-  ProvisioningController({OnboardingSyncService? onboardingSyncService})
-    : _injectedOnboardingSyncService = onboardingSyncService;
+  ProvisioningController({
+    OnboardingSyncService? onboardingSyncService,
+    Future<Ed25519> Function()? ed25519Loader,
+    this._trust = kLottiSyncBundleTrust,
+    DateTime Function()? clock,
+  }) : _injectedOnboardingSyncService = onboardingSyncService,
+       _ed25519Loader = ed25519Loader ?? SodiumEd25519.bundled,
+       // Read at call time so fake clocks installed by tests apply.
+       _clock = clock ?? (() => system_clock.clock.now());
 
   final OnboardingSyncService? _injectedOnboardingSyncService;
+  final Future<Ed25519> Function() _ed25519Loader;
+  final BundleTrust _trust;
+  final DateTime Function() _clock;
   SyncProvisioningBundle? _lastBundle;
   MatrixConfig? _lastCredentials;
 
@@ -70,7 +85,9 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   /// discriminator is required — it determines whether this consumption
   /// rotates the password (`provisioned`) or joins without rotating
   /// (`handover`). v:1 bundles (which predate the discriminator) are
-  /// rejected.
+  /// rejected. A v:3 bundle must carry its attestation; whether that
+  /// attestation is trusted is decided by [configureFromBundle], which needs
+  /// the asynchronously loaded Ed25519 implementation.
   SyncProvisioningBundle decodeBundle(String base64String) {
     try {
       final normalized = _normalizeBase64(base64String.trim());
@@ -87,7 +104,8 @@ class ProvisioningController extends Notifier<ProvisioningState> {
           'Missing or non-integer bundle version',
         );
       }
-      if (rawVersion != kSyncBundleVersion) {
+      if (rawVersion != kSyncBundleVersion &&
+          rawVersion != kSignedSyncBundleVersion) {
         // A real version this build does not speak: the devices are on
         // different Lotti releases. Reported separately because the remedy is
         // "update", not "get a fresh code".
@@ -103,7 +121,19 @@ class ProvisioningController extends Notifier<ProvisioningState> {
         );
       }
 
-      final bundle = SyncProvisioningBundle.fromJson(json);
+      if (rawVersion == kSignedSyncBundleVersion && json['att'] is! Map) {
+        throw const BundleDecodeException(
+          BundleDecodeError.malformedPayload,
+          'A v3 bundle must carry its attestation',
+        );
+      }
+
+      final parsed = SyncProvisioningBundle.fromJson(json);
+      // An attestation only means something in the schema that defines it;
+      // a v2 bundle is treated as unsigned whatever else it carries.
+      final bundle = rawVersion == kSyncBundleVersion
+          ? parsed.copyWith(att: null)
+          : parsed;
 
       if (!bundle.user.startsWith('@')) {
         throw const BundleDecodeException(
@@ -166,6 +196,28 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       // Step 1: Login
       state = const ProvisioningState.loggingIn();
 
+      // Before anything touches the current session: a forged or phishing
+      // bundle must not even log the existing account out.
+      try {
+        // libsodium is only needed to check a signature; an unsigned bundle
+        // for a self-hosted server pairs without it, as it always did.
+        BundleAttestationVerifier(
+          ed25519: bundle.att == null ? null : await _ed25519Loader(),
+          trust: _trust,
+        ).verify(bundle, now: _clock());
+      } on UntrustedBundleException catch (e) {
+        loggingService.log(
+          LogDomain.sync,
+          'Refused untrusted bundle: ${e.failure.name}',
+          subDomain: 'configureFromBundle.verify',
+          level: InsightLevel.warn,
+        );
+        state = const ProvisioningState.error(
+          ProvisioningError.untrustedBundle,
+        );
+        return;
+      }
+
       final oldConfig = await matrixService.loadConfig();
       final oldRoomId = await matrixService.getRoom();
 
@@ -184,6 +236,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
         homeServer: bundle.homeServer,
         user: bundle.user,
         password: bundle.password,
+        attestation: bundle.att,
       );
       final loggedIn = await _switchSession(matrixService, newConfig);
       if (!loggedIn) {
@@ -220,13 +273,12 @@ class ProvisioningController extends Notifier<ProvisioningState> {
 
       // Step 4: Generate handover bundle. Tagged as `handover` so the
       // next device consuming it joins without rotating the password.
-      final handoverBundle = SyncProvisioningBundle(
-        v: kSyncBundleVersion,
-        kind: SyncBundleKind.handover,
+      final handoverBundle = _handoverBundle(
         homeServer: bundle.homeServer,
         user: bundle.user,
         password: newPassword,
         roomId: bundle.roomId,
+        attestation: bundle.att,
       );
       state = ProvisioningState.ready(_encodeBundle(handoverBundle));
     } catch (e, stackTrace) {
@@ -290,13 +342,12 @@ class ProvisioningController extends Notifier<ProvisioningState> {
       final roomId = existing ?? await matrixService.createRoom();
       await matrixService.saveRoom(roomId);
 
-      final handoverBundle = SyncProvisioningBundle(
-        v: kSyncBundleVersion,
-        kind: SyncBundleKind.handover,
+      final handoverBundle = _handoverBundle(
         homeServer: config.homeServer,
         user: config.user,
         password: config.password,
         roomId: roomId,
+        attestation: config.attestation,
       );
       state = ProvisioningState.ready(_encodeBundle(handoverBundle));
     } catch (e, stackTrace) {
@@ -385,16 +436,34 @@ class ProvisioningController extends Notifier<ProvisioningState> {
     final roomId = matrixService.syncRoomId;
     if (config == null || roomId == null) return null;
 
-    final bundle = SyncProvisioningBundle(
-      v: kSyncBundleVersion,
-      kind: SyncBundleKind.handover,
-      homeServer: config.homeServer,
-      user: config.user,
-      password: config.password,
-      roomId: roomId,
+    return _encodeBundle(
+      _handoverBundle(
+        homeServer: config.homeServer,
+        user: config.user,
+        password: config.password,
+        roomId: roomId,
+        attestation: config.attestation,
+      ),
     );
-    return _encodeBundle(bundle);
   }
+
+  /// A handover for the next device: v3 carrying the account's attestation
+  /// when it has one, so an operator homeserver accepts it, else v2.
+  static SyncProvisioningBundle _handoverBundle({
+    required String homeServer,
+    required String user,
+    required String password,
+    required String roomId,
+    required BundleAttestation? attestation,
+  }) => SyncProvisioningBundle(
+    v: attestation == null ? kSyncBundleVersion : kSignedSyncBundleVersion,
+    kind: SyncBundleKind.handover,
+    homeServer: homeServer,
+    user: user,
+    password: password,
+    roomId: roomId,
+    att: attestation,
+  );
 
   /// The wire form of a bundle: its JSON, Base64url-encoded.
   static String _encodeBundle(SyncProvisioningBundle bundle) =>
