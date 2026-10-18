@@ -11,6 +11,7 @@ library;
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
 import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
@@ -37,6 +38,9 @@ class GoalAgentToolNames {
 
   /// The one read tool: recall from the goal's whole history (ADR 0057).
   static const searchGoalMemory = 'search_goal_memory';
+
+  /// Durable, keyed facts about the user and the goal (ADR 0057).
+  static const rememberGoalFact = 'remember_goal_fact';
 
   static bool isGoalRevisionProposal(String toolName) =>
       toolName == proposeGoalRevision || toolName == legacyProposeGoalRevision;
@@ -674,5 +678,42 @@ final List<AgentToolDefinition> goalAgentTools = [
         'containing all the keywords; with `ids`, pulls up entries by id. '
         'Never use it to restate FACTS. At most three calls per wake.',
     parameters: memorySearchParameters,
+  ),
+  const AgentToolDefinition(
+    name: GoalAgentToolNames.rememberGoalFact,
+    description:
+        'Durably remember one fact about the user or this goal that should '
+        'shape coaching for months: a constraint, a preference, how they '
+        'want to be coached. Use a stable key (e.g. "walks-after-dinner"); '
+        're-using a key replaces that fact. Set source to "userStated" only '
+        'when the user says it in the message you are answering; a fact the '
+        'user just told you is kept, anything else waits for their '
+        'confirmation on the goal page. Not for progress or one-off events.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'key': {
+          'type': 'string',
+          'description': 'Stable kebab-case key; re-using it replaces.',
+        },
+        'hook': {
+          'type': 'string',
+          'maxLength': knowledgeHookMaxLength,
+          'description': 'One line, at most $knowledgeHookMaxLength chars.',
+        },
+        'statement': {
+          'type': 'string',
+          'description':
+              "The fact in full, in the user's own words where "
+              'they gave them.',
+        },
+        'source': {
+          'type': 'string',
+          'enum': ['userStated', 'agentInferred'],
+        },
+      },
+      'required': ['key', 'hook', 'statement', 'source'],
+      'additionalProperties': false,
+    },
   ),
 ];

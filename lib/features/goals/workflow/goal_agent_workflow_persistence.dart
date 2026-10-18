@@ -534,6 +534,32 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
         observations: strategy.observations,
       );
 
+      // Durable facts (ADR 0057): kept when the user stated them in the
+      // message this wake answers, proposed for the goal page otherwise.
+      // The strategy validated them already; one the store still refuses
+      // is logged and dropped, never the rest of the wake's output.
+      for (final fact in strategy.factRequests) {
+        try {
+          await _knowledge.propose(
+            agentId: agentId,
+            key: fact.key,
+            hook: fact.hook,
+            statement: fact.statement,
+            source: fact.source,
+            userConfirmed: goalFactIsUserConfirmed(
+              fact,
+              answeringUser: replyToUser,
+            ),
+          );
+        } on AgentKnowledgeException catch (error, stackTrace) {
+          logError(
+            'goal fact not remembered',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
       // Revision proposals: ChangeSet-gated — the goal spec NEVER mutates
       // here; PR 4's approval flow mints the new version on accept.
       if (staleSpecWake && strategy.revisionProposals.isNotEmpty) {

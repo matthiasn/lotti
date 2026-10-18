@@ -43,6 +43,7 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_health_direction.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/features/goals/ui/knowledge/goal_knowledge_section.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';

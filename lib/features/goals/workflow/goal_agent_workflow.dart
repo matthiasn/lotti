@@ -15,6 +15,7 @@ import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
@@ -53,6 +54,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
+import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
@@ -165,6 +167,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
     chatHistory: _chatHistoryService,
     logger: _domainLogger,
     checkInSourceReader: _checkInSourceReader,
+  );
+
+  /// The goal's durable facts (ADR 0057 decision 1): written from
+  /// `remember_goal_fact`, read into every wake's FACTS.
+  late final AgentKnowledgeService _knowledge = AgentKnowledgeService(
+    agentRepository: _repository,
+    syncService: _syncService,
+    domainLogger: _domainLogger,
   );
 
   /// Resolves the goal's charter from the journal (ADR 0140). Optional and
@@ -386,6 +396,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       dailyBriefing: dailyBriefing,
       previousBriefing: previousBriefing,
       charter: await _charterFacts(agentId),
+      knowledge: await _knowledgeFacts(agentId),
       derivation: derivation,
       nudges: nudges,
       reference: reference,
@@ -417,6 +428,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       facts: facts,
       reference: reference,
       overdueEscalation: overdueEscalation,
+      answeringUser: pendingUserMessage != null,
     );
 
     final allTools = [
@@ -904,6 +916,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
     } catch (error, stackTrace) {
       logError(
         'goal charter unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// The `knowledge` FACTS section, or null for a goal with no confirmed
+  /// facts. Contained like the charter: unreadable knowledge costs this wake
+  /// its knowledge and is logged, never the wake.
+  Future<Map<String, Object?>?> _knowledgeFacts(String agentId) async {
+    try {
+      return goalKnowledgeFacts(await _knowledge.activeFor(agentId));
+    } catch (error, stackTrace) {
+      logError(
+        'goal knowledge unavailable for this wake',
         error: error,
         stackTrace: stackTrace,
       );

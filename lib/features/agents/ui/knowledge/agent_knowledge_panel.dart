@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -48,13 +49,7 @@ class AgentKnowledgePanel extends ConsumerWidget {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step5),
+    return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
