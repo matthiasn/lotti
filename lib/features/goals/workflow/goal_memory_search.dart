@@ -6,8 +6,9 @@ import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 
-/// How much of one recalled entry the model reads: a long check-in is cut,
-/// and the whole entry stays in the journal to pull up by id.
+/// How much of one recalled entry a keyword search shows: a long check-in is
+/// cut, and pulling it up by id reads it whole, up to
+/// [goalMemoryResultTokenBudget].
 const int goalMemoryHitTokenBudget = 250;
 
 /// How much one recall may add to a wake — about a fifth of the ≤8k a goal
@@ -152,7 +153,12 @@ class GoalMemorySearch {
         text: formatMemorySearchResult(
           request,
           hits,
-          hitTokenBudget: goalMemoryHitTokenBudget,
+          // By id is how a cut hit is read whole — the omission note and the
+          // cut text both point there — so an id gets the recall's whole
+          // budget rather than the keyword hit's slice it already showed.
+          hitTokenBudget: request.ids.isNotEmpty
+              ? goalMemoryResultTokenBudget
+              : goalMemoryHitTokenBudget,
           totalTokenBudget: goalMemoryResultTokenBudget,
         ),
       );

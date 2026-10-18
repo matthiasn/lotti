@@ -180,6 +180,26 @@ void main() {
     expect(line.split(' ').length, lessThan(300));
   });
 
+  test('a check-in cut in a keyword hit reads whole when pulled up by id — '
+      'up to the recall budget', () async {
+    final long = 'krill ${List.filled(400, 'colony').join(' ')}';
+    checkIns = [
+      GoalCheckInSource(
+        entryId: 'checkin-long',
+        recordedAt: DateTime(2026, 8),
+        text: long,
+      ),
+    ];
+
+    final byKeyword = await searcher().search(agentId, {'query': 'krill'});
+    expect(byKeyword.text, isNot(contains(long)));
+
+    final byId = await searcher().search(agentId, {
+      'ids': ['checkin-long'],
+    });
+    expect(byId.text, contains(long));
+  });
+
   test('asks for keywords or ids when given neither', () async {
     final recall = await searcher().search(agentId, {});
 

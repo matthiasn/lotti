@@ -2114,8 +2114,9 @@ sequenceDiagram
   agent's `search_memory`; the goal supplies its corpus
   (`goalMemoryEvents`) and the wake budget it renders within.
 - **Read on demand, nothing captured.** The sources are read when a recall
-  runs: `GoalRepository.checkInSources` and
-  `GoalChatHistoryService.allDialogue`, both unbounded and both only here.
+  runs: `GoalRepository.checkInSources` — the reader every automatic wake's
+  check-in compaction already uses — and `GoalChatHistoryService.allDialogue`,
+  unbounded and read by recall alone.
   Each is contained — one that cannot be read costs the recall that source,
   logged, never the wake.
 - **The loop takes one more turn, and only then.** The strategy's
@@ -2125,9 +2126,10 @@ sequenceDiagram
   a search that failed: each is returned as the tool's answer, never a
   rejection. A rejected call stays unresolved, and an unresolved interactive
   batch withholds its reply — a search must never cost the user their answer.
-- **Bounded output.** A hit is cut to `goalMemoryHitTokenBudget` (250) with
-  the whole entry pullable by id, and the result stops at
-  `goalMemoryResultTokenBudget` (1,500), counting what it left out.
+- **Bounded output.** A keyword hit is cut to `goalMemoryHitTokenBudget`
+  (250); pulling it up by id reads it whole, up to
+  `goalMemoryResultTokenBudget` (1,500), where every recall's result also
+  stops, counting what it left out.
 - **The evals.** The outcome evals tolerate a recall like an observation; the
   compaction eval withholds the tool, because its probes measure what each
   compaction arm leaves in `userVoice`. The system prompt is unchanged — the
