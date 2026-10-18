@@ -130,4 +130,107 @@ void main() {
     expect(footer.bottom, layout.bottom);
     expect(footer.top, greaterThan(body.bottom));
   });
+
+  group('CompanionReportScaffold', () {
+    late List<CompanionHeaderSlot> slots;
+    late List<CompanionFraming> framings;
+
+    Future<void> pump(
+      WidgetTester tester, {
+      required double width,
+      bool companion = true,
+      VoidCallback? onFigureTap,
+    }) async {
+      slots = [];
+      framings = [];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          // A column hands it unbounded height, as a card surface does.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: width,
+                child: CompanionReportScaffold(
+                  companion: companion
+                      ? (framing) {
+                          framings.add(framing);
+                          return const SizedBox.expand(key: _figureKey);
+                        }
+                      : null,
+                  onFigureTap: onFigureTap,
+                  header: (slot) {
+                    slots.add(slot);
+                    return SizedBox(
+                      key: _headerKey,
+                      height: 40,
+                      child: slot.figure,
+                    );
+                  },
+                  body: const SizedBox(key: _bodyKey, height: 40),
+                  footer: const SizedBox(key: _footerKey, height: 24),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // The card body is its width less a card padding on each side; the test
+    // app wears the light tokens.
+    double widthFor(double body) =>
+        body + 2 * dsTokensLight.spacing.cardPadding;
+
+    testWidgets('on a wide card she stands beside header, body and footer, '
+        'and the header keeps no badge and offers no tap', (tester) async {
+      await pump(
+        tester,
+        width: widthFor(CompanionPlacement.besideMinWidth),
+        onFigureTap: () {},
+      );
+
+      expect(find.byType(CompanionBesideReport), findsOneWidget);
+      expect(framings, [CompanionFraming.full]);
+      expect(slots.single.figure, isNull);
+      expect(slots.single.badge, isFalse);
+      expect(slots.single.onFigureTap, isNull);
+    });
+
+    testWidgets('on a narrow card her bust is the header figure, with the '
+        'tap, and the blocks stack', (tester) async {
+      var taps = 0;
+      await pump(
+        tester,
+        width: widthFor(CompanionPlacement.besideMinWidth - 1),
+        onFigureTap: () => taps++,
+      );
+
+      expect(find.byType(CompanionBesideReport), findsNothing);
+      expect(framings, [CompanionFraming.bust]);
+      final slot = slots.single;
+      expect(slot.figure, isNotNull);
+      expect(slot.badge, isTrue);
+      slot.onFigureTap!();
+      expect(taps, 1);
+      // Header, body and footer stack in reading order.
+      final header = tester.getRect(find.byKey(_headerKey));
+      final body = tester.getRect(find.byKey(_bodyKey));
+      final footer = tester.getRect(find.byKey(_footerKey));
+      expect(body.top, header.bottom);
+      expect(footer.top, body.bottom);
+    });
+
+    testWidgets('without her the header keeps its badge, at any width', (
+      tester,
+    ) async {
+      await pump(tester, width: 900, companion: false, onFigureTap: () {});
+
+      expect(find.byType(CompanionBesideReport), findsNothing);
+      expect(framings, isEmpty);
+      expect(slots.single.figure, isNull);
+      expect(slots.single.badge, isTrue);
+      expect(slots.single.onFigureTap, isNull);
+    });
+  });
 }

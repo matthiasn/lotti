@@ -11,6 +11,14 @@ import 'package:material_ui/material_ui.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  test("a goal report's speech is its own utterance, apart from tasks", () {
+    expect(goalReportSpeechSourceId('goal-1'), 'goal-report:goal-1');
+    expect(
+      goalReportSpeechSourceId('goal-1'),
+      isNot(goalReportSpeechSourceId('goal-2')),
+    );
+  });
+
   group('goalCompanionPose', () {
     test('gives every track status a gesture and mood without guilt', () {
       const expected = {

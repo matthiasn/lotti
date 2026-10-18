@@ -420,146 +420,203 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
         !_cancelledManually &&
         nextWakeAt?.isAfter(clock.now()) == true;
 
+    // The companion reads this report aloud under its own utterance, and
+    // stands in for the badge in the goal's own pose (as on the Goals list).
+    final sourceId = goalReportSpeechSourceId(widget.agentId);
+    final spokenText =
+        [
+              report?.tldr,
+              report?.content,
+              oneLiner,
+            ]
+            .map((text) => text?.trim() ?? '')
+            .firstWhere(
+              (text) => text.isNotEmpty,
+              orElse: () => '',
+            );
+    final canReadAloud =
+        spokenText.isNotEmpty &&
+        (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
+            false) &&
+        ref.watch(ttsEngineProvider).isSupported;
+    final companionEnabled =
+        ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    final pose = goalCompanionPose(
+      widget.healthAsync.value?.trackStatus,
+      resolved: widget.healthAsync.hasValue,
+    );
+    // Surface a toast when reading this report aloud fails.
+    listenForPlaybackFailure(ref, context, sourceId);
+
+    // The card's meta facts on one trailing rail: what this goal's agent has
+    // cost over its lifetime, and how old the read below it is — neither
+    // earns a row of the card's body. A Wrap, not a Row: the slot's cap
+    // bounds the RAIL, and both facts are money-and-time figures that a
+    // longer locale or a raised text scale lengthens, so when they stop
+    // fitting side by side the caption drops UNDER the pill rather than
+    // either being truncated into a wrong number. The read-aloud disc, when
+    // there is a voice, closes the rail as it does on the task card.
+    final meta = Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step1,
+      children: [
+        GoalAgentLifetimePills(agentId: widget.agentId, inline: true),
+        if (freshness != null)
+          Text(
+            freshness,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.aiCard.metaText,
+            ),
+          ),
+      ],
+    );
+
     return DecoratedBox(
       key: const ValueKey('goal-agent-read-card'),
       decoration: aiCardDecoration(context),
       child: ClipRRect(
         borderRadius: aiCardRadius(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // The same header as the task agent section: sparkle badge, the
-            // shared card title, the persona underneath, tap → internals.
-            // The trailing slot carries the read's freshness instead of a
-            // playback control.
-            TldrHeader(
-              agentName: widget.identity.displayName,
-              onAgentTap: _openInternals,
-              // The card's two meta facts on one trailing rail: what this
-              // goal's agent has cost over its lifetime, and how old the
-              // read below it is. Neither earns a row of the card's body —
-              // the header rail was empty space beside them.
-              // A Wrap, not a Row: the slot's cap bounds the RAIL, and a Row
-              // would still lay these two out at their intrinsic widths and
-              // clip past it. Both facts are money-and-time figures that a
-              // longer locale or a raised text scale lengthens, so when they
-              // stop fitting side by side the caption drops UNDER the pill —
-              // end-aligned, still the header's trailing rail — rather than
-              // either of them being truncated into a wrong number.
-              trailing: Wrap(
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: tokens.spacing.step3,
-                runSpacing: tokens.spacing.step1,
-                children: [
-                  GoalAgentLifetimePills(agentId: widget.agentId, inline: true),
-                  if (freshness != null)
-                    Text(
-                      freshness,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.aiCard.metaText,
+        child: CompanionReportScaffold(
+          companion: companionEnabled
+              ? (framing) => CompanionSpeaker(
+                  key: const ValueKey('goalAgentCompanion'),
+                  sourceId: sourceId,
+                  framing: framing,
+                  mood: pose.mood,
+                  holding: pose.gesture,
+                )
+              : null,
+          // Her bust is only her head and shoulders: a tap stands her up
+          // head to toe, full screen, reading this report.
+          onFigureTap: () => openCompanionStage(
+            context,
+            sourceId: sourceId,
+            spokenText: spokenText,
+          ),
+          // The same header as the task agent section: the badge (or her),
+          // the shared card title, the persona underneath, tap → internals.
+          header: (slot) => TldrHeader(
+            agentName: widget.identity.displayName,
+            onAgentTap: _openInternals,
+            figure: slot.figure,
+            onFigureTap: slot.onFigureTap,
+            figureLabel: messages.aiCardCompanionOpenFullScreen,
+            badge: slot.badge,
+            trailing: canReadAloud
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: tokens.spacing.step3,
+                    children: [
+                      Flexible(child: meta),
+                      SummaryReadAloudButton(
+                        sourceId: sourceId,
+                        text: spokenText,
                       ),
-                    ),
-                ],
-              ),
+                    ],
+                  )
+                : meta,
+          ),
+          body: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.cardPadding,
-                0,
-                tokens.spacing.cardPadding,
-                tokens.spacing.step3,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _GoalReportCard(
-                    report: report,
-                    fallback:
-                        oneLiner ??
-                        (widget.healthAsync.hasError
-                            ? messages.goalDetailHealthUnavailable
-                            : messages.goalDetailNoReport),
-                    fallbackMuted: oneLiner == null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _GoalReportCard(
+                  report: report,
+                  fallback:
+                      oneLiner ??
+                      (widget.healthAsync.hasError
+                          ? messages.goalDetailHealthUnavailable
+                          : messages.goalDetailNoReport),
+                  fallbackMuted: oneLiner == null,
+                ),
+                if (updateFailure != null) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  Row(
+                    key: const ValueKey('goal-agent-update-failed'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        LottiIcons.error,
+                        size: tokens.typography.styles.body.bodySmall.fontSize,
+                        color: tokens.colors.alert.error.ink,
+                      ),
+                      SizedBox(width: tokens.spacing.step1),
+                      Expanded(
+                        child: Text(
+                          switch (_failureReason(updateFailure)) {
+                            '' => messages.goalDetailUpdateFailed,
+                            final reason =>
+                              messages.goalDetailUpdateFailedWithReason(
+                                reason,
+                              ),
+                          },
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.alert.error.ink,
+                              ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  if (updateFailure != null) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    Row(
-                      key: const ValueKey('goal-agent-update-failed'),
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          LottiIcons.error,
-                          size:
-                              tokens.typography.styles.body.bodySmall.fontSize,
-                          color: tokens.colors.alert.error.ink,
-                        ),
-                        SizedBox(width: tokens.spacing.step1),
-                        Expanded(
-                          child: Text(
-                            switch (_failureReason(updateFailure)) {
-                              '' => messages.goalDetailUpdateFailed,
-                              final reason =>
-                                messages.goalDetailUpdateFailedWithReason(
-                                  reason,
-                                ),
-                            },
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.alert.error.ink,
-                                ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  if (widget.canRefresh) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    // The same reload affordances as the task agent section:
-                    // freshness state, countdown, skip-once, Update now and
-                    // the automatic-updates switch.
-                    AgentAutomationRow(
-                      compact: !isDesktopLayout(context),
-                      // "Updates on changes" restates the switch beside it:
-                      // automatic updates being ON *is* the promise. The
-                      // countdown, which says something the switch cannot,
-                      // still takes the slot whenever a run is pending.
-                      showsIdleScheduleLabel: false,
-                      automaticUpdatesEnabled: automaticUpdatesEnabled,
-                      automationBusy: _automationBusy,
-                      inferenceAvailable: true,
-                      isRunning: isRefreshing,
-                      // The agent-wide flag keeps the trigger busy while ANY
-                      // run holds the lock — a chat reply, a Phase A tick —
-                      // but only a report refresh replaces the read, so only
-                      // that one may call it out of date.
-                      isRefreshingReport: reportRefreshInFlight,
-                      showCountdown: showCountdown,
-                      nextWakeAt: nextWakeAt,
-                      hasReportContent: hasReadContent,
-                      isStale: widget.agentState?.isReportStale ?? false,
-                      onAutomaticUpdatesChanged: (enabled) =>
-                          unawaited(_updateAutomaticUpdates(enabled)),
-                      onRunNow: () => ref
-                          .read(goalHabitCompletionServiceProvider)
-                          .requestReportRefresh(widget.agentId),
-                      onSkipScheduledUpdate: () async {
-                        ref
-                            .read(goalAgentServiceProvider)
-                            .skipPendingReportRefresh(widget.agentId);
-                        setState(() => _cancelledManually = true);
-                        return true;
-                      },
-                      onCountdownExpired: () =>
-                          ref.invalidate(agentStateProvider(widget.agentId)),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
+          ),
+          // The same reload affordances as the task agent section: freshness
+          // state, countdown, skip-once, Update now and the automatic-updates
+          // switch — the card's footer, on the summary's edge.
+          footer: Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.cardPadding,
+              widget.canRefresh ? tokens.spacing.step3 : 0,
+              tokens.spacing.cardPadding,
+              tokens.spacing.step3,
+            ),
+            child: widget.canRefresh
+                ? AgentAutomationRow(
+                    compact: !isDesktopLayout(context),
+                    // "Updates on changes" restates the switch beside it:
+                    // automatic updates being ON *is* the promise. The
+                    // countdown, which says something the switch cannot,
+                    // still takes the slot whenever a run is pending.
+                    showsIdleScheduleLabel: false,
+                    automaticUpdatesEnabled: automaticUpdatesEnabled,
+                    automationBusy: _automationBusy,
+                    inferenceAvailable: true,
+                    isRunning: isRefreshing,
+                    // The agent-wide flag keeps the trigger busy while ANY
+                    // run holds the lock — a chat reply, a Phase A tick —
+                    // but only a report refresh replaces the read, so only
+                    // that one may call it out of date.
+                    isRefreshingReport: reportRefreshInFlight,
+                    showCountdown: showCountdown,
+                    nextWakeAt: nextWakeAt,
+                    hasReportContent: hasReadContent,
+                    isStale: widget.agentState?.isReportStale ?? false,
+                    onAutomaticUpdatesChanged: (enabled) =>
+                        unawaited(_updateAutomaticUpdates(enabled)),
+                    onRunNow: () => ref
+                        .read(goalHabitCompletionServiceProvider)
+                        .requestReportRefresh(widget.agentId),
+                    onSkipScheduledUpdate: () async {
+                      ref
+                          .read(goalAgentServiceProvider)
+                          .skipPendingReportRefresh(widget.agentId);
+                      setState(() => _cancelledManually = true);
+                      return true;
+                    },
+                    onCountdownExpired: () =>
+                        ref.invalidate(agentStateProvider(widget.agentId)),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ),
       ),
     );

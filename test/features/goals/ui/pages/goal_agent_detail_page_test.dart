@@ -17,17 +17,26 @@ import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/spoken_track.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
+import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -47,6 +56,7 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -56,7 +66,9 @@ import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_cell.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
@@ -66,9 +78,11 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../test_utils/material_ui_finders.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../ai_consumption/test_utils.dart';
 import '../../../habits/test_utils.dart';
+import '../../../tts/test_utils.dart';
 
 void main() {
   final goalIdentity =
@@ -4617,5 +4631,192 @@ void main() {
     );
     // An active goal's charter can be added to and edited from here.
     expect(find.byKey(const ValueKey('goal-charter-add')), findsOneWidget);
+  });
+
+  group('the companion on the read card', () {
+    const tldr = 'Two sessions this week; one more by Sunday.';
+
+    Future<void> pump(
+      WidgetTester tester, {
+      required Size size,
+      bool companion = true,
+      bool readAloud = true,
+      GoalTrackStatus trackStatus = GoalTrackStatus.atRisk,
+    }) async {
+      tester.view
+        ..physicalSize = size
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flagName) => Stream.value(switch (flagName) {
+                enableCompanionFlag => companion,
+                enableAiSummaryTtsFlag => readAloud,
+                _ => false,
+              }),
+            ),
+            ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
+            spokenTrackLoaderProvider.overrideWithValue(
+              (clip, text) => Completer<MouthTrack>().future,
+            ),
+            habitsControllerProvider.overrideWith(
+              () => FakeHabitsController(
+                HabitsState.initial(now: DateTime(2026, 8, 11)),
+              ),
+            ),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: trackStatus,
+                attainment: 0.5,
+                reportOneLiner: 'Halfway there.',
+                pendingProposals: 0,
+                // A spec the report predates the change of, so the page
+                // shows the report (it hides one written for another spec).
+                spec:
+                    AgentDomainEntity.goalSpecVersion(
+                          id: 'goal-1:spec-v1',
+                          agentId: 'goal-1',
+                          version: 1,
+                          status: GoalSpecVersionStatus.active,
+                          authoredBy: 'user',
+                          title: 'Stretch',
+                          statement: 'Stretch three times a week.',
+                          criteria: const GoalCriterion.habit(
+                            criterionId: 'c1',
+                            habitId: 'habit-stretch',
+                            window: GoalWindow.rollingDays(count: 7),
+                            targetCount: 3,
+                          ),
+                          createdAt: DateTime(2026),
+                          vectorClock: null,
+                        )
+                        as GoalSpecVersionEntity,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportProvider('goal-1').overrideWith(
+              (ref) async => AgentDomainEntity.agentReport(
+                id: 'report-1',
+                agentId: 'goal-1',
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 11),
+                vectorClock: null,
+                content: '$tldr\n\nMore detail.',
+                tldr: tldr,
+              ),
+            ),
+          ],
+        ),
+      );
+      // She ticks for as long as she is mounted: pump frames, never settle.
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    CompanionSpeaker speaker(WidgetTester tester) =>
+        tester.widget<CompanionSpeaker>(find.byType(CompanionSpeaker));
+
+    testWidgets('stands head to toe beside the read on a wide card, in place '
+        "of the badge, in the goal's own pose", (tester) async {
+      await pump(tester, size: const Size(1440, 1000));
+
+      final her = speaker(tester);
+      expect(her.framing, CompanionFraming.full);
+      expect(her.sourceId, goalReportSpeechSourceId('goal-1'));
+      final pose = goalCompanionPose(GoalTrackStatus.atRisk, resolved: true);
+      expect(her.mood, pose.mood);
+      expect(her.holding, pose.gesture);
+      expect(find.byType(CompanionBesideReport), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('goal-agent-read-card')),
+          matching: find.byIcon(LottiIcons.aiSpark),
+        ),
+        findsNothing,
+      );
+      // Title, read and footer on one edge beside her.
+      final title = tester.getRect(find.text('AI summary'));
+      expect(
+        tester.getRect(find.byType(AgentAutomationRow)).left,
+        title.left,
+      );
+      expect(
+        tester.getRect(find.byType(CompanionView)).left,
+        lessThan(title.left),
+      );
+      // A wide card already shows her in full: no tap to enlarge her.
+      expect(
+        findMaterialTooltip('View companion full screen'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('on a narrow card her bust opens her full screen, reading '
+        "this goal's report", (tester) async {
+      await pump(tester, size: const Size(390, 1600));
+
+      expect(speaker(tester).framing, CompanionFraming.bust);
+      expect(find.byType(CompanionBesideReport), findsNothing);
+      await tester.tap(findMaterialTooltip('View companion full screen'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      final stage = tester.widget<CompanionStagePage>(
+        find.byType(CompanionStagePage),
+      );
+      expect(stage.sourceId, goalReportSpeechSourceId('goal-1'));
+      expect(stage.spokenText, tldr);
+    });
+
+    testWidgets('offers the read-aloud disc for the read while there is a '
+        'voice', (tester) async {
+      await pump(tester, size: const Size(1440, 1000));
+
+      final readAloud = tester.widget<SummaryReadAloudButton>(
+        find.byType(SummaryReadAloudButton),
+      );
+      expect(readAloud.sourceId, goalReportSpeechSourceId('goal-1'));
+      expect(readAloud.text, tldr);
+    });
+
+    testWidgets('read-aloud off: no disc, and she still stands for the goal', (
+      tester,
+    ) async {
+      await pump(tester, size: const Size(1440, 1000), readAloud: false);
+
+      expect(find.byType(SummaryReadAloudButton), findsNothing);
+      expect(find.byType(CompanionSpeaker), findsOneWidget);
+    });
+
+    testWidgets('her flag off keeps the sparkle badge and no companion', (
+      tester,
+    ) async {
+      await pump(tester, size: const Size(1440, 1000), companion: false);
+
+      expect(find.byType(CompanionSpeaker), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('goal-agent-read-card')),
+          matching: find.byIcon(LottiIcons.aiSpark),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }

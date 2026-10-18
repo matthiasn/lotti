@@ -1140,7 +1140,17 @@ handler would retract it; that wiring is a follow-up.
   `AgentAutomationRow` reload affordances, and the goal's cumulative
   inference-impact pill (`GoalAgentLifetimePills`) on its header rail
   beside the freshness caption — one
-  panel language, changed in one place for both. A refresh that DIES
+  panel language, changed in one place for both. With `enable_companion`
+  on it wears the companion as the task card does, through the same
+  `CompanionReportScaffold` (`agents/ui/ai_summary_card/companion_report_layout.dart`):
+  head to toe beside header, read and automation row on a wide card, her
+  bust in the header badge tile on a narrow one, the bust's tap opening her
+  full-screen stage. She holds the goal's pose (`goalCompanionPose`, as on
+  the Goals list) and speaks the read under `goalReportSpeechSourceId`; the
+  header rail gains the shared read-aloud disc (`SummaryReadAloudButton`)
+  while read-aloud is on and the device has a voice. It reads the TL;DR,
+  else the full text, else the health one-liner — the read the card leads
+  with. A refresh that DIES
   (provider out of credits, network down, the executor timeout) says so on
   the card: it watches `goalReportWakeOutcomeProvider` — report-refresh and
   escalation wakes only, so a failed chat run or a passing Phase A
