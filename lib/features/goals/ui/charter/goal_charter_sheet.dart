@@ -70,7 +70,7 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
         setState(
           () => _error = chatRecorderErrorMessage(context, next.errorKind),
         );
-        unawaited(Future.microtask(recorder.clearResult));
+        Future.microtask(recorder.clearResult);
         return;
       }
       final transcript = next.transcript?.trim();
@@ -78,7 +78,7 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
           transcript.isNotEmpty &&
           next.transcript != previous?.transcript) {
         _append(transcript);
-        unawaited(Future.microtask(recorder.clearResult));
+        Future.microtask(recorder.clearResult);
       }
     });
   }
@@ -273,7 +273,7 @@ class GoalCharterDictation extends ConsumerWidget {
             leadingIcon: LottiIcons.mic,
             variant: DesignSystemButtonVariant.quiet,
             alignsLabelToTrailingEdge: true,
-            onPressed: () => unawaited(recorder.start()),
+            onPressed: recorder.start,
           ),
         );
       case ChatRecorderStatus.recording:
@@ -311,13 +311,13 @@ class GoalCharterDictation extends ConsumerWidget {
               key: const ValueKey('goal-charter-dictation-cancel'),
               label: messages.cancelButton,
               variant: DesignSystemButtonVariant.quiet,
-              onPressed: () => unawaited(recorder.cancel()),
+              onPressed: recorder.cancel,
             ),
             DesignSystemButton(
               key: const ValueKey('goal-charter-dictation-stop'),
               label: messages.audioRecordingStop,
               leadingIcon: LottiIcons.stop,
-              onPressed: () => unawaited(recorder.stopAndTranscribe()),
+              onPressed: recorder.stopAndTranscribe,
             ),
           ],
         );

@@ -1002,7 +1002,7 @@ void main() {
         expect(links.single.fromId, 'about');
       });
 
-      test('is invisible to a reader of the goal\'s outgoing links — the '
+      test("is invisible to a reader of the goal's outgoing links — the "
           'check-in readers', () async {
         // Every check-in reader starts from the goal's outgoing links. A
         // charter link must never be among them, or its entry would count as
