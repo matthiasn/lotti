@@ -5172,6 +5172,12 @@ abstract class AppLocalizations {
   /// **'Requested'**
   String get backfillStatsRequested;
 
+  /// No description provided for @backfillStatsSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get backfillStatsSkipped;
+
   /// No description provided for @backfillStatsThisDevice.
   ///
   /// In en, this message translates to:
@@ -5207,12 +5213,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Missing'**
   String get backfillStatusMissing;
-
-  /// No description provided for @backfillStatsSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped'**
-  String get backfillStatsSkipped;
 
   /// No description provided for @backfillToggleDescription.
   ///

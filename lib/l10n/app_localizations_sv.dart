@@ -3076,6 +3076,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatsRequested => 'Begärd';
 
   @override
+  String get backfillStatsSkipped => 'Hoppade över';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (den här enheten)';
   }
@@ -3094,9 +3097,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Saknad';
-
-  @override
-  String get backfillStatsSkipped => 'Hoppade över';
 
   @override
   String get backfillToggleDescription =>

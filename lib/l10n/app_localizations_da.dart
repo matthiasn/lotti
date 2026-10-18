@@ -3067,6 +3067,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatsRequested => 'Efterspurgt';
 
   @override
+  String get backfillStatsSkipped => 'Sprunget over';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (denne enhed)';
   }
@@ -3085,9 +3088,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Savnet';
-
-  @override
-  String get backfillStatsSkipped => 'Sprunget over';
 
   @override
   String get backfillToggleDescription =>

@@ -3098,6 +3098,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitado';
 
   @override
+  String get backfillStatsSkipped => 'Omitido';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (este dispositivo)';
   }
@@ -3116,9 +3119,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Faltante';
-
-  @override
-  String get backfillStatsSkipped => 'Omitido';
 
   @override
   String get backfillToggleDescription =>

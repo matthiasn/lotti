@@ -3103,6 +3103,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatsRequested => 'Požadováno';
 
   @override
+  String get backfillStatsSkipped => 'Přeskočeno';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (toto zařízení)';
   }
@@ -3121,9 +3124,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Chybí';
-
-  @override
-  String get backfillStatsSkipped => 'Přeskočeno';
 
   @override
   String get backfillToggleDescription =>
