@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.58]
+
+### Added
+
+- **Tell a goal's agent what the goal is for.** Every goal page has an
+  *About this goal* section where you write, dictate or record what the goal
+  is about and how you want to be coached, for example "this is my journal
+  for the season; ask me one guided question each morning". A recording is
+  kept so you can play it back, and its transcript — which you can correct —
+  is what the agent reads. The agent reads all of it every time it writes to
+  you, the morning briefing included, so a goal that is not about numbers
+  still has somewhere to say what it is about. What you put there shapes the
+  agent's focus, questions and tone, never the goal's status; it does not
+  count as a check-in or as check-in time, and the page tells you when it has
+  grown longer than the agent can read at once.
+- **A goal's agent remembers what you told it, however long ago.** Each time
+  it writes to you it has a short summary of your recent check-ins; now it can
+  also look further back when it needs to — every check-in you recorded or
+  wrote for the goal, in your own words, the whole conversation and its own
+  notes. Ask "what did I say about the evening walks in spring?" and it finds
+  it rather than guessing.
+- **The companion on your goal's AI summary, and in full.** With **Companion**
+  on, a goal's page shows her on its AI summary card the way task cards do:
+  standing beside the summary on a wide screen, her portrait in the card's
+  header on a phone. She keeps the goal's pose from the Goals list, and with
+  read-aloud on, a new speaker button has her read the summary to you. On a
+  phone, tap her portrait on any AI summary card — a task's or a goal's — and
+  she stands head to toe, full screen, with the read-aloud button at her
+  feet; a summary she is already reading carries on while she is there.
+
 ## [1.1.57]
 
 ### Added
