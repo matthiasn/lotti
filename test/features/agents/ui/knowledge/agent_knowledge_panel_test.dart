@@ -45,7 +45,7 @@ void main() {
   ) {
     return makeTestableWidget(
       const SingleChildScrollView(
-        child: const AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
+        child: AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
       ),
       overrides: [
         agentKnowledgeProvider(
