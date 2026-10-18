@@ -150,7 +150,7 @@
     "lib/features/events/ui/widgets/event_overlay_pill.dart": {"color":2},
     "lib/features/events/ui/widgets/event_photo_gallery.dart": {"color":8},
     "lib/features/events/ui/widgets/event_summary_card.dart": {"spacing":1},
-    "lib/features/goals/ui/pages/goal_agent_detail_page_cards_part.dart": {"spacing":2},
+    "lib/features/goals/ui/pages/goal_agent_detail_page_cards_part.dart": {"spacing":1},
     "lib/features/goals/ui/pages/unified_goals_page.dart": {"spacing":1},
     "lib/features/habits/ui/charts/habit_completion_rate_chart.dart": {"spacing":3},
     "lib/features/habits/ui/habits_page.dart": {"spacing":2},

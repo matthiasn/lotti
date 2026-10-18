@@ -86,7 +86,8 @@ Contents:
   [the companion feature](../companion.md) is the card's identity mark in
   place of the sparkle badge (`CompanionSpeaker`). Where she stands is a
   `CompanionPlacement`, chosen from the card body's width rather than the
-  window's:
+  window's, by `CompanionReportScaffold` — the header/body/footer block the
+  goal agent's read card shares, so both report cards place her alike:
   - **beside** (body at least `besideMinWidth`, 480): head to toe, `full`
     framing, `ControlSizes.companionCard` (168) high, as a leading rail
     (`CompanionBesideReport`) beside a column holding the badge-less

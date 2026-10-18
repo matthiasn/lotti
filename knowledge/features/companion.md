@@ -211,7 +211,7 @@ sequenceDiagram
   utterance gets a fresh clock: two clips both open at zero, and a clock that
   still held the first one's zero would start the second at its full lead.
 
-She has four hosts, each with its own framing:
+She has five hosts, each with its own framing:
 
 | Host | Framing | Box | Utterance (`sourceId`) |
 |---|---|---|---|
@@ -219,8 +219,10 @@ She has four hosts, each with its own framing:
 | Day page header ([Daily OS](daily_os_next/ui-surfaces.md#the-day-briefing)) | `bust` | `ControlSizes.avatar` square | `day-briefing:<yyyy-MM-dd>` |
 | Onboarding welcome and first task ([onboarding](onboarding.md#the-companion)) | `full` in the welcome hero, `bust` on the first task | the hero frame's height; `ControlSizes.avatarHero` square | `onboarding-companion` |
 | Goal card on the Goals list (`goals/ui/unified/unified_goal_card.dart`, via `goals/ui/unified/goal_companion.dart`) | `bust`, silent `CompanionView` | `ControlSizes.avatarCompact` tile on the goal's status wash, in place of the persona monogram | none — goals have no read-aloud |
+| Goal agent's read card (`goals/ui/pages/goal_agent_detail_page_cards_part.dart`, placed by the shared `CompanionReportScaffold`) | as the AI summary card: `full` beside the read on a wide card, `bust` in the header's badge tile below that, in the goal's pose | as the AI summary card; the bust's tap opens her full-screen stage | `goal-report:<agentId>` (`goalReportSpeechSourceId`) |
 
-On the goal card her pose carries the goal's `GoalTrackStatus`
+On the goal card and the goal agent's read card her pose carries the
+goal's `GoalTrackStatus`
 (`goalCompanionPose`): a held gesture for the verdict at a glance and a mood
 for the face, because at 40 pixels the moods alone are a few pixels apart.
 Doing well is a raised thumb (`celebrate` once achieved), on the way back a

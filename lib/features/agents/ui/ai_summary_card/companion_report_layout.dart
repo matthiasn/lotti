@@ -2,8 +2,8 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Where the companion stands on the task summary card, by the width the
-/// card body has.
+/// Where the companion stands on an agent report card — the task summary,
+/// the goal agent's read — by the width the card body has.
 enum CompanionPlacement {
   /// Head to toe at the card's leading side, [ControlSizes.companionCard]
   /// high, in place of the badge and heading the header, summary and
@@ -36,6 +36,93 @@ enum CompanionPlacement {
     double width, {
     TextScaler textScaler = TextScaler.noScaling,
   }) => width >= textScaler.scale(besideMinWidth) ? beside : header;
+}
+
+/// What a report card's header is handed for the companion: her bust as the
+/// badge's `figure` on a narrow card, no `badge` at all beside a wide one
+/// (she stands in its place), and `onFigureTap` only where her bust is
+/// what the header shows.
+typedef CompanionHeaderSlot = ({
+  Widget? figure,
+  bool badge,
+  VoidCallback? onFigureTap,
+});
+
+/// The top block of an agent report card — header, body and footer — with
+/// the companion placed by the width the card gives it
+/// ([CompanionPlacement]): standing beside all three on a wide card
+/// ([CompanionBesideReport]), her bust in the header's badge tile on a
+/// narrow one, and absent, the classic badge in its place, while [companion]
+/// is null.
+///
+/// Every report card that wears her shares this, so the placement rule, the
+/// breakpoint and the bust's tap mean the same on the task summary and the
+/// goal agent's read. The host keeps whatever it shows below the block
+/// (proposals, history).
+class CompanionReportScaffold extends StatelessWidget {
+  const CompanionReportScaffold({
+    required this.header,
+    required this.footer,
+    this.body,
+    this.companion,
+    this.onFigureTap,
+    super.key,
+  });
+
+  /// The card header for [CompanionHeaderSlot] — a `TldrHeader` passing the
+  /// slot's figure, badge and tap on.
+  final Widget Function(CompanionHeaderSlot slot) header;
+
+  /// The report body, carrying its own horizontal insets; null shows none.
+  final Widget? body;
+
+  /// The freshness row, carrying its own insets.
+  final Widget footer;
+
+  /// Her figure in the framing asked for, filling the box it is given; null
+  /// while she is not shown (her flag is off).
+  final Widget Function(CompanionFraming framing)? companion;
+
+  /// What tapping her bust does on a narrow card — open her full-screen
+  /// stage. A wide card already shows her in full, and offers no tap.
+  final VoidCallback? onFigureTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardPadding = context.designTokens.spacing.cardPadding;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final companion = this.companion;
+        // Where she stands follows the room the card body has, not the
+        // window: a desktop pane can still give the card a phone's width.
+        final placement = companion == null
+            ? null
+            : CompanionPlacement.forBodyWidth(
+                constraints.maxWidth - 2 * cardPadding,
+                textScaler: MediaQuery.textScalerOf(context),
+              );
+        final inHeader = placement == CompanionPlacement.header;
+        final headerWidget = header((
+          figure: inHeader ? companion!(CompanionFraming.bust) : null,
+          badge: placement != CompanionPlacement.beside,
+          onFigureTap: inHeader ? onFigureTap : null,
+        ));
+        if (placement == CompanionPlacement.beside) {
+          return CompanionBesideReport(
+            companion: companion!(CompanionFraming.full),
+            header: headerWidget,
+            body: body ?? const SizedBox.shrink(),
+            footer: footer,
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [headerWidget, ?body, footer],
+        );
+      },
+    );
+  }
 }
 
 /// [companion] standing at the leading side of the card, heading the

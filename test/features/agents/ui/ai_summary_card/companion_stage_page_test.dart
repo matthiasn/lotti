@@ -6,6 +6,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
@@ -27,6 +29,8 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 void main() {
   Future<void> openStage(
     WidgetTester tester, {
+    CompanionMood? mood,
+    GestureName? holding,
     bool readAloud = true,
     bool engineSupported = true,
     Stream<bool>? readAloudFlag,
@@ -35,11 +39,19 @@ void main() {
       makeTestableWidgetWithScaffold(
         Builder(
           builder: (context) => TextButton(
-            onPressed: () => openCompanionStage(
-              context,
-              sourceId: 'task-1',
-              spokenText: 'Two items left.',
-            ),
+            onPressed: () => mood == null
+                ? openCompanionStage(
+                    context,
+                    sourceId: 'task-1',
+                    spokenText: 'Two items left.',
+                  )
+                : openCompanionStage(
+                    context,
+                    sourceId: 'task-1',
+                    spokenText: 'Two items left.',
+                    mood: mood,
+                    holding: holding,
+                  ),
             child: const Text('open'),
           ),
         ),
@@ -79,6 +91,34 @@ void main() {
       tester.getSize(find.byType(CompanionView)),
       tester.getSize(find.byType(CompanionStagePage)),
     );
+  });
+
+  testWidgets('stands calm and at ready unless the host poses her', (
+    tester,
+  ) async {
+    await openStage(tester);
+
+    final speaker = tester.widget<CompanionSpeaker>(
+      find.byType(CompanionSpeaker),
+    );
+    expect(speaker.mood, CompanionMood.calm);
+    expect(speaker.holding, isNull);
+  });
+
+  testWidgets("keeps the host's pose, so she stands up as she was tapped", (
+    tester,
+  ) async {
+    await openStage(
+      tester,
+      mood: CompanionMood.busy,
+      holding: GestureName.think,
+    );
+
+    final speaker = tester.widget<CompanionSpeaker>(
+      find.byType(CompanionSpeaker),
+    );
+    expect(speaker.mood, CompanionMood.busy);
+    expect(speaker.holding, GestureName.think);
   });
 
   testWidgets('offers the read-aloud control for the words the card showed', (

@@ -20,6 +20,11 @@ import 'package:material_ui/material_ui.dart';
 /// from one newly at risk though both wear the same "At risk" pill.
 typedef GoalCompanionPose = ({CompanionMood mood, GestureName? gesture});
 
+/// The utterance the companion speaks a goal agent's report under — on its
+/// detail card and on her full-screen stage — so the read-aloud control and
+/// her mouth follow the same playback, apart from any task's or day's.
+String goalReportSpeechSourceId(String agentId) => 'goal-report:$agentId';
+
 /// [GoalCompanionPose] for [status]; while the health is not [resolved] she
 /// stands calm and at ready, so she never flashes a verdict the card has not
 /// reached.
