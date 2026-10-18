@@ -536,8 +536,9 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
 
       // Durable facts (ADR 0057): kept when the user stated them in the
       // message this wake answers, proposed for the goal page otherwise.
-      // The strategy validated them already; one the store still refuses
-      // is logged and dropped, never the rest of the wake's output.
+      // The strategy validated them already; one the store still refuses —
+      // or cannot read its prior version for — is logged and dropped, never
+      // the rest of the wake's output, the user's reply above all.
       for (final fact in strategy.factRequests) {
         try {
           await _knowledge.propose(
@@ -551,7 +552,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
               answeringUser: replyToUser,
             ),
           );
-        } on AgentKnowledgeException catch (error, stackTrace) {
+        } catch (error, stackTrace) {
           logError(
             'goal fact not remembered',
             error: error,

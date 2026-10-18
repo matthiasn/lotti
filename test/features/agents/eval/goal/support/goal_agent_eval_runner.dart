@@ -444,6 +444,9 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     // A recall is a read: it changes nothing, so like an observation it is
     // never an unexpected call — unless a scenario forbids it outright.
     GoalAgentToolNames.searchGoalMemory,
+    // A remembered fact is the observation's durable sibling: tolerated
+    // likewise, and it never confirms itself outside the user's own turn.
+    GoalAgentToolNames.rememberGoalFact,
     if (scenario.hasPendingUserMessage) GoalAgentToolNames.replyToUser,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {
