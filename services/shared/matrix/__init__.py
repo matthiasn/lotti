@@ -1,7 +1,7 @@
 """Shared Matrix provisioning core.
 
-Used by both the ``tools/matrix_provisioner`` CLI and the
-matrix-provisioning-service web API so the two can never drift apart.
+The provisioning flow, admin client and bundle codec behind the
+``tools/matrix_provisioner`` self-hosting CLI.
 """
 
 from .admin_client import (
