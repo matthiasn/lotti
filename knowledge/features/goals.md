@@ -2034,7 +2034,9 @@ flowchart LR
   the timeline, not in check-in time, not compacted — without any reader
   filtering by type. An older build folds `CharterLink` into a `BasicLink`
   that still points into the goal, so it shows a plain note there and never
-  a check-in.
+  a check-in. It stores the folded row as basic and keeps the charter-derived
+  id, so once that device upgrades `charterLinksToGoal` recognizes the row by
+  its id (`entryLinkId` with the charter type) — sync will not replay it.
 - **Writes go through `GoalRepository`.** `createCharterEntry` writes the note
   in the goal's category and privacy, then the link, and deletes the note
   again if the link is refused. Edits and deletes pass the goal id as

@@ -88,9 +88,15 @@ a definition, and nothing guarantees that it reaches a later wake.
   the goal. It shows the charter entry as an ordinary note with a link to
   the goal, and never as a check-in, since the link still points into the
   goal.
-- ADR 0042's write-back caveat applies: if an older build hides or deletes
-  such a link, it re-serializes it as basic, and the entry stops being part
-  of the charter for everyone. It still never becomes a check-in. Because
+- An older build stores the folded link as a `BasicLink` — type column and
+  payload both — and the row's vector clock stops sync from replaying it
+  after that device upgrades. The link id survives: it is derived from the
+  charter type and the pair (`entryLinkId`). So `JournalDb.charterLinksToGoal`
+  also reads a basic link into the goal whose id is exactly the charter-derived
+  one; no other basic link can carry it. This also covers ADR 0042's
+  write-back caveat: an older build that edits the link re-serializes it as
+  basic under the same id, and it stays in the charter. An older build that
+  hides or deletes it removes it, which is what the user asked for. Because
   the fallback is harmless, the variant and the UI that writes it ship
   together rather than a release apart.
 - `JournalDb.charterLinksToGoal` reads the links by `(to_id, type)`, which
