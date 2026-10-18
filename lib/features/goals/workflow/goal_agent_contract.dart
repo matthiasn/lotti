@@ -11,6 +11,7 @@ library;
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —
@@ -33,6 +34,9 @@ class GoalAgentToolNames {
   /// spec version against which the proposal was authored.
   static const proposeGoalRevision = 'propose_goal_revision_v2';
   static const recordGoalObservation = 'record_goal_observation';
+
+  /// The one read tool: recall from the goal's whole history (ADR 0057).
+  static const searchGoalMemory = 'search_goal_memory';
 
   static bool isGoalRevisionProposal(String toolName) =>
       toolName == proposeGoalRevision || toolName == legacyProposeGoalRevision;
@@ -658,5 +662,17 @@ final List<AgentToolDefinition> goalAgentTools = [
       },
       'required': ['note'],
     },
+  ),
+  const AgentToolDefinition(
+    name: GoalAgentToolNames.searchGoalMemory,
+    description:
+        "Recall from this goal's whole history beyond FACTS: every check-in "
+        'the user recorded or wrote, word for word, the whole chat, and your '
+        'own observations, newest first. Use it when the user refers to '
+        'something earlier, or when a reply or briefing needs a past detail '
+        'that userVoice does not carry. With `query`, returns entries '
+        'containing all the keywords; with `ids`, pulls up entries by id. '
+        'Never use it to restate FACTS. At most three calls per wake.',
+    parameters: memorySearchParameters,
   ),
 ];

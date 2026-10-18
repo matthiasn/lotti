@@ -286,6 +286,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         version.criteria,
         facts.evaluation.results,
       ),
+      memorySearcher: _memorySearch.forAgent(agentId),
     );
   }
 

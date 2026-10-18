@@ -72,7 +72,7 @@ state object.
 |-------|----------|
 | **Durable** (`agent.sqlite`) | Identity and lifecycle, runtime state and slots, the immutable message log (user messages, thoughts, tool actions, tool results), structured observations, reports and heads, change sets and decisions, attention requests and awards, template versions, evolution sessions and recaps, wake token usage and run history |
 | **Live journal** | Rebuilt fresh each wake: current task or project data, linked tasks and entries, checklist state, labels, time entries, project-to-task relationships |
-| **Retrieval** | Task-agent reports are embedded after the wake commits when both optional embedding dependencies are available, so later semantic retrieval can use the report text |
+| **Retrieval** | Task-agent reports are embedded after the wake commits when both optional embedding dependencies are available, so later semantic retrieval can use the report text. Keyword recall over the **whole** log — the day agent's `search_memory`, goal agents' `search_goal_memory` — runs through one helper (`lib/features/agents/memory/memory_search.dart`) over `AgentLogCompactor.searchLog`, each agent supplying its corpus as inline events |
 
 # The read model is an append-only event log
 
@@ -85,6 +85,12 @@ is compacted by **summary checkpoints over a log prefix** (ADR 0017).
 The substrate covers task agents (captured journal entries + observations +
 proposal verdicts), project agents (captured project-linked entries +
 observations), and day agents (submitted capture transcripts + observations).
+
+Goal agents use its **read side only**: recall builds an `AgentLogCompactor`
+over the goal's check-ins and chat as inline events, beside its observations,
+and searches it — nothing is captured or folded, and no wake reads the log
+whole. Their bounded wake context is the check-in compaction layers in
+[goal agents](../goals.md#check-ins-the-users-own-voice).
 
 The **improver** agent is deliberately out. Its wake context is a per-ritual
 *windowed* snapshot — feedback since the last scan watermark, instance reports,

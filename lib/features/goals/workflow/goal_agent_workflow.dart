@@ -53,6 +53,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
@@ -155,6 +156,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// Writes the span digests the hierarchical compaction reads. Null keeps
   /// the truncating selection: the recent tail only.
   final GoalCheckInDigestService? _checkInDigestService;
+
+  /// Recall over the goal's whole history — check-ins, chat, observations —
+  /// for the `search_goal_memory` tool (ADR 0057 decision 1). Built from the
+  /// same sources the wake already reads, so it needs no wiring of its own.
+  late final GoalMemorySearch _memorySearch = GoalMemorySearch(
+    syncService: _syncService,
+    chatHistory: _chatHistoryService,
+    logger: _domainLogger,
+    checkInSourceReader: _checkInSourceReader,
+  );
 
   /// Resolves the goal's charter from the journal (ADR 0140). Optional and
   /// injected like [_checkInSourceReader]: without it a wake carries no

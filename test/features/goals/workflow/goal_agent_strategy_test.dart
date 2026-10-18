@@ -7,6 +7,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -1786,5 +1787,105 @@ void main() {
     expect(strategy.finalResponse, isNull);
     strategy.recordFinalResponse('Answered the user.');
     expect(strategy.finalResponse, 'Answered the user.');
+  });
+
+  group('search_goal_memory', () {
+    late List<Map<String, dynamic>> asked;
+
+    GoalAgentStrategy withRecall({GoalMemorySearcher? searcher}) =>
+        GoalAgentStrategy(
+          domainLogger: domainLogger,
+          syncService: syncService,
+          agentId: 'goal-1',
+          threadId: 'thread-1',
+          runKey: 'run-1',
+          knownAdIds: const {},
+          memorySearcher: searcher,
+        );
+
+    GoalMemorySearcher answering(String text, {bool ok = true}) =>
+        (args) async {
+          asked.add(args);
+          return (ok: ok, text: text);
+        };
+
+    Future<void> search(GoalAgentStrategy recalling, {String id = 's1'}) =>
+        recalling.processToolCalls(
+          toolCalls: [
+            _call(
+              id: id,
+              name: GoalAgentToolNames.searchGoalMemory,
+              args: {'query': 'ice shelf'},
+            ),
+          ],
+          manager: manager,
+        );
+
+    setUp(() => asked = []);
+
+    test('answers with what was recalled, and takes exactly one more turn '
+        'to read it', () async {
+      final recalling = withRecall(
+        searcher: answering('Found 1 memory match(es) for "ice shelf"'),
+      );
+
+      await search(recalling);
+
+      expect(asked.single, {'query': 'ice shelf'});
+      expect(rejection(), 'Found 1 memory match(es) for "ice shelf"');
+      expect(
+        recalling.getContinuationPrompt(manager),
+        goalMemoryContinuationPrompt,
+      );
+      // One turn, not a loop: the next batch that recalls nothing stops.
+      expect(recalling.getContinuationPrompt(manager), isNull);
+      await recalling.processToolCalls(
+        toolCalls: [
+          _call(
+            id: 'o1',
+            name: GoalAgentToolNames.recordGoalObservation,
+            args: {'note': 'Fog days are calm.'},
+          ),
+        ],
+        manager: manager,
+      );
+      expect(recalling.getContinuationPrompt(manager), isNull);
+    });
+
+    test('a failed recall is an answer, never a rejection — it must not '
+        'withhold the reply', () async {
+      final recalling = withRecall(
+        searcher: answering('Error: memory search failed.', ok: false),
+      );
+
+      await search(recalling);
+
+      expect(rejection(), 'Error: memory search failed.');
+      expect(recalling.unresolvedRejectedTools, isEmpty);
+    });
+
+    test('a wake makes at most $goalMemorySearchesPerWake recalls', () async {
+      final recalling = withRecall(searcher: answering('hits'));
+
+      for (var i = 0; i < goalMemorySearchesPerWake + 1; i++) {
+        await search(recalling, id: 's$i');
+      }
+
+      expect(asked, hasLength(goalMemorySearchesPerWake));
+      expect(rejection(), goalMemoryExhaustedAnswer);
+      expect(recalling.unresolvedRejectedTools, isEmpty);
+      // The exhausted answer is not a recall: nothing new to read.
+      expect(recalling.getContinuationPrompt(manager), isNull);
+    });
+
+    test('a wake without recall says so instead of failing', () async {
+      final recalling = withRecall();
+
+      await search(recalling);
+
+      expect(rejection(), goalMemoryUnavailableAnswer);
+      expect(recalling.unresolvedRejectedTools, isEmpty);
+      expect(recalling.getContinuationPrompt(manager), isNull);
+    });
   });
 }

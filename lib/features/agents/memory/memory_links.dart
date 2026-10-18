@@ -146,3 +146,14 @@ String _followSupersession(String entryId, Map<String, String> supersededBy) {
     current = next;
   }
 }
+
+/// Renders a resolved memory link as a `wire:id` prompt token, annotating
+/// dangling (`(not found)`) and superseded (`→ liveId`) links so the model
+/// sees the link's current health.
+String formatLink(ResolvedMemoryLink link) {
+  final wire = link.link.relation.wire;
+  final id = link.link.entryId;
+  if (!link.exists) return '$wire:$id (not found)';
+  if (link.superseded) return '$wire:$id → ${link.liveEntryId}';
+  return '$wire:$id';
+}

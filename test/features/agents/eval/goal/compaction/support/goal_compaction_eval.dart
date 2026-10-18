@@ -599,8 +599,13 @@ class GoalCompactionEvalRunner {
         // offered the ad tools. Off-track is the only fixture status that
         // would be; keeping the surface uniform across arms is what makes
         // the tool-set comparison meaningful.
+        //
+        // Recall is withheld too: the eval measures what each compaction arm
+        // leaves in `userVoice`, and a search over the raw history would
+        // answer the probes around it.
         if (tool.name != GoalAgentToolNames.createGoalAd &&
-            tool.name != GoalAgentToolNames.rerunGoalAd)
+            tool.name != GoalAgentToolNames.rerunGoalAd &&
+            tool.name != GoalAgentToolNames.searchGoalMemory)
           ChatCompletionTool(
             type: ChatCompletionToolType.function,
             function: FunctionObject(

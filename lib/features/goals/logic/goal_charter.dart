@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
-import 'package:lotti/features/goals/logic/goal_evidence_text.dart';
 
 /// A goal's charter (ADR 0140): what the user wrote about what the goal is
 /// for and how its agent should coach. The agent reads it word for word on
@@ -98,7 +97,7 @@ GoalCharterSelection goalCharterSelection(
         GoalCharterEntry(
           entryId: entry.entryId,
           writtenAt: entry.writtenAt,
-          text: truncateGoalEvidenceText(entry.text, budget),
+          text: TextChunker.truncateToTokens(entry.text, budget),
         ),
       );
       truncated = true;

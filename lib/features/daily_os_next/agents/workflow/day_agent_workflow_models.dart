@@ -7,7 +7,6 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
@@ -647,17 +646,6 @@ class KnowledgeContext {
 const workflowUuid = Uuid();
 
 const _maxRecentObservationCount = 20;
-
-/// Renders a resolved memory link as a `wire:id` prompt token, annotating
-/// dangling (`(not found)`) and superseded (`→ liveId`) links so the model
-/// sees the link's current health.
-String formatLink(ResolvedMemoryLink link) {
-  final wire = link.link.relation.wire;
-  final id = link.link.entryId;
-  if (!link.exists) return '$wire:$id (not found)';
-  if (link.superseded) return '$wire:$id → ${link.liveEntryId}';
-  return '$wire:$id';
-}
 
 /// Appends the Soul document's personality sections (voice directive, and any
 /// non-empty tone bounds, coaching style, and anti-sycophancy policy) to the

@@ -238,6 +238,7 @@ const List<String> _allGoalToolNames = [
   GoalAgentToolNames.snoozeGoalAd,
   GoalAgentToolNames.proposeGoalRevision,
   GoalAgentToolNames.recordGoalObservation,
+  GoalAgentToolNames.searchGoalMemory,
 ];
 
 /// Ad-capable tools, forbidden wherever the policy says "no ad".

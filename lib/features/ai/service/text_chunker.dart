@@ -94,6 +94,31 @@ abstract final class TextChunker {
     return (words.length * kTokensPerWord).ceil();
   }
 
+  /// [text], trimmed, cut to fit [tokenBudget] by [estimateTokens] — the
+  /// longest prefix that fits with a closing `…` — or whole when it already
+  /// fits; empty for a non-positive budget. Used wherever a bounded slice of
+  /// one entry may enter a model's context: the complete text stays where it
+  /// lives, and one pathological entry cannot consume a whole budget.
+  static String truncateToTokens(String text, int tokenBudget) {
+    final trimmed = text.trim();
+    if (tokenBudget <= 0 || trimmed.isEmpty) return '';
+    if (estimateTokens(trimmed) <= tokenBudget) return trimmed;
+
+    final runes = trimmed.runes.toList(growable: false);
+    var low = 0;
+    var high = runes.length;
+    while (low < high) {
+      final mid = (low + high + 1) ~/ 2;
+      final candidate = '${String.fromCharCodes(runes.take(mid))}…';
+      if (estimateTokens(candidate) <= tokenBudget) {
+        low = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return '${String.fromCharCodes(runes.take(low)).trimRight()}…';
+  }
+
   /// Splits text into sentences, preserving sentence-ending punctuation.
   ///
   /// Handles common sentence boundaries: `.`, `!`, `?` followed by

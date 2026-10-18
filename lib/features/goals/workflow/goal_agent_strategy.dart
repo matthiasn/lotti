@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -56,6 +57,7 @@ class GoalAgentStrategy extends ConversationStrategy
     this._allowedCurrentActionCriterionIds = const {},
     this.expectedStatus,
     this.expectedRollingAggregates = const [],
+    this._memorySearcher,
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -114,6 +116,15 @@ class GoalAgentStrategy extends ConversationStrategy
   final _rejectedToolBatchByName = <String, int>{};
   var _toolCallBatch = 0;
 
+  /// Recall from the goal's whole history (`search_goal_memory`); null on a
+  /// wake that has none, where the tool answers that recall is unavailable.
+  final GoalMemorySearcher? _memorySearcher;
+  var _memorySearches = 0;
+
+  /// Whether the batch just processed recalled something — the one case the
+  /// conversation goes on, so the model reads what it asked for.
+  var _recalledThisBatch = false;
+
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
   String? get reportTldr => _reportTldr;
@@ -161,6 +172,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required ConversationManager manager,
   }) async {
     _toolCallBatch++;
+    _recalledThisBatch = false;
     await recordAssistantMessage();
 
     for (final call in toolCalls) {
@@ -208,6 +220,8 @@ class GoalAgentStrategy extends ConversationStrategy
           await _handleProposeRevision(call, args, manager);
         case GoalAgentToolNames.recordGoalObservation:
           await _handleObservation(call, args, manager);
+        case GoalAgentToolNames.searchGoalMemory:
+          await _handleMemorySearch(call, args, manager);
         default:
           await _reject(
             call: call,
@@ -225,9 +239,15 @@ class GoalAgentStrategy extends ConversationStrategy
 
   /// Never nags: "nothing material changed → no tools" is the contract's
   /// cheapest and most important behaviour, and a continuation prompt
-  /// demanding output would train churn back in.
+  /// demanding output would train churn back in. The one exception is a
+  /// batch that recalled memory: its answer is a tool result the model has
+  /// not read yet, so the conversation takes one more turn to use it.
   @override
-  String? getContinuationPrompt(ConversationManager manager) => null;
+  String? getContinuationPrompt(ConversationManager manager) {
+    if (!_recalledThisBatch) return null;
+    _recalledThisBatch = false;
+    return goalMemoryContinuationPrompt;
+  }
 
   /// The report, with any section the model wrote beside it moved inside.
   ///
@@ -748,6 +768,31 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     _observations.add(ObservationRecord(text: note));
     await _accept(call, manager, 'Observation recorded.');
+  }
+
+  /// Recall for `search_goal_memory`. Every outcome is an ANSWER, never a
+  /// rejection — an unavailable, exhausted or failed recall included. A
+  /// rejected call stays unresolved, and an unresolved interactive batch
+  /// withholds its reply: a search that found nothing must not cost the
+  /// user the answer they asked for.
+  Future<void> _handleMemorySearch(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final searcher = _memorySearcher;
+    if (searcher == null) {
+      await _accept(call, manager, goalMemoryUnavailableAnswer);
+      return;
+    }
+    if (_memorySearches >= goalMemorySearchesPerWake) {
+      await _accept(call, manager, goalMemoryExhaustedAnswer);
+      return;
+    }
+    _memorySearches++;
+    final recall = await searcher(args);
+    _recalledThisBatch = true;
+    await _accept(call, manager, recall.text);
   }
 
   /// The first status token found standing as a word in any visible string.
