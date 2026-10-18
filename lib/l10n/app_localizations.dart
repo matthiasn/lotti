@@ -919,12 +919,6 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get agentKnowledgeConfirm;
 
-  /// No description provided for @agentKnowledgeConfirmedHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get agentKnowledgeConfirmedHeader;
-
   /// No description provided for @agentKnowledgeEdit.
   ///
   /// In en, this message translates to:
@@ -955,16 +949,34 @@ abstract class AppLocalizations {
   /// **'What should I remember?'**
   String get agentKnowledgeEditStatementHint;
 
+  /// No description provided for @agentKnowledgeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit what I remember'**
+  String get agentKnowledgeEditTitle;
+
   /// No description provided for @agentKnowledgeEmpty.
   ///
   /// In en, this message translates to:
   /// **'Nothing yet — I\'ll remember what you tell me.'**
   String get agentKnowledgeEmpty;
 
+  /// No description provided for @agentKnowledgeFactOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Options for this fact'**
+  String get agentKnowledgeFactOptions;
+
+  /// No description provided for @agentKnowledgeLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load what I\'ve learned.'**
+  String get agentKnowledgeLoadError;
+
   /// No description provided for @agentKnowledgeProposedHeader.
   ///
   /// In en, this message translates to:
-  /// **'Awaiting your confirmation'**
+  /// **'Did I get this right?'**
   String get agentKnowledgeProposedHeader;
 
   /// No description provided for @agentKnowledgeRetract.
@@ -978,6 +990,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Still true?'**
   String get agentKnowledgeStale;
+
+  /// No description provided for @agentKnowledgeStillTrueYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get agentKnowledgeStillTrueYes;
 
   /// No description provided for @agentKnowledgeTitle.
   ///

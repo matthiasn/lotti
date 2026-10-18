@@ -482,16 +482,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Conferma';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Confermato';
-
-  @override
   String get agentKnowledgeEdit => 'Modifica';
 
   @override
-  String get agentKnowledgeEditCancel => 'Annullamento';
+  String get agentKnowledgeEditCancel => 'Annulla';
 
   @override
-  String get agentKnowledgeEditHookHint => 'Riepilogo di una linea';
+  String get agentKnowledgeEditHookHint => 'Riepilogo in una riga';
 
   @override
   String get agentKnowledgeEditSave => 'Salva';
@@ -500,17 +497,30 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => 'Cosa dovrei ricordare?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Modifica ciò che ricordo';
+
+  @override
   String get agentKnowledgeEmpty =>
-      'Ancora niente. Mi ricordero\' cosa mi dirai.';
+      'Ancora niente: ricorderò quello che mi dici.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Risvegliare la conferma';
+  String get agentKnowledgeFactOptions => 'Opzioni per questo fatto';
 
   @override
-  String get agentKnowledgeRetract => 'Dimenticati.';
+  String get agentKnowledgeLoadError =>
+      'Impossibile caricare quello che ho imparato.';
 
   @override
-  String get agentKnowledgeStale => 'E\' ancora vero?';
+  String get agentKnowledgeProposedHeader => 'Ho capito bene?';
+
+  @override
+  String get agentKnowledgeRetract => 'Dimentica';
+
+  @override
+  String get agentKnowledgeStale => 'È ancora vero?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Sì';
 
   @override
   String get agentKnowledgeTitle => 'Quello che ho imparato';

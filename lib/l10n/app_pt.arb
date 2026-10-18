@@ -266,16 +266,19 @@
   "agentInstancesToolbarGroupBy": "Agrupar por",
   "agentInstancesUnassignedSoul": "Não atribuído",
   "agentKnowledgeConfirm": "Confirmar",
-  "agentKnowledgeConfirmedHeader": "Confirmado",
   "agentKnowledgeEdit": "Editar",
   "agentKnowledgeEditCancel": "Cancelar",
   "agentKnowledgeEditHookHint": "Resumo de uma linha",
-  "agentKnowledgeEditSave": "Salvar",
+  "agentKnowledgeEditSave": "Guardar",
   "agentKnowledgeEditStatementHint": "O que devo lembrar?",
-  "agentKnowledgeEmpty": "Nada ainda - vou lembrar o que você me disser.",
-  "agentKnowledgeProposedHeader": "Aguardando sua confirmação",
-  "agentKnowledgeRetract": "Esqueça",
+  "agentKnowledgeEditTitle": "Edita o que eu lembro",
+  "agentKnowledgeEmpty": "Nada ainda — vou lembrar o que me disseres.",
+  "agentKnowledgeFactOptions": "Opções deste facto",
+  "agentKnowledgeLoadError": "Não foi possível carregar o que aprendi.",
+  "agentKnowledgeProposedHeader": "Percebi bem?",
+  "agentKnowledgeRetract": "Esquece",
   "agentKnowledgeStale": "Ainda é verdade?",
+  "agentKnowledgeStillTrueYes": "Sim",
   "agentKnowledgeTitle": "O que eu aprendi",
   "agentLifecycleActive": "Ativo",
   "agentLifecycleCreated": "Criado",
@@ -2420,7 +2423,7 @@
     }
   },
   "dailyOsNextGreetingMorning": "Bom dia.",
-  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 coisa que notei — revise} other{{count} coisas que notei — revise}}",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 coisa que notei — revê} other{{count} coisas que notei — revê}}",
   "@dailyOsNextKnowledgeNudge": {
     "placeholders": {
       "count": {

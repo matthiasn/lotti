@@ -267,16 +267,19 @@
   "agentInstancesToolbarGroupBy": "Grupper efter",
   "agentInstancesUnassignedSoul": "Ikke tildelt",
   "agentKnowledgeConfirm": "Bekræft",
-  "agentKnowledgeConfirmedHeader": "Bekræftet",
-  "agentKnowledgeEdit": "Redigering",
+  "agentKnowledgeEdit": "Rediger",
   "agentKnowledgeEditCancel": "Annuller",
   "agentKnowledgeEditHookHint": "Énlinjes resumé",
   "agentKnowledgeEditSave": "Gem",
   "agentKnowledgeEditStatementHint": "Hvad skal jeg huske?",
+  "agentKnowledgeEditTitle": "Ret det, jeg husker",
   "agentKnowledgeEmpty": "Intet endnu — jeg vil huske, hvad du fortæller mig.",
-  "agentKnowledgeProposedHeader": "Afventer din bekræftelse",
+  "agentKnowledgeFactOptions": "Indstillinger for dette faktum",
+  "agentKnowledgeLoadError": "Kunne ikke indlæse, hvad jeg har lært.",
+  "agentKnowledgeProposedHeader": "Har jeg forstået det rigtigt?",
   "agentKnowledgeRetract": "Glem det",
   "agentKnowledgeStale": "Er det stadig sandt?",
+  "agentKnowledgeStillTrueYes": "Ja",
   "agentKnowledgeTitle": "Hvad jeg har lært",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Oprettet",
@@ -2421,7 +2424,7 @@
     }
   },
   "dailyOsNextGreetingMorning": "Godmorgen.",
-  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 ting jeg lagde mærke til — review} other{{count} ting jeg lagde mærke til — review}}",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 ting jeg lagde mærke til — gennemse} other{{count} ting jeg lagde mærke til — gennemse}}",
   "@dailyOsNextKnowledgeNudge": {
     "placeholders": {
       "count": {

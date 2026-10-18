@@ -475,10 +475,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Bekræft';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Bekræftet';
-
-  @override
-  String get agentKnowledgeEdit => 'Redigering';
+  String get agentKnowledgeEdit => 'Rediger';
 
   @override
   String get agentKnowledgeEditCancel => 'Annuller';
@@ -493,17 +490,30 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => 'Hvad skal jeg huske?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Ret det, jeg husker';
+
+  @override
   String get agentKnowledgeEmpty =>
       'Intet endnu — jeg vil huske, hvad du fortæller mig.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Afventer din bekræftelse';
+  String get agentKnowledgeFactOptions => 'Indstillinger for dette faktum';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Kunne ikke indlæse, hvad jeg har lært.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Har jeg forstået det rigtigt?';
 
   @override
   String get agentKnowledgeRetract => 'Glem det';
 
   @override
   String get agentKnowledgeStale => 'Er det stadig sandt?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Ja';
 
   @override
   String get agentKnowledgeTitle => 'Hvad jeg har lært';
@@ -4930,8 +4940,8 @@ class AppLocalizationsDa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ting jeg lagde mærke til — review',
-      one: '1 ting jeg lagde mærke til — review',
+      other: '$count ting jeg lagde mærke til — gennemse',
+      one: '1 ting jeg lagde mærke til — gennemse',
     );
     return '$_temp0';
   }

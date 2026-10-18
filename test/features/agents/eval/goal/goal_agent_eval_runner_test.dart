@@ -72,8 +72,12 @@ void main() {
       for (final bad in [
         '{}',
         '{"key":"k","hook":"h","statement":"s","source":"userSaid"}',
-        '{"key":"k","hook":"${'h' * 121}","statement":"s",'
-            '"source":"agentInferred"}',
+        jsonEncode({
+          'key': 'k',
+          'hook': 'h' * 121,
+          'statement': 's',
+          'source': 'agentInferred',
+        }),
       ]) {
         expect(
           classifyFact(bad),
@@ -83,8 +87,12 @@ void main() {
       }
       expect(
         classifyFact(
-          '{"key":"walks-after-dinner","hook":"Walks after dinner",'
-          '"statement":"Walks after dinner.","source":"agentInferred"}',
+          jsonEncode({
+            'key': 'walks-after-dinner',
+            'hook': 'Walks after dinner',
+            'statement': 'Walks after dinner.',
+            'source': 'agentInferred',
+          }),
         ),
         GoalAgentEvalFailureCategory.none,
       );

@@ -480,9 +480,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Confirmar';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Confirmado';
-
-  @override
   String get agentKnowledgeEdit => 'Editar';
 
   @override
@@ -498,16 +495,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => '¿Qué debo recordar?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Edita lo que recuerdo';
+
+  @override
   String get agentKnowledgeEmpty => 'Nada aún — recordaré lo que me digas.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Esperando tu confirmación';
+  String get agentKnowledgeFactOptions => 'Opciones de este dato';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'No se pudo cargar lo que he aprendido.';
+
+  @override
+  String get agentKnowledgeProposedHeader => '¿Lo he entendido bien?';
 
   @override
   String get agentKnowledgeRetract => 'Olvidar';
 
   @override
   String get agentKnowledgeStale => '¿Sigue siendo así?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Sí';
 
   @override
   String get agentKnowledgeTitle => 'Lo que he aprendido';

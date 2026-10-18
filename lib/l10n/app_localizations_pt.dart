@@ -479,9 +479,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Confirmar';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Confirmado';
-
-  @override
   String get agentKnowledgeEdit => 'Editar';
 
   @override
@@ -491,23 +488,36 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentKnowledgeEditHookHint => 'Resumo de uma linha';
 
   @override
-  String get agentKnowledgeEditSave => 'Salvar';
+  String get agentKnowledgeEditSave => 'Guardar';
 
   @override
   String get agentKnowledgeEditStatementHint => 'O que devo lembrar?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Edita o que eu lembro';
+
+  @override
   String get agentKnowledgeEmpty =>
-      'Nada ainda - vou lembrar o que você me disser.';
+      'Nada ainda — vou lembrar o que me disseres.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Aguardando sua confirmação';
+  String get agentKnowledgeFactOptions => 'Opções deste facto';
 
   @override
-  String get agentKnowledgeRetract => 'Esqueça';
+  String get agentKnowledgeLoadError =>
+      'Não foi possível carregar o que aprendi.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Percebi bem?';
+
+  @override
+  String get agentKnowledgeRetract => 'Esquece';
 
   @override
   String get agentKnowledgeStale => 'Ainda é verdade?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Sim';
 
   @override
   String get agentKnowledgeTitle => 'O que eu aprendi';
@@ -4977,8 +4987,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count coisas que notei — revise',
-      one: '1 coisa que notei — revise',
+      other: '$count coisas que notei — revê',
+      one: '1 coisa que notei — revê',
     );
     return '$_temp0';
   }

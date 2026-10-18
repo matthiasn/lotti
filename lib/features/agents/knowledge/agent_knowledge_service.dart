@@ -131,6 +131,9 @@ class AgentKnowledgeService {
     final updated = entry.copyWith(
       status: KnowledgeStatus.confirmed,
       confirmedAt: now,
+      // Confirming again is the answer to "Still true?": the fact is renewed
+      // and no longer due for review.
+      reviewAfter: null,
       updatedAt: now,
     );
     await syncService.upsertEntity(updated);

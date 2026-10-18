@@ -482,9 +482,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Confirmați';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Confirmat';
-
-  @override
   String get agentKnowledgeEdit => 'Editați';
 
   @override
@@ -500,16 +497,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => 'Ce ar trebui să rețin?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Editați ce rețin';
+
+  @override
   String get agentKnowledgeEmpty => 'Încă nimic — voi reține ce îmi spuneți.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Așteaptă confirmarea dvs.';
+  String get agentKnowledgeFactOptions => 'Opțiuni pentru acest fapt';
 
   @override
-  String get agentKnowledgeRetract => 'Uită';
+  String get agentKnowledgeLoadError => 'Nu s-a putut încărca ce am învățat.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Am înțeles corect?';
+
+  @override
+  String get agentKnowledgeRetract => 'Uitați';
 
   @override
   String get agentKnowledgeStale => 'Mai este valabil?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Da';
 
   @override
   String get agentKnowledgeTitle => 'Ce am învățat';

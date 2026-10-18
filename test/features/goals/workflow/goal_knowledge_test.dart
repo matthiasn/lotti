@@ -126,7 +126,7 @@ void main() {
       );
     });
 
-    test('an inferred fact is proposed even in the user\'s own words', () {
+    test("an inferred fact is proposed even in the user's own words", () {
       expect(
         goalFactIsUserConfirmed(
           fact('Only walks after dinner.', source: 'agentInferred'),

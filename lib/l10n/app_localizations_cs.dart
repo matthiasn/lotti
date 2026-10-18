@@ -478,9 +478,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Potvrdit';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Potvrzeno';
-
-  @override
   String get agentKnowledgeEdit => 'Upravit';
 
   @override
@@ -496,16 +493,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => 'Co si mám zapamatovat?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Uprav, co si pamatuju';
+
+  @override
   String get agentKnowledgeEmpty => 'Zatím nic — zapamatuji si, co mi řekneš.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Čeká na tvé potvrzení';
+  String get agentKnowledgeFactOptions => 'Možnosti tohoto faktu';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Nepodařilo se načíst, co jsem se naučil.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Pochopil jsem to správně?';
 
   @override
   String get agentKnowledgeRetract => 'Zapomenout';
 
   @override
   String get agentKnowledgeStale => 'Platí to stále?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Ano';
 
   @override
   String get agentKnowledgeTitle => 'Co jsem se naučil';

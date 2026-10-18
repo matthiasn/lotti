@@ -474,16 +474,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentKnowledgeConfirm => 'Bevestigen';
 
   @override
-  String get agentKnowledgeConfirmedHeader => 'Bevestigd';
-
-  @override
   String get agentKnowledgeEdit => 'Bewerken';
 
   @override
   String get agentKnowledgeEditCancel => 'Annuleren';
 
   @override
-  String get agentKnowledgeEditHookHint => 'Overzicht met één regel';
+  String get agentKnowledgeEditHookHint => 'Samenvatting in één regel';
 
   @override
   String get agentKnowledgeEditSave => 'Opslaan';
@@ -492,20 +489,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentKnowledgeEditStatementHint => 'Wat moet ik me herinneren?';
 
   @override
+  String get agentKnowledgeEditTitle => 'Bewerk wat ik onthoud';
+
+  @override
   String get agentKnowledgeEmpty =>
       'Nog niets. Ik zal onthouden wat je me vertelt.';
 
   @override
-  String get agentKnowledgeProposedHeader => 'Wacht op uw bevestiging.';
+  String get agentKnowledgeFactOptions => 'Opties voor dit feit';
 
   @override
-  String get agentKnowledgeRetract => 'Vergeet';
+  String get agentKnowledgeLoadError =>
+      'Wat ik heb geleerd kon niet worden geladen.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Heb ik dit goed begrepen?';
+
+  @override
+  String get agentKnowledgeRetract => 'Vergeten';
 
   @override
   String get agentKnowledgeStale => 'Nog steeds waar?';
 
   @override
-  String get agentKnowledgeTitle => 'Wat ik geleerd heb.';
+  String get agentKnowledgeStillTrueYes => 'Ja';
+
+  @override
+  String get agentKnowledgeTitle => 'Wat ik heb geleerd';
 
   @override
   String get agentLifecycleActive => 'Actief';

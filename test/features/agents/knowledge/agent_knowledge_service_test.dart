@@ -255,6 +255,35 @@ void main() {
       expect(updated.confirmedAt, now);
     });
 
+    test('confirming a fact due for review renews it', () async {
+      final stale =
+          AgentDomainEntity.plannerKnowledge(
+                id: 'e5',
+                agentId: agentId,
+                key: 'k',
+                hook: 'h',
+                statementText: 'still true',
+                source: KnowledgeSource.userStated,
+                status: KnowledgeStatus.confirmed,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+                reviewAfter: DateTime(2026, 5, 2),
+              )
+              as PlannerKnowledgeEntity;
+      when(() => repository.getEntity('e5')).thenAnswer((_) async => stale);
+
+      final updated = await withClock(
+        Clock.fixed(now),
+        () => service.confirm('e5'),
+      );
+
+      // "Still true?" answered: no longer flagged, confirmed as of now.
+      expect(updated!.reviewAfter, isNull);
+      expect(updated.confirmedAt, now);
+      expect(updated.statementText, 'still true');
+    });
+
     test('retract removes an entry from the active Head set', () async {
       final confirmed = knowledge(id: 'e2', key: 'k');
       when(() => repository.getEntity('e2')).thenAnswer((_) async => confirmed);

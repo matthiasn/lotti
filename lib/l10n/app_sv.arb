@@ -267,16 +267,19 @@
   "agentInstancesToolbarGroupBy": "Grupp efter",
   "agentInstancesUnassignedSoul": "Otilldelat",
   "agentKnowledgeConfirm": "Bekräfta",
-  "agentKnowledgeConfirmedHeader": "Bekräftat",
-  "agentKnowledgeEdit": "Redigering",
+  "agentKnowledgeEdit": "Redigera",
   "agentKnowledgeEditCancel": "Avbryt",
   "agentKnowledgeEditHookHint": "Enradssammanfattning",
   "agentKnowledgeEditSave": "Spara",
   "agentKnowledgeEditStatementHint": "Vad ska jag komma ihåg?",
+  "agentKnowledgeEditTitle": "Redigera det jag minns",
   "agentKnowledgeEmpty": "Inget än — jag kommer ihåg vad du berättar för mig.",
-  "agentKnowledgeProposedHeader": "Väntar på din bekräftelse",
+  "agentKnowledgeFactOptions": "Alternativ för det här faktumet",
+  "agentKnowledgeLoadError": "Det gick inte att läsa in vad jag har lärt mig.",
+  "agentKnowledgeProposedHeader": "Har jag förstått rätt?",
   "agentKnowledgeRetract": "Glöm",
   "agentKnowledgeStale": "Stämmer det fortfarande?",
+  "agentKnowledgeStillTrueYes": "Ja",
   "agentKnowledgeTitle": "Vad jag har lärt mig",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Skapad",
@@ -2421,7 +2424,7 @@
     }
   },
   "dailyOsNextGreetingMorning": "God morgon.",
-  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 sak jag lade märke till — recension} other{{count} saker jag lade märke till — recension}}",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 sak jag lade märke till — granska} other{{count} saker jag lade märke till — granska}}",
   "@dailyOsNextKnowledgeNudge": {
     "placeholders": {
       "count": {
