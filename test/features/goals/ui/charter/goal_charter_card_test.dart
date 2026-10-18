@@ -15,6 +15,8 @@ import 'package:lotti/features/goals/state/goal_charter_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_sheet.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart'
+    show kGoalCheckInTranscriptGrace;
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -311,6 +313,40 @@ void main() {
         expect(triggered.single.skillId, skillTranscribeContextId);
       });
     }
+
+    testWidgets('a recording nobody picks up turns stalled on its own when its '
+        'grace window closes', (tester) async {
+      // Recorded a minute before "now": inside the window, nothing running.
+      await pump(
+        tester,
+        entries: () async => [recording('spoken')],
+        overrides: noFailure('spoken'),
+      );
+      expect(
+        find.byKey(const ValueKey('goal-charter-transcribing-spoken')),
+        findsOneWidget,
+      );
+
+      // Nothing else will rebuild the tile — no transcript, no status change,
+      // no notification. Without its own timer it says "Transcribing…" for as
+      // long as the page stays open.
+      await withClock(
+        Clock.fixed(now.add(kGoalCheckInTranscriptGrace)),
+        () async {
+          await tester.pump(kGoalCheckInTranscriptGrace);
+          await tester.pump();
+        },
+      );
+
+      expect(
+        find.byKey(const ValueKey('goal-charter-untranscribed-spoken')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-charter-retry-spoken')),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('a recording waiting for words keeps the over-budget notice '
         'away', (tester) async {

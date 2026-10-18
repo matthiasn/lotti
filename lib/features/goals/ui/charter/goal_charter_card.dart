@@ -235,8 +235,9 @@ class _GoalCharterNoteTile extends StatelessWidget {
 
 /// A spoken charter entry: the recording, then its transcript — or, until
 /// there is one, the same honest account the check-in rail gives
-/// ([goalAudioTranscriptStatus]), with Retry where nothing is coming.
-class _GoalCharterRecordingTile extends ConsumerWidget {
+/// ([goalAudioTranscriptStatus]), with Retry where nothing is coming. It
+/// wakes itself when its grace window closes, as the rail does.
+class _GoalCharterRecordingTile extends ConsumerStatefulWidget {
   const _GoalCharterRecordingTile({
     required this.recording,
     required this.onEdit,
@@ -246,9 +247,19 @@ class _GoalCharterRecordingTile extends ConsumerWidget {
   final VoidCallback? onEdit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GoalCharterRecordingTile> createState() =>
+      _GoalCharterRecordingTileState();
+}
+
+class _GoalCharterRecordingTileState
+    extends ConsumerState<_GoalCharterRecordingTile>
+    with GoalTranscriptGraceRebuild {
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final recording = widget.recording;
+    final onEdit = widget.onEdit;
     final id = recording.meta.id;
     final transcript = recording.entryText?.plainText.trim() ?? '';
     final hasTranscript = transcript.isNotEmpty;
@@ -261,12 +272,24 @@ class _GoalCharterRecordingTile extends ConsumerWidget {
     final durableFailure =
         !hasTranscript &&
         (ref.watch(goalAudioTranscriptionFailedProvider(id)).value ?? false);
+    final graceExpiry = recording.meta.dateFrom.add(
+      kGoalCheckInTranscriptGrace,
+    );
+    final now = clock.now();
     final status = goalAudioTranscriptStatus(
       hasTranscript: hasTranscript,
       inference: inference,
       durableFailure: durableFailure,
-      graceExpiry: recording.meta.dateFrom.add(kGoalCheckInTranscriptGrace),
-      now: clock.now(),
+      graceExpiry: graceExpiry,
+      now: now,
+    );
+    // Waiting with nothing running is the one state no other rebuild ends.
+    armGraceRebuild(
+      status == TimelineTranscriptStatus.pending &&
+              inference == InferenceStatus.idle &&
+              graceExpiry.isAfter(now)
+          ? graceExpiry
+          : null,
     );
     final caption = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
