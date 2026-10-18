@@ -1,4 +1,6 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/features/goals/model/goal_entry_ids.dart';
 import 'package:lotti/features/goals/repository/goal_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -54,6 +57,7 @@ void main() {
   );
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(goalEntry(id: 'fallback'));
     registerFallbackValue(meta('fallback'));
   });
@@ -220,6 +224,281 @@ void main() {
       expect(sources.single.text, 'Skipped the lunch walk.');
       // The moment the user spoke, not the moment this was read.
       expect(sources.single.recordedAt, testDate);
+    });
+  });
+
+  group('charter entries', () {
+    final goalId = 'derived:${goalEntryUuidV5Input('agent-1')}';
+
+    EntryLink charterLink(String fromId) => EntryLink.charter(
+      id: 'charter-$fromId',
+      fromId: fromId,
+      toId: goalId,
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+    );
+
+    JournalEntry note(
+      String id, {
+      String text = 'Ask me one guided question each morning.',
+      DateTime? at,
+      DateTime? deletedAt,
+    }) => JournalEntry(
+      meta: meta(id).copyWith(dateFrom: at ?? testDate, deletedAt: deletedAt),
+      entryText: EntryText(plainText: text),
+    );
+
+    void stubGoal({String? categoryId, bool? private}) =>
+        when(
+          () => mockDb.journalEntityById(goalId),
+        ).thenAnswer(
+          (_) async => goalEntry(id: goalId).copyWith(
+            meta: meta(
+              goalId,
+            ).copyWith(categoryId: categoryId, private: private),
+          ),
+        );
+
+    void stubCreateMetadata() => when(
+      () => mockPersistence.createMetadata(
+        dateFrom: any(named: 'dateFrom'),
+        categoryId: any(named: 'categoryId'),
+        private: any(named: 'private'),
+      ),
+    ).thenAnswer((_) async => meta('charter-1'));
+
+    void stubCreateLink(Future<bool> Function() answer) => when(
+      () => mockPersistence.createLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+        linkType: any(named: 'linkType'),
+      ),
+    ).thenAnswer((_) => answer());
+
+    void stubUpdate() {
+      when(
+        () => mockPersistence.updateMetadata(
+          any(),
+          deletedAt: any(named: 'deletedAt'),
+        ),
+      ).thenAnswer(
+        (invocation) async =>
+            (invocation.positionalArguments.first as Metadata).copyWith(
+              deletedAt: invocation.namedArguments[#deletedAt] as DateTime?,
+            ),
+      );
+      when(
+        () => mockPersistence.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+    }
+
+    test('reads the live text entries linked into the goal, in the order '
+        'they were written', () async {
+      when(() => mockDb.charterLinksToGoal(goalId)).thenAnswer(
+        (_) async => [
+          charterLink('later'),
+          charterLink('first'),
+          charterLink('deleted'),
+          charterLink('blank'),
+          charterLink('not-a-note'),
+        ],
+      );
+      when(() => mockDb.getJournalEntitiesForIds(any())).thenAnswer(
+        (_) async => [
+          note('later', text: 'Coach me gently.', at: DateTime(2026, 8, 3)),
+          note('first', text: 'This goal is my journal.', at: DateTime(2026)),
+          note('deleted', deletedAt: testDate),
+          note('blank', text: '   '),
+          goalEntry(id: 'not-a-note'),
+        ],
+      );
+
+      final entries = await repository.charterEntries('agent-1');
+
+      expect(entries.map((e) => e.meta.id), ['first', 'later']);
+      verify(
+        () => mockDb.getJournalEntitiesForIds({
+          'later',
+          'first',
+          'deleted',
+          'blank',
+          'not-a-note',
+        }),
+      ).called(1);
+    });
+
+    test('a goal without a charter reads no entries at all', () async {
+      when(
+        () => mockDb.charterLinksToGoal(goalId),
+      ).thenAnswer((_) async => []);
+
+      expect(await repository.charterEntries('agent-1'), isEmpty);
+      verifyNever(() => mockDb.getJournalEntitiesForIds(any()));
+    });
+
+    test('a new entry is written in the goal\'s category and privacy, then '
+        'linked from the entry into the goal', () async {
+      stubGoal(categoryId: 'cat-journal', private: true);
+      stubCreateMetadata();
+      when(
+        () => mockPersistence.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      stubCreateLink(() async => true);
+
+      final created = await withClock(
+        Clock.fixed(testDate),
+        () => repository.createCharterEntry(
+          agentId: 'agent-1',
+          text: '  This goal is my journal.  ',
+        ),
+      );
+
+      expect(created!.entryText!.plainText, 'This goal is my journal.');
+      verify(
+        () => mockPersistence.createMetadata(
+          dateFrom: testDate,
+          categoryId: 'cat-journal',
+          private: true,
+        ),
+      ).called(1);
+      // Never through `createDbEntity(linkedId:)`: that links FROM the goal,
+      // which is what makes an entry a check-in.
+      final written = verify(
+        () => mockPersistence.createDbEntity(captureAny()),
+      ).captured;
+      expect(written.single, isA<JournalEntry>());
+      verify(
+        () => mockPersistence.createLink(
+          fromId: 'charter-1',
+          toId: goalId,
+          linkType: EntryLinkType.charter,
+        ),
+      ).called(1);
+    });
+
+    test('blank words and a goal with no journal row write nothing', () async {
+      expect(
+        await repository.createCharterEntry(agentId: 'agent-1', text: '  '),
+        isNull,
+      );
+      when(
+        () => mockDb.journalEntityById(goalId),
+      ).thenAnswer((_) async => null);
+      expect(
+        await repository.createCharterEntry(agentId: 'agent-1', text: 'Hi'),
+        isNull,
+      );
+      verifyNever(() => mockPersistence.createDbEntity(any()));
+    });
+
+    test('a refused entry write is not linked', () async {
+      stubGoal();
+      stubCreateMetadata();
+      when(
+        () => mockPersistence.createDbEntity(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(
+        await repository.createCharterEntry(agentId: 'agent-1', text: 'Hi'),
+        isNull,
+      );
+      verifyNever(
+        () => mockPersistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+    });
+
+    for (final failure in ['refused', 'throws']) {
+      test('an entry whose charter link $failure is deleted again', () async {
+        stubGoal();
+        stubCreateMetadata();
+        stubUpdate();
+        when(
+          () => mockPersistence.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        stubCreateLink(
+          () async =>
+              failure == 'throws' ? throw StateError('link write') : false,
+        );
+
+        final created = await withClock(
+          Clock.fixed(testDate),
+          () => repository.createCharterEntry(agentId: 'agent-1', text: 'Hi'),
+        );
+
+        expect(created, isNull);
+        final deleted = verify(
+          () => mockPersistence.updateDbEntity(
+            captureAny(),
+            linkedId: goalId,
+          ),
+        ).captured;
+        final entity = deleted.single as JournalEntry;
+        expect(entity.meta.id, 'charter-1');
+        expect(entity.meta.deletedAt, testDate);
+      });
+    }
+
+    test('an edit saves the new words and notifies the goal it does not '
+        'descend from', () async {
+      stubUpdate();
+
+      final saved = await repository.updateCharterEntry(
+        note('charter-1', text: 'Old words.'),
+        agentId: 'agent-1',
+        text: ' New words. ',
+      );
+
+      expect(saved, isTrue);
+      final written = verify(
+        () => mockPersistence.updateDbEntity(captureAny(), linkedId: goalId),
+      ).captured;
+      expect(
+        (written.single as JournalEntry).entryText!.plainText,
+        'New words.',
+      );
+    });
+
+    test('an edit to blank words is refused without a write', () async {
+      expect(
+        await repository.updateCharterEntry(
+          note('charter-1'),
+          agentId: 'agent-1',
+          text: ' ',
+        ),
+        isFalse,
+      );
+      verifyNever(
+        () => mockPersistence.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      );
+    });
+
+    test('deleting an entry stamps it deleted and notifies the goal', () async {
+      stubUpdate();
+
+      final deleted = await withClock(
+        Clock.fixed(testDate),
+        () => repository.deleteCharterEntry(
+          note('charter-1'),
+          agentId: 'agent-1',
+        ),
+      );
+
+      expect(deleted, isTrue);
+      final written = verify(
+        () => mockPersistence.updateDbEntity(captureAny(), linkedId: goalId),
+      ).captured;
+      expect((written.single as JournalEntry).meta.deletedAt, testDate);
     });
   });
 

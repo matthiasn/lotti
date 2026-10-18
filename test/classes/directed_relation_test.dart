@@ -81,6 +81,10 @@ void main() {
         () => const DirectedRelation(EntryLinkType.relationship).wireName,
         throwsStateError,
       );
+      expect(
+        () => const DirectedRelation(EntryLinkType.charter).wireName,
+        throwsStateError,
+      );
     });
   });
 
@@ -119,6 +123,10 @@ void main() {
       );
       expect(
         () => const DirectedRelation(EntryLinkType.relationship).englishPhrase,
+        throwsStateError,
+      );
+      expect(
+        () => const DirectedRelation(EntryLinkType.charter).englishPhrase,
         throwsStateError,
       );
     });

@@ -279,6 +279,23 @@ mixin _JournalDbLinksRatings
     return result;
   }
 
+  /// The live charter links into [goalId]: one per charter entry, each
+  /// pointing from the entry to the goal (ADR 0140). Served by the
+  /// `(to_id, type)` index. Hidden links are left out — a charter link is
+  /// never hidden by this app, so a hidden one is a removal in flight.
+  Future<List<EntryLink>> charterLinksToGoal(String goalId) async {
+    final rows =
+        await (select(linkedEntries)..where(
+              (t) =>
+                  t.toId.equals(goalId) &
+                  t.type.equals(entryLinkTypeDbName(EntryLinkType.charter)) &
+                  (t.hidden.isNull() | t.hidden.equals(false)) &
+                  _linkIsLive,
+            ))
+            .get();
+    return rows.map(entryLinkFromLinkedDbEntry).toList();
+  }
+
   /// Every stored version of a link from [fromId] to [toId] — of [type]
   /// only, when given — removed links included.
   ///
