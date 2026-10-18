@@ -254,6 +254,18 @@ void main() {
             ),
           ),
           (
+            'charter',
+            'CharterLink',
+            () => EntryLink.charter(
+              id: 'link-charter',
+              fromId: currentTaskId,
+              toId: 'related',
+              createdAt: baseDate,
+              updatedAt: baseDate,
+              vectorClock: null,
+            ),
+          ),
+          (
             'rating',
             'RatingLink',
             () => EntryLink.rating(

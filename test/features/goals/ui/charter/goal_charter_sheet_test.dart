@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -41,9 +42,12 @@ void main() {
     WidgetTester tester, {
     JournalEntry? entry,
     ChatRecorderController Function()? recorder,
+    bool journalStack = true,
   }) async {
     final overrides = <Override>[
-      goalRepositoryProvider.overrideWithValue(repository),
+      goalRepositoryProvider.overrideWithValue(
+        journalStack ? repository : null,
+      ),
       domainLoggerProvider.overrideWithValue(logger),
       chatRecorderControllerProvider.overrideWith(
         recorder ?? TranscriptEmittingController.new,
@@ -105,6 +109,59 @@ void main() {
         ),
       ).called(1);
       expect(find.byType(GoalCharterForm), findsNothing);
+    });
+
+    testWidgets('⌘/Ctrl+Enter saves, as the button does', (tester) async {
+      when(
+        () => repository.createCharterEntry(
+          agentId: any(named: 'agentId'),
+          text: any(named: 'text'),
+        ),
+      ).thenAnswer((_) async => existing);
+      await openSheet(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-charter-text')),
+        'Coach me gently.',
+      );
+      await tester.pump();
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.createCharterEntry(
+          agentId: 'agent-1',
+          text: 'Coach me gently.',
+        ),
+      ).called(1);
+      expect(find.byType(GoalCharterForm), findsNothing);
+    });
+
+    testWidgets('Cancel closes the sheet and writes nothing', (tester) async {
+      await openSheet(tester, entry: existing);
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-cancel')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalCharterForm), findsNothing);
+      verifyZeroInteractions(repository);
+    });
+
+    testWidgets('without a journal stack, save and delete say they could not '
+        'and keep the sheet open', (tester) async {
+      await openSheet(tester, entry: existing, journalStack: false);
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-save')));
+      await tester.pump();
+      expect(find.text("That didn't save. Try again."), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-delete')));
+      await tester.pump();
+      final context = tester.element(find.byType(GoalCharterForm));
+      expect(find.text(context.messages.journalDeleteFailed), findsOneWidget);
+      expect(find.byType(GoalCharterForm), findsOneWidget);
     });
 
     testWidgets('blank words cannot be saved', (tester) async {
