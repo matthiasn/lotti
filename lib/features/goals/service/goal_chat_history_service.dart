@@ -84,19 +84,8 @@ class GoalChatHistoryService {
       if (selected.length >= goalRecentDialogueMessageLimit) break;
       final payloadId = message.contentEntryId;
       if (payloadId == null) continue;
-      final payload = await _repository.getEntity(payloadId);
-      final text = payload is AgentMessagePayloadEntity
-          ? payload.content['text']
-          : null;
-      if (text is! String || text.trim().isEmpty) continue;
-      final entry = (
-        id: message.id,
-        role: _isUserTurn(message)
-            ? GoalChatHistoryRole.user
-            : GoalChatHistoryRole.assistant,
-        text: text.trim(),
-        createdAt: message.createdAt,
-      );
+      final entry = _entryOf(message, await _repository.getEntity(payloadId));
+      if (entry == null) continue;
       if (selected.isEmpty) {
         final bounded = _fitEntry(entry, tokenBudget);
         if (bounded == null) break;
@@ -108,6 +97,40 @@ class GoalChatHistoryService {
       selected.add(entry);
     }
     return selected.reversed.toList(growable: false);
+  }
+
+  /// The whole visible conversation, oldest first: every user turn and every
+  /// reply the agent gave, with its words. Unbounded on purpose — it is what
+  /// memory recall searches (`search_goal_memory`), never what a wake reads
+  /// whole. Payloads are fetched in one read.
+  Future<List<GoalChatHistoryEntry>> allDialogue(String agentId) async {
+    final messages = await _visibleMessages(agentId, limit: null);
+    final payloads = await _repository.getEntitiesByIds({
+      for (final message in messages) ?message.contentEntryId,
+    });
+    return [
+      for (final message in messages)
+        ?_entryOf(message, payloads[message.contentEntryId]),
+    ];
+  }
+
+  /// [message] as a dialogue entry, or null when its payload holds no words.
+  static GoalChatHistoryEntry? _entryOf(
+    AgentMessageEntity message,
+    AgentDomainEntity? payload,
+  ) {
+    final text = payload is AgentMessagePayloadEntity
+        ? payload.content['text']
+        : null;
+    if (text is! String || text.trim().isEmpty) return null;
+    return (
+      id: message.id,
+      role: _isUserTurn(message)
+          ? GoalChatHistoryRole.user
+          : GoalChatHistoryRole.assistant,
+      text: text.trim(),
+      createdAt: message.createdAt,
+    );
   }
 
   static Map<String, Object> toJson(GoalChatHistoryEntry entry) => _json(entry);

@@ -35,6 +35,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1492,6 +1493,110 @@ void main() {
         expect(asked, isFalse);
       },
     );
+  });
+
+  test("a wake recalls through the workflow's own sources, and reads the "
+      'answer on one more turn', () async {
+    stubSpec();
+    stubGlmResolution();
+    _stubBadPrior(repository, agentId, now);
+    // An agent log with nothing in it and a chat with no turns: the check-in
+    // reader is the only source with anything to find.
+    when(() => syncService.repository).thenReturn(repository);
+    for (final kind in [
+      AgentMessageKind.system,
+      AgentMessageKind.observation,
+      AgentMessageKind.summary,
+    ]) {
+      when(
+        () => repository.getMessagesByKind(agentId, kind),
+      ).thenAnswer((_) async => []);
+    }
+    when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(agentId, AgentMessageKind.user),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKindAndToolName(
+        agentId,
+        AgentMessageKind.action,
+        AgentConversationToolNames.replyToUser,
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => repository.getEntitiesByIds(any())).thenAnswer((_) async => {});
+    final memoryLogger = MockDomainLogger();
+    workflow = GoalAgentWorkflow(
+      domainLogger: memoryLogger,
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      checkInSourceReader: (id) async => [
+        GoalCheckInSource(
+          entryId: 'checkin-shelf',
+          recordedAt: DateTime(2026, 4, 2, 21),
+          text: 'Walked down to the ice shelf with the colony.',
+        ),
+      ],
+    );
+    String? recalled;
+    String? continuation;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          if (recalled != null) return null;
+          expect(
+            tools!.map((tool) => tool.function.name),
+            contains(GoalAgentToolNames.searchGoalMemory),
+          );
+          final goalStrategy = strategy! as GoalAgentStrategy;
+          await goalStrategy.processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.searchGoalMemory, {
+                'query': 'ice shelf',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          recalled =
+              verify(
+                    () => conversationManager.addToolResponse(
+                      toolCallId: any(named: 'toolCallId'),
+                      response: captureAny(named: 'response'),
+                    ),
+                  ).captured.last
+                  as String;
+          continuation = goalStrategy.getContinuationPrompt(
+            conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+        };
+
+    await workflow.execute(
+      agentIdentity: identity,
+      runKey: 'run-recall',
+      triggerTokens: const {'goal-escalation:2026-08-11'},
+      threadId: 'thread-recall',
+    );
+
+    expect(recalled, contains('(checkIn) (id: checkin-shelf)'));
+    expect(recalled, contains('Walked down to the ice shelf'));
+    expect(continuation, goalMemoryContinuationPrompt);
   });
 
   group('the charter', () {

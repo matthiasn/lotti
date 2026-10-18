@@ -74,6 +74,12 @@ void main() {
       (invocation) async =>
           entities[invocation.positionalArguments.first as String],
     );
+    when(() => repository.getEntitiesByIds(any())).thenAnswer(
+      (invocation) async => {
+        for (final id in invocation.positionalArguments.first as Iterable)
+          id as String: ?entities[id],
+      },
+    );
   }
 
   setUp(() {
@@ -421,4 +427,43 @@ void main() {
       );
     },
   );
+
+  test('allDialogue reads the whole conversation, oldest first, both '
+      'sides, with its words — and no turn without them', () async {
+    final turns = [
+      for (var minute = 1; minute <= 40; minute++)
+        message(
+          id: 'turn-$minute',
+          kind: minute.isOdd ? AgentMessageKind.user : AgentMessageKind.action,
+          minute: minute,
+        ),
+    ];
+    final silent = message(
+      id: 'silent',
+      kind: AgentMessageKind.user,
+      minute: 41,
+    );
+    stubHistory(
+      users: [silent, ...turns.where((t) => t.kind == AgentMessageKind.user)],
+      replies: turns.where((t) => t.kind == AgentMessageKind.action).toList(),
+      texts: {for (final turn in turns) turn.id: ' words of ${turn.id} '},
+    );
+
+    final dialogue = await service.allDialogue('goal-1');
+
+    // Past every wake bound: recall reads it all.
+    expect(dialogue, hasLength(40));
+    expect(dialogue.first.id, 'turn-1');
+    expect(dialogue.first.role, GoalChatHistoryRole.user);
+    expect(dialogue.first.text, 'words of turn-1');
+    expect(dialogue[1].role, GoalChatHistoryRole.assistant);
+    expect(dialogue.last.id, 'turn-40');
+    verify(
+      () => repository.getMessagesByKind(
+        'goal-1',
+        AgentMessageKind.user,
+      ),
+    ).called(1);
+    verifyNever(() => repository.getEntity(any()));
+  });
 }
