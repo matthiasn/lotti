@@ -3065,7 +3065,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillStatusMissing => 'Faltante';
 
   @override
-  String get backfillStatusSkipped => 'Omitido';
+  String get backfillStatsSkipped => 'Omitido';
 
   @override
   String get backfillToggleDescription =>

@@ -3022,7 +3022,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillStatusMissing => 'Missing';
 
   @override
-  String get backfillStatusSkipped => 'Skipped';
+  String get backfillStatsSkipped => 'Skipped';
 
   @override
   String get backfillToggleDescription =>

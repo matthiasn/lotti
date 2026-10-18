@@ -3043,7 +3043,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatusMissing => 'Saknad';
 
   @override
-  String get backfillStatusSkipped => 'Hoppade över';
+  String get backfillStatsSkipped => 'Hoppade över';
 
   @override
   String get backfillToggleDescription =>

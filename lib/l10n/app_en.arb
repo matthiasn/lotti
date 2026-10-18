@@ -2011,6 +2011,7 @@
   "backfillStatsReceived": "Received",
   "backfillStatsRefresh": "Refresh stats",
   "backfillStatsRequested": "Requested",
+  "backfillStatsSkipped": "Skipped",
   "backfillStatsThisDevice": "{name} (this device)",
   "@backfillStatsThisDevice": {
     "placeholders": {
@@ -2024,7 +2025,6 @@
   "backfillStatsUnresolvable": "Unresolvable",
   "backfillStatusInboundQueue": "Inbound queue",
   "backfillStatusMissing": "Missing",
-  "backfillStatusSkipped": "Skipped",
   "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
   "backfillToggleTitle": "Automatic backfill",
   "basicSettings": "Basic settings",

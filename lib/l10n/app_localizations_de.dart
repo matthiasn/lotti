@@ -3060,7 +3060,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillStatusMissing => 'Fehlend';
 
   @override
-  String get backfillStatusSkipped => 'Übersprungen';
+  String get backfillStatsSkipped => 'Übersprungen';
 
   @override
   String get backfillToggleDescription =>

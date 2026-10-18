@@ -3034,7 +3034,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatusMissing => 'Savnet';
 
   @override
-  String get backfillStatusSkipped => 'Sprunget over';
+  String get backfillStatsSkipped => 'Sprunget over';
 
   @override
   String get backfillToggleDescription =>

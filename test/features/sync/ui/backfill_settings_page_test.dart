@@ -131,7 +131,7 @@ void main() {
       AppLocalizations.of(tester.element(find.byType(BackfillSettingsBody)))!;
 
   group('BackfillSettingsBody · status row', () {
-    testWidgets('shows three labelled cells with formatted counts', (
+    testWidgets('shows two labelled cells with formatted counts', (
       tester,
     ) async {
       await pumpBody(tester);
@@ -142,11 +142,27 @@ void main() {
       // the ledger; the closed `Advanced recovery` group does not
       // include it.
       expect(find.text(messages.backfillStatusMissing), findsNWidgets(2));
-      expect(find.text(messages.backfillStatusSkipped), findsOneWidget);
+      // Skipped counts Matrix messages nothing can bring back, so it sits in
+      // the ledger rather than in this row.
+      expect(
+        find.descendant(
+          of: find.byType(StatusRow),
+          matching: find.text(messages.backfillStatsSkipped),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(StatusRow),
+          matching: find.byType(VerticalDivider),
+        ),
+        findsOneWidget,
+        reason: 'two cells, one divider between them',
+      );
 
-      // Inbound queue & skipped come from the (absent) coordinator —
-      // the body falls back to 0 when Matrix is not registered.
-      // Missing comes from `populatedStats.totalMissing` = 5.
+      // Inbound queue comes from the (absent) coordinator — the body falls
+      // back to 0 when Matrix is not registered. Missing comes from
+      // `populatedStats.totalMissing` = 5.
       expect(find.text('5'), findsWidgets);
     });
 
@@ -289,7 +305,7 @@ void main() {
   });
 
   group('BackfillSettingsBody · sync statistics ledger', () {
-    testWidgets('renders all eight labelled rows', (tester) async {
+    testWidgets('renders all nine labelled rows', (tester) async {
       await pumpBody(tester);
       final messages = messagesOf(tester);
 
@@ -305,6 +321,13 @@ void main() {
       expect(find.text(messages.backfillStatsDeleted), findsOneWidget);
       expect(find.text(messages.backfillStatsUnresolvable), findsOneWidget);
       expect(find.text(messages.backfillStatsBurned), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(SyncStatsCard),
+          matching: find.text(messages.backfillStatsSkipped),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows correct values for each stat', (tester) async {
@@ -861,9 +884,15 @@ void main() {
         );
         await pumpInScaffold(tester);
 
-        // Inbound queue cell shows 4; skipped cell shows 2.
-        expect(find.text('4'), findsWidgets);
-        expect(find.text('2'), findsWidgets);
+        // Inbound queue cell shows 4; the ledger's skipped row shows 2.
+        expect(tester.widget<StatusRow>(find.byType(StatusRow)).inbound, 4);
+        expect(
+          tester
+              .widget<SyncStatsCard>(find.byType(SyncStatsCard))
+              .skippedCount
+              .value,
+          2,
+        );
       },
     );
 
@@ -898,7 +927,30 @@ void main() {
       final statusAfter = tester.widget<StatusRow>(find.byType(StatusRow));
       expect(identical(statusAfter, statusBefore), isFalse);
       expect(statusAfter.inbound, 9);
-      expect(statusAfter.skipped, 1);
+      // The skipped count reaches the ledger through its listenable alone.
+      expect(ledgerBefore.skippedCount.value, 1);
+    });
+
+    testWidgets("shows the queue's skipped count in the statistics ledger, "
+        'following each signal', (tester) async {
+      await pumpInScaffold(tester);
+      final messages = messagesOf(tester);
+      final skippedRow = find.ancestor(
+        of: find.text(messages.backfillStatsSkipped),
+        matching: find.byType(Row),
+      );
+
+      await emitDepth(tester, total: 0, abandoned: 1357);
+      expect(
+        find.descendant(of: skippedRow.first, matching: find.text('1,357')),
+        findsOneWidget,
+      );
+
+      await emitDepth(tester, total: 0, abandoned: 0);
+      expect(
+        find.descendant(of: skippedRow.first, matching: find.text('0')),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
