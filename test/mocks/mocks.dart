@@ -96,6 +96,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_transcription_repository.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
@@ -2027,3 +2028,14 @@ class MockPullRequestContextService extends Mock
     implements PullRequestContextService {}
 
 class MockPurgedEntryGuard extends Mock implements PurgedEntryGuard {}
+
+/// An [InferenceStatusController] fixed at [status] — for a surface that
+/// shows what a transcription or other run is doing, without running one.
+class FixedInferenceStatusController extends InferenceStatusController {
+  FixedInferenceStatusController(this.status);
+
+  final InferenceStatus status;
+
+  @override
+  InferenceStatus build() => status;
+}

@@ -56,6 +56,19 @@ void main() {
     ),
   );
 
+  JournalAudio audio(String id, {String? transcript, DateTime? deletedAt}) =>
+      JournalAudio(
+        meta: meta(id).copyWith(deletedAt: deletedAt),
+        data: AudioData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          audioFile: '$id.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 30),
+        ),
+        entryText: transcript == null ? null : EntryText(plainText: transcript),
+      );
+
   setUpAll(() {
     registerAllFallbackValues();
     registerFallbackValue(goalEntry(id: 'fallback'));
@@ -173,21 +186,6 @@ void main() {
       type: 'BasicLink',
       hidden: false,
     );
-
-    JournalAudio audio(String id, {String? transcript, DateTime? deletedAt}) =>
-        JournalAudio(
-          meta: meta(id).copyWith(deletedAt: deletedAt),
-          data: AudioData(
-            dateFrom: testDate,
-            dateTo: testDate,
-            audioFile: '$id.m4a',
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-          ),
-          entryText: transcript == null
-              ? null
-              : EntryText(plainText: transcript),
-        );
 
     test('a goal with no links reads nothing', () async {
       when(
@@ -349,6 +347,35 @@ void main() {
       expect(charter.single.writtenAt, DateTime(2026, 8));
     });
 
+    test('a recording belongs to the charter with or without its words, '
+        'but reaches the agent only once it has them', () async {
+      when(() => mockDb.charterLinksToGoal(goalId)).thenAnswer(
+        (_) async => [
+          charterLink('spoken'),
+          charterLink('still-transcribing'),
+          charterLink('deleted-recording'),
+        ],
+      );
+      when(() => mockDb.getJournalEntitiesForIds(any())).thenAnswer(
+        (_) async => [
+          audio('spoken', transcript: '  Coach me gently.  '),
+          audio('still-transcribing'),
+          audio('deleted-recording', transcript: 'gone', deletedAt: testDate),
+        ],
+      );
+
+      final entries = await repository.charterEntries('agent-1');
+      expect(entries.map((e) => e.meta.id).toSet(), {
+        'spoken',
+        'still-transcribing',
+      });
+      expect(entries.every((e) => e is JournalAudio), isTrue);
+
+      final charter = await repository.charter('agent-1');
+      expect(charter.single.entryId, 'spoken');
+      expect(charter.single.text, 'Coach me gently.');
+    });
+
     test('a goal without a charter reads no entries at all', () async {
       when(
         () => mockDb.charterLinksToGoal(goalId),
@@ -463,6 +490,150 @@ void main() {
         expect(entity.meta.deletedAt, testDate);
       });
     }
+
+    group('attachCharterRecording', () {
+      test('links a saved recording INTO the goal — never from it', () async {
+        stubGoal();
+        when(
+          () => mockDb.journalEntityById('audio-1'),
+        ).thenAnswer((_) async => audio('audio-1'));
+        stubCreateLink(() async => true);
+
+        expect(
+          await repository.attachCharterRecording(
+            agentId: 'agent-1',
+            audioId: 'audio-1',
+          ),
+          isTrue,
+        );
+        verify(
+          () => mockPersistence.createLink(
+            fromId: 'audio-1',
+            toId: goalId,
+            linkType: EntryLinkType.charter,
+          ),
+        ).called(1);
+      });
+
+      test('a recording whose link is refused is deleted again', () async {
+        stubGoal();
+        stubUpdate();
+        when(
+          () => mockDb.journalEntityById('audio-1'),
+        ).thenAnswer((_) async => audio('audio-1'));
+        stubCreateLink(() async => false);
+
+        final attached = await withClock(
+          Clock.fixed(testDate),
+          () => repository.attachCharterRecording(
+            agentId: 'agent-1',
+            audioId: 'audio-1',
+          ),
+        );
+
+        expect(attached, isFalse);
+        final deleted = verify(
+          () => mockPersistence.updateDbEntity(captureAny(), linkedId: goalId),
+        ).captured;
+        expect((deleted.single as JournalAudio).meta.deletedAt, testDate);
+      });
+
+      test('a recording for a goal with no journal row is deleted rather '
+          'than left where no page shows it', () async {
+        stubUpdate();
+        when(
+          () => mockDb.journalEntityById(goalId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById('audio-1'),
+        ).thenAnswer((_) async => audio('audio-1'));
+
+        final attached = await withClock(
+          Clock.fixed(testDate),
+          () => repository.attachCharterRecording(
+            agentId: 'agent-1',
+            audioId: 'audio-1',
+          ),
+        );
+
+        expect(attached, isFalse);
+        verify(
+          () => mockPersistence.updateDbEntity(any(), linkedId: goalId),
+        ).called(1);
+      });
+
+      test('only a live recording can join the charter', () async {
+        stubGoal();
+        when(
+          () => mockDb.journalEntityById('not-audio'),
+        ).thenAnswer((_) async => note('not-audio'));
+        when(() => mockDb.journalEntityById('deleted')).thenAnswer(
+          (_) async => audio('deleted', deletedAt: testDate),
+        );
+
+        for (final id in ['not-audio', 'deleted']) {
+          expect(
+            await repository.attachCharterRecording(
+              agentId: 'agent-1',
+              audioId: id,
+            ),
+            isFalse,
+            reason: id,
+          );
+        }
+        verifyNever(
+          () => mockPersistence.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+          ),
+        );
+      });
+    });
+
+    test(
+      "correcting a recording's transcript saves it on the recording",
+      () async {
+        stubUpdate();
+
+        final saved = await repository.updateCharterEntry(
+          audio('audio-1', transcript: 'Coach me gentle.'),
+          agentId: 'agent-1',
+          text: 'Coach me gently.',
+        );
+
+        expect(saved, isTrue);
+        final written = verify(
+          () => mockPersistence.updateDbEntity(captureAny(), linkedId: goalId),
+        ).captured;
+        final recording = written.single as JournalAudio;
+        expect(recording.entryText!.plainText, 'Coach me gently.');
+        // Still the same recording, file and all.
+        expect(recording.data.audioFile, 'audio-1.m4a');
+      },
+    );
+
+    test(
+      'an entry that is neither a note nor a recording is not edited',
+      () async {
+        stubUpdate();
+
+        expect(
+          await repository.updateCharterEntry(
+            goalEntry(id: 'not-a-charter-kind'),
+            agentId: 'agent-1',
+            text: 'Words.',
+          ),
+          isFalse,
+        );
+        verifyNever(
+          () => mockPersistence.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        );
+      },
+    );
 
     test('an edit saves the new words and notifies the goal it does not '
         'descend from', () async {

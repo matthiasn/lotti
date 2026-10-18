@@ -107,22 +107,24 @@ class GoalRepository {
     ];
   }
 
-  /// The goal's charter (ADR 0140): the live text entries linked into
-  /// [agentId]'s goal row by a charter link, in the order they were written.
+  /// The goal's charter (ADR 0140): the live entries linked into [agentId]'s
+  /// goal row by a charter link, in the order they were written — written
+  /// notes with words, and recordings with or without their transcript yet.
   ///
   /// A charter link points from the entry to the goal — the reverse of a
   /// check-in's — so nothing here can surface a check-in, and no check-in
   /// reader can surface a charter entry.
-  Future<List<JournalEntry>> charterEntries(String agentId) async {
+  Future<List<JournalEntity>> charterEntries(String agentId) async {
     final links = await _journalDb.charterLinksToGoal(goalIdForAgent(agentId));
     final ids = links.map((link) => link.fromId).toSet();
     if (ids.isEmpty) return const [];
     final entities = await _journalDb.getJournalEntitiesForIds(ids);
     return [
       for (final entity in entities)
-        if (entity is JournalEntry &&
-            !entity.isDeleted &&
-            (entity.entryText?.plainText.trim() ?? '').isNotEmpty)
+        if (!entity.isDeleted &&
+            (entity is JournalAudio ||
+                (entity is JournalEntry &&
+                    (entity.entryText?.plainText.trim() ?? '').isNotEmpty)))
           entity,
     ]..sort((a, b) {
       final byDate = a.meta.dateFrom.compareTo(b.meta.dateFrom);
@@ -131,10 +133,12 @@ class GoalRepository {
   }
 
   /// [charterEntries] in the plain shape the headless workflow reads — the
-  /// [GoalCharterReader] the agent wakes with.
+  /// [GoalCharterReader] the agent wakes with. A recording counts once its
+  /// words exist; until then there is nothing for the agent to read.
   Future<List<GoalCharterEntry>> charter(String agentId) async => [
     for (final entry in await charterEntries(agentId))
-      GoalCharterEntry.of(entry),
+      if ((entry.entryText?.plainText.trim() ?? '').isNotEmpty)
+        GoalCharterEntry.of(entry),
   ];
 
   /// Writes [text] as a new charter entry of [agentId]'s goal, in the goal's
@@ -163,36 +167,72 @@ class GoalRepository {
     if (!(await _persistenceLogic.createDbEntity(entry) ?? false)) {
       return null;
     }
+    return await _linkIntoCharter(entry, goalId: goal.meta.id) ? entry : null;
+  }
+
+  /// Makes the recording [audioId] a charter entry of [agentId]'s goal.
+  ///
+  /// The recording is saved with no parent first — a recording linked FROM
+  /// the goal, the way the recorder links one, would be a check-in — and only
+  /// then linked into the goal. A recording that cannot be linked is deleted
+  /// again rather than left in the journal where the goal page never shows
+  /// it. Returns whether it is now part of the charter.
+  Future<bool> attachCharterRecording({
+    required String agentId,
+    required String audioId,
+  }) async {
+    final goal = await getGoalForAgent(agentId);
+    final audio = await _journalDb.journalEntityById(audioId);
+    if (audio is! JournalAudio || audio.isDeleted) return false;
+    if (goal == null) {
+      await _deleteEntry(audio, goalId: goalIdForAgent(agentId));
+      return false;
+    }
+    return _linkIntoCharter(audio, goalId: goal.meta.id);
+  }
+
+  /// Links [entry] into [goalId]'s charter, deleting it again when the link
+  /// is refused or throws.
+  Future<bool> _linkIntoCharter(
+    JournalEntity entry, {
+    required String goalId,
+  }) async {
     bool linked;
     try {
       linked = await _persistenceLogic.createLink(
         fromId: entry.meta.id,
-        toId: goal.meta.id,
+        toId: goalId,
         linkType: EntryLinkType.charter,
       );
     } catch (_) {
       // A link write that throws is as refused as one that answers false.
       linked = false;
     }
-    if (linked) return entry;
-    await _deleteEntry(entry, goalId: goal.meta.id);
-    return null;
+    if (linked) return true;
+    await _deleteEntry(entry, goalId: goalId);
+    return false;
   }
 
-  /// Saves new words for the charter entry [entry] of [agentId]'s goal.
-  /// Blank words are refused: an entry emptied in its sheet is deleted there.
+  /// Saves new words for the charter entry [entry] of [agentId]'s goal — a
+  /// note's text, or a recording's transcript. Blank words are refused: an
+  /// entry emptied in its sheet is deleted there.
   Future<bool> updateCharterEntry(
-    JournalEntry entry, {
+    JournalEntity entry, {
     required String agentId,
     required String text,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return false;
+    final meta = await _persistenceLogic.updateMetadata(entry.meta);
+    final words = EntryText(plainText: trimmed);
+    final updated = switch (entry) {
+      final JournalAudio audio => audio.copyWith(entryText: words, meta: meta),
+      final JournalEntry note => note.copyWith(entryText: words, meta: meta),
+      _ => null,
+    };
+    if (updated == null) return false;
     final result = await _persistenceLogic.updateDbEntity(
-      entry.copyWith(
-        entryText: EntryText(plainText: trimmed),
-        meta: await _persistenceLogic.updateMetadata(entry.meta),
-      ),
+      updated,
       // The goal is not the entry's parent — the link points the other way —
       // so it is named here, or its page and its stale report never hear of
       // the edit.
@@ -204,12 +244,12 @@ class GoalRepository {
   /// Deletes the charter entry [entry] of [agentId]'s goal. The link stays,
   /// as links to deleted entries do; [charterEntries] skips the entry.
   Future<bool> deleteCharterEntry(
-    JournalEntry entry, {
+    JournalEntity entry, {
     required String agentId,
   }) => _deleteEntry(entry, goalId: goalIdForAgent(agentId));
 
   Future<bool> _deleteEntry(
-    JournalEntry entry, {
+    JournalEntity entry, {
     required String goalId,
   }) async {
     final result = await _persistenceLogic.updateDbEntity(

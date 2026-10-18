@@ -7124,6 +7124,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Din agent kan kun læse den første del. Forkort eller saml indlæg, så den læser det hele.';
 
   @override
+  String get goalCharterRecord => 'Indtal om dette mål';
+
+  @override
   String get goalCharterSaveFailed => 'Det blev ikke gemt. Prøv igen.';
 
   @override

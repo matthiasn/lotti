@@ -7233,6 +7233,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ton agent ne peut lire que la première partie. Raccourcis ou regroupe des entrées pour qu\'il lise tout.';
 
   @override
+  String get goalCharterRecord => 'Enregistrer sur cet objectif';
+
+  @override
   String get goalCharterSaveFailed => 'L\'enregistrement a échoué. Réessaie.';
 
   @override

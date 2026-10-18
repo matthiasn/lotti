@@ -7173,6 +7173,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dein Agent kann nur den ersten Teil davon lesen. Kürze Einträge oder fasse sie zusammen, damit er alles liest.';
 
   @override
+  String get goalCharterRecord => 'Über dieses Ziel sprechen';
+
+  @override
   String get goalCharterSaveFailed =>
       'Das wurde nicht gespeichert. Versuch es noch einmal.';
 

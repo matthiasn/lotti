@@ -16,6 +16,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -82,7 +83,7 @@ void main() {
                 id: failedAudioId,
                 aiResponseType: AiResponseType.audioTranscription,
               )).overrideWith(
-                () => _TestInferenceStatusController(InferenceStatus.error),
+                () => FixedInferenceStatusController(InferenceStatus.error),
               ),
             if (onTrigger != null)
               triggerSkillProvider.overrideWith((ref, params) async {
@@ -592,13 +593,4 @@ void main() {
     expect(find.text('TODAY'), findsOneWidget);
     expect(find.text('YESTERDAY'), findsOneWidget);
   });
-}
-
-class _TestInferenceStatusController extends InferenceStatusController {
-  _TestInferenceStatusController(this.initial);
-
-  final InferenceStatus initial;
-
-  @override
-  InferenceStatus build() => initial;
 }

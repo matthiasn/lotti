@@ -29,7 +29,7 @@ void main() {
     late MockUpdateNotifications notifications;
     late StreamController<Set<String>> updates;
     late ProviderContainer container;
-    late List<JournalEntry> stored;
+    late List<JournalEntity> stored;
 
     setUp(() {
       repository = MockGoalRepository();
@@ -54,7 +54,7 @@ void main() {
       await updates.close();
     });
 
-    Future<List<JournalEntry>> read() =>
+    Future<List<JournalEntity>> read() =>
         container.read(goalCharterEntriesProvider('agent-1').future);
 
     test("reads the goal's charter", () async {
@@ -69,7 +69,7 @@ void main() {
 
     test('re-reads when the goal is notified, keeping the last charter while '
         'it does', () async {
-      final values = <AsyncValue<List<JournalEntry>>>[];
+      final values = <AsyncValue<List<JournalEntity>>>[];
       final subscription = container.listen(
         goalCharterEntriesProvider('agent-1'),
         (_, next) => values.add(next),
@@ -93,6 +93,25 @@ void main() {
       expect(values.every((value) => value.hasValue), isTrue);
       verify(() => repository.charterEntries('agent-1')).called(2);
     });
+
+    test(
+      'a charter entry being updated on its own re-reads it — a '
+      "recording's transcript lands on the recording, not the goal",
+      () async {
+        final subscription = container.listen(
+          goalCharterEntriesProvider('agent-1'),
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+        await read();
+
+        updates.add({'purpose'});
+        await pumpEventQueue();
+        await read();
+
+        verify(() => repository.charterEntries('agent-1')).called(2);
+      },
+    );
 
     test('a private entry being hidden or shown re-reads it', () async {
       final subscription = container.listen(
@@ -160,6 +179,35 @@ void main() {
       // One entry larger than the whole budget is cut, which is also not
       // reading all of it.
       expect(goalCharterFitsBudget([entry('long', long)]), isFalse);
+    });
+
+    test('a recording still waiting for its words counts for nothing', () {
+      final long = List.filled(goalCharterTokenBudget, 'krill').join(' ');
+      final untranscribed = JournalAudio(
+        meta: testTextEntryNoGeo.meta.copyWith(id: 'spoken'),
+        data: AudioData(
+          dateFrom: DateTime(2026, 8),
+          dateTo: DateTime(2026, 8),
+          audioFile: 'spoken.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 30),
+        ),
+      );
+      expect(
+        goalCharterFitsBudget([
+          entry('purpose', 'This goal is my journal.'),
+          untranscribed,
+        ]),
+        isTrue,
+      );
+      // ...and once it has words, they count like any other entry's.
+      expect(
+        goalCharterFitsBudget([
+          entry('purpose', 'This goal is my journal.'),
+          untranscribed.copyWith(entryText: EntryText(plainText: long)),
+        ]),
+        isFalse,
+      );
     });
   });
 }

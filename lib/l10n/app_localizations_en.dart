@@ -7096,6 +7096,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.';
 
   @override
+  String get goalCharterRecord => 'Record about this goal';
+
+  @override
   String get goalCharterSaveFailed => 'That didn\'t save. Try again.';
 
   @override

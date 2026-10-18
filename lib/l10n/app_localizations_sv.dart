@@ -7134,6 +7134,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Din agent kan bara läsa den första delen. Korta ner eller slå ihop inlägg så att den läser allt.';
 
   @override
+  String get goalCharterRecord => 'Spela in om det här målet';
+
+  @override
   String get goalCharterSaveFailed => 'Det sparades inte. Försök igen.';
 
   @override

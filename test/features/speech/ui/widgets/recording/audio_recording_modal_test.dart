@@ -855,94 +855,110 @@ void main() {
     });
 
     group('AudioRecordingModal.show() - Static Method Coverage', () {
-      testWidgets(
-        'default root modal finishes cleanly above a nested task navigator',
-        (tester) async {
-          tester.view
-            ..physicalSize = const Size(1000, 800)
-            ..devicePixelRatio = 1;
-          addTearDown(tester.view.resetPhysicalSize);
-          addTearDown(tester.view.resetDevicePixelRatio);
+      for (final openCreatedEntry in [true, false]) {
+        testWidgets(
+          'default root modal finishes cleanly above a nested task navigator '
+          '(openCreatedEntry: $openCreatedEntry)',
+          (tester) async {
+            String? shownId;
+            tester.view
+              ..physicalSize = const Size(1000, 800)
+              ..devicePixelRatio = 1;
+            addTearDown(tester.view.resetPhysicalSize);
+            addTearDown(tester.view.resetDevicePixelRatio);
 
-          final rootObserver = _TestNavigatorObserver();
-          final nestedObserver = _TestNavigatorObserver();
-          final navigatedPaths = <String>[];
-          var modalHadPoppedWhenNavigating = false;
-          beamToNamedOverride = (path) {
-            navigatedPaths.add(path);
-            modalHadPoppedWhenNavigating = rootObserver.poppedRoutes
-                .whereType<WoltModalSheetRoute<String>>()
-                .isNotEmpty;
-          };
-          addTearDown(() => beamToNamedOverride = null);
-          final recordingState = AudioRecorderState(
-            status: AudioRecorderStatus.recording,
-            progress: const Duration(seconds: 8),
-            vu: 1,
-            dBFS: -24,
-            showIndicator: false,
-            modalVisible: true,
-          );
+            final rootObserver = _TestNavigatorObserver();
+            final nestedObserver = _TestNavigatorObserver();
+            final navigatedPaths = <String>[];
+            var modalHadPoppedWhenNavigating = false;
+            beamToNamedOverride = (path) {
+              navigatedPaths.add(path);
+              modalHadPoppedWhenNavigating = rootObserver.poppedRoutes
+                  .whereType<WoltModalSheetRoute<String>>()
+                  .isNotEmpty;
+            };
+            addTearDown(() => beamToNamedOverride = null);
+            final recordingState = AudioRecorderState(
+              status: AudioRecorderStatus.recording,
+              progress: const Duration(seconds: 8),
+              vu: 1,
+              dBFS: -24,
+              showIndicator: false,
+              modalVisible: true,
+            );
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: withServiceOverrides([
-                ...baseOverrides(),
-                audioRecorderControllerProvider.overrideWith(
-                  () => _CallbackTrackingController(
-                    fixedState: recordingState,
-                    createdId: 'audio-entry-1',
+            await tester.pumpWidget(
+              ProviderScope(
+                overrides: withServiceOverrides([
+                  ...baseOverrides(),
+                  audioRecorderControllerProvider.overrideWith(
+                    () => _CallbackTrackingController(
+                      fixedState: recordingState,
+                      createdId: 'audio-entry-1',
+                    ),
                   ),
-                ),
-              ]),
-              child: MaterialApp(
-                builder: LegacyMaterialBridge.builder,
-                theme: resolveTestTheme(),
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  ...GlobalMaterialLocalizations.delegates,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                navigatorObservers: [rootObserver],
-                home: Navigator(
-                  observers: [nestedObserver],
-                  onGenerateRoute: (_) => MaterialPageRoute<void>(
-                    builder: (context) => Scaffold(
-                      body: ElevatedButton(
-                        onPressed: () => AudioRecordingModal.show(context),
-                        child: const Text('Show Modal'),
+                ]),
+                child: MaterialApp(
+                  builder: LegacyMaterialBridge.builder,
+                  theme: resolveTestTheme(),
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    ...GlobalMaterialLocalizations.delegates,
+                  ],
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  navigatorObservers: [rootObserver],
+                  home: Navigator(
+                    observers: [nestedObserver],
+                    onGenerateRoute: (_) => MaterialPageRoute<void>(
+                      builder: (context) => Scaffold(
+                        body: ElevatedButton(
+                          onPressed: () async =>
+                              shownId = await AudioRecordingModal.show(
+                                context,
+                                openCreatedEntry: openCreatedEntry,
+                              ),
+                          child: const Text('Show Modal'),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
 
-          await tester.tap(find.text('Show Modal'));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
+            await tester.tap(find.text('Show Modal'));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
-          expect(
-            rootObserver.pushedRoutes.whereType<WoltModalSheetRoute<String>>(),
-            hasLength(1),
-          );
-          expect(
-            nestedObserver.pushedRoutes
-                .whereType<WoltModalSheetRoute<String>>(),
-            isEmpty,
-          );
+            expect(
+              rootObserver.pushedRoutes
+                  .whereType<WoltModalSheetRoute<String>>(),
+              hasLength(1),
+            );
+            expect(
+              nestedObserver.pushedRoutes
+                  .whereType<WoltModalSheetRoute<String>>(),
+              isEmpty,
+            );
 
-          await tester.tap(find.byKey(const ValueKey('stop_recording')));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
+            await tester.tap(find.byKey(const ValueKey('stop_recording')));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
-          expect(find.byType(AudioRecordingModalContent), findsNothing);
-          expect(navigatedPaths, ['/journal/audio-entry-1']);
-          expect(modalHadPoppedWhenNavigating, isTrue);
-          expect(tester.takeException(), isNull);
-        },
-      );
+            expect(find.byType(AudioRecordingModalContent), findsNothing);
+            // The recording is saved either way; only opening it is optional —
+            // a caller that links the recording itself stays where it is.
+            expect(shownId, 'audio-entry-1');
+            if (openCreatedEntry) {
+              expect(navigatedPaths, ['/journal/audio-entry-1']);
+              expect(modalHadPoppedWhenNavigating, isTrue);
+            } else {
+              expect(navigatedPaths, isEmpty);
+            }
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
 
       testWidgets(
         'should set modal visible and category when show() is called',

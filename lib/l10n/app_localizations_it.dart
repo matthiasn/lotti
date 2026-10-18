@@ -7210,6 +7210,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il tuo agente può leggere solo la prima parte. Accorcia o unisci le voci perché le legga tutte.';
 
   @override
+  String get goalCharterRecord => 'Registra su questo obiettivo';
+
+  @override
   String get goalCharterSaveFailed => 'Non è stato salvato. Riprova.';
 
   @override

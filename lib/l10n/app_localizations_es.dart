@@ -7208,6 +7208,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu agente solo puede leer la primera parte. Acorta o combina entradas para que lo lea todo.';
 
   @override
+  String get goalCharterRecord => 'Grabar sobre este objetivo';
+
+  @override
   String get goalCharterSaveFailed => 'No se ha guardado. Inténtalo de nuevo.';
 
   @override

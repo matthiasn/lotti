@@ -19,15 +19,18 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Opens the sheet for one charter entry of the goal coached by [agentId]
-/// (ADR 0140): a new one, or [entry] to edit.
+/// (ADR 0140): a new one, or [entry] to edit — a note's words, or a
+/// recording's transcript.
 ///
 /// The charter is what the user tells the agent the goal is FOR — written
-/// here, never in the chat. Voice is dictation into the field, so what the
-/// agent reads word for word is what the user saw and could correct.
+/// here, never in the chat. Voice in this sheet is dictation into the field,
+/// so what the agent reads word for word is what the user saw and could
+/// correct; a recording the user wants to keep is made from the card instead
+/// (`recordGoalCharterEntry`) and corrected here through its transcript.
 Future<void> showGoalCharterSheet({
   required BuildContext context,
   required String agentId,
-  JournalEntry? entry,
+  JournalEntity? entry,
 }) => DsActionModal.show<void>(
   context: context,
   title: context.messages.goalCharterTitle,
@@ -40,8 +43,9 @@ class GoalCharterForm extends ConsumerStatefulWidget {
 
   final String agentId;
 
-  /// The entry being edited; null for a new one.
-  final JournalEntry? entry;
+  /// The entry being edited — a note, or a recording whose transcript is
+  /// edited; null for a new note.
+  final JournalEntity? entry;
 
   @override
   ConsumerState<GoalCharterForm> createState() => _GoalCharterFormState();
@@ -175,7 +179,7 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
   }
 
   /// Deletes the entry and closes the sheet, or says it could not.
-  Future<void> _delete(JournalEntry entry) async {
+  Future<void> _delete(JournalEntity entry) async {
     final failed = context.messages.journalDeleteFailed;
     final repository = ref.read(goalRepositoryProvider);
     if (repository == null) {
@@ -257,11 +261,17 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
             enabled: shown == ChatRecorderStatus.idle,
             semanticsLabel: messages.goalCharterTitle,
           ),
-          SizedBox(height: tokens.spacing.step3),
-          GoalCharterDictation(
-            status: shown,
-            onStart: status == ChatRecorderStatus.idle ? _startDictation : null,
-          ),
+          // A recording's words come from the recording; dictating more into
+          // its transcript would put words in its mouth.
+          if (entry is! JournalAudio) ...[
+            SizedBox(height: tokens.spacing.step3),
+            GoalCharterDictation(
+              status: shown,
+              onStart: status == ChatRecorderStatus.idle
+                  ? _startDictation
+                  : null,
+            ),
+          ],
           SizedBox(height: tokens.spacing.step5),
           DesignSystemModalActionBar(
             primary: DesignSystemButton(

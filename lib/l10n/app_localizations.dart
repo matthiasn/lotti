@@ -12035,6 +12035,12 @@ abstract class AppLocalizations {
   /// **'Your agent can only read the first part of this. Shorten or combine entries so it reads all of it.'**
   String get goalCharterOverBudget;
 
+  /// No description provided for @goalCharterRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record about this goal'**
+  String get goalCharterRecord;
+
   /// No description provided for @goalCharterSaveFailed.
   ///
   /// In en, this message translates to:

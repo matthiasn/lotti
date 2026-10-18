@@ -2955,6 +2955,7 @@
   "goalCharterEmpty": "Cuéntale a tu agente para qué es este objetivo y cómo quieres que te acompañe. Lo lee cada vez que te escribe.",
   "goalCharterHint": "¿Para qué es este objetivo, qué te importa y cómo debería acompañarte tu agente? Por ejemplo: hazme una pregunta guiada cada mañana.",
   "goalCharterOverBudget": "Tu agente solo puede leer la primera parte. Acorta o combina entradas para que lo lea todo.",
+  "goalCharterRecord": "Grabar sobre este objetivo",
   "goalCharterSaveFailed": "No se ha guardado. Inténtalo de nuevo.",
   "goalCharterTitle": "Sobre este objetivo",
   "goalChartSevenDayAverage": "Media de 7 días",

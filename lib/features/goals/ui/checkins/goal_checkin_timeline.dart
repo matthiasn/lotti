@@ -13,6 +13,7 @@ import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
+import 'package:lotti/features/goals/ui/checkins/goal_audio_transcript_status.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -250,15 +251,13 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline> {
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
             transcript: checkIn.transcript,
-            transcriptStatus: checkIn.transcript != null
-                ? TimelineTranscriptStatus.none
-                : inferenceStatus == InferenceStatus.running
-                ? TimelineTranscriptStatus.pending
-                : inferenceStatus == InferenceStatus.error || durableFailure
-                ? TimelineTranscriptStatus.failed
-                : graceExpiry.isAfter(clock.now())
-                ? TimelineTranscriptStatus.pending
-                : TimelineTranscriptStatus.stalled,
+            transcriptStatus: goalAudioTranscriptStatus(
+              hasTranscript: checkIn.transcript != null,
+              inference: inferenceStatus,
+              durableFailure: durableFailure,
+              graceExpiry: graceExpiry,
+              now: clock.now(),
+            ),
           ),
         );
 

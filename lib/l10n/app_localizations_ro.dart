@@ -7247,6 +7247,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Agentul poate citi doar prima parte. Scurtați sau combinați înregistrările ca să le citească pe toate.';
 
   @override
+  String get goalCharterRecord => 'Înregistrați despre acest obiectiv';
+
+  @override
   String get goalCharterSaveFailed => 'Nu s-a salvat. Încercați din nou.';
 
   @override

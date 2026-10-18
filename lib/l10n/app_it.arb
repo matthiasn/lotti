@@ -3300,6 +3300,7 @@
   "goalCharterEmpty": "Racconta al tuo agente a cosa serve questo obiettivo e come vuoi essere seguito. Lo legge ogni volta che ti scrive.",
   "goalCharterHint": "A cosa serve questo obiettivo, cosa conta per te e come dovrebbe seguirti il tuo agente? Per esempio: fammi una domanda guidata ogni mattina.",
   "goalCharterOverBudget": "Il tuo agente può leggere solo la prima parte. Accorcia o unisci le voci perché le legga tutte.",
+  "goalCharterRecord": "Registra su questo obiettivo",
   "goalCharterSaveFailed": "Non è stato salvato. Riprova.",
   "goalCharterTitle": "Su questo obiettivo",
   "goalChartSevenDayAverage": "Media su 7 giorni",

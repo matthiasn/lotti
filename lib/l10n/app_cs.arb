@@ -2962,6 +2962,7 @@
   "goalCharterEmpty": "Řekni svému agentovi, k čemu tento cíl je a jak chceš, aby tě koučoval. Čte to pokaždé, když ti píše.",
   "goalCharterHint": "K čemu tento cíl je, na čem ti záleží a jak by tě měl tvůj agent koučovat? Například: polož mi každé ráno jednu otázku k zamyšlení.",
   "goalCharterOverBudget": "Tvůj agent dokáže přečíst jen první část. Zkrať záznamy nebo je spoj, aby přečetl všechno.",
+  "goalCharterRecord": "Nahrát o tomto cíli",
   "goalCharterSaveFailed": "Neuložilo se to. Zkus to znovu.",
   "goalCharterTitle": "O tomto cíli",
   "goalChartSevenDayAverage": "7denní průměr",

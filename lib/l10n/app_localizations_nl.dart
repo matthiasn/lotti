@@ -7154,6 +7154,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je agent kan alleen het eerste deel lezen. Kort items in of voeg ze samen zodat hij alles leest.';
 
   @override
+  String get goalCharterRecord => 'Inspreken over dit doel';
+
+  @override
   String get goalCharterSaveFailed =>
       'Dat is niet opgeslagen. Probeer het opnieuw.';
 

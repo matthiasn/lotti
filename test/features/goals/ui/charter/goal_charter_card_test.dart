@@ -1,15 +1,25 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/state/goal_charter_providers.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_sheet.dart';
+import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/ui/evolution/widgets/evolution_recorder_test_utils.dart';
@@ -24,11 +34,30 @@ void main() {
         entryText: EntryText(plainText: text),
       );
 
+  final now = DateTime(2026, 8, 11, 12);
+
+  JournalAudio recording(String id, {String? transcript, DateTime? at}) =>
+      JournalAudio(
+        meta: testTextEntryNoGeo.meta.copyWith(
+          id: id,
+          dateFrom: at ?? now.subtract(const Duration(minutes: 1)),
+        ),
+        data: AudioData(
+          dateFrom: now,
+          dateTo: now,
+          audioFile: '$id.m4a',
+          audioDirectory: '/audio/',
+          duration: const Duration(seconds: 30),
+        ),
+        entryText: transcript == null ? null : EntryText(plainText: transcript),
+      );
+
   Future<void> pump(
     WidgetTester tester, {
-    required Future<List<JournalEntry>> Function() entries,
+    required Future<List<JournalEntity>> Function() entries,
     bool editable = true,
-  }) async {
+    List<Override> overrides = const [],
+  }) => withClock(Clock.fixed(now), () async {
     await tester.pumpWidget(
       makeTestableWidget(
         GoalCharterCard(agentId: 'agent-1', editable: editable),
@@ -39,11 +68,15 @@ void main() {
           chatRecorderControllerProvider.overrideWith(
             TranscriptEmittingController.new,
           ),
+          ...overrides,
         ],
       ),
     );
     await tester.pump();
-  }
+    // The durable-failure lookup resolves a frame late; that rebuild reads
+    // the clock, so it belongs inside the fixed one.
+    await tester.pump();
+  });
 
   testWidgets('lists the charter in full, in the order it was written', (
     tester,
@@ -174,5 +207,160 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  group('a recorded entry', () {
+    List<Override> noFailure(String id) => [
+      goalAudioTranscriptionFailedProvider(
+        id,
+      ).overrideWith((ref) async => false),
+    ];
+
+    testWidgets('plays, and its transcript opens the sheet to correct', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        entries: () async => [
+          recording('spoken', transcript: 'Coach me gently.'),
+        ],
+        overrides: noFailure('spoken'),
+      );
+
+      expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      expect(find.text('Coach me gently.'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('goal-charter-entry-spoken')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final form = tester.widget<GoalCharterForm>(find.byType(GoalCharterForm));
+      expect(form.entry, isA<JournalAudio>());
+      // The words come from the recording: no dictating into a transcript.
+      expect(find.byKey(const ValueKey('goal-charter-dictate')), findsNothing);
+    });
+
+    testWidgets('says it is being transcribed while it is', (tester) async {
+      await pump(
+        tester,
+        entries: () async => [recording('spoken')],
+        overrides: [
+          ...noFailure('spoken'),
+          inferenceStatusControllerProvider((
+            id: 'spoken',
+            aiResponseType: AiResponseType.audioTranscription,
+          )).overrideWith(
+            () => FixedInferenceStatusController(InferenceStatus.running),
+          ),
+        ],
+      );
+
+      expect(
+        find.byKey(const ValueKey('goal-charter-transcribing-spoken')),
+        findsOneWidget,
+      );
+      expect(find.text('Transcribing…'), findsOneWidget);
+    });
+
+    for (final (kind, label, at, failed) in [
+      (
+        'failed',
+        'failed',
+        null,
+        true,
+      ),
+      (
+        'stalled',
+        'missing',
+        DateTime(2026, 8, 11, 11),
+        false,
+      ),
+    ]) {
+      testWidgets('a $kind transcription offers Retry, which transcribes that '
+          'recording', (tester) async {
+        final triggered = <TriggerSkillParams>[];
+        await pump(
+          tester,
+          entries: () async => [recording('spoken', at: at)],
+          overrides: [
+            goalAudioTranscriptionFailedProvider(
+              'spoken',
+            ).overrideWith((ref) async => failed),
+            triggerSkillProvider.overrideWith((ref, params) async {
+              triggered.add(params);
+            }),
+          ],
+        );
+
+        final context = tester.element(find.byType(GoalCharterCard));
+        expect(
+          find.text(
+            label == 'failed'
+                ? context.messages.timelineTranscriptionFailed
+                : context.messages.timelineTranscriptMissing,
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('goal-charter-retry-spoken')),
+        );
+        await tester.pump();
+
+        expect(triggered.single.entityId, 'spoken');
+        expect(triggered.single.skillId, skillTranscribeContextId);
+      });
+    }
+
+    testWidgets('a recording waiting for words keeps the over-budget notice '
+        'away', (tester) async {
+      await pump(
+        tester,
+        entries: () async => [recording('spoken')],
+        overrides: noFailure('spoken'),
+      );
+
+      expect(
+        find.byKey(const ValueKey('goal-charter-over-budget')),
+        findsNothing,
+      );
+    });
+  });
+
+  testWidgets('an active goal records from the header', (tester) async {
+    await pump(
+      tester,
+      entries: () async => [entry('purpose', 'This goal is my journal.')],
+    );
+
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const ValueKey('goal-charter-record')))
+          .tooltip,
+      'Record about this goal',
+    );
+  });
+
+  testWidgets('an empty charter invites a recording as well as writing', (
+    tester,
+  ) async {
+    await pump(tester, entries: () async => const []);
+
+    expect(
+      find.byKey(const ValueKey('goal-charter-empty-record')),
+      findsOneWidget,
+    );
+    expect(find.text('Record about this goal'), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-charter-empty-cta')), findsOne);
+  });
+
+  testWidgets('a dormant goal records nothing either', (tester) async {
+    await pump(
+      tester,
+      editable: false,
+      entries: () async => [entry('purpose', 'This goal is my journal.')],
+    );
+
+    expect(find.byKey(const ValueKey('goal-charter-record')), findsNothing);
   });
 }

@@ -7204,6 +7204,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tvůj agent dokáže přečíst jen první část. Zkrať záznamy nebo je spoj, aby přečetl všechno.';
 
   @override
+  String get goalCharterRecord => 'Nahrát o tomto cíli';
+
+  @override
   String get goalCharterSaveFailed => 'Neuložilo se to. Zkus to znovu.';
 
   @override

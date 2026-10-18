@@ -2955,6 +2955,7 @@
   "goalCharterEmpty": "Spuneți-i agentului la ce servește acest obiectiv și cum doriți să fiți îndrumat. Citește aceste informații de fiecare dată când vă scrie.",
   "goalCharterHint": "La ce servește acest obiectiv, ce contează pentru dvs. și cum ar trebui să vă îndrume agentul? De exemplu: puneți-mi o întrebare ghidată în fiecare dimineață.",
   "goalCharterOverBudget": "Agentul poate citi doar prima parte. Scurtați sau combinați înregistrările ca să le citească pe toate.",
+  "goalCharterRecord": "Înregistrați despre acest obiectiv",
   "goalCharterSaveFailed": "Nu s-a salvat. Încercați din nou.",
   "goalCharterTitle": "Despre acest obiectiv",
   "goalChartSevenDayAverage": "Media pe 7 zile",

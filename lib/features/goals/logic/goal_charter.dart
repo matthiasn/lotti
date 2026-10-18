@@ -18,9 +18,9 @@ class GoalCharterEntry {
     required this.text,
   });
 
-  /// The charter entry a journal [entry] stands for: its words, trimmed, and
-  /// the moment it was written.
-  GoalCharterEntry.of(JournalEntry entry)
+  /// The charter entry a journal [entry] stands for: its words — a note's
+  /// text, a recording's transcript — trimmed, and the moment it was written.
+  GoalCharterEntry.of(JournalEntity entry)
     : entryId = entry.meta.id,
       writtenAt = entry.meta.dateFrom,
       text = entry.entryText?.plainText.trim() ?? '';
