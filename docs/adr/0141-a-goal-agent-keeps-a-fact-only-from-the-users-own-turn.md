@@ -37,9 +37,11 @@ could not use them.
 2. **A goal fact is kept only from the user's own turn.**
    `remember_goal_fact` records a fact `confirmed` when its `source` is
    `userStated`, the wake is answering the user's own chat message, **and**
-   the fact is grounded in that message: at least half of its content words
-   (three letters or more, inflection allowed) appear in what the user
-   typed. Every other fact — inferred, "user-stated" on a briefing or any
+   the fact is grounded in that message: at least half of the content words
+   (three letters or more, inflection allowed) of its statement, and of its
+   one-line hook, appear in what the user typed. The hook is held to it too,
+   because it is stored with the fact and is what a wake reads in place of
+   the statement once the knowledge budget runs out. Every other fact — inferred, "user-stated" on a briefing or any
    other automatic wake, or labelled the user's on their turn without their
    words — is `proposed`. The caller vouches, never the model: the source is
    the model's claim, and the model has read transcripts, check-ins and the

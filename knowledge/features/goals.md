@@ -2176,7 +2176,9 @@ stateDiagram-v2
 - **The caller vouches, never the model.** `goalFactIsUserConfirmed` keeps a
   fact only when its `source` is `userStated`, the wake answers the user's
   own chat message, *and* at least `goalFactGroundingShare` (half) of the
-  fact's content words appear in that message. `GoalAgentStrategy` decides
+  content words of both its statement and its hook appear in that message
+  — the hook too, since a wake past the knowledge budget reads it in place
+  of the statement. `GoalAgentStrategy` decides
   once, from the pending message, and both answers the model and hands the
   decision to persistence (`rememberedFacts`), which passes it as
   `userConfirmed` to `AgentKnowledgeService.propose`. A briefing that reads a

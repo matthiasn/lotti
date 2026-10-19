@@ -73,11 +73,14 @@ const double goalFactGroundingShare = 0.5;
 /// Whether [request] is kept at once, or waits for the user on the goal
 /// page (ADR 0141). Kept only when the model attests the user stated it,
 /// on a wake answering the user's [userMessage], and the fact is grounded
-/// in that message: at least [goalFactGroundingShare] of its words appear
-/// in it. The source is the model's word, and the model has read
-/// transcripts, check-ins and the charter too — without the grounding, a
-/// user's "ok" could carry a sentence planted in a transcript into memory
-/// every wake reads. A fact that fails it is only proposed, never lost.
+/// in that message: at least [goalFactGroundingShare] of the words of its
+/// statement, and of its hook, appear in it. The source is the model's
+/// word, and the model has read transcripts, check-ins and the charter too
+/// — without the grounding, a user's "ok" could carry a sentence planted in
+/// a transcript into memory every wake reads. The hook is held to it as
+/// well: it is stored with the fact, and it is what a wake reads in place
+/// of the statement once the knowledge budget runs out. A fact that fails
+/// it is only proposed, never lost.
 bool goalFactIsUserConfirmed(
   GoalFactRequest request, {
   required String? userMessage,
@@ -85,13 +88,17 @@ bool goalFactIsUserConfirmed(
   if (userMessage == null || request.source != KnowledgeSource.userStated) {
     return false;
   }
-  final factWords = _contentWords(request.statement);
-  if (factWords.isEmpty) return false;
   final said = _contentWords(userMessage);
-  final grounded = factWords.where(
-    (word) => said.any((other) => _sameWord(word, other)),
-  );
-  return grounded.length >= factWords.length * goalFactGroundingShare;
+  bool groundedInSaid(String text) {
+    final words = _contentWords(text);
+    if (words.isEmpty) return false;
+    final grounded = words.where(
+      (word) => said.any((other) => _sameWord(word, other)),
+    );
+    return grounded.length >= words.length * goalFactGroundingShare;
+  }
+
+  return groundedInSaid(request.statement) && groundedInSaid(request.hook);
 }
 
 final _word = RegExp(r'[\p{L}\p{N}]+', unicode: true);
