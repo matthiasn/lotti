@@ -111,7 +111,9 @@ class DesignSystemInlineCallout extends StatelessWidget {
                     ),
                   ),
                   if (actions.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.step4),
+                    // Tight under the words they answer: the buttons carry
+                    // their own height, so more air reads as a second block.
+                    SizedBox(height: tokens.spacing.step2),
                     Wrap(
                       alignment: WrapAlignment.end,
                       crossAxisAlignment: WrapCrossAlignment.center,

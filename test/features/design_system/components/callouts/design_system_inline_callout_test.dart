@@ -68,6 +68,17 @@ void main() {
       final callout = tester.getRect(find.byType(DesignSystemInlineCallout));
       expect(title.bottom, lessThanOrEqualTo(body.top));
       expect(quiet.top, greaterThanOrEqualTo(body.bottom));
+      // The actions sit one small step under the message, not a block away.
+      final actionsRow = tester.getRect(
+        find.descendant(
+          of: find.byType(DesignSystemInlineCallout),
+          matching: find.byType(Wrap),
+        ),
+      );
+      expect(
+        actionsRow.top - body.bottom,
+        closeTo(tokensOf(tester).spacing.step2, 0.5),
+      );
       expect(primary.left, greaterThan(quiet.right));
       final inset = tokensOf(tester).spacing.step4;
       expect(primary.right, closeTo(callout.right - inset, 1));
