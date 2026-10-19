@@ -245,6 +245,27 @@ void main() {
     expect(find.text('Read answer aloud'), findsNothing);
   });
 
+  testWidgets('without the voice model, the speech action asks first and a '
+      'cancel downloads nothing', (tester) async {
+    bench.ttsModels.installed = false;
+    await pump(tester, speech: true);
+
+    await tester.tap(find.text('Read answer aloud'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Download (398.4 MB)'), findsOneWidget);
+
+    // The answer's own button reads Cancel while it waits; the prompt is the
+    // last one in the tree, on top.
+    await tester.tap(find.text('Cancel').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Download (398.4 MB)'), findsNothing);
+    expect(bench.ttsModels.ensureCount, 0);
+    expect(bench.engine.calls, isEmpty);
+  });
+
   testWidgets('failed speech offers an explicit retry of the saved answer', (
     tester,
   ) async {

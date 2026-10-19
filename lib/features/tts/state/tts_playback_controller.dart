@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -12,6 +13,10 @@ import 'package:lotti/services/domain_logging.dart';
 
 /// Language-agnostic synthesis mode; Supertonic infers from the text.
 const String kDefaultTtsLanguage = 'na';
+
+/// Asks the user whether to download [model] — a download of
+/// [TtsModelOption.totalBytes] — and answers whether they agreed.
+typedef TtsModelDownloadConsent = Future<bool> Function(TtsModelOption model);
 
 /// One disposable, device-local result. Its key includes every synthesis input;
 /// playback speed is applied by the player and does not change the WAV.
@@ -77,6 +82,9 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   /// Silently prepares one utterance without taking playback ownership. A
   /// matching [speak] joins this work. Replacements and cancellation discard
   /// native results, and all synthesis shares the same serialized queue.
+  ///
+  /// Never downloads: with the model not installed it does nothing, because
+  /// the model may only arrive through a download the user agreed to.
   Future<void> prepare({
     required String sourceId,
     required String text,
@@ -106,7 +114,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     try {
       await previous;
       if (!current() || !await canPrepare() || !current()) return;
-      final directory = await repo.ensureInstalled(settings.modelId);
+      if (!await repo.isInstalled(settings.modelId)) return;
+      final directory = await repo.modelDirectory(settings.modelId);
       if (!current() || !await canPrepare() || !current()) return;
       file = await engine.synthesizeToFile(
         text: text,
@@ -146,11 +155,16 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   /// Speaks [text], attributing the utterance to [sourceId]. A no-op while a
   /// previous utterance is still being prepared or playing. Cancelled native
   /// synthesis may finish, but its result is deleted and never played.
+  ///
+  /// When the model is not installed yet, [confirmModelDownload] is asked
+  /// first; without it, or when the user declines, nothing downloads and the
+  /// utterance ends quietly.
   Future<void> speak({
     required String sourceId,
     required String text,
     String language = kDefaultTtsLanguage,
     Future<bool> Function()? canPlay,
+    TtsModelDownloadConsent? confirmModelDownload,
   }) async {
     if (state.isBusy) return;
     final generation = ++_generation;
@@ -204,8 +218,13 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
           settings.modelId,
           sourceId,
           current,
+          confirmModelDownload,
         );
         if (!current()) return;
+        if (modelDir == null) {
+          _onPlaybackEnded();
+          return;
+        }
 
         state = state.copyWith(
           status: TtsPlaybackStatus.synthesizing,
@@ -274,16 +293,21 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
     await _stopAndDelete(player, file);
   }
 
-  Future<String> _ensureModel(
+  /// The model's directory, downloading it first when the user agrees, or
+  /// null when it is missing and may not be downloaded.
+  Future<String?> _ensureModel(
     TtsModelRepository repo,
     String modelId,
     String sourceId,
     bool Function() current,
+    TtsModelDownloadConsent? confirmModelDownload,
   ) async {
     if (await repo.isInstalled(modelId)) {
       return repo.modelDirectory(modelId);
     }
-    if (!current()) return '';
+    if (!current() || confirmModelDownload == null) return null;
+    final agreed = await confirmModelDownload(ttsModelByIdOrDefault(modelId));
+    if (!agreed || !current()) return null;
     state = state.copyWith(
       status: TtsPlaybackStatus.downloadingModel,
       sourceId: sourceId,

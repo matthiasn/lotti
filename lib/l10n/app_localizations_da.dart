@@ -5921,11 +5921,6 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Fortsæt uden billeder';
 
   @override
@@ -6518,6 +6513,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get doneButton => 'Færdig';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Sammenkædet opgave';
@@ -15347,7 +15347,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get speechSettingsModelDescription => 'On-device talemodel';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Downloads én gang';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · hentes én gang, første gang du får læst op';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Model';
@@ -17227,6 +17229,19 @@ class AppLocalizationsDa extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Hent ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'Oplæsning kører på denne enhed og kræver en engangsdownload af stemmemodellen på $size. Wi-Fi anbefales.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => 'Hent stemmemodellen?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

@@ -28,7 +28,11 @@ void main() {
     await pump(tester, modelId: 'supertonic-3', onChanged: (_) {});
 
     expect(find.text('Supertonic 3'), findsOneWidget);
-    expect(find.text('Downloads once'), findsOneWidget);
+    // The size is disclosed before anything downloads.
+    expect(
+      find.text('398.4 MB · downloads once, when you first read aloud'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('hides the recommended badge when there is only one model', (
@@ -53,12 +57,16 @@ void main() {
           id: 'fast',
           displayName: 'Fast model',
           huggingFaceRepoId: 'repo/fast',
+          revision: 'r1',
+          files: [TtsModelFile('fast.onnx', 1000000)],
           recommended: true,
         ),
         TtsModelOption(
           id: 'hifi',
           displayName: 'Hi-fi model',
           huggingFaceRepoId: 'repo/hifi',
+          revision: 'r1',
+          files: [TtsModelFile('hifi.onnx', 2500000)],
         ),
       ],
     );

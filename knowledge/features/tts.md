@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-10-15
+    last_modified: 2026-10-19
 ---
 
 On-device text-to-speech that reads a task's AI **TL;DR** or a saved query
@@ -22,11 +22,33 @@ stack.
 
 **Synthesis never leaves the device — but the model has to arrive first.** The
 weights are not bundled. `TtsModelRepository` checks the model directory for the
-six files in `kSupertonicModelFiles` (four `.onnx` graphs plus `tts.json` and
-`unicode_indexer.json`) and downloads whichever are missing from
-`https://huggingface.co/<repo>/resolve/main/onnx/<file>`. So the first synthesis on a
-fresh install needs the network; every one after it does not, and no text or audio
-is ever sent anywhere.
+six files the model's `TtsModelOption.files` lists (four `.onnx` graphs plus
+`tts.json` and `unicode_indexer.json`) and downloads whichever are missing from
+`https://huggingface.co/<repo>/resolve/<revision>/onnx/<file>`. So the first
+synthesis on a fresh install needs the network; every one after it does not, and
+no text or audio is ever sent anywhere.
+
+# The download is always asked for
+
+The model is about 398.4 MB, and App Store guideline 4.2.3(ii) requires the app
+to disclose that size and let the user choose before fetching it. So nothing
+downloads it implicitly:
+
+- **The size ships with the app.** `TtsModelOption` pins the Hugging Face
+  `revision` (`kSupertonic3Revision`) and lists every file with its byte count
+  at that commit (`kSupertonic3Files`); `totalBytes` sums them. Pinning keeps
+  the disclosed size true however the repository's default branch moves —
+  moving the pin means re-measuring the files.
+- **Only `speak` downloads, and only on a yes.** With the model missing it asks
+  its `confirmModelDownload` callback (a `TtsModelDownloadConsent`), which every
+  read-aloud control fills with
+  [`confirmTtsModelDownload`](../../lib/features/tts/ui/tts_model_download_prompt.dart):
+  a confirmation modal showing the size, rounded up by `formatDownloadMegabytes`.
+  Without a callback, or on a no, nothing is fetched and the utterance ends
+  quietly in `stopped`, with no error.
+- **`prepare` never downloads.** With the model missing it does nothing.
+- **The onboarding companion** only speaks when the model is already installed.
+- **Speech settings** show the size under the model name.
 
 The engine sits behind a `TtsEngine` interface, with `SupertonicOnnxEngine` wired
 on macOS, iOS, Linux and Android.
@@ -70,8 +92,8 @@ the speech logging domain without including the temporary file path or content.
 Speech settings also expose **Prepare chat audio automatically**, off by default.
 `TtsSettingsController` persists this device-local opt-in under
 `TTS_AUTO_PREPARE_CHAT_AUDIO`; the existing TTS feature flag still applies.
-It enables synthesis, never autoplay. It can download missing model weights on
-first use, just like explicit playback.
+It enables synthesis, never autoplay, and never downloads: until the user has
+agreed to the model download on an explicit play, preparation does nothing.
 
 `prepare` keeps at most one disposable result outside playback state, sharing
 `_preparation` with explicit speech so the ONNX session is never used concurrently.
@@ -106,7 +128,8 @@ Model weights remain installed when prepared answer audio is discarded.
 stateDiagram-v2
   [*] --> idle
   idle --> synthesizing: Speak reserves preparation
-  synthesizing --> downloadingModel: weights missing
+  synthesizing --> downloadingModel: weights missing and user agreed
+  synthesizing --> stopped: weights missing, download declined or not offered
   downloadingModel --> synthesizing: model ready
   synthesizing --> playing: WAV ready and caller allows playback
   playing --> stopped: completion or Stop

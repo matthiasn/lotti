@@ -172,6 +172,7 @@ void main() {
       bool tts = true,
       bool engineSupported = true,
       bool hasPlan = true,
+      FakeTtsModelRepository? models,
     }) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -191,7 +192,7 @@ void main() {
             ),
             ttsAudioPlayerProvider.overrideWithValue(player),
             ttsModelRepositoryProvider.overrideWithValue(
-              FakeTtsModelRepository(),
+              models ?? FakeTtsModelRepository(),
             ),
             spokenTrackLoaderProvider.overrideWithValue(
               (clip, text) => Completer<MouthTrack>().future,
@@ -263,6 +264,30 @@ void main() {
       );
       expect(player.playCount, 1);
       expect(find.byTooltip('Stop the briefing'), findsOneWidget);
+    });
+
+    testWidgets('without the voice model, a tap asks first, showing its '
+        'size', (tester) async {
+      final models = FakeTtsModelRepository(installed: false);
+      await pump(tester, models: models);
+
+      await tester.tap(find.byType(CompanionSpeaker));
+      await _pumpFrames(tester);
+      // Let the prompt finish sliding in before tapping it.
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Download the voice model?'), findsOneWidget);
+      expect(find.text('Download (398.4 MB)'), findsOneWidget);
+      expect(models.ensureCount, 0);
+      expect(engine.calls, isEmpty);
+
+      await tester.tap(find.text('Download (398.4 MB)'));
+      // The prompt answers once its route has closed.
+      await tester.pump(const Duration(milliseconds: 400));
+      await _pumpFrames(tester);
+
+      expect(models.ensureCount, 1);
+      expect(engine.calls, hasLength(1));
     });
 
     testWidgets('a tap while she speaks stops her', (tester) async {

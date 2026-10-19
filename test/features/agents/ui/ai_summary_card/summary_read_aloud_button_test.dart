@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
+import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
@@ -13,6 +14,7 @@ class _Playback extends TtsPlaybackController {
 
   final TtsPlaybackState initial;
   final spoken = <({String sourceId, String text})>[];
+  TtsModelDownloadConsent? confirmModelDownload;
   int stops = 0;
 
   @override
@@ -24,7 +26,11 @@ class _Playback extends TtsPlaybackController {
     required String text,
     String language = 'en',
     Future<bool> Function()? canPlay,
-  }) async => spoken.add((sourceId: sourceId, text: text));
+    TtsModelDownloadConsent? confirmModelDownload,
+  }) async {
+    spoken.add((sourceId: sourceId, text: text));
+    this.confirmModelDownload = confirmModelDownload;
+  }
 
   @override
   Future<void> stop({String? sourceId}) async => stops++;
@@ -59,6 +65,24 @@ void main() {
     expect(button.progress, isNull);
     button.onPlay();
     expect(playback.spoken, [(sourceId: 'task-1', text: 'Two left.')]);
+  });
+
+  testWidgets('a play asks before the voice model downloads, showing its '
+      'size', (tester) async {
+    final button = await pump(tester, const TtsPlaybackState());
+    button.onPlay();
+    final consent = playback.confirmModelDownload;
+    expect(consent, isNotNull, reason: 'the model must never download unasked');
+
+    final agreed = consent!(ttsModelByIdOrDefault(kDefaultTtsModelId));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Download the voice model?'), findsOneWidget);
+    await tester.tap(find.text('Download (398.4 MB)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(await agreed, isTrue);
   });
 
   testWidgets('another source playing leaves it idle', (tester) async {

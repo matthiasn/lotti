@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/query/query_audio_excerpt.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/ui/tts_model_download_prompt.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -50,7 +51,11 @@ class QueryAnswerSpeechButton extends ConsumerWidget {
           variant: DesignSystemButtonVariant.tertiary,
           onPressed: busy
               ? controller.stop
-              : () => controller.speakAnswer(answerId: answerId),
+              : () => controller.speakAnswer(
+                  answerId: answerId,
+                  confirmModelDownload: (model) =>
+                      confirmTtsModelDownload(context, model),
+                ),
         ),
       ],
     );

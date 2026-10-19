@@ -153,6 +153,9 @@ class QueryAudioTestBench extends QueryTestBench {
   final ttsEnabled = StreamController<bool>.broadcast(sync: true);
   final speechPlayer = FakeTtsAudioPlayer();
   FakeTtsEngine engine = FakeTtsEngine();
+
+  /// The voice model store; installed unless a test says otherwise.
+  final ttsModels = FakeTtsModelRepository();
   final events = <AgentQueryChatEventEntity>[];
   Uint8List bytes = Uint8List.fromList([1, 2, 3]);
   late QueryEvidence evidence;
@@ -229,7 +232,7 @@ class QueryAudioTestBench extends QueryTestBench {
       return player;
     }),
     ttsEngineProvider.overrideWith((ref) => engine),
-    ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
+    ttsModelRepositoryProvider.overrideWithValue(ttsModels),
     ttsAudioPlayerProvider.overrideWithValue(speechPlayer),
   ];
 

@@ -5963,11 +5963,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Ohne Fotos fortfahren';
 
   @override
@@ -6561,6 +6556,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get doneButton => 'Fertig';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Verknüpfte Aufgabe';
@@ -15453,7 +15453,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get speechSettingsModelDescription => 'Lokales Sprachmodell';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Wird einmal geladen';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · wird einmal geladen, wenn du zum ersten Mal vorlesen lässt';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Modell';
@@ -17354,6 +17356,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Modell: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Herunterladen ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'Vorlesen läuft auf diesem Gerät und braucht einmalig einen Download des Sprachmodells von $size. WLAN wird empfohlen.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => 'Sprachmodell herunterladen?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

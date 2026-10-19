@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/ui/tts_model_download_prompt.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -46,7 +47,12 @@ class SummaryReadAloudButton extends ConsumerWidget {
     return TtsPlayButton(
       mode: mode,
       progress: progress,
-      onPlay: () => notifier.speak(sourceId: sourceId, text: text),
+      onPlay: () => notifier.speak(
+        sourceId: sourceId,
+        text: text,
+        confirmModelDownload: (model) =>
+            confirmTtsModelDownload(context, model),
+      ),
       onStop: notifier.stop,
     );
   }

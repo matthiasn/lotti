@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 /// ```text
 /// idle ─▶ downloadingModel ─▶ synthesizing ─▶ playing ─▶ stopped ─▶ idle
 ///   └────────────────────────▶ synthesizing (model already present)
+/// idle ─▶ stopped (model missing, download declined or not offered)
 /// any ─▶ error ─▶ idle
 /// ```
+///
+/// [TtsPlaybackStatus.downloadingModel] is only ever entered after the user
+/// agreed to the download.
 enum TtsPlaybackStatus {
   /// Nothing is playing or being prepared.
   idle,
 
-  /// Fetching the ONNX model from Hugging Face on first use.
+  /// Fetching the ONNX model from Hugging Face, after the user agreed to.
   downloadingModel,
 
   /// Running ONNX inference to produce the WAV.

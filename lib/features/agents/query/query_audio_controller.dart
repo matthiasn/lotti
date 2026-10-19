@@ -468,7 +468,12 @@ class QueryAudioController extends Notifier<QueryAudioState> {
     }
   }
 
-  Future<void> speakAnswer({required String answerId}) async {
+  /// Reads the answer [answerId] aloud. [confirmModelDownload] is asked
+  /// before the voice model downloads; see [TtsPlaybackController.speak].
+  Future<void> speakAnswer({
+    required String answerId,
+    TtsModelDownloadConsent? confirmModelDownload,
+  }) async {
     final run = await _start(answerId);
     if (run == null) return;
     try {
@@ -488,6 +493,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
         await _tts!.speak(
           sourceId: _ttsSourceId!,
           text: answer.text,
+          confirmModelDownload: confirmModelDownload,
           canPlay: () async {
             try {
               await _authorize(run);

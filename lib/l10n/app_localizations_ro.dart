@@ -6026,11 +6026,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Continuați fără fotografii';
 
   @override
@@ -6628,6 +6623,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get doneButton => 'Gata';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Sarcină asociată';
@@ -15639,7 +15639,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Se descarcă o singură dată';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · se descarcă o singură dată, la prima citire cu voce tare';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Model';
@@ -17551,6 +17553,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Descărcați ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'Citirea cu voce tare rulează pe acest dispozitiv și necesită o descărcare unică a modelului de voce de $size. Se recomandă Wi-Fi.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => 'Descărcați modelul de voce?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

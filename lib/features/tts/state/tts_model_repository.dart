@@ -6,20 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Files that make up a Supertonic model, fetched from the repo's `onnx/`
-/// directory. The two JSON configs live alongside the ONNX graphs upstream.
-const List<String> kSupertonicModelFiles = <String>[
-  'duration_predictor.onnx',
-  'text_encoder.onnx',
-  'vector_estimator.onnx',
-  'vocoder.onnx',
-  'tts.json',
-  'unicode_indexer.json',
-];
-
 /// Ensures the ONNX model files for a model id are present on disk —
-/// downloading them from Hugging Face on first use — and resolves the local
+/// downloading them from Hugging Face when asked to — and resolves the local
 /// directory the engine loads from.
+///
+/// Downloading is never implicit: callers check [isInstalled] and, for a
+/// model that is missing, ask the user — showing
+/// [TtsModelOption.totalBytes] — before calling [ensureInstalled].
 abstract interface class TtsModelRepository {
   /// Whether the model's files are already present locally.
   Future<bool> isInstalled(String modelId);
@@ -48,8 +41,10 @@ class SupertonicModelRepository implements TtsModelRepository {
   final http.Client _client;
   final Future<Directory> Function() _supportDirectory;
 
-  Uri _fileUri(String repoId, String file) =>
-      Uri.parse('https://huggingface.co/$repoId/resolve/main/onnx/$file');
+  Uri _fileUri(TtsModelOption model, String file) => Uri.parse(
+    'https://huggingface.co/${model.huggingFaceRepoId}/resolve/'
+    '${model.revision}/onnx/$file',
+  );
 
   @override
   Future<String> modelDirectory(String modelId) async {
@@ -60,8 +55,8 @@ class SupertonicModelRepository implements TtsModelRepository {
   @override
   Future<bool> isInstalled(String modelId) async {
     final dir = await modelDirectory(modelId);
-    for (final file in kSupertonicModelFiles) {
-      if (!File('$dir/$file').existsSync()) return false;
+    for (final file in ttsModelByIdOrDefault(modelId).files) {
+      if (!File('$dir/${file.name}').existsSync()) return false;
     }
     return true;
   }
@@ -74,19 +69,20 @@ class SupertonicModelRepository implements TtsModelRepository {
     final dir = await modelDirectory(modelId);
     await Directory(dir).create(recursive: true);
 
-    final missing = kSupertonicModelFiles
-        .where((f) => !File('$dir/$f').existsSync())
+    final model = ttsModelByIdOrDefault(modelId);
+    final missing = model.files
+        .map((file) => file.name)
+        .where((name) => !File('$dir/$name').existsSync())
         .toList();
     if (missing.isEmpty) {
       onProgress?.call(1);
       return dir;
     }
 
-    final repoId = ttsModelByIdOrDefault(modelId).huggingFaceRepoId;
     for (var i = 0; i < missing.length; i++) {
       final fileIndex = i;
       await _download(
-        _fileUri(repoId, missing[i]),
+        _fileUri(model, missing[i]),
         File('$dir/${missing[i]}'),
         (fraction) => onProgress?.call((fileIndex + fraction) / missing.length),
       );
