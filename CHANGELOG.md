@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.59]
+
+### Added
+
+- **A goal's agent remembers what you tell it.** Say "remember, I only walk
+  after dinner" in the chat and it keeps that as a fact it uses every time it
+  writes to you. Something it only worked out itself, or noticed in a
+  check-in, waits under *What I've learned* on the goal page until you
+  confirm it — and you can edit or forget any fact there.
+
+### Changed
+
+- **Sync health no longer flags skipped messages as a problem.** The count of
+  skipped sync messages sat in the top row in red, beside an alert icon, as
+  though something urgently needed fixing. It counts Matrix messages, not
+  entries, and a large number is normal. The top row now shows only the
+  inbound queue and missing entries, and the skipped count is a plain line in
+  the Sync statistics card. Retry skipped events is still under Advanced
+  recovery.
+
+### Fixed
+
+- **"What I've learned" reads right in more languages.** Italian, Dutch,
+  Portuguese, Romanian, Danish and Swedish had mistranslated labels or the
+  wrong form of address; they are corrected.
+
 ## [1.1.58]
 
 ### Added
