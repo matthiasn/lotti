@@ -108,12 +108,13 @@ Centralizing it is what keeps the responsive contract consistent — a feature t
 builds its own sheet has to re-derive the breakpoint, the insets, the barrier
 behaviour and the glass footer treatment, and will drift.
 
-**Two flows own their own Wolt presentation** and are worth knowing about before
-assuming a single entry point:
+**Three hosts own their own Wolt presentation** and are worth knowing about
+before assuming a single entry point:
 
 | Flow | Why |
 |------|-----|
-| [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Calls `WoltModalSheet.show` directly and picks its responsive type itself, because it needs a right-anchored full-height **side panel** on wide screens rather than a centred dialog. It still borrows `ModalUtils` helpers for the barrier colour and its sliver pages |
+| The shared side sheet ([`side_sheet.dart`](../../lib/widgets/modal/side_sheet.dart)) | A right-anchored, full-height **side panel** over the scrim on a wide window, a bottom sheet on a phone. `sideSheetModalType` is the responsive type; `showSideSheetPane` hosts a pane that draws its own chrome — agent internals, the goal and person agent chats. Because the pane owns its header, the host shows **no drag handle**: Wolt lays the handle over the page as an opaque hit target 48 px tall and the full sheet width, which would swallow the pane's close button. Drag to dismiss still works on the whole sheet |
+| [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Calls `WoltModalSheet.show` directly so it can push its step pages, but takes its type from the shared `sideSheetModalType`, full height on a phone. It borrows `ModalUtils` helpers for the barrier colour and its sliver pages |
 | [What's New](../features/whats_new.md) | Invokes Wolt directly for its own presentation |
 
 So the accurate rule is: `ModalUtils` owns the shared styling and navigation

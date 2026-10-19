@@ -33,9 +33,14 @@ WoltModalType sideSheetModalType(
 /// middle and a pinned footer with `Expanded` — which a scrolling Wolt page,
 /// laying content out in a shrink-wrapping viewport, cannot offer.
 ///
-/// The content owns its chrome (no Wolt top bar or close button); closing it
-/// is `Navigator.pop` on the context it is built with, or a tap on the scrim,
-/// or Esc.
+/// The content owns its chrome (no Wolt top bar, close button or drag
+/// handle); closing it is `Navigator.pop` on the context it is built with, a
+/// tap on the scrim, Esc, or — on a phone — dragging the sheet down.
+///
+/// The drag handle stays off because Wolt lays it over the page as an opaque
+/// hit target the full width of the sheet and 48 px tall: it would swallow
+/// every tap on the content's own header, close button included. Drag to
+/// dismiss does not need it — Wolt listens for the drag on the whole sheet.
 Future<T?> showSideSheetPane<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -53,6 +58,7 @@ Future<T?> showSideSheetPane<T>({
       sideSheet: sideSheet,
       fullHeightOnPhone: true,
     ),
+    showDragHandle: false,
     barrierDismissible: true,
     modalBarrierColor: ModalUtils.getModalBarrierColor(
       isDark: isDark,

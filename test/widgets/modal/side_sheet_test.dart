@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/icon_tokens.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/side_sheet.dart';
@@ -68,8 +69,8 @@ void main() {
   });
 
   group('showSideSheetPane', () {
-    Future<void> pumpHost(WidgetTester tester) async {
-      setTestSurfaceSize(tester, wide);
+    Future<void> pumpHost(WidgetTester tester, {Size size = wide}) async {
+      setTestSurfaceSize(tester, size);
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Builder(
@@ -85,6 +86,15 @@ void main() {
                 // in an unbounded, shrink-wrapping page.
                 builder: (sheetContext) => Column(
                   children: [
+                    // The pane's own header, flush with the top edge as the
+                    // agent internals and chat headers are.
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(LottiIcons.close),
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                      ),
+                    ),
                     const Expanded(
                       child: SizedBox.expand(key: ValueKey('pane-body')),
                     ),
@@ -98,7 +108,7 @@ void main() {
               child: const Text('Open'),
             ),
           ),
-          mediaQueryData: const MediaQueryData(size: wide),
+          mediaQueryData: MediaQueryData(size: size),
         ),
       );
       await tester.tap(find.text('Open'));
@@ -135,6 +145,38 @@ void main() {
 
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('pane-body')), findsNothing);
+    });
+
+    testWidgets("on a phone the pane's own top-edge close button is tappable", (
+      tester,
+    ) async {
+      await pumpHost(tester, size: phone);
+      expect(find.byKey(const ValueKey('pane-body')), findsOneWidget);
+
+      // Fatal on a miss: Wolt's drag handle, when shown, is an opaque strip
+      // across the sheet's top 48 px that a header button cannot be reached
+      // through — the tap would land on it and nothing would close.
+      WidgetController.hitTestWarningShouldBeFatal = true;
+      addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = false);
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('pane-body')), findsNothing);
+    });
+
+    testWidgets('on a phone dragging the sheet down still dismisses it', (
+      tester,
+    ) async {
+      await pumpHost(tester, size: phone);
+
+      await tester.fling(
+        find.byKey(const ValueKey('pane-body')),
+        const Offset(0, 600),
+        2000,
+      );
+      await tester.pumpAndSettle();
+
       expect(find.byKey(const ValueKey('pane-body')), findsNothing);
     });
   });

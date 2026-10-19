@@ -247,6 +247,25 @@ void main() {
       );
       expect(tester.getSize(find.byType(AgentInternalsPanel)).width, 390);
     });
+
+    testWidgets('on a phone the close icon dismisses the bottom sheet', (
+      tester,
+    ) async {
+      await pumpPanel(
+        tester,
+        screenSize: const Size(390, 844),
+        overrides: [
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+        ],
+      );
+      expect(find.text('Agent internals'), findsOneWidget);
+
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Agent internals'), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
   });
 
   group('AgentInternalsPanel – identity fallbacks', () {
