@@ -15757,6 +15757,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Backfill response';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Companion customization';
+
+  @override
   String get syncPayloadConfigFlag => 'Config flag';
 
   @override

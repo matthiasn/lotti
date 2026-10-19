@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
@@ -17,21 +18,31 @@ import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/pages/sliver_box_adapter_page.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../companion_overrides.dart';
 
-/// She ticks for as long as she is mounted: pump frames, never settle.
+/// She ticks for as long as she is mounted: pump frames, never settle —
+/// past the quarter second a change waits before it is sent.
 Future<void> _frames(WidgetTester tester) async {
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 20; i++) {
     await tester.pump(const Duration(milliseconds: 16));
   }
 }
 
 void main() {
   late SettingsDb db;
+  late MockOutboxService outbox;
 
-  setUp(() => db = SettingsDb(inMemoryDatabase: true));
+  setUpAll(registerAllFallbackValues);
+  setUp(() {
+    db = SettingsDb(inMemoryDatabase: true);
+    outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+  });
   tearDown(() => db.close());
 
   Future<void> pumpBody(
@@ -45,6 +56,7 @@ void main() {
         SingleChildScrollView(child: body),
         overrides: [
           settingsDbProvider.overrideWithValue(db),
+          outboxServiceProvider.overrideWithValue(outbox),
           ...companionLookOverrides(
             outfit: CompanionLook.grandmaGarden,
             customization: customization,
@@ -178,7 +190,8 @@ void main() {
     expect(selected('Surprise me'), isTrue);
   });
 
-  testWidgets('every choice is stored as it is made', (tester) async {
+  testWidgets('every choice is stored as it is made, and sent to the other '
+      'devices', (tester) async {
     await pumpBody(tester);
     await tester.tap(find.text('Locs').last);
     await _frames(tester);
@@ -187,6 +200,10 @@ void main() {
       () => db.itemByKey(companionCustomizationKey),
     );
     expect(stored, contains('"hairStyle":"locs"'));
+    final sent =
+        verify(() => outbox.enqueueMessage(captureAny())).captured.single
+            as SyncCompanionCustomization;
+    expect(sent.customization, contains('"hairStyle":"locs"'));
   });
 
   testWidgets('the page wears the settings chrome and its title', (
@@ -204,6 +221,7 @@ void main() {
         const CompanionSettingsPage(),
         overrides: [
           settingsDbProvider.overrideWithValue(db),
+          outboxServiceProvider.overrideWithValue(outbox),
           ...companionLookOverrides(),
         ],
       ),

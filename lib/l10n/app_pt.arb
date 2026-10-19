@@ -6675,6 +6675,7 @@
   "syncPayloadAiConfigDelete": "Exclusão de configuração de IA",
   "syncPayloadBackfillRequest": "Solicitação de preenchimento",
   "syncPayloadBackfillResponse": "Resposta de preenchimento",
+  "syncPayloadCompanionCustomization": "Aparência da companheira",
   "syncPayloadConfigFlag": "Sinalizador de configuração",
   "syncPayloadConsumptionEvent": "Consumo de IA",
   "syncPayloadDailyOsUserName": "Nome diário do sistema operacional",

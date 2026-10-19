@@ -26237,6 +26237,12 @@ abstract class AppLocalizations {
   /// **'Backfill response'**
   String get syncPayloadBackfillResponse;
 
+  /// Payload type shown in the sync outbox list for a synced companion customization (her skin, hair and outfit).
+  ///
+  /// In en, this message translates to:
+  /// **'Companion customization'**
+  String get syncPayloadCompanionCustomization;
+
   /// No description provided for @syncPayloadConfigFlag.
   ///
   /// In en, this message translates to:

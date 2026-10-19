@@ -6676,6 +6676,7 @@
   "syncPayloadAiConfigDelete": "AI-konfigurationssletning",
   "syncPayloadBackfillRequest": "Anmodning om tilbagefyldning",
   "syncPayloadBackfillResponse": "Tilbagefyldningsrespons",
+  "syncPayloadCompanionCustomization": "Følgesvendens udseende",
   "syncPayloadConfigFlag": "Konfigurationsflag",
   "syncPayloadConsumptionEvent": "AI-forbrug",
   "syncPayloadDailyOsUserName": "Daily OS-navn",

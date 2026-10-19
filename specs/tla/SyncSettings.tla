@@ -2,6 +2,8 @@
 (***************************************************************************)
 (* Non-sequence-tracked settings: configFlag, themingSelection and        *)
 (* dailyOsUserName, in SyncEventProcessor._applySyncMessage. Three fixed  *)
+(* companionCustomization is applied as dailyOsUserName is, the same     *)
+(* register with a published marker, so the name's family covers it.     *)
 (* envelopes are available to two receivers. A receiver applies one at  *)
 (* a time, but peers can choose different delivery orders. The timestamp *)
 (* guard orders stamp then canonical payload for all three families. *)

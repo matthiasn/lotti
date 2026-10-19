@@ -15997,6 +15997,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Resposta de preenchimento';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Aparência da companheira';
+
+  @override
   String get syncPayloadConfigFlag => 'Sinalizador de configuração';
 
   @override

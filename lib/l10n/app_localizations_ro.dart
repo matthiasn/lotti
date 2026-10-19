@@ -16154,6 +16154,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Răspuns de completare';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Aspectul însoțitoarei';
+
+  @override
   String get syncPayloadConfigFlag => 'Indicator de configurare';
 
   @override

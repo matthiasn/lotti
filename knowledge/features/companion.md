@@ -311,11 +311,33 @@ flowchart LR
   starts over from that choice.
 - **The customization** (`companionCustomizationProvider`): her skin tone,
   hairstyle, hair colour and outfit, stored as JSON under
-  `COMPANION_CUSTOMIZATION` in `SettingsDb`. It starts at the default — Lotti
-  as the videos draw her — and refines when the load lands; a change made
-  before that wins. A part a newer version wrote, or an outfit that no
-  longer exists, reads as the default. It is device-local: syncing it is a
-  later branch (plan 2026-10-12, "Revision").
+  `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
+  `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at
+  the default — Lotti as the videos draw her — and refines when the load
+  lands; a change made before that wins. A part a newer version wrote, or an
+  outfit that no longer exists, reads as the default.
+- **It syncs** as the Daily OS greeting name does, last write wins:
+
+  ```mermaid
+  sequenceDiagram
+    participant Page as Settings page
+    participant C as Customization controller
+    participant DB as SettingsDb
+    participant Out as Outbox
+    participant Peer as Other device
+    Page->>C: set(customization)
+    C->>DB: saveLocalSettingsGroup(JSON, stamp)
+    C->>Out: SyncMessage.companionCustomization (debounced 250 ms)
+    C->>DB: SYNCED_AT = stamp
+    Out-->>Peer: message
+    Peer->>Peer: saveSettingsItemsIfNewer (value, stamp, SYNCED_AT)
+    Peer->>Peer: settingsNotification, controller reloads, never sends back
+  ```
+
+  A customization stored but never published — made before this sync, or
+  while the outbox failed — is published once on the next load, a pre-sync
+  one with stamp 1 so it never beats a real change. "Send settings" re-sends
+  it with the other preferences.
 - **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
   colour over the outfit's palette and sets its hairstyle; the outfit keeps
   its clothes and props. A deeper tone deepens plain lips, never lipstick an

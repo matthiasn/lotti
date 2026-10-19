@@ -6019,6 +6019,7 @@
   "syncPayloadAiConfigDelete": "AI-Konfiguration löschen",
   "syncPayloadBackfillRequest": "Nachfüllanfrage",
   "syncPayloadBackfillResponse": "Nachfüllantwort",
+  "syncPayloadCompanionCustomization": "Aussehen der Begleiterin",
   "syncPayloadConfigFlag": "Konfigurationsflag",
   "syncPayloadConsumptionEvent": "KI-Verbrauch",
   "syncPayloadDailyOsUserName": "Daily-OS-Name",

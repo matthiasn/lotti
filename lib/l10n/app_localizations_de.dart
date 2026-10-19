@@ -15962,6 +15962,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Nachfüllantwort';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Aussehen der Begleiterin';
+
+  @override
   String get syncPayloadConfigFlag => 'Konfigurationsflag';
 
   @override

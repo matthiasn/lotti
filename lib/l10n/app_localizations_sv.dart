@@ -15860,6 +15860,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Återfyllningsrespons';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Följeslagarens utseende';
+
+  @override
   String get syncPayloadConfigFlag => 'Konfigurationsflagga';
 
   @override

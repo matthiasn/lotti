@@ -16108,6 +16108,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Réponse de rattrapage';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Apparence de la compagne';
+
+  @override
   String get syncPayloadConfigFlag => 'Option de configuration';
 
   @override

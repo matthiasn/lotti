@@ -16047,6 +16047,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Risposta di backup';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Aspetto della compagna';
+
+  @override
   String get syncPayloadConfigFlag => 'Bandiera di conflitto';
 
   @override

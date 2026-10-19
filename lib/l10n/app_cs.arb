@@ -6026,6 +6026,7 @@
   "syncPayloadAiConfigDelete": "Smazání nastavení AI",
   "syncPayloadBackfillRequest": "Žádost o doplnění",
   "syncPayloadBackfillResponse": "Odpověď na doplnění",
+  "syncPayloadCompanionCustomization": "Vzhled společnice",
   "syncPayloadConfigFlag": "Konfigurační příznak",
   "syncPayloadConsumptionEvent": "Spotřeba AI",
   "syncPayloadDailyOsUserName": "Jméno Daily OS",

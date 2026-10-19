@@ -6019,6 +6019,7 @@
   "syncPayloadAiConfigDelete": "Ștergere configurare AI",
   "syncPayloadBackfillRequest": "Cerere de completare",
   "syncPayloadBackfillResponse": "Răspuns de completare",
+  "syncPayloadCompanionCustomization": "Aspectul însoțitoarei",
   "syncPayloadConfigFlag": "Indicator de configurare",
   "syncPayloadConsumptionEvent": "Consum AI",
   "syncPayloadDailyOsUserName": "Nume Daily OS",

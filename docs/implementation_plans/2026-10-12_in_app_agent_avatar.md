@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`) and D (`feat/companion-customization`) built — see "Revision: her range, and making her your own"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`), D (`feat/companion-customization`) and E (`feat/companion-customization-sync`) built — see "Revision: her range, and making her your own"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -628,10 +628,19 @@ flowchart TD
 
 ### E · `feat/companion-customization-sync`: the same her on every device
 
-- A `SyncMessage` variant for her customization under last-write-wins on
-  `updatedAt`, as the Daily OS greeting name syncs
-  (`SyncMessage.dailyOsUserName`), with the outbox, apply and resend paths
-  that come with one.
+- `SyncMessage.companionCustomization`: her customization's JSON string and
+  an `updatedAt` stamp, kept by receivers under last-write-wins exactly as
+  the Daily OS greeting name is (`SyncMessage.dailyOsUserName`): the outbox
+  writer, scheduling, apply (value, stamp and published marker in one
+  settings transaction), the payload label in the outbox monitor, and "Send
+  settings". Sync carries the string without reading it, so it never
+  depends on the companion; its keys moved to `lib/utils/` for sync to
+  reach.
+- The companion sends a change debounced, publishes a never-sent one once on
+  load (a pre-sync one with stamp 1), and reloads on an inbound change
+  without sending it back.
+- A build that predates the variant cannot decode it and skips it, as it
+  does any unknown variant.
 
 ### Later
 

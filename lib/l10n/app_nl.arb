@@ -6675,6 +6675,7 @@
   "syncPayloadAiConfigDelete": "AI configuratie verwijderen",
   "syncPayloadBackfillRequest": "Terugvullen verzoek",
   "syncPayloadBackfillResponse": "Terugvulrespons",
+  "syncPayloadCompanionCustomization": "Uiterlijk van de metgezel",
   "syncPayloadConfigFlag": "Configuratievlag",
   "syncPayloadConsumptionEvent": "AI-verbruik",
   "syncPayloadDailyOsUserName": "Dagelijkse naam van het besturingssysteem",

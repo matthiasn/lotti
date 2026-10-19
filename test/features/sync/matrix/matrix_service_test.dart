@@ -1385,6 +1385,11 @@ void main() {
         updatedAt: 0,
         status: SyncEntryStatus.initial,
       ),
+      'companionCustomization': const SyncMessage.companionCustomization(
+        customization: '{}',
+        updatedAt: 0,
+        status: SyncEntryStatus.initial,
+      ),
       'gitHubAccount': const SyncMessage.gitHubAccount(
         updatedAt: 0,
         status: SyncEntryStatus.initial,

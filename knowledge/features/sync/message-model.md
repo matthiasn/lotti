@@ -12,6 +12,10 @@ sources:
     resource: ../../../lib/classes/sync/sync_message.dart
     title: SyncMessage freezed union
     last_modified: 2026-08-10
+  - id: companion-customization
+    resource: ../../../lib/features/companion/state/companion_customization_controller.dart
+    title: The companion's customization, sent and reloaded
+    last_modified: 2026-10-19
   - id: payload-type
     resource: ../../../lib/classes/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
@@ -60,12 +64,13 @@ sources:
 
 # Families
 
-Everything on the wire is a `SyncMessage` — a freezed union with twenty-nine
+Everything on the wire is a `SyncMessage` — a freezed union with thirty
 variants:
 
 `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
 `syncNodeProfile`, `aiConfigDelete`, `savedTaskFilter`,
 `savedTaskFilterDelete`, `configFlag`, `themingSelection`, `dailyOsUserName`,
+`companionCustomization`,
 `gitHubAccount`, `notification`, `notificationStateUpdate`,
 `onboardingSnapshotBegin`, `onboardingSnapshotAccepted`,
 `onboardingTerminalCounters`, `onboardingSnapshotEnd`, `backfillRequest`,
@@ -201,20 +206,25 @@ log lines carry only the stamp. `specs/tla/GitHubAccountSync.tla` models it
 with changes made on the devices themselves; see
 [GitHub pull requests](../github.md).
 
-`themingSelection` and `dailyOsUserName` use the versioned settings group
+`themingSelection`, `dailyOsUserName` and `companionCustomization` use the
+versioned settings group
 comparison in the [settings group contract](../../architecture/persistence.md#settings-groups).
 `configFlag` uses the [flag version contract](../../architecture/persistence.md#config-flag-versions).
 Its optional wire stamp falls back to the Matrix event timestamp for old senders.
 Older receivers still overwrite on arrival, so a current receiver answers an unstamped flag, or a stamped one older than the version it holds, by sending that version: the newest is then the last to arrive at the old build ([ADR 0131](../../../docs/adr/0131-current-builds-repair-what-old-builds-left.md)). Two current builds never answer each other, since a copy as new as the one held is no cause.
-They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). It also re-sends the GitHub account, connected or disconnected, through `preferenceResendExtrasProvider`, which the composition root binds (ADR 0133). Theme/name apply persists the values,
-freshness stamp and (for the name) bootstrap marker in one settings transaction.
+They have no sequence-gap repair. "Send settings" repairs them by hand: its `SyncStep.preferences` step re-sends the theme, the greeting name, the companion's customization and every versioned flag with the stamp the stored value holds, and receivers keep the newer value (`preferenceResendMessages`). It also re-sends the GitHub account, connected or disconnected, through `preferenceResendExtrasProvider`, which the composition root binds (ADR 0133). Theme, name and customization apply persists the values,
+freshness stamp and (for the name and the customization) bootstrap marker in
+one settings transaction. The customization travels as the companion's own
+JSON string, which sync stores without reading, so sync never depends on the
+[companion](../companion.md); a build that predates the variant cannot decode
+it and skips it.
 Failures propagate to the inbound queue's bounded retry policy; notifications
 are emitted only after successful persistence. Cache publication follows the
 [settings group contract](../../architecture/persistence.md#settings-groups).
 
-Local theme/name edits use that same serialized store before publishing their
-committed snapshot. The greeting's existing publication marker can bootstrap an
-unpublished name on reload; theme publication has the separate
+Local theme, name and customization edits use that same serialized store before
+publishing their committed snapshot. The greeting's and the customization's
+publication markers can bootstrap an unpublished value on reload; theme publication has the separate
 [controller lifetime boundary](../theming.md#the-sync-boundary).
 
 `SyncPreferenceEdits` checks local edits interleaved with remote receives and

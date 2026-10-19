@@ -15896,6 +15896,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Terugvulrespons';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Uiterlijk van de metgezel';
+
+  @override
   String get syncPayloadConfigFlag => 'Configuratievlag';
 
   @override

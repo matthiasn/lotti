@@ -233,6 +233,41 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           rethrow;
         }
         return null;
+      case SyncCompanionCustomization(:final customization, :final updatedAt):
+        try {
+          // Stored as received: the companion reads it, and falls back to her
+          // defaults for anything it cannot. Value, stamp and published
+          // marker commit together, as the greeting name's do.
+          final applied = await _settingsDb.saveSettingsItemsIfNewer(
+            {
+              companionCustomizationKey: customization,
+              companionCustomizationUpdatedAtKey: updatedAt.toString(),
+              companionCustomizationSyncedAtKey: updatedAt.toString(),
+            },
+            stampKey: companionCustomizationUpdatedAtKey,
+            payloadKeys: [companionCustomizationKey],
+          );
+          if (!applied) return null;
+
+          _updateNotifications.notify(
+            {settingsNotification},
+            fromSync: true,
+          );
+
+          _trace(
+            'apply companionCustomization updatedAt=$updatedAt',
+            subDomain: 'processor.apply',
+          );
+        } catch (e, st) {
+          _loggingService.error(
+            LogDomain.settings,
+            e,
+            stackTrace: st,
+            subDomain: 'apply',
+          );
+          rethrow;
+        }
+        return null;
       case SyncDailyOsUserName(:final userName, :final updatedAt):
         try {
           // A received name is already published. Its value, freshness stamp

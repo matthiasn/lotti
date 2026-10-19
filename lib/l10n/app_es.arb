@@ -6019,6 +6019,7 @@
   "syncPayloadAiConfigDelete": "Eliminación de configuración de IA",
   "syncPayloadBackfillRequest": "Solicitud de relleno",
   "syncPayloadBackfillResponse": "Respuesta de relleno",
+  "syncPayloadCompanionCustomization": "Aspecto de la compañera",
   "syncPayloadConfigFlag": "Indicador de configuración",
   "syncPayloadConsumptionEvent": "Consumo de IA",
   "syncPayloadDailyOsUserName": "Nombre de Daily OS",

@@ -6676,6 +6676,7 @@
   "syncPayloadAiConfigDelete": "AI-konfigurationsborttagning",
   "syncPayloadBackfillRequest": "Begäran om återfyllning",
   "syncPayloadBackfillResponse": "Återfyllningsrespons",
+  "syncPayloadCompanionCustomization": "Följeslagarens utseende",
   "syncPayloadConfigFlag": "Konfigurationsflagga",
   "syncPayloadConsumptionEvent": "AI-konsumtion",
   "syncPayloadDailyOsUserName": "Daily OS-namn",

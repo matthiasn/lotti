@@ -62,8 +62,8 @@ nudges), is
   after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
   colour (silver, white, grey, black, brown, auburn, pink, lavender, blue)
   and an outfit she always wears, or "Surprise me". Every part combines with
-  every other. The choice is stored on the device (`companionCustomizationProvider`);
-  syncing it across devices is still to come.
+  every other. The choice is stored and synced to the person's other devices
+  (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
   the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda
   (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,

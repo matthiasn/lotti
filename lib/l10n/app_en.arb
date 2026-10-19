@@ -9605,6 +9605,10 @@
   "syncPayloadAiConfigDelete": "AI configuration delete",
   "syncPayloadBackfillRequest": "Backfill request",
   "syncPayloadBackfillResponse": "Backfill response",
+  "syncPayloadCompanionCustomization": "Companion customization",
+  "@syncPayloadCompanionCustomization": {
+    "description": "Payload type shown in the sync outbox list for a synced companion customization (her skin, hair and outfit)."
+  },
   "syncPayloadConfigFlag": "Config flag",
   "syncPayloadConsumptionEvent": "AI consumption",
   "syncPayloadDailyOsUserName": "Daily OS name",

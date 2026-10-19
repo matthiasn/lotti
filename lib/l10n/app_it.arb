@@ -6676,6 +6676,7 @@
   "syncPayloadAiConfigDelete": "Configurazione AI eliminare",
   "syncPayloadBackfillRequest": "Richiesta di rimborso",
   "syncPayloadBackfillResponse": "Risposta di backup",
+  "syncPayloadCompanionCustomization": "Aspetto della compagna",
   "syncPayloadConfigFlag": "Bandiera di conflitto",
   "syncPayloadConsumptionEvent": "Consumo di AI",
   "syncPayloadDailyOsUserName": "Nome del sistema operativo giornaliero",

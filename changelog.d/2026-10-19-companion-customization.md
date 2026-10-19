@@ -6,4 +6,4 @@
   she fancies — and an outfit she always wears, or "Surprise me" to let her
   pick one each time you open the app. Every choice combines with every
   other, and she changes as you choose, in a preview at the top of the page.
-  Your choice stays on this device for now.
+  Your choice follows you to your other devices.

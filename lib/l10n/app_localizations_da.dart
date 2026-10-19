@@ -15843,6 +15843,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadBackfillResponse => 'Tilbagefyldningsrespons';
 
   @override
+  String get syncPayloadCompanionCustomization => 'Følgesvendens udseende';
+
+  @override
   String get syncPayloadConfigFlag => 'Konfigurationsflag';
 
   @override

@@ -150,6 +150,18 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'updatedAt=${msg.updatedAt}',
   );
 
+  /// Content-free: the log line carries the stamp, never her customization.
+  Future<void> enqueueCompanionCustomization({
+    required SyncCompanionCustomization msg,
+    required OutboxCompanion commonFields,
+  }) => enqueueSimple(
+    commonFields: commonFields,
+    subject: 'companionCustomization',
+    logMessage:
+        'enqueue type=SyncCompanionCustomization '
+        'subject=companionCustomization updatedAt=${msg.updatedAt}',
+  );
+
   /// Content-free: the log line never carries the token, nor the login.
   Future<void> enqueueGitHubAccount({
     required SyncGitHubAccount msg,
