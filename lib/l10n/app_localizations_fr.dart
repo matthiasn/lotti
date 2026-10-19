@@ -480,6 +480,60 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Non attribué';
 
   @override
+  String get agentKnowledgeConfirm => 'Confirmer';
+
+  @override
+  String get agentKnowledgeEdit => 'Modifier';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annuler';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Résumé en une ligne';
+
+  @override
+  String get agentKnowledgeEditSave => 'Enregistrer';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Que dois-je retenir ?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Modifie ce dont je me souviens';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Rien pour l\'instant — je retiendrai ce que tu me dis.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Options pour ce fait';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Impossible de charger ce que j\'ai appris.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Est-ce que j\'ai bien compris ?';
+
+  @override
+  String get agentKnowledgeRetract => 'Oublier';
+
+  @override
+  String get agentKnowledgeRetry => 'Réessayer';
+
+  @override
+  String get agentKnowledgeSaveFailed =>
+      'Ça n\'a pas été enregistré. Réessaie.';
+
+  @override
+  String get agentKnowledgeStale => 'Toujours vrai ?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Oui';
+
+  @override
+  String get agentKnowledgeTitle => 'Ce que j\'ai appris';
+
+  @override
   String get agentLifecycleActive => 'Actif';
 
   @override
@@ -3059,6 +3113,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillStatsRequested => 'Demandé';
 
   @override
+  String get backfillStatsSkipped => 'Ignoré';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (cet appareil)';
   }
@@ -3077,9 +3134,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Manquant';
-
-  @override
-  String get backfillStatsSkipped => 'Ignoré';
 
   @override
   String get backfillToggleDescription =>
@@ -4961,31 +5015,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bonjour.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Confirmer';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmé';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Modifier';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annuler';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Résumé en une ligne';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Enregistrer';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Que dois-je retenir ?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Rien pour l\'instant — je retiendrai ce que tu me dis.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4995,19 +5024,6 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader =>
-      'En attente de ta confirmation';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Oublier';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Toujours vrai ?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Ce que j\'ai appris';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Dissocier';

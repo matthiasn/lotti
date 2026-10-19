@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/ui/knowledge/agent_knowledge_panel.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -12,7 +13,7 @@ import 'package:material_ui/material_ui.dart';
 Future<void> showKnowledgePanelModal(BuildContext context) {
   return ModalUtils.showSinglePageModal<void>(
     context: context,
-    builder: (_) => const KnowledgePanel(),
+    builder: (_) => const AgentKnowledgePanel(agentId: dailyOsPlannerAgentId),
   );
 }
 
@@ -22,7 +23,7 @@ Future<void> showKnowledgePanelModal(BuildContext context) {
 /// Renders nothing while there is nothing awaiting confirmation, so the
 /// page stays calm by default; when proposals exist it shows a single
 /// sparkle line ("2 things I noticed — review") that opens the
-/// [KnowledgePanel] modal. Confirmed-only knowledge stays reachable via
+/// [AgentKnowledgePanel] modal. Confirmed-only knowledge stays reachable via
 /// the header menu instead of occupying the page.
 class KnowledgeNudge extends ConsumerWidget {
   const KnowledgeNudge({super.key});
@@ -35,7 +36,12 @@ class KnowledgeNudge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final proposedCount =
-        ref.watch(plannerKnowledgeProvider).value?.proposed.length ?? 0;
+        ref
+            .watch(agentKnowledgeProvider(dailyOsPlannerAgentId))
+            .value
+            ?.proposed
+            .length ??
+        0;
     if (proposedCount == 0) return const SizedBox.shrink();
 
     final accent = tokens.colors.aiCard.accent;

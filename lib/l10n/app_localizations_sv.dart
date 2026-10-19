@@ -474,6 +474,59 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Otilldelat';
 
   @override
+  String get agentKnowledgeConfirm => 'Bekräfta';
+
+  @override
+  String get agentKnowledgeEdit => 'Redigera';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Avbryt';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Enradssammanfattning';
+
+  @override
+  String get agentKnowledgeEditSave => 'Spara';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Vad ska jag komma ihåg?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Redigera det jag minns';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Inget än — jag kommer ihåg vad du berättar för mig.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Alternativ för det här faktumet';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Det gick inte att läsa in vad jag har lärt mig.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Har jag förstått rätt?';
+
+  @override
+  String get agentKnowledgeRetract => 'Glöm';
+
+  @override
+  String get agentKnowledgeRetry => 'Försök igen';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Det sparades inte. Försök igen.';
+
+  @override
+  String get agentKnowledgeStale => 'Stämmer det fortfarande?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Ja';
+
+  @override
+  String get agentKnowledgeTitle => 'Vad jag har lärt mig';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -3023,6 +3076,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatsRequested => 'Begärd';
 
   @override
+  String get backfillStatsSkipped => 'Hoppade över';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (den här enheten)';
   }
@@ -3041,9 +3097,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Saknad';
-
-  @override
-  String get backfillStatsSkipped => 'Hoppade över';
 
   @override
   String get backfillToggleDescription =>
@@ -4897,52 +4950,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'God morgon.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bekräfta';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bekräftat';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Redigering';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Avbryt';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Enradssammanfattning';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Spara';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Vad ska jag komma ihåg?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Inget än — jag kommer ihåg vad du berättar för mig.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count saker jag lade märke till — recension',
-      one: '1 sak jag lade märke till — recension',
+      other: '$count saker jag lade märke till — granska',
+      one: '1 sak jag lade märke till — granska',
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Väntar på din bekräftelse';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Glöm';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Stämmer det fortfarande?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Vad jag har lärt mig';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Brytlänk';

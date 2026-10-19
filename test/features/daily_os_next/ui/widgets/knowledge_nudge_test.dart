@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/ui/knowledge/agent_knowledge_panel.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -28,10 +29,12 @@ void main() {
         as PlannerKnowledgeEntity;
   }
 
-  Widget nudge(PlannerKnowledgeView view) => makeTestableWidget(
+  Widget nudge(AgentKnowledgeView view) => makeTestableWidget(
     const KnowledgeNudge(),
     overrides: [
-      plannerKnowledgeProvider.overrideWith((ref) async => view),
+      agentKnowledgeProvider(
+        dailyOsPlannerAgentId,
+      ).overrideWith((ref) async => view),
       // The panel the nudge opens resolves this; the nudge itself never does.
       dayAgentKnowledgeServiceProvider.overrideWithValue(
         MockDayAgentKnowledgeService(),
@@ -46,7 +49,7 @@ void main() {
     // for existing, so it is the first thing worth pinning.
     await tester.pumpWidget(
       nudge(
-        PlannerKnowledgeView(confirmed: [proposal('c1')], proposed: const []),
+        AgentKnowledgeView(confirmed: [proposal('c1')], proposed: const []),
       ),
     );
     await tester.pump();
@@ -62,7 +65,7 @@ void main() {
     // as the day loads.
     await tester.pumpWidget(
       nudge(
-        const PlannerKnowledgeView(
+        const AgentKnowledgeView(
           confirmed: [],
           proposed: [],
         ),
@@ -78,7 +81,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       nudge(
-        PlannerKnowledgeView(
+        AgentKnowledgeView(
           confirmed: const [],
           proposed: [proposal('p1'), proposal('p2')],
         ),
@@ -99,7 +102,7 @@ void main() {
     // "review" would not be worth the row it costs.
     await tester.pumpWidget(
       nudge(
-        PlannerKnowledgeView(
+        AgentKnowledgeView(
           confirmed: const [],
           proposed: [proposal('p1'), proposal('p2'), proposal('p3')],
         ),
@@ -123,7 +126,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       nudge(
-        PlannerKnowledgeView(confirmed: const [], proposed: [proposal('p1')]),
+        AgentKnowledgeView(confirmed: const [], proposed: [proposal('p1')]),
       ),
     );
     await tester.pump();
@@ -137,7 +140,7 @@ void main() {
   testWidgets('tapping it opens the knowledge panel', (tester) async {
     await tester.pumpWidget(
       nudge(
-        PlannerKnowledgeView(confirmed: const [], proposed: [proposal('p1')]),
+        AgentKnowledgeView(confirmed: const [], proposed: [proposal('p1')]),
       ),
     );
     await tester.pump();
@@ -146,6 +149,6 @@ void main() {
     await tester.pumpAndSettle();
 
     // The nudge's only job is to be the way in.
-    expect(find.byType(KnowledgePanel), findsOneWidget);
+    expect(find.byType(AgentKnowledgePanel), findsOneWidget);
   });
 }

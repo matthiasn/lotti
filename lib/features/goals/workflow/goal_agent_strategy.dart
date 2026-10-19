@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -58,6 +59,7 @@ class GoalAgentStrategy extends ConversationStrategy
     this.expectedStatus,
     this.expectedRollingAggregates = const [],
     this._memorySearcher,
+    this.userMessage,
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -124,6 +126,18 @@ class GoalAgentStrategy extends ConversationStrategy
   /// Whether the batch just processed recalled something — the one case the
   /// conversation goes on, so the model reads what it asked for.
   var _recalledThisBatch = false;
+
+  /// The user's chat message this wake answers, or null on any other wake —
+  /// the only words a fact can be kept on (`goalFactIsUserConfirmed`).
+  final String? userMessage;
+
+  final _rememberedFacts = <({GoalFactRequest fact, bool confirmed})>[];
+
+  /// The facts this wake asked to remember, each with whether it is kept at
+  /// once — decided here, where the model was told, for the workflow to
+  /// store exactly as answered.
+  List<({GoalFactRequest fact, bool confirmed})> get rememberedFacts =>
+      List.unmodifiable(_rememberedFacts);
 
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
@@ -222,6 +236,8 @@ class GoalAgentStrategy extends ConversationStrategy
           await _handleObservation(call, args, manager);
         case GoalAgentToolNames.searchGoalMemory:
           await _handleMemorySearch(call, args, manager);
+        case GoalAgentToolNames.rememberGoalFact:
+          await _handleRememberFact(call, args, manager);
         default:
           await _reject(
             call: call,
@@ -793,6 +809,33 @@ class GoalAgentStrategy extends ConversationStrategy
     final recall = await searcher(args);
     _recalledThisBatch = true;
     await _accept(call, manager, recall.text);
+  }
+
+  /// `remember_goal_fact`. Like a recall, every outcome is an answer, never a
+  /// rejection — a malformed fact included — so a fact that could not be
+  /// kept never withholds the user's reply. The answer says whether it was
+  /// kept or waits for the user, so the model never claims more.
+  Future<void> _handleRememberFact(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final parsed = parseGoalFactRequest(args);
+    final request = parsed.request;
+    if (request == null) {
+      await _accept(call, manager, parsed.error!);
+      return;
+    }
+    final confirmed = goalFactIsUserConfirmed(
+      request,
+      userMessage: userMessage,
+    );
+    _rememberedFacts.add((fact: request, confirmed: confirmed));
+    await _accept(
+      call,
+      manager,
+      confirmed ? goalFactKeptAnswer : goalFactProposedAnswer,
+    );
   }
 
   /// The first status token found standing as a word in any visible string.

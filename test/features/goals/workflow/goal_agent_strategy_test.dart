@@ -7,6 +7,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1886,6 +1887,98 @@ void main() {
       expect(rejection(), goalMemoryUnavailableAnswer);
       expect(recalling.unresolvedRejectedTools, isEmpty);
       expect(recalling.getContinuationPrompt(manager), isNull);
+    });
+  });
+
+  group('remember_goal_fact', () {
+    GoalAgentStrategy remembering({String? userMessage}) => GoalAgentStrategy(
+      domainLogger: domainLogger,
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      userMessage: userMessage,
+    );
+
+    Future<void> remember(
+      GoalAgentStrategy strategy,
+      Map<String, dynamic> args,
+    ) => strategy.processToolCalls(
+      toolCalls: [
+        _call(name: GoalAgentToolNames.rememberGoalFact, args: args),
+      ],
+      manager: manager,
+    );
+
+    const stated = {
+      'key': 'walks-after-dinner',
+      'hook': 'Walks after dinner',
+      'statement': 'I walk after dinner, never before.',
+      'source': 'userStated',
+    };
+
+    const said = 'Remember: I walk after dinner, never before.';
+
+    test(
+      'a fact the user states in the message being answered is kept',
+      () async {
+        final strategy = remembering(userMessage: said);
+
+        await remember(strategy, stated);
+
+        expect(rejection(), goalFactKeptAnswer);
+        final remembered = strategy.rememberedFacts.single;
+        expect(remembered.fact.key, 'walks-after-dinner');
+        expect(remembered.confirmed, isTrue);
+        expect(strategy.unresolvedRejectedTools, isEmpty);
+      },
+    );
+
+    test(
+      'the same fact on a wake that answers no one is only proposed',
+      () async {
+        final strategy = remembering();
+
+        await remember(strategy, stated);
+
+        expect(rejection(), goalFactProposedAnswer);
+        expect(strategy.rememberedFacts.single.confirmed, isFalse);
+      },
+    );
+
+    test(
+      'a fact the user did not say is proposed, even labelled as theirs',
+      () async {
+        final strategy = remembering(userMessage: 'ok, thanks');
+
+        await remember(strategy, stated);
+
+        expect(rejection(), goalFactProposedAnswer);
+        expect(strategy.rememberedFacts.single.confirmed, isFalse);
+      },
+    );
+
+    test(
+      'an inferred fact is proposed even while answering the user',
+      () async {
+        final strategy = remembering(userMessage: said);
+
+        await remember(strategy, {...stated, 'source': 'agentInferred'});
+
+        expect(rejection(), goalFactProposedAnswer);
+      },
+    );
+
+    test('a malformed fact is answered, not rejected, and nothing is '
+        'kept', () async {
+      final strategy = remembering(userMessage: said);
+
+      await remember(strategy, {...stated, 'hook': ' '});
+
+      expect(rejection(), startsWith('Not remembered:'));
+      expect(strategy.rememberedFacts, isEmpty);
+      expect(strategy.unresolvedRejectedTools, isEmpty);
     });
   });
 }

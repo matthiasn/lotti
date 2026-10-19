@@ -196,6 +196,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     bool dailyBriefing = false,
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
+    Map<String, Object?>? knowledge,
   }) async {
     final renderedFacts = _factsRenderer.render(
       version: version,
@@ -214,6 +215,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       dailyBriefing: dailyBriefing,
       previousBriefing: previousBriefing,
       charter: charter,
+      knowledge: knowledge,
     );
     var factsBlock = pendingUserMessage == null
         ? renderedFacts
@@ -254,6 +256,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required GoalWakeFacts facts,
     required DateTime reference,
     required bool overdueEscalation,
+    required String? userMessage,
   }) {
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
@@ -287,6 +290,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         facts.evaluation.results,
       ),
       memorySearcher: _memorySearch.forAgent(agentId),
+      userMessage: userMessage,
     );
   }
 

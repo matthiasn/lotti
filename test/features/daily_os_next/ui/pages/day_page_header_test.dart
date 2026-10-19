@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
+import 'package:lotti/features/agents/ui/knowledge/agent_knowledge_panel.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_persona_provider.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_agent_status_chip.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -208,14 +208,14 @@ void main() {
             size: const Size(1024, 900),
           ),
           overrides: [
-            plannerKnowledgeProvider.overrideWith(
-              (ref) async => PlannerKnowledgeView(
+            agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
+              (ref) async => AgentKnowledgeView(
                 confirmed: [learned],
                 proposed: const [],
               ),
             ),
-            dayAgentKnowledgeServiceProvider.overrideWithValue(
-              MockDayAgentKnowledgeService(),
+            agentKnowledgeServiceProvider.overrideWithValue(
+              MockAgentKnowledgeService(),
             ),
           ],
         ),
@@ -225,10 +225,10 @@ void main() {
 
       await tester.tap(find.byIcon(LottiIcons.moreVertical));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(messages.dailyOsNextKnowledgeTitle));
+      await tester.tap(find.text(messages.agentKnowledgeTitle));
       await tester.pumpAndSettle();
 
-      expect(find.byType(KnowledgePanel), findsOneWidget);
+      expect(find.byType(AgentKnowledgePanel), findsOneWidget);
       expect(
         find.text('Krill deliveries go better before 10am'),
         findsOneWidget,

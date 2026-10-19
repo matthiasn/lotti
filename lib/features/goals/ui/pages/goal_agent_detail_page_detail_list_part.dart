@@ -142,6 +142,9 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
       // carries its own leading gap and renders nothing while it has nothing
       // to show.
       GoalCharterCard(agentId: agentId, editable: isActive),
+      // What the agent learned from the user (ADR 0057) — beside what the
+      // user wrote the goal is for, and only once there is something.
+      GoalKnowledgeSection(agentId: agentId),
       // Every active banner remains reachable here, uncapped. The shell
       // rotates one slot; this goal-owned surface does not. Banners are an
       // interaction channel, not a replacement for the standing report.

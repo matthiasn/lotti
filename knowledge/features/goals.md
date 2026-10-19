@@ -48,6 +48,14 @@ sources:
     resource: ../../docs/adr/0140-a-goal-is-constituted-by-its-charter-entries.md
     title: ADR 0140 — A goal is constituted by its charter entries
     last_modified: 2026-10-18
+  - id: goal-knowledge
+    resource: ../../lib/features/goals/workflow/goal_knowledge.dart
+    title: Goal facts — remember_goal_fact, the confirm rule, the FACTS section
+    last_modified: 2026-10-19
+  - id: adr-0141
+    resource: ../../docs/adr/0141-a-goal-agent-keeps-a-fact-only-from-the-users-own-turn.md
+    title: ADR 0141 — A goal agent keeps a fact only from the user's own turn
+    last_modified: 2026-10-19
   - id: memory-search
     resource: ../../lib/features/goals/workflow/goal_memory_search.dart
     title: GoalMemorySearch — recall over check-ins, chat and observations
@@ -263,7 +271,7 @@ flowchart TD
     CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
-    FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 9-tool contract]
+    FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 10-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
@@ -2145,6 +2153,55 @@ sequenceDiagram
   compaction eval withholds the tool, because its probes measure what each
   compaction arm leaves in `userVoice`. The system prompt is unchanged — the
   tool's description says when to recall.
+
+## Durable facts
+
+What the user tells the agent about themselves and the goal — a constraint,
+a preference, how they want to be coached — outlives the conversation it was
+said in through `remember_goal_fact` (ADR 0057 decision 1, ADR 0141). The
+facts are the shared knowledge store's entries (`PlannerKnowledgeEntity`,
+`lib/features/agents/knowledge/`) under the goal agent's id.
+
+```mermaid
+stateDiagram-v2
+    [*] --> proposed: remember_goal_fact,\nany other wake or inferred
+    [*] --> confirmed: remember_goal_fact, userStated on the\nuser's own chat turn, grounded in their words
+    proposed --> confirmed: Confirm on the goal page
+    proposed --> retracted: Forget
+    confirmed --> confirmed: Edit (re-confirms)
+    confirmed --> retracted: Forget
+    retracted --> [*]
+```
+
+- **The caller vouches, never the model.** `goalFactIsUserConfirmed` keeps a
+  fact only when its `source` is `userStated`, the wake answers the user's
+  own chat message, *and* at least `goalFactGroundingShare` (half) of the
+  content words of both its statement and its hook appear in that message
+  — the hook too, since a wake past the knowledge budget reads it in place
+  of the statement. `GoalAgentStrategy` decides
+  once, from the pending message, and both answers the model and hands the
+  decision to persistence (`rememberedFacts`), which passes it as
+  `userConfirmed` to `AgentKnowledgeService.propose`. A briefing that reads a
+  check-in quoting someone can therefore only propose, and so can a chat
+  turn whose "ok" the model pairs with a sentence it read elsewhere. Re-using a key supersedes (recency
+  wins in `activePlannerKnowledge`).
+- **Written with the wake's outputs.** Facts are stored in the output
+  transaction beside observations. A fact the store refuses — or cannot read
+  the prior version of — is logged and dropped, never the rest of the
+  output; like a recall, every outcome of the tool is an answer, so a
+  remembered fact never withholds the user's reply.
+- **Read on every wake.** `goalKnowledgeFacts` renders the confirmed facts as
+  FACTS' `knowledge` section after `charter`, in key order within
+  `goalKnowledgeTokenBudget` (600) — a fact past the budget reads as its
+  hook, and past even that it is counted. Its policy keeps measured FACTS
+  above it.
+- **Reviewed on the goal page.** `GoalKnowledgeSection` shows the shared
+  `AgentKnowledgePanel` under *About this goal* once there is anything to
+  show. A proposal is the agent asking — an agent-toned callout under "Did
+  I get this right?" with Confirm and Forget; a confirmed fact is plain text
+  with Edit and Forget behind its menu, and a fact past `reviewAfter` asks
+  "Still true?" in place, where confirming renews it (clears `reviewAfter`).
+  A wake's completion notifies the agent id, which refreshes it.
 
 ## Gotchas
 

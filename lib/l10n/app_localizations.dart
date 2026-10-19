@@ -913,6 +913,108 @@ abstract class AppLocalizations {
   /// **'Unassigned'**
   String get agentInstancesUnassignedSoul;
 
+  /// No description provided for @agentKnowledgeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get agentKnowledgeConfirm;
+
+  /// No description provided for @agentKnowledgeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get agentKnowledgeEdit;
+
+  /// No description provided for @agentKnowledgeEditCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get agentKnowledgeEditCancel;
+
+  /// No description provided for @agentKnowledgeEditHookHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One-line summary'**
+  String get agentKnowledgeEditHookHint;
+
+  /// No description provided for @agentKnowledgeEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get agentKnowledgeEditSave;
+
+  /// No description provided for @agentKnowledgeEditStatementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I remember?'**
+  String get agentKnowledgeEditStatementHint;
+
+  /// No description provided for @agentKnowledgeEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit what I remember'**
+  String get agentKnowledgeEditTitle;
+
+  /// No description provided for @agentKnowledgeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet — I\'ll remember what you tell me.'**
+  String get agentKnowledgeEmpty;
+
+  /// No description provided for @agentKnowledgeFactOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Options for this fact'**
+  String get agentKnowledgeFactOptions;
+
+  /// No description provided for @agentKnowledgeLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load what I\'ve learned.'**
+  String get agentKnowledgeLoadError;
+
+  /// No description provided for @agentKnowledgeProposedHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Did I get this right?'**
+  String get agentKnowledgeProposedHeader;
+
+  /// No description provided for @agentKnowledgeRetract.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get agentKnowledgeRetract;
+
+  /// No description provided for @agentKnowledgeRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get agentKnowledgeRetry;
+
+  /// No description provided for @agentKnowledgeSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save. Try again.'**
+  String get agentKnowledgeSaveFailed;
+
+  /// No description provided for @agentKnowledgeStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Still true?'**
+  String get agentKnowledgeStale;
+
+  /// No description provided for @agentKnowledgeStillTrueYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get agentKnowledgeStillTrueYes;
+
+  /// No description provided for @agentKnowledgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What I\'ve learned'**
+  String get agentKnowledgeTitle;
+
   /// No description provided for @agentLifecycleActive.
   ///
   /// In en, this message translates to:
@@ -5070,6 +5172,12 @@ abstract class AppLocalizations {
   /// **'Requested'**
   String get backfillStatsRequested;
 
+  /// No description provided for @backfillStatsSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get backfillStatsSkipped;
+
   /// No description provided for @backfillStatsThisDevice.
   ///
   /// In en, this message translates to:
@@ -5105,12 +5213,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Missing'**
   String get backfillStatusMissing;
-
-  /// No description provided for @backfillStatsSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped'**
-  String get backfillStatsSkipped;
 
   /// No description provided for @backfillToggleDescription.
   ///
@@ -8183,83 +8285,11 @@ abstract class AppLocalizations {
   /// **'Good morning.'**
   String get dailyOsNextGreetingMorning;
 
-  /// No description provided for @dailyOsNextKnowledgeConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
-  String get dailyOsNextKnowledgeConfirm;
-
-  /// No description provided for @dailyOsNextKnowledgeConfirmedHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get dailyOsNextKnowledgeConfirmedHeader;
-
-  /// No description provided for @dailyOsNextKnowledgeEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get dailyOsNextKnowledgeEdit;
-
-  /// No description provided for @dailyOsNextKnowledgeEditCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get dailyOsNextKnowledgeEditCancel;
-
-  /// No description provided for @dailyOsNextKnowledgeEditHookHint.
-  ///
-  /// In en, this message translates to:
-  /// **'One-line summary'**
-  String get dailyOsNextKnowledgeEditHookHint;
-
-  /// No description provided for @dailyOsNextKnowledgeEditSave.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get dailyOsNextKnowledgeEditSave;
-
-  /// No description provided for @dailyOsNextKnowledgeEditStatementHint.
-  ///
-  /// In en, this message translates to:
-  /// **'What should I remember?'**
-  String get dailyOsNextKnowledgeEditStatementHint;
-
-  /// No description provided for @dailyOsNextKnowledgeEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing yet — I\'ll remember what you tell me.'**
-  String get dailyOsNextKnowledgeEmpty;
-
   /// No description provided for @dailyOsNextKnowledgeNudge.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}'**
   String dailyOsNextKnowledgeNudge(int count);
-
-  /// No description provided for @dailyOsNextKnowledgeProposedHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Awaiting your confirmation'**
-  String get dailyOsNextKnowledgeProposedHeader;
-
-  /// No description provided for @dailyOsNextKnowledgeRetract.
-  ///
-  /// In en, this message translates to:
-  /// **'Forget'**
-  String get dailyOsNextKnowledgeRetract;
-
-  /// No description provided for @dailyOsNextKnowledgeStale.
-  ///
-  /// In en, this message translates to:
-  /// **'Still true?'**
-  String get dailyOsNextKnowledgeStale;
-
-  /// No description provided for @dailyOsNextKnowledgeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What I\'ve learned'**
-  String get dailyOsNextKnowledgeTitle;
 
   /// No description provided for @dailyOsNextParsedCardBreakLinkTooltip.
   ///

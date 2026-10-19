@@ -35,6 +35,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
+import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
@@ -505,6 +506,12 @@ void main() {
       () => repository.getEntitiesByAgentId(
         agentId,
         type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.plannerKnowledge,
       ),
     ).thenAnswer((_) async => []);
     when(
@@ -1597,6 +1604,249 @@ void main() {
     expect(recalled, contains('(checkIn) (id: checkin-shelf)'));
     expect(recalled, contains('Walked down to the ice shelf'));
     expect(continuation, goalMemoryContinuationPrompt);
+  });
+
+  group('durable facts', () {
+    const statedFact = {
+      'key': 'walks-after-dinner',
+      'hook': 'Walks after dinner',
+      'statement': 'I walk after dinner, never before.',
+      'source': 'userStated',
+    };
+
+    /// The model answers with [calls]; returns the FACTS it was sent.
+    Future<String?> answering(List<ChatCompletionMessageToolCall> calls) async {
+      String? sent;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            if (sent != null) return null;
+            sent = message;
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: calls,
+              manager: conversationManager,
+            );
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+      return sent;
+    }
+
+    List<PlannerKnowledgeEntity> storedFacts() =>
+        upserts.whereType<PlannerKnowledgeEntity>().toList();
+
+    test('a fact the user states in their own chat message is kept', () async {
+      stubSpec();
+      stubGlmResolution();
+      when(() => repository.getEntity('message-chat')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessage(
+          id: 'message-chat',
+          agentId: agentId,
+          threadId: 'chat',
+          kind: AgentMessageKind.user,
+          createdAt: now,
+          vectorClock: null,
+          contentEntryId: 'payload-chat',
+          metadata: const AgentMessageMetadata(),
+        ),
+      );
+      when(() => repository.getEntity('payload-chat')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'payload-chat',
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: const {'text': 'Remember: I walk after dinner.'},
+        ),
+      );
+      await answering([
+        toolCall(GoalAgentToolNames.replyToUser, {'message': 'Noted.'}),
+        toolCall(
+          GoalAgentToolNames.rememberGoalFact,
+          statedFact,
+          id: 'call-2',
+        ),
+      ]);
+
+      final result = await workflow.executeUserMessage(
+        agentIdentity: identity,
+        runKey: 'chat-fact',
+        triggerTokens: const {'goal-chat-message:message-chat'},
+        threadId: 'chat',
+        messageId: 'message-chat',
+      );
+
+      expect(result.success, isTrue, reason: result.error);
+      final fact = storedFacts().single;
+      expect(fact.key, 'walks-after-dinner');
+      expect(fact.agentId, agentId);
+      expect(fact.status, KnowledgeStatus.confirmed);
+      expect(fact.confirmedAt, isNotNull);
+    });
+
+    test(
+      'a fact the store refuses is logged, and the reply still lands',
+      () async {
+        stubSpec();
+        stubGlmResolution();
+        final logger = MockDomainLogger();
+        when(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        ).thenReturn(null);
+        workflow = GoalAgentWorkflow(
+          repository: repository,
+          syncService: syncService,
+          phaseA: GoalAgentPhaseA(
+            repository: repository,
+            syncService: syncService,
+            signalReader: _FakeReader(),
+          ),
+          conversationRepository: conversationRepository,
+          cloudInferenceRepository: cloudInferenceRepository,
+          aiConfigRepository: aiConfigRepository,
+          domainLogger: logger,
+        );
+        // The knowledge store is unreadable: the fact cannot be written.
+        final unavailable = StateError('knowledge store unavailable');
+        when(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.plannerKnowledge,
+          ),
+        ).thenThrow(unavailable);
+        await answering([
+          toolCall(GoalAgentToolNames.replyToUser, {'message': 'Noted.'}),
+          toolCall(
+            GoalAgentToolNames.rememberGoalFact,
+            statedFact,
+            id: 'call-2',
+          ),
+        ]);
+
+        final result = await withClock(
+          fixedClock,
+          () => workflow.execute(
+            agentIdentity: identity,
+            runKey: 'chat-refused',
+            triggerTokens: const {},
+            threadId: 'chat-refused',
+            pendingUserMessage: 'Remember: I walk after dinner.',
+            chatMessageId: 'source-message',
+          ),
+        );
+
+        expect(result.success, isTrue, reason: result.error);
+        expect(storedFacts(), isEmpty);
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            unavailable,
+            message: 'goal fact not remembered',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        // The user's answer is never the price of a fact that did not keep.
+        expect(
+          upserts.whereType<AgentMessageEntity>().where(
+            (message) =>
+                message.id == goalAgentReplyMessageId(agentId, 'chat-refused'),
+          ),
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
+      'the same fact on a wake that answers no one is only proposed',
+      () async {
+        stubSpec();
+        stubGlmResolution();
+        _stubBadPrior(repository, agentId, now);
+        await answering([
+          toolCall(GoalAgentToolNames.rememberGoalFact, statedFact),
+        ]);
+
+        await workflow.execute(
+          agentIdentity: identity,
+          runKey: 'run-fact',
+          triggerTokens: const {'goal-escalation:2026-08-11'},
+          threadId: 'thread-fact',
+        );
+
+        final fact = storedFacts().single;
+        expect(fact.status, KnowledgeStatus.proposed);
+        expect(fact.confirmedAt, isNull);
+      },
+    );
+
+    test('confirmed facts reach the wake in FACTS', () async {
+      stubSpec();
+      stubGlmResolution();
+      _stubBadPrior(repository, agentId, now);
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.plannerKnowledge,
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.plannerKnowledge(
+            id: 'fact-1',
+            agentId: agentId,
+            key: 'walks-after-dinner',
+            hook: 'Walks after dinner',
+            statementText: 'I walk after dinner, never before.',
+            source: KnowledgeSource.userStated,
+            status: KnowledgeStatus.confirmed,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        ],
+      );
+      String? facts;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            facts ??= message;
+            return const InferenceUsage(inputTokens: 10, outputTokens: 5);
+          };
+
+      await workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-knowledge',
+        triggerTokens: const {'goal-escalation:2026-08-11'},
+        threadId: 'thread-knowledge',
+      );
+
+      expect(facts, contains('"knowledge": {'));
+      expect(facts, contains('I walk after dinner, never before.'));
+      expect(facts, contains(goalKnowledgeInterpretationPolicy));
+    });
   });
 
   group('the charter', () {

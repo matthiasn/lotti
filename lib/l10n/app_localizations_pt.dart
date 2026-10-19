@@ -476,6 +476,59 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Não atribuído';
 
   @override
+  String get agentKnowledgeConfirm => 'Confirmar';
+
+  @override
+  String get agentKnowledgeEdit => 'Editar';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Cancelar';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Resumo de uma linha';
+
+  @override
+  String get agentKnowledgeEditSave => 'Guardar';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'O que devo lembrar?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Edita o que eu lembro';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Nada ainda — vou lembrar o que me disseres.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Opções deste facto';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Não foi possível carregar o que aprendi.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Percebi bem?';
+
+  @override
+  String get agentKnowledgeRetract => 'Esquece';
+
+  @override
+  String get agentKnowledgeRetry => 'Tentar outra vez';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Não ficou guardado. Tenta outra vez.';
+
+  @override
+  String get agentKnowledgeStale => 'Ainda é verdade?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Sim';
+
+  @override
+  String get agentKnowledgeTitle => 'O que eu aprendi';
+
+  @override
   String get agentLifecycleActive => 'Ativo';
 
   @override
@@ -3044,6 +3097,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitado';
 
   @override
+  String get backfillStatsSkipped => 'Ignorado';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (este dispositivo)';
   }
@@ -3062,9 +3118,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Desaparecido';
-
-  @override
-  String get backfillStatsSkipped => 'Ignorado';
 
   @override
   String get backfillToggleDescription =>
@@ -4936,52 +4989,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bom dia.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Confirmar';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmado';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Editar';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Cancelar';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Resumo de uma linha';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Salvar';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'O que devo lembrar?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Nada ainda - vou lembrar o que você me disser.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count coisas que notei — revise',
-      one: '1 coisa que notei — revise',
+      other: '$count coisas que notei — revê',
+      one: '1 coisa que notei — revê',
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Aguardando sua confirmação';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Esqueça';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Ainda é verdade?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'O que eu aprendi';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Quebrar link';

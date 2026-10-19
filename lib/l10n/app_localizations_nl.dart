@@ -471,6 +471,60 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Niet toegewezen';
 
   @override
+  String get agentKnowledgeConfirm => 'Bevestigen';
+
+  @override
+  String get agentKnowledgeEdit => 'Bewerken';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annuleren';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Samenvatting in één regel';
+
+  @override
+  String get agentKnowledgeEditSave => 'Opslaan';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Wat moet ik me herinneren?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Bewerk wat ik onthoud';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Nog niets. Ik zal onthouden wat je me vertelt.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Opties voor dit feit';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Wat ik heb geleerd kon niet worden geladen.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Heb ik dit goed begrepen?';
+
+  @override
+  String get agentKnowledgeRetract => 'Vergeten';
+
+  @override
+  String get agentKnowledgeRetry => 'Opnieuw proberen';
+
+  @override
+  String get agentKnowledgeSaveFailed =>
+      'Dat is niet opgeslagen. Probeer het opnieuw.';
+
+  @override
+  String get agentKnowledgeStale => 'Nog steeds waar?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Ja';
+
+  @override
+  String get agentKnowledgeTitle => 'Wat ik heb geleerd';
+
+  @override
   String get agentLifecycleActive => 'Actief';
 
   @override
@@ -3026,6 +3080,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillStatsRequested => 'Verzoek';
 
   @override
+  String get backfillStatsSkipped => 'Overgeslagen';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (dit apparaat)';
   }
@@ -3044,9 +3101,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Ontbrekend';
-
-  @override
-  String get backfillStatsSkipped => 'Overgeslagen';
 
   @override
   String get backfillToggleDescription =>
@@ -4908,32 +4962,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Goedemorgen.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bevestigen';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bevestigd';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Bewerken';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annuleren';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Overzicht met één regel';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Opslaan';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint =>
-      'Wat moet ik me herinneren?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Nog niets. Ik zal onthouden wat je me vertelt.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4943,18 +4971,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Wacht op uw bevestiging.';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Vergeet';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Nog steeds waar?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Wat ik geleerd heb.';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Verwijzing verbreken';

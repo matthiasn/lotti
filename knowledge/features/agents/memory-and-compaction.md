@@ -70,7 +70,7 @@ state object.
 
 | Layer | Contents |
 |-------|----------|
-| **Durable** (`agent.sqlite`) | Identity and lifecycle, runtime state and slots, the immutable message log (user messages, thoughts, tool actions, tool results), structured observations, reports and heads, change sets and decisions, attention requests and awards, template versions, evolution sessions and recaps, wake token usage and run history |
+| **Durable** (`agent.sqlite`) | Identity and lifecycle, runtime state and slots, the immutable message log (user messages, thoughts, tool actions, tool results), structured observations, durable keyed knowledge (`PlannerKnowledgeEntity`, compaction-exempt — `lib/features/agents/knowledge/`), reports and heads, change sets and decisions, attention requests and awards, template versions, evolution sessions and recaps, wake token usage and run history |
 | **Live journal** | Rebuilt fresh each wake: current task or project data, linked tasks and entries, checklist state, labels, time entries, project-to-task relationships |
 | **Retrieval** | Task-agent reports are embedded after the wake commits when both optional embedding dependencies are available, so later semantic retrieval can use the report text. Keyword recall over the **whole** log — the day agent's `search_memory`, goal agents' `search_goal_memory` — runs through one helper (`lib/features/agents/memory/memory_search.dart`) over `AgentLogCompactor.searchLog`, each agent supplying its corpus as inline events |
 

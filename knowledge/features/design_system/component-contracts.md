@@ -660,6 +660,14 @@ callout's message must never depend on an alert hue for its legibility.
 Promoted from the sync feature, whose paused banner and add-device security
 warning are the canonical uses.
 
+**Actions sit straight under the message, with no spacer.** A callout's
+buttons answer the words above them, and the buttons' own inset is the only
+gap; any spacer on top reads as a second section and the callout as two
+boxes in one frame. No call site adds a gap of its own, and buttons inside a
+callout keep the default `shrinkWrap` tap target: a padded 48-high target
+would put its invisible inset back above the row.
+`design_system_inline_callout_test.dart` pins it.
+
 # One field surface
 
 `DesignSystemSearch` and `DesignSystemDropdown` are separate components that

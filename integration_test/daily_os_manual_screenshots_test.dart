@@ -17,13 +17,14 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_inference_providers.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
@@ -361,8 +362,8 @@ Widget _desktopDayApp() {
             hasPreferredName: true,
           ),
         ),
-        plannerKnowledgeProvider.overrideWith(
-          (ref) async => const PlannerKnowledgeView(
+        agentKnowledgeProvider(dailyOsPlannerAgentId).overrideWith(
+          (ref) async => const AgentKnowledgeView(
             proposed: [],
             confirmed: [],
           ),

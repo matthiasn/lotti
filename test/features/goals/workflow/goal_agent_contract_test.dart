@@ -55,7 +55,7 @@ void main() {
     );
   });
 
-  test('the tool surface includes the shared reply carrier and eight goal '
+  test('the tool surface includes the shared reply carrier and nine goal '
       'tools', () {
     expect(
       [for (final tool in goalAgentTools) tool.name],
@@ -69,6 +69,7 @@ void main() {
         GoalAgentToolNames.proposeGoalRevision,
         GoalAgentToolNames.recordGoalObservation,
         GoalAgentToolNames.searchGoalMemory,
+        GoalAgentToolNames.rememberGoalFact,
       ],
     );
     for (final tool in goalAgentTools) {

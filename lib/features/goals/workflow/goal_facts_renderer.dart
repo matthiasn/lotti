@@ -73,6 +73,7 @@ class GoalFactsRenderer {
     bool dailyBriefing = false,
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
+    Map<String, Object?>? knowledge,
   }) {
     final now = clock.now();
     final active = nudges.where((n) => n.status == NudgeStatus.active).toList();
@@ -149,6 +150,8 @@ class GoalFactsRenderer {
       // What the user wrote the goal is FOR (ADR 0140), verbatim. Absent for
       // a goal without a charter, which renders exactly as before.
       'charter': ?charter,
+      // Facts the user confirmed about themselves and the goal (ADR 0057).
+      'knowledge': ?knowledge,
       'evaluation': {
         'referenceIsCurrentDay': _isToday(evaluationReference, now),
         'todayGuidance': _todayGuidanceJson(

@@ -472,6 +472,59 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Ikke tildelt';
 
   @override
+  String get agentKnowledgeConfirm => 'Bekræft';
+
+  @override
+  String get agentKnowledgeEdit => 'Rediger';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Annuller';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Énlinjes resumé';
+
+  @override
+  String get agentKnowledgeEditSave => 'Gem';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Hvad skal jeg huske?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Ret det, jeg husker';
+
+  @override
+  String get agentKnowledgeEmpty =>
+      'Intet endnu — jeg vil huske, hvad du fortæller mig.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Indstillinger for dette faktum';
+
+  @override
+  String get agentKnowledgeLoadError =>
+      'Kunne ikke indlæse, hvad jeg har lært.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Har jeg forstået det rigtigt?';
+
+  @override
+  String get agentKnowledgeRetract => 'Glem det';
+
+  @override
+  String get agentKnowledgeRetry => 'Prøv igen';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Det blev ikke gemt. Prøv igen.';
+
+  @override
+  String get agentKnowledgeStale => 'Er det stadig sandt?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Ja';
+
+  @override
+  String get agentKnowledgeTitle => 'Hvad jeg har lært';
+
+  @override
   String get agentLifecycleActive => 'Aktiv';
 
   @override
@@ -3014,6 +3067,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatsRequested => 'Efterspurgt';
 
   @override
+  String get backfillStatsSkipped => 'Sprunget over';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (denne enhed)';
   }
@@ -3032,9 +3088,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Savnet';
-
-  @override
-  String get backfillStatsSkipped => 'Sprunget over';
 
   @override
   String get backfillToggleDescription =>
@@ -4889,52 +4942,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Godmorgen.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Bekræft';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Bekræftet';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Redigering';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Annuller';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Énlinjes resumé';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Gem';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Hvad skal jeg huske?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Intet endnu — jeg vil huske, hvad du fortæller mig.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ting jeg lagde mærke til — review',
-      one: '1 ting jeg lagde mærke til — review',
+      other: '$count ting jeg lagde mærke til — gennemse',
+      one: '1 ting jeg lagde mærke til — gennemse',
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Afventer din bekræftelse';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Glem det';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Er det stadig sandt?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Hvad jeg har lært';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Break link';

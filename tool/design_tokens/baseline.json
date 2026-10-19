@@ -88,7 +88,6 @@
     "lib/features/daily_os_next/ui/widgets/diff_row.dart": {"spacing":2},
     "lib/features/daily_os_next/ui/widgets/edge_fade.dart": {"color":2},
     "lib/features/daily_os_next/ui/widgets/hold_to_confirm.dart": {"color":2},
-    "lib/features/daily_os_next/ui/widgets/knowledge_panel.dart": {"spacing":1},
     "lib/features/daily_os_next/ui/widgets/learning_cards.dart": {"spacing":1},
     "lib/features/daily_os_next/ui/widgets/pending_card.dart": {"spacing":1},
     "lib/features/daily_os_next/ui/widgets/sidebar_calendar.dart": {"spacing":1},

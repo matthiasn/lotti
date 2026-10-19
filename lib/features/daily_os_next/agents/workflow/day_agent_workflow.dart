@@ -11,6 +11,7 @@ import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
 import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
@@ -39,7 +40,6 @@ import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -66,8 +66,8 @@ import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 part 'day_agent_context_builder.dart';
-part 'day_agent_planning_context.dart';
 part 'day_agent_persistence.dart';
+part 'day_agent_planning_context.dart';
 part 'day_agent_prompt_builder.dart';
 part 'day_agent_tool_handlers.dart';
 

@@ -479,6 +479,57 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentInstancesUnassignedSoul => 'Neatribuit';
 
   @override
+  String get agentKnowledgeConfirm => 'Confirmați';
+
+  @override
+  String get agentKnowledgeEdit => 'Editați';
+
+  @override
+  String get agentKnowledgeEditCancel => 'Anulați';
+
+  @override
+  String get agentKnowledgeEditHookHint => 'Rezumat pe un rând';
+
+  @override
+  String get agentKnowledgeEditSave => 'Salvați';
+
+  @override
+  String get agentKnowledgeEditStatementHint => 'Ce ar trebui să rețin?';
+
+  @override
+  String get agentKnowledgeEditTitle => 'Editați ce rețin';
+
+  @override
+  String get agentKnowledgeEmpty => 'Încă nimic — voi reține ce îmi spuneți.';
+
+  @override
+  String get agentKnowledgeFactOptions => 'Opțiuni pentru acest fapt';
+
+  @override
+  String get agentKnowledgeLoadError => 'Nu s-a putut încărca ce am învățat.';
+
+  @override
+  String get agentKnowledgeProposedHeader => 'Am înțeles corect?';
+
+  @override
+  String get agentKnowledgeRetract => 'Uitați';
+
+  @override
+  String get agentKnowledgeRetry => 'Încercați din nou';
+
+  @override
+  String get agentKnowledgeSaveFailed => 'Nu s-a salvat. Încercați din nou.';
+
+  @override
+  String get agentKnowledgeStale => 'Mai este valabil?';
+
+  @override
+  String get agentKnowledgeStillTrueYes => 'Da';
+
+  @override
+  String get agentKnowledgeTitle => 'Ce am învățat';
+
+  @override
   String get agentLifecycleActive => 'Activ';
 
   @override
@@ -3067,6 +3118,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitat';
 
   @override
+  String get backfillStatsSkipped => 'Omis';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (acest dispozitiv)';
   }
@@ -3085,9 +3139,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Lipsă';
-
-  @override
-  String get backfillStatsSkipped => 'Omis';
 
   @override
   String get backfillToggleDescription =>
@@ -4976,31 +5027,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
 
   @override
-  String get dailyOsNextKnowledgeConfirm => 'Confirmați';
-
-  @override
-  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmat';
-
-  @override
-  String get dailyOsNextKnowledgeEdit => 'Editați';
-
-  @override
-  String get dailyOsNextKnowledgeEditCancel => 'Anulați';
-
-  @override
-  String get dailyOsNextKnowledgeEditHookHint => 'Rezumat pe un rând';
-
-  @override
-  String get dailyOsNextKnowledgeEditSave => 'Salvați';
-
-  @override
-  String get dailyOsNextKnowledgeEditStatementHint => 'Ce ar trebui să rețin?';
-
-  @override
-  String get dailyOsNextKnowledgeEmpty =>
-      'Încă nimic — voi reține ce îmi spuneți.';
-
-  @override
   String dailyOsNextKnowledgeNudge(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5011,18 +5037,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get dailyOsNextKnowledgeProposedHeader => 'Așteaptă confirmarea dvs.';
-
-  @override
-  String get dailyOsNextKnowledgeRetract => 'Uită';
-
-  @override
-  String get dailyOsNextKnowledgeStale => 'Mai este valabil?';
-
-  @override
-  String get dailyOsNextKnowledgeTitle => 'Ce am învățat';
 
   @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
