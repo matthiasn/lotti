@@ -40,6 +40,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.59" date="2026-10-19">
+      <description>
+        <p>Added: a goal's agent remembers what you tell it. Say "remember, I only walk after dinner" in the chat and it keeps that as a fact it uses every time it writes to you. Something it only worked out itself, or noticed in a check-in, waits under "What I've learned" on the goal page until you confirm it - and you can edit or forget any fact there.</p>
+        <p>Changed: sync health no longer flags skipped messages as a problem. The count of skipped sync messages sat in the top row in red, beside an alert icon, as though something urgently needed fixing. It counts Matrix messages, not entries, and a large number is normal. The top row now shows only the inbound queue and missing entries, and the skipped count is a plain line in the Sync statistics card. Retry skipped events is still under Advanced recovery.</p>
+        <p>Fixed: "What I've learned" reads right in more languages. Italian, Dutch, Portuguese, Romanian, Danish and Swedish had mistranslated labels or the wrong form of address; they are corrected.</p>
+      </description>
+    </release>
     <release version="1.1.58" date="2026-10-19">
       <description>
         <p>Added: tell a goal's agent what the goal is for. Every goal page has an "About this goal" section where you write, dictate or record what the goal is about and how you want to be coached, for example "this is my journal for the season; ask me one guided question each morning". A recording is kept so you can play it back, and its transcript - which you can correct - is what the agent reads. The agent reads all of it every time it writes to you, the morning briefing included, so a goal that is not about numbers still has somewhere to say what it is about. What you put there shapes the agent's focus, questions and tone, never the goal's status; it does not count as a check-in or as check-in time, and the page tells you when it has grown longer than the agent can read at once.</p>
