@@ -131,4 +131,46 @@ void main() {
       hasLength(grandma.length),
     );
   });
+
+  test('copyWith with nothing to change keeps every part as it was', () {
+    const look = CompanionLook.grandmaRock;
+    final palette = look.palette;
+    final kept = palette.copyWith();
+    expect(
+      [
+        kept.hair,
+        kept.hairBack,
+        kept.hairShade,
+        kept.hairLight,
+        kept.skin,
+        kept.skinShade,
+        kept.skinDeep,
+        kept.skinLight,
+        kept.brow,
+        kept.dress,
+        kept.cardigan,
+      ],
+      [
+        palette.hair,
+        palette.hairBack,
+        palette.hairShade,
+        palette.hairLight,
+        palette.skin,
+        palette.skinShade,
+        palette.skinDeep,
+        palette.skinLight,
+        palette.brow,
+        palette.dress,
+        palette.cardigan,
+      ],
+    );
+
+    final same = look.copyWith();
+    expect(identical(same.palette, palette), isTrue);
+    expect(same.hairStyle, look.hairStyle);
+    expect(
+      [same.id, same.sunglasses, same.beret, same.beads, same.glove],
+      [look.id, look.sunglasses, look.beret, look.beads, look.glove],
+    );
+  });
 }

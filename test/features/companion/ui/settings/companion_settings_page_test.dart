@@ -145,6 +145,19 @@ void main() {
     );
   });
 
+  testWidgets('a screen reader can choose a swatch by its tap action', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpBody(tester);
+
+    tester.semantics.tap(find.semantics.byLabel('Skin tone 6'));
+    await _frames(tester);
+
+    expect(chosen(tester).skinTone, CompanionSkinTone.tone6);
+    semantics.dispose();
+  });
+
   testWidgets('a hairstyle segment changes her hair', (tester) async {
     await pumpBody(tester);
     // The visible label; the toggle lays an invisible bold twin under it.

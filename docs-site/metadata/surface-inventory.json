@@ -901,6 +901,19 @@
       "status": "verified"
     },
     {
+      "id": "settings-companion",
+      "title": "Companion",
+      "kind": "settings-page",
+      "source": "lib/features/settings/domain/settings_tree_data.dart",
+      "sourcePattern": "'preferences/companion'",
+      "locator": "/settings/companion",
+      "routes": [
+        "/settings/companion"
+      ],
+      "page": "reference/companion",
+      "status": "planned"
+    },
+    {
       "id": "settings-animations",
       "title": "Completion animations",
       "kind": "settings-page",
