@@ -5996,11 +5996,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Continuar sin fotos';
 
   @override
@@ -6601,6 +6596,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get doneButton => 'Listo';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Tarea vinculada';
@@ -15536,7 +15536,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Modelo de voz en el dispositivo';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Se descarga una vez';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · se descarga una vez, la primera vez que lees en voz alta';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Modelo';
@@ -17443,6 +17445,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Modelo: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Descargar ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'La lectura en voz alta funciona en este dispositivo y necesita una única descarga del modelo de voz de $size. Se recomienda wifi.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => '¿Descargar el modelo de voz?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

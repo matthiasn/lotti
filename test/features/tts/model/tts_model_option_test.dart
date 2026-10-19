@@ -16,6 +16,25 @@ void main() {
       expect(recommended.single.id, kDefaultTtsModelId);
     });
 
+    test('pins Supertonic 3 to a commit, with the size of every file', () {
+      final model = ttsModelByIdOrDefault('supertonic-3');
+
+      expect(model.revision, matches(RegExp(r'^[0-9a-f]{40}$')));
+      expect(model.files.map((f) => f.name), [
+        'duration_predictor.onnx',
+        'text_encoder.onnx',
+        'vector_estimator.onnx',
+        'vocoder.onnx',
+        'tts.json',
+        'unicode_indexer.json',
+      ]);
+      for (final file in model.files) {
+        expect(file.bytes, greaterThan(0), reason: file.name);
+      }
+      // Measured at the pinned commit; the prompt shows "398.4 MB".
+      expect(model.totalBytes, 398361202);
+    });
+
     test('has unique ids', () {
       final ids = kTtsModels.map((m) => m.id).toSet();
       expect(ids.length, kTtsModels.length);
@@ -28,21 +47,43 @@ void main() {
         id: 'x',
         displayName: 'X',
         huggingFaceRepoId: 'owner/x',
+        revision: 'r1',
+        files: [TtsModelFile('a.onnx', 1)],
       );
       const b = TtsModelOption(
         id: 'x',
         displayName: 'X',
         huggingFaceRepoId: 'owner/x',
+        revision: 'r1',
+        files: [TtsModelFile('a.onnx', 1)],
       );
       const c = TtsModelOption(
         id: 'x',
         displayName: 'X',
         huggingFaceRepoId: 'owner/x',
+        revision: 'r1',
+        files: [TtsModelFile('a.onnx', 1)],
         recommended: true,
+      );
+      const otherRevision = TtsModelOption(
+        id: 'x',
+        displayName: 'X',
+        huggingFaceRepoId: 'owner/x',
+        revision: 'r2',
+        files: [TtsModelFile('a.onnx', 1)],
+      );
+      const otherSize = TtsModelOption(
+        id: 'x',
+        displayName: 'X',
+        huggingFaceRepoId: 'owner/x',
+        revision: 'r1',
+        files: [TtsModelFile('a.onnx', 2)],
       );
       expect(a, b);
       expect(a.hashCode, b.hashCode);
       expect(a, isNot(c));
+      expect(a, isNot(otherRevision));
+      expect(a, isNot(otherSize));
     });
   });
 
@@ -51,6 +92,8 @@ void main() {
       id: 'x',
       displayName: 'X',
       huggingFaceRepoId: 'owner/x',
+      revision: 'r1',
+      files: [],
     );
     expect(option.toString(), 'TtsModelOption(x, owner/x)');
   });

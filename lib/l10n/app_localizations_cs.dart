@@ -5989,11 +5989,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Pokračovat bez fotek';
 
   @override
@@ -6591,6 +6586,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get doneButton => 'Hotovo';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Propojený úkol';
@@ -15544,7 +15544,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Stáhne se jednou';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · stáhne se jednou, když poprvé necháš předčítat';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Model';
@@ -17438,6 +17440,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Stáhnout ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'Předčítání běží na tomto zařízení a vyžaduje jednorázové stažení hlasového modelu o velikosti $size. Doporučujeme Wi-Fi.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => 'Stáhnout hlasový model?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

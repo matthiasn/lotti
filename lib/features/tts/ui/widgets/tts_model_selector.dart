@@ -1,6 +1,7 @@
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/download_size.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Selectable list of the available TTS models. Each row shows the model name,
@@ -119,7 +120,12 @@ class _ModelRow extends StatelessWidget {
                             ],
                           ),
                           Text(
-                            context.messages.speechSettingsModelDownloadsOnce,
+                            context.messages.speechSettingsModelDownloadSize(
+                              formatDownloadMegabytes(
+                                context.messages,
+                                model.totalBytes,
+                              ),
+                            ),
                             style: tokens.typography.styles.others.caption
                                 .copyWith(
                                   color: tokens.colors.text.mediumEmphasis,

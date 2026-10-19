@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -583,12 +584,24 @@ void main() {
     expect(state.sourceId, isNull);
   });
 
-  test('missing model: downloads with progress before synthesizing', () async {
+  test('missing model: asks with the model, then downloads with progress '
+      'before synthesizing', () async {
     final repo = FakeTtsModelRepository(installed: false);
     final h = harness(repo: repo);
+    final asked = <TtsModelOption>[];
 
-    await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+    await controllerOf(h.container).speak(
+      sourceId: 'task-1',
+      text: 'x',
+      confirmModelDownload: (model) async {
+        asked.add(model);
+        // Nothing has started downloading while the user is being asked.
+        expect(repo.ensureCount, 0);
+        return true;
+      },
+    );
 
+    expect(asked.map((m) => m.id), [kDefaultTtsModelId]);
     expect(repo.ensureCount, 1);
     final statuses = h.states.map((s) => s.status).toList();
     expect(
@@ -604,6 +617,81 @@ void main() {
       (s) => s.status == TtsPlaybackStatus.downloadingModel,
     );
     expect(downloadStates.map((s) => s.downloadProgress), contains(0.5));
+  });
+
+  group('missing model without consent', () {
+    test(
+      'a declined download fetches and speaks nothing, and ends quietly',
+      () async {
+        final repo = FakeTtsModelRepository(installed: false);
+        final engine = FakeTtsEngine();
+        final h = harness(repo: repo, engine: engine);
+
+        await controllerOf(h.container).speak(
+          sourceId: 'task-1',
+          text: 'x',
+          confirmModelDownload: (_) async => false,
+        );
+
+        expect(repo.ensureCount, 0);
+        expect(engine.calls, isEmpty);
+        expect(
+          h.states.map((s) => s.status),
+          isNot(contains(TtsPlaybackStatus.downloadingModel)),
+        );
+        final state = h.container.read(ttsPlaybackControllerProvider);
+        expect(state.status, TtsPlaybackStatus.stopped);
+        expect(state.sourceId, isNull);
+        expect(state.errorMessage, isNull);
+      },
+    );
+
+    test('without a way to ask, nothing downloads', () async {
+      final repo = FakeTtsModelRepository(installed: false);
+      final engine = FakeTtsEngine();
+      final h = harness(repo: repo, engine: engine);
+
+      await controllerOf(h.container).speak(sourceId: 'task-1', text: 'x');
+
+      expect(repo.ensureCount, 0);
+      expect(engine.calls, isEmpty);
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.stopped,
+      );
+    });
+
+    test('an installed model is never asked about', () async {
+      final h = harness();
+      var asked = false;
+
+      await controllerOf(h.container).speak(
+        sourceId: 'task-1',
+        text: 'x',
+        confirmModelDownload: (_) async => asked = true,
+      );
+
+      expect(asked, isFalse);
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).status,
+        TtsPlaybackStatus.playing,
+      );
+    });
+
+    test('preparation never downloads the model', () async {
+      final repo = FakeTtsModelRepository(installed: false);
+      final engine = FakeTtsEngine();
+      final h = harness(repo: repo, engine: engine);
+
+      await controllerOf(h.container).prepare(
+        sourceId: 'chat',
+        text: 'Answer',
+        canPrepare: () async => true,
+      );
+
+      expect(repo.ensureCount, 0);
+      expect(engine.calls, isEmpty);
+    });
   });
 
   test('ignores a second speak while already busy', () async {

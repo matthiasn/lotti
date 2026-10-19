@@ -3645,15 +3645,6 @@
       }
     }
   },
-  "demoMediaPromptSize": "{megabytes} MB",
-  "@demoMediaPromptSize": {
-    "description": "A download size in megabytes, e.g. 26.6 MB.",
-    "placeholders": {
-      "megabytes": {
-        "type": "String"
-      }
-    }
-  },
   "demoMediaPromptSkip": "Continue without photos",
   "demoMediaPromptTitle": "Download the demo photos?",
   "demoOnboardingExplore": "Explore with sample data",
@@ -3878,6 +3869,15 @@
     }
   },
   "doneButton": "Done",
+  "downloadSizeMegabytes": "{megabytes} MB",
+  "@downloadSizeMegabytes": {
+    "description": "A download size in megabytes, e.g. 26.6 MB.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      }
+    }
+  },
   "editLinkTypeCounterpartLabel": "Linked task",
   "@editLinkTypeCounterpartLabel": {
     "description": "Caption above the name of the task on the other end of the link being edited."
@@ -9417,7 +9417,14 @@
   "speechSettingsChatAudioDescription": "Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.",
   "speechSettingsChatAudioLabel": "Chat audio",
   "speechSettingsModelDescription": "On-device speech model",
-  "speechSettingsModelDownloadsOnce": "Downloads once",
+  "speechSettingsModelDownloadSize": "{size} · downloads once, when you first read aloud",
+  "@speechSettingsModelDownloadSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
   "speechSettingsModelLabel": "Model",
   "speechSettingsRecommendedBadge": "Recommended",
   "speechSettingsSpeedDescription": "How fast summaries are read",
@@ -10415,6 +10422,23 @@
       }
     }
   },
+  "ttsModelDownloadConfirm": "Download ({size})",
+  "@ttsModelDownloadConfirm": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "ttsModelDownloadMessage": "Reading aloud runs on this device and needs a one-time {size} download of the voice model. Wi-Fi is recommended.",
+  "@ttsModelDownloadMessage": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "ttsModelDownloadTitle": "Download the voice model?",
   "unifiedGoalsArchivedTitle": "{count, plural, =1{Archived goal · 1} other{Archived goals · {count}}}",
   "@unifiedGoalsArchivedTitle": {
     "placeholders": {

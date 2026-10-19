@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
+import 'package:lotti/features/tts/ui/tts_model_download_prompt.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -75,7 +76,13 @@ class DayBriefingCompanion extends ConsumerWidget {
       if (ref.read(ttsPlaybackControllerProvider).isBusy) {
         await notifier.stop();
       }
-      await notifier.speak(sourceId: sourceId, text: text);
+      if (!context.mounted) return;
+      await notifier.speak(
+        sourceId: sourceId,
+        text: text,
+        confirmModelDownload: (model) =>
+            confirmTtsModelDownload(context, model),
+      );
     }
 
     // Nothing waits on the voice: speak and stop settle their own failures

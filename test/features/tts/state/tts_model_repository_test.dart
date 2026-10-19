@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -28,8 +29,8 @@ void main() {
 
   void writeAllFiles(String dir) {
     Directory(dir).createSync(recursive: true);
-    for (final file in kSupertonicModelFiles) {
-      File('$dir/$file').writeAsStringSync('x');
+    for (final file in kSupertonic3Files) {
+      File('$dir/${file.name}').writeAsStringSync('x');
     }
   }
 
@@ -66,12 +67,20 @@ void main() {
         onProgress: progress.add,
       );
 
+      // Fetched at the pinned commit, never a moving branch, so the size
+      // the prompt showed is what arrives.
       expect(
-        requested.where((p) => p.contains('/resolve/main/onnx/')).length,
-        kSupertonicModelFiles.length,
+        requested
+            .where((p) => p.contains('/resolve/$kSupertonic3Revision/onnx/'))
+            .length,
+        kSupertonic3Files.length,
       );
-      for (final file in kSupertonicModelFiles) {
-        expect(File('$dir/$file').existsSync(), isTrue, reason: file);
+      for (final file in kSupertonic3Files) {
+        expect(
+          File('$dir/${file.name}').existsSync(),
+          isTrue,
+          reason: file.name,
+        );
       }
       expect(progress.last, 1.0);
       expect(await r.isInstalled('supertonic-3'), isTrue);

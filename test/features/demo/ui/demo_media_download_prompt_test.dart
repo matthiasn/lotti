@@ -1,30 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/ui/demo_media_download_prompt.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
 
 void main() {
-  group('formatDemoMediaSize', () {
-    Future<AppLocalizations> messagesFor(String locale) =>
-        AppLocalizations.delegate.load(Locale(locale));
-
-    test('shows megabytes to one decimal, rounded up so the size is never '
-        'understated', () async {
-      final en = await messagesFor('en');
-
-      expect(formatDemoMediaSize(en, 26544434), '26.6 MB');
-      expect(formatDemoMediaSize(en, 26500000), '26.5 MB');
-      expect(formatDemoMediaSize(en, 1), '0.1 MB');
-    });
-
-    test('uses the locale decimal separator and unit', () async {
-      expect(formatDemoMediaSize(await messagesFor('de'), 26544434), '26,6 MB');
-      expect(formatDemoMediaSize(await messagesFor('fr'), 26544434), '26,6 Mo');
-    });
-  });
-
   group('DemoMediaDownloadPrompt', () {
     Future<List<DemoMediaChoice>> pumpPrompt(WidgetTester tester) async {
       final choices = <DemoMediaChoice>[];

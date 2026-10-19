@@ -5943,11 +5943,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String demoMediaPromptSize(String megabytes) {
-    return '$megabytes MB';
-  }
-
-  @override
   String get demoMediaPromptSkip => 'Doorgaan zonder foto\'s';
 
   @override
@@ -6545,6 +6540,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get doneButton => 'Klaar';
+
+  @override
+  String downloadSizeMegabytes(String megabytes) {
+    return '$megabytes MB';
+  }
 
   @override
   String get editLinkTypeCounterpartLabel => 'Gekoppelde taak';
@@ -15392,7 +15392,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';
 
   @override
-  String get speechSettingsModelDownloadsOnce => 'Eenmaal downloaden';
+  String speechSettingsModelDownloadSize(String size) {
+    return '$size · wordt één keer gedownload, als je voor het eerst laat voorlezen';
+  }
 
   @override
   String get speechSettingsModelLabel => 'Model';
@@ -17287,6 +17289,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String transcriptModelLabel(String provider, String model) {
     return 'Model: $provider, $model';
   }
+
+  @override
+  String ttsModelDownloadConfirm(String size) {
+    return 'Downloaden ($size)';
+  }
+
+  @override
+  String ttsModelDownloadMessage(String size) {
+    return 'Voorlezen werkt op dit apparaat en vraagt eenmalig een download van het spraakmodel van $size. Wifi wordt aanbevolen.';
+  }
+
+  @override
+  String get ttsModelDownloadTitle => 'Spraakmodel downloaden?';
 
   @override
   String unifiedGoalsArchivedTitle(int count) {

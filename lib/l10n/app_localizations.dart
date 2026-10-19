@@ -9917,12 +9917,6 @@ abstract class AppLocalizations {
   /// **'The demo comes with sample photos, a {size} download. You can explore without them — blurred previews stand in for the photos.'**
   String demoMediaPromptMessage(String size);
 
-  /// A download size in megabytes, e.g. 26.6 MB.
-  ///
-  /// In en, this message translates to:
-  /// **'{megabytes} MB'**
-  String demoMediaPromptSize(String megabytes);
-
   /// No description provided for @demoMediaPromptSkip.
   ///
   /// In en, this message translates to:
@@ -11056,6 +11050,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get doneButton;
+
+  /// A download size in megabytes, e.g. 26.6 MB.
+  ///
+  /// In en, this message translates to:
+  /// **'{megabytes} MB'**
+  String downloadSizeMegabytes(String megabytes);
 
   /// Caption above the name of the task on the other end of the link being edited.
   ///
@@ -25427,11 +25427,11 @@ abstract class AppLocalizations {
   /// **'On-device speech model'**
   String get speechSettingsModelDescription;
 
-  /// No description provided for @speechSettingsModelDownloadsOnce.
+  /// No description provided for @speechSettingsModelDownloadSize.
   ///
   /// In en, this message translates to:
-  /// **'Downloads once'**
-  String get speechSettingsModelDownloadsOnce;
+  /// **'{size} · downloads once, when you first read aloud'**
+  String speechSettingsModelDownloadSize(String size);
 
   /// No description provided for @speechSettingsModelLabel.
   ///
@@ -28600,6 +28600,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model: {provider}, {model}'**
   String transcriptModelLabel(String provider, String model);
+
+  /// No description provided for @ttsModelDownloadConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ({size})'**
+  String ttsModelDownloadConfirm(String size);
+
+  /// No description provided for @ttsModelDownloadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading aloud runs on this device and needs a one-time {size} download of the voice model. Wi-Fi is recommended.'**
+  String ttsModelDownloadMessage(String size);
+
+  /// No description provided for @ttsModelDownloadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the voice model?'**
+  String get ttsModelDownloadTitle;
 
   /// No description provided for @unifiedGoalsArchivedTitle.
   ///
