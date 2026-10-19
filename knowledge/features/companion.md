@@ -334,9 +334,10 @@ flowchart LR
     Peer->>Peer: settingsNotification, controller reloads, never sends back
   ```
 
-  A customization stored but never published — made before this sync, or
-  while the outbox failed — is published once on the next load, a pre-sync
-  one with stamp 1 so it never beats a real change. "Send settings" re-sends
+  A customization stored but never published — while the outbox failed — is
+  published once on the next load. A reload that a `settingsNotification`
+  triggers while a local save is still committing waits for the save, so the
+  page never shows the value the save is replacing. "Send settings" re-sends
   it with the other preferences.
 - **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
   colour over the outfit's palette and sets its hairstyle; the outfit keeps

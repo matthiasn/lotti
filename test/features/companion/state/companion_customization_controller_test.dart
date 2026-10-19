@@ -121,13 +121,14 @@ void main() {
       });
     });
 
-    test('one from before sync goes out with the oldest stamp, so it never '
-        'overrides a real change', () {
+    test('one without a stamp shows, but has nothing to win with and is '
+        'not sent', () {
       fakeAsync((async) {
         stored({companionCustomizationKey: _json(_afro)});
-        start(async);
+        final c = start(async);
         settle(async);
-        expect(sent().single.updatedAt, 1);
+        expect(c.read(companionCustomizationProvider), _afro);
+        verifyNever(() => outbox.enqueueMessage(any()));
       });
     });
 
@@ -290,6 +291,43 @@ void main() {
         settle(async);
         expect(c.read(companionCustomizationProvider), _locs);
         verifyNever(() => outbox.enqueueMessage(any()));
+      });
+    });
+
+    test('a reload during a save waits for it, so she never shows the value '
+        'it replaces', () {
+      fakeAsync((async) {
+        final saving =
+            Completer<({int updatedAt, Map<String, String> values})>();
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer((_) => saving.future);
+        // Until the save commits, storage still holds the old value.
+        var storedJson = _json(_afro);
+        when(
+          () => db.itemByKey(companionCustomizationKey),
+        ).thenAnswer((_) async => storedJson);
+        final c = start(async);
+        c.read(companionCustomizationProvider.notifier).set(_locs);
+        // Another setting synced in while the save is in flight.
+        updates.add({settingsNotification});
+        async.flushMicrotasks();
+        expect(c.read(companionCustomizationProvider), _locs);
+        verifyNever(() => db.itemByKey(any()));
+
+        storedJson = _json(_locs);
+        saving.complete((
+          updatedAt: 950,
+          values: {companionCustomizationKey: _json(_locs)},
+        ));
+        settle(async);
+        // The deferred reload runs once the save lands, and reads the winner.
+        verify(() => db.itemByKey(companionCustomizationKey)).called(1);
+        expect(c.read(companionCustomizationProvider), _locs);
       });
     });
 

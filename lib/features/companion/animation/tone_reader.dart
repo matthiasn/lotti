@@ -60,23 +60,39 @@ int? _approval(String words) {
   for (final MapEntry(key: mark, value: weight) in _marks.entries) {
     if (lower.contains(mark)) score += weight;
   }
-  for (final MapEntry(key: phrase, value: weight) in _phrases.entries) {
-    if (lower.contains(phrase)) score += weight;
-  }
   final tokens = [for (final m in _token.allMatches(lower)) m[0]!];
-  for (var i = 0; i < tokens.length; i++) {
-    final weight = _weight(tokens[i]);
-    if (weight == 0) continue;
-    // "Not done", "no progress", "nicht erledigt": praise denied is a
-    // concern; "no blockers", "keine Probleme": trouble denied is good news.
-    final negated = [
-      for (var k = i - 2; k < i; k++)
-        if (k >= 0) tokens[k],
-    ].any(_negators.contains);
-    score += negated ? (weight > 0 ? -1 : 1) : weight;
+  var i = 0;
+  while (i < tokens.length) {
+    // A phrase counts once, as a whole, and its words not again.
+    final (:weight, :length) =
+        _phraseAt(tokens, i) ?? (weight: _weight(tokens[i]), length: 1);
+    if (weight != 0) {
+      // "Not done", "no progress", "nicht erledigt": praise denied is a
+      // concern; "no blockers", "not falling behind", "nicht im Verzug":
+      // trouble denied is good news.
+      final negated = [
+        for (var k = i - 2; k < i; k++)
+          if (k >= 0) tokens[k],
+      ].any(_negators.contains);
+      score += negated ? (weight > 0 ? -1 : 1) : weight;
+    }
+    i += length;
   }
   if (score == 0) return null;
   return score.clamp(minApproval, maxApproval);
+}
+
+/// The phrase starting at token [i], matched word for word, or null.
+({int weight, int length})? _phraseAt(List<String> tokens, int i) {
+  for (final (:words, :weight) in _phrases) {
+    if (i + words.length > tokens.length) continue;
+    var matches = true;
+    for (var j = 0; j < words.length && matches; j++) {
+      matches = tokens[i + j] == words[j];
+    }
+    if (matches) return (weight: weight, length: words.length);
+  }
+  return null;
 }
 
 int _weight(String token) {
@@ -116,17 +132,18 @@ const _marks = {
   '🛑': -2,
 };
 
-const _phrases = {
-  'well done': 2,
-  'great job': 2,
-  'on track': 1,
-  'off track': -2,
-  'at risk': -1,
-  'falling behind': -2,
-  'gut gemacht': 2,
-  'im plan': 1,
-  'im verzug': -2,
-};
+/// Whole words in a row, so "im Plan" never matches "im Planungsmeeting".
+const _phrases = <({List<String> words, int weight})>[
+  (words: ['well', 'done'], weight: 2),
+  (words: ['great', 'job'], weight: 2),
+  (words: ['on', 'track'], weight: 1),
+  (words: ['off', 'track'], weight: -2),
+  (words: ['at', 'risk'], weight: -1),
+  (words: ['falling', 'behind'], weight: -2),
+  (words: ['gut', 'gemacht'], weight: 2),
+  (words: ['im', 'plan'], weight: 1),
+  (words: ['im', 'verzug'], weight: -2),
+];
 
 /// Short words, matched whole so "done" never matches "doner".
 const _exact = {

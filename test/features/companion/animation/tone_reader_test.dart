@@ -35,9 +35,23 @@ void main() {
       expect(_one('Keine Probleme.'), greaterThan(0));
     });
 
+    test('a phrase denied is denied too', () {
+      expect(_one('We are not falling behind.'), greaterThan(0));
+      expect(_one('The launch is not at risk.'), greaterThan(0));
+      expect(_one('Das Projekt ist nicht im Verzug.'), greaterThan(0));
+    });
+
+    test('a phrase counts once, not again for its words', () {
+      // "well done" alone weighs what "great" does, not that plus "done".
+      expect(_one('Well done.'), _one('Great.'));
+      expect(_one('The launch is at risk.'), _one('The launch has a risk.'));
+    });
+
     test('a whole word, never a part of one', () {
       // "done" inside "Doneck" is not done.
       expect(_one('Meet Doneck at ten.'), isNull);
+      // "im Plan" inside "im Planungsmeeting" is no plan kept.
+      expect(_one('Wir sprechen im Planungsmeeting.'), isNull);
     });
 
     test('German reads too', () {

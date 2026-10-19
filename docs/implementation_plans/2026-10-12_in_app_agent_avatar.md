@@ -637,8 +637,8 @@ flowchart TD
   depends on the companion; its keys moved to `lib/utils/` for sync to
   reach.
 - The companion sends a change debounced, publishes a never-sent one once on
-  load (a pre-sync one with stamp 1), and reloads on an inbound change
-  without sending it back.
+  load, and reloads on an inbound change without sending it back — after
+  any local save still committing, so the reload never undoes it.
 - A build that predates the variant cannot decode it and skips it, as it
   does any unknown variant.
 

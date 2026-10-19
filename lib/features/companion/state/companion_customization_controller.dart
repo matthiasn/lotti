@@ -32,21 +32,21 @@ final companionCustomizationProvider =
 /// `SyncMessage.companionCustomization`; an inbound change, applied by sync
 /// under last-write-wins and surfaced as a `settingsNotification`, reloads
 /// her here and is never sent back. A customization stored on this device
-/// but never published — made before sync, or while the outbox failed — is
-/// published once on load, so it reaches the other devices without a
-/// re-edit.
+/// but never published — while the outbox failed — is published once on
+/// load, so it reaches the other devices without a re-edit.
 class CompanionCustomizationController
     extends Notifier<CompanionCustomization> {
   /// Set by [set], so a late-resolving [_load] never clobbers it.
   bool _changed = false;
 
+  /// Saves not yet committed. A reload while one is pending would read the
+  /// value it is about to replace, so it waits until the last one lands.
+  var _saving = 0;
+  var _reloadPending = false;
+
   StreamSubscription<Set<String>>? _synced;
   final _debounceKey =
       'companion.customization.sync.${identityHashCode(Object())}';
-
-  /// The stamp a customization from before sync is published with: older
-  /// than any real change on any device, so it never overrides one.
-  static const _bootstrapUpdatedAt = 1;
 
   @override
   CompanionCustomization build() {
@@ -72,11 +72,14 @@ class CompanionCustomizationController
       final json = stored[companionCustomizationKey];
       if (!ref.mounted || _changed || json == null) return;
       state = _decode(json);
-      final updatedAt =
-          int.tryParse(stored[companionCustomizationUpdatedAtKey] ?? '') ??
-          _bootstrapUpdatedAt;
-      if (int.tryParse(stored[companionCustomizationSyncedAtKey] ?? '') !=
-          updatedAt) {
+      // Every write stores its stamp with the value, so one without a stamp
+      // has nothing to win with and is not sent.
+      final updatedAt = int.tryParse(
+        stored[companionCustomizationUpdatedAtKey] ?? '',
+      );
+      if (updatedAt != null &&
+          int.tryParse(stored[companionCustomizationSyncedAtKey] ?? '') !=
+              updatedAt) {
         _publish(json, updatedAt);
       }
     } catch (error, stackTrace) {
@@ -94,6 +97,7 @@ class CompanionCustomizationController
   }
 
   Future<void> _save(CompanionCustomization customization) async {
+    _saving++;
     try {
       // The value and a fresh stamp together, so what is sent and what is
       // stored agree on which change wins.
@@ -108,6 +112,12 @@ class CompanionCustomizationController
       _publish(saved.values[companionCustomizationKey]!, saved.updatedAt);
     } catch (error, stackTrace) {
       _logError(error, stackTrace, 'Could not store her customization');
+    } finally {
+      _saving--;
+      if (_saving == 0 && _reloadPending && ref.mounted) {
+        _reloadPending = false;
+        _reload().ignore();
+      }
     }
   }
 
@@ -156,6 +166,11 @@ class CompanionCustomizationController
   }
 
   Future<void> _reload() async {
+    if (_saving > 0) {
+      // What is stored is about to change; read it once it has.
+      _reloadPending = true;
+      return;
+    }
     try {
       // Sync resolved last-write-wins before it stored the value, so the
       // stored one is the winner, even over a change made here. A reload
