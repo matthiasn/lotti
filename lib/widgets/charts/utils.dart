@@ -46,18 +46,29 @@ List<Observation> aggregateSumByDay(
   return aggregated;
 }
 
+/// One `MMM dd` formatter per locale. Building a [DateFormat] parses its
+/// pattern and resolves locale data, and these formatters run per cell or
+/// per tick — the habit heatmap calls one twice for each of its hundreds of
+/// cells — so they are built once and reused.
+final _monthDayFormats = <String, DateFormat>{};
+
+DateFormat _monthDayFormat() => _monthDayFormats.putIfAbsent(
+  Intl.getCurrentLocale(),
+  () => DateFormat('MMM dd'),
+);
+
 String chartDateFormatter(String ymd) {
   if (ymd.isEmpty) {
     return '';
   }
 
   final day = DateTime.parse(ymd);
-  return DateFormat('MMM dd').format(day);
+  return _monthDayFormat().format(day);
 }
 
 String chartDateFormatterMmDd(num millis) {
   final day = DateTime.fromMillisecondsSinceEpoch(millis.toInt());
-  return DateFormat('MMM dd').format(day);
+  return _monthDayFormat().format(day);
 }
 
 /// Formats a canonical midnight-UTC day key for a compact date axis without

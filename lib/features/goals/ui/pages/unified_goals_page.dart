@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/motion/on_screen_ticker_mode.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -313,86 +314,101 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
                         // clear once the launcher owns the action.
                         (launcherOwnsCreateAction ? 0 : tokens.spacing.step12),
                   ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _GoalsHeader(
-                        filter: state.displayFilter,
-                        onFilterChanged: ref
-                            .read(habitsControllerProvider.notifier)
-                            .setDisplayFilter,
-                      ),
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      // The day's briefing across goals, above the habits
-                      // to tick off: what each goal's agent says to do next.
-                      GoalTodayBriefingCard(identities: identities),
-                      HabitsSummaryCard(
-                        visibleHabitIds: recordableIds,
-                        doneHabitIds: summaryDoneIds,
-                        // Scoped to the recordable set, from the SAME
-                        // per-habit streaks the visible row chains render —
-                        // a hidden out-of-window habit's streak must not be
-                        // advertised here.
-                        streakCounts: (
-                          short: recordableIds
-                              .where((id) => (streaks[id] ?? 0) >= 3)
-                              .length,
-                          long: recordableIds
-                              .where((id) => (streaks[id] ?? 0) >= 7)
-                              .length,
+                  // Built whole and kept resident, not a lazy SliverList:
+                  // the page is a bounded stack of heavy cards (the goal
+                  // cards' progress and assessment reads, the multi-year
+                  // heatmap, the chart), and a lazy list built the bottom
+                  // ones mid-scroll — a visible stall — and disposed the top
+                  // ones off-screen, reloading every goal on the way back.
+                  // Everything now builds once when the page opens and stays
+                  // until the page itself goes; the app shell already pauses
+                  // a hidden tab's tickers, and each goal card's own
+                  // animation runs only while it is on screen.
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _paintedApart([
+                        _GoalsHeader(
+                          filter: state.displayFilter,
+                          onFilterChanged: ref
+                              .read(habitsControllerProvider.notifier)
+                              .setDisplayFilter,
                         ),
-                      ),
-                      SizedBox(height: tokens.spacing.step5),
-                      if (failedFirstLoad)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: tokens.spacing.sectionGap,
-                          ),
-                          child: Text(
-                            messages.agentsPageLoadFailed,
-                            textAlign: TextAlign.center,
-                            style: tokens.typography.styles.body.bodyMedium
-                                .copyWith(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                ),
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        // The day's briefing across goals, above the habits
+                        // to tick off: what each goal's agent says to do next.
+                        GoalTodayBriefingCard(identities: identities),
+                        HabitsSummaryCard(
+                          visibleHabitIds: recordableIds,
+                          doneHabitIds: summaryDoneIds,
+                          // Scoped to the recordable set, from the SAME
+                          // per-habit streaks the visible row chains render —
+                          // a hidden out-of-window habit's streak must not be
+                          // advertised here.
+                          streakCounts: (
+                            short: recordableIds
+                                .where((id) => (streaks[id] ?? 0) >= 3)
+                                .length,
+                            long: recordableIds
+                                .where((id) => (streaks[id] ?? 0) >= 7)
+                                .length,
                           ),
                         ),
-                      // The page's own first run gets the same designed
-                      // invitation its sub-states already have: a blank
-                      // stretch of chrome with an unexplained FAB is not an
-                      // empty state. Gated on a RESOLVED first load — the
-                      // no-flash rule: while loading, render nothing here.
-                      if (agents.hasValue &&
-                          identities.isEmpty &&
-                          archivedIdentities.isEmpty &&
-                          !failedFirstLoad)
-                        const _NoGoalsYet(),
-                      for (final identity in identities) ...[
-                        UnifiedGoalCard(
-                          key: Key('unified-goal-card-${identity.agentId}'),
-                          identity: identity,
-                        ),
-                        SizedBox(height: tokens.spacing.cardItemSpacing),
-                      ],
-                      if (archivedIdentities.isNotEmpty) ...[
-                        SizedBox(height: tokens.spacing.step3),
-                        _ArchivedGoalsSection(
-                          identities: archivedIdentities,
-                        ),
-                      ],
-                      if (orphanHabits.isNotEmpty) ...[
-                        HabitsSectionHeader(
-                          label: messages.unifiedGoalsUngroupedHabitsHeader,
-                          count: orphanHabits.length,
-                        ),
-                        ...orphanHabits.map(buildOrphanRow),
-                      ],
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      // Unfiltered: the aggregate heatmap must not inherit
-                      // the Habits tab's hidden category selection either.
-                      const HabitHeatmapCard(ignoreCategoryFilter: true),
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      const HabitsChartCard(),
-                    ]),
+                        SizedBox(height: tokens.spacing.step5),
+                        if (failedFirstLoad)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: tokens.spacing.sectionGap,
+                            ),
+                            child: Text(
+                              messages.agentsPageLoadFailed,
+                              textAlign: TextAlign.center,
+                              style: tokens.typography.styles.body.bodyMedium
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                          ),
+                        // The page's own first run gets the same designed
+                        // invitation its sub-states already have: a blank
+                        // stretch of chrome with an unexplained FAB is not an
+                        // empty state. Gated on a RESOLVED first load — the
+                        // no-flash rule: while loading, render nothing here.
+                        if (agents.hasValue &&
+                            identities.isEmpty &&
+                            archivedIdentities.isEmpty &&
+                            !failedFirstLoad)
+                          const _NoGoalsYet(),
+                        for (final identity in identities) ...[
+                          OnScreenTickerMode(
+                            child: UnifiedGoalCard(
+                              key: Key('unified-goal-card-${identity.agentId}'),
+                              identity: identity,
+                            ),
+                          ),
+                          SizedBox(height: tokens.spacing.cardItemSpacing),
+                        ],
+                        if (archivedIdentities.isNotEmpty) ...[
+                          SizedBox(height: tokens.spacing.step3),
+                          _ArchivedGoalsSection(
+                            identities: archivedIdentities,
+                          ),
+                        ],
+                        if (orphanHabits.isNotEmpty) ...[
+                          HabitsSectionHeader(
+                            label: messages.unifiedGoalsUngroupedHabitsHeader,
+                            count: orphanHabits.length,
+                          ),
+                          ...orphanHabits.map(buildOrphanRow),
+                        ],
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        // Unfiltered: the aggregate heatmap must not inherit
+                        // the Habits tab's hidden category selection either.
+                        const HabitHeatmapCard(ignoreCategoryFilter: true),
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        const HabitsChartCard(),
+                      ]),
+                    ),
                   ),
                 ),
               ],
@@ -403,6 +419,15 @@ class _UnifiedGoalsPageState extends ConsumerState<UnifiedGoalsPage>
     );
   }
 }
+
+/// Each of the resident column's cards in its own layer, as the lazy list it
+/// replaced painted them: a scroll frame then only moves layers, rather than
+/// repainting every card — the multi-year heatmap's cells, the chart — the
+/// column holds. Spacers stay bare; they paint nothing.
+List<Widget> _paintedApart(List<Widget> children) => [
+  for (final child in children)
+    if (child is SizedBox) child else RepaintBoundary(child: child),
+];
 
 /// An invitation, not an apology (the check-in rail's own empty-state
 /// pattern): says what a goal is for and offers the one action that starts
@@ -472,9 +497,11 @@ class _ArchivedGoalsSection extends StatelessWidget {
         ),
         children: [
           for (final identity in identities) ...[
-            UnifiedGoalCard(
-              key: Key('unified-archived-goal-card-${identity.agentId}'),
-              identity: identity,
+            OnScreenTickerMode(
+              child: UnifiedGoalCard(
+                key: Key('unified-archived-goal-card-${identity.agentId}'),
+                identity: identity,
+              ),
             ),
             if (identity != identities.last)
               SizedBox(height: tokens.spacing.cardItemSpacing),

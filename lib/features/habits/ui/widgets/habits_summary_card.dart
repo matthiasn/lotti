@@ -350,10 +350,14 @@ class _StreakBadge extends StatelessWidget {
             color: accent,
           ),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            label,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          // Flexible: a long translation or a large text scale on a narrow
+          // phone must wrap inside the pill rather than overflow it.
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
           ),
         ],

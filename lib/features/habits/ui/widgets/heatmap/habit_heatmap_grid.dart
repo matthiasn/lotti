@@ -40,6 +40,9 @@ class HabitHeatmapGrid extends StatelessWidget {
   /// is emitted for the first column whose month differs from the column before
   /// it, so each month is anchored once at its leftmost (oldest) week.
   Map<int, String> _monthLabels(String locale) {
+    // One formatter for every column: building a DateFormat resolves locale
+    // data, and a multi-year grid has hundreds of columns.
+    final monthFormat = DateFormat.MMM(locale);
     final labels = <int, String>{};
     String? previous;
     for (var i = 0; i < columns.length; i++) {
@@ -48,7 +51,7 @@ class HabitHeatmapGrid extends StatelessWidget {
         orElse: () => null,
       );
       if (firstDay == null) continue;
-      final month = DateFormat.MMM(locale).format(DateTime.parse(firstDay.ymd));
+      final month = monthFormat.format(DateTime.parse(firstDay.ymd));
       if (month != previous) {
         labels[i] = month;
       }
