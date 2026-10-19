@@ -40,6 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.60" date="2026-10-19">
+      <description>
+        <p>Added: the companion changes clothes. With Companion on, she now has six outfits: alongside her everyday, keynote and rock looks, a garden, a lavender and a winter outfit. Each time you open the app she picks one at random and wears it on every screen until you close it. On her full-screen view, the new palette button changes her into the next one.</p>
+        <p>Added: make the companion your own. With Companion on, Settings &gt; Preferences &gt; Companion lets you choose how she looks: one of six skin tones, her hair as a bun, short curls, an afro, locs or a bob, its colour - silver, white, grey, black, brown, auburn, or pink, lavender and blue if she fancies - and an outfit she always wears, or "Surprise me" to let her pick one each time you open the app. Every choice combines with every other, and she changes as you choose, in a preview at the top of the page. Your choice follows you to your other devices.</p>
+        <p>Changed: the companion's face follows what she reads. With Companion on, she no longer reads a whole summary with one expression. Through praise she brightens and gives you a thumbs up or a cheer; where the summary turns to something overdue, blocked or behind, her face changes with it - a furrowed brow, a hand to her cheek - and back again once the words move on. She reads the tone from the words themselves, on your device: English and German words, and the check and warning marks of any report. She stays kind about it, never scolding.</p>
+        <p>Fixed: the Goals list scrolls smoothly on phones. Scrolling down froze for a moment while the habit heatmap and chart at the bottom were built, and scrolling back up reloaded every goal card - the day's briefing even vanished and reappeared. The page now loads everything once when you open it and keeps it while you scroll; a goal's companion only moves while you can see her. On narrow phones the streak label also wraps inside its pill instead of running past it.</p>
+        <p>Fixed: the close button on agent internals did nothing on a phone. The sheet's invisible drag strip lay across its top edge and caught the tap meant for the X, so the only way out was tapping beside the sheet. The X now closes it, and a downward swipe still dismisses it. The goal and person agent chats get the same fix where they open as a bottom sheet in a narrow window.</p>
+      </description>
+    </release>
     <release version="1.1.59" date="2026-10-19">
       <description>
         <p>Added: a goal's agent remembers what you tell it. Say "remember, I only walk after dinner" in the chat and it keeps that as a fact it uses every time it writes to you. Something it only worked out itself, or noticed in a check-in, waits under "What I've learned" on the goal page until you confirm it - and you can edit or forget any fact there.</p>
