@@ -682,8 +682,14 @@ the page:
   out through a second `ValueListenable<int>` that notifies only when it
   changes; the statistics ledger's *Skipped* row listens to that alone, so
   the rest of the ledger never rebuilds on a depth signal. It counts
-  skipped Matrix messages, not entries — nothing a user can act on — so it
+  skipped Matrix messages, not entries, and a large count is routine, so it
   sits in the ledger in the low-emphasis tone rather than in the status row.
+  The manual retry stays where it was: while the count is non-zero, the
+  recovery group offers *Retry skipped events* (`InboundQueue.resurrectAll`).
+  That re-queues only abandoned rows below the resurrection cap (50) and
+  never untrusted ones, so it can return 0 while the count stays non-zero.
+  Untrusted rows come back through `readmitUntrusted` at queue start, and
+  path-driven resurrection (`resurrectByPaths`) re-queues others on its own.
 - The desktop Settings destination reuses the same live depth through
   `inboundQueueDepthProvider` for its neutral outlined `↓ count` badge.
 - `_AdvancedRecoveryGroup` drives

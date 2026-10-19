@@ -309,8 +309,9 @@ class _Ledger extends StatelessWidget {
           value: stats.totalBurned,
           color: lowEmphasis,
         ),
-        // Skipped Matrix messages, not entries: they are gone and there is
-        // nothing to act on, so the count stays low-emphasis however large.
+        // Skipped Matrix messages, not entries. A large count is routine and
+        // the manual retry lives under advanced recovery, so the count stays
+        // low-emphasis however large.
         ValueListenableBuilder<int>(
           valueListenable: skippedCount,
           builder: (context, skipped, _) => _LedgerRow(
