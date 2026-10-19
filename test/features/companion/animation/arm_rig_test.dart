@@ -93,4 +93,28 @@ void main() {
     );
     expect((kicked.wrist - rest.wrist).distance, greaterThan(0.1));
   });
+
+  test("a gesture's elbow preference reaches the solved arm, mirrored", () {
+    double elbowOut(GestureArm target, int side) {
+      final rig = ArmRig(
+        side > 0 ? CompanionGesture.readyRight : CompanionGesture.readyLeft,
+        side,
+      );
+      var pose = rig.step(target, null, 0, dt);
+      for (var i = 1; i < 240; i++) {
+        pose = rig.step(target, null, i * dt, dt);
+      }
+      return side * pose.elbow!.dx;
+    }
+
+    final hip = GestureName.handsOnHips.gesture;
+    for (final (arm, side) in [(hip.right!, 1), (hip.left!, -1)]) {
+      final hanging = GestureArm(arm.x, arm.y, arm.angle, arm.hand);
+      expect(
+        elbowOut(arm, side),
+        greaterThan(elbowOut(hanging, side) + 10),
+        reason: 'side $side',
+      );
+    }
+  });
 }

@@ -11,11 +11,11 @@ sources:
   - id: goal-companion
     resource: ../../lib/features/goals/ui/unified/goal_companion.dart
     title: The goal card's companion and the pose a track status gives her
-    last_modified: 2026-10-17
+    last_modified: 2026-10-19
   - id: animator
     resource: ../../lib/features/companion/animation/companion_animator.dart
     title: CompanionAnimator
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: view
     resource: ../../lib/features/companion/ui/companion_view.dart
     title: CompanionView and CompanionController
@@ -23,7 +23,15 @@ sources:
   - id: gesture
     resource: ../../lib/features/companion/model/companion_gesture.dart
     title: CompanionGesture and GestureName
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
+  - id: reaction
+    resource: ../../lib/features/companion/model/companion_reaction.dart
+    title: companionReaction, CompanionCue and CompanionSass
+    last_modified: 2026-10-19
+  - id: arm-solver
+    resource: ../../lib/features/companion/rig/arm_solver.dart
+    title: solveArm and its preferred elbow
+    last_modified: 2026-10-19
   - id: mouth-track
     resource: ../../lib/features/companion/animation/mouth_track.dart
     title: MouthTrack
@@ -139,6 +147,18 @@ While speaking, a rise of the voice's loudness through 0.55 — at most every
 are timed pulses, scheduled by mood-scaled random intervals; `blink()` fires
 one now.
 
+**Her face can be lopsided.** `browSkew` and `smileSkew` lift her right
+brow or mouth corner (screen right) and lower the left by as much, on top of
+the symmetric `browRaise` and `smile`; the mood's and the gesture's add. The
+smile runs from -1 to 1, so below zero the corners turn down. A gesture's
+`lids` adds to the mood's resting lids, which is how a facepalm shuts her
+eyes and an eye roll half-closes them.
+
+**An elbow may be asked for.** The arm solver keeps the most relaxed elbow
+it is allowed, which hangs; hands on the hips need it out. A `GestureArm`'s
+`elbow` names the direction the upper arm would rather take, and the solver
+weighs its choices against that instead of the hang, inside the same rules.
+
 `CompanionController` is the owner's handle: `play`, `blink` and `time`
 reach the attached view's animator, and are no-ops while detached. Swapping
 controllers in `didUpdateWidget` detaches the old one.
@@ -223,7 +243,8 @@ She has five hosts, each with its own framing:
 
 On the goal card and the goal agent's read card her pose carries the
 goal's `GoalTrackStatus`
-(`goalCompanionPose`): a held gesture for the verdict at a glance and a mood
+(`goalCompanionPose`), on the warm end of the [reaction
+scale](#reactions): a held gesture for the verdict at a glance and a mood
 for the face, because at 40 pixels the moods alone are a few pixels apart.
 Doing well is a raised thumb (`celebrate` once achieved), on the way back a
 clap, at risk a hand to the cheek, off track palms down — it is all right,
@@ -237,6 +258,19 @@ for the hand in every gesture (a test walks each gesture through its phases).
 A host cues her through `CompanionController.play` (a gesture once) or keeps a
 gesture up with `CompanionView.holding`, which her ticker replays whenever it
 relaxes — no timer. `CompanionController.gesture` reads the gesture in play.
+
+# Reactions
+
+`companionReaction(approval, sass:)` is how a host says how a piece of work
+went: approval from `minApproval` (-3) to `maxApproval` (+3), sass `warm`,
+`cheeky` or `sassy`. Each cell is a `CompanionCue` — a mood and a gesture to
+hold. Warm is encouraging whatever happened; sassy is hands on hips, slow
+claps and eye rolls. Two rules hold across the table, and its tests keep
+them: her smile never falls as approval rises, and warm uses none of the
+sassy faces or gestures. Disapproval stops at sass: no reaction is hurt or
+sad, and none is ever tied to a notification. Nothing passes a sass other
+than warm yet; the coaching agent's charter is meant to choose it (plan
+2026-10-12, "Revision").
 
 # Gotchas
 

@@ -82,22 +82,27 @@ bool elbowAllowed(Offset shoulder, Offset elbow, Offset wrist, int side) {
 }
 
 /// The elbow for a wrist target, and the wrist itself pulled in to the arm's
-/// reach. [previous] is last frame's elbow, so the choice holds steady.
+/// reach. [previous] is last frame's elbow, so the choice holds steady;
+/// [rest] is the unit direction the upper arm would rather take, hanging a
+/// little out by default.
 ({Offset elbow, Offset wrist}) solveArm(
   Offset shoulder,
   Offset wrist,
   int side, {
   Offset? previous,
+  Offset? rest,
 }) {
   final d = wrist - shoulder;
   final reach = d.distance;
   const full = upperArm + forearm - 1e-3;
   final target = reach > full ? shoulder + d * (full / reach) : wrist;
-  final rest = _rest(side);
+  final preferred = rest ?? _rest(side);
   Offset? best;
   var bestCost = double.infinity;
   for (final u in _directions) {
-    final hang = math.acos(clampUnit(u.dx * rest.dx + u.dy * rest.dy, -1));
+    final hang = math.acos(
+      clampUnit(u.dx * preferred.dx + u.dy * preferred.dy, -1),
+    );
     for (final ru in _upperFractions) {
       final elbow = shoulder + u * (upperArm * ru);
       if (!elbowAllowed(shoulder, elbow, target, side)) continue;

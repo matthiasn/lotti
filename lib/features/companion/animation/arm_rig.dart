@@ -109,7 +109,19 @@ class ArmRig {
     final lift = _lift.step(target.lift + shrug(sh, rawWrist), dt);
     final shoulder = Offset(sh.dx, sh.dy - lift);
     final prev = _elbowX == null ? null : Offset(_elbowX!.x, _elbowY!.x);
-    final solved = solveArm(shoulder, rawWrist, side, previous: prev);
+    final elbowAngle = target.elbow;
+    final solved = solveArm(
+      shoulder,
+      rawWrist,
+      side,
+      previous: prev,
+      rest: elbowAngle == null
+          ? null
+          : Offset(
+              math.cos(elbowAngle * math.pi / 180),
+              math.sin(elbowAngle * math.pi / 180),
+            ),
+    );
     _elbowX ??= Spring(solved.elbow.dx, freq: 5, zeta: 1);
     _elbowY ??= Spring(solved.elbow.dy, freq: 5, zeta: 1);
     final chased = Offset(

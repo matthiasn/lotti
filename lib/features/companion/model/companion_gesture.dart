@@ -14,6 +14,7 @@ class GestureArm {
     this.angle, [
     this.hand = HandPose.relaxed,
     this.lift = 0,
+    this.elbow,
   ]);
 
   final double x;
@@ -21,6 +22,12 @@ class GestureArm {
   final double angle;
   final HandPose hand;
   final double lift;
+
+  /// The way the upper arm would rather point from the shoulder, in degrees
+  /// (0 screen-right, 90 down); null lets it hang. The solver still keeps
+  /// the elbow inside what a real arm can do — this only biases its choice,
+  /// as hands on the hips need the elbows out.
+  final double? elbow;
 }
 
 /// An additive wobble on a wrist: x and y amplitude, angle amplitude in
@@ -44,7 +51,10 @@ class CompanionGesture {
     this.brow = 0,
     this.tilt = 0,
     this.smile = 0,
+    this.smileSkew = 0,
+    this.browSkew = 0,
     this.squint = 0,
+    this.lids = 0,
     this.gaze,
     this.faceHand = false,
     this.oscRight,
@@ -65,7 +75,16 @@ class CompanionGesture {
 
   /// Added to the base smile.
   final double smile;
+
+  /// Added to the mood's: lifts the right mouth corner, lowers the left.
+  final double smileSkew;
+
+  /// Added to the mood's: lifts the right brow, lowers the left.
+  final double browSkew;
   final double squint;
+
+  /// Added to the mood's resting lids: how far the upper lids close, 0..1.
+  final double lids;
 
   /// Null leaves the eyes to their own glances.
   final (double, double)? gaze;
@@ -103,7 +122,55 @@ const _speakOut = CompanionGesture(
   smile: 0.2,
 );
 
-/// The gesture library of the pitch videos, by name.
+/// A hand on the hip, fingers forward and down, the elbow out.
+const _hipLeft = GestureArm(-50, -58, 30, HandPose.flat, 0, 140);
+const _hipRight = GestureArm(50, -58, 150, HandPose.flat, 0, 40);
+
+const _clapApart = CompanionGesture(
+  left: GestureArm(-30, -92, -78, HandPose.flat),
+  right: GestureArm(30, -92, -102, HandPose.flat),
+  smile: 0.1,
+  smileSkew: 0.3,
+  lids: 0.3,
+);
+const _clapTogether = CompanionGesture(
+  left: GestureArm(-9, -92, -78, HandPose.flat),
+  right: GestureArm(9, -92, -102, HandPose.flat),
+  smile: 0.1,
+  smileSkew: 0.3,
+  lids: 0.3,
+);
+
+// The eye roll's later phases: up, across, and down to a flat look.
+const _eyeRollUp = CompanionGesture(
+  right: _hipRight,
+  roll: 0.08,
+  pitch: -0.06,
+  gaze: (0.1, -1),
+  lids: 0.1,
+  smileSkew: -0.15,
+  browSkew: 0.3,
+);
+const _eyeRollAcross = CompanionGesture(
+  right: _hipRight,
+  roll: 0.08,
+  pitch: -0.06,
+  gaze: (0.6, -0.7),
+  lids: 0.1,
+  smileSkew: -0.15,
+  browSkew: 0.3,
+);
+const _eyeRollDone = CompanionGesture(
+  right: _hipRight,
+  roll: 0.05,
+  gaze: (0.3, 0),
+  lids: 0.3,
+  smileSkew: -0.15,
+  browSkew: 0.3,
+);
+
+/// The gesture library of the pitch videos, by name, and the sassy ones
+/// added for the companion's reactions (`companionReaction`).
 enum GestureName {
   wave(
     CompanionGesture(
@@ -297,6 +364,100 @@ enum GestureName {
       roll: 0.07,
       bounce: 2,
       hold: 3,
+    ),
+  ),
+
+  /// Both hands on the hips, chin a little up: waiting, or proud of you.
+  handsOnHips(
+    CompanionGesture(
+      left: _hipLeft,
+      right: _hipRight,
+      roll: 0.08,
+      pitch: -0.05,
+      browSkew: 0.25,
+      hold: 2.2,
+    ),
+  ),
+
+  /// "Uh-uh": the index finger up beside the face, wagging; the other hand
+  /// on the hip.
+  fingerWag(
+    CompanionGesture(
+      left: _hipLeft,
+      right: GestureArm(70, -146, -90, HandPose.point, 4),
+      oscRight: (dx: 3, dy: 0, angle: 18, hz: 3),
+      roll: -0.05,
+      brow: 0.2,
+      browSkew: 0.5,
+      smileSkew: 0.25,
+      lids: 0.15,
+      hold: 1.8,
+    ),
+  ),
+
+  /// Palms up and out, the shoulders raised: "what can you do?"
+  shrug(
+    CompanionGesture(
+      left: GestureArm(-84, -66, 200, HandPose.open, 9),
+      right: GestureArm(84, -66, -20, HandPose.open, 9),
+      roll: 0.1,
+      brow: 0.7,
+      smile: -0.1,
+      smileSkew: -0.2,
+      hold: 1.4,
+    ),
+  ),
+
+  /// A hand flat over the brow, head down, eyes shut.
+  facepalm(
+    CompanionGesture(
+      right: GestureArm(16, -170, -150, HandPose.flat, 4),
+      pitch: 0.25,
+      roll: -0.06,
+      brow: -0.2,
+      smile: -0.3,
+      lids: 0.7,
+      faceHand: true,
+      hold: 1.8,
+    ),
+  ),
+
+  /// Three slow claps under a lopsided smile: "well done, finally".
+  slowClap(
+    CompanionGesture(
+      left: GestureArm(-30, -92, -78, HandPose.flat),
+      right: GestureArm(30, -92, -102, HandPose.flat),
+      smile: 0.1,
+      smileSkew: 0.3,
+      lids: 0.3,
+      hold: 2.1,
+      then: [
+        (0.45, _clapTogether),
+        (0.6, _clapApart),
+        (1.05, _clapTogether),
+        (1.2, _clapApart),
+        (1.65, _clapTogether),
+        (1.8, _clapApart),
+      ],
+    ),
+  ),
+
+  /// The eyes roll up and across under a raised brow, a hand on the hip.
+  eyeRoll(
+    CompanionGesture(
+      right: _hipRight,
+      roll: 0.08,
+      pitch: -0.06,
+      gaze: (-0.5, -0.9),
+      lids: 0.1,
+      smileSkew: -0.15,
+      browSkew: 0.3,
+      hold: 1.4,
+      then: [
+        (0.25, _eyeRollUp),
+        (0.5, _eyeRollAcross),
+        (0.85, _eyeRollDone),
+      ],
     ),
   );
 

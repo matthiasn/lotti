@@ -53,6 +53,34 @@ void main() {
     },
   );
 
+  test('a brow skew raises her right brow and lowers the left', () async {
+    const look = CompanionLook.grandma;
+    // The brows' heights, each from its own half of the face.
+    Future<(double, double)> brows(double skew) async {
+      final r = await _head(look, pose: CompanionPose(browSkew: skew));
+      double? at({required bool right}) {
+        var sum = 0.0;
+        var n = 0;
+        for (var y = 120; y < 240; y++) {
+          for (var x = right ? 245 : 140; x < (right ? 340 : 235); x++) {
+            if (near(r.at(x, y), look.palette.brow)) {
+              sum += y;
+              n++;
+            }
+          }
+        }
+        return n == 0 ? null : sum / n;
+      }
+
+      return (at(right: false)!, at(right: true)!);
+    }
+
+    final (left, right) = await brows(0);
+    final (skewLeft, skewRight) = await brows(1.5);
+    expect(skewRight, lessThan(right - 4));
+    expect(skewLeft, greaterThan(left + 4));
+  });
+
   test('a blink closes both eyes', () async {
     const look = CompanionLook.grandma;
     final open = await _head(look);

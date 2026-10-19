@@ -3,6 +3,7 @@ import 'package:lotti/features/companion/animation/text_lip_sync.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/companion/widgetbook/companion_voice_preview.dart';
@@ -115,6 +116,10 @@ WidgetbookComponent _characterComponent(CompanionSpecies species) {
               (mood.name, lookKnob(context), mood),
           ],
         ),
+      ),
+      WidgetbookUseCase(
+        name: 'Reactions',
+        builder: (context) => CompanionReactionGrid(look: lookKnob(context)),
       ),
       WidgetbookUseCase(
         name: 'Chat avatar sizes',
@@ -327,6 +332,63 @@ class _AvatarSizes extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Every [companionReaction] at once: a row per [CompanionSass], from the
+/// lowest approval on the left to the highest on the right, each holding its
+/// gesture.
+class CompanionReactionGrid extends StatelessWidget {
+  const CompanionReactionGrid({required this.look, super.key});
+
+  final CompanionLook look;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final caption = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      child: Column(
+        children: [
+          for (final sass in CompanionSass.values)
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: tokens.spacing.step10,
+                    child: Text(sass.name, style: caption),
+                  ),
+                  for (var a = minApproval; a <= maxApproval; a++)
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: CompanionView(
+                              look: look,
+                              mood: companionReaction(a, sass: sass).mood,
+                              holding: companionReaction(a, sass: sass).gesture,
+                              autoGestures: false,
+                              stage: true,
+                              seed: 11 + a * 7 + sass.index * 3,
+                            ),
+                          ),
+                          Text(
+                            '${a > 0 ? '+' : ''}$a · '
+                            '${companionReaction(a, sass: sass).mood.name}',
+                            style: caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
         ],
       ),

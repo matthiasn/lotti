@@ -70,6 +70,46 @@ void main() {
       );
       expect(smile.centroid(_c.lips)!.dy, lessThan(flat.centroid(_c.lips)!.dy));
     });
+
+    test(
+      'a skew lifts the right corner and lowers the left: a smirk',
+      () async {
+        // Lips only on one half of the canvas, so each half's centroid is
+        // that corner's height.
+        Future<(double, double)> corners(double skew) async {
+          Future<double> half(double clipX) async {
+            final r = await _draw((c) {
+              c
+                ..save()
+                ..clipRect(Rect.fromLTWH(clipX, -20, 16, 40));
+              drawMouth(c, _c, 0, 0, Viseme.x.shape, 0, skew: skew);
+              c.restore();
+            });
+            return r.centroid(_c.lips)!.dy;
+          }
+
+          return (await half(-16), await half(0));
+        }
+
+        final (flatLeft, flatRight) = await corners(0);
+        final (smirkLeft, smirkRight) = await corners(1);
+        expect(smirkRight, lessThan(flatRight - 1));
+        expect(smirkLeft, greaterThan(flatLeft + 1));
+      },
+    );
+
+    test('a negative smile turns the corners down', () async {
+      final flat = await _draw(
+        (c) => drawMouth(c, _c, 0, 0, Viseme.x.shape, 0),
+      );
+      final frown = await _draw(
+        (c) => drawMouth(c, _c, 0, 0, Viseme.x.shape, -1),
+      );
+      expect(
+        frown.centroid(_c.lips)!.dy,
+        greaterThan(flat.centroid(_c.lips)!.dy),
+      );
+    });
   });
 
   group('drawEye', () {

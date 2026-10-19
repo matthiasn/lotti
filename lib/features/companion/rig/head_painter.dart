@@ -120,7 +120,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c,
       Offset(s * 20 + fx, -27 + fy * 1.2),
       s,
-      p.browRaise,
+      p.browRaise + s * p.browSkew,
       p.browTilt,
     );
   }
@@ -130,7 +130,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
     ..save()
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
-  drawMouth(canvas, c, 0, 0, p.mouth, p.smile);
+  drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
   canvas.restore();
 }
 

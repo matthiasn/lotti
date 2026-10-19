@@ -10,17 +10,21 @@ import 'package:lotti/features/companion/rig/rig_math.dart';
 /// Face features in head-local units (origin at the face's centre, y down):
 /// eyes with lids and gaze, brows, nose, and the mouth.
 
-/// Draws the mouth centred on (x, y).
+/// Draws the mouth centred on (x, y). [smile] lifts both corners (below zero
+/// turns them down); [skew] lifts the right one and lowers the left: a smirk.
 void drawMouth(
   Canvas canvas,
   CompanionPalette c,
   double x,
   double y,
   MouthShape m,
-  double smile,
-) {
+  double smile, {
+  double skew = 0,
+}) {
   final hw = m.halfWidth * (1 + 0.08 * smile);
   final lift = 2.4 * smile;
+  final liftL = 2.4 * (smile - skew);
+  final liftR = 2.4 * (smile + skew);
   final lx = x - hw;
   final rx = x + hw;
   final cy = y - lift * 0.3;
@@ -31,7 +35,7 @@ void drawMouth(
   final botOut = botIn + m.open * 0.2 + m.lowerLip;
 
   void upperEdge(Path p) => p
-    ..moveTo(lx - 1.2, cy - lift)
+    ..moveTo(lx - 1.2, cy - liftL)
     ..cubicTo(
       lx + hw * 0.2,
       topOut + 1.2,
@@ -54,7 +58,7 @@ void drawMouth(
       rx - hw * 0.2,
       topOut + 1.2,
       rx + 1.2,
-      cy - lift,
+      cy - liftR,
     );
 
   // Outer lips: the upper with a soft cupid's bow, the lower fuller.
@@ -67,7 +71,7 @@ void drawMouth(
       lx + hw * 0.15,
       botOut + 1.5,
       lx - 1.2,
-      cy - lift,
+      cy - liftL,
     )
     ..close();
   fillPath(canvas, lips, c.lips);
@@ -81,21 +85,21 @@ void drawMouth(
       lx + hw * 0.3,
       topIn + 0.5,
       lx - 1.2,
-      cy - lift,
+      cy - liftL,
     )
     ..close();
   fillPath(canvas, upper, c.lipsUpper);
 
   if (m.open > 0.6) {
     final inner = Path()
-      ..moveTo(lx, cy - lift)
+      ..moveTo(lx, cy - liftL)
       ..cubicTo(
         lx + hw * (0.3 - 0.25 * rnd),
         topIn - m.open * 0.15 * (1 + rnd),
         rx - hw * (0.3 - 0.25 * rnd),
         topIn - m.open * 0.15 * (1 + rnd),
         rx,
-        cy - lift,
+        cy - liftR,
       )
       ..cubicTo(
         rx - hw * (0.2 - 0.15 * rnd),
@@ -103,7 +107,7 @@ void drawMouth(
         lx + hw * (0.2 - 0.15 * rnd),
         botIn + m.open * 0.2 * (1 + rnd) - lift * 0.4,
         lx,
-        cy - lift,
+        cy - liftL,
       )
       ..close();
     canvas
@@ -157,14 +161,14 @@ void drawMouth(
     strokePath(
       canvas,
       Path()
-        ..moveTo(lx + 0.6, cy - lift)
+        ..moveTo(lx + 0.6, cy - liftL)
         ..cubicTo(
           lx + hw * 0.4,
           cy + 0.9 + smile * 0.8,
           rx - hw * 0.4,
           cy + 0.9 + smile * 0.8,
           rx - 0.6,
-          cy - lift,
+          cy - liftR,
         ),
       c.mouthIn,
       1.1,

@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branch A (`feat/companion-expressions`) built — see "Revision: her range, and making her your own"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -502,6 +502,108 @@ The binding everything else uses, with one real host so it is not unused code.
   2026-10-15). Full length at 136 is too tall for a header; the owner chose
   the bust, and the existing 48 avatar token fits it beside the header's
   48-high icon buttons.
+
+## Revision: her range, and making her your own (2026-10-19)
+
+From the product conversation of 2026-10-19 (paraphrased). The goal agents
+are turning into general coaching agents, and a coach is told how to talk
+to you in its **charter** ([ADR 0140](../adr/0140-a-goal-is-constituted-by-its-charter-entries.md)).
+So she needs more range at runtime than five moods:
+
+1. **Levels of approval and disapproval, and of sass**, so her reaction fits
+   how a piece of work actually went.
+2. **A face that follows the text**: happy through the praise, a different
+   face when the read-out turns to what needs work.
+3. **Outfits**: she starts in a random one for now, and a control on the
+   full-screen stage cycles through them.
+4. **Full customization** in settings: skin tone, hairstyles, hair colour,
+   and in time a grandpa. "You should be able to create your own."
+
+This replaces branches 4 (mood from the record) and 5 (character choice) of
+"Delivery" with the stack below. Branches 6 (talk back) and 7 (nudges) stay
+as planned and follow it.
+
+```mermaid
+flowchart TD
+  M["main (branches 1–3 merged)"] --> A
+  A["A · feat/companion-expressions<br/>lopsided face, reaction scale, sassy gestures"] --> B
+  B["B · feat/companion-tone-track<br/>her face follows the words"] --> C
+  C["C · feat/companion-outfits<br/>random start, cycle on the stage"] --> D
+  D["D · feat/companion-customization<br/>skin, hair, outfit as parts, synced"]
+  D -.-> E["later · a grandpa; sass from the coach's charter"]
+```
+
+### Three decisions (2026-10-19)
+
+- **Disapproval is sass, never guilt.** "Mood without guilt" said she never
+  scolds. She may now frown, raise a brow, roll her eyes or put her hands on
+  her hips, but she is never hurt, never sad at you, and no reaction is ever
+  attached to a notification. How much sass is the user's choice: warm is
+  the default, and warm is exactly what the goal card showed before.
+- **Every part combines with every other, with no ethnicity labels.** Skin
+  tone, hairstyle, hair colour, eyes, outfit and accessories are independent
+  choices; a few named presets are starting points, not the menu. That
+  avoids deciding who may wear which hair. Differences in face shape, if
+  any, stay subtle, so nothing becomes a caricature.
+- **Tone labels: guessed on the device first, written by the agent later.**
+  Branch B reads a sentence's tone from its section heading and a small word
+  list, so it does not wait on the agent's report contract; the agent marking
+  tone in its report is a later step.
+
+### A · `feat/companion-expressions`: the range a coach needs
+
+- **A lopsided face.** `CompanionPose` gains `browSkew` and `smileSkew`,
+  each lifting one side (her right, screen right) and lowering the other; the
+  smile may go below zero, turning the corners down. Both painters draw them.
+- **Seven reaction moods** beside the five record moods: `proud`,
+  `delighted`, `smug`, `skeptical`, `unimpressed`, `disappointed`, `stern`.
+- **Six sassy gestures**: `handsOnHips`, `fingerWag`, `shrug`, `facepalm`,
+  `slowClap`, `eyeRoll`. Hands on the hips needs the elbows out, which the
+  arm solver never chose on its own (it keeps the most relaxed elbow), so a
+  `GestureArm` may name a preferred elbow direction; the solver's rules still
+  hold.
+- **The reaction scale** (`companionReaction`): approval from -3 to +3 by a
+  sass of warm, cheeky or sassy, each cell a mood and a held gesture. Her
+  smile never falls as approval rises, at any sass; warm uses no sassy face
+  or gesture.
+- **The goal card moves onto the scale** at its warm end, with the same
+  poses as before.
+- **Widgetbook:** a "Reactions" grid of every cell, per character.
+- No changelog fragment: nothing a user sees changes yet.
+
+### B · `feat/companion-tone-track`: her face follows the words
+
+- An expression track timed by the playhead, like the mouth: the clip's text
+  split into sentences, each with an approval, the reaction changing as the
+  voice reaches it. The time of a sentence comes from the same letter-by-
+  letter timing `TextLipSync` uses and `VoicedTextTrack` stretches over the
+  voice.
+- Tones come from the host where it knows them (the day briefing composes
+  its own sentences), else from a section heading ("what went well", "needs
+  work") and a small word list, on the device.
+
+### C · `feat/companion-outfits`: a random outfit, and a switch
+
+- More grandma outfits. She starts in a random one per app launch and keeps
+  it on every screen for that session; a control on the full-screen stage
+  cycles through them.
+
+### D · `feat/companion-customization`: make her your own
+
+- A look split into parts: skin tone, hairstyle (bun, curls, afro, locs,
+  braids, bob, pixie, …), hair colour (including dyed), eyes, outfit and
+  accessories. Each hairstyle is its own painter with the strands that trail
+  her motion; that is the bulk of the drawing.
+- A settings screen with a live preview; the choice syncs like the theme
+  (`features/theming`), and reaches her through a scope the shell provides,
+  as branch 5 planned.
+
+### Later
+
+- **A grandpa**: trousers, a beard, a different silhouette, so a change to
+  the body painters rather than a palette.
+- **Sass from the coach**: the coaching agent's charter or persona sets her
+  sass, so a coach told to be blunt gets an eyebrow.
 
 ## Testing
 
