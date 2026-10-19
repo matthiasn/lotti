@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -11,10 +12,12 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
-/// The line she says by default in the playground.
+/// The line she says by default in the playground: praise, then something
+/// that needs work, so her face has somewhere to go.
 const defaultCompanionLine =
-    'Good morning! Four things today. The big one is the migration, at ten. '
-    'And you have a walk planned, which I fully support.';
+    'Good morning! You finished the migration, well done. '
+    'The review is overdue, though, and the tests are falling behind. '
+    'Four things today.';
 
 /// Widgetbook folder for the in-app companion: Lotti, the grandmother of the
 /// pitch videos, and the animals a person may pick instead, drawn live in
@@ -73,6 +76,11 @@ WidgetbookComponent _characterComponent(CompanionSpecies species) {
           autoGestures: context.knobs.boolean(
             label: 'Gestures while talking',
             initialValue: true,
+          ),
+          sass: context.knobs.object.segmented(
+            label: 'Sass',
+            options: CompanionSass.values,
+            labelBuilder: (s) => s.name,
           ),
         ),
       ),
@@ -148,7 +156,8 @@ CompanionMood _moodKnob(BuildContext context) => context.knobs.object.dropdown(
 /// Her, live, with a button to say the line and one per gesture.
 ///
 /// The line is spoken silently: the mouth follows the words
-/// ([TextLipSync]) on the view's own clock from the press of the button.
+/// ([TextLipSync]) on the view's own clock from the press of the button, and
+/// her face follows how they land ([ToneTrack]) with [sass].
 class CompanionPlayground extends StatefulWidget {
   const CompanionPlayground({
     required this.look,
@@ -157,6 +166,7 @@ class CompanionPlayground extends StatefulWidget {
     required this.line,
     required this.rate,
     required this.autoGestures,
+    this.sass = CompanionSass.warm,
     this.stage = true,
     this.supersample,
     super.key,
@@ -168,6 +178,7 @@ class CompanionPlayground extends StatefulWidget {
   final String line;
   final double rate;
   final bool autoGestures;
+  final CompanionSass sass;
   final bool stage;
   final int? supersample;
 
@@ -178,11 +189,14 @@ class CompanionPlayground extends StatefulWidget {
 class _CompanionPlaygroundState extends State<CompanionPlayground> {
   final _controller = CompanionController();
   TextLipSync? _track;
+  ToneTrack? _tone;
   double _startedAt = 0;
 
   void _say() {
     setState(() {
-      _track = TextLipSync(widget.line, rate: widget.rate);
+      final track = TextLipSync(widget.line, rate: widget.rate);
+      _track = track;
+      _tone = ToneTrack.read(widget.line, track);
       _startedAt = _controller.time;
     });
   }
@@ -216,6 +230,8 @@ class _CompanionPlaygroundState extends State<CompanionPlayground> {
               stage: widget.stage,
               supersample: widget.supersample,
               track: _track,
+              tone: _tone,
+              sass: widget.sass,
               playhead: _playhead,
               autoGestures: widget.autoGestures,
               controller: _controller,

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/playhead_clock.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -21,6 +22,8 @@ import 'package:lotti/services/domain_logging.dart';
 /// ([loadSpokenTrack]) — the WAV and the words it was made from, both taken
 /// from the playback state, so what the host shows now cannot put other words
 /// in her mouth — and each frame her mouth follows the player's playhead.
+/// Her face follows the same words ([ToneTrack]): pleased through praise, a
+/// different face where they turn to what needs work.
 /// Another source playing, or none, leaves her silent but alive. The voice
 /// knows nothing about her.
 ///
@@ -64,6 +67,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
   PlayheadClock _clock = PlayheadClock();
   ProviderSubscription<TtsClip?>? _clip;
   MouthTrack? _track;
+  ToneTrack? _tone;
 
   // Bumped by every utterance start or end, so a slow load for an utterance
   // that is already over never lands.
@@ -131,7 +135,14 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     if (!mounted || utterance != _utterance || identical(track, _track)) {
       return;
     }
-    setState(() => _track = track);
+    setState(() {
+      _track = track;
+      // The words' tones, timed as the mouth times them; read with the
+      // track so the two never belong to different clips.
+      _tone = track == null || clip == null
+          ? null
+          : ToneTrack.read(clip.text, track);
+    });
   }
 
   Duration? _playhead() {
@@ -150,6 +161,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     controller: widget.controller,
     holding: widget.holding,
     track: _track,
+    tone: _tone,
     playhead: _playhead,
   );
 }

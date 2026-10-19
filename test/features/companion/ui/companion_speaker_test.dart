@@ -207,6 +207,22 @@ void main() {
     expect(view(tester).track, same(track));
   });
 
+  testWidgets("reads the tone of the clip's own words, timed by its mouth", (
+    tester,
+  ) async {
+    const words = 'Four things today. The review is overdue.';
+    await pumpSpeaker(tester);
+    playback.current = _playing('task-1', text: words);
+    await tester.pump();
+    expect(view(tester).tone, isNull);
+
+    final track = await answerLoad(tester);
+    final tone = view(tester).tone!;
+    expect(tone.cues, hasLength(2));
+    expect(tone.cues.last.start, track.timeOf(words.indexOf(' The review')));
+    expect(tone.cues.last.approval, lessThan(0));
+  });
+
   testWidgets('speaks a clip that was already playing when she appeared', (
     tester,
   ) async {
@@ -276,6 +292,7 @@ void main() {
     await tester.pump();
 
     expect(view(tester).track, isNull);
+    expect(view(tester).tone, isNull);
     expect(view(tester).playhead!(), isNull);
   });
 

@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branch A (`feat/companion-expressions`) built — see "Revision: her range, and making her your own"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`) and B (`feat/companion-tone-track`) built — see "Revision: her range, and making her your own"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -574,13 +574,20 @@ flowchart TD
 ### B · `feat/companion-tone-track`: her face follows the words
 
 - An expression track timed by the playhead, like the mouth: the clip's text
-  split into sentences, each with an approval, the reaction changing as the
-  voice reaches it. The time of a sentence comes from the same letter-by-
-  letter timing `TextLipSync` uses and `VoicedTextTrack` stretches over the
-  voice.
-- Tones come from the host where it knows them (the day briefing composes
-  its own sentences), else from a section heading ("what went well", "needs
-  work") and a small word list, on the device.
+  split into lines and sentences, each with an approval, the reaction
+  changing as the voice reaches it. Every mouth track answers `timeOf`, when
+  a character of its words is spoken: `TextLipSync` records it as it reads
+  the letters, `VoicedTextTrack` stretches it over the voice.
+- Tones are read on the device from each sentence's words (a short English
+  and German list), emoji that read the same in any language, and, for a
+  sentence that reads neither way, the heading of its section.
+- Each change of tone cues the reaction's gesture once; between toned
+  sentences and once she is quiet, the host's mood is back.
+- **Changed from the first draft of this section:** hosts do not tag their
+  own sentences. The day briefing was to, but its sentences are facts (how
+  many blocks, the next one, the time free), which read neither way, so
+  every host goes through the same reader.
+- A changelog fragment: with Companion on, her face changes as she reads.
 
 ### C · `feat/companion-outfits`: a random outfit, and a switch
 

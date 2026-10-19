@@ -19,7 +19,7 @@ sources:
   - id: view
     resource: ../../lib/features/companion/ui/companion_view.dart
     title: CompanionView and CompanionController
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: gesture
     resource: ../../lib/features/companion/model/companion_gesture.dart
     title: CompanionGesture and GestureName
@@ -35,7 +35,7 @@ sources:
   - id: mouth-track
     resource: ../../lib/features/companion/animation/mouth_track.dart
     title: MouthTrack
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: voiced-text
     resource: ../../lib/features/companion/animation/voiced_text_track.dart
     title: VoicedTextTrack
@@ -51,11 +51,19 @@ sources:
   - id: speaker
     resource: ../../lib/features/companion/ui/companion_speaker.dart
     title: CompanionSpeaker
-    last_modified: 2026-10-15
+    last_modified: 2026-10-19
   - id: spoken-track
     resource: ../../lib/features/companion/state/spoken_track.dart
     title: loadSpokenTrack and spokenTrackLoaderProvider
     last_modified: 2026-10-15
+  - id: tone-reader
+    resource: ../../lib/features/companion/animation/tone_reader.dart
+    title: readTones, the on-device tone of each sentence
+    last_modified: 2026-10-19
+  - id: tone-track
+    resource: ../../lib/features/companion/animation/tone_track.dart
+    title: ToneTrack, the tones timed by the playhead
+    last_modified: 2026-10-19
   - id: playhead-clock
     resource: ../../lib/features/companion/animation/playhead_clock.dart
     title: PlayheadClock
@@ -175,6 +183,12 @@ position, so a stall or a seek cannot desync the lips from the voice.
 | `SpeechEnvelope` | the loudness (no words) | a WAV's per-frame RMS |
 | `VoicedTextTrack` | the text | a WAV's envelope, which also gates the shapes |
 
+Every track also answers `timeOf(offset)`: when the character at that offset
+of its words is spoken, on the same clock as its shapes — `TextLipSync`
+records the time it reaches each character, and `VoicedTextTrack` stretches
+that over the voice as it does the shapes. A voice alone (`SpeechEnvelope`)
+has no words and answers null. This is how her face is timed to the words.
+
 `VoicedTextTrack` stretches the text's **spoken** span — up to
 `TextLipSync.spokenLength`, the start of the closing rest every line ends
 on — over the voiced part of the clip, first sound to last. Stretching the
@@ -200,6 +214,7 @@ sequenceDiagram
   Voice-->>Her: playing, sourceId, clip (path + words)
   Her->>Loader: the clip's path and words
   Loader-->>Her: VoicedTextTrack (or TextLipSync)
+  Her->>Her: ToneTrack.read(the clip's words, that track)
   loop every frame
     Her->>Voice: read position (never watched)
     Her->>Her: PlayheadClock carries it to now
@@ -271,6 +286,46 @@ sassy faces or gestures. Disapproval stops at sass: no reaction is hurt or
 sad, and none is ever tied to a notification. Nothing passes a sass other
 than warm yet; the coaching agent's charter is meant to choose it (plan
 2026-10-12, "Revision").
+
+# Her face on the words
+
+While she speaks, her face follows how the words land, not only the host's
+mood. `readTones` reads the clip's text — Markdown and all — into cues, one
+at the first character of each line and each sentence in it, with an
+approval on the reaction scale or null where the words read neither way:
+
+- A sentence's own words decide its tone: a short English and German list
+  of word beginnings and phrases ("finish", "well done", "overdue",
+  "blocked", "erledigt", "überfällig"), plus emoji that read the same in any
+  language (✅ 🎉 ⚠️ ❌). Praise denied ("not done") counts as a concern,
+  trouble denied ("no blockers") as good news; the sum is clamped to the
+  scale.
+- A sentence that reads neither way takes its **section's** tone, set by the
+  heading above it, so every line under "⚠️ Risks" keeps her concerned.
+- A report in another language reads neither way except by its emoji; the
+  agent marking tone in its own report is the later step (plan 2026-10-12,
+  "Revision").
+
+`ToneTrack.read` times each cue with the mouth's `timeOf`, so a tone starts
+when the voice reaches its sentence. `CompanionSpeaker` builds it with the
+mouth, from the same clip, so the two never belong to different clips, and
+drops both when the utterance ends.
+
+`CompanionView` asks the tone for the approval at the playhead each frame,
+as it asks the mouth for its shape:
+
+```mermaid
+stateDiagram-v2
+  [*] --> HostMood
+  HostMood --> Reaction: playhead in a sentence with a tone (its gesture cued once)
+  Reaction --> Reaction: the tone changes (the new reaction's gesture cued once)
+  Reaction --> HostMood: a sentence with no tone, or the playhead leaves the track
+```
+
+In a reaction her mood is `companionReaction(approval, sass:).mood`; the
+gesture is played once when the tone changes, not held, so her talking
+gestures resume after it. `sass` is warm unless the view is given another;
+no host gives one yet.
 
 # Gotchas
 

@@ -34,6 +34,16 @@ class VoicedTextTrack implements MouthTrack {
   @override
   double loudnessAt(Duration position) => envelope.loudnessAt(position);
 
+  /// When the voice reaches the character at [offset]: the words' own time
+  /// for it, stretched over the voiced part of the clip as the shapes are.
+  @override
+  Duration timeOf(int offset) {
+    final spoken = words.spokenLength.inMicroseconds / 1e6;
+    final at = words.timeOf(offset).inMicroseconds / 1e6;
+    final u = spoken <= 0 ? 0.0 : clampUnit(at / spoken);
+    return Duration(microseconds: ((_from + u * (_to - _from)) * 1e6).round());
+  }
+
   @override
   MouthShape mouthAt(Duration position) {
     final l = envelope.loudnessAt(position);

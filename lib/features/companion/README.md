@@ -36,6 +36,10 @@ nudges), is
     voice (`lib/features/tts/`) writes;
   - `TextLipSync`: the words alone, read into the nine Rhubarb mouth shapes;
   - `VoicedTextTrack`: both, the words' shapes timed and gated by the voice.
+- **Her face follows the words.** While she reads, each sentence's tone —
+  praise, neither, or something that needs work, read on the device from its
+  words, its emoji and its section's heading (`ToneTrack`) — gives her the
+  matching reaction, timed by the same playhead as her mouth.
 - **She has moods** (`calm`, `bright`, `busy`, `frazzled`, `sleepy`) that show
   on her face and in her breathing, never as guilt.
 - **She reacts.** `companionReaction` rates a piece of work from -3 to +3,
@@ -96,8 +100,8 @@ Run the widgetbook (`fvm flutter run -d <device> -t lib/widgetbook.dart`) and
 open **Companion → Lotti (grandma)**, **Cat** or **Red panda**; each has the
 same use cases, its look knob limited to its own looks:
 
-- **Playground**: the look, mood, framing, stage and smoothing as knobs, a
-  line to say, and a button per gesture;
+- **Playground**: the look, mood, framing, stage, smoothing and sass as
+  knobs, a line to say (her face follows it), and a button per gesture;
 - **Talking with a voice (WAV)**: give it a 16-bit PCM WAV path (and, for
   better mouth shapes, its words), press Play, and she says it out loud;
 - **Looks**, **Moods**, **Reactions** (every approval at every sass) and

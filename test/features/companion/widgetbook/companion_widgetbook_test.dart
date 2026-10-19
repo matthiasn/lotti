@@ -153,5 +153,35 @@ void main() {
       expect(opens.sublist(260).every((o) => o == 0), isTrue);
       expect(widest, greaterThan(3));
     });
+
+    testWidgets('her face follows the line, with the sass it is given', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1400, 900));
+      await tester.pumpWidget(
+        _host(
+          const CompanionPlayground(
+            look: CompanionLook.grandma,
+            mood: CompanionMood.calm,
+            framing: CompanionFraming.full,
+            line: defaultCompanionLine,
+            rate: 1,
+            autoGestures: false,
+            sass: CompanionSass.sassy,
+          ),
+        ),
+      );
+      CompanionView shown() =>
+          tester.widget<CompanionView>(find.byType(CompanionView));
+      expect(shown().tone, isNull);
+      expect(shown().sass, CompanionSass.sassy);
+
+      await tester.tap(find.byKey(const ValueKey('companion_say')));
+      await tester.pump();
+      // The default line has praise and something that needs work.
+      final approvals = shown().tone!.cues.map((c) => c.approval).toList();
+      expect(approvals.any((a) => a != null && a > 0), isTrue);
+      expect(approvals.any((a) => a != null && a < 0), isTrue);
+    });
   });
 }

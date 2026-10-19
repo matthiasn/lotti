@@ -5,10 +5,12 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/rig/supersampled_painter.dart';
 
@@ -38,7 +40,8 @@ class CompanionController {
 }
 
 /// The companion, alive: she breathes, blinks, glances about and, while a
-/// [track] plays, talks with her mouth on it.
+/// [track] plays, talks with her mouth on it — and, given its [tone], with
+/// her face on what the words say.
 ///
 /// Per-frame values never leave this widget's state: the [Ticker] advances a
 /// [CompanionAnimator] and only the painted pose changes. What changes
@@ -51,6 +54,8 @@ class CompanionView extends StatefulWidget {
     this.stage = false,
     this.supersample,
     this.track,
+    this.tone,
+    this.sass = CompanionSass.warm,
     this.playhead,
     this.lookAt,
     this.autoGestures = true,
@@ -82,6 +87,16 @@ class CompanionView extends StatefulWidget {
 
   /// What she says; she talks while [playhead] reads a position inside it.
   final MouthTrack? track;
+
+  /// How [track]'s words land, on the same playhead. While she speaks a
+  /// sentence that reads one way or the other, its [companionReaction] with
+  /// [sass] takes over her face from [mood], and each change of tone cues
+  /// that reaction's gesture once; between such sentences, and once she is
+  /// quiet, she is in [mood] again.
+  final ToneTrack? tone;
+
+  /// How much sass her reactions to [tone] carry.
+  final CompanionSass sass;
   final PlayheadReader? playhead;
 
   /// Fixes her eyes on a point (each axis about -1..1) instead of letting
@@ -110,6 +125,9 @@ class _CompanionViewState extends State<CompanionView>
   late final Ticker _ticker;
   late CompanionPose _pose;
   Duration _last = Duration.zero;
+
+  // The approval of the words she is saying now, so a change cues once.
+  int? _approval;
 
   @override
   void initState() {
@@ -147,13 +165,38 @@ class _CompanionViewState extends State<CompanionView>
     final position = widget.playhead?.call();
     return _animator.step(
       dt,
-      mood: widget.mood,
+      mood: _moodAt(track, position),
       speech: track == null || position == null
           ? null
           : (track: track, position: position),
       lookAt: widget.lookAt,
       autoGestures: widget.autoGestures,
     );
+  }
+
+  /// Her mood for the words at [position]: the reaction to their tone while
+  /// they read one way or the other, the host's [CompanionView.mood]
+  /// otherwise.
+  CompanionMood _moodAt(MouthTrack? track, Duration? position) {
+    final tone = widget.tone;
+    final speaking =
+        tone != null &&
+        track != null &&
+        position != null &&
+        !position.isNegative &&
+        position < track.length;
+    final approval = speaking ? tone.approvalAt(position) : null;
+    if (approval == null) {
+      _approval = null;
+      return widget.mood;
+    }
+    final reaction = companionReaction(approval, sass: widget.sass);
+    if (approval != _approval) {
+      _approval = approval;
+      final gesture = reaction.gesture;
+      if (gesture != null) _animator.play(gesture);
+    }
+    return reaction.mood;
   }
 
   void _onTick(Duration elapsed) {

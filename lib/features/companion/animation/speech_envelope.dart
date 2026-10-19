@@ -55,6 +55,10 @@ class SpeechEnvelope implements MouthTrack {
   final List<double> levels;
   final int fps;
 
+  /// A voice alone has no words to place.
+  @override
+  Duration? timeOf(int offset) => null;
+
   @override
   Duration get length => Duration(microseconds: levels.length * 1000000 ~/ fps);
 
