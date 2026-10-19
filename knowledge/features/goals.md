@@ -1041,12 +1041,13 @@ handler would retract it; that wiring is a follow-up.
   hours are evidence for future initial display timing, not an automatic
   scheduling command.
   Exposure is measured in visibility episodes by
-  `NudgeBannerExposureTracker` gated on THREE signals — the tracker's
-  stopwatch runs only while the app lifecycle is `resumed`, `TickerMode`
-  reports the host tab on screen, AND the banner intersects its enclosing
-  viewport (rechecked on scroll events, lifecycle changes and post-rebuild
-  frames, never per frame; the dock and other non-scrollable hosts use the
-  other two signals alone). Every
+  `NudgeBannerExposureTracker` on top of the design system's
+  `OnScreenTickerMode`, gated on THREE signals — the tracker's stopwatch
+  runs only while the app lifecycle is `resumed`, `TickerMode` reports the
+  host tab on screen, AND the banner intersects its enclosing viewport
+  (rechecked on every drawn frame, scroll event, lifecycle change and
+  rebuild; a still page runs nothing; the dock and other non-scrollable
+  hosts use the other two signals alone). Every
   visible→hidden transition — backgrounding, tab switch, scroll-out,
   unmount — flushes its own episode into the per-host G-counters, so
   returning starts a new episode. Writes per nudge are serialized in
@@ -1696,6 +1697,22 @@ handler would retract it; that wiring is a follow-up.
   pages, all under `/goals/...` paths built by the plain helpers in
   `goal_routes.dart` (see [navigation](../architecture/navigation.md)); the
   never-released `/agents` twin tab was removed after this surface landed.
+- **The Goals list is built whole and stays resident.** Its body is one
+  `Column` in a `SliverToBoxAdapter`, not a lazy `SliverList`: the page is a
+  bounded stack of heavy cards, and the lazy list built the bottom ones (the
+  multi-year heatmap, the chart) mid-scroll — a stall on a phone — while
+  disposing the goal cards that scrolled off, whose card-only providers
+  (progress view, assessment history, the briefing's report, the companion
+  flag) are `autoDispose`, so every goal reloaded on the way back and the
+  briefing card collapsed until its report returned. Now everything builds
+  once when the page opens and stays until the page itself is disposed;
+  each card paints in its own `RepaintBoundary` (what the lazy list used to
+  give it), so a scroll frame only moves layers; and each goal card sits in
+  an `OnScreenTickerMode`, so a below-the-fold companion does not animate.
+  A hidden tab is paused by the app shell's `TickerMode`, never unloaded.
+  The phone-viewport tests in `unified_goals_page_test.dart` pin all three:
+  built at open, nothing disposed or reloaded across a full scroll, and
+  off-screen cards still.
 
 ## Health signals are only as fresh as the last import
 

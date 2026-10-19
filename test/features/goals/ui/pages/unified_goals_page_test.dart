@@ -185,8 +185,8 @@ void main() {
     List<AgentIdentityEntity> archivedAgents = const [],
     List<Override> extraOverrides = const [],
   }) async {
-    // Tall surface so the whole column — down to the aggregate heatmap and
-    // chart cards — builds inside the sliver viewport.
+    // A tall surface puts the whole page on screen at once; the page builds
+    // all of it either way (see the phone-viewport scrolling group).
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -959,5 +959,121 @@ void main() {
     // Orphan rows: the in-scope habit stays, the unassigned one is gone.
     expect(find.text('Work stretch'), findsOneWidget);
     expect(find.text(habitFlossingDueLater.name), findsNothing);
+  });
+
+  group('scrolling on a phone', () {
+    const phone = Size(390, 844);
+    // More goals than a phone shows at once, so the last start below the
+    // fold — numbered past goal-1, whose reads the shared pump overrides.
+    final goalIds = [for (var i = 2; i < 10; i++) 'goal-$i'];
+
+    /// Loads and disposals of the providers only a goal card watches —
+    /// the ones a lazily built list threw away when a card scrolled off.
+    late Map<String, int> loads;
+    late Map<String, int> disposals;
+    void counted(Ref ref, String name) {
+      loads[name] = (loads[name] ?? 0) + 1;
+      ref.onDispose(() => disposals[name] = (disposals[name] ?? 0) + 1);
+    }
+
+    List<Override> fourGoals() => [
+      for (final id in goalIds) ...[
+        goalAgentHealthProvider(id).overrideWith((ref) async => health(id)),
+        goalAgentProgressViewProvider(id).overrideWith((ref) async {
+          counted(ref, 'progress');
+          return progress();
+        }),
+        goalAssessmentHistoryProvider(id).overrideWith((ref) async {
+          counted(ref, 'assessments');
+          return [];
+        }),
+      ],
+    ];
+
+    Future<void> openOnPhone(WidgetTester tester) => pump(
+      tester,
+      baseState(),
+      viewport: phone,
+      activeAgents: [for (final id in goalIds) identity(id, 'Goal $id')],
+      extraOverrides: fourGoals(),
+    );
+
+    Future<void> scrollBy(WidgetTester tester, double dy, int steps) async {
+      for (var i = 0; i < steps; i++) {
+        await tester.drag(find.byType(CustomScrollView), Offset(0, dy));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    setUp(() {
+      loads = {};
+      disposals = {};
+    });
+
+    testWidgets('the page is built whole when it opens: the cards at the '
+        'bottom do not wait to be scrolled to', (tester) async {
+      await openOnPhone(tester);
+
+      // Far below the fold on a phone, yet already built — scrolling to them
+      // must not build them mid-gesture (the stall this page used to have).
+      expect(
+        find.byType(HabitHeatmapCard, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(HabitsChartCard, skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.byType(UnifiedGoalCard, skipOffstage: false),
+        findsNWidgets(goalIds.length),
+      );
+      expect(loads, {
+        'progress': goalIds.length,
+        'assessments': goalIds.length,
+      });
+    });
+
+    testWidgets('scrolling to the bottom and back unloads and reloads '
+        'nothing', (tester) async {
+      await openOnPhone(tester);
+
+      await scrollBy(tester, -150, 30);
+      // At the bottom, the goal cards are far above the viewport — and
+      // still mounted, their reads still alive.
+      expect(
+        find.byType(UnifiedGoalCard, skipOffstage: false),
+        findsNWidgets(goalIds.length),
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await scrollBy(tester, 150, 30);
+
+      expect(disposals, isEmpty);
+      expect(loads, {
+        'progress': goalIds.length,
+        'assessments': goalIds.length,
+      });
+    });
+
+    testWidgets("an off-screen goal card's animations wait until it scrolls "
+        'into view', (tester) async {
+      await openOnPhone(tester);
+
+      bool animating(String id) => TickerMode.valuesOf(
+        tester.element(
+          find.byKey(Key('unified-goal-card-$id'), skipOffstage: false),
+        ),
+      ).enabled;
+
+      // The first card is on screen; the last sits below the fold.
+      expect(animating(goalIds.first), isTrue);
+      expect(animating(goalIds.last), isFalse);
+
+      await scrollBy(tester, -150, 30);
+
+      expect(animating(goalIds.first), isFalse);
+      expect(animating(goalIds.last), isTrue);
+    });
   });
 }

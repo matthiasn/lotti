@@ -64,6 +64,19 @@ class _ControllableController extends HabitsController {
 
 void main() {
   group('HabitsSummaryCard', () {
+    testWidgets('a narrow phone wraps the streak label inside its pill '
+        'rather than overflowing it', (tester) async {
+      tester.view.physicalSize = const Size(300, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      // No streak yet: the longest label the pill carries.
+      await _pump(tester, _state(definitionCount: 3, completedCount: 1));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Start a streak today'), findsOneWidget);
+    });
+
     testWidgets('renders the completed-today count as the headline number', (
       tester,
     ) async {
