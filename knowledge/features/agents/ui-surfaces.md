@@ -694,7 +694,9 @@ which `TldrBody` shows whenever the host passes `onOpenInternals` — not only
 when the report is expanded. The goal agent's read uses `TldrHeader` plus an
 overflow-menu item; the relationship briefing deliberately omits the link and
 offers its own *See activity* button. It is a thin shell —
-header and close button; the sheet owns width, edge and scrim — hosting the host's optional
+header and close button; the sheet owns width, edge and scrim, and shows no
+drag handle on a phone, whose opaque strip would otherwise sit over the close
+button — hosting the host's optional
 `AgentMaintenanceSection` and then `AgentInternalsBody`, once
 `agentIdentityProvider` resolves. The band sits *above* the tabs because it is
 the one thing here the reader changes rather than reads, and because it belongs
