@@ -45,7 +45,7 @@ Future<void> openCompanionStage(
 
 /// The companion full screen: her `full` framing on the dark stage, which
 /// grounds her feet with its floor shadow, a control at the top that
-/// changes her outfit for the session ([companionLookProvider]) and one that
+/// changes her outfit for the session ([companionOutfitProvider]) and one that
 /// closes the page, and the summary's read-aloud control at her feet.
 ///
 /// The stage is dark whatever the app theme, like the tutorial videos she
@@ -127,7 +127,7 @@ class CompanionStagePage extends ConsumerWidget {
                                       .messages
                                       .aiCardCompanionStageNextOutfit,
                                   onPressed: ref
-                                      .read(companionLookProvider.notifier)
+                                      .read(companionOutfitProvider.notifier)
                                       .next,
                                 ),
                                 DsAiDiscButton(

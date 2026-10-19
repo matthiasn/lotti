@@ -4,13 +4,13 @@ import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
-import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../companion/companion_overrides.dart';
 
 void main() {
   test("a goal report's speech is its own utterance, apart from tasks", () {
@@ -100,9 +100,7 @@ void main() {
           ),
         ),
         overrides: [
-          companionLookProvider.overrideWithBuild(
-            (ref, notifier) => CompanionLook.grandmaWinter,
-          ),
+          ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
         ],
       ),
     );
@@ -133,7 +131,7 @@ void main() {
     expect(view.track, isNull);
     expect(view.seed, 7);
     // The session's outfit, as everywhere else she appears.
-    expect(view.look, CompanionLook.grandmaWinter);
+    expect(view.look.id, CompanionLook.grandmaWinter.id);
 
     // Decorative: the status pill carries the verdict in words.
     final semantics = tester.getSemantics(find.byType(GoalCompanionBust));

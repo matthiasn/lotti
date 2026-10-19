@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
@@ -79,6 +80,22 @@ void main() {
     final (skewLeft, skewRight) = await brows(1.5);
     expect(skewRight, lessThan(right - 4));
     expect(skewLeft, greaterThan(left + 4));
+  });
+
+  test("she wears her look's hairstyle, front and back", () async {
+    const bun = CompanionLook.grandma;
+    final afro = bun.copyWith(hairStyle: CompanionHairStyle.afro);
+    final withBun = await _head(bun);
+    final withAfro = await _head(afro);
+    // The afro is far more hair, behind and over the head.
+    expect(
+      withAfro.count(bun.palette.hairBack),
+      greaterThan(withBun.count(bun.palette.hairBack) + 2000),
+    );
+    expect(
+      withAfro.count(bun.palette.hair, tolerance: 30),
+      greaterThan(withBun.count(bun.palette.hair, tolerance: 30)),
+    );
   });
 
   test('a blink closes both eyes', () async {

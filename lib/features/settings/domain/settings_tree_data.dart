@@ -30,6 +30,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableMatrix,
   required bool enableWhatsNew,
   bool enableSpeechTts = false,
+  bool enableCompanion = false,
   bool enableHealthImport = false,
   bool syncFeatureAvailable = true,
 }) {
@@ -241,7 +242,8 @@ List<SettingsNode> buildSettingsTree({
     // celebrations are a matter of taste, not a maintenance tool, and they
     // belong beside theming rather than beside the log domains.
     //
-    // Order is look → feel → capture → voice → input.
+    // Order is look → feel → capture → voice → input; the companion's
+    // looks sit with the app's.
     //
     // Leaf ids are namespaced under `preferences/` (e.g.
     // `preferences/theming`) but their public Beamer URLs are unchanged —
@@ -255,6 +257,10 @@ List<SettingsNode> buildSettingsTree({
       LottiIcons.tune,
       children: [
         leaf('preferences/theming', LottiIcons.palette),
+        // The companion is behind its flag, so is the page that dresses
+        // her.
+        if (enableCompanion)
+          leaf('preferences/companion', LottiIcons.personCircled),
         leaf(
           'preferences/animations',
           LottiIcons.animation,

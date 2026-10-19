@@ -28,7 +28,7 @@ void main() {
   });
 
   test('the back of the head is the bun and the cap', () async {
-    final r = await _draw((c) => drawBackHair(c, _c, Offset.zero));
+    final r = await _draw((c) => drawBunBack(c, _c, Offset.zero));
     expect(r.count(_c.hairBack), greaterThan(2000));
     // The bun hangs low to the left, behind the neck.
     expect(r.at(100 - 26, 110 + 30), _c.hairBack);
@@ -38,10 +38,10 @@ void main() {
     'the front hair covers the crown, its strands swing with the lag',
     () async {
       final still = await _draw(
-        (c) => drawFrontHair(c, _c, Offset.zero, 0),
+        (c) => drawBunFront(c, _c, Offset.zero, 0),
       );
       final swung = await _draw(
-        (c) => drawFrontHair(c, _c, const Offset(7, 0), 0),
+        (c) => drawBunFront(c, _c, const Offset(7, 0), 0),
       );
       expect(still.count(_c.hair), greaterThan(100));
       expect(
@@ -50,27 +50,4 @@ void main() {
       );
     },
   );
-
-  test('the forehead shadow follows a turn of the head', () async {
-    final ahead = await _draw((c) => drawForeheadShadow(c, _c, Offset.zero, 0));
-    final turned = await _draw(
-      (c) => drawForeheadShadow(c, _c, Offset.zero, 1),
-    );
-    // Drawn at 30 % alpha over black: find it by any non-black pixel.
-    Offset centre(Raster r) {
-      var sum = Offset.zero;
-      var n = 0;
-      for (var y = 0; y < 200; y++) {
-        for (var x = 0; x < 200; x++) {
-          if (r.at(x, y) != const Color(0xFF000000)) {
-            sum += Offset(x.toDouble(), y.toDouble());
-            n++;
-          }
-        }
-      }
-      return sum / n.toDouble();
-    }
-
-    expect(centre(turned).dx, greaterThan(centre(ahead).dx + 2));
-  });
 }

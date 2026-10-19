@@ -6198,6 +6198,168 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get commonUnknown;
 
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Auburn'**
+  String get companionSettingsHairColourAuburn;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get companionSettingsHairColourBlack;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get companionSettingsHairColourBlue;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Brown'**
+  String get companionSettingsHairColourBrown;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Gray'**
+  String get companionSettingsHairColourGrey;
+
+  /// Section title on the companion settings page for choosing her hair colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hair color'**
+  String get companionSettingsHairColourLabel;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Lavender'**
+  String get companionSettingsHairColourLavender;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get companionSettingsHairColourPink;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'Silver'**
+  String get companionSettingsHairColourSilver;
+
+  /// Name of one hair colour the companion can have.
+  ///
+  /// In en, this message translates to:
+  /// **'White'**
+  String get companionSettingsHairColourWhite;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Afro'**
+  String get companionSettingsHairStyleAfro;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Bob'**
+  String get companionSettingsHairStyleBob;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Bun'**
+  String get companionSettingsHairStyleBun;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Curls'**
+  String get companionSettingsHairStyleCurls;
+
+  /// Section title on the companion settings page for choosing her hairstyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hairstyle'**
+  String get companionSettingsHairStyleLabel;
+
+  /// Name of one hairstyle the companion can wear.
+  ///
+  /// In en, this message translates to:
+  /// **'Locs'**
+  String get companionSettingsHairStyleLocs;
+
+  /// Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose one she always wears, or let her pick one each time you open the app.'**
+  String get companionSettingsOutfitDescription;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyday'**
+  String get companionSettingsOutfitEveryday;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden'**
+  String get companionSettingsOutfitGarden;
+
+  /// Section title on the companion settings page for choosing her outfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Outfit'**
+  String get companionSettingsOutfitLabel;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Lavender'**
+  String get companionSettingsOutfitLavender;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Rock'**
+  String get companionSettingsOutfitRock;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Keynote'**
+  String get companionSettingsOutfitStage;
+
+  /// Outfit option that lets the companion pick a random outfit each time the app opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Surprise me'**
+  String get companionSettingsOutfitSurprise;
+
+  /// Name of one of the companion's outfits.
+  ///
+  /// In en, this message translates to:
+  /// **'Winter'**
+  String get companionSettingsOutfitWinter;
+
+  /// Screen-reader name of one skin-tone swatch; tones are numbered from light to deep, never named after a people.
+  ///
+  /// In en, this message translates to:
+  /// **'Skin tone {number}'**
+  String companionSettingsSkinTone(int number);
+
+  /// Section title on the companion settings page for choosing her skin tone.
+  ///
+  /// In en, this message translates to:
+  /// **'Skin tone'**
+  String get companionSettingsSkinToneLabel;
+
   /// No description provided for @completeHabitFailButton.
   ///
   /// In en, this message translates to:
@@ -23224,6 +23386,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sparks'**
   String get settingsCelebrationsVariantSparks;
+
+  /// Subtitle of the companion settings entry in the settings tree.
+  ///
+  /// In en, this message translates to:
+  /// **'Her skin, hair and outfit'**
+  String get settingsCompanionSubtitle;
+
+  /// Title of the settings page where the companion character is customized.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion'**
+  String get settingsCompanionTitle;
 
   /// No description provided for @settingsConflictsTitle.
   ///

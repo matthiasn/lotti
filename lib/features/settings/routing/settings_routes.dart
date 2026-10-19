@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/companion/ui/settings/companion_settings_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurable_details_page.dart';
@@ -466,6 +467,12 @@ final SettingsRouteTable settingsRoutes = SettingsRouteTable(
       url: '/settings/theming',
       page: (_, _) => const ThemingPage(),
       panel: (_, _) => const ThemingBody(),
+      scrollable: true,
+    ),
+    'preferences/companion': SettingsRoute(
+      url: '/settings/companion',
+      page: (_, _) => const CompanionSettingsPage(),
+      panel: (_, _) => const CompanionSettingsBody(),
       scrollable: true,
     ),
     'preferences/animations': SettingsRoute(

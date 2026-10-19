@@ -3667,6 +3667,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonUnknown => 'Unknown';
 
   @override
+  String get companionSettingsHairColourAuburn => 'Auburn';
+
+  @override
+  String get companionSettingsHairColourBlack => 'Black';
+
+  @override
+  String get companionSettingsHairColourBlue => 'Blue';
+
+  @override
+  String get companionSettingsHairColourBrown => 'Brown';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Gray';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Hair color';
+
+  @override
+  String get companionSettingsHairColourLavender => 'Lavender';
+
+  @override
+  String get companionSettingsHairColourPink => 'Pink';
+
+  @override
+  String get companionSettingsHairColourSilver => 'Silver';
+
+  @override
+  String get companionSettingsHairColourWhite => 'White';
+
+  @override
+  String get companionSettingsHairStyleAfro => 'Afro';
+
+  @override
+  String get companionSettingsHairStyleBob => 'Bob';
+
+  @override
+  String get companionSettingsHairStyleBun => 'Bun';
+
+  @override
+  String get companionSettingsHairStyleCurls => 'Curls';
+
+  @override
+  String get companionSettingsHairStyleLabel => 'Hairstyle';
+
+  @override
+  String get companionSettingsHairStyleLocs => 'Locs';
+
+  @override
+  String get companionSettingsOutfitDescription =>
+      'Choose one she always wears, or let her pick one each time you open the app.';
+
+  @override
+  String get companionSettingsOutfitEveryday => 'Everyday';
+
+  @override
+  String get companionSettingsOutfitGarden => 'Garden';
+
+  @override
+  String get companionSettingsOutfitLabel => 'Outfit';
+
+  @override
+  String get companionSettingsOutfitLavender => 'Lavender';
+
+  @override
+  String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitStage => 'Keynote';
+
+  @override
+  String get companionSettingsOutfitSurprise => 'Surprise me';
+
+  @override
+  String get companionSettingsOutfitWinter => 'Winter';
+
+  @override
+  String companionSettingsSkinTone(int number) {
+    return 'Skin tone $number';
+  }
+
+  @override
+  String get companionSettingsSkinToneLabel => 'Skin tone';
+
+  @override
   String get completeHabitFailButton => 'Missed';
 
   @override
@@ -13979,6 +14063,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Sparks';
 
   @override
+  String get settingsCompanionSubtitle => 'Her skin, hair and outfit';
+
+  @override
+  String get settingsCompanionTitle => 'Companion';
+
+  @override
   String get settingsConflictsTitle => 'Sync Conflicts';
 
   @override
@@ -17146,6 +17236,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get colorLabel => 'Colour';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Grey';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Hair colour';
 
   @override
   String get configFlagEnableAiStreaming =>

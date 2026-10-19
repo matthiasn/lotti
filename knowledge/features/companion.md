@@ -66,7 +66,23 @@ sources:
     last_modified: 2026-10-19
   - id: look-controller
     resource: ../../lib/features/companion/state/companion_look_controller.dart
-    title: companionLookProvider, the session's outfit
+    title: companionOutfitProvider and companionLookProvider
+    last_modified: 2026-10-19
+  - id: customization
+    resource: ../../lib/features/companion/state/companion_customization_controller.dart
+    title: companionCustomizationProvider, her stored customization
+    last_modified: 2026-10-19
+  - id: parts
+    resource: ../../lib/features/companion/model/companion_parts.dart
+    title: Skin tones, hairstyles and hair colours
+    last_modified: 2026-10-19
+  - id: hair-styles
+    resource: ../../lib/features/companion/rig/hair_styles_painter.dart
+    title: The hairstyles' painters
+    last_modified: 2026-10-19
+  - id: settings-page
+    resource: ../../lib/features/companion/ui/settings/companion_settings_page.dart
+    title: The page that customizes her
     last_modified: 2026-10-19
   - id: playhead-clock
     resource: ../../lib/features/companion/animation/playhead_clock.dart
@@ -270,16 +286,48 @@ clap, at risk a hand to the cheek, off track palms down — it is all right,
 never a scold — and no data a hand at her ear, listening for news. Until
 the health resolves she stands calm and at ready.
 
-**What she wears.** Every host shows her in the session's outfit,
-`companionLookProvider` in `companion/state/`: `CompanionSpeaker` and the
-goal card's silent bust both watch it, and no host passes a look. Its first
-value is drawn from `companionOutfits` (the grandmother's looks) with
-`companionOutfitRandomProvider`, which a test or a capture pins; the
-provider is not auto-disposed, so the draw holds until the app closes. The
-palette control on her full-screen stage calls `next`, which steps through
-the outfits and wraps, and every screen showing her changes with it. It is
-not a setting and does not sync; that is the customization branch's (plan
-2026-10-12, "Revision").
+**What she wears.** Every host shows her as `companionLookProvider` draws
+her, in `companion/state/`; `CompanionSpeaker` and the goal card's silent
+bust both watch it, and no host passes a look. It is two things together:
+
+```mermaid
+flowchart LR
+  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit?]
+  C -->|outfitId| O[companionOutfitProvider<br/>the chosen outfit, or a random one]
+  R[companionOutfitRandomProvider] --> O
+  Stage[stage palette button] -->|next| O
+  Settings[Settings › Preferences › Companion] -->|set| C
+  C -->|dress| L[companionLookProvider]
+  O --> L
+  L --> Hosts[CompanionSpeaker · GoalCompanionBust · settings preview]
+```
+
+- **The outfit** (`companionOutfitProvider`): the one chosen in her
+  customization, or, with none chosen, one of `companionOutfits` (the
+  grandmother's looks) drawn by `companionOutfitRandomProvider`, which a test
+  or a capture pins. It is not auto-disposed, so the draw holds until the app
+  closes. The stage's palette control calls `next`, stepping through the
+  outfits and wrapping, for the session only; a new choice in settings
+  starts over from that choice.
+- **The customization** (`companionCustomizationProvider`): her skin tone,
+  hairstyle, hair colour and outfit, stored as JSON under
+  `COMPANION_CUSTOMIZATION` in `SettingsDb`. It starts at the default — Lotti
+  as the videos draw her — and refines when the load lands; a change made
+  before that wins. A part a newer version wrote, or an outfit that no
+  longer exists, reads as the default. It is device-local: syncing it is a
+  later branch (plan 2026-10-12, "Revision").
+- **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
+  colour over the outfit's palette and sets its hairstyle; the outfit keeps
+  its clothes and props. A deeper tone deepens plain lips, never lipstick an
+  outfit paints (the rock look's red).
+
+Every part combines with every other, and none is named after a people:
+skin tones are numbered, light to deep, and a screen reader says "Skin tone
+3". Five hairstyles share one dispatch, `hair_styles_painter.dart`: each has
+a back layer (behind the head and body), a front layer over the forehead
+whose outline also shades it, and hanging parts that trail the head's motion
+by the hair lag — the locs and the bob's ends; the bun keeps its painter,
+`hair_painter.dart`.
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).
@@ -343,6 +391,11 @@ gestures resume after it. `sass` is warm unless the view is given another;
 no host gives one yet.
 
 # Gotchas
+
+- Hair has to fit the `bust` window: it leaves about 106 head units above
+  the face's centre, and the bun tops out at 90. The afro is drawn wider
+  than tall so its curls stop near 99; a taller style would be cut off on
+  every bust (`hair_styles_painter_test.dart` measures the silhouettes).
 
 - `CompanionPose` is rebuilt field by field in `_withTrail` to add the hair
   and hem lag; a new pose field must be carried there too.

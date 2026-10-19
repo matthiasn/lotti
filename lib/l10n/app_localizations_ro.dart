@@ -3749,6 +3749,90 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
+  String get companionSettingsHairColourAuburn => 'Arămiu';
+
+  @override
+  String get companionSettingsHairColourBlack => 'Negru';
+
+  @override
+  String get companionSettingsHairColourBlue => 'Albastru';
+
+  @override
+  String get companionSettingsHairColourBrown => 'Șaten';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Gri';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Culoarea părului';
+
+  @override
+  String get companionSettingsHairColourLavender => 'Lavandă';
+
+  @override
+  String get companionSettingsHairColourPink => 'Roz';
+
+  @override
+  String get companionSettingsHairColourSilver => 'Argintiu';
+
+  @override
+  String get companionSettingsHairColourWhite => 'Alb';
+
+  @override
+  String get companionSettingsHairStyleAfro => 'Afro';
+
+  @override
+  String get companionSettingsHairStyleBob => 'Bob';
+
+  @override
+  String get companionSettingsHairStyleBun => 'Coc';
+
+  @override
+  String get companionSettingsHairStyleCurls => 'Bucle';
+
+  @override
+  String get companionSettingsHairStyleLabel => 'Coafură';
+
+  @override
+  String get companionSettingsHairStyleLocs => 'Dreaduri';
+
+  @override
+  String get companionSettingsOutfitDescription =>
+      'Alegeți o ținută pe care o poartă mereu sau lăsați-o să aleagă una de fiecare dată când deschideți aplicația.';
+
+  @override
+  String get companionSettingsOutfitEveryday => 'De zi cu zi';
+
+  @override
+  String get companionSettingsOutfitGarden => 'Grădină';
+
+  @override
+  String get companionSettingsOutfitLabel => 'Ținută';
+
+  @override
+  String get companionSettingsOutfitLavender => 'Lavandă';
+
+  @override
+  String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitStage => 'Scenă';
+
+  @override
+  String get companionSettingsOutfitSurprise => 'Surprindeți-mă';
+
+  @override
+  String get companionSettingsOutfitWinter => 'Iarnă';
+
+  @override
+  String companionSettingsSkinTone(int number) {
+    return 'Nuanța pielii $number';
+  }
+
+  @override
+  String get companionSettingsSkinToneLabel => 'Nuanța pielii';
+
+  @override
   String get completeHabitFailButton => 'Ratat';
 
   @override
@@ -14317,6 +14401,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCelebrationsVariantSparks => 'Scântei';
+
+  @override
+  String get settingsCompanionSubtitle => 'Pielea, părul și ținuta ei';
+
+  @override
+  String get settingsCompanionTitle => 'Însoțitoare';
 
   @override
   String get settingsConflictsTitle => 'Sync cu conflicte';

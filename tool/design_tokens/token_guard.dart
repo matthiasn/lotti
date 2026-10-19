@@ -22,10 +22,12 @@ const tokenSource = 'lib/features/design_system/theme/';
 
 /// Where raw colours are the drawing itself: the companion's skin, hair,
 /// clothes and stage are illustration colours, like a picture's pixels, with
-/// no interface meaning a token could carry. Only colour is exempt here;
+/// no interface meaning a token could carry — her outfits, and the skin
+/// tones and hair colours a person may give her. Only colour is exempt here;
 /// spacing and typography stay guarded, as does the rest of the feature.
 const illustrationSources = [
   'lib/features/companion/model/companion_look.dart',
+  'lib/features/companion/model/companion_parts.dart',
   'lib/features/companion/rig/',
 ];
 

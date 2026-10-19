@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`) and C (`feat/companion-outfits`) built — see "Revision: her range, and making her your own"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`), C (`feat/companion-outfits`) and D (`feat/companion-customization`) built — see "Revision: her range, and making her your own"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -529,8 +529,9 @@ flowchart TD
   A["A · feat/companion-expressions<br/>lopsided face, reaction scale, sassy gestures"] --> B
   B["B · feat/companion-tone-track<br/>her face follows the words"] --> C
   C["C · feat/companion-outfits<br/>random start, cycle on the stage"] --> D
-  D["D · feat/companion-customization<br/>skin, hair, outfit as parts, synced"]
-  D -.-> E["later · a grandpa; sass from the coach's charter"]
+  D["D · feat/companion-customization<br/>skin, hair, outfit as parts"] --> E
+  E["E · feat/companion-customization-sync<br/>synced across devices"]
+  E -.-> F["later · a grandpa; sass from the coach's charter"]
 ```
 
 ### Three decisions (2026-10-19)
@@ -605,13 +606,32 @@ flowchart TD
 
 ### D · `feat/companion-customization`: make her your own
 
-- A look split into parts: skin tone, hairstyle (bun, curls, afro, locs,
-  braids, bob, pixie, …), hair colour (including dyed), eyes, outfit and
-  accessories. Each hairstyle is its own painter with the strands that trail
-  her motion; that is the bulk of the drawing.
-- A settings screen with a live preview; the choice syncs like the theme
-  (`features/theming`), and reaches her through a scope the shell provides,
-  as branch 5 planned.
+- A look split into parts (`companion_parts.dart`): six skin tones,
+  numbered light to deep; five hairstyles — the bun, curls, an afro, locs
+  and a bob; nine hair colours, the greys and some dyes. Eyes and
+  accessories stay with the outfit for now. `CompanionCustomization` holds
+  the choice and `dress`es an outfit in it.
+- Each new hairstyle is its own painter (`hair_styles_painter.dart`), with
+  the strands that hang — the locs, the bob's ends — trailing her motion. The
+  afro is drawn wider than tall, because the bust framing leaves no more
+  headroom than that.
+- Settings › Preferences › Companion, behind `enable_companion`: a live
+  preview, head to toe and as a portrait, above swatches for skin and hair
+  colour, a toggle for the hairstyle and chips for the outfit, including
+  "Surprise me", the random outfit of branch C.
+- The choice is stored in `SettingsDb`, on this device. **Changed from the
+  first draft of this section:** it does not sync yet. A synced setting is a
+  new `SyncMessage` variant — a wire format older versions must tolerate —
+  so it is branch E, reviewed on its own rather than inside a drawing branch.
+- The companion reads her customization from her own `state/`; no scope from
+  the shell is needed, since every host already ranks above her.
+
+### E · `feat/companion-customization-sync`: the same her on every device
+
+- A `SyncMessage` variant for her customization under last-write-wins on
+  `updatedAt`, as the Daily OS greeting name syncs
+  (`SyncMessage.dailyOsUserName`), with the outbox, apply and resend paths
+  that come with one.
 
 ### Later
 

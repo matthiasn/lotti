@@ -3699,6 +3699,90 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonUnknown => 'Onbekend';
 
   @override
+  String get companionSettingsHairColourAuburn => 'Koperrood';
+
+  @override
+  String get companionSettingsHairColourBlack => 'Zwart';
+
+  @override
+  String get companionSettingsHairColourBlue => 'Blauw';
+
+  @override
+  String get companionSettingsHairColourBrown => 'Bruin';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Grijs';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Haarkleur';
+
+  @override
+  String get companionSettingsHairColourLavender => 'Lavendel';
+
+  @override
+  String get companionSettingsHairColourPink => 'Roze';
+
+  @override
+  String get companionSettingsHairColourSilver => 'Zilver';
+
+  @override
+  String get companionSettingsHairColourWhite => 'Wit';
+
+  @override
+  String get companionSettingsHairStyleAfro => 'Afro';
+
+  @override
+  String get companionSettingsHairStyleBob => 'Bob';
+
+  @override
+  String get companionSettingsHairStyleBun => 'Knot';
+
+  @override
+  String get companionSettingsHairStyleCurls => 'Krullen';
+
+  @override
+  String get companionSettingsHairStyleLabel => 'Kapsel';
+
+  @override
+  String get companionSettingsHairStyleLocs => 'Locs';
+
+  @override
+  String get companionSettingsOutfitDescription =>
+      'Kies een outfit die ze altijd draagt, of laat haar er elke keer dat je de app opent zelf een kiezen.';
+
+  @override
+  String get companionSettingsOutfitEveryday => 'Dagelijks';
+
+  @override
+  String get companionSettingsOutfitGarden => 'Tuin';
+
+  @override
+  String get companionSettingsOutfitLabel => 'Outfit';
+
+  @override
+  String get companionSettingsOutfitLavender => 'Lavendel';
+
+  @override
+  String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitStage => 'Podium';
+
+  @override
+  String get companionSettingsOutfitSurprise => 'Verras me';
+
+  @override
+  String get companionSettingsOutfitWinter => 'Winter';
+
+  @override
+  String companionSettingsSkinTone(int number) {
+    return 'Huidskleur $number';
+  }
+
+  @override
+  String get companionSettingsSkinToneLabel => 'Huidskleur';
+
+  @override
   String get completeHabitFailButton => 'Gemiste';
 
   @override
@@ -14086,6 +14170,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsCelebrationsVariantSparks => 'Vonken';
+
+  @override
+  String get settingsCompanionSubtitle => 'Haar huid, haar en outfit';
+
+  @override
+  String get settingsCompanionTitle => 'Metgezel';
 
   @override
   String get settingsConflictsTitle => 'Conflicten synchroniseren';

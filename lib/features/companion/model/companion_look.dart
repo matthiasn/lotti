@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 
 /// Who the companion is dressed as: her colours, and the few switches that
 /// differ between outfits.
@@ -133,6 +134,118 @@ class CompanionPalette {
   final Color? tail;
   final Color? tailRing;
 
+  /// This palette with the given colours changed: how a skin tone or a hair
+  /// colour is laid over an outfit.
+  CompanionPalette copyWith({
+    Color? hair,
+    Color? hairBack,
+    Color? hairShade,
+    Color? hairLight,
+    Color? skin,
+    Color? skinShade,
+    Color? skinDeep,
+    Color? skinLight,
+    Color? brow,
+    Color? iris,
+    Color? irisLight,
+    Color? pupil,
+    Color? eyeWhite,
+    Color? lips,
+    Color? lipsUpper,
+    Color? lipsLight,
+    Color? mouthIn,
+    Color? teeth,
+    Color? tongue,
+    Color? dress,
+    Color? dressShade,
+    Color? dressLight,
+    Color? cardigan,
+    Color? cardiganShade,
+    Color? cardiganLight,
+    Color? scarf,
+    Color? scarfDot,
+    Color? glasses,
+    Color? glassesLight,
+    Color? pearl,
+    Color? pearlShade,
+    Color? shoe,
+    Color? shoeShade,
+    Color? sole,
+    Color? ink,
+    Color? hat,
+    Color? hatShade,
+    Color? lens,
+    Color? beads,
+    Color? beadsLight,
+    Color? glove,
+    Color? gloveDeep,
+    Color? earring,
+    Color? muzzle,
+    Color? earInner,
+    Color? furMark,
+    Color? limb,
+    Color? limbDeep,
+    Color? paw,
+    Color? nose,
+    Color? whisker,
+    Color? tail,
+    Color? tailRing,
+  }) => CompanionPalette(
+    hair: hair ?? this.hair,
+    hairBack: hairBack ?? this.hairBack,
+    hairShade: hairShade ?? this.hairShade,
+    hairLight: hairLight ?? this.hairLight,
+    skin: skin ?? this.skin,
+    skinShade: skinShade ?? this.skinShade,
+    skinDeep: skinDeep ?? this.skinDeep,
+    skinLight: skinLight ?? this.skinLight,
+    brow: brow ?? this.brow,
+    iris: iris ?? this.iris,
+    irisLight: irisLight ?? this.irisLight,
+    pupil: pupil ?? this.pupil,
+    eyeWhite: eyeWhite ?? this.eyeWhite,
+    lips: lips ?? this.lips,
+    lipsUpper: lipsUpper ?? this.lipsUpper,
+    lipsLight: lipsLight ?? this.lipsLight,
+    mouthIn: mouthIn ?? this.mouthIn,
+    teeth: teeth ?? this.teeth,
+    tongue: tongue ?? this.tongue,
+    dress: dress ?? this.dress,
+    dressShade: dressShade ?? this.dressShade,
+    dressLight: dressLight ?? this.dressLight,
+    cardigan: cardigan ?? this.cardigan,
+    cardiganShade: cardiganShade ?? this.cardiganShade,
+    cardiganLight: cardiganLight ?? this.cardiganLight,
+    scarf: scarf ?? this.scarf,
+    scarfDot: scarfDot ?? this.scarfDot,
+    glasses: glasses ?? this.glasses,
+    glassesLight: glassesLight ?? this.glassesLight,
+    pearl: pearl ?? this.pearl,
+    pearlShade: pearlShade ?? this.pearlShade,
+    shoe: shoe ?? this.shoe,
+    shoeShade: shoeShade ?? this.shoeShade,
+    sole: sole ?? this.sole,
+    ink: ink ?? this.ink,
+    hat: hat ?? this.hat,
+    hatShade: hatShade ?? this.hatShade,
+    lens: lens ?? this.lens,
+    beads: beads ?? this.beads,
+    beadsLight: beadsLight ?? this.beadsLight,
+    glove: glove ?? this.glove,
+    gloveDeep: gloveDeep ?? this.gloveDeep,
+    earring: earring ?? this.earring,
+    muzzle: muzzle ?? this.muzzle,
+    earInner: earInner ?? this.earInner,
+    furMark: furMark ?? this.furMark,
+    limb: limb ?? this.limb,
+    limbDeep: limbDeep ?? this.limbDeep,
+    paw: paw ?? this.paw,
+    nose: nose ?? this.nose,
+    whisker: whisker ?? this.whisker,
+    tail: tail ?? this.tail,
+    tailRing: tailRing ?? this.tailRing,
+  );
+
   Color get limbColor => limb ?? skin;
   Color get limbDeepColor => limbDeep ?? skinDeep;
   Color get pawColor => paw ?? limbColor;
@@ -180,6 +293,7 @@ class CompanionLook {
     this.glove = false,
     this.earring = EarringKind.pearl,
     this.blush = 0.38,
+    this.hairStyle = CompanionHairStyle.bun,
   });
 
   /// Stable identifier, as stored when the look becomes a setting.
@@ -203,6 +317,29 @@ class CompanionLook {
 
   /// Opacity of the cheeks' colour.
   final double blush;
+
+  /// The grandmother's hair; an animal has fur and ears instead, and ignores
+  /// it.
+  final CompanionHairStyle hairStyle;
+
+  /// This look with [palette] or [hairStyle] changed: an outfit dressed in a
+  /// person's own choice of skin and hair.
+  CompanionLook copyWith({
+    CompanionPalette? palette,
+    CompanionHairStyle? hairStyle,
+  }) => CompanionLook(
+    id: id,
+    palette: palette ?? this.palette,
+    species: species,
+    glasses: glasses,
+    sunglasses: sunglasses,
+    beret: beret,
+    beads: beads,
+    glove: glove,
+    earring: earring,
+    blush: blush,
+    hairStyle: hairStyle ?? this.hairStyle,
+  );
 
   /// Lotti, the grandmother the app is named after: silver bun, glasses, a
   /// teal dress under a mustard cardigan, a small raspberry scarf.

@@ -52,7 +52,8 @@ It does **not** own the pages that configure another feature. AI, agents,
 categories, labels, projects and sync settings live in their features, and so do
 the dashboard definitions (`dashboards`), the habit list (`habits`), theming
 (`theming`), notification settings (`notifications`), recording style
-(`onboarding`), speech (`tts`), keyboard shortcuts (`keyboard`), system health
+(`onboarding`), speech (`tts`), the companion's looks (`companion`), keyboard
+shortcuts (`keyboard`), system health
 (`system_health`) and GitHub (`github`). Settings only references them from its
 route registry.
 
