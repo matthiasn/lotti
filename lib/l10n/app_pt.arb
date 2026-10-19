@@ -736,6 +736,7 @@
   "aiCapabilityChipThinking": "Pensando",
   "aiCapabilityChipTranscription": "Transcrição",
   "aiCardCompanionOpenFullScreen": "Ver companheira em tela cheia",
+  "aiCardCompanionStageNextOutfit": "Trocar de roupa",
   "aiCardCompanionStageTitle": "Companheira em tela cheia",
   "aiCardHistoryToggle": "História · {count}",
   "@aiCardHistoryToggle": {

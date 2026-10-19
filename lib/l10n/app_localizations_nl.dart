@@ -1526,6 +1526,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Metgezel op volledig scherm bekijken';
 
   @override
+  String get aiCardCompanionStageNextOutfit => 'Andere outfit';
+
+  @override
   String get aiCardCompanionStageTitle => 'Metgezel op volledig scherm';
 
   @override
@@ -3026,6 +3029,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillStatsRequested => 'Verzoek';
 
   @override
+  String get backfillStatsSkipped => 'Overgeslagen';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (dit apparaat)';
   }
@@ -3044,9 +3050,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Ontbrekend';
-
-  @override
-  String get backfillStatsSkipped => 'Overgeslagen';
 
   @override
   String get backfillToggleDescription =>

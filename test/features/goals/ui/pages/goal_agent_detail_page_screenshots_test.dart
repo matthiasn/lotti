@@ -26,6 +26,8 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -128,6 +130,10 @@ Future<void> _capture(
             ttsEngineProvider.overrideWithValue(FakeTtsEngine()),
             spokenTrackLoaderProvider.overrideWithValue(
               (clip, text) async => throw StateError('no voice in captures'),
+            ),
+            // Her everyday outfit, not the session's random one.
+            companionLookProvider.overrideWithBuild(
+              (ref, notifier) => CompanionLook.grandma,
             ),
             habitsControllerProvider.overrideWith(
               () => FakeHabitsController(

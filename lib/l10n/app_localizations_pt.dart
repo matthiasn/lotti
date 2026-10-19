@@ -1533,6 +1533,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiCardCompanionOpenFullScreen => 'Ver companheira em tela cheia';
 
   @override
+  String get aiCardCompanionStageNextOutfit => 'Trocar de roupa';
+
+  @override
   String get aiCardCompanionStageTitle => 'Companheira em tela cheia';
 
   @override
@@ -3044,6 +3047,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitado';
 
   @override
+  String get backfillStatsSkipped => 'Ignorado';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (este dispositivo)';
   }
@@ -3062,9 +3068,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Desaparecido';
-
-  @override
-  String get backfillStatsSkipped => 'Ignorado';
 
   @override
   String get backfillToggleDescription =>

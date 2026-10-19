@@ -50,8 +50,14 @@ nudges), is
   lopsided: one brow up, a smirk. Disapproval is sass, never hurt. The goal
   card uses its warm end.
 - **She has looks**: everyday (teal dress, mustard cardigan), stage (raspberry
-  dress, ivory cardigan) and rock (beret, yellow sunglasses, beads, a red
-  glove). A look is data: a palette and a few switches.
+  dress, ivory cardigan), rock (beret, yellow sunglasses, beads, a red
+  glove), garden (sage and straw), lavender (lavender and dove grey) and
+  winter (navy and red). A look is data: a palette and a few switches.
+- **She dresses for the session.** In the app she wears one of her outfits,
+  drawn at random the first time she is shown and kept on every screen until
+  the app closes (`companionLookProvider`); the palette button on her
+  full-screen stage changes into the next one. Choosing and syncing a look
+  is still to come.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
   the grandmother, a silver tabby cat (`cat`, `cat_rock`) or a red panda
   (`red_panda`, `red_panda_bookish`). An animal keeps her skeleton, gestures,
@@ -67,7 +73,7 @@ nudges), is
 | `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, and the reaction scale |
 | `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
-| `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate |
+| `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; `companionLookProvider`: the session's outfit |
 | `ui/` | `CompanionView`, the live widget, and its `CompanionController`; `CompanionSpeaker`, the view bound to the on-device voice |
 | `widgetbook/` | The widgetbook folder "Companion" |
 

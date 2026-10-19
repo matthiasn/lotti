@@ -737,6 +737,7 @@
   "aiCapabilityChipThinking": "Tänkande",
   "aiCapabilityChipTranscription": "Transkription",
   "aiCardCompanionOpenFullScreen": "Visa följeslagaren i helskärm",
+  "aiCardCompanionStageNextOutfit": "Byt kläder",
   "aiCardCompanionStageTitle": "Följeslagaren i helskärm",
   "aiCardHistoryToggle": "Historia · {count}",
   "@aiCardHistoryToggle": {

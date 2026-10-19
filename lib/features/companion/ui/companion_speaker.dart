@@ -4,9 +4,9 @@ import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/playhead_clock.dart';
 import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
-import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -27,13 +27,15 @@ import 'package:lotti/services/domain_logging.dart';
 /// Another source playing, or none, leaves her silent but alive. The voice
 /// knows nothing about her.
 ///
+/// She wears the session's outfit ([companionLookProvider]), so she is
+/// dressed the same on every screen.
+///
 /// Only the start and end of an utterance pass through Riverpod; the
 /// per-frame playhead is read straight from the playback state, never
 /// watched.
 class CompanionSpeaker extends ConsumerStatefulWidget {
   const CompanionSpeaker({
     required this.sourceId,
-    this.look = CompanionLook.grandma,
     this.mood = CompanionMood.calm,
     this.framing = CompanionFraming.full,
     this.stage = false,
@@ -46,7 +48,6 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
   /// [TtsPlaybackController.speak].
   final String sourceId;
 
-  final CompanionLook look;
   final CompanionMood mood;
   final CompanionFraming framing;
 
@@ -154,7 +155,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
 
   @override
   Widget build(BuildContext context) => CompanionView(
-    look: widget.look,
+    look: ref.watch(companionLookProvider),
     mood: widget.mood,
     framing: widget.framing,
     stage: widget.stage,

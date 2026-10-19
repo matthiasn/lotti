@@ -1,7 +1,7 @@
 # In-App Agent Avatar: a Character You Talk To
 
 Date: 2026-10-12
-Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`) and B (`feat/companion-tone-track`) built — see "Revision: her range, and making her your own"
+Status: proof of concept built (2026-10-13); delivery as a branch stack (2026-10-15), branches 1 (`feat/companion-speaks`), 2 (`feat/companion-day-briefing`) and 3 (`feat/companion-onboarding`) built — see "Delivery"; revised 2026-10-19 for her range and customization, branches A (`feat/companion-expressions`), B (`feat/companion-tone-track`) and C (`feat/companion-outfits`) built — see "Revision: her range, and making her your own"
 Branch: `feat/companion-widgetbook` (PR #4782), the parent of the stack
 Builds on: [2026-06-22_bones_animation_framework.md](2026-06-22_bones_animation_framework.md)
 (the rig engine and its locked runtime decisions) and
@@ -591,9 +591,17 @@ flowchart TD
 
 ### C · `feat/companion-outfits`: a random outfit, and a switch
 
-- More grandma outfits. She starts in a random one per app launch and keeps
-  it on every screen for that session; a control on the full-screen stage
-  cycles through them.
+- Three more grandma outfits, palette only: garden, lavender and winter,
+  six in all with everyday, stage and rock.
+- `companionLookProvider` (`companion/state/`) draws one at random the first
+  time she is shown and keeps it for the session, on every screen: the
+  speaker and the goal card's bust watch it, so no host passes a look any
+  more. The draw comes from `companionOutfitRandomProvider`, so a test or a
+  capture pins it.
+- A palette control on the full-screen stage steps to the next outfit and
+  wraps; one new label, in every catalog.
+- Not a setting and not synced: the next branch makes the choice the
+  user's.
 
 ### D · `feat/companion-customization`: make her your own
 

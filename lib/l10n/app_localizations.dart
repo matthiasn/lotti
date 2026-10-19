@@ -2646,6 +2646,12 @@ abstract class AppLocalizations {
   /// **'View companion full screen'**
   String get aiCardCompanionOpenFullScreen;
 
+  /// Label of the button on the companion's full-screen stage that changes her into her next outfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Change her outfit'**
+  String get aiCardCompanionStageNextOutfit;
+
   /// Screen-reader name of the companion's full-screen view, announced when it opens.
   ///
   /// In en, this message translates to:
@@ -5070,6 +5076,12 @@ abstract class AppLocalizations {
   /// **'Requested'**
   String get backfillStatsRequested;
 
+  /// No description provided for @backfillStatsSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get backfillStatsSkipped;
+
   /// No description provided for @backfillStatsThisDevice.
   ///
   /// In en, this message translates to:
@@ -5105,12 +5117,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Missing'**
   String get backfillStatusMissing;
-
-  /// No description provided for @backfillStatsSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped'**
-  String get backfillStatsSkipped;
 
   /// No description provided for @backfillToggleDescription.
   ///

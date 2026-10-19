@@ -1105,6 +1105,10 @@
   "@aiCardCompanionOpenFullScreen": {
     "description": "Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view."
   },
+  "aiCardCompanionStageNextOutfit": "Change her outfit",
+  "@aiCardCompanionStageNextOutfit": {
+    "description": "Label of the button on the companion's full-screen stage that changes her into her next outfit."
+  },
   "aiCardCompanionStageTitle": "Companion, full screen",
   "@aiCardCompanionStageTitle": {
     "description": "Screen-reader name of the companion's full-screen view, announced when it opens."

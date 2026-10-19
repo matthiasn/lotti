@@ -619,6 +619,7 @@
   "aiCapabilityChipThinking": "Réflexion",
   "aiCapabilityChipTranscription": "Transcription",
   "aiCardCompanionOpenFullScreen": "Afficher la compagne en plein écran",
+  "aiCardCompanionStageNextOutfit": "Changer de tenue",
   "aiCardCompanionStageTitle": "Compagne en plein écran",
   "aiCardHistoryToggle": "Historique · {count}",
   "@aiCardHistoryToggle": {

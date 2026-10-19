@@ -64,6 +64,10 @@ sources:
     resource: ../../lib/features/companion/animation/tone_track.dart
     title: ToneTrack, the tones timed by the playhead
     last_modified: 2026-10-19
+  - id: look-controller
+    resource: ../../lib/features/companion/state/companion_look_controller.dart
+    title: companionLookProvider, the session's outfit
+    last_modified: 2026-10-19
   - id: playhead-clock
     resource: ../../lib/features/companion/animation/playhead_clock.dart
     title: PlayheadClock
@@ -265,6 +269,17 @@ Doing well is a raised thumb (`celebrate` once achieved), on the way back a
 clap, at risk a hand to the cheek, off track palms down — it is all right,
 never a scold — and no data a hand at her ear, listening for news. Until
 the health resolves she stands calm and at ready.
+
+**What she wears.** Every host shows her in the session's outfit,
+`companionLookProvider` in `companion/state/`: `CompanionSpeaker` and the
+goal card's silent bust both watch it, and no host passes a look. Its first
+value is drawn from `companionOutfits` (the grandmother's looks) with
+`companionOutfitRandomProvider`, which a test or a capture pins; the
+provider is not auto-disposed, so the draw holds until the app closes. The
+palette control on her full-screen stage calls `next`, which steps through
+the outfits and wraps, and every screen showing her changes with it. It is
+not a setting and does not sync; that is the customization branch's (plan
+2026-10-12, "Revision").
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).

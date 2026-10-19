@@ -1541,6 +1541,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizualizați însoțitoarea pe tot ecranul';
 
   @override
+  String get aiCardCompanionStageNextOutfit => 'Schimbați ținuta';
+
+  @override
   String get aiCardCompanionStageTitle => 'Însoțitoare pe tot ecranul';
 
   @override
@@ -3067,6 +3070,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitat';
 
   @override
+  String get backfillStatsSkipped => 'Omis';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (acest dispozitiv)';
   }
@@ -3085,9 +3091,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Lipsă';
-
-  @override
-  String get backfillStatsSkipped => 'Omis';
 
   @override
   String get backfillToggleDescription =>

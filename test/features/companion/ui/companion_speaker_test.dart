@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -93,7 +95,6 @@ void main() {
           height: 96,
           child: CompanionSpeaker(
             sourceId: sourceId,
-            look: CompanionLook.cat,
             mood: CompanionMood.bright,
             controller: controller,
             holding: holding,
@@ -108,6 +109,9 @@ void main() {
             () => _Settings(TtsSettings(speed: speed)),
           ),
           spokenTrackLoaderProvider.overrideWithValue(loader.call),
+          companionLookProvider.overrideWithBuild(
+            (ref, notifier) => CompanionLook.cat,
+          ),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
@@ -142,6 +146,19 @@ void main() {
     expect(shown.mood, CompanionMood.bright);
     expect(shown.framing, CompanionFraming.full);
     expect(shown.stage, isFalse);
+  });
+
+  testWidgets('wears the session outfit, and changes when it does', (
+    tester,
+  ) async {
+    await pumpSpeaker(tester);
+    ProviderScope.containerOf(
+      tester.element(find.byType(CompanionSpeaker)),
+    ).read(companionLookProvider.notifier).next();
+    await tester.pump();
+
+    // The cat is no outfit of hers, so the next one is the first.
+    expect(view(tester).look, companionOutfits.first);
   });
 
   testWidgets('stands her on the stage when the host asks', (tester) async {
@@ -344,6 +361,9 @@ void main() {
             () => _Settings(const TtsSettings()),
           ),
           spokenTrackLoaderProvider.overrideWithValue(loader.call),
+          companionLookProvider.overrideWithBuild(
+            (ref, notifier) => CompanionLook.cat,
+          ),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       ),

@@ -7,8 +7,10 @@ import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.da
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -66,6 +68,9 @@ void main() {
           ),
           spokenTrackLoaderProvider.overrideWithValue(
             (clip, text) => Completer<MouthTrack>().future,
+          ),
+          companionLookProvider.overrideWithBuild(
+            (ref, notifier) => companionOutfits.first,
           ),
         ],
       ),
@@ -198,6 +203,26 @@ void main() {
           .first,
     );
     expect(region.value, SystemUiOverlayStyle.light);
+  });
+
+  testWidgets('the outfit control changes her into her next outfit, and '
+      'back round to the first', (tester) async {
+    await openStage(tester);
+    CompanionLook worn() =>
+        tester.widget<CompanionView>(find.byType(CompanionView)).look;
+    expect(worn(), companionOutfits.first);
+
+    final outfit = find.byKey(const ValueKey('companionStageOutfit'));
+    expect(find.bySemanticsLabel('Change her outfit'), findsOneWidget);
+    await tester.tap(outfit);
+    await tester.pump();
+    expect(worn(), companionOutfits[1]);
+
+    for (var i = 1; i < companionOutfits.length; i++) {
+      await tester.tap(outfit);
+      await tester.pump();
+    }
+    expect(worn(), companionOutfits.first);
   });
 
   testWidgets('the close control takes her back to the card', (tester) async {

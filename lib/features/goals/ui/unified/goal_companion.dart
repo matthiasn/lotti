@@ -1,8 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,9 +55,10 @@ CompanionCue goalCompanionPose(
 ///
 /// Silent: goals have no read-aloud, so she is a [CompanionView] that
 /// breathes, blinks and glances but never talks. [seed] keeps the cards of
-/// one list from blinking in step. Decorative — the status pill beside her
+/// one list from blinking in step. She wears the session's outfit, as
+/// everywhere else. Decorative — the status pill beside her
 /// carries the verdict in words.
-class GoalCompanionBust extends StatelessWidget {
+class GoalCompanionBust extends ConsumerWidget {
   const GoalCompanionBust({
     required this.pose,
     required this.fill,
@@ -70,7 +73,7 @@ class GoalCompanionBust extends StatelessWidget {
   final int seed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     return ExcludeSemantics(
       child: Container(
@@ -83,6 +86,7 @@ class GoalCompanionBust extends StatelessWidget {
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
         child: CompanionView(
+          look: ref.watch(companionLookProvider),
           framing: CompanionFraming.bust,
           mood: pose.mood,
           // Held, so the verdict never relaxes out of view; she picks no

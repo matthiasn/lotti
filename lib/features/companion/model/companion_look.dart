@@ -258,6 +258,58 @@ class CompanionLook {
     blush: 0.3,
   );
 
+  /// Off to the garden: a sage dress under a straw cardigan, a coral scarf
+  /// and brown shoes.
+  static const grandmaGarden = CompanionLook(
+    id: 'grandma_garden',
+    palette: CompanionPalette(
+      dress: Color(0xFF7A9A6B),
+      dressShade: Color(0xFF5F7D52),
+      dressLight: Color(0xFF97B588),
+      cardigan: Color(0xFFE8D9B0),
+      cardiganShade: Color(0xFFC9B88C),
+      cardiganLight: Color(0xFFF4EAD0),
+      scarf: Color(0xFFE07A5F),
+      shoe: Color(0xFF6B4A2E),
+      shoeShade: Color(0xFF4A321E),
+    ),
+  );
+
+  /// Sunday best: a lavender dress under a dove-grey cardigan, a teal scarf
+  /// and plum shoes.
+  static const grandmaLavender = CompanionLook(
+    id: 'grandma_lavender',
+    palette: CompanionPalette(
+      dress: Color(0xFF8E7CC3),
+      dressShade: Color(0xFF6F5FA3),
+      dressLight: Color(0xFFAA9BD6),
+      cardigan: Color(0xFFD8D5DE),
+      cardiganShade: Color(0xFFB6B2BF),
+      cardiganLight: Color(0xFFECEAF0),
+      scarf: Color(0xFF1F7F8A),
+      shoe: Color(0xFF4A2545),
+      shoeShade: Color(0xFF301830),
+    ),
+  );
+
+  /// Wrapped up for winter: a navy dress under a red cardigan, a cream scarf
+  /// with red dots and black shoes.
+  static const grandmaWinter = CompanionLook(
+    id: 'grandma_winter',
+    palette: CompanionPalette(
+      dress: Color(0xFF27375E),
+      dressShade: Color(0xFF1B2745),
+      dressLight: Color(0xFF3A4D7D),
+      cardigan: Color(0xFFC0392B),
+      cardiganShade: Color(0xFF962D22),
+      cardiganLight: Color(0xFFD9574A),
+      scarf: Color(0xFFF3EBDD),
+      scarfDot: Color(0xFFC0392B),
+      shoe: Color(0xFF2A2A2E),
+      shoeShade: Color(0xFF18181B),
+    ),
+  );
+
   /// A silver tabby: green eyes, a white muzzle and white socks, in a navy
   /// dress under a coral cardigan with a mint scarf.
   static const cat = CompanionLook(
@@ -371,6 +423,9 @@ class CompanionLook {
     grandma,
     grandmaStage,
     grandmaRock,
+    grandmaGarden,
+    grandmaLavender,
+    grandmaWinter,
     cat,
     catRock,
     redPanda,
