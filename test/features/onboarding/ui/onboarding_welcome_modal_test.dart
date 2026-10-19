@@ -401,8 +401,12 @@ void main() {
     var dismissed = false;
     var completed = false;
     final gateway = MockDemoModeGateway();
+    when(gateway.demoMediaBytesAwaitingChoice).thenAnswer((_) async => 0);
     when(
-      () => gateway.enterDemo(locale: any(named: 'locale')),
+      () => gateway.enterDemo(
+        locale: any(named: 'locale'),
+        downloadMedia: any(named: 'downloadMedia'),
+      ),
     ).thenAnswer((_) async {});
 
     await openWelcome(
@@ -421,7 +425,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
 
-    verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+    verify(
+      () => gateway.enterDemo(
+        locale: any(named: 'locale'),
+        downloadMedia: any(named: 'downloadMedia'),
+      ),
+    ).called(1);
     expect(dismissed, isFalse, reason: 'demo entry is not a skip');
     expect(completed, isFalse, reason: 'demo entry is not a completion');
     final state = await repo.funnelState();
@@ -430,6 +439,51 @@ void main() {
       isFalse,
       reason: 'the FTUE auto-show budget must survive a demo detour',
     );
+  });
+
+  testWidgets('first-launch demo entry asks before downloading its photos, '
+      'showing the size (App Store guideline 4.2.3(ii))', (tester) async {
+    final gateway = MockDemoModeGateway();
+    when(
+      gateway.demoMediaBytesAwaitingChoice,
+    ).thenAnswer((_) async => 26544434);
+    when(
+      () => gateway.enterDemo(
+        locale: any(named: 'locale'),
+        downloadMedia: any(named: 'downloadMedia'),
+      ),
+    ).thenAnswer((_) async {});
+
+    await openWelcome(
+      tester,
+      child: host(onDismiss: () {}, demoGateway: gateway),
+    );
+    await tester.ensureVisible(find.text('Explore with sample data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore with sample data'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Download the demo photos?'), findsOneWidget);
+    expect(find.textContaining('a 26.6 MB download'), findsOneWidget);
+    verifyNever(
+      () => gateway.enterDemo(
+        locale: any(named: 'locale'),
+        downloadMedia: any(named: 'downloadMedia'),
+      ),
+    );
+
+    await tester.tap(find.text('Download (26.6 MB)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    verify(
+      () => gateway.enterDemo(
+        locale: any(named: 'locale'),
+        downloadMedia: true,
+      ),
+    ).called(1);
   });
 
   testWidgets(

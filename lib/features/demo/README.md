@@ -20,7 +20,9 @@ copy over in the exit sheet.
   photos and logged sessions, so the per-task knowledge graph opens onto a
   real neighbourhood; due dates are relative to now, so today is today.
 - **Three ways in.** The onboarding welcome ("Explore with sample data"), the
-  tasks empty-state button, and Settings → Onboarding.
+  tasks empty-state button, and Settings → Onboarding. Each one first asks
+  whether to download the demo's photos, showing the download's size; the
+  demo works without them.
 - **Always clearly marked.** A persistent banner sits above the app while the
   demo is active; tapping it (or its Exit button) opens the exit sheet.
 - **Exit without losing work.** Leaving keeps the demo world resumable, and
@@ -38,10 +40,11 @@ lib/features/demo/
 ├── seed/    penguin-logistics fixture + locale tables, DemoSeeder,
 │            seed manifest, tutorial "first mission" content
 ├── media/   immutable R2 catalog + checksummed background hydration,
-│            generated ThumbHash map (make demo_media_thumb_hashes)
+│            the user's download choice, generated ThumbHash and
+│            byte-size maps (make demo_media_thumb_hashes)
 ├── state/   DemoModeGateway — enter/resume/reseed/exit/delete decisions
-├── ui/      banner + scaffold, entry launcher & Try button, exit sheet,
-│            real-AI setup sheet
+├── ui/      banner + scaffold, entry launcher & Try button, photo
+│            download prompt, exit sheet, real-AI setup sheet
 ├── ai/      real-AI availability gate (nudge decision) + the wiring that
 │            points seeded tasks/category at the connected real profile
 └── copy/    exit copy-over: candidate discovery + the copier
@@ -53,10 +56,13 @@ name or list position. Everything the manual quotes stays exactly where it is;
 new work is appended. Demo-only content (the guided "first mission") still
 lives in `DemoTutorialContent`, outside the shared world.
 
-The 91-image media catalog is hosted exclusively on Cloudflare R2. Seeding
-writes image metadata only and never waits for the network. Every demo-world
-startup compares the manifest-owned catalog with tenant-local checksums and
-downloads missing or corrupt files in the background; a slow or failed request
+The 91-image media catalog (about 26.6 MB) is hosted exclusively on
+Cloudflare R2. Seeding writes image metadata only and never waits for the
+network. Nothing downloads until the user chooses to: entering the demo asks
+first, with the size, and the choice is kept in the demo world. In a world
+whose user chose to download, every demo-world startup compares the
+manifest-owned catalog with tenant-local checksums and downloads missing or
+corrupt files in the background; a slow or failed request
 is retried on a later startup. While that reconciliation runs, the persistent
 demo banner shows its exact completed-item count without blocking the
 workspace, and every cover slot already shows the picture's ThumbHash — a

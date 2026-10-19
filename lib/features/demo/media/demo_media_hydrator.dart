@@ -4,7 +4,6 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
-import 'package:path/path.dart' as p;
 
 typedef DemoMediaDownload = Future<Uint8List> Function(Uri uri);
 typedef DemoMediaFileDigest = Future<String> Function(File file);
@@ -242,8 +241,7 @@ class DemoMediaHydrator {
   static Future<File> _defaultRenameFile(File source, String targetPath) =>
       source.rename(targetPath);
 
-  File _target(DemoMediaAsset asset) =>
-      File(p.joinAll([root.path, ...asset.relativePath.split('/')]));
+  File _target(DemoMediaAsset asset) => asset.localFile(root);
 
   void dispose() {
     _disposed = true;

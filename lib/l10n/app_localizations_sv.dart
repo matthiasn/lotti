@@ -5831,6 +5831,27 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vissa demobilder kunde inte hämtas. Ett nytt försök görs vid nästa start.';
 
   @override
+  String demoMediaPromptDownload(String size) {
+    return 'Hämta ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demon innehåller exempelfoton, en nedladdning på $size. Du kan utforska den utan dem – suddiga förhandsvisningar visas i stället.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Fortsätt utan foton';
+
+  @override
+  String get demoMediaPromptTitle => 'Hämta demobilderna?';
+
+  @override
   String get demoOnboardingExplore => 'Utforska med exempeldata';
 
   @override

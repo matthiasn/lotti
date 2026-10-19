@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/generated/demo_media_byte_sizes.g.dart';
 import 'package:lotti/features/demo/media/generated/demo_media_thumb_hashes.g.dart';
 import 'package:lotti/utils/thumbhash.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   test('catalog gives every demo task one immutable R2 cover', () {
@@ -98,5 +102,28 @@ void main() {
 
     expect(known.thumbHash, demoMediaThumbHashes[known.sha256]);
     expect(unknown.thumbHash, isNull);
+    expect(known.byteSize, demoMediaByteSizes[known.sha256]);
+    expect(unknown.byteSize, isNull);
+  });
+
+  test('every catalog object has a positive byte size, so the download '
+      'prompt can never understate the demo', () {
+    expect(
+      demoMediaByteSizes.keys.toSet(),
+      demoMediaAssets.map((asset) => asset.sha256).toSet(),
+    );
+    for (final asset in demoMediaAssets) {
+      expect(asset.byteSize, greaterThan(0), reason: asset.fileName);
+    }
+  });
+
+  test('localFile places the object under its catalog directory', () {
+    final root = Directory('/worlds/demo');
+    final asset = demoMediaAssets.first;
+
+    expect(
+      asset.localFile(root).path,
+      p.joinAll([root.path, ...asset.relativePath.split('/')]),
+    );
   });
 }

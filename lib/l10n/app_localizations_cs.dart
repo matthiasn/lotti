@@ -5892,6 +5892,27 @@ class AppLocalizationsCs extends AppLocalizations {
       'Některé ukázkové obrázky se nepodařilo stáhnout. Při příštím spuštění to zkusíme znovu.';
 
   @override
+  String demoMediaPromptDownload(String size) {
+    return 'Stáhnout ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demo obsahuje ukázkové fotky o velikosti $size. Můžeš ho prozkoumat i bez nich – místo fotek uvidíš rozmazané náhledy.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Pokračovat bez fotek';
+
+  @override
+  String get demoMediaPromptTitle => 'Stáhnout ukázkové fotky?';
+
+  @override
   String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';
 
   @override

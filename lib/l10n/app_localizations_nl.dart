@@ -5846,6 +5846,27 @@ class AppLocalizationsNl extends AppLocalizations {
       'Sommige demofoto\'s konden niet worden gedownload. Bij de volgende start wordt het opnieuw geprobeerd.';
 
   @override
+  String demoMediaPromptDownload(String size) {
+    return 'Downloaden ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'De demo bevat voorbeeldfoto\'s, een download van $size. Je kunt hem ook zonder verkennen: wazige voorbeelden nemen dan de plaats van de foto\'s in.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Doorgaan zonder foto\'s';
+
+  @override
+  String get demoMediaPromptTitle => 'Demofoto\'s downloaden?';
+
+  @override
   String get demoOnboardingExplore => 'Verkennen met voorbeeldgegevens';
 
   @override

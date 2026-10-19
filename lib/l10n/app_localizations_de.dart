@@ -5866,6 +5866,27 @@ class AppLocalizationsDe extends AppLocalizations {
       'Einige Demo-Bilder konnten nicht heruntergeladen werden. Beim nächsten Start wird es erneut versucht.';
 
   @override
+  String demoMediaPromptDownload(String size) {
+    return 'Herunterladen ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Die Demo enthält Beispielfotos – ein Download von $size. Du kannst sie auch ohne erkunden: Unscharfe Vorschauen stehen dann für die Fotos.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Ohne Fotos fortfahren';
+
+  @override
+  String get demoMediaPromptTitle => 'Demo-Fotos herunterladen?';
+
+  @override
   String get demoOnboardingExplore => 'Mit Beispieldaten erkunden';
 
   @override

@@ -116,10 +116,11 @@ unawaited_check:
 changelog_check:
 	$(DART_CMD) run tool/changelog/validate.dart
 
-# Backfills the ThumbHash map for the demo-media catalog
-# (lib/features/demo/media/generated/demo_media_thumb_hashes.g.dart): one
-# blurred stand-in per R2 object, computed from the object's bytes. Idempotent —
-# an object already in the map is skipped; FORCE=1 recomputes every object.
+# Backfills the ThumbHash and byte-size maps for the demo-media catalog
+# (lib/features/demo/media/generated/demo_media_thumb_hashes.g.dart and
+# demo_media_byte_sizes.g.dart): one blurred stand-in and one size per R2
+# object, computed from the object's bytes. Idempotent — an object already in
+# both maps is skipped; FORCE=1 recomputes every object.
 .PHONY: demo_media_thumb_hashes
 demo_media_thumb_hashes:
 	$(DART_CMD) run tool/demo_media/thumb_hashes.dart $(if $(FORCE),--force,)

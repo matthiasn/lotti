@@ -139,8 +139,8 @@ void main() {
   });
 
   group('runThumbHashBackfill', () {
-    test('hashes every object the map does not cover and leaves covered '
-        'ones alone', () async {
+    test('hashes and sizes every object the maps do not cover and leaves '
+        'covered ones alone', () async {
       final downloads = _ScriptedDownloads({
         'red.webp': [redBytes],
         'green.webp': [greenBytes],
@@ -150,6 +150,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red, blue, green],
         existing: {blue.sha256: blueHash},
+        existingSizes: {blue.sha256: 123},
         download: downloads.call,
         delay: noDelay,
         log: log,
@@ -164,13 +165,20 @@ void main() {
         blue.sha256: blueHash,
         green.sha256: thumbHashForImageBytes(greenBytes).toBase64(),
       });
+      expect(report.sizes, {
+        red.sha256: redBytes.length,
+        blue.sha256: 123,
+        green.sha256: greenBytes.length,
+      });
       expect(downloads.calls, ['red.webp', 'green.webp']);
       expect(delays, isEmpty);
       expect(report.summary, 'processed 2, skipped 1, pruned 0, failed 0');
-      expect(log.toString(), contains('- blue.webp: already hashed'));
+      expect(log.toString(), contains('- blue.webp: already hashed and sized'));
       expect(
         log.toString(),
-        contains('+ red.webp: ${report.hashes[red.sha256]}'),
+        contains(
+          '+ red.webp: ${report.hashes[red.sha256]}, ${redBytes.length} bytes',
+        ),
       );
     });
 
@@ -180,6 +188,7 @@ void main() {
         final first = await runThumbHashBackfill(
           catalog: [red, blue],
           existing: const {},
+          existingSizes: const {},
           download: _ScriptedDownloads({
             'red.webp': [redBytes],
             'blue.webp': [blueBytes],
@@ -192,6 +201,7 @@ void main() {
         final second = await runThumbHashBackfill(
           catalog: [red, blue],
           existing: first.hashes,
+          existingSizes: first.sizes,
           download: downloads.call,
           delay: noDelay,
           log: log,
@@ -201,6 +211,11 @@ void main() {
         expect(second.processed, isEmpty);
         expect(second.skipped, ['red.webp', 'blue.webp']);
         expect(second.hashes, first.hashes);
+        expect(second.sizes, first.sizes);
+        expect(
+          renderByteSizeMap(second.sizes),
+          renderByteSizeMap(first.sizes),
+        );
         expect(
           renderThumbHashMap(second.hashes),
           renderThumbHashMap(first.hashes),
@@ -216,6 +231,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red],
         existing: {red.sha256: 'stale'},
+        existingSizes: {red.sha256: 1},
         download: downloads.call,
         delay: noDelay,
         log: log,
@@ -226,6 +242,27 @@ void main() {
       expect(report.processed, ['red.webp']);
       expect(report.skipped, isEmpty);
       expect(report.hashes[red.sha256], isNot('stale'));
+      expect(report.sizes[red.sha256], redBytes.length);
+    });
+
+    test('downloads an object that has a hash but no size yet', () async {
+      final downloads = _ScriptedDownloads({
+        'red.webp': [redBytes],
+      });
+
+      final report = await runThumbHashBackfill(
+        catalog: [red],
+        existing: {red.sha256: thumbHashForImageBytes(redBytes).toBase64()},
+        existingSizes: const {},
+        download: downloads.call,
+        delay: noDelay,
+        log: log,
+      );
+
+      expect(downloads.calls, ['red.webp']);
+      expect(report.processed, ['red.webp']);
+      expect(report.skipped, isEmpty);
+      expect(report.sizes, {red.sha256: redBytes.length});
     });
 
     test('one failing object does not abort the batch, and keeps the hash it '
@@ -239,6 +276,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red, blue, green],
         existing: {blue.sha256: 'kept'},
+        existingSizes: {blue.sha256: 7},
         download: downloads.call,
         delay: noDelay,
         log: log,
@@ -257,6 +295,7 @@ void main() {
       );
       expect(report.hasFailures, isTrue);
       expect(report.hashes[blue.sha256], 'kept');
+      expect(report.sizes[blue.sha256], 7);
       expect(report.hashes.keys, containsAll([red.sha256, green.sha256]));
       // A missing object is a dead end: no retry, no wait.
       expect(downloads.calls, ['red.webp', 'blue.webp', 'green.webp']);
@@ -273,6 +312,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red],
         existing: const {},
+        existingSizes: const {},
         download: downloads.call,
         delay: noDelay,
         log: log,
@@ -299,6 +339,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red],
         existing: const {},
+        existingSizes: const {},
         download: downloads.call,
         delay: noDelay,
         log: log,
@@ -319,12 +360,14 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red],
         existing: const {},
+        existingSizes: const {},
         download: downloads.call,
         delay: noDelay,
         log: log,
       );
 
       expect(report.failures['red.webp'], isA<StateError>());
+      expect(report.sizes, isEmpty);
       expect(
         report.failures['red.webp'].toString(),
         contains('catalog says ${red.sha256}'),
@@ -339,6 +382,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [asset],
         existing: const {},
+        existingSizes: const {},
         download: _ScriptedDownloads({
           'junk.webp': [junk],
         }).call,
@@ -354,6 +398,7 @@ void main() {
       final report = await runThumbHashBackfill(
         catalog: [red],
         existing: {red.sha256: 'current', 'deadbeef': 'stale'},
+        existingSizes: {red.sha256: 5, 'deadbeef': 9},
         download: _ScriptedDownloads(const {}).call,
         delay: noDelay,
         log: log,
@@ -361,9 +406,28 @@ void main() {
 
       expect(report.pruned, ['deadbeef']);
       expect(report.hashes, {red.sha256: 'current'});
+      expect(report.sizes, {red.sha256: 5});
       expect(log.toString(), contains('x deadbeef: no longer in the catalog'));
       expect(report.summary, 'processed 0, skipped 1, pruned 1, failed 0');
     });
+
+    test(
+      'prunes a size whose digest only the size map still carries',
+      () async {
+        final report = await runThumbHashBackfill(
+          catalog: [red],
+          existing: {red.sha256: 'current'},
+          existingSizes: {red.sha256: 5, 'cafe': 3},
+          download: _ScriptedDownloads(const {}).call,
+          delay: noDelay,
+          log: log,
+        );
+
+        expect(report.pruned, ['cafe']);
+        expect(report.sizes, {red.sha256: 5});
+        expect(report.hashes, {red.sha256: 'current'});
+      },
+    );
   });
 
   group('downloadWithClient', () {
@@ -487,6 +551,34 @@ void main() {
           "      'middle',\n"
           "  'ffff':\n"
           "      'last',\n"
+          '};\n',
+        ),
+      );
+    });
+  });
+
+  group('renderByteSizeMap', () {
+    test('renders an empty map on one line', () {
+      final source = renderByteSizeMap(const {});
+
+      expect(source, startsWith('// GENERATED CODE - DO NOT MODIFY BY HAND'));
+      expect(
+        source,
+        contains(
+          'const Map<String, int> demoMediaByteSizes = <String, int>{};',
+        ),
+      );
+    });
+
+    test('renders entries sorted by digest, one line each', () {
+      final source = renderByteSizeMap({'bb': 2, 'aa': 1});
+
+      expect(
+        source,
+        endsWith(
+          'const Map<String, int> demoMediaByteSizes = <String, int>{\n'
+          "  'aa': 1,\n"
+          "  'bb': 2,\n"
           '};\n',
         ),
       );

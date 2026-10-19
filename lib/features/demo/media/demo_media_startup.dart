@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_consent.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -24,7 +25,10 @@ typedef DemoMediaHydrationLaunch = void Function(Future<void> hydration);
 ///
 /// The background work first runs [backfillDemoThumbHashes] over the same
 /// images, so a world seeded before the stand-ins existed gets them without
-/// a reseed, then hydrates.
+/// a reseed, then hydrates — but only when the user chose to download this
+/// world's photos ([DemoMediaConsent]). Without that choice the backfill
+/// still runs (it is local), and nothing is downloaded or registered: the
+/// stand-ins take the photos' place.
 Future<void> registerDemoMediaHydration({
   required GetIt serviceLocator,
   required ProfileContext profile,
@@ -81,6 +85,18 @@ Future<void> registerDemoMediaHydration({
   ];
   if (requiredAssets.isEmpty) return;
 
+  final downloadChosen = await DemoMediaConsent.isGranted(profile.root);
+  final backfill = backfillDemoThumbHashes(
+    journalDb: serviceLocator<JournalDb>(),
+    updateNotifications: serviceLocator<UpdateNotifications>(),
+    logger: logger,
+    assets: requiredAssets,
+  );
+  if (!downloadChosen) {
+    (launch ?? unawaited)(backfill.then((_) {}));
+    return;
+  }
+
   void onError(
     DemoMediaAsset asset,
     Object error,
@@ -113,12 +129,7 @@ Future<void> registerDemoMediaHydration({
     hydrator,
     dispose: (service) => service.dispose(),
   );
-  final hydration = backfillDemoThumbHashes(
-    journalDb: serviceLocator<JournalDb>(),
-    updateNotifications: serviceLocator<UpdateNotifications>(),
-    logger: logger,
-    assets: requiredAssets,
-  ).then((_) => hydrator.hydrate()).then((_) {});
+  final hydration = backfill.then((_) => hydrator.hydrate()).then((_) {});
   (launch ?? unawaited)(hydration);
 }
 

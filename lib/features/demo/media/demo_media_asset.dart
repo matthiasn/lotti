@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:lotti/features/demo/media/generated/demo_media_byte_sizes.g.dart';
 import 'package:lotti/features/demo/media/generated/demo_media_thumb_hashes.g.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as p;
 
 /// Public Cloudflare R2 origin used by the immutable demo-media catalog.
 const demoMediaPublicBaseUrl =
@@ -69,11 +73,20 @@ class DemoMediaAsset {
   /// hash by itself; `make demo_media_thumb_hashes` fills the gap.
   String? get thumbHash => demoMediaThumbHashes[sha256];
 
+  /// Size of the object in bytes — what downloading it costs — or null when
+  /// the backfill has not seen this [sha256] yet. Filled by the same
+  /// `make demo_media_thumb_hashes` run as [thumbHash].
+  int? get byteSize => demoMediaByteSizes[sha256];
+
   String get objectKey => '$demoMediaR2Prefix/$fileName';
 
   Uri get uri => Uri.parse('$demoMediaPublicBaseUrl/$objectKey');
 
   String get relativePath => '$demoMediaDirectory/$fileName';
+
+  /// Where this object is materialized inside the world rooted at [root].
+  File localFile(Directory root) =>
+      File(p.joinAll([root.path, ...relativePath.split('/')]));
 
   /// `ImageData.imageDirectory` notation, including leading/trailing slash.
   String get imageDirectory => '/$demoMediaDirectory/';

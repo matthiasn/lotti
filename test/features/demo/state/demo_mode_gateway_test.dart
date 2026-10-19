@@ -11,6 +11,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_consent.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -1111,6 +1113,186 @@ void main() {
       final container = ProviderContainer(overrides: getItServiceOverrides());
       addTearDown(container.dispose);
       expect(await container.read(demoJournalEmptyProvider.future), isFalse);
+    });
+  });
+
+  group('demo photo download choice', () {
+    final catalogBytes = totalDemoMediaBytes(demoMediaAssets);
+
+    Future<Profile> enterFresh(
+      DemoModeGateway gateway, {
+      bool downloadMedia = false,
+    }) async {
+      await gateway.enterDemo(
+        locale: const Locale('en'),
+        downloadMedia: downloadMedia,
+      );
+      return (await gateway.findDemoProfile())!;
+    }
+
+    Future<void> markStale(Profile profile) => DemoSeedManifest(
+      seedVersion: demoSeedVersion - 1,
+      seededAt: DateTime.utc(2026),
+      localeTag: 'en',
+      seededJournalIds: const [],
+      seededDefinitionIds: const [],
+      seededAiConfigIds: const [],
+    ).write(registry.rootFor(profile));
+
+    test(
+      'with no demo world yet, the whole catalog awaits the choice',
+      () async {
+        expect(catalogBytes, greaterThan(0));
+        expect(
+          await buildGateway().demoMediaBytesAwaitingChoice(),
+          catalogBytes,
+        );
+      },
+    );
+
+    test('choosing to download on first entry records it in the new world, '
+        'before the switch', () async {
+      final gateway = buildGateway();
+      var grantedAtSwitch = false;
+      final recording = DemoModeGateway(
+        registry: registry,
+        world: world,
+        activate: (id) async {
+          final profile = (await gateway.findDemoProfile())!;
+          grantedAtSwitch = await DemoMediaConsent.isGranted(
+            registry.rootFor(profile),
+          );
+          activated.add(id);
+        },
+        profileContext: () => activeContext,
+        seedRunner: (world, locale) async {},
+      );
+
+      await recording.enterDemo(
+        locale: const Locale('en'),
+        downloadMedia: true,
+      );
+
+      expect(grantedAtSwitch, isTrue);
+      expect(await gateway.demoMediaBytesAwaitingChoice(), 0);
+    });
+
+    test('continuing without photos records nothing, so the next entry asks '
+        'again', () async {
+      final gateway = buildGateway();
+      final profile = await enterFresh(gateway);
+
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(profile)),
+        isFalse,
+      );
+      expect(await gateway.demoMediaBytesAwaitingChoice(), catalogBytes);
+    });
+
+    test('a resumed world records the choice in its own root', () async {
+      final gateway = buildGateway();
+      final first = await enterFresh(gateway);
+      activated.clear();
+
+      await gateway.enterDemo(
+        locale: const Locale('en'),
+        downloadMedia: true,
+      );
+
+      expect(activated, [first.id]);
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(first)),
+        isTrue,
+      );
+    });
+
+    test('entering without the choice never revokes an earlier one', () async {
+      final gateway = buildGateway();
+      final first = await enterFresh(gateway, downloadMedia: true);
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(first)),
+        isTrue,
+      );
+    });
+
+    test('a current world is priced at only the photos not on disk', () async {
+      final gateway = buildGateway();
+      final profile = await enterFresh(gateway);
+      final present = demoMediaAssets.first;
+      present.localFile(registry.rootFor(profile))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([1]);
+
+      expect(
+        await gateway.demoMediaBytesAwaitingChoice(),
+        catalogBytes - present.byteSize!,
+      );
+    });
+
+    test('a stale world is priced at the whole catalog, because entering may '
+        'reseed it', () async {
+      final gateway = buildGateway();
+      final profile = await enterFresh(gateway);
+      demoMediaAssets.first.localFile(registry.rootFor(profile))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([1]);
+      await markStale(profile);
+
+      expect(await gateway.demoMediaBytesAwaitingChoice(), catalogBytes);
+    });
+
+    test('nothing awaits a choice while the demo is already active', () async {
+      final gateway = buildGateway();
+      final profile = await enterFresh(gateway);
+      activeContext = guestContext(profile);
+
+      expect(await gateway.demoMediaBytesAwaitingChoice(), 0);
+    });
+
+    test('a stale world wiped on entry carries the earlier choice into the '
+        'reseeded one', () async {
+      final gateway = buildGateway();
+      final first = await enterFresh(gateway, downloadMedia: true);
+      await markStale(first);
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      final second = (await gateway.findDemoProfile())!;
+      expect(second.id, isNot(first.id));
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(second)),
+        isTrue,
+      );
+    });
+
+    test('reset keeps the choice the old world carried', () async {
+      final gateway = buildGateway();
+      final first = await enterFresh(gateway, downloadMedia: true);
+
+      await gateway.resetDemo(locale: const Locale('en'));
+
+      final second = (await gateway.findDemoProfile())!;
+      expect(second.id, isNot(first.id));
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(second)),
+        isTrue,
+      );
+    });
+
+    test('reset of a world without the choice stays without it', () async {
+      final gateway = buildGateway();
+      await enterFresh(gateway);
+
+      await gateway.resetDemo(locale: const Locale('en'));
+
+      final second = (await gateway.findDemoProfile())!;
+      expect(
+        await DemoMediaConsent.isGranted(registry.rootFor(second)),
+        isFalse,
+      );
     });
   });
 }

@@ -9737,6 +9737,36 @@ abstract class AppLocalizations {
   /// **'Some demo images couldn\'t be downloaded. They\'ll retry next time.'**
   String get demoMediaDownloadRetry;
 
+  /// No description provided for @demoMediaPromptDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download ({size})'**
+  String demoMediaPromptDownload(String size);
+
+  /// No description provided for @demoMediaPromptMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo comes with sample photos, a {size} download. You can explore without them — blurred previews stand in for the photos.'**
+  String demoMediaPromptMessage(String size);
+
+  /// A download size in megabytes, e.g. 26.6 MB.
+  ///
+  /// In en, this message translates to:
+  /// **'{megabytes} MB'**
+  String demoMediaPromptSize(String megabytes);
+
+  /// No description provided for @demoMediaPromptSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue without photos'**
+  String get demoMediaPromptSkip;
+
+  /// No description provided for @demoMediaPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the demo photos?'**
+  String get demoMediaPromptTitle;
+
   /// No description provided for @demoOnboardingExplore.
   ///
   /// In en, this message translates to:

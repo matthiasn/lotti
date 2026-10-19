@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/ui/demo_media_download_prompt.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -14,18 +15,32 @@ import 'package:material_ui/material_ui.dart';
 
 /// Enters the demo world from a UI entry point.
 ///
-/// Pushes a blocking full-screen progress route on the ROOT navigator (the
-/// seed run can take a few seconds on first entry), then hands over to the
-/// gateway. On success the profile switch replaces the entire widget tree —
-/// progress route included — so nothing is popped; on failure the route is
-/// removed and the error is logged (the entry points must not crash the
-/// host surface).
+/// When entering would leave demo photos to download that the user has not
+/// chosen yet, it first asks — showing the download's size — whether to
+/// download them or continue without; dismissing the prompt enters nothing.
+/// Every entry point comes through here, so none can start the download
+/// unasked.
+///
+/// Then pushes a blocking full-screen progress route on the ROOT navigator
+/// (the seed run can take a few seconds on first entry) and hands over to
+/// the gateway. On success the profile switch replaces the entire widget
+/// tree — progress route included — so nothing is popped; on failure the
+/// route is removed and the error is logged (the entry points must not
+/// crash the host surface).
 Future<void> launchDemoEnter(
   BuildContext context, {
   DemoModeGateway? gateway,
-}) => _launch(context, gateway, (g, locale, showProgress) {
+}) => _launch(context, gateway, (g, locale, showProgress) async {
+  final bytes = await g.demoMediaBytesAwaitingChoice();
+  var downloadMedia = false;
+  if (bytes > 0) {
+    if (!context.mounted) return;
+    final choice = await showDemoMediaDownloadPrompt(context, bytes: bytes);
+    if (choice == null) return;
+    downloadMedia = choice == DemoMediaChoice.download;
+  }
   showProgress();
-  return g.enterDemo(locale: locale);
+  await g.enterDemo(locale: locale, downloadMedia: downloadMedia);
 });
 
 /// Reseeds the demo world the app is ALREADY in when its seed content has
@@ -55,7 +70,8 @@ Future<void> launchStaleDemoRefresh(
 );
 
 /// Wipes, reseeds and re-enters the demo world. Same progress/failure
-/// contract as [launchDemoEnter]. Because the flow ends INSIDE the freshly
+/// contract as [launchDemoEnter], without the photo prompt: the reseeded
+/// world keeps the choice the old one carried. Because the flow ends INSIDE the freshly
 /// seeded demo world (a generation switch), no completion toast is possible
 /// or needed — the reseeded world itself is the confirmation.
 Future<void> launchDemoReset(

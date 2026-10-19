@@ -3512,6 +3512,33 @@
   },
   "demoMediaDownloadProgress": "Downloading demo images",
   "demoMediaDownloadRetry": "Some demo images couldn't be downloaded. They'll retry next time.",
+  "demoMediaPromptDownload": "Download ({size})",
+  "@demoMediaPromptDownload": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "demoMediaPromptMessage": "The demo comes with sample photos, a {size} download. You can explore without them — blurred previews stand in for the photos.",
+  "@demoMediaPromptMessage": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "demoMediaPromptSize": "{megabytes} MB",
+  "@demoMediaPromptSize": {
+    "description": "A download size in megabytes, e.g. 26.6 MB.",
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      }
+    }
+  },
+  "demoMediaPromptSkip": "Continue without photos",
+  "demoMediaPromptTitle": "Download the demo photos?",
   "demoOnboardingExplore": "Explore with sample data",
   "demoSettingsDeleteConfirm": "Delete the demo world and everything in it?",
   "demoSettingsDeleteTitle": "Delete demo data",

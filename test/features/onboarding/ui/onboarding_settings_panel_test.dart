@@ -400,8 +400,12 @@ void main() {
         'tapping it enters the demo', (tester) async {
       when(() => gateway.isDemoActive).thenReturn(false);
       when(gateway.demoProfileExists).thenAnswer((_) async => false);
+      when(gateway.demoMediaBytesAwaitingChoice).thenAnswer((_) async => 0);
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
       ).thenAnswer((_) async {});
 
       await pumpWithGateway(tester);
@@ -416,7 +420,12 @@ void main() {
       await tester.tap(find.text('Try the demo workspace'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
+      ).called(1);
     });
 
     testWidgets('real world with an existing demo: Return + Reset + Delete', (

@@ -5884,6 +5884,27 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível transferir algumas imagens de demonstração. Será feita nova tentativa no próximo arranque.';
 
   @override
+  String demoMediaPromptDownload(String size) {
+    return 'Transferir ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'A demo inclui fotografias de exemplo, uma transferência de $size. Podes explorá-la sem elas: pré-visualizações desfocadas ocupam o seu lugar.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Continuar sem fotografias';
+
+  @override
+  String get demoMediaPromptTitle => 'Transferir as fotografias da demo?';
+
+  @override
   String get demoOnboardingExplore => 'Explorar com dados de exemplo';
 
   @override

@@ -39,7 +39,15 @@ sources:
   - id: media-hydrator
     resource: ../../lib/features/demo/media/demo_media_hydrator.dart
     title: Best-effort tenant-local media hydration
-    last_modified: 2026-08-05
+    last_modified: 2026-10-19
+  - id: media-consent
+    resource: ../../lib/features/demo/media/demo_media_consent.dart
+    title: The user's choice to download the demo photos
+    last_modified: 2026-10-19
+  - id: media-prompt
+    resource: ../../lib/features/demo/ui/demo_media_download_prompt.dart
+    title: Photo download prompt with the download size
+    last_modified: 2026-10-19
   - id: thumbhash
     resource: ../../lib/utils/thumbhash.dart
     title: Vendored ThumbHash encoder and decoder
@@ -170,7 +178,7 @@ and failures, because a page of unbroken green teaches nothing about the states.
 Everything arrives with `vectorClock: null` — a guest world has no sync
 stack to stamp one.
 
-# R2 media is best-effort, never part of seeding
+# R2 media is opt-in and best-effort, never part of seeding
 
 The catalog in
 [`demo_media_asset.dart`](../../lib/features/demo/media/demo_media_asset.dart)
@@ -178,12 +186,59 @@ contains immutable versioned object keys, SHA-256 digests, owning task/category
 ids, relative capture times, cover roles, and localized captions. The source
 files live only in Cloudflare R2; the app bundle contains no demo artwork.
 
+## Nothing downloads until the user chooses to
+
+The photos are an additional download of roughly 26.6 MB, and App Store
+guideline 4.2.3(ii) requires the app to disclose its size and let the user
+choose before fetching it. So every user-initiated entry — all three entry
+points go through `launchDemoEnter` — first asks
+`DemoModeGateway.demoMediaBytesAwaitingChoice`. When that is above zero,
+[`showDemoMediaDownloadPrompt`](../../lib/features/demo/ui/demo_media_download_prompt.dart)
+shows the size (rounded *up* to a tenth of a megabyte) and offers **Download**
+or **Continue without photos**; dismissing it enters nothing. The answer
+reaches `enterDemo(downloadMedia:)`, which records a yes as
+[`DemoMediaConsent`](../../lib/features/demo/media/demo_media_consent.dart) —
+`demo_media_consent.json` in the world's own root — before the switch, so the
+new generation's startup hydration sees it.
+
+- **Sizes ship with the app.** Each object's byte count lives in the generated
+  `media/generated/demo_media_byte_sizes.g.dart`, filled by the same
+  `make demo_media_thumb_hashes` run as the ThumbHashes; `demo_media_asset_test`
+  fails if any catalog object lacks one.
+- **The size is never understated.** No demo world, or one that is not up to
+  date (entering may wipe and reseed it), is priced at the whole catalog. A
+  current world is priced at only the files not on disk yet.
+- **Nothing to ask is no prompt.** Zero comes back while the demo is already
+  active, once the world carries the record, or when every file is present.
+- **A no records nothing**, so the next entry from the real world asks again.
+  A yes is never revoked by a later entry, and carries over into the
+  reseeded world on `resetDemo`, on an automatic stale reseed, and on a stale
+  wipe in `enterDemo`. Reset itself never asks.
+- **Worlds from before the record** have none, so they download nothing more
+  until the user is asked; files already on disk stay.
+
+```mermaid
+flowchart LR
+    T[Entry tap] --> B{bytes awaiting choice > 0?}
+    B -->|No| E[enterDemo]
+    B -->|Yes| P[Prompt with size]
+    P -->|Download| G[enterDemo downloadMedia: true<br/>record consent in world root]
+    P -->|Continue without| E
+    P -->|Dismissed| X[Nothing entered]
+    G --> S[Switch into the world]
+    E --> S
+```
+
+## Hydration
+
 After each profile bootstrap, `registerDemoMediaHydration` first proves the
 active guest is this product demo by reading its seed manifest. It filters the
 current catalog to image ids that manifest actually owns, then intersects that
 set with non-deleted database rows — essential when an older demo is resumed
-to protect user work, and so a permanently purged seeded image stays purged —
-and launches a bounded-concurrency
+to protect user work, and so a permanently purged seeded image stays purged.
+Without a consent record it stops there: the local ThumbHash backfill below
+still runs, but no hydrator is registered and nothing is fetched. Otherwise it
+launches a bounded-concurrency
 `DemoMediaHydrator` without awaiting or registering it as switch-blocking
 startup work. Its getIt disposal callback cancels in-flight requests when the
 user leaves the demo. Existing files are accepted only when their digest
@@ -276,7 +331,9 @@ flowchart LR
     B[Profile bootstrap] --> M{Guest with demo manifest?}
     M -->|No| S[Skip]
     M -->|Yes| C[Filter catalog to seeded image ids]
-    C --> H[Launch background hydrator]
+    C --> U{User chose to download?}
+    U -->|No| TB[ThumbHash backfill only]
+    U -->|Yes| H[Launch background hydrator]
     H --> V{Local SHA-256 matches?}
     V -->|Yes| K[Keep file]
     V -->|No| D[Download R2 object to .part]
@@ -377,6 +434,10 @@ Three ways in, one strip while inside:
   (zero rows, not filtered-empty) and not already in the demo.
 - Settings → Onboarding panel: Try/Resume, and while active: real-AI row,
   Exit (opens the exit sheet), Reset, Delete.
+
+All three go through `launchDemoEnter`, which asks about the photos before
+entering (see
+[Nothing downloads until the user chooses to](#nothing-downloads-until-the-user-chooses-to)).
 
 `DemoModeScaffold` wraps the app shell in `beamer_app.dart` and mounts the
 persistent banner while a demo world is active — structural height (a
