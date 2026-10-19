@@ -415,6 +415,40 @@ void main() {
     });
   });
 
+  group('SyncMessage.companionCustomization', () {
+    test('serializes to JSON, carrying her customization as it is', () {
+      const message = SyncMessage.companionCustomization(
+        customization: '{"hairStyle":"afro"}',
+        updatedAt: 1234567890,
+        status: SyncEntryStatus.update,
+      );
+
+      final json = message.toJson();
+
+      expect(json['runtimeType'], 'companionCustomization');
+      expect(json['customization'], '{"hairStyle":"afro"}');
+      expect(json['updatedAt'], 1234567890);
+      expect(json['status'], 'update');
+    });
+
+    test('round-trip preserves all fields', () {
+      const original =
+          SyncMessage.companionCustomization(
+                customization: '{"skinTone":"tone4"}',
+                updatedAt: 9876543210,
+                status: SyncEntryStatus.initial,
+              )
+              as SyncCompanionCustomization;
+
+      final decoded =
+          SyncMessage.fromJson(original.toJson()) as SyncCompanionCustomization;
+
+      expect(decoded.customization, original.customization);
+      expect(decoded.updatedAt, original.updatedAt);
+      expect(decoded.status, original.status);
+    });
+  });
+
   group('SyncMessage.syncNodeProfile', () {
     final updatedAt = DateTime.utc(2026, 3, 15, 12, 30);
 

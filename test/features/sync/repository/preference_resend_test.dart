@@ -4,6 +4,7 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/repository/preference_resend.dart';
+import 'package:lotti/utils/companion_settings_keys.dart';
 import 'package:lotti/utils/daily_os_preferences_keys.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 
@@ -37,6 +38,14 @@ void main() {
       dailyOsUserNameUpdatedAtSettingsKey,
       '1800',
     );
+    await settingsDb.saveSettingsItem(
+      companionCustomizationKey,
+      '{"hairStyle":"bob"}',
+    );
+    await settingsDb.saveSettingsItem(
+      companionCustomizationUpdatedAtKey,
+      '1850',
+    );
     await journalDb.applyConfigFlagVersion(
       const ConfigFlag(name: 'private', description: 'Private?', status: true),
       updatedAt: 1900,
@@ -53,6 +62,11 @@ void main() {
       const SyncMessage.dailyOsUserName(
         userName: 'Pingu',
         updatedAt: 1800,
+        status: SyncEntryStatus.update,
+      ),
+      const SyncMessage.companionCustomization(
+        customization: '{"hairStyle":"bob"}',
+        updatedAt: 1850,
         status: SyncEntryStatus.update,
       ),
       const SyncMessage.configFlag(
@@ -81,6 +95,11 @@ void main() {
     await settingsDb.saveSettingsItem(
       dailyOsUserNameUpdatedAtSettingsKey,
       'not a number',
+    );
+    // Her customization with no stamp at all.
+    await settingsDb.saveSettingsItem(
+      companionCustomizationKey,
+      '{"hairStyle":"bob"}',
     );
 
     expect(await messages(), isEmpty);

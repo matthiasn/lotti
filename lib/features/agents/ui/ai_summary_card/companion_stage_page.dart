@@ -4,6 +4,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -43,8 +44,9 @@ Future<void> openCompanionStage(
 }
 
 /// The companion full screen: her `full` framing on the dark stage, which
-/// grounds her feet with its floor shadow, a close control at the top and
-/// the summary's read-aloud control at her feet.
+/// grounds her feet with its floor shadow, a control at the top that
+/// changes her outfit for the session ([companionOutfitProvider]) and one that
+/// closes the page, and the summary's read-aloud control at her feet.
 ///
 /// The stage is dark whatever the app theme, like the tutorial videos she
 /// stands on it in, so the page wears the dark design-system theme for its
@@ -115,15 +117,27 @@ class CompanionStagePage extends ConsumerWidget {
                         padding: EdgeInsets.all(tokens.spacing.cardPadding),
                         child: Column(
                           children: [
-                            Align(
-                              alignment: AlignmentDirectional.centerEnd,
-                              child: DsAiDiscButton(
-                                icon: LottiIcons.close,
-                                label: MaterialLocalizations.of(
-                                  context,
-                                ).closeButtonTooltip,
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                DsAiDiscButton(
+                                  key: const ValueKey('companionStageOutfit'),
+                                  icon: LottiIcons.palette,
+                                  label: context
+                                      .messages
+                                      .aiCardCompanionStageNextOutfit,
+                                  onPressed: ref
+                                      .read(companionOutfitProvider.notifier)
+                                      .next,
+                                ),
+                                DsAiDiscButton(
+                                  icon: LottiIcons.close,
+                                  label: MaterialLocalizations.of(
+                                    context,
+                                  ).closeButtonTooltip,
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ],
                             ),
                             const Spacer(),
                             if (canReadAloud)

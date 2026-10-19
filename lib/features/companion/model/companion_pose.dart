@@ -61,7 +61,9 @@ class CompanionPose {
     this.squint = 0,
     this.browRaise = 0,
     this.browTilt = 0,
+    this.browSkew = 0,
     this.smile = 0.3,
+    this.smileSkew = 0,
     this.mouth = const MouthShape(),
     this.handInFrontOfFace = false,
   });
@@ -99,9 +101,18 @@ class CompanionPose {
   final double squint;
   final double browRaise;
 
-  /// Positive draws the inner ends of the brows up: worry.
+  /// Positive draws the inner ends of the brows up: worry; negative draws
+  /// them down: sternness.
   final double browTilt;
+
+  /// Raises the right brow (screen right) and lowers the left by as much.
+  final double browSkew;
+
+  /// About -1..1: below zero turns the mouth's corners down.
   final double smile;
+
+  /// Lifts the right corner of the mouth and lowers the left: a smirk.
+  final double smileSkew;
   final MouthShape mouth;
 
   /// The right hand reaches the face, so it draws over the head.

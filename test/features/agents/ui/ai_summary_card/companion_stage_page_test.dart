@@ -9,6 +9,7 @@ import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../companion/companion_overrides.dart';
 import '../../../tts/test_utils.dart';
 
 /// She ticks for as long as she is mounted: pump frames, never settle.
@@ -67,6 +69,7 @@ void main() {
           spokenTrackLoaderProvider.overrideWithValue(
             (clip, text) => Completer<MouthTrack>().future,
           ),
+          ...companionLookOverrides(outfit: companionOutfits.first),
         ],
       ),
     );
@@ -198,6 +201,26 @@ void main() {
           .first,
     );
     expect(region.value, SystemUiOverlayStyle.light);
+  });
+
+  testWidgets('the outfit control changes her into her next outfit, and '
+      'back round to the first', (tester) async {
+    await openStage(tester);
+    String worn() =>
+        tester.widget<CompanionView>(find.byType(CompanionView)).look.id;
+    expect(worn(), companionOutfits.first.id);
+
+    final outfit = find.byKey(const ValueKey('companionStageOutfit'));
+    expect(find.bySemanticsLabel('Change her outfit'), findsOneWidget);
+    await tester.tap(outfit);
+    await tester.pump();
+    expect(worn(), companionOutfits[1].id);
+
+    for (var i = 1; i < companionOutfits.length; i++) {
+      await tester.tap(outfit);
+      await tester.pump();
+    }
+    expect(worn(), companionOutfits.first.id);
   });
 
   testWidgets('the close control takes her back to the card', (tester) async {

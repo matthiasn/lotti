@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/companion/ui/settings/companion_settings_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_settings_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/dashboards/ui/settings/dashboard_settings_page.dart';
@@ -143,6 +144,7 @@ List<SettingsNode> _allNodes() {
     enableMatrix: true,
     enableWhatsNew: true,
     enableSpeechTts: true,
+    enableCompanion: true,
     enableHealthImport: true,
     syncFeatureAvailable: syncAvailable,
   );
@@ -222,6 +224,10 @@ void main() {
         RecordingStyleSettingsBody,
       ),
       'preferences/speech': (SpeechSettingsPage, SpeechSettingsBody),
+      'preferences/companion': (
+        CompanionSettingsPage,
+        CompanionSettingsBody,
+      ),
       'preferences/keyboard-shortcuts': (
         KeyboardShortcutsPage,
         KeyboardShortcutsBody,
@@ -532,6 +538,10 @@ void main() {
       expect(beamUrlToPath('/settings/notifications'), [
         'preferences',
         'preferences/notifications',
+      ]);
+      expect(beamUrlToPath('/settings/companion'), [
+        'preferences',
+        'preferences/companion',
       ]);
       expect(beamUrlToPath('/settings/speech'), [
         'preferences',

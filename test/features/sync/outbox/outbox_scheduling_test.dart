@@ -27,6 +27,7 @@ enum _GeneratedPriorityMessageKind {
   aiConfigDelete,
   themingSelection,
   dailyOsUserName,
+  companionCustomization,
   gitHubAccount,
   backfillRequest,
   backfillResponse,
@@ -159,6 +160,12 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.dailyOsUserName =>
         SyncMessage.dailyOsUserName(
           userName: 'name-$counterSlot',
+          updatedAt: counterSlot,
+          status: status,
+        ),
+      _GeneratedPriorityMessageKind.companionCustomization =>
+        SyncMessage.companionCustomization(
+          customization: '{"n":$counterSlot}',
           updatedAt: counterSlot,
           status: status,
         ),
@@ -295,6 +302,7 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.notificationStateUpdate ||
       _GeneratedPriorityMessageKind.themingSelection ||
       _GeneratedPriorityMessageKind.dailyOsUserName ||
+      _GeneratedPriorityMessageKind.companionCustomization ||
       _GeneratedPriorityMessageKind.gitHubAccount ||
       _GeneratedPriorityMessageKind.configFlag ||
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,

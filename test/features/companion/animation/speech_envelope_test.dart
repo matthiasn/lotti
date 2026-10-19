@@ -95,4 +95,8 @@ void main() {
       expect(mouthForLoudness(1).open, closeTo(Viseme.d.shape.open, 1e-9));
     });
   });
+
+  test('a voice alone has no words to time', () {
+    expect(SpeechEnvelope([1, 1]).timeOf(0), isNull);
+  });
 }

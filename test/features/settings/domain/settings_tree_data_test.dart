@@ -13,6 +13,7 @@ List<SettingsNode> _tree({
   bool enableMatrix = true,
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
+  bool enableCompanion = false,
   bool enableHealthImport = false,
   bool syncFeatureAvailable = true,
 }) => buildSettingsTree(
@@ -22,6 +23,7 @@ List<SettingsNode> _tree({
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
+  enableCompanion: enableCompanion,
   enableHealthImport: enableHealthImport,
   syncFeatureAvailable: syncFeatureAvailable,
 );
@@ -73,6 +75,20 @@ void main() {
         preferences.children!.map((n) => n.id),
         contains('preferences/speech'),
       );
+    });
+  });
+
+  group('buildSettingsTree — enableCompanion', () {
+    test('adds her page under preferences, after theming, only when '
+        'enabled', () {
+      expect(_ids(_tree()), isNot(contains('preferences/companion')));
+
+      final tree = _tree(enableCompanion: true);
+      expect(tree.map((n) => n.id), isNot(contains('preferences/companion')));
+      final preferences = tree.firstWhere((n) => n.id == 'preferences');
+      final ids = preferences.children!.map((n) => n.id).toList();
+      expect(ids.indexOf('preferences/companion'), 1);
+      expect(_find(tree, 'preferences/companion')?.hasChildren, isFalse);
     });
   });
 

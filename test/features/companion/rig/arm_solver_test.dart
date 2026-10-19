@@ -21,6 +21,15 @@ void main() {
       );
     }, tags: 'glados');
 
+    test('a preferred direction swings the elbow out, still allowed', () {
+      const sh = shoulderRight;
+      const wrist = Offset(50, -58);
+      final hanging = solveArm(sh, wrist, 1);
+      final out = solveArm(sh, wrist, 1, rest: const Offset(0.77, 0.64));
+      expect(out.elbow.dx, greaterThan(hanging.elbow.dx + 10));
+      expect(elbowAllowed(sh, out.elbow, out.wrist, 1), isTrue);
+    });
+
     test('every gesture target gets an allowed elbow, on both sides', () {
       final targets = [
         (CompanionGesture.readyLeft, -1),

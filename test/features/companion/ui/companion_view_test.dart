@@ -1,9 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/rig/supersampled_painter.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -50,6 +53,8 @@ Future<List<CompanionPose>> _frames(WidgetTester tester, double seconds) async {
   }
   return out;
 }
+
+Duration _ms(int ms) => Duration(milliseconds: ms);
 
 void main() {
   testWidgets('she is alive: the pose changes frame to frame', (tester) async {
@@ -169,6 +174,107 @@ void main() {
     position = null;
     await tester.pump(const Duration(milliseconds: 16));
     expect(_pose(tester).mouth.open, 0);
+  });
+
+  group('her face follows the words', () {
+    const line =
+        'Four things today. You finished the migration, well done! '
+        'The review is overdue.';
+    final mouth = TextLipSync(line);
+    final tone = ToneTrack.read(line, mouth);
+    final praise = mouth.timeOf(line.indexOf(' You')) + _ms(50);
+    final concern = mouth.timeOf(line.indexOf(' The review')) + _ms(50);
+
+    Future<CompanionController> speak(
+      WidgetTester tester,
+      Duration? Function() playhead, {
+      CompanionSass sass = CompanionSass.warm,
+    }) async {
+      final controller = CompanionController();
+      await tester.pumpWidget(
+        _host(
+          CompanionView(
+            track: mouth,
+            tone: tone,
+            sass: sass,
+            playhead: playhead,
+            controller: controller,
+            autoGestures: false,
+          ),
+        ),
+      );
+      return controller;
+    }
+
+    testWidgets('praise cues its reaction once, and its face holds', (
+      tester,
+    ) async {
+      final warmTop = companionReaction(3);
+      expect(tone.approvalAt(praise), 3);
+      final controller = await speak(tester, () => praise);
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.gesture, warmTop.gesture);
+
+      final poses = await _frames(tester, 3);
+      // The gesture let go after its hold and was not cued again: the tone
+      // did not change.
+      expect(controller.gesture, isNull);
+      // Her face is the reaction's: bright smiles, her calm talking smile
+      // is 0.3.
+      expect(poses.last.smile, greaterThan(0.3 + warmTop.mood.smile - 0.05));
+    });
+
+    testWidgets('a turn to what needs work changes her face and cues again', (
+      tester,
+    ) async {
+      var at = praise;
+      final controller = await speak(tester, () => at);
+      final pleased = (await _frames(tester, 2)).last;
+
+      at = concern;
+      await tester.pump(const Duration(milliseconds: 16));
+      final reaction = companionReaction(tone.approvalAt(concern)!);
+      expect(controller.gesture, reaction.gesture);
+      final concerned = (await _frames(tester, 2)).last;
+      expect(concerned.smile, lessThan(pleased.smile - 0.3));
+      expect(concerned.browTilt, greaterThan(pleased.browTilt));
+    });
+
+    testWidgets('the host sass picks the reaction', (tester) async {
+      final controller = await speak(
+        tester,
+        () => concern,
+        sass: CompanionSass.cheeky,
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(
+        controller.gesture,
+        companionReaction(
+          tone.approvalAt(concern)!,
+          sass: CompanionSass.cheeky,
+        ).gesture,
+      );
+    });
+
+    testWidgets('a neutral sentence leaves her in the host mood', (
+      tester,
+    ) async {
+      final controller = await speak(tester, () => _ms(100));
+      final poses = await _frames(tester, 2);
+      expect(controller.gesture, isNull);
+      expect(poses.last.smile, closeTo(0.3 + CompanionMood.calm.smile, 0.05));
+    });
+
+    testWidgets('once she is quiet, the host mood is back', (tester) async {
+      Duration? at = concern;
+      await speak(tester, () => at);
+      final concerned = (await _frames(tester, 2)).last;
+      at = null;
+      final quiet = (await _frames(tester, 3)).last;
+      // Idle and calm, her smile is 0.5.
+      expect(quiet.smile, closeTo(0.5, 0.05));
+      expect(quiet.smile, greaterThan(concerned.smile));
+    });
   });
 
   testWidgets('the controller cues a gesture and lets go when disposed', (

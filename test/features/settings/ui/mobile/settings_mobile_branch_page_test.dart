@@ -16,10 +16,14 @@ List<Override> _flags({
   bool habits = true,
   bool dashboards = true,
   bool speechTts = false,
+  bool companion = false,
 }) => [
   configFlagProvider(
     enableAiSummaryTtsFlag,
   ).overrideWith((ref) => Stream.value(speechTts)),
+  configFlagProvider(
+    enableCompanionFlag,
+  ).overrideWith((ref) => Stream.value(companion)),
   configFlagProvider(
     enableMatrixFlag,
   ).overrideWith((ref) => Stream.value(true)),
@@ -99,7 +103,7 @@ void main() {
       await _pump(
         tester,
         branchId: 'preferences',
-        overrides: _flags(speechTts: true),
+        overrides: _flags(speechTts: true, companion: true),
       );
       final rowIds = tester
           .widgetList<SettingsTreeRow>(find.byType(SettingsTreeRow))
@@ -107,6 +111,7 @@ void main() {
           .toList();
       expect(rowIds, [
         'preferences/theming',
+        'preferences/companion',
         'preferences/animations',
         'preferences/notifications',
         'preferences/recording-style',
@@ -147,10 +152,11 @@ void main() {
       await _pump(
         tester,
         branchId: 'preferences',
-        overrides: _flags(speechTts: true),
+        overrides: _flags(speechTts: true, companion: true),
       );
       const expected = {
         'preferences/theming': '/settings/theming',
+        'preferences/companion': '/settings/companion',
         // Animations came from Advanced and kept that URL.
         'preferences/animations': '/settings/advanced/animations',
         'preferences/notifications': '/settings/notifications',

@@ -60,6 +60,7 @@ import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/companion_settings_keys.dart';
 import 'package:lotti/utils/daily_os_preferences_keys.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';

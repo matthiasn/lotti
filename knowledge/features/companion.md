@@ -11,23 +11,31 @@ sources:
   - id: goal-companion
     resource: ../../lib/features/goals/ui/unified/goal_companion.dart
     title: The goal card's companion and the pose a track status gives her
-    last_modified: 2026-10-17
+    last_modified: 2026-10-19
   - id: animator
     resource: ../../lib/features/companion/animation/companion_animator.dart
     title: CompanionAnimator
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: view
     resource: ../../lib/features/companion/ui/companion_view.dart
     title: CompanionView and CompanionController
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: gesture
     resource: ../../lib/features/companion/model/companion_gesture.dart
     title: CompanionGesture and GestureName
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
+  - id: reaction
+    resource: ../../lib/features/companion/model/companion_reaction.dart
+    title: companionReaction, CompanionCue and CompanionSass
+    last_modified: 2026-10-19
+  - id: arm-solver
+    resource: ../../lib/features/companion/rig/arm_solver.dart
+    title: solveArm and its preferred elbow
+    last_modified: 2026-10-19
   - id: mouth-track
     resource: ../../lib/features/companion/animation/mouth_track.dart
     title: MouthTrack
-    last_modified: 2026-10-14
+    last_modified: 2026-10-19
   - id: voiced-text
     resource: ../../lib/features/companion/animation/voiced_text_track.dart
     title: VoicedTextTrack
@@ -43,11 +51,39 @@ sources:
   - id: speaker
     resource: ../../lib/features/companion/ui/companion_speaker.dart
     title: CompanionSpeaker
-    last_modified: 2026-10-15
+    last_modified: 2026-10-19
   - id: spoken-track
     resource: ../../lib/features/companion/state/spoken_track.dart
     title: loadSpokenTrack and spokenTrackLoaderProvider
     last_modified: 2026-10-15
+  - id: tone-reader
+    resource: ../../lib/features/companion/animation/tone_reader.dart
+    title: readTones, the on-device tone of each sentence
+    last_modified: 2026-10-19
+  - id: tone-track
+    resource: ../../lib/features/companion/animation/tone_track.dart
+    title: ToneTrack, the tones timed by the playhead
+    last_modified: 2026-10-19
+  - id: look-controller
+    resource: ../../lib/features/companion/state/companion_look_controller.dart
+    title: companionOutfitProvider and companionLookProvider
+    last_modified: 2026-10-19
+  - id: customization
+    resource: ../../lib/features/companion/state/companion_customization_controller.dart
+    title: companionCustomizationProvider, her stored customization
+    last_modified: 2026-10-19
+  - id: parts
+    resource: ../../lib/features/companion/model/companion_parts.dart
+    title: Skin tones, hairstyles and hair colours
+    last_modified: 2026-10-19
+  - id: hair-styles
+    resource: ../../lib/features/companion/rig/hair_styles_painter.dart
+    title: The hairstyles' painters
+    last_modified: 2026-10-19
+  - id: settings-page
+    resource: ../../lib/features/companion/ui/settings/companion_settings_page.dart
+    title: The page that customizes her
+    last_modified: 2026-10-19
   - id: playhead-clock
     resource: ../../lib/features/companion/animation/playhead_clock.dart
     title: PlayheadClock
@@ -139,6 +175,18 @@ While speaking, a rise of the voice's loudness through 0.55 — at most every
 are timed pulses, scheduled by mood-scaled random intervals; `blink()` fires
 one now.
 
+**Her face can be lopsided.** `browSkew` and `smileSkew` lift her right
+brow or mouth corner (screen right) and lower the left by as much, on top of
+the symmetric `browRaise` and `smile`; the mood's and the gesture's add. The
+smile runs from -1 to 1, so below zero the corners turn down. A gesture's
+`lids` adds to the mood's resting lids, which is how a facepalm shuts her
+eyes and an eye roll half-closes them.
+
+**An elbow may be asked for.** The arm solver keeps the most relaxed elbow
+it is allowed, which hangs; hands on the hips need it out. A `GestureArm`'s
+`elbow` names the direction the upper arm would rather take, and the solver
+weighs its choices against that instead of the hang, inside the same rules.
+
 `CompanionController` is the owner's handle: `play`, `blink` and `time`
 reach the attached view's animator, and are no-ops while detached. Swapping
 controllers in `didUpdateWidget` detaches the old one.
@@ -154,6 +202,12 @@ position, so a stall or a seek cannot desync the lips from the voice.
 | `TextLipSync` | the text, letter by letter, into nine Rhubarb visemes at a fixed rate | how open the mouth is |
 | `SpeechEnvelope` | the loudness (no words) | a WAV's per-frame RMS |
 | `VoicedTextTrack` | the text | a WAV's envelope, which also gates the shapes |
+
+Every track also answers `timeOf(offset)`: when the character at that offset
+of its words is spoken, on the same clock as its shapes — `TextLipSync`
+records the time it reaches each character, and `VoicedTextTrack` stretches
+that over the voice as it does the shapes. A voice alone (`SpeechEnvelope`)
+has no words and answers null. This is how her face is timed to the words.
 
 `VoicedTextTrack` stretches the text's **spoken** span — up to
 `TextLipSync.spokenLength`, the start of the closing rest every line ends
@@ -180,6 +234,7 @@ sequenceDiagram
   Voice-->>Her: playing, sourceId, clip (path + words)
   Her->>Loader: the clip's path and words
   Loader-->>Her: VoicedTextTrack (or TextLipSync)
+  Her->>Her: ToneTrack.read(the clip's words, that track)
   loop every frame
     Her->>Voice: read position (never watched)
     Her->>Her: PlayheadClock carries it to now
@@ -223,12 +278,82 @@ She has five hosts, each with its own framing:
 
 On the goal card and the goal agent's read card her pose carries the
 goal's `GoalTrackStatus`
-(`goalCompanionPose`): a held gesture for the verdict at a glance and a mood
+(`goalCompanionPose`), on the warm end of the [reaction
+scale](#reactions): a held gesture for the verdict at a glance and a mood
 for the face, because at 40 pixels the moods alone are a few pixels apart.
 Doing well is a raised thumb (`celebrate` once achieved), on the way back a
 clap, at risk a hand to the cheek, off track palms down — it is all right,
 never a scold — and no data a hand at her ear, listening for news. Until
 the health resolves she stands calm and at ready.
+
+**What she wears.** Every host shows her as `companionLookProvider` draws
+her, in `companion/state/`; `CompanionSpeaker` and the goal card's silent
+bust both watch it, and no host passes a look. It is two things together:
+
+```mermaid
+flowchart LR
+  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit?]
+  C -->|outfitId| O[companionOutfitProvider<br/>the chosen outfit, or a random one]
+  R[companionOutfitRandomProvider] --> O
+  Stage[stage palette button] -->|next| O
+  Settings[Settings › Preferences › Companion] -->|set| C
+  C -->|dress| L[companionLookProvider]
+  O --> L
+  L --> Hosts[CompanionSpeaker · GoalCompanionBust · settings preview]
+```
+
+- **The outfit** (`companionOutfitProvider`): the one chosen in her
+  customization, or, with none chosen, one of `companionOutfits` (the
+  grandmother's looks) drawn by `companionOutfitRandomProvider`, which a test
+  or a capture pins. It is not auto-disposed, so the draw holds until the app
+  closes. The stage's palette control calls `next`, stepping through the
+  outfits and wrapping, for the session only; a new choice in settings
+  starts over from that choice.
+- **The customization** (`companionCustomizationProvider`): her skin tone,
+  hairstyle, hair colour and outfit, stored as JSON under
+  `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
+  `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at
+  the default — Lotti as the videos draw her — and refines when the load
+  lands; a change made before that wins. A part a newer version wrote, or an
+  outfit that no longer exists, reads as the default — but a change is laid
+  over the stored JSON (`CompanionCustomization.toJsonOver`), so a part it
+  leaves alone keeps what the newer version wrote, and sync never carries an
+  older build's defaults over a newer device's choice.
+- **It syncs** as the Daily OS greeting name does, last write wins:
+
+  ```mermaid
+  sequenceDiagram
+    participant Page as Settings page
+    participant C as Customization controller
+    participant DB as SettingsDb
+    participant Out as Outbox
+    participant Peer as Other device
+    Page->>C: set(customization)
+    C->>DB: saveLocalSettingsGroup(JSON, stamp)
+    C->>Out: SyncMessage.companionCustomization (debounced 250 ms)
+    C->>DB: SYNCED_AT = stamp
+    Out-->>Peer: message
+    Peer->>Peer: saveSettingsItemsIfNewer (value, stamp, SYNCED_AT)
+    Peer->>Peer: settingsNotification, controller reloads, never sends back
+  ```
+
+  A customization stored but never published — while the outbox failed — is
+  published once on the next load. A reload that a `settingsNotification`
+  triggers while a local save is still committing waits for the save, so the
+  page never shows the value the save is replacing. "Send settings" re-sends
+  it with the other preferences.
+- **Dressing** (`CompanionCustomization.dress`) lays the skin tone and hair
+  colour over the outfit's palette and sets its hairstyle; the outfit keeps
+  its clothes and props. A deeper tone deepens plain lips, never lipstick an
+  outfit paints (the rock look's red).
+
+Every part combines with every other, and none is named after a people:
+skin tones are numbered, light to deep, and a screen reader says "Skin tone
+3". Five hairstyles share one dispatch, `hair_styles_painter.dart`: each has
+a back layer (behind the head and body), a front layer over the forehead
+whose outline also shades it, and hanging parts that trail the head's motion
+by the hair lag — the locs and the bob's ends; the bun keeps its painter,
+`hair_painter.dart`.
 
 `full` is head to toe, wide enough that both wrists stay inside it with room
 for the hand in every gesture (a test walks each gesture through its phases).
@@ -238,7 +363,65 @@ A host cues her through `CompanionController.play` (a gesture once) or keeps a
 gesture up with `CompanionView.holding`, which her ticker replays whenever it
 relaxes — no timer. `CompanionController.gesture` reads the gesture in play.
 
+# Reactions
+
+`companionReaction(approval, sass:)` is how a host says how a piece of work
+went: approval from `minApproval` (-3) to `maxApproval` (+3), sass `warm`,
+`cheeky` or `sassy`. Each cell is a `CompanionCue` — a mood and a gesture to
+hold. Warm is encouraging whatever happened; sassy is hands on hips, slow
+claps and eye rolls. Two rules hold across the table, and its tests keep
+them: her smile never falls as approval rises, and warm uses none of the
+sassy faces or gestures. Disapproval stops at sass: no reaction is hurt or
+sad, and none is ever tied to a notification. Nothing passes a sass other
+than warm yet; the coaching agent's charter is meant to choose it (plan
+2026-10-12, "Revision").
+
+# Her face on the words
+
+While she speaks, her face follows how the words land, not only the host's
+mood. `readTones` reads the clip's text — Markdown and all — into cues, one
+at the first character of each line and each sentence in it, with an
+approval on the reaction scale or null where the words read neither way:
+
+- A sentence's own words decide its tone: a short English and German list
+  of word beginnings and phrases ("finish", "well done", "overdue",
+  "blocked", "erledigt", "überfällig"), plus emoji that read the same in any
+  language (✅ 🎉 ⚠️ ❌). Praise denied ("not done") counts as a concern,
+  trouble denied ("no blockers") as good news; the sum is clamped to the
+  scale.
+- A sentence that reads neither way takes its **section's** tone, set by the
+  heading above it, so every line under "⚠️ Risks" keeps her concerned.
+- A report in another language reads neither way except by its emoji; the
+  agent marking tone in its own report is the later step (plan 2026-10-12,
+  "Revision").
+
+`ToneTrack.read` times each cue with the mouth's `timeOf`, so a tone starts
+when the voice reaches its sentence. `CompanionSpeaker` builds it with the
+mouth, from the same clip, so the two never belong to different clips, and
+drops both when the utterance ends.
+
+`CompanionView` asks the tone for the approval at the playhead each frame,
+as it asks the mouth for its shape:
+
+```mermaid
+stateDiagram-v2
+  [*] --> HostMood
+  HostMood --> Reaction: playhead in a sentence with a tone (its gesture cued once)
+  Reaction --> Reaction: the tone changes (the new reaction's gesture cued once)
+  Reaction --> HostMood: a sentence with no tone, or the playhead leaves the track
+```
+
+In a reaction her mood is `companionReaction(approval, sass:).mood`; the
+gesture is played once when the tone changes, not held, so her talking
+gestures resume after it. `sass` is warm unless the view is given another;
+no host gives one yet.
+
 # Gotchas
+
+- Hair has to fit the `bust` window: it leaves about 106 head units above
+  the face's centre, and the bun tops out at 90. The afro is drawn wider
+  than tall so its curls stop near 99; a taller style would be cut off on
+  every bust (`hair_styles_painter_test.dart` measures the silhouettes).
 
 - `CompanionPose` is rebuilt field by field in `_withTrail` to add the hair
   and hem lag; a new pose field must be carried there too.

@@ -221,6 +221,7 @@ flowchart LR
   Definitions --> Measurables["Measurables"]
 
   Preferences --> Theming["Theming"]
+  Preferences --> Companion["Companion — if enableCompanion"]
   Preferences --> Animations["Animations — URL /settings/advanced/animations"]
   Preferences --> Notifications["Notifications"]
   Preferences --> RecordingStyle["Recording style"]

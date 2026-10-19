@@ -8,6 +8,9 @@ void main() {
       'grandma',
       'grandma_stage',
       'grandma_rock',
+      'grandma_garden',
+      'grandma_lavender',
+      'grandma_winter',
       'cat',
       'cat_rock',
       'red_panda',
@@ -95,5 +98,79 @@ void main() {
     const g = CompanionLook.grandma;
     expect(g.sunglasses || g.beret || g.beads || g.glove, isFalse);
     expect(g.earring, EarringKind.pearl);
+  });
+
+  test('her new outfits keep her face and change only her clothes', () {
+    const base = CompanionPalette();
+    final outfits = [
+      CompanionLook.grandmaGarden,
+      CompanionLook.grandmaLavender,
+      CompanionLook.grandmaWinter,
+    ];
+    for (final look in outfits) {
+      final c = look.palette;
+      expect(look.species, CompanionSpecies.grandma, reason: look.id);
+      expect(
+        [c.skin, c.hair, c.iris, c.lips],
+        [
+          base.skin,
+          base.hair,
+          base.iris,
+          base.lips,
+        ],
+        reason: look.id,
+      );
+      expect(c.dress, isNot(base.dress), reason: look.id);
+      expect(c.cardigan, isNot(base.cardigan), reason: look.id);
+      expect(look.glasses, isTrue, reason: look.id);
+    }
+    // No two of her outfits share a dress and cardigan.
+    final grandma = CompanionLook.of(CompanionSpecies.grandma);
+    expect(
+      grandma.map((l) => (l.palette.dress, l.palette.cardigan)).toSet(),
+      hasLength(grandma.length),
+    );
+  });
+
+  test('copyWith with nothing to change keeps every part as it was', () {
+    const look = CompanionLook.grandmaRock;
+    final palette = look.palette;
+    final kept = palette.copyWith();
+    expect(
+      [
+        kept.hair,
+        kept.hairBack,
+        kept.hairShade,
+        kept.hairLight,
+        kept.skin,
+        kept.skinShade,
+        kept.skinDeep,
+        kept.skinLight,
+        kept.brow,
+        kept.dress,
+        kept.cardigan,
+      ],
+      [
+        palette.hair,
+        palette.hairBack,
+        palette.hairShade,
+        palette.hairLight,
+        palette.skin,
+        palette.skinShade,
+        palette.skinDeep,
+        palette.skinLight,
+        palette.brow,
+        palette.dress,
+        palette.cardigan,
+      ],
+    );
+
+    final same = look.copyWith();
+    expect(identical(same.palette, palette), isTrue);
+    expect(same.hairStyle, look.hairStyle);
+    expect(
+      [same.id, same.sunglasses, same.beret, same.beads, same.glove],
+      [look.id, look.sunglasses, look.beret, look.beads, look.glove],
+    );
   });
 }

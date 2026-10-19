@@ -1122,6 +1122,10 @@
   "@aiCardCompanionOpenFullScreen": {
     "description": "Tooltip and screen-reader label on the companion's bust in the AI summary card header: opens her full-screen view."
   },
+  "aiCardCompanionStageNextOutfit": "Change her outfit",
+  "@aiCardCompanionStageNextOutfit": {
+    "description": "Label of the button on the companion's full-screen stage that changes her into her next outfit."
+  },
   "aiCardCompanionStageTitle": "Companion, full screen",
   "@aiCardCompanionStageTitle": {
     "description": "Screen-reader name of the companion's full-screen view, announced when it opens."
@@ -2402,6 +2406,119 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
+  "companionSettingsHairColourAuburn": "Auburn",
+  "@companionSettingsHairColourAuburn": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourBlack": "Black",
+  "@companionSettingsHairColourBlack": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourBlue": "Blue",
+  "@companionSettingsHairColourBlue": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourBrown": "Brown",
+  "@companionSettingsHairColourBrown": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourGrey": "Gray",
+  "@companionSettingsHairColourGrey": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourLabel": "Hair color",
+  "@companionSettingsHairColourLabel": {
+    "description": "Section title on the companion settings page for choosing her hair colour."
+  },
+  "companionSettingsHairColourLavender": "Lavender",
+  "@companionSettingsHairColourLavender": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourPink": "Pink",
+  "@companionSettingsHairColourPink": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourSilver": "Silver",
+  "@companionSettingsHairColourSilver": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairColourWhite": "White",
+  "@companionSettingsHairColourWhite": {
+    "description": "Name of one hair colour the companion can have."
+  },
+  "companionSettingsHairStyleAfro": "Afro",
+  "@companionSettingsHairStyleAfro": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleBob": "Bob",
+  "@companionSettingsHairStyleBob": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleBun": "Bun",
+  "@companionSettingsHairStyleBun": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleCurls": "Curls",
+  "@companionSettingsHairStyleCurls": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsHairStyleLabel": "Hairstyle",
+  "@companionSettingsHairStyleLabel": {
+    "description": "Section title on the companion settings page for choosing her hairstyle."
+  },
+  "companionSettingsHairStyleLocs": "Locs",
+  "@companionSettingsHairStyleLocs": {
+    "description": "Name of one hairstyle the companion can wear."
+  },
+  "companionSettingsOutfitDescription": "Choose one she always wears, or let her pick one each time you open the app.",
+  "@companionSettingsOutfitDescription": {
+    "description": "Explains the outfit choice on the companion settings page: a fixed outfit, or a random one per app launch."
+  },
+  "companionSettingsOutfitEveryday": "Everyday",
+  "@companionSettingsOutfitEveryday": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitGarden": "Garden",
+  "@companionSettingsOutfitGarden": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitLabel": "Outfit",
+  "@companionSettingsOutfitLabel": {
+    "description": "Section title on the companion settings page for choosing her outfit."
+  },
+  "companionSettingsOutfitLavender": "Lavender",
+  "@companionSettingsOutfitLavender": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitRock": "Rock",
+  "@companionSettingsOutfitRock": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitStage": "Keynote",
+  "@companionSettingsOutfitStage": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsOutfitSurprise": "Surprise me",
+  "@companionSettingsOutfitSurprise": {
+    "description": "Outfit option that lets the companion pick a random outfit each time the app opens."
+  },
+  "companionSettingsOutfitWinter": "Winter",
+  "@companionSettingsOutfitWinter": {
+    "description": "Name of one of the companion's outfits."
+  },
+  "companionSettingsSkinTone": "Skin tone {number}",
+  "@companionSettingsSkinTone": {
+    "description": "Screen-reader name of one skin-tone swatch; tones are numbered from light to deep, never named after a people.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "companionSettingsSkinToneLabel": "Skin tone",
+  "@companionSettingsSkinToneLabel": {
+    "description": "Section title on the companion settings page for choosing her skin tone."
+  },
   "completeHabitFailButton": "Missed",
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
@@ -8780,6 +8897,14 @@
   "settingsCelebrationsVariantRandom": "Random",
   "settingsCelebrationsVariantRandomDescription": "A fresh style on every completion",
   "settingsCelebrationsVariantSparks": "Sparks",
+  "settingsCompanionSubtitle": "Her skin, hair and outfit",
+  "@settingsCompanionSubtitle": {
+    "description": "Subtitle of the companion settings entry in the settings tree."
+  },
+  "settingsCompanionTitle": "Companion",
+  "@settingsCompanionTitle": {
+    "description": "Title of the settings page where the companion character is customized."
+  },
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardDetailsLabel": "Edit dashboard",
   "settingsDashboardSaveLabel": "Save",
@@ -9512,6 +9637,10 @@
   "syncPayloadAiConfigDelete": "AI configuration delete",
   "syncPayloadBackfillRequest": "Backfill request",
   "syncPayloadBackfillResponse": "Backfill response",
+  "syncPayloadCompanionCustomization": "Companion customization",
+  "@syncPayloadCompanionCustomization": {
+    "description": "Payload type shown in the sync outbox list for a synced companion customization (her skin, hair and outfit)."
+  },
   "syncPayloadConfigFlag": "Config flag",
   "syncPayloadConsumptionEvent": "AI consumption",
   "syncPayloadDailyOsUserName": "Daily OS name",

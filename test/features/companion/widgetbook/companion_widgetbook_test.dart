@@ -4,6 +4,7 @@ import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/rig/supersampled_painter.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -62,6 +63,7 @@ void main() {
         'Talking with a voice (WAV)',
         'Looks',
         'Moods',
+        'Reactions',
         'Chat avatar sizes',
       ]);
     }
@@ -88,6 +90,30 @@ void main() {
       }
     });
   }
+
+  testWidgets('Reactions shows every sass at every approval, each holding '
+      'its gesture', (tester) async {
+    setTestSurfaceSize(tester, const Size(1400, 900));
+    await tester.pumpWidget(
+      _host(const CompanionReactionGrid(look: CompanionLook.cat)),
+    );
+    await tester.pump(const Duration(milliseconds: 16));
+    final views = tester
+        .widgetList<CompanionView>(find.byType(CompanionView))
+        .toList();
+    expect(views, hasLength(CompanionSass.values.length * 7));
+    var i = 0;
+    for (final sass in CompanionSass.values) {
+      expect(find.text(sass.name), findsOneWidget);
+      for (var a = minApproval; a <= maxApproval; a++) {
+        final cue = companionReaction(a, sass: sass);
+        expect(views[i].mood, cue.mood, reason: '${sass.name} $a');
+        expect(views[i].holding, cue.gesture, reason: '${sass.name} $a');
+        expect(views[i].look, CompanionLook.cat);
+        i++;
+      }
+    }
+  });
 
   group('CompanionPlayground', () {
     testWidgets('has a button per gesture, each one plays it', (tester) async {
@@ -126,6 +152,36 @@ void main() {
       // The line runs about two seconds, then she falls quiet.
       expect(opens.sublist(260).every((o) => o == 0), isTrue);
       expect(widest, greaterThan(3));
+    });
+
+    testWidgets('her face follows the line, with the sass it is given', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1400, 900));
+      await tester.pumpWidget(
+        _host(
+          const CompanionPlayground(
+            look: CompanionLook.grandma,
+            mood: CompanionMood.calm,
+            framing: CompanionFraming.full,
+            line: defaultCompanionLine,
+            rate: 1,
+            autoGestures: false,
+            sass: CompanionSass.sassy,
+          ),
+        ),
+      );
+      CompanionView shown() =>
+          tester.widget<CompanionView>(find.byType(CompanionView));
+      expect(shown().tone, isNull);
+      expect(shown().sass, CompanionSass.sassy);
+
+      await tester.tap(find.byKey(const ValueKey('companion_say')));
+      await tester.pump();
+      // The default line has praise and something that needs work.
+      final approvals = shown().tone!.cues.map((c) => c.approval).toList();
+      expect(approvals.any((a) => a != null && a > 0), isTrue);
+      expect(approvals.any((a) => a != null && a < 0), isTrue);
     });
   });
 }

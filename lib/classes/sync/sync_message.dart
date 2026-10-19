@@ -304,6 +304,22 @@ sealed class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
   }) = SyncDailyOsUserName;
 
+  /// How a person made the companion their own — her skin tone, hairstyle,
+  /// hair colour and outfit — synced across their devices.
+  ///
+  /// [customization] is her customization's JSON, as the companion stores it
+  /// under `COMPANION_CUSTOMIZATION`: sync carries it without reading it, so
+  /// it never depends on the companion. Receivers keep it under
+  /// last-write-wins keyed on [updatedAt] (epoch millis), as they keep
+  /// [SyncDailyOsUserName]. A device preference, not journal data: no gap
+  /// detection. A build that predates this variant cannot decode it and
+  /// skips it.
+  const factory SyncMessage.companionCustomization({
+    required String customization,
+    required int updatedAt,
+    required SyncEntryStatus status,
+  }) = SyncCompanionCustomization;
+
   /// The user's GitHub account: the read-only token and the login it was
   /// checked against, or a disconnection when [token] is null. Applied into
   /// the receiver's keychain (`GitHubTokenStorage.applyIfNewer`) under

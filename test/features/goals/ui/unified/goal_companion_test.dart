@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/goals/ui/unified/goal_companion.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../companion/companion_overrides.dart';
 
 void main() {
   test("a goal report's speech is its own utterance, apart from tasks", () {
@@ -97,6 +99,9 @@ void main() {
             seed: 7,
           ),
         ),
+        overrides: [
+          ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
+        ],
       ),
     );
     // She ticks for as long as she is mounted: pump frames, never settle.
@@ -125,6 +130,8 @@ void main() {
     expect(view.autoGestures, isFalse);
     expect(view.track, isNull);
     expect(view.seed, 7);
+    // The session's outfit, as everywhere else she appears.
+    expect(view.look.id, CompanionLook.grandmaWinter.id);
 
     // Decorative: the status pill carries the verdict in words.
     final semantics = tester.getSemantics(find.byType(GoalCompanionBust));

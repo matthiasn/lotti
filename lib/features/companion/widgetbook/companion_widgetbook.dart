@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/companion/widgetbook/companion_voice_preview.dart';
@@ -10,10 +12,12 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
-/// The line she says by default in the playground.
+/// The line she says by default in the playground: praise, then something
+/// that needs work, so her face has somewhere to go.
 const defaultCompanionLine =
-    'Good morning! Four things today. The big one is the migration, at ten. '
-    'And you have a walk planned, which I fully support.';
+    'Good morning! You finished the migration, well done. '
+    'The review is overdue, though, and the tests are falling behind. '
+    'Four things today.';
 
 /// Widgetbook folder for the in-app companion: Lotti, the grandmother of the
 /// pitch videos, and the animals a person may pick instead, drawn live in
@@ -73,6 +77,11 @@ WidgetbookComponent _characterComponent(CompanionSpecies species) {
             label: 'Gestures while talking',
             initialValue: true,
           ),
+          sass: context.knobs.object.segmented(
+            label: 'Sass',
+            options: CompanionSass.values,
+            labelBuilder: (s) => s.name,
+          ),
         ),
       ),
       WidgetbookUseCase(
@@ -117,6 +126,10 @@ WidgetbookComponent _characterComponent(CompanionSpecies species) {
         ),
       ),
       WidgetbookUseCase(
+        name: 'Reactions',
+        builder: (context) => CompanionReactionGrid(look: lookKnob(context)),
+      ),
+      WidgetbookUseCase(
         name: 'Chat avatar sizes',
         builder: (context) => _AvatarSizes(look: lookKnob(context)),
       ),
@@ -143,7 +156,8 @@ CompanionMood _moodKnob(BuildContext context) => context.knobs.object.dropdown(
 /// Her, live, with a button to say the line and one per gesture.
 ///
 /// The line is spoken silently: the mouth follows the words
-/// ([TextLipSync]) on the view's own clock from the press of the button.
+/// ([TextLipSync]) on the view's own clock from the press of the button, and
+/// her face follows how they land ([ToneTrack]) with [sass].
 class CompanionPlayground extends StatefulWidget {
   const CompanionPlayground({
     required this.look,
@@ -152,6 +166,7 @@ class CompanionPlayground extends StatefulWidget {
     required this.line,
     required this.rate,
     required this.autoGestures,
+    this.sass = CompanionSass.warm,
     this.stage = true,
     this.supersample,
     super.key,
@@ -163,6 +178,7 @@ class CompanionPlayground extends StatefulWidget {
   final String line;
   final double rate;
   final bool autoGestures;
+  final CompanionSass sass;
   final bool stage;
   final int? supersample;
 
@@ -173,11 +189,14 @@ class CompanionPlayground extends StatefulWidget {
 class _CompanionPlaygroundState extends State<CompanionPlayground> {
   final _controller = CompanionController();
   TextLipSync? _track;
+  ToneTrack? _tone;
   double _startedAt = 0;
 
   void _say() {
     setState(() {
-      _track = TextLipSync(widget.line, rate: widget.rate);
+      final track = TextLipSync(widget.line, rate: widget.rate);
+      _track = track;
+      _tone = ToneTrack.read(widget.line, track);
       _startedAt = _controller.time;
     });
   }
@@ -211,6 +230,8 @@ class _CompanionPlaygroundState extends State<CompanionPlayground> {
               stage: widget.stage,
               supersample: widget.supersample,
               track: _track,
+              tone: _tone,
+              sass: widget.sass,
               playhead: _playhead,
               autoGestures: widget.autoGestures,
               controller: _controller,
@@ -327,6 +348,63 @@ class _AvatarSizes extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Every [companionReaction] at once: a row per [CompanionSass], from the
+/// lowest approval on the left to the highest on the right, each holding its
+/// gesture.
+class CompanionReactionGrid extends StatelessWidget {
+  const CompanionReactionGrid({required this.look, super.key});
+
+  final CompanionLook look;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final caption = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      child: Column(
+        children: [
+          for (final sass in CompanionSass.values)
+            Expanded(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: tokens.spacing.step10,
+                    child: Text(sass.name, style: caption),
+                  ),
+                  for (var a = minApproval; a <= maxApproval; a++)
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: CompanionView(
+                              look: look,
+                              mood: companionReaction(a, sass: sass).mood,
+                              holding: companionReaction(a, sass: sass).gesture,
+                              autoGestures: false,
+                              stage: true,
+                              seed: 11 + a * 7 + sass.index * 3,
+                            ),
+                          ),
+                          Text(
+                            '${a > 0 ? '+' : ''}$a · '
+                            '${companionReaction(a, sass: sass).mood.name}',
+                            style: caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
         ],
       ),

@@ -2153,6 +2153,20 @@ void main() {
           status: SyncEntryStatus.update,
         ),
       ),
+      (
+        name: 'companion',
+        stampKey: 'COMPANION_CUSTOMIZATION_UPDATED_AT',
+        values: {
+          'COMPANION_CUSTOMIZATION': '{"hairStyle":"afro"}',
+          'COMPANION_CUSTOMIZATION_UPDATED_AT': '100',
+          'COMPANION_CUSTOMIZATION_SYNCED_AT': '100',
+        },
+        message: const SyncMessage.companionCustomization(
+          customization: '{"hairStyle":"afro"}',
+          updatedAt: 100,
+          status: SyncEntryStatus.update,
+        ),
+      ),
     ];
 
     for (final scenario in cases) {
@@ -2192,11 +2206,15 @@ void main() {
             ...scenario.message.toJson(),
             if (scenario.name == 'theme') 'lightThemeName': 'Zulu',
             if (scenario.name == 'name') 'userName': 'Zoe',
+            if (scenario.name == 'companion')
+              'customization': '{"hairStyle":"locs"}',
           });
           final winnerValues = {
             ...scenario.values,
             if (scenario.name == 'theme') 'LIGHT_SCHEME': 'Zulu',
             if (scenario.name == 'name') 'DAILY_OS_USER_NAME': 'Zoe',
+            if (scenario.name == 'companion')
+              'COMPANION_CUSTOMIZATION': '{"hairStyle":"locs"}',
           };
           for (final messages in [
             [scenario.message, winner],

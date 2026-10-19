@@ -1580,6 +1580,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiCardCompanionOpenFullScreen => 'Visa följeslagaren i helskärm';
 
   @override
+  String get aiCardCompanionStageNextOutfit => 'Byt kläder';
+
+  @override
   String get aiCardCompanionStageTitle => 'Följeslagaren i helskärm';
 
   @override
@@ -3737,6 +3740,90 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commonUnknown => 'Okänt';
+
+  @override
+  String get companionSettingsHairColourAuburn => 'Kopparröd';
+
+  @override
+  String get companionSettingsHairColourBlack => 'Svart';
+
+  @override
+  String get companionSettingsHairColourBlue => 'Blå';
+
+  @override
+  String get companionSettingsHairColourBrown => 'Brun';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Grå';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Hårfärg';
+
+  @override
+  String get companionSettingsHairColourLavender => 'Lavendel';
+
+  @override
+  String get companionSettingsHairColourPink => 'Rosa';
+
+  @override
+  String get companionSettingsHairColourSilver => 'Silver';
+
+  @override
+  String get companionSettingsHairColourWhite => 'Vit';
+
+  @override
+  String get companionSettingsHairStyleAfro => 'Afro';
+
+  @override
+  String get companionSettingsHairStyleBob => 'Page';
+
+  @override
+  String get companionSettingsHairStyleBun => 'Knut';
+
+  @override
+  String get companionSettingsHairStyleCurls => 'Lockar';
+
+  @override
+  String get companionSettingsHairStyleLabel => 'Frisyr';
+
+  @override
+  String get companionSettingsHairStyleLocs => 'Locs';
+
+  @override
+  String get companionSettingsOutfitDescription =>
+      'Välj kläder hon alltid har på sig, eller låt henne välja själv varje gång du öppnar appen.';
+
+  @override
+  String get companionSettingsOutfitEveryday => 'Vardag';
+
+  @override
+  String get companionSettingsOutfitGarden => 'Trädgård';
+
+  @override
+  String get companionSettingsOutfitLabel => 'Kläder';
+
+  @override
+  String get companionSettingsOutfitLavender => 'Lavendel';
+
+  @override
+  String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitStage => 'Scen';
+
+  @override
+  String get companionSettingsOutfitSurprise => 'Överraska mig';
+
+  @override
+  String get companionSettingsOutfitWinter => 'Vinter';
+
+  @override
+  String companionSettingsSkinTone(int number) {
+    return 'Hudton $number';
+  }
+
+  @override
+  String get companionSettingsSkinToneLabel => 'Hudton';
 
   @override
   String get completeHabitFailButton => 'Missade';
@@ -14099,6 +14186,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Gnistor';
 
   @override
+  String get settingsCompanionSubtitle => 'Hennes hud, hår och kläder';
+
+  @override
+  String get settingsCompanionTitle => 'Följeslagare';
+
+  @override
   String get settingsConflictsTitle => 'Synkroniseringskonflikter';
 
   @override
@@ -15802,6 +15895,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadBackfillResponse => 'Återfyllningsrespons';
+
+  @override
+  String get syncPayloadCompanionCustomization => 'Följeslagarens utseende';
 
   @override
   String get syncPayloadConfigFlag => 'Konfigurationsflagga';

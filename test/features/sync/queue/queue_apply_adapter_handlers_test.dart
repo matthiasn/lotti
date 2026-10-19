@@ -482,6 +482,15 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
+    test('SyncCompanionCustomization bypasses outer wrap (settings_db)', () {
+      const message = SyncMessage.companionCustomization(
+        customization: '{}',
+        updatedAt: 1,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
     test('SyncBackfillRequest wraps conservatively', () {
       const message = SyncMessage.backfillRequest(
         entries: <BackfillRequestEntry>[],

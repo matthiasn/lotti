@@ -5,6 +5,8 @@
 (* envelopes are available to two receivers. A receiver applies one at  *)
 (* a time, but peers can choose different delivery orders. The timestamp *)
 (* guard orders stamp then canonical payload for all three families. *)
+(* companionCustomization is applied as dailyOsUserName is, the same     *)
+(* register with a published marker, so the name's family covers it.     *)
 (*                                                                         *)
 (* Start/Write/Commit reflect guard, transaction-local writes, then the  *)
 (* atomic group commit (including stamp) and successful return. A failed *)

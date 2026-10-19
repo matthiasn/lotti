@@ -82,4 +82,42 @@ void main() {
     }
     expect(cues.last.viseme, Viseme.x);
   }, tags: 'glados');
+
+  group('timeOf', () {
+    const text = 'Good morning. Four things today.';
+    final sync = TextLipSync(text);
+
+    test('starts at zero and never runs backwards', () {
+      expect(sync.timeOf(0), Duration.zero);
+      var last = Duration.zero;
+      for (var i = 0; i <= text.length; i++) {
+        expect(sync.timeOf(i), greaterThanOrEqualTo(last), reason: '$i');
+        last = sync.timeOf(i);
+      }
+    });
+
+    test('a later word is reached later, after the full stop rests', () {
+      final four = sync.timeOf(text.indexOf('Four'));
+      expect(four, greaterThan(sync.timeOf(text.indexOf('morning'))));
+      // The full stop's pause lies between "morning" and "Four".
+      expect(
+        four - sync.timeOf(text.indexOf('.')),
+        greaterThanOrEqualTo(const Duration(milliseconds: 380)),
+      );
+    });
+
+    test('offsets past either end are the ends of the words', () {
+      expect(sync.timeOf(-5), Duration.zero);
+      expect(sync.timeOf(999), sync.timeOf(text.length));
+      expect(sync.timeOf(text.length), lessThanOrEqualTo(sync.length));
+    });
+
+    test('runs at the rate the shapes do', () {
+      final fast = TextLipSync(text, rate: 2);
+      expect(
+        fast.timeOf(text.length).inMicroseconds,
+        closeTo(sync.timeOf(text.length).inMicroseconds / 2, 2),
+      );
+    });
+  });
 }

@@ -17,6 +17,9 @@ class TextLipSync implements MouthTrack {
   factory TextLipSync(String text, {double rate = 1}) {
     final cues = <VisemeCue>[];
     var t = 0.0;
+    final s = text.toLowerCase();
+    // When each character is reached, so a later reader can time the words.
+    final reached = List<double>.filled(s.length + 1, 0);
     void add(Viseme v, double seconds) {
       if (cues.isEmpty || cues.last.viseme != v) {
         cues.add((start: t, viseme: v));
@@ -24,13 +27,14 @@ class TextLipSync implements MouthTrack {
       t += seconds / rate;
     }
 
-    final s = text.toLowerCase();
     var i = 0;
     while (i < s.length) {
+      reached[i] = t;
       final two = i + 1 < s.length ? s.substring(i, i + 2) : '';
       final ch = s[i];
       if (_digraphs.containsKey(two)) {
         add(_digraphs[two]!, 0.1);
+        reached[i + 1] = reached[i];
         i += 2;
         continue;
       }
@@ -48,14 +52,16 @@ class TextLipSync implements MouthTrack {
       }
       i++;
     }
+    reached[s.length] = t;
     add(Viseme.x, 0.2);
-    return TextLipSync._(cues, t);
+    return TextLipSync._(cues, t, reached);
   }
 
-  TextLipSync._(this.cues, this._end);
+  TextLipSync._(this.cues, this._end, this._reached);
 
   final List<VisemeCue> cues;
   final double _end;
+  final List<double> _reached;
 
   /// Time to blend from one shape into the next.
   static const blendSeconds = 0.06;
@@ -85,6 +91,14 @@ class TextLipSync implements MouthTrack {
       smoothstep((t - cues[idx].start) / blendSeconds),
     );
   }
+
+  /// When the mouth reaches the character at [offset], at the same steady
+  /// rate as the shapes.
+  @override
+  Duration timeOf(int offset) => Duration(
+    microseconds: (_reached[offset.clamp(0, _reached.length - 1)] * 1e6)
+        .round(),
+  );
 
   /// How open the mouth is, standing in for the voice's loudness.
   @override

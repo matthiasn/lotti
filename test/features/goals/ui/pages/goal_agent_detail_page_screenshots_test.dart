@@ -38,6 +38,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
+import '../../../companion/companion_overrides.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../../habits/test_utils.dart';
 import '../../../tts/test_utils.dart';
@@ -129,6 +130,8 @@ Future<void> _capture(
             spokenTrackLoaderProvider.overrideWithValue(
               (clip, text) async => throw StateError('no voice in captures'),
             ),
+            // Her everyday outfit, not the session's random one.
+            ...companionLookOverrides(),
             habitsControllerProvider.overrideWith(
               () => FakeHabitsController(
                 HabitsState.initial(now: DateTime(2026, 8, 16)),

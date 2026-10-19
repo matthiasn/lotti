@@ -1300,6 +1300,27 @@ void main() {
     });
   });
 
+  group('SyncCompanionCustomization', () {
+    test('enqueues her customization with its own subject', () async {
+      final message = SyncMessage.companionCustomization(
+        customization: '{"hairStyle":"curls"}',
+        updatedAt: DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
+        status: SyncEntryStatus.update,
+      );
+
+      await service.enqueueMessage(message);
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured.length, 1);
+
+      final companion = captured.first as OutboxCompanion;
+      expect(companion.subject.value, 'companionCustomization');
+      expect(companion.message.value, contains('companionCustomization'));
+    });
+  });
+
   group('SyncThemingSelection', () {
     test('enqueues theming message with correct subject', () async {
       final message = SyncMessage.themingSelection(

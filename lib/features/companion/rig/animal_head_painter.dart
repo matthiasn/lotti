@@ -197,7 +197,7 @@ void drawAnimalFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c,
       Offset(s * 20 + fx, -28 + fy * 1.2),
       s,
-      p.browRaise,
+      p.browRaise + s * p.browSkew,
       p.browTilt,
     );
   }
@@ -206,7 +206,7 @@ void drawAnimalFace(Canvas canvas, CompanionLook look, CompanionPose p) {
     ..save()
     ..translate(fx * 1.1, 24 + fy)
     ..scale(1.05);
-  drawMouth(canvas, c, 0, 0, p.mouth, p.smile);
+  drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
   canvas.restore();
   _whiskers(canvas, c, fx, fy, panda: panda);
   _crownTuft(canvas, c, p.hairLag, yaw);

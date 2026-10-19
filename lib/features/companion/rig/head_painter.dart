@@ -5,7 +5,7 @@ import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/animal_head_painter.dart';
 import 'package:lotti/features/companion/rig/face_painter.dart';
-import 'package:lotti/features/companion/rig/hair_painter.dart';
+import 'package:lotti/features/companion/rig/hair_styles_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
 
@@ -30,7 +30,7 @@ void drawBackOfHead(Canvas canvas, RigFrame f, CompanionLook look) {
   if (look.species.isAnimal) {
     drawEars(canvas, look, f.pose);
   } else {
-    drawBackHair(canvas, look.palette, f.pose.hairLag);
+    drawBackHair(canvas, look.palette, f.pose.hairLag, look.hairStyle);
   }
   canvas.restore();
 }
@@ -67,7 +67,9 @@ void drawHead(Canvas canvas, RigFrame f, CompanionLook look) {
       _earring(canvas, c, Offset(s * (44 - yaw * 2 * s), 15), look.earring);
     }
   }
-  if (!look.species.isAnimal) drawFrontHair(canvas, c, p.hairLag, yaw);
+  if (!look.species.isAnimal) {
+    drawFrontHair(canvas, c, p.hairLag, yaw, look.hairStyle);
+  }
   if (look.beret) _beret(canvas, c, yaw);
   canvas.restore();
 }
@@ -95,7 +97,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
     ellipse(Offset(38 - yaw * 6, 6), 22, 60),
     c.skinShade.withValues(alpha: 0.38),
   );
-  drawForeheadShadow(canvas, c, p.hairLag, yaw);
+  drawForeheadShadow(canvas, c, p.hairLag, yaw, look.hairStyle);
   for (final s in [-1, 1]) {
     final at = Offset(s * 25 + yaw * 5, 11 + pitch * 2);
     canvas.drawCircle(
@@ -120,7 +122,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c,
       Offset(s * 20 + fx, -27 + fy * 1.2),
       s,
-      p.browRaise,
+      p.browRaise + s * p.browSkew,
       p.browTilt,
     );
   }
@@ -130,7 +132,7 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
     ..save()
     ..translate(fx * 1.1, 22 + fy)
     ..scale(1.25);
-  drawMouth(canvas, c, 0, 0, p.mouth, p.smile);
+  drawMouth(canvas, c, 0, 0, p.mouth, p.smile, skew: p.smileSkew);
   canvas.restore();
 }
 

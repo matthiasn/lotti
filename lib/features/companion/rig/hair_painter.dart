@@ -55,7 +55,7 @@ List<Offset> fringeOutline() => [
 ];
 
 /// The bun and the cap behind the face.
-void drawBackHair(Canvas canvas, CompanionPalette c, Offset lag) {
+void drawBunBack(Canvas canvas, CompanionPalette c, Offset lag) {
   final bun = Offset(-26 + lag.dx * 0.6, 26 + lag.dy * 0.4);
   fillPath(canvas, ellipse(bun, 21, 18), c.hairBack);
   for (var k = 0; k < 4; k++) {
@@ -77,13 +77,15 @@ void drawBackHair(Canvas canvas, CompanionPalette c, Offset lag) {
   );
 }
 
-List<Offset> _fringe(Offset lag, double yaw) => [
+/// The bun's front hair outline: swept back from the parting, turned with
+/// the head and trailing a little of its motion.
+List<Offset> bunFringe(Offset lag, double yaw) => [
   for (final p in _lagged(fringeOutline(), lag * 0.4)) p + Offset(yaw * 4, 0),
 ];
 
 /// The hair over the forehead, its waves and the loose strands.
-void drawFrontHair(Canvas canvas, CompanionPalette c, Offset lag, double yaw) {
-  final fringe = smoothClosed(_fringe(lag, yaw), 0.24);
+void drawBunFront(Canvas canvas, CompanionPalette c, Offset lag, double yaw) {
+  final fringe = smoothClosed(bunFringe(lag, yaw), 0.24);
   fillPath(canvas, fringe, c.hair);
   canvas
     ..save()
@@ -104,22 +106,6 @@ void drawFrontHair(Canvas canvas, CompanionPalette c, Offset lag, double yaw) {
     ..restore();
   _waveMarks(canvas, c, yaw);
   _wisps(canvas, c, lag, yaw);
-}
-
-/// The fringe's shadow on the forehead.
-void drawForeheadShadow(
-  Canvas canvas,
-  CompanionPalette c,
-  Offset lag,
-  double yaw,
-) {
-  fillPath(
-    canvas,
-    smoothClosed([
-      for (final p in _fringe(lag, yaw)) p + const Offset(0, 3.5),
-    ], 0.24),
-    c.skinDeep.withValues(alpha: 0.3),
-  );
 }
 
 /// Swept-back waves: arcs that follow the hair from the parting to the ears.

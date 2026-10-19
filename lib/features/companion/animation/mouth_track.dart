@@ -15,4 +15,9 @@ abstract interface class MouthTrack {
 
   /// The voice's loudness at [position], 0..1; 0 outside the clip.
   double loudnessAt(Duration position);
+
+  /// When the character at [offset] of the words is spoken, or null for a
+  /// track that has no words. An offset past the end is the end of the
+  /// words.
+  Duration? timeOf(int offset);
 }

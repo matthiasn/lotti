@@ -291,6 +291,24 @@ Map<String, dynamic> _$SyncDailyOsUserNameToJson(
   'runtimeType': instance.$type,
 };
 
+SyncCompanionCustomization _$SyncCompanionCustomizationFromJson(
+  Map<String, dynamic> json,
+) => SyncCompanionCustomization(
+  customization: json['customization'] as String,
+  updatedAt: (json['updatedAt'] as num).toInt(),
+  status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncCompanionCustomizationToJson(
+  SyncCompanionCustomization instance,
+) => <String, dynamic>{
+  'customization': instance.customization,
+  'updatedAt': instance.updatedAt,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'runtimeType': instance.$type,
+};
+
 SyncGitHubAccount _$SyncGitHubAccountFromJson(Map<String, dynamic> json) =>
     SyncGitHubAccount(
       updatedAt: (json['updatedAt'] as num).toInt(),

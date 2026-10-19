@@ -153,6 +153,46 @@ void main() {
     expect(bright.smile, greaterThan(calm.smile + 0.2));
   });
 
+  test('a reaction mood shows lopsided, or frowning', () {
+    final calm = _run(CompanionAnimator(), 3).last;
+    final smug = _run(CompanionAnimator(), 3, mood: CompanionMood.smug).last;
+    final skeptical = _run(
+      CompanionAnimator(),
+      3,
+      mood: CompanionMood.skeptical,
+    ).last;
+    final stern = _run(CompanionAnimator(), 3, mood: CompanionMood.stern).last;
+    expect([calm.smileSkew, calm.browSkew], [0, 0]);
+    expect(smug.smileSkew, closeTo(CompanionMood.smug.smileSkew, 0.02));
+    expect(skeptical.browSkew, closeTo(CompanionMood.skeptical.browSkew, 0.02));
+    // Below zero: the corners turn down, which the old 0..1 range forbade.
+    expect(stern.smile, lessThan(-0.5));
+    expect(stern.browRaise, lessThan(-0.5));
+  });
+
+  test("a gesture's lids and skews add to the mood's", () {
+    final a = CompanionAnimator()..play(GestureName.slowClap);
+    final clap = _run(a, 1, mood: CompanionMood.smug).last;
+    expect(
+      clap.smileSkew,
+      closeTo(
+        CompanionMood.smug.smileSkew + GestureName.slowClap.gesture.smileSkew,
+        0.05,
+      ),
+    );
+    final b = CompanionAnimator()..play(GestureName.facepalm);
+    // Mid-hold, between blinks: the lids rest mostly shut.
+    final palm = _run(b, 1.2).last;
+    expect(palm.blink, greaterThan(0.5));
+  });
+
+  test('the new pose fields survive the hair and hem trail', () {
+    final a = CompanionAnimator()..play(GestureName.fingerWag);
+    final pose = _run(a, 1).last;
+    expect(pose.browSkew, greaterThan(0.3));
+    expect(pose.smileSkew, greaterThan(0.15));
+  });
+
   test('the hair trails a moving head and settles when it stops', () {
     final a = CompanionAnimator()..play(GestureName.celebrate);
     final poses = _run(a, 1.5);

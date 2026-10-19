@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/utils/companion_settings_keys.dart';
 import 'package:lotti/utils/daily_os_preferences_keys.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 
@@ -16,8 +17,8 @@ final preferenceResendExtrasProvider =
     );
 
 /// The messages that re-send this device's synced preferences — the theme,
-/// the Daily OS greeting name and every config flag — each with the stamp
-/// its stored value holds.
+/// the Daily OS greeting name, the companion's customization and every
+/// config flag — each with the stamp its stored value holds.
 ///
 /// Each is sent once per change and kept by its receiver under
 /// last-writer-wins on that stamp, so a lost message used to stay lost until
@@ -35,6 +36,8 @@ Future<List<SyncMessage>> preferenceResendMessages({
     themePrefsUpdatedAtKey,
     dailyOsUserNameSettingsKey,
     dailyOsUserNameUpdatedAtSettingsKey,
+    companionCustomizationKey,
+    companionCustomizationUpdatedAtKey,
   ]);
   final light = settings[lightSchemeNameKey];
   final dark = settings[darkSchemeNameKey];
@@ -43,6 +46,10 @@ Future<List<SyncMessage>> preferenceResendMessages({
   final userName = settings[dailyOsUserNameSettingsKey];
   final nameStamp = int.tryParse(
     settings[dailyOsUserNameUpdatedAtSettingsKey] ?? '',
+  );
+  final customization = settings[companionCustomizationKey];
+  final customizationStamp = int.tryParse(
+    settings[companionCustomizationUpdatedAtKey] ?? '',
   );
   return [
     if (light != null && dark != null && mode != null && themeStamp != null)
@@ -57,6 +64,12 @@ Future<List<SyncMessage>> preferenceResendMessages({
       SyncMessage.dailyOsUserName(
         userName: userName,
         updatedAt: nameStamp,
+        status: SyncEntryStatus.update,
+      ),
+    if (customization != null && customizationStamp != null)
+      SyncMessage.companionCustomization(
+        customization: customization,
+        updatedAt: customizationStamp,
         status: SyncEntryStatus.update,
       ),
     for (final (:flag, :updatedAt) in await journalDb.stampedConfigFlags())

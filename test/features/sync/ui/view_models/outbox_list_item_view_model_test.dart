@@ -266,6 +266,20 @@ void main() {
             expectedLabel: (ctx) => ctx.messages.syncPayloadDailyOsUserName,
           ),
           (
+            name: 'companion customization',
+            item: payloadItem(
+              id: 32,
+              message: const SyncMessage.companionCustomization(
+                customization: '{}',
+                updatedAt: 0,
+                status: SyncEntryStatus.update,
+              ).toJson(),
+              subject: 'companionCustomization',
+            ),
+            expectedLabel: (ctx) =>
+                ctx.messages.syncPayloadCompanionCustomization,
+          ),
+          (
             name: 'github account',
             item: payloadItem(
               id: 17,

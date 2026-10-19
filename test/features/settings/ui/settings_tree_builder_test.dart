@@ -38,10 +38,14 @@ List<Override> _flags({
   bool dashboards = true,
   bool whatsNew = false,
   bool speechTts = false,
+  bool companion = false,
 }) => [
   configFlagProvider(
     enableAiSummaryTtsFlag,
   ).overrideWith((ref) => Stream.value(speechTts)),
+  configFlagProvider(
+    enableCompanionFlag,
+  ).overrideWith((ref) => Stream.value(companion)),
   configFlagProvider(
     enableMatrixFlag,
   ).overrideWith((ref) => Stream.value(matrix)),
@@ -140,6 +144,22 @@ void main() {
       await _buildTree(tester, overrides: _flags(speechTts: true)),
     );
     expect(ids.contains('preferences/speech'), isTrue);
+  });
+
+  testWidgets('the companion flag adds her page inside preferences, after '
+      'theming', (tester) async {
+    final tree = await _buildTree(tester, overrides: _flags(companion: true));
+    final preferences = tree.firstWhere((n) => n.id == 'preferences');
+    final ids = preferences.children!.map((n) => n.id).toList();
+    expect(ids.indexOf('preferences/companion'), 1);
+    expect(tree.map((n) => n.id), isNot(contains('preferences/companion')));
+  });
+
+  testWidgets('her page is absent while the companion flag is off', (
+    tester,
+  ) async {
+    final ids = _ids(await _buildTree(tester, overrides: _flags()));
+    expect(ids.contains('preferences/companion'), isFalse);
   });
 
   testWidgets('the speech leaf is absent while the TTS flag is off', (

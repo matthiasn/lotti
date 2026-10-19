@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/head_painter.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
@@ -52,6 +53,50 @@ void main() {
       expect(r.count(look.palette.glasses), greaterThan(100));
     },
   );
+
+  test('a brow skew raises her right brow and lowers the left', () async {
+    const look = CompanionLook.grandma;
+    // The brows' heights, each from its own half of the face.
+    Future<(double, double)> brows(double skew) async {
+      final r = await _head(look, pose: CompanionPose(browSkew: skew));
+      double? at({required bool right}) {
+        var sum = 0.0;
+        var n = 0;
+        for (var y = 120; y < 240; y++) {
+          for (var x = right ? 245 : 140; x < (right ? 340 : 235); x++) {
+            if (near(r.at(x, y), look.palette.brow)) {
+              sum += y;
+              n++;
+            }
+          }
+        }
+        return n == 0 ? null : sum / n;
+      }
+
+      return (at(right: false)!, at(right: true)!);
+    }
+
+    final (left, right) = await brows(0);
+    final (skewLeft, skewRight) = await brows(1.5);
+    expect(skewRight, lessThan(right - 4));
+    expect(skewLeft, greaterThan(left + 4));
+  });
+
+  test("she wears her look's hairstyle, front and back", () async {
+    const bun = CompanionLook.grandma;
+    final afro = bun.copyWith(hairStyle: CompanionHairStyle.afro);
+    final withBun = await _head(bun);
+    final withAfro = await _head(afro);
+    // The afro is far more hair, behind and over the head.
+    expect(
+      withAfro.count(bun.palette.hairBack),
+      greaterThan(withBun.count(bun.palette.hairBack) + 2000),
+    );
+    expect(
+      withAfro.count(bun.palette.hair, tolerance: 30),
+      greaterThan(withBun.count(bun.palette.hair, tolerance: 30)),
+    );
+  });
 
   test('a blink closes both eyes', () async {
     const look = CompanionLook.grandma;

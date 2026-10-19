@@ -406,6 +406,8 @@ class QueueApplyAdapter {
       themingSelection: (_) => false,
       // settings_db (Daily OS greeting name).
       dailyOsUserName: (_) => false,
+      // settings_db (the companion's customization).
+      companionCustomization: (_) => false,
       // The device keychain, outside every database.
       gitHubAccount: (_) => false,
       // notifications_db.

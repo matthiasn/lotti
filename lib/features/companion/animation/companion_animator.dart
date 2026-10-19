@@ -53,7 +53,9 @@ class CompanionAnimator {
     'pitch': Spring(0, freq: 1.8, zeta: 0.7),
     'brow': Spring(0, freq: 2.6, zeta: 0.6),
     'tilt': Spring(0, freq: 2, zeta: 0.8),
+    'browSkew': Spring(0, freq: 2.2),
     'smile': Spring(0.5, freq: 1.4, zeta: 0.9),
+    'smileSkew': Spring(0, freq: 1.6, zeta: 0.9),
     'squint': Spring(0, freq: 2, zeta: 0.9),
     'lids': Spring(0, freq: 1.2, zeta: 1),
     'gx': Spring(0, freq: 5, zeta: 0.95),
@@ -208,7 +210,7 @@ class CompanionAnimator {
     _tailPhase += dt * 2 * math.pi * 0.3 * mood.breathRate;
     final pelvisX = 3.2 * noise1(t * 0.35, 1);
     final baseSmile = (speaking ? 0.3 : 0.5) + mood.smile;
-    final lids = s['lids']!.step(mood.lids, dt);
+    final lids = s['lids']!.step(clampUnit(mood.lids + g.lids), dt);
     final pulse = _blinkAmount();
 
     final pose = CompanionPose(
@@ -228,7 +230,10 @@ class CompanionAnimator {
         dt,
       ),
       browTilt: s['tilt']!.step(g.tilt + mood.tilt, dt),
-      smile: s['smile']!.step(clampUnit(baseSmile + g.smile), dt),
+      browSkew: s['browSkew']!.step(g.browSkew + mood.browSkew, dt),
+      // Down to -1: a reaction may frown.
+      smile: s['smile']!.step(clampUnit(baseSmile + g.smile, -1), dt),
+      smileSkew: s['smileSkew']!.step(g.smileSkew + mood.smileSkew, dt),
       mouth: mouth,
       left: _left.step(
         g.left ?? CompanionGesture.readyLeft,
@@ -287,7 +292,9 @@ CompanionPose _withTrail(CompanionPose p, Offset hairLag, double hemLag) =>
       squint: p.squint,
       browRaise: p.browRaise,
       browTilt: p.browTilt,
+      browSkew: p.browSkew,
       smile: p.smile,
+      smileSkew: p.smileSkew,
       mouth: p.mouth,
       handInFrontOfFace: p.handInFrontOfFace,
     );

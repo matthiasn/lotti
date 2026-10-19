@@ -151,6 +151,11 @@ void main() {
       );
       expect(resolve('preferences/recording-style').title, 'Recording Style');
       expect(resolve('preferences/speech').title, 'Speech');
+      expect(resolve('preferences/companion').title, 'Companion');
+      expect(
+        resolve('preferences/companion').desc,
+        'Her skin, hair and outfit',
+      );
     });
 
     testWidgets('the notifications leaf carries its own copy', (

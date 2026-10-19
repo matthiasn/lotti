@@ -1582,6 +1582,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit společnici na celé obrazovce';
 
   @override
+  String get aiCardCompanionStageNextOutfit => 'Změnit oblečení';
+
+  @override
   String get aiCardCompanionStageTitle => 'Společnice na celé obrazovce';
 
   @override
@@ -3777,6 +3780,90 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get commonUnknown => 'Neznámé';
+
+  @override
+  String get companionSettingsHairColourAuburn => 'Kaštanová';
+
+  @override
+  String get companionSettingsHairColourBlack => 'Černá';
+
+  @override
+  String get companionSettingsHairColourBlue => 'Modrá';
+
+  @override
+  String get companionSettingsHairColourBrown => 'Hnědá';
+
+  @override
+  String get companionSettingsHairColourGrey => 'Šedá';
+
+  @override
+  String get companionSettingsHairColourLabel => 'Barva vlasů';
+
+  @override
+  String get companionSettingsHairColourLavender => 'Levandulová';
+
+  @override
+  String get companionSettingsHairColourPink => 'Růžová';
+
+  @override
+  String get companionSettingsHairColourSilver => 'Stříbrná';
+
+  @override
+  String get companionSettingsHairColourWhite => 'Bílá';
+
+  @override
+  String get companionSettingsHairStyleAfro => 'Afro';
+
+  @override
+  String get companionSettingsHairStyleBob => 'Mikádo';
+
+  @override
+  String get companionSettingsHairStyleBun => 'Drdol';
+
+  @override
+  String get companionSettingsHairStyleCurls => 'Kudrny';
+
+  @override
+  String get companionSettingsHairStyleLabel => 'Účes';
+
+  @override
+  String get companionSettingsHairStyleLocs => 'Dredy';
+
+  @override
+  String get companionSettingsOutfitDescription =>
+      'Vyber oblečení, které bude nosit vždy, nebo ji nech, ať si při každém otevření aplikace vybere sama.';
+
+  @override
+  String get companionSettingsOutfitEveryday => 'Všední';
+
+  @override
+  String get companionSettingsOutfitGarden => 'Zahrada';
+
+  @override
+  String get companionSettingsOutfitLabel => 'Oblečení';
+
+  @override
+  String get companionSettingsOutfitLavender => 'Levandule';
+
+  @override
+  String get companionSettingsOutfitRock => 'Rock';
+
+  @override
+  String get companionSettingsOutfitStage => 'Pódium';
+
+  @override
+  String get companionSettingsOutfitSurprise => 'Překvap mě';
+
+  @override
+  String get companionSettingsOutfitWinter => 'Zima';
+
+  @override
+  String companionSettingsSkinTone(int number) {
+    return 'Odstín pleti $number';
+  }
+
+  @override
+  String get companionSettingsSkinToneLabel => 'Odstín pleti';
 
   @override
   String get completeHabitFailButton => 'Zmeškáno';
@@ -14274,6 +14361,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCelebrationsVariantSparks => 'Jiskry';
 
   @override
+  String get settingsCompanionSubtitle => 'Její pleť, vlasy a oblečení';
+
+  @override
+  String get settingsCompanionTitle => 'Společnice';
+
+  @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';
 
   @override
@@ -15992,6 +16085,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadBackfillResponse => 'Odpověď na doplnění';
+
+  @override
+  String get syncPayloadCompanionCustomization => 'Vzhled společnice';
 
   @override
   String get syncPayloadConfigFlag => 'Konfigurační příznak';

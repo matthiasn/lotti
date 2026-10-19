@@ -46,4 +46,16 @@ void main() {
     final track = VoicedTextTrack(silent, 'hello');
     expect(track.mouthAt(_ms(200)).open, Viseme.x.shape.open);
   });
+
+  test("the words' times are stretched over the voiced part too", () {
+    const text = 'mama papa';
+    final track = VoicedTextTrack(envelope, text);
+    // The first word starts with the voice, at 0.5 s.
+    expect(track.timeOf(0), _ms(500));
+    final papa = track.timeOf(text.indexOf('papa'));
+    expect(papa, greaterThan(_ms(500)));
+    expect(papa, lessThan(_ms(1500)));
+    // The end of the words is the end of the voice, never past it.
+    expect(track.timeOf(text.length), lessThanOrEqualTo(_ms(1500)));
+  });
 }

@@ -105,8 +105,8 @@ Contents:
     the summary keeps the full card width.
     A tap on that tile (`TldrHeader.onFigureTap`, its own control apart from
     the title's tap-to-internals ink) opens `CompanionStagePage`: her `full`
-    framing head to toe on the dark stage, with a close control and the same
-    read-aloud control (`SummaryReadAloudButton`) for the words the card
+    framing head to toe on the dark stage, with a control that changes her
+    outfit for the session, a close control, and the same read-aloud control (`SummaryReadAloudButton`) for the words the card
     showed. She speaks the task's utterance there too, so a summary being
     read aloud carries on in her mouth.
 

@@ -2,10 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/playhead_clock.dart';
+import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
-import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
@@ -21,8 +22,13 @@ import 'package:lotti/services/domain_logging.dart';
 /// ([loadSpokenTrack]) — the WAV and the words it was made from, both taken
 /// from the playback state, so what the host shows now cannot put other words
 /// in her mouth — and each frame her mouth follows the player's playhead.
+/// Her face follows the same words ([ToneTrack]): pleased through praise, a
+/// different face where they turn to what needs work.
 /// Another source playing, or none, leaves her silent but alive. The voice
 /// knows nothing about her.
+///
+/// She wears the session's outfit ([companionLookProvider]), so she is
+/// dressed the same on every screen.
 ///
 /// Only the start and end of an utterance pass through Riverpod; the
 /// per-frame playhead is read straight from the playback state, never
@@ -30,7 +36,6 @@ import 'package:lotti/services/domain_logging.dart';
 class CompanionSpeaker extends ConsumerStatefulWidget {
   const CompanionSpeaker({
     required this.sourceId,
-    this.look = CompanionLook.grandma,
     this.mood = CompanionMood.calm,
     this.framing = CompanionFraming.full,
     this.stage = false,
@@ -43,7 +48,6 @@ class CompanionSpeaker extends ConsumerStatefulWidget {
   /// [TtsPlaybackController.speak].
   final String sourceId;
 
-  final CompanionLook look;
   final CompanionMood mood;
   final CompanionFraming framing;
 
@@ -64,6 +68,7 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
   PlayheadClock _clock = PlayheadClock();
   ProviderSubscription<TtsClip?>? _clip;
   MouthTrack? _track;
+  ToneTrack? _tone;
 
   // Bumped by every utterance start or end, so a slow load for an utterance
   // that is already over never lands.
@@ -131,7 +136,14 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     if (!mounted || utterance != _utterance || identical(track, _track)) {
       return;
     }
-    setState(() => _track = track);
+    setState(() {
+      _track = track;
+      // The words' tones, timed as the mouth times them; read with the
+      // track so the two never belong to different clips.
+      _tone = track == null || clip == null
+          ? null
+          : ToneTrack.read(clip.text, track);
+    });
   }
 
   Duration? _playhead() {
@@ -143,13 +155,14 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
 
   @override
   Widget build(BuildContext context) => CompanionView(
-    look: widget.look,
+    look: ref.watch(companionLookProvider),
     mood: widget.mood,
     framing: widget.framing,
     stage: widget.stage,
     controller: widget.controller,
     holding: widget.holding,
     track: _track,
+    tone: _tone,
     playhead: _playhead,
   );
 }

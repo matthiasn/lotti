@@ -1,13 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
+import 'package:lotti/features/companion/model/companion_parts.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
+import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -21,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../companion_overrides.dart';
 
 const _clip = '/tmp/clip.wav';
 
@@ -93,7 +99,6 @@ void main() {
           height: 96,
           child: CompanionSpeaker(
             sourceId: sourceId,
-            look: CompanionLook.cat,
             mood: CompanionMood.bright,
             controller: controller,
             holding: holding,
@@ -108,6 +113,7 @@ void main() {
             () => _Settings(TtsSettings(speed: speed)),
           ),
           spokenTrackLoaderProvider.overrideWithValue(loader.call),
+          ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
@@ -138,10 +144,53 @@ void main() {
     await pumpSpeaker(tester);
 
     final shown = view(tester);
-    expect(shown.look, CompanionLook.cat);
+    expect(shown.look.id, CompanionLook.grandmaWinter.id);
     expect(shown.mood, CompanionMood.bright);
     expect(shown.framing, CompanionFraming.full);
     expect(shown.stage, isFalse);
+  });
+
+  testWidgets('wears the session outfit, and changes when it does', (
+    tester,
+  ) async {
+    await pumpSpeaker(tester);
+    ProviderScope.containerOf(
+      tester.element(find.byType(CompanionSpeaker)),
+    ).read(companionOutfitProvider.notifier).next();
+    await tester.pump();
+
+    final winter = companionOutfits.indexOf(CompanionLook.grandmaWinter);
+    expect(
+      view(tester).look.id,
+      companionOutfits[(winter + 1) % companionOutfits.length].id,
+    );
+  });
+
+  testWidgets('wears her customization: a new hairstyle shows at once', (
+    tester,
+  ) async {
+    await pumpSpeaker(tester);
+    expect(view(tester).look.hairStyle, CompanionHairStyle.bun);
+
+    ProviderScope.containerOf(
+          tester.element(find.byType(CompanionSpeaker)),
+        )
+        .read(companionCustomizationProvider.notifier)
+        .set(
+          const CompanionCustomization(
+            hairStyle: CompanionHairStyle.locs,
+            skinTone: CompanionSkinTone.tone5,
+          ),
+        );
+    await tester.pump();
+
+    expect(view(tester).look.hairStyle, CompanionHairStyle.locs);
+    expect(view(tester).look.palette.skin, CompanionSkinTone.tone5.skin);
+    // Still the winter outfit, in her new skin and hair.
+    expect(
+      view(tester).look.palette.dress,
+      CompanionLook.grandmaWinter.palette.dress,
+    );
   });
 
   testWidgets('stands her on the stage when the host asks', (tester) async {
@@ -205,6 +254,22 @@ void main() {
     expect(loader.calls, [(clip: _clip, text: 'Good morning')]);
     final track = await answerLoad(tester);
     expect(view(tester).track, same(track));
+  });
+
+  testWidgets("reads the tone of the clip's own words, timed by its mouth", (
+    tester,
+  ) async {
+    const words = 'Four things today. The review is overdue.';
+    await pumpSpeaker(tester);
+    playback.current = _playing('task-1', text: words);
+    await tester.pump();
+    expect(view(tester).tone, isNull);
+
+    final track = await answerLoad(tester);
+    final tone = view(tester).tone!;
+    expect(tone.cues, hasLength(2));
+    expect(tone.cues.last.start, track.timeOf(words.indexOf(' The review')));
+    expect(tone.cues.last.approval, lessThan(0));
   });
 
   testWidgets('speaks a clip that was already playing when she appeared', (
@@ -276,6 +341,7 @@ void main() {
     await tester.pump();
 
     expect(view(tester).track, isNull);
+    expect(view(tester).tone, isNull);
     expect(view(tester).playhead!(), isNull);
   });
 
@@ -327,6 +393,7 @@ void main() {
             () => _Settings(const TtsSettings()),
           ),
           spokenTrackLoaderProvider.overrideWithValue(loader.call),
+          ...companionLookOverrides(outfit: CompanionLook.grandmaWinter),
           domainLoggerProvider.overrideWithValue(logger),
         ],
       ),
