@@ -44,6 +44,10 @@ class CompanionCustomizationController
   var _saving = 0;
   var _reloadPending = false;
 
+  /// What is stored, as last read or written here. A change is laid over it,
+  /// so the parts it leaves alone keep what a newer version wrote there.
+  Map<String, dynamic>? _stored;
+
   StreamSubscription<Set<String>>? _synced;
   final _debounceKey =
       'companion.customization.sync.${identityHashCode(Object())}';
@@ -71,7 +75,9 @@ class CompanionCustomizationController
       ]);
       final json = stored[companionCustomizationKey];
       if (!ref.mounted || _changed || json == null) return;
-      state = _decode(json);
+      final raw = _parse(json);
+      state = CompanionCustomization.fromJson(raw);
+      _stored = raw;
       // Every write stores its stamp with the value, so one without a stamp
       // has nothing to win with and is not sent.
       final updatedAt = int.tryParse(
@@ -93,10 +99,15 @@ class CompanionCustomizationController
   void set(CompanionCustomization customization) {
     _changed = true;
     state = customization;
-    _save(customization).ignore();
+    final stored = _stored;
+    final json = stored == null
+        ? customization.toJson()
+        : customization.toJsonOver(stored);
+    _stored = json;
+    _save(jsonEncode(json)).ignore();
   }
 
-  Future<void> _save(CompanionCustomization customization) async {
+  Future<void> _save(String json) async {
     _saving++;
     try {
       // The value and a fresh stamp together, so what is sent and what is
@@ -104,7 +115,7 @@ class CompanionCustomizationController
       final saved = await ref
           .read(settingsDbProvider)
           .saveLocalSettingsGroup(
-            {companionCustomizationKey: jsonEncode(customization.toJson())},
+            {companionCustomizationKey: json},
             stampKey: companionCustomizationUpdatedAtKey,
             timestamp: clock.now().millisecondsSinceEpoch,
           );
@@ -179,15 +190,17 @@ class CompanionCustomizationController
           .read(settingsDbProvider)
           .itemByKey(companionCustomizationKey);
       if (!ref.mounted || json == null) return;
-      final synced = _decode(json);
+      final raw = _parse(json);
+      final synced = CompanionCustomization.fromJson(raw);
+      _stored = raw;
       if (synced != state) state = synced;
     } catch (error, stackTrace) {
       _logError(error, stackTrace, 'Could not reload her customization');
     }
   }
 
-  static CompanionCustomization _decode(String json) =>
-      CompanionCustomization.fromJson(jsonDecode(json) as Map<String, dynamic>);
+  static Map<String, dynamic> _parse(String json) =>
+      jsonDecode(json) as Map<String, dynamic>;
 
   void _logError(Object error, StackTrace stackTrace, String message) {
     if (!ref.mounted) return;

@@ -96,6 +96,26 @@ class CompanionCustomization {
     'outfit': ?outfitId,
   };
 
+  /// [toJson] laid over [stored], the JSON this was changed from: a part
+  /// left as [stored] reads here keeps what [stored] holds. So a part a newer
+  /// version wrote — which reads here as its default — survives a change to
+  /// another part, on this device and, through sync, on the newer one, and so
+  /// does a part this version has never heard of.
+  Map<String, dynamic> toJsonOver(Map<String, dynamic> stored) {
+    final read = CompanionCustomization.fromJson(stored).toJson();
+    final changed = toJson();
+    final json = {...stored};
+    for (final key in {...read.keys, ...changed.keys}) {
+      if (read[key] == changed[key]) continue;
+      if (changed.containsKey(key)) {
+        json[key] = changed[key];
+      } else {
+        json.remove(key);
+      }
+    }
+    return json;
+  }
+
   @override
   bool operator ==(Object other) =>
       other is CompanionCustomization &&

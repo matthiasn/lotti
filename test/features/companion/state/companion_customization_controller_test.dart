@@ -216,6 +216,39 @@ void main() {
       });
     });
 
+    test('keeps, and sends, what a newer version wrote in the parts it '
+        'leaves alone', () {
+      fakeAsync((async) {
+        storesWithStamp(900);
+        const newer = {
+          'skinTone': 'tone2',
+          'hairStyle': 'mohawk',
+          'hairColour': 'black',
+          'eyes': 'green',
+        };
+        stored({companionCustomizationKey: jsonEncode(newer)});
+        final c = start(async);
+        c
+            .read(companionCustomizationProvider.notifier)
+            .set(
+              c
+                  .read(companionCustomizationProvider)
+                  .copyWith(skinTone: CompanionSkinTone.tone5),
+            );
+        settle(async);
+
+        final expected = jsonEncode({...newer, 'skinTone': 'tone5'});
+        verify(
+          () => db.saveLocalSettingsGroup(
+            {companionCustomizationKey: expected},
+            stampKey: companionCustomizationUpdatedAtKey,
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).called(1);
+        expect(sent().single.customization, expected);
+      });
+    });
+
     test('a run of taps goes out as one message, the last', () {
       fakeAsync((async) {
         storesWithStamp(800);
@@ -291,6 +324,48 @@ void main() {
         settle(async);
         expect(c.read(companionCustomizationProvider), _locs);
         verifyNever(() => outbox.enqueueMessage(any()));
+      });
+    });
+
+    test('a change after it keeps what a newer device wrote there', () {
+      fakeAsync((async) {
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer(
+          (invocation) async => (
+            updatedAt: 1,
+            values: Map.of(
+              invocation.positionalArguments.first as Map<String, String>,
+            ),
+          ),
+        );
+        final c = start(async);
+        const newer = {
+          'skinTone': 'tone1',
+          'hairStyle': 'mohawk',
+          'hairColour': 'silver',
+        };
+        when(
+          () => db.itemByKey(companionCustomizationKey),
+        ).thenAnswer((_) async => jsonEncode(newer));
+        updates.add({settingsNotification});
+        settle(async);
+        c
+            .read(companionCustomizationProvider.notifier)
+            .set(
+              c
+                  .read(companionCustomizationProvider)
+                  .copyWith(hairColour: CompanionHairColour.pink),
+            );
+        settle(async);
+        expect(
+          sent().single.customization,
+          jsonEncode({...newer, 'hairColour': 'pink'}),
+        );
       });
     });
 

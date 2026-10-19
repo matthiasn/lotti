@@ -82,6 +82,53 @@ void main() {
     );
   });
 
+  group('toJsonOver', () {
+    // Written by a newer version: a hairstyle, an outfit and a part this one
+    // has never heard of.
+    const newer = {
+      'skinTone': 'tone2',
+      'hairStyle': 'mohawk',
+      'hairColour': 'black',
+      'outfit': 'grandma_space',
+      'eyes': 'green',
+    };
+    final read = CompanionCustomization.fromJson(newer);
+
+    test('keeps what a newer version wrote in every part left alone', () {
+      expect(
+        read.copyWith(skinTone: CompanionSkinTone.tone5).toJsonOver(newer),
+        {...newer, 'skinTone': 'tone5'},
+      );
+      expect(read.toJsonOver(newer), newer);
+    });
+
+    test('writes a part that changed, over what it could not read', () {
+      expect(
+        read
+            .copyWith(
+              hairStyle: CompanionHairStyle.bob,
+              outfitId: () => 'grandma_rock',
+            )
+            .toJsonOver(newer),
+        {...newer, 'hairStyle': 'bob', 'outfit': 'grandma_rock'},
+      );
+    });
+
+    test('clears an outfit set back to a surprise', () {
+      const stored = {
+        'skinTone': 'tone1',
+        'hairStyle': 'bun',
+        'hairColour': 'silver',
+        'outfit': 'grandma_rock',
+      };
+      final json = CompanionCustomization.fromJson(
+        stored,
+      ).copyWith(outfitId: () => null).toJsonOver(stored);
+      expect(json, isNot(contains('outfit')));
+      expect(CompanionCustomization.fromJson(json).outfitId, isNull);
+    });
+  });
+
   test('copyWith changes what it is given, and can clear the outfit', () {
     const custom = CompanionCustomization(outfitId: 'grandma_rock');
     expect(

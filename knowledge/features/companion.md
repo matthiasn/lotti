@@ -315,7 +315,10 @@ flowchart LR
   `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at
   the default — Lotti as the videos draw her — and refines when the load
   lands; a change made before that wins. A part a newer version wrote, or an
-  outfit that no longer exists, reads as the default.
+  outfit that no longer exists, reads as the default — but a change is laid
+  over the stored JSON (`CompanionCustomization.toJsonOver`), so a part it
+  leaves alone keeps what the newer version wrote, and sync never carries an
+  older build's defaults over a newer device's choice.
 - **It syncs** as the Daily OS greeting name does, last write wins:
 
   ```mermaid
