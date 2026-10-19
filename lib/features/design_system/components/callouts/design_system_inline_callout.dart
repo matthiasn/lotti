@@ -111,9 +111,9 @@ class DesignSystemInlineCallout extends StatelessWidget {
                     ),
                   ),
                   if (actions.isNotEmpty) ...[
-                    // Tight under the words they answer: the buttons carry
-                    // their own height, so more air reads as a second block.
-                    SizedBox(height: tokens.spacing.step2),
+                    // No spacer: the buttons sit straight under the words
+                    // they answer — their own inset is the only gap, so the
+                    // row never reads as a second block.
                     Wrap(
                       alignment: WrapAlignment.end,
                       crossAxisAlignment: WrapCrossAlignment.center,
