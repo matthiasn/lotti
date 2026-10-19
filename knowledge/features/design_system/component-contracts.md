@@ -24,6 +24,10 @@ sources:
     resource: ../../../lib/features/design_system/components/action_modal
     title: Action modal — the shell, row and toggle chip behind both task-detail menus
     last_modified: 2026-08-21
+  - id: on-screen-ticker-mode
+    resource: ../../../lib/features/design_system/components/motion/on_screen_ticker_mode.dart
+    title: OnScreenTickerMode — animate only what is actually on screen
+    last_modified: 2026-10-19
   - id: modal-utils
     resource: ../../../lib/widgets/modal/modal_utils.dart
     title: ModalUtils — sheet presentation and the width-driven navigator choice
@@ -990,6 +994,30 @@ stateDiagram-v2
 While `Animating`, rows the drum passes are shown but not reported; a
 generation counter keeps an interrupted animation's completion from clearing a
 newer one that happens to aim at the same row.
+
+# Animate only what is on screen
+
+A page that builds its content whole and keeps it resident — so scrolling
+never builds, disposes or reloads anything — still must not pay for the
+animation of what it is not showing. `OnScreenTickerMode` wraps such a child
+in a `TickerMode` that is on only while three things hold: the app is
+`resumed`, the host tab is on screen (the app shell mutes inactive tabs with
+`TickerMode`, and TickerMode composes by AND, so the gate never overrides
+it), and the child intersects its enclosing scroll viewport. Outside any
+scroll view, mounted on a visible tab counts as on screen.
+
+- **Off until proven on.** The first layout-safe sample is after the first
+  frame, so a below-the-fold child never animates even once.
+- **Rechecked on every drawn frame, scroll event, lifecycle change and
+  rebuild.** A post-frame callback re-arms itself; it schedules no frames of
+  its own, so a still page runs nothing.
+- **`onVisibilityChanged`** reports each hidden↔visible transition (never on
+  disposal) for callers that measure exposure on top of the gate — the nudge
+  banners' `NudgeBannerExposureTracker` is built this way.
+
+Its users: the Goals list's goal cards (the companion's per-frame idle
+animation) and the nudge banners. The pattern is pinned in
+`on_screen_ticker_mode_test.dart`.
 
 # Boundaries
 
