@@ -25,6 +25,8 @@ void main() {
 
   setUp(() {
     gateway = MockDemoModeGateway();
+    // Nothing left to download unless a test says otherwise: no prompt.
+    when(gateway.demoMediaBytesAwaitingChoice).thenAnswer((_) async => 0);
   });
 
   Widget host({
@@ -53,7 +55,10 @@ void main() {
         'ambient locale', (tester) async {
       final entered = Completer<void>();
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
       ).thenAnswer((_) => entered.future);
 
       await tester.pumpWidget(
@@ -72,7 +77,13 @@ void main() {
 
       expect(find.byType(DemoEnteringProgressPage), findsOneWidget);
       expect(find.text('Demo-Welt wird eingerichtet…'), findsOneWidget);
-      verify(() => gateway.enterDemo(locale: const Locale('de'))).called(1);
+      verify(
+        () => gateway.enterDemo(
+          locale: const Locale('de'),
+          // ignore: avoid_redundant_argument_values
+          downloadMedia: false,
+        ),
+      ).called(1);
 
       entered.complete();
       await tester.pump();
@@ -83,7 +94,10 @@ void main() {
       tester,
     ) async {
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
       ).thenAnswer((_) async => throw StateError('seed boom'));
 
       await tester.pumpWidget(
@@ -116,7 +130,10 @@ void main() {
       addTearDown(getIt.reset);
       final entered = Completer<void>();
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
       ).thenAnswer((_) => entered.future);
 
       await tester.pumpWidget(
@@ -173,6 +190,120 @@ void main() {
       await tester.tap(find.text('go'));
       await tester.pumpAndSettle();
       expect(find.byType(DemoEnteringProgressPage), findsNothing);
+    });
+  });
+
+  group('launchDemoEnter photo prompt', () {
+    const bytes = 26544434;
+
+    Future<void> tapGo(WidgetTester tester) async {
+      await tester.pumpWidget(
+        host(
+          builder: (context) => TextButton(
+            onPressed: () =>
+                unawaited(launchDemoEnter(context, gateway: gateway)),
+            child: const Text('go'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('go'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    setUp(() {
+      when(
+        gateway.demoMediaBytesAwaitingChoice,
+      ).thenAnswer((_) async => bytes);
+      when(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    testWidgets('asks with the download size before entering anything', (
+      tester,
+    ) async {
+      await tapGo(tester);
+
+      expect(find.text('Download the demo photos?'), findsOneWidget);
+      expect(find.textContaining('a 26.6 MB download'), findsOneWidget);
+      expect(find.text('Download (26.6 MB)'), findsOneWidget);
+      expect(find.byType(DemoEnteringProgressPage), findsNothing);
+      verifyNever(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
+      );
+    });
+
+    testWidgets('choosing to download enters with the photos', (tester) async {
+      await tapGo(tester);
+      await tester.tap(find.text('Download (26.6 MB)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('continuing without photos enters without them', (
+      tester,
+    ) async {
+      await tapGo(tester);
+      await tester.tap(find.text('Continue without photos'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          // ignore: avoid_redundant_argument_values
+          downloadMedia: false,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('dismissing the prompt enters nothing', (tester) async {
+      await tapGo(tester);
+      Navigator.of(
+        tester.element(find.text('Download the demo photos?')),
+      ).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Download the demo photos?'), findsNothing);
+      expect(find.byType(DemoEnteringProgressPage), findsNothing);
+      verifyNever(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
+      );
+    });
+
+    testWidgets('with nothing left to download it enters without asking', (
+      tester,
+    ) async {
+      when(gateway.demoMediaBytesAwaitingChoice).thenAnswer((_) async => 0);
+
+      await tapGo(tester);
+
+      expect(find.text('Download the demo photos?'), findsNothing);
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          // ignore: avoid_redundant_argument_values
+          downloadMedia: false,
+        ),
+      ).called(1);
     });
   });
 
@@ -233,7 +364,10 @@ void main() {
       tester,
     ) async {
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(button(demoActive: false, journalEmpty: true));
@@ -243,7 +377,12 @@ void main() {
       await tester.tap(find.text('Try the demo'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          downloadMedia: any(named: 'downloadMedia'),
+        ),
+      ).called(1);
     });
   });
 }

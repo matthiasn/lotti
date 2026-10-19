@@ -3040,6 +3040,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillStatsRequested => 'Angefordert';
 
   @override
+  String get backfillStatsSkipped => 'Übersprungen';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (dieses Gerät)';
   }
@@ -3058,9 +3061,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Fehlend';
-
-  @override
-  String get backfillStatsSkipped => 'Übersprungen';
 
   @override
   String get backfillToggleDescription =>
@@ -5849,6 +5849,27 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'Einige Demo-Bilder konnten nicht heruntergeladen werden. Beim nächsten Start wird es erneut versucht.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Herunterladen ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Die Demo enthält Beispielfotos – ein Download von $size. Du kannst sie auch ohne erkunden: Unscharfe Vorschauen stehen dann für die Fotos.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Ohne Fotos fortfahren';
+
+  @override
+  String get demoMediaPromptTitle => 'Demo-Fotos herunterladen?';
 
   @override
   String get demoOnboardingExplore => 'Mit Beispieldaten erkunden';

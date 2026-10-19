@@ -3014,6 +3014,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillStatsRequested => 'Efterspurgt';
 
   @override
+  String get backfillStatsSkipped => 'Sprunget over';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (denne enhed)';
   }
@@ -3032,9 +3035,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Savnet';
-
-  @override
-  String get backfillStatsSkipped => 'Sprunget over';
 
   @override
   String get backfillToggleDescription =>
@@ -5806,6 +5806,27 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'Nogle demobilleder kunne ikke hentes. Der forsøges igen ved næste opstart.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Hent ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demoen indeholder eksempelbilleder, en download på $size. Du kan udforske den uden dem – slørede forhåndsvisninger vises i stedet.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Fortsæt uden billeder';
+
+  @override
+  String get demoMediaPromptTitle => 'Hent demobillederne?';
 
   @override
   String get demoOnboardingExplore => 'Udforsk med eksempeldata';

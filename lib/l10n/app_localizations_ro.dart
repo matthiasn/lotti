@@ -3067,6 +3067,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitat';
 
   @override
+  String get backfillStatsSkipped => 'Omis';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (acest dispozitiv)';
   }
@@ -3085,9 +3088,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Lipsă';
-
-  @override
-  String get backfillStatsSkipped => 'Omis';
 
   @override
   String get backfillToggleDescription =>
@@ -5913,6 +5913,27 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'Unele imagini demo nu au putut fi descărcate. Vom încerca din nou la următoarea pornire.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Descărcați ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demo-ul include fotografii de exemplu, o descărcare de $size. Îl puteți explora și fără ele – în locul lor apar previzualizări estompate.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Continuați fără fotografii';
+
+  @override
+  String get demoMediaPromptTitle => 'Descărcați fotografiile demo?';
 
   @override
   String get demoOnboardingExplore => 'Explorați cu date de exemplu';

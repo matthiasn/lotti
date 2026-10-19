@@ -3023,6 +3023,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillStatsRequested => 'Begärd';
 
   @override
+  String get backfillStatsSkipped => 'Hoppade över';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (den här enheten)';
   }
@@ -3041,9 +3044,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Saknad';
-
-  @override
-  String get backfillStatsSkipped => 'Hoppade över';
 
   @override
   String get backfillToggleDescription =>
@@ -5813,6 +5813,27 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'Vissa demobilder kunde inte hämtas. Ett nytt försök görs vid nästa start.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Hämta ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demon innehåller exempelfoton, en nedladdning på $size. Du kan utforska den utan dem – suddiga förhandsvisningar visas i stället.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Fortsätt utan foton';
+
+  @override
+  String get demoMediaPromptTitle => 'Hämta demobilderna?';
 
   @override
   String get demoOnboardingExplore => 'Utforska med exempeldata';

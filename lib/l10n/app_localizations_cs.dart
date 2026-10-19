@@ -3051,6 +3051,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillStatsRequested => 'Požadováno';
 
   @override
+  String get backfillStatsSkipped => 'Přeskočeno';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (toto zařízení)';
   }
@@ -3069,9 +3072,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Chybí';
-
-  @override
-  String get backfillStatsSkipped => 'Přeskočeno';
 
   @override
   String get backfillToggleDescription =>
@@ -5875,6 +5875,27 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'Některé ukázkové obrázky se nepodařilo stáhnout. Při příštím spuštění to zkusíme znovu.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Stáhnout ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'Demo obsahuje ukázkové fotky o velikosti $size. Můžeš ho prozkoumat i bez nich – místo fotek uvidíš rozmazané náhledy.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Pokračovat bez fotek';
+
+  @override
+  String get demoMediaPromptTitle => 'Stáhnout ukázkové fotky?';
 
   @override
   String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';

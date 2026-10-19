@@ -3045,6 +3045,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillStatsRequested => 'Solicitado';
 
   @override
+  String get backfillStatsSkipped => 'Omitido';
+
+  @override
   String backfillStatsThisDevice(String name) {
     return '$name (este dispositivo)';
   }
@@ -3063,9 +3066,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backfillStatusMissing => 'Faltante';
-
-  @override
-  String get backfillStatsSkipped => 'Omitido';
 
   @override
   String get backfillToggleDescription =>
@@ -5881,6 +5881,27 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get demoMediaDownloadRetry =>
       'No se pudieron descargar algunas imágenes de demostración. Se reintentará la próxima vez.';
+
+  @override
+  String demoMediaPromptDownload(String size) {
+    return 'Descargar ($size)';
+  }
+
+  @override
+  String demoMediaPromptMessage(String size) {
+    return 'La demo incluye fotos de ejemplo, una descarga de $size. Puedes explorarla sin ellas: unas vistas previas difuminadas ocupan su lugar.';
+  }
+
+  @override
+  String demoMediaPromptSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get demoMediaPromptSkip => 'Continuar sin fotos';
+
+  @override
+  String get demoMediaPromptTitle => '¿Descargar las fotos de la demo?';
 
   @override
   String get demoOnboardingExplore => 'Explorar con datos de ejemplo';

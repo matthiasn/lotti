@@ -9,6 +9,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_consent.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
@@ -111,7 +113,16 @@ class DemoModeGateway {
   /// something the user made. [resetDemo] remains the explicit, confirmed
   /// wipe. While the demo is ALREADY active there is nothing to enter, so it
   /// degrades to the same staleness repair — see [refreshStaleDemoWorld].
-  Future<void> enterDemo({required Locale locale}) async {
+  ///
+  /// [downloadMedia] records that the user chose to download the demo's
+  /// photos — after being shown [demoMediaBytesAwaitingChoice] — in the
+  /// world about to be entered, before the switch, so the world's startup
+  /// hydration sees it. False records nothing and revokes nothing: a world
+  /// whose user chose earlier keeps that choice, across a reseed too.
+  Future<void> enterDemo({
+    required Locale locale,
+    bool downloadMedia = false,
+  }) async {
     if (isDemoActive) {
       // Already inside: "Try the demo" has nothing to enter, but the world
       // underfoot may be stale — see [refreshStaleDemoWorld].
@@ -119,14 +130,41 @@ class DemoModeGateway {
       return;
     }
     final existing = await findDemoProfile();
+    var keepDownloadChoice = false;
     if (existing != null) {
+      final root = registry.rootFor(existing);
       if (await _hasCurrentSeed(existing) || await _hasUserWork(existing)) {
+        if (downloadMedia) await DemoMediaConsent.grant(root);
         await activate(existing.id);
         return;
       }
+      keepDownloadChoice = await DemoMediaConsent.isGranted(root);
       await registry.deleteGuestProfile(existing.id);
     }
-    await _createAndEnter(locale);
+    await _createAndEnter(
+      locale,
+      downloadMedia: downloadMedia || keepDownloadChoice,
+    );
+  }
+
+  /// Bytes of demo photos the next [enterDemo] would download if the user
+  /// chose to, or 0 when there is nothing to ask: the demo is already
+  /// active, the user already chose for the demo world, or every photo is on
+  /// disk.
+  ///
+  /// A world that is not up to date is priced at the whole catalog, because
+  /// [enterDemo] may wipe and reseed it; overstating a download is the safe
+  /// direction, understating it is not.
+  Future<int> demoMediaBytesAwaitingChoice() async {
+    if (isDemoActive) return 0;
+    final existing = await findDemoProfile();
+    if (existing == null) return totalDemoMediaBytes(demoMediaAssets);
+    final root = registry.rootFor(existing);
+    if (await DemoMediaConsent.isGranted(root)) return 0;
+    if (!await _hasCurrentSeed(existing)) {
+      return totalDemoMediaBytes(demoMediaAssets);
+    }
+    return pendingDemoMediaBytes(root, demoMediaAssets);
   }
 
   /// Reseeds a stale demo world the app is ALREADY sitting in.
@@ -170,16 +208,22 @@ class DemoModeGateway {
 
   /// Wipes and reseeds the demo world, then enters it. When called while the
   /// demo is active it exits to the real world first so the demo databases
-  /// are closed before their directory is deleted.
+  /// are closed before their directory is deleted. The user's choice to
+  /// download the demo's photos carries over into the reseeded world; a
+  /// world whose user has not chosen stays without them.
   Future<void> resetDemo({required Locale locale}) async {
     if (isDemoActive) {
       await exitDemo();
     }
     final existing = await findDemoProfile();
+    var keepDownloadChoice = false;
     if (existing != null) {
+      keepDownloadChoice = await DemoMediaConsent.isGranted(
+        registry.rootFor(existing),
+      );
       await registry.deleteGuestProfile(existing.id);
     }
-    await _createAndEnter(locale);
+    await _createAndEnter(locale, downloadMedia: keepDownloadChoice);
   }
 
   /// Deletes the demo profile and its directory tree. Only legal while the
@@ -431,13 +475,20 @@ class DemoModeGateway {
         link.id == demoUuid('link-${link.fromId}-${link.toId}');
   }
 
-  Future<void> _createAndEnter(Locale locale) async {
+  Future<void> _createAndEnter(
+    Locale locale, {
+    required bool downloadMedia,
+  }) async {
     await DemoWorldCreator(
       registry: registry,
       activate: activate,
     ).createAndActivate(
       name: demoProfileName,
-      seed: (world) => _seedRunner(world, locale),
+      seed: (world) async {
+        await _seedRunner(world, locale);
+        // Before the switch, so the new world's startup hydration sees it.
+        if (downloadMedia) await DemoMediaConsent.grant(world.root);
+      },
     );
   }
 }

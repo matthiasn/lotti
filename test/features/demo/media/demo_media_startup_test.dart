@@ -11,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_consent.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
@@ -34,7 +35,7 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     logger = MockDomainLogger();
     journalDb = MockJournalDb();
     updateNotifications = MockUpdateNotifications();
@@ -49,6 +50,8 @@ void main() {
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications);
     root = Directory.systemTemp.createTempSync('demo_media_startup_');
+    // The user chose to download unless a test says otherwise.
+    await DemoMediaConsent.grant(root);
   });
 
   tearDown(() async {
@@ -163,6 +166,79 @@ void main() {
       seededBytes,
     );
     expect(services.isRegistered<DemoMediaHydrator>(), isTrue);
+  });
+
+  group('without the choice to download', () {
+    setUp(() {
+      File(p.join(root.path, demoMediaConsentFileName)).deleteSync();
+    });
+
+    test('downloads nothing and registers no hydrator', () async {
+      final seeded = asset('seeded-image', [2, 3, 4]);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: DateTime(2026, 8, 5),
+        localeTag: 'en',
+        seededJournalIds: [seeded.id],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      when(
+        () => journalDb.allNonDeletedJournalEntityIds(),
+      ).thenAnswer((_) async => [seeded.id]);
+      final requested = <Uri>[];
+      Future<void>? launched;
+
+      await registerDemoMediaHydration(
+        serviceLocator: services,
+        profile: context(ProfileType.guest),
+        catalog: [seeded],
+        download: (uri) async {
+          requested.add(uri);
+          return Uint8List.fromList([2, 3, 4]);
+        },
+        launch: (future) => launched = future,
+      );
+      await launched;
+
+      expect(requested, isEmpty);
+      expect(services.isRegistered<DemoMediaHydrator>(), isFalse);
+      expect(seeded.localFile(root).existsSync(), isFalse);
+    });
+
+    test('still backfills the ThumbHash stand-ins, which are local', () async {
+      final seeded = hashedAsset('seeded-image');
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: DateTime(2026, 8, 5),
+        localeTag: 'en',
+        seededJournalIds: [seeded.id],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      when(
+        () => journalDb.allNonDeletedJournalEntityIds(),
+      ).thenAnswer((_) async => [seeded.id]);
+      when(
+        () => journalDb.getJournalEntitiesForIds({seeded.id}),
+      ).thenAnswer((_) async => [TestImageFactory.create(id: seeded.id)]);
+      when(
+        () => journalDb.updateJournalEntity(any()),
+      ).thenAnswer((_) async => JournalUpdateResult.applied());
+      Future<void>? launched;
+
+      await registerDemoMediaHydration(
+        serviceLocator: services,
+        profile: context(ProfileType.guest),
+        catalog: [seeded],
+        download: (uri) async => fail('nothing may download'),
+        launch: (future) => launched = future,
+      );
+      await launched;
+
+      verify(() => journalDb.updateJournalEntity(any())).called(1);
+      verify(() => updateNotifications.notify(any())).called(1);
+    });
   });
 
   test('launches hydration without waiting for the network', () async {
