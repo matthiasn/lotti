@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show ExploreConfig, Glados, any;
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/observation.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -268,6 +270,23 @@ void main() {
 
   group('date formatters', () {
     final millis = DateTime(2024, 3, 15, 9, 5).millisecondsSinceEpoch;
+
+    test('chartDateFormatter keeps following the locale while it reuses '
+        'its formatter', () async {
+      await initializeDateFormatting('de');
+      final before = Intl.defaultLocale;
+      addTearDown(() => Intl.defaultLocale = before);
+
+      Intl.defaultLocale = 'en';
+      expect(chartDateFormatter('2024-03-15'), 'Mar 15');
+      // Asked again in another locale, it must not answer from the English
+      // formatter it built first.
+      Intl.defaultLocale = 'de';
+      expect(chartDateFormatter('2024-03-15'), 'März 15');
+      expect(chartDateFormatterMmDd(millis), 'März 15');
+      Intl.defaultLocale = 'en';
+      expect(chartDateFormatter('2024-03-15'), 'Mar 15');
+    });
 
     test('chartDateFormatterYMD formats a full localized date', () {
       expect(chartDateFormatterYMD(millis), 'Mar 15, 2024');
