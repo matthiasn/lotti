@@ -4045,6 +4045,14 @@ class AppLocalizationsIt extends AppLocalizations {
       'Abilita questo per rivendere automaticamente gli upload di allegati falliti quando la connessione viene ripristinata.';
 
   @override
+  String get configFlagUseIsolateSync =>
+      'Processo di sincronizzazione in background';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Sperimentale: avvia all\'apertura dell\'app il processo in background della sincronizzazione. Non sincronizza ancora nulla: serve a verificare che funzioni sul tuo dispositivo. Ha effetto dopo un riavvio.';
+
+  @override
   String get conflictApplyButton => 'Applicare';
 
   @override

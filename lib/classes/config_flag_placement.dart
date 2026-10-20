@@ -102,6 +102,7 @@ const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
     enableVectorSearchFlag,
     dailyOsOnboardingEnabledFlag,
     enableForkHealingFlag,
+    useIsolateSyncFlag,
     enableLoggingFlag,
     resendAttachments,
   ],

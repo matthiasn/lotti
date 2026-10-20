@@ -24,6 +24,11 @@ docker compose exec -T dendrite create-account -config dendrite.yaml -username "
 cd - > /dev/null
 cd ..
 
+# The sync isolate in the app build (ADR 0142). It needs no homeserver; it
+# runs first because it is fast and a worker that cannot start breaks the
+# rest.
+flutter test integration_test/sync_isolate_test.dart "$@"
+
 flutter test integration_test/matrix_service_test.dart \
 --dart-define=TEST_USER1="@$TEST_USER1:localhost" \
 --dart-define=TEST_USER2="@$TEST_USER2:localhost" \

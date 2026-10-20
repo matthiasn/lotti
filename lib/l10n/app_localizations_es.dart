@@ -4045,6 +4045,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
+  String get configFlagUseIsolateSync =>
+      'Proceso de sincronización en segundo plano';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimental: inicia al abrir la app el proceso en segundo plano de la sincronización. Todavía no sincroniza nada; sirve para comprobar que funciona en tu dispositivo. Se aplica tras reiniciar.';
+
+  @override
   String get conflictApplyButton => 'Aplicar';
 
   @override

@@ -1670,6 +1670,8 @@
   "configFlagRecordLocationDescription": "Registrar automáticamente tu ubicación con las nuevas entradas. Esto ayuda con la organización y la búsqueda basadas en la ubicación.",
   "configFlagResendAttachments": "Reenviar archivos adjuntos",
   "configFlagResendAttachmentsDescription": "Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.",
+  "configFlagUseIsolateSync": "Proceso de sincronización en segundo plano",
+  "configFlagUseIsolateSyncDescription": "Experimental: inicia al abrir la app el proceso en segundo plano de la sincronización. Todavía no sincroniza nada; sirve para comprobar que funciona en tu dispositivo. Se aplica tras reiniciar.",
   "conflictApplyButton": "Aplicar",
   "conflictApplyFailedTitle": "No se pudo aplicar la resolución",
   "conflictBannerAgoDays": "{count, plural, =1{hace 1 día} other{hace {count} días}}",

@@ -234,6 +234,16 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: useIsolateSyncFlag,
+      // Off: production sync runs on the UI isolate, untouched. On, the sync
+      // isolate is started at launch (ADR 0142) — read once, at startup.
+      description: 'Start the sync isolate?',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 
   for (final flagName in retiredConfigFlags) {

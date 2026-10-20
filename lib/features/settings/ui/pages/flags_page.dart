@@ -99,6 +99,7 @@ class FlagsBody extends ConsumerStatefulWidget {
   static const Set<String> syncOnlyFlags = {
     enableMatrixFlag,
     resendAttachments,
+    useIsolateSyncFlag,
   };
 
   @override

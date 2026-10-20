@@ -4041,6 +4041,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
+  String get configFlagUseIsolateSync => 'Synchronizační proces na pozadí';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimentální: při otevření aplikace spustí proces synchronizace na pozadí. Zatím nic nesynchronizuje – slouží k ověření, že na tvém zařízení běží. Projeví se po restartu.';
+
+  @override
   String get conflictApplyButton => 'Použít';
 
   @override

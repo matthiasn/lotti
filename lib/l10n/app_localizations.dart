@@ -6762,6 +6762,18 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
+  /// No description provided for @configFlagUseIsolateSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Background sync worker'**
+  String get configFlagUseIsolateSync;
+
+  /// No description provided for @configFlagUseIsolateSyncDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental: starts sync\'s background worker when the app opens. It does no syncing yet — this tests that it runs on your device. Takes effect after a restart.'**
+  String get configFlagUseIsolateSyncDescription;
+
   /// No description provided for @conflictApplyButton.
   ///
   /// In en, this message translates to:

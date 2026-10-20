@@ -4001,6 +4001,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.';
 
   @override
+  String get configFlagUseIsolateSync => 'Synkroniseringsprocess i bakgrunden';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimentell: startar synkroniseringens bakgrundsprocess när appen öppnas. Den synkroniserar inget ännu – så testar du att den körs på din enhet. Gäller efter en omstart.';
+
+  @override
   String get conflictApplyButton => 'Ansök';
 
   @override

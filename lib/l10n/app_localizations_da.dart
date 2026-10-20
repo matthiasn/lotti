@@ -3993,6 +3993,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.';
 
   @override
+  String get configFlagUseIsolateSync => 'Synkroniseringsproces i baggrunden';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Eksperimentel: starter synkroniseringens baggrundsproces, når appen åbner. Den synkroniserer ikke noget endnu – sådan tester du, at den kører på din enhed. Træder i kraft efter en genstart.';
+
+  @override
   String get conflictApplyButton => 'Ansøg';
 
   @override

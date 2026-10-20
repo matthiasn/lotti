@@ -3978,6 +3978,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
+  String get configFlagUseIsolateSync => 'Background sync worker';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimental: starts sync\'s background worker when the app opens. It does no syncing yet — this tests that it runs on your device. Takes effect after a restart.';
+
+  @override
   String get conflictApplyButton => 'Apply';
 
   @override

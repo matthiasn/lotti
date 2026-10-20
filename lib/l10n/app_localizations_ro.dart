@@ -4061,6 +4061,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
+  String get configFlagUseIsolateSync => 'Proces de sincronizare în fundal';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimental: pornește la deschiderea aplicației procesul de sincronizare în fundal. Încă nu sincronizează nimic; astfel puteți verifica dacă rulează pe dispozitivul dumneavoastră. Intră în vigoare după o repornire.';
+
+  @override
   String get conflictApplyButton => 'Aplicați';
 
   @override

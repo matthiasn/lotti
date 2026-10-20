@@ -1199,6 +1199,11 @@ void main() {
         description: 'Resend Attachments?',
         status: false,
       ),
+      const ConfigFlag(
+        name: useIsolateSyncFlag,
+        description: 'Start the sync isolate?',
+        status: false,
+      ),
     };
 
     ProfileContext guestContext() => ProfileContext.forProfile(
@@ -1243,6 +1248,10 @@ void main() {
           find.text(context.messages.configFlagResendAttachments),
           findsNothing,
         );
+        expect(
+          find.text(context.messages.configFlagUseIsolateSync),
+          findsNothing,
+        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -1264,13 +1273,17 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(3));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(4));
         expect(
           find.text(context.messages.configFlagEnableMatrix),
           findsOneWidget,
         );
         expect(
           find.text(context.messages.configFlagResendAttachments),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.configFlagUseIsolateSync),
           findsOneWidget,
         );
       },

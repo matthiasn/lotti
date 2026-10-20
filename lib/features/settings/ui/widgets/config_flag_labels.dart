@@ -72,6 +72,8 @@ abstract final class ConfigFlagLabels {
         return LottiIcons.tip;
       case enableForkHealingFlag:
         return LottiIcons.merge;
+      case useIsolateSyncFlag:
+        return LottiIcons.memory;
       default:
         return LottiIcons.settings;
     }
@@ -125,6 +127,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagDailyOsOnboardingEnabled;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealing;
+      case useIsolateSyncFlag:
+        return context.messages.configFlagUseIsolateSync;
       default:
         return flag.name;
     }
@@ -178,6 +182,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagDailyOsOnboardingEnabledDescription;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealingDescription;
+      case useIsolateSyncFlag:
+        return context.messages.configFlagUseIsolateSyncDescription;
       default:
         return flag.description;
     }

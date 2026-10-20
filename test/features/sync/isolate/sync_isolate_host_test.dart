@@ -1,0 +1,495 @@
+import 'dart:async';
+import 'dart:isolate';
+
+import 'package:clock/clock.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
+import 'package:lotti/services/logging_domains.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+
+// Fake workers. Each runs in a real spawned isolate, so they are top-level
+// and keep no state the test could share with them.
+
+/// Shakes hands, then exits on the first request it receives.
+void _exitOnRequest(SendPort host) {
+  final commands = ReceivePort();
+  host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((_) => Isolate.exit());
+}
+
+/// Shakes hands, then throws out of its handler on the first request.
+void _throwOnRequest(SendPort host) {
+  final commands = ReceivePort();
+  host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((_) => throw StateError('worker blew up'));
+}
+
+/// Shakes hands and never answers anything — not even shutdown.
+void _neverAnswers(SendPort host) {
+  final commands = ReceivePort();
+  host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((_) {});
+}
+
+/// Exits without ever shaking hands.
+void _exitsBeforeHandshake(SendPort host) => Isolate.exit();
+
+/// Stays alive without ever shaking hands.
+void _neverShakesHands(SendPort host) => ReceivePort().listen((_) {});
+
+/// Shakes hands and then idles.
+void _idles(SendPort host) {
+  final commands = ReceivePort();
+  host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((_) {});
+}
+
+/// Answers every request with a failure of its own, and exits on shutdown
+/// as a well-behaved worker does.
+void _rejectsEverything(SendPort host) {
+  final commands = ReceivePort();
+  host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((message) {
+    final request = message as SyncIsolateRequest;
+    host.send(
+      SyncIsolateReply.failure(
+        request.requestId,
+        const SyncIsolateFailure(SyncIsolateErrorCode.failed, 'nope'),
+      ),
+    );
+    if (request.command is SyncIsolateShutdown) commands.close();
+  });
+}
+
+Matcher _failsWith(SyncIsolateErrorCode code) => throwsA(
+  isA<SyncIsolateFailure>().having((f) => f.code, 'code', code),
+);
+
+/// Stands in for the host's respawn timers: records the backoff each respawn
+/// was given and fires one only when the test says so, so supervision runs
+/// on the test's schedule instead of a real timer's.
+class _ManualTimers {
+  final delays = <Duration>[];
+  final _pending = <_ManualTimer>[];
+
+  Timer call(Duration delay, void Function() callback) {
+    delays.add(delay);
+    final timer = _ManualTimer(callback);
+    _pending.add(timer);
+    return timer;
+  }
+
+  /// Fires the most recently scheduled respawn.
+  void fireLast() => _pending.removeLast().fire();
+
+  bool get lastCancelled => _pending.last.cancelled;
+}
+
+class _ManualTimer implements Timer {
+  _ManualTimer(this._callback);
+
+  final void Function() _callback;
+  bool cancelled = false;
+  var _fired = false;
+
+  void fire() {
+    if (cancelled || _fired) return;
+    _fired = true;
+    _callback();
+  }
+
+  @override
+  void cancel() => cancelled = true;
+
+  @override
+  bool get isActive => !cancelled && !_fired;
+
+  @override
+  int get tick => _fired ? 1 : 0;
+}
+
+void main() {
+  late MockDomainLogger logger;
+  late _ManualTimers timers;
+  final hosts = <SyncIsolateHost>[];
+
+  SyncIsolateHost makeHost({
+    SyncIsolateEntry entry = syncIsolateEntry,
+    Duration requestTimeout = const Duration(seconds: 30),
+    Duration startTimeout = const Duration(seconds: 30),
+    List<Duration> respawnBackoff = const [Duration(seconds: 1)],
+    Duration stableUptime = const Duration(hours: 1),
+  }) {
+    final host = SyncIsolateHost(
+      logger: logger,
+      entry: entry,
+      requestTimeout: requestTimeout,
+      startTimeout: startTimeout,
+      respawnBackoff: respawnBackoff,
+      stableUptime: stableUptime,
+      createTimer: timers.call,
+    );
+    hosts.add(host);
+    return host;
+  }
+
+  /// Completes with the next time [host] reaches [state].
+  Future<void> reaches(SyncIsolateHost host, SyncIsolateState state) =>
+      host.states.firstWhere((s) => s == state);
+
+  /// Starts [host] and waits until its worker has shaken hands.
+  Future<void> startRunning(SyncIsolateHost host) async {
+    final running = reaches(host, SyncIsolateState.running);
+    host.start();
+    await running;
+  }
+
+  /// Sends a ping the worker exits on, and waits for the host to schedule
+  /// the respawn.
+  Future<void> crash(SyncIsolateHost host) async {
+    final restarting = reaches(host, SyncIsolateState.restarting);
+    await expectLater(
+      host.ping(),
+      _failsWith(SyncIsolateErrorCode.isolateExited),
+    );
+    await restarting;
+  }
+
+  /// Fires the pending respawn and waits for the new worker's handshake.
+  Future<void> respawn(SyncIsolateHost host) async {
+    final running = reaches(host, SyncIsolateState.running);
+    timers.fireLast();
+    await running;
+  }
+
+  setUp(() {
+    timers = _ManualTimers();
+    logger = MockDomainLogger();
+    when(
+      () => logger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+  });
+
+  tearDown(() async {
+    for (final host in hosts) {
+      await host.dispose();
+    }
+    hosts.clear();
+  });
+
+  group('with the production worker', () {
+    test(
+      'starts, answers pings in order, and counts what it handled',
+      () async {
+        final host = makeHost();
+        final seen = <SyncIsolateState>[];
+        host.states.listen(seen.add);
+
+        await startRunning(host);
+        final first = await host.ping();
+        final second = await host.ping();
+
+        expect(seen, [SyncIsolateState.starting, SyncIsolateState.running]);
+        expect(first.handled, 1);
+        expect(second.handled, 2);
+        expect(second.uptime, greaterThanOrEqualTo(first.uptime));
+      },
+    );
+
+    test("forwards the worker's log lines to the sync log", () async {
+      final host = makeHost();
+      await startRunning(host);
+      // The ping's reply is sent after the startup line, and one port keeps
+      // its order, so by the time it lands the line has been written.
+      await host.ping();
+
+      verify(
+        () => logger.log(
+          LogDomain.sync,
+          'sync isolate started',
+          subDomain: 'isolate',
+          level: any(named: 'level'),
+        ),
+      ).called(1);
+    });
+
+    test(
+      'dispose shuts the worker down politely and refuses later calls',
+      () async {
+        final host = makeHost();
+        await startRunning(host);
+
+        await host.dispose();
+
+        expect(host.state, SyncIsolateState.disposed);
+        await expectLater(
+          host.ping(),
+          _failsWith(SyncIsolateErrorCode.notRunning),
+        );
+        // The worker exited on its own, so nothing was crash-logged.
+        verifyNever(
+          () => logger.error(
+            any(),
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+            message: any(named: 'message'),
+          ),
+        );
+      },
+    );
+  });
+
+  test('a request before start fails at once rather than waiting', () async {
+    final host = makeHost();
+
+    await expectLater(host.ping(), _failsWith(SyncIsolateErrorCode.notRunning));
+  });
+
+  test('start twice is a programming error', () async {
+    final host = makeHost();
+    await startRunning(host);
+
+    expect(host.start, throwsStateError);
+  });
+
+  test("a worker's own failure reply reaches the caller unchanged", () async {
+    final host = makeHost(entry: _rejectsEverything);
+    await startRunning(host);
+
+    await expectLater(
+      host.ping(),
+      _failsWith(SyncIsolateErrorCode.failed),
+    );
+    expect(host.state, SyncIsolateState.running);
+  });
+
+  test('an unanswered request fails with a timeout', () async {
+    final host = makeHost(entry: _neverAnswers, requestTimeout: Duration.zero);
+    await startRunning(host);
+
+    await expectLater(host.ping(), _failsWith(SyncIsolateErrorCode.timeout));
+    expect(host.state, SyncIsolateState.running);
+  });
+
+  test('a worker that never exits on shutdown is killed by dispose', () async {
+    final host = makeHost(entry: _neverAnswers, requestTimeout: Duration.zero);
+    await startRunning(host);
+
+    await host.dispose();
+
+    expect(host.state, SyncIsolateState.disposed);
+  });
+
+  test('a worker that cannot start is logged and retried, never thrown into '
+      'the caller', () async {
+    final host = makeHost(entry: _exitsBeforeHandshake);
+    final restarting = reaches(host, SyncIsolateState.restarting);
+
+    host.start();
+    await restarting;
+
+    verify(
+      () => logger.error(
+        LogDomain.sync,
+        any<Object>(
+          that: isA<SyncIsolateFailure>().having(
+            (f) => f.code,
+            'code',
+            SyncIsolateErrorCode.isolateExited,
+          ),
+        ),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'isolate',
+        message: 'starting the sync isolate failed',
+      ),
+    ).called(1);
+    await expectLater(
+      host.ping(),
+      _failsWith(SyncIsolateErrorCode.notRunning),
+    );
+  });
+
+  test('a worker that never shakes hands times out its start, is logged '
+      'with the reason, and is retried', () async {
+    final host = makeHost(
+      entry: _neverShakesHands,
+      startTimeout: Duration.zero,
+    );
+    final restarting = reaches(host, SyncIsolateState.restarting);
+
+    host.start();
+    await restarting;
+
+    final logged = verify(
+      () => logger.error(
+        LogDomain.sync,
+        captureAny(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'isolate',
+        message: 'starting the sync isolate failed',
+      ),
+    ).captured.single;
+    // What lands in the log names the code and the budget it ran out of.
+    expect(
+      '$logged',
+      'SyncIsolateFailure(timeout): no handshake from the sync isolate after '
+          '${Duration.zero}',
+    );
+  });
+
+  test(
+    'a worker that shakes hands after dispose is killed, not adopted',
+    () async {
+      final host = makeHost(entry: _idles)..start();
+      await host.dispose();
+
+      await untilCalled(
+        () => logger.log(
+          LogDomain.sync,
+          'sync isolate finished starting after dispose; killed it',
+          subDomain: 'isolate',
+          level: any(named: 'level'),
+        ),
+      );
+
+      expect(host.state, SyncIsolateState.disposed);
+      verifyNever(
+        () => logger.log(
+          any(),
+          any(that: startsWith('sync isolate handshake')),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      );
+    },
+  );
+
+  group('supervision', () {
+    test(
+      'a worker that exits fails the request it held and is respawned',
+      () async {
+        final host = makeHost(entry: _exitOnRequest);
+        await startRunning(host);
+
+        await crash(host);
+        await respawn(host);
+
+        // A fresh worker received this request — and exited on it in turn.
+        await expectLater(
+          host.ping(),
+          _failsWith(SyncIsolateErrorCode.isolateExited),
+        );
+        verify(
+          () => logger.error(
+            LogDomain.sync,
+            any<Object>(that: startsWith('sync isolate exited unexpectedly')),
+            subDomain: 'isolate',
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    test('an uncaught error in the worker is logged with its trace, ahead of '
+        'the exit it causes', () async {
+      final host = makeHost(entry: _throwOnRequest);
+      await startRunning(host);
+
+      await crash(host);
+
+      // Both arrive on one port, so the trace is never lost to an exit that
+      // overtook it.
+      verifyInOrder([
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(that: contains('worker blew up')),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'isolate',
+          message: 'uncaught error in sync isolate',
+        ),
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(that: startsWith('sync isolate exited unexpectedly')),
+          subDomain: 'isolate',
+        ),
+      ]);
+    });
+
+    test('consecutive crashes climb the backoff and then stay on its last '
+        'step', () async {
+      final host = makeHost(
+        entry: _exitOnRequest,
+        respawnBackoff: const [Duration(seconds: 1), Duration(seconds: 5)],
+      );
+      await startRunning(host);
+
+      await crash(host);
+      await respawn(host);
+      await crash(host);
+      await respawn(host);
+      await crash(host);
+
+      expect(timers.delays, const [
+        Duration(seconds: 1),
+        Duration(seconds: 5),
+        Duration(seconds: 5),
+      ]);
+    });
+
+    test('a crash after a stable run starts the backoff over', () async {
+      var now = DateTime(2026, 10, 20, 9);
+      await withClock(Clock(() => now), () async {
+        final host = makeHost(
+          entry: _exitOnRequest,
+          respawnBackoff: const [Duration(seconds: 1), Duration(seconds: 5)],
+          stableUptime: const Duration(minutes: 5),
+        );
+        await startRunning(host);
+        await crash(host);
+        await respawn(host);
+
+        // The respawned worker runs past the stable uptime before it dies.
+        now = now.add(const Duration(minutes: 6));
+        await crash(host);
+
+        expect(timers.delays, const [
+          Duration(seconds: 1),
+          Duration(seconds: 1),
+        ]);
+      });
+    });
+
+    test('disposing while a respawn is pending cancels it', () async {
+      final host = makeHost(entry: _exitOnRequest);
+      await startRunning(host);
+      await crash(host);
+
+      await host.dispose();
+
+      expect(timers.lastCancelled, isTrue);
+      expect(host.state, SyncIsolateState.disposed);
+      await expectLater(
+        host.ping(),
+        _failsWith(SyncIsolateErrorCode.notRunning),
+      );
+    });
+  });
+}

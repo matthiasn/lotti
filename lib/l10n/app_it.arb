@@ -1892,6 +1892,8 @@
   "configFlagRecordLocationDescription": "Registra automaticamente la tua posizione con nuove voci. Questo aiuta con l'organizzazione basata sulla posizione e la ricerca.",
   "configFlagResendAttachments": "Rispondere agli allegati",
   "configFlagResendAttachmentsDescription": "Abilita questo per rivendere automaticamente gli upload di allegati falliti quando la connessione viene ripristinata.",
+  "configFlagUseIsolateSync": "Processo di sincronizzazione in background",
+  "configFlagUseIsolateSyncDescription": "Sperimentale: avvia all'apertura dell'app il processo in background della sincronizzazione. Non sincronizza ancora nulla: serve a verificare che funzioni sul tuo dispositivo. Ha effetto dopo un riavvio.",
   "conflictApplyButton": "Applicare",
   "conflictApplyFailedTitle": "Non è possibile applicare la risoluzione",
   "conflictBannerAgoDays": "{count, plural, =1{1 giorno fa} other{{count} giorni fa}}",
