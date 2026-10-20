@@ -340,8 +340,16 @@ class _RelationshipDetailsPageState
     // (design review 2026-10-17: "airy overall, vertically").
     final blockGap = tokens.spacing.step5;
     final gap = SizedBox(height: blockGap);
+    // Every block is keyed. A list matches its children by position unless
+    // it can match a key, and these blocks come and go above one another —
+    // a check-in with notes for next time puts the brief card above the
+    // agent's card — so an unkeyed block below the change was torn down and
+    // built again on the reload that brought the check-in, folding a card
+    // the reader had opened. The rule this keeps: `stay-while-reload` in
+    // knowledge/conventions.
     final whoBlock = <Widget>[
       PersonHeaderBlock(
+        key: const ValueKey('person-block-header'),
         item: item,
         categoryName: categoryName,
         // The verbs first, then the reminders control, as one row.
@@ -362,6 +370,7 @@ class _RelationshipDetailsPageState
       // Under the person's name: the reminder the user just tapped says it
       // is paused, and until when.
       PausedReminderCallout(
+        key: const ValueKey('person-block-paused'),
         relationshipId: relationshipId,
         bottomGap: blockGap,
       ),
@@ -369,6 +378,7 @@ class _RelationshipDetailsPageState
       // this page; then it is the most time-sensitive thing here, so it
       // sits where they land.
       PostInteractionPrompt(
+        key: const ValueKey('person-block-post-call'),
         relationshipId: relationshipId,
         bottomGap: blockGap,
       ),
@@ -383,6 +393,7 @@ class _RelationshipDetailsPageState
     List<Widget> briefing({required bool compact}) => [
       if (hasNotes || (showMeeting && compact)) ...[
         PersonBriefCard(
+          key: const ValueKey('person-block-brief'),
           source: nextTime,
           meeting: nextMeeting,
           // On a wide pane the timeline's own Upcoming row sits right beside
@@ -400,6 +411,7 @@ class _RelationshipDetailsPageState
       // Always present: an unenrolled person gets the offer that explains
       // what reminders turn on.
       RelationshipBriefingCard(
+        key: const ValueKey('person-block-briefing'),
         relationship: relationship,
         checkIns: checkIns,
         folded: compact && hasNotes,
@@ -409,6 +421,7 @@ class _RelationshipDetailsPageState
       if (timeline.pinned.isNotEmpty) ...[
         if (compact) SizedBox(height: tokens.spacing.step3) else gap,
         PersonAboutSection(
+          key: const ValueKey('person-block-about'),
           personName: personName,
           pinned: timeline.pinned,
           onOpen: actions.openNote,

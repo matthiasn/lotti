@@ -170,44 +170,76 @@ class PersonTimelineSliver extends ConsumerWidget {
       );
     }
 
-    final slots = <Widget Function(BuildContext)>[
-      (context) => heading,
+    final slots = <_TimelineSlot>[
+      _TimelineSlot(heading.key!, (context, key) => heading),
       if (timeline.itemCount >= personTimelineFiltersFrom)
-        (context) => Padding(
-          key: const ValueKey('person-timeline-filter'),
-          padding: inset.copyWith(top: tokens.spacing.step2),
-          child: DsChoicePills<PersonTimelineFilter>(
-            value: filter,
-            values: PersonTimelineFilter.values,
-            labelFor: (value) => _filterLabel(context, value),
-            onSelected: onFilter,
+        _TimelineSlot(
+          const ValueKey('person-timeline-filter'),
+          (context, key) => Padding(
+            key: key,
+            padding: inset.copyWith(top: tokens.spacing.step2),
+            child: DsChoicePills<PersonTimelineFilter>(
+              value: filter,
+              values: PersonTimelineFilter.values,
+              labelFor: (value) => _filterLabel(context, value),
+              onSelected: onFilter,
+            ),
           ),
         ),
       for (final section in timeline.sections) ...[
-        (context) => DesignSystemTimelineSectionHeader(
-          key: ValueKey(
+        _TimelineSlot(
+          ValueKey(
             'person-timeline-section-${section.kind.name}'
             '${section.month?.toIso8601String() ?? ''}',
           ),
-          label: personTimelineSectionLabel(context, section, now: now),
+          (context, key) => DesignSystemTimelineSectionHeader(
+            key: key,
+            label: personTimelineSectionLabel(context, section, now: now),
+          ),
         ),
         for (final (index, item) in section.items.indexed)
-          (context) => PersonTimelineRow(
-            key: ValueKey('person-timeline-row-${item.id}'),
-            item: item,
-            last: index == section.items.length - 1,
-            highlighted: highlighted.contains(item.id),
-            actions: actions,
-            now: now,
+          _TimelineSlot(
+            ValueKey('person-timeline-row-${item.id}'),
+            (context, key) => PersonTimelineRow(
+              key: key,
+              item: item,
+              last: index == section.items.length - 1,
+              highlighted: highlighted.contains(item.id),
+              actions: actions,
+              now: now,
+            ),
           ),
       ],
     ];
+    final indexOfKey = {
+      for (final (index, slot) in slots.indexed) slot.key: index,
+    };
 
+    // A builder list matches children by index unless it can look a key up.
+    // Without the lookup, a check-in arriving at the top shifted every row
+    // below it to a new index, and each was torn down and built again — its
+    // photos re-resolved and re-decoded, a row's opened words folded — on
+    // every reload that added or removed a row: the person page flickered
+    // after each check-in, twice (the check-in, then its recording moving
+    // in). With it, a row keeps its element wherever it moves.
     return SliverList.builder(
       itemCount: slots.length,
-      itemBuilder: (context, index) => slots[index](context),
+      itemBuilder: (context, index) {
+        final slot = slots[index];
+        return slot.build(context, slot.key);
+      },
+      findChildIndexCallback: (key) => indexOfKey[key],
     );
   }
+}
+
+/// One child of [PersonTimelineSliver]'s list, built lazily, with the [key]
+/// it is built under so the list can find it again after it moves.
+class _TimelineSlot {
+  const _TimelineSlot(this.key, this.build);
+
+  final Key key;
+  final Widget Function(BuildContext context, Key key) build;
 }
 
 /// One row of a person's timeline, whatever it holds.

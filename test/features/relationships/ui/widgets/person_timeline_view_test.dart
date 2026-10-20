@@ -490,6 +490,58 @@ void main() {
       );
     });
 
+    testWidgets('a check-in landing above keeps every row below it: opened '
+        'words stay open, and no row is built again', (tester) async {
+      setTestSurfaceSize(tester, const Size(390, 2400));
+      final long = audio(
+        'long',
+        DateTime(2026, 8, 12, 19, 10),
+        words: longWords,
+      );
+      await pump(
+        tester,
+        timeline(checkIns: [quiet], tasks: [], entries: [long]),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('person-folded-more-long')));
+      await tester.pumpAndSettle();
+      Element row(String id) => tester.element(
+        find.byKey(ValueKey('person-timeline-row-$id')),
+      );
+      final longRow = row('long');
+      final quietRow = row('quiet');
+
+      // The reload a new check-in brings: the same rows, one more above them.
+      final fresh = CheckInEntry(
+        meta: meta('fresh', DateTime(2026, 8, 13, 13)),
+        data: const CheckInData(
+          relationshipId: 'pip',
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
+      await pump(
+        tester,
+        timeline(checkIns: [fresh, quiet], tasks: [], entries: [long]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('person-timeline-row-fresh')), findsOne);
+      // Found again by key at their new places, not rebuilt from scratch:
+      // a rebuilt row re-resolves and re-decodes its photos, which is what
+      // made the page flicker after every check-in.
+      expect(identical(row('long'), longRow), isTrue);
+      expect(identical(row('quiet'), quietRow), isTrue);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('person-folded-words-long')),
+            )
+            .maxLines,
+        isNull,
+        reason: 'the words the reader opened stay open',
+      );
+    });
+
     testWidgets('a voice note with words offers Sort this, which sorts it; '
         'one still waiting for its words does not', (tester) async {
       await pump(

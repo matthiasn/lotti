@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -37,6 +38,7 @@ import 'package:lotti/features/relationships/ui/pages/relationship_details_page.
 import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_capture_sheet.dart';
+import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_action_bar.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_briefing_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_chat_pane.dart';
@@ -44,6 +46,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/project_repository.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
@@ -2546,14 +2549,67 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // Mid-refetch: the rendered detail must stay, with no loading shell.
+    // Mid-refetch: the rendered detail must stay, with no loading shell. The
+    // page's spinner is the design system's; a check for Material's would
+    // pass whatever the page did.
     expect(calls, 2, reason: 'the refetch fired');
     expect(find.text('Anna'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(DesignSystemSpinner), findsNothing);
+    expect(find.byType(PersonTimelineSliver), findsOneWidget);
 
     second.complete(relationship());
     await tester.pumpAndSettle();
     expect(find.text('Anna'), findsOneWidget);
+  });
+
+  testWidgets('a check-in with notes for next time lands without rebuilding '
+      'the page under the reader: the blocks below it keep their elements', (
+    tester,
+  ) async {
+    final updates = StreamController<Set<String>>.broadcast();
+    addTearDown(updates.close);
+    when(
+      () => mockNotifications.updateStream,
+    ).thenAnswer((_) => updates.stream);
+    when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+      (_) async => relationship(important: true),
+    );
+    final older = checkIn('ci-old', narrative: 'Coffee in July.');
+    var checkIns = [older];
+    when(
+      () => mockRepository.getCheckInsForRelationship('rel-1'),
+    ).thenAnswer((_) async => checkIns);
+    // A phone: the blocks share one list with the timeline.
+    const phone = Size(390, 2400);
+    setTestSurfaceSize(tester, phone);
+    await pumpPage(tester, mediaQueryData: const MediaQueryData(size: phone));
+
+    Element block(Key key) => tester.element(find.byKey(key));
+    const briefingKey = ValueKey('person-block-briefing');
+    const olderRowKey = ValueKey('person-timeline-row-ci-old');
+    final briefing = block(briefingKey);
+    final olderRow = block(olderRowKey);
+    expect(find.byKey(const ValueKey('person-block-brief')), findsNothing);
+
+    // The check-in arrives with something to bring up next time, so the
+    // brief card appears above the agent's card, and its row above the
+    // older one.
+    checkIns = [
+      checkIn('ci-new', attention: 'Ask about the sled race.'),
+      older,
+    ];
+    await withClock(Clock.fixed(now), () async {
+      updates.add({'rel-1', checkInNotification, 'ci-new'});
+      await tester.pumpAndSettle();
+    });
+
+    expect(find.byKey(const ValueKey('person-block-brief')), findsOne);
+    expect(find.byKey(const ValueKey('person-timeline-row-ci-new')), findsOne);
+    // Matched by key at their new places rather than torn down and built
+    // again: a rebuilt card loses what the reader opened, a rebuilt row
+    // re-resolves its photos — the flicker after every check-in.
+    expect(identical(block(briefingKey), briefing), isTrue);
+    expect(identical(block(olderRowKey), olderRow), isTrue);
   });
 }
 
