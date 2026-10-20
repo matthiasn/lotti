@@ -101,9 +101,10 @@ refresh then.
 # The empty state is a first-run path, not a message
 
 When **no providers are configured**, the body swaps to an FTUE banner, the tab
-bar and a no-providers card with six quick-add provider chips (Gemini, OpenAI,
-Anthropic, Alibaba, oMLX, Ollama) rather than an empty list — because at that
-point the useful action is connecting a provider, not filtering nothing.
+bar — on the page only; the desktop panels hide it, as everywhere — and a
+no-providers card with six quick-add provider chips (Gemini, OpenAI, Anthropic,
+Alibaba, oMLX, Ollama) rather than an empty list — because at that point the
+useful action is connecting a provider, not filtering nothing.
 
 Initial-load and error states render through shared loading and error components
 in a `SliverFillRemaining`, so they occupy the viewport rather than collapsing the

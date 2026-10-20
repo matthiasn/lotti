@@ -35,7 +35,7 @@ sources:
   - id: backfill-actions
     resource: ../../../lib/features/agents/ui/ai_summary_card/backfill_actions.dart
     title: confirmBackfillSuggestion and dismissBackfillSuggestion
-    last_modified: 2026-10-06
+    last_modified: 2026-10-20
   - id: gate
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: hasAutomatedSkillType, the try* resolvers and the transcription fallback
