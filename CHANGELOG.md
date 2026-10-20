@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.61]
+
+### Changed
+
+- **The app now asks before downloading the demo photos or the voice model,
+  and says how big the download is.** Opening the demo used to start a
+  download of about 27 MB of sample photos in the background, and the first
+  tap on read aloud fetched a voice model of about 400 MB without warning.
+  Both now ask first and show the size. You can explore the demo without the
+  photos, which show as blurred previews, and you can cancel the voice model
+  download. Speech settings also show the voice model's size, and preparing
+  chat replies in advance never downloads the model.
+
+### Fixed
+
+- **A person's page no longer flickers after a check-in, and its history no
+  longer shifts under your finger.** Saving a check-in — especially a
+  dictated one, whose recording and transcript land in steps — rebuilt the
+  timeline below the new check-in and, on a phone, the agent's briefing card,
+  once for every step: photos blinked, and a card or a transcript you had
+  opened folded again. On a long history, rows coming back into view also
+  appeared three lines tall and then collapsed to their one-line summary, so
+  the list kept jumping and seemed to go on forever in both directions. The
+  page now updates in place, every row is the height it will stay, and what
+  you opened stays open.
+
 ## [1.1.60]
 
 ### Added
