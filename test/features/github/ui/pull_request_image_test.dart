@@ -40,6 +40,30 @@ void main() {
     when(() => fetcher.cached(any())).thenReturn(null);
   });
 
+  // Every test decodes the same bytes, at its own size: an entry one test
+  // leaves in the image cache, still decoding, would stand in for another's
+  // image, which then never counts as shown.
+  tearDown(() {
+    PaintingBinding.instance.imageCache
+      ..clear()
+      ..clearLiveImages();
+  });
+
+  /// Decodes every shown image with its own provider, so it has its size
+  /// before the test touches it. Decoding needs real async, which fake time
+  /// does not drive; without this a test relied on an earlier one leaving
+  /// the decoded image in the cache.
+  Future<void> decodeShownImages(WidgetTester tester) async {
+    final images = find.byType(Image);
+    for (final element in images.evaluate().toList()) {
+      final image = (element.widget as Image).image;
+      await tester.runAsync(
+        () => precacheImage(image, element, onError: (_, _) {}),
+      );
+    }
+    if (images.evaluate().isNotEmpty) await tester.pump();
+  }
+
   Future<void> pump(WidgetTester tester, {Widget? child}) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -51,6 +75,7 @@ void main() {
       ),
     );
     await tester.pump();
+    await decodeShownImages(tester);
   }
 
   /// The bytes the shown [Image] draws.

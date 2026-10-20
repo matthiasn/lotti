@@ -889,6 +889,33 @@ The weekly run shuffles test order using its recorded workflow run number as the
 seed. Workflow dispatch accepts a `seed` to reproduce the order; `0` keeps
 declaration order. This changes test ordering, not Glados's generated inputs.
 
+A failure only the weekly run shows is a test that depends on another one
+having run first, inside its file or before it in the shard. A file alone
+reproduces the first kind: `fvm flutter test <file>
+--test-randomize-ordering-seed <seed>`; the second needs the shard command
+below. What it came down to each time:
+
+- **A file-level mock whose recorded calls are never cleared.** A mock
+  created once in `main` or `setUpAll` collects every test's calls, so a
+  `verify(...).called(1)`, a `verifyNever` or `captured.single` sees another
+  test's. Clear it in `setUp`: `clearInteractions` keeps the `setUpAll`
+  stubs, while `reset` drops them, so use `reset` only for a mock stubbed
+  per test, or restub after it. A group that resets a shared mock in its own
+  `setUp` drops the file-wide stubs for every test that happens to run after
+  it; restore them in the main `setUp` instead (`stubJournalDefaults` in
+  `entry_controller_test.dart`).
+- **A global a test sets and only `setUp` resets.** The file's last test
+  leaves it set for the next file. A rendering debug variable left on
+  (`debugRepaintRainbowEnabled`) fails every `testWidgets` after it on the
+  framework's end-of-test check; reset such globals in `tearDown` too.
+- **The image cache.** An image decoded by an earlier test, or still decoding
+  under its fake time, stands in for the next test's. Clear `imageCache` (and
+  its live images) in `setUp` and `tearDown`, and decode what a test needs in
+  that test: `precacheImage` inside `tester.runAsync`, as
+  `pull_request_image_test.dart` does.
+- **A counter that is 0 for the first caller.** Assert on what is fixed, not
+  on what only the second call makes positive.
+
 ### Local commands
 
 Use targeted files during development. These broader targets are for explicitly

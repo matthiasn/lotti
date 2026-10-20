@@ -138,6 +138,13 @@ void main() {
       await getIt.reset();
     });
 
+    // The mocks keep their setUpAll stubs; a call one test records must not
+    // count in another's verify, whatever order the tests run in.
+    setUp(() {
+      clearInteractions(mockTimeService);
+      clearInteractions(mockNavService);
+    });
+
     test('createTextEntry creates and stores a text entry', () async {
       final entry = await service.createTextEntry();
 

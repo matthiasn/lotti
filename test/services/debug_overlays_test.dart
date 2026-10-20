@@ -13,6 +13,14 @@ void main() {
     debugRepaintRainbowEnabled = false;
   });
 
+  // And after: CI runs a shard's files in one isolate, and a test that ends
+  // with the global on fails every widget test of the file after it, on the
+  // framework's check that no rendering debug variable changed.
+  tearDown(() {
+    repaintRainbowEnabled.value = false;
+    debugRepaintRainbowEnabled = false;
+  });
+
   test(
     "mirrors true into Flutter's `debugRepaintRainbowEnabled` global "
     'and schedules a forced frame so the overlay shows up on the next '
