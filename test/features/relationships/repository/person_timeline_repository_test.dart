@@ -175,6 +175,76 @@ void main() {
     );
   });
 
+  group('getRecordingSummaries', () {
+    AiResponseEntry summary(
+      String id, {
+      required DateTime at,
+      String? oneLiner = 'The line.',
+      AiResponseType type = AiResponseType.audioSummary,
+      DateTime? deletedAt,
+    }) =>
+        JournalEntity.aiResponse(
+              meta: meta(id).copyWith(dateFrom: at, deletedAt: deletedAt),
+              data: AiResponseData(
+                model: 'model',
+                systemMessage: '',
+                prompt: '',
+                thoughts: '',
+                response: 'A longer summary.',
+                type: type,
+                oneLiner: oneLiner,
+              ),
+            )
+            as AiResponseEntry;
+
+    setUp(() async {
+      final entities = <JournalEntity>[
+        testAudioEntry.copyWith(meta: meta('take-1')),
+        testAudioEntry.copyWith(meta: meta('take-2')),
+        testAudioEntry.copyWith(meta: meta('take-3')),
+        testAudioEntry.copyWith(meta: meta('take-4')),
+        // Two summaries of one take: the newer leads, whatever order the
+        // links were written in.
+        summary('old-1', at: at, oneLiner: 'The old line.'),
+        summary('new-1', at: at.add(const Duration(hours: 1))),
+        // A summary written by a model that gave no one-liner.
+        summary('bare-2', at: at, oneLiner: ' '),
+        // An analysis is not a summary; a deleted summary is none.
+        summary('analysis-3', at: at, type: AiResponseType.imageAnalysis),
+        summary('gone-3', at: at, deletedAt: at),
+      ];
+      for (final entity in entities) {
+        await db.updateJournalEntity(entity);
+      }
+      await link('take-1', 'old-1', relationship: false);
+      await link('take-1', 'new-1', relationship: false);
+      await link('take-2', 'bare-2', relationship: false);
+      await link('take-3', 'analysis-3', relationship: false);
+      await link('take-3', 'gone-3', relationship: false);
+    });
+
+    test('leads each recording with its newest summary line, and names the '
+        'summaries read', () async {
+      final summaries = await repository.getRecordingSummaries({
+        'take-1',
+        'take-2',
+        'take-3',
+        'take-4',
+      });
+
+      expect(summaries.oneLiners, {'take-1': 'The line.'});
+      // The bare summary is still the one a later edit would land on.
+      expect(summaries.summaryIds, {'new-1', 'bare-2'});
+    });
+
+    test('asks nothing for no recordings', () async {
+      final summaries = await repository.getRecordingSummaries(const {});
+
+      expect(summaries.oneLiners, isEmpty);
+      expect(summaries.summaryIds, isEmpty);
+    });
+  });
+
   group('createNote', () {
     setUp(() {
       when(

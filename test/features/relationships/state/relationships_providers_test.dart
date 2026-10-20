@@ -95,6 +95,10 @@ void main() {
     when(
       () => mockTimeline.getTimelineEntries(any()),
     ).thenAnswer((_) async => []);
+    when(() => mockTimeline.getRecordingSummaries(any())).thenAnswer(
+      (_) async =>
+          (oneLiners: const <String, String>{}, summaryIds: const <String>{}),
+    );
     mockNotifications = MockUpdateNotifications();
     // Synchronous delivery: `add` runs the controllers' listeners (and their
     // `invalidateSelf`) before it returns, so a refetch assertion needs no

@@ -107,6 +107,14 @@ typedef RelationshipDetail = ({
   /// The notes, voice notes, photos and meetings on the person's timeline
   /// (ADR 0138), in no particular order — `buildPersonTimeline` sorts.
   List<JournalEntity> timelineEntries,
+
+  /// The one line each recording on the page leads with — the newest audio
+  /// summary's one-liner, by recording id — read here with the rest of the
+  /// detail rather than by each row once it is on screen: a row that fetched
+  /// its own line showed its transcript first and shrank when the line
+  /// arrived, which under the lazy list made the history drift under the
+  /// reader (the stay-while-reload convention).
+  Map<String, String> recordingSummaries,
 });
 
 /// Detail state for one relationship. Resolves to `null` when the id does
@@ -146,6 +154,11 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
   /// notifies the person's id.
   var _timelineEntryIds = const <String>{};
 
+  /// Ids of the audio summaries the last build read a one-liner from, so a
+  /// summary written again refreshes the row that leads with it. A first
+  /// summary is a link write from its recording, whose id is watched above.
+  var _summaryIds = const <String>{};
+
   @override
   Future<RelationshipDetail?> build() async {
     ref
@@ -175,7 +188,8 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
             affectedIds.any(_linkedTaskIds.contains) ||
             affectedIds.any(_checkInIds.contains) ||
             affectedIds.any(_checkInEntryIds.contains) ||
-            affectedIds.any(_timelineEntryIds.contains)) {
+            affectedIds.any(_timelineEntryIds.contains) ||
+            affectedIds.any(_summaryIds.contains)) {
           ref.invalidateSelf();
         }
       },
@@ -197,16 +211,26 @@ class RelationshipDetailController extends AsyncNotifier<RelationshipDetail?> {
     };
     final linkedTasks = await repository.getLinkedTasks(_relationshipId);
     _linkedTaskIds = {for (final task in linkedTasks) task.id};
-    final timelineEntries = await ref
-        .read(personTimelineRepositoryProvider)
-        .getTimelineEntries(_relationshipId);
+    final timelineRepository = ref.read(personTimelineRepositoryProvider);
+    final timelineEntries = await timelineRepository.getTimelineEntries(
+      _relationshipId,
+    );
     _timelineEntryIds = {for (final entry in timelineEntries) entry.id};
+    final summaries = await timelineRepository.getRecordingSummaries({
+      for (final entries in checkInEntries.values)
+        for (final entry in entries)
+          if (entry is JournalAudio) entry.id,
+      for (final entry in timelineEntries)
+        if (entry is JournalAudio) entry.id,
+    });
+    _summaryIds = summaries.summaryIds;
     return (
       relationship: relationship,
       checkIns: checkIns,
       checkInEntries: checkInEntries,
       linkedTasks: linkedTasks,
       timelineEntries: timelineEntries,
+      recordingSummaries: summaries.oneLiners,
     );
   }
 }

@@ -800,6 +800,29 @@ Every section and the bar sit on `detailContentInsets`, measured with a
 window. The timeline sliver is outdented by its rows' own inset, so a row's
 tile sits on the page's text edge and its hover fill reaches into the gutter.
 
+The page reloads on every write that touches the person — a check-in alone
+writes the check-in, moves each recording into it, lands the transcript and
+its summary — and keeps what it shows through each: the detail is read with
+`.value`, so the loading shell is the first load's only. Blocks and rows also
+keep their *elements*: the timeline's builder list finds each slot again by
+its key (`findChildIndexCallback`), and every block above it carries a
+`person-block-*` key, since the brief card appears above the agent's card as
+soon as a check-in brings notes for next time. Without both, every row below
+a new check-in, and on a phone the agent's card, was torn down and rebuilt on
+each of those writes, and the page flickered after every check-in.
+
+Rows are also laid out at their final height the first time: the line a
+spoken row leads with — the newest audio summary's one-liner — is read with
+the detail (`RelationshipDetail.recordingSummaries`, from
+`PersonTimelineRepository.getRecordingSummaries`, two bulk reads), and the
+detail watches those summaries' ids. The row used to look its line up in a
+per-recording `autoDispose` provider, so a row the lazy list dropped and built
+again — on every reload, and every time it scrolled back into view — was laid
+out three lines tall and shrank when the line arrived. With rows shrinking
+above and below the viewport the scroll extent moved under the reader on
+every flick: the history seemed endless and its rows seemed replaced. The
+rule is [stay while reload](../conventions/stay-while-reload.md).
+
 The page sets four type sizes: the title for the name (23), `heading3` for
 the one headline the brief card leads with (20), 16 for section and card
 titles (`subtitle1`, semibold) and everything the user reads (`bodyMedium`),

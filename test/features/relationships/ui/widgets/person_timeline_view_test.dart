@@ -4,9 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -15,7 +13,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
@@ -124,6 +121,7 @@ void main() {
     PersonTimeline t, {
     ValueChanged<PersonTimelineFilter>? onFilter,
     List<Override> overrides = const [],
+    Map<String, String> summaries = const {},
   }) => tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       overrides: overrides,
@@ -131,6 +129,7 @@ void main() {
         slivers: [
           PersonTimelineSliver(
             timeline: t,
+            summaries: summaries,
             personName: 'Pip',
             filter: PersonTimelineFilter.all,
             onFilter: onFilter ?? (_) {},
@@ -334,25 +333,6 @@ void main() {
       expect(opened, ['entry spoken']);
     });
 
-    Override summaryOf(String audioId, String oneLiner) =>
-        linkedAiResponsesControllerProvider(audioId).overrideWith(
-          () => _FixedResponses(audioId, [
-            JournalEntity.aiResponse(
-                  meta: meta('summary-$audioId', DateTime(2026, 8, 12, 19, 12)),
-                  data: AiResponseData(
-                    model: 'model',
-                    systemMessage: '',
-                    prompt: '',
-                    thoughts: '',
-                    response: 'A long summary.',
-                    type: AiResponseType.audioSummary,
-                    oneLiner: oneLiner,
-                  ),
-                )
-                as AiResponseEntry,
-          ]),
-        );
-
     final longWords = [
       for (var i = 1; i <= 12; i++) 'Sentence $i of what Pip said.',
     ].join(' ');
@@ -370,7 +350,7 @@ void main() {
             audio('spoken', DateTime(2026, 8, 12, 19, 10), words: longWords),
           ],
         ),
-        overrides: [summaryOf('spoken', 'Pip wants a crew send-off.')],
+        summaries: {'spoken': 'Pip wants a crew send-off.'},
       );
       await tester.pumpAndSettle();
 
@@ -420,7 +400,7 @@ void main() {
             spoken.meta.id: [audio('take-1', DateTime(2026, 8, 1, 12, 44))],
           },
         ),
-        overrides: [summaryOf('take-1', 'Pip is calm about the slip.')],
+        summaries: {'take-1': 'Pip is calm about the slip.'},
       );
       await tester.pumpAndSettle();
 
@@ -488,6 +468,117 @@ void main() {
             .maxLines,
         isNull,
       );
+    });
+
+    testWidgets('a check-in landing above keeps every row below it: opened '
+        'words stay open, and no row is built again', (tester) async {
+      setTestSurfaceSize(tester, const Size(390, 2400));
+      final long = audio(
+        'long',
+        DateTime(2026, 8, 12, 19, 10),
+        words: longWords,
+      );
+      await pump(
+        tester,
+        timeline(checkIns: [quiet], tasks: [], entries: [long]),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('person-folded-more-long')));
+      await tester.pumpAndSettle();
+      Element row(String id) => tester.element(
+        find.byKey(ValueKey('person-timeline-row-$id')),
+      );
+      final longRow = row('long');
+      final quietRow = row('quiet');
+
+      // The reload a new check-in brings: the same rows, one more above them.
+      final fresh = CheckInEntry(
+        meta: meta('fresh', DateTime(2026, 8, 13, 13)),
+        data: const CheckInData(
+          relationshipId: 'pip',
+          interactionType: CheckInInteractionType.call,
+        ),
+      );
+      await pump(
+        tester,
+        timeline(checkIns: [fresh, quiet], tasks: [], entries: [long]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('person-timeline-row-fresh')), findsOne);
+      // Found again by key at their new places, not rebuilt from scratch:
+      // a rebuilt row re-resolves and re-decodes its photos, which is what
+      // made the page flicker after every check-in.
+      expect(identical(row('long'), longRow), isTrue);
+      expect(identical(row('quiet'), quietRow), isTrue);
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('person-folded-words-long')),
+            )
+            .maxLines,
+        isNull,
+        reason: 'the words the reader opened stay open',
+      );
+    });
+
+    testWidgets('rows come back into view at their height: a jump down the '
+        'history leaves the scroll extent where it is', (tester) async {
+      // Thirty long recordings, each with a summary line to lead with — as
+      // the page's detail supplies them. Rows the lazy list drops and builds
+      // again must lay out at their final height the first time: a row that
+      // fetched its own line was laid out three lines tall and shrank when
+      // the line arrived, and the extent shrank under the reader.
+      final many = [
+        for (var i = 0; i < 30; i++)
+          audio(
+            'many-$i',
+            DateTime(2026, 8, 12).subtract(Duration(hours: 7 * i)),
+            words: longWords,
+          ),
+      ];
+      final summaries = {for (final a in many) a.meta.id: 'Line ${a.meta.id}.'};
+      const phone = Size(390, 844);
+      setTestSurfaceSize(tester, phone);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CustomScrollView(
+            controller: controller,
+            slivers: [
+              PersonTimelineSliver(
+                timeline: timeline(checkIns: [], tasks: [], entries: many),
+                summaries: summaries,
+                personName: 'Pip',
+                filter: PersonTimelineFilter.all,
+                onFilter: (_) {},
+                actions: actions(),
+                now: now,
+              ),
+            ],
+          ),
+          mediaQueryData: const MediaQueryData(size: phone),
+        ),
+      );
+      await tester.pumpAndSettle();
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      final end = controller.position.maxScrollExtent;
+
+      // Far away, so the rows at the end are dropped; then back to them.
+      controller.jumpTo(0);
+      await tester.pumpAndSettle();
+      controller.jumpTo(end);
+      final extents = <double>[];
+      for (var frame = 0; frame < 4; frame++) {
+        await tester.pump();
+        extents.add(controller.position.maxScrollExtent);
+      }
+
+      expect(extents, everyElement(end));
+      expect(controller.position.pixels, end);
+      expect(find.text('Line many-29.'), findsOneWidget);
     });
 
     testWidgets('a voice note with words offers Sort this, which sorts it; '
@@ -780,11 +871,3 @@ Future<void> _hover(WidgetTester tester, Finder target) async {
 
 /// Serves fixed linked responses, so a test states the summary it asserts
 /// about instead of standing up a database.
-class _FixedResponses extends LinkedAiResponsesController {
-  _FixedResponses(super.entryId, this.responses);
-
-  final List<AiResponseEntry> responses;
-
-  @override
-  Future<List<AiResponseEntry>> build() async => responses;
-}

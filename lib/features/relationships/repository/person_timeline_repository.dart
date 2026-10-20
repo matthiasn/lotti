@@ -13,6 +13,14 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 
+/// What [PersonTimelineRepository.getRecordingSummaries] answers: each
+/// recording's leading line by recording id, and the ids of the summaries
+/// those lines came from.
+typedef RecordingSummaries = ({
+  Map<String, String> oneLiners,
+  Set<String> summaryIds,
+});
+
 /// The journal `type`s a person's timeline holds through a [RelationshipLink]
 /// besides their check-ins and tasks: notes, voice notes, photos and
 /// meetings (ADR 0138).
@@ -152,6 +160,62 @@ class PersonTimelineRepository {
     return _journalDb.getLiveEntitiesOfTypesByIds(
       ids,
       types: personTimelineEntryTypes,
+    );
+  }
+
+  static const RecordingSummaries _noSummaries = (
+    oneLiners: <String, String>{},
+    summaryIds: <String>{},
+  );
+
+  /// The one line each recording in [audioIds] leads with on the page: the
+  /// `oneLiner` of its newest audio summary, for the recordings that have
+  /// one — and the ids of the summaries read, for the detail to watch.
+  ///
+  /// Read with the person's detail, in two bulk reads, rather than by each
+  /// row once it is on screen: a row that fetched its own line first showed
+  /// three lines of transcript and then shrank, and under a lazy list rows
+  /// do that every time they scroll back into view — the history drifted
+  /// under the reader. With the line in the detail, a row is its data.
+  Future<RecordingSummaries> getRecordingSummaries(Set<String> audioIds) async {
+    if (audioIds.isEmpty) return _noSummaries;
+    final links =
+        (await _journalDb.linksFromIds(audioIds.toList(growable: false)).get())
+            .map(entryLinkFromLinkedDbEntry)
+            .whereType<BasicLink>()
+            .where((link) => link.hidden != true)
+            .toList(growable: false);
+    if (links.isEmpty) return _noSummaries;
+    final rows = await _journalDb.journalEntitiesByIdsUnorderedAllPrivate([
+      for (final link in links) link.toId,
+    ]).get();
+    final summaries = <String, AiResponseEntry>{
+      for (final row in rows)
+        if (fromDbEntity(row) case final AiResponseEntry summary
+            when summary.data.type == AiResponseType.audioSummary &&
+                summary.meta.deletedAt == null)
+          summary.id: summary,
+    };
+    // Newest wins, as everywhere a summary is read: a recording summarized
+    // again keeps the earlier one, and the row leads with the latest.
+    final newest = <String, AiResponseEntry>{};
+    for (final link in links) {
+      final summary = summaries[link.toId];
+      if (summary == null) continue;
+      final current = newest[link.fromId];
+      if (current == null ||
+          summary.meta.dateFrom.isAfter(current.meta.dateFrom)) {
+        newest[link.fromId] = summary;
+      }
+    }
+    return (
+      oneLiners: {
+        for (final MapEntry(key: audioId, value: summary) in newest.entries)
+          if (summary.data.oneLiner?.trim() case final line?
+              when line.isNotEmpty)
+            audioId: line,
+      },
+      summaryIds: {for (final summary in newest.values) summary.id},
     );
   }
 
