@@ -5,8 +5,8 @@ description: One-call model assessment over Lotti's live harnesses, with explici
 resource: ../../../tool/lotti_gym.py
 tags: [ai, evaluation, benchmarking, model-selection, lotti-gym]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-09-17T19:30:00Z }
-stale_after: 2026-10-22
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: gym
     resource: ../../../tool/lotti_gym.py
@@ -15,11 +15,11 @@ sources:
   - id: catalog
     resource: ../../../tool/lotti_gym_catalog.dart
     title: Authoritative exercise inventory
-    last_modified: 2026-09-13
+    last_modified: 2026-09-14
   - id: results
     resource: ../../../tool/lotti_gym_results.py
     title: Artifact adapters and consolidated report
-    last_modified: 2026-09-13
+    last_modified: 2026-09-15
   - id: billing
     resource: ../../../tool/lotti_gym_billing.py
     title: Per-request provider billing ledger and transparent relay
@@ -27,11 +27,11 @@ sources:
   - id: history
     resource: ../../../tool/lotti_gym_history.py
     title: Public aggregate run history and duration accounting
-    last_modified: 2026-09-14
+    last_modified: 2026-09-15
   - id: judge
     resource: ../../../tool/task_agent_model_eval_judge.py
     title: Diagnostic task-report rubric
-    last_modified: 2026-07-12
+    last_modified: 2026-08-18
 ---
 
 # Assessing a model
@@ -48,7 +48,8 @@ warms the Flutter builds without enabling inference, runs the candidate and
 then runs the existing task-report rubric. It writes `report.html`,
 `summary.json`, `jobs.json` and retained per-attempt evidence under a unique
 run directory in `~/.local/share/lotti-gym/runs/`. Model output stays outside
-the application repository. The command prints the directory, final verdict and
+the application repository: `--output-root` moves run directories elsewhere, and
+must resolve outside the repository. The command prints the directory, final verdict and
 run price. Aggregate history is recorded in
 `docs/evaluations/lotti-gym-runs.jsonl`; this contains no prompts, outputs,
 credentials, local artifact paths or host names.
@@ -57,8 +58,9 @@ Only the Melious transport is supported by this first orchestrator. This uses
 production routing through the existing harnesses, rather than treating an
 arbitrary OpenAI-compatible endpoint as equivalent. `--base-url` selects an
 endpoint; HTTPS is required except for explicit loopback addresses. The task
-judge authorizes exactly the hostname selected by this endpoint; ambient judge
-host overrides do not expand that authorization.
+judge reaches that endpoint only through its per-attempt loopback billing relay:
+Gym adds exactly `127.0.0.1` to the judge's built-in host allowlist, and ambient
+judge host overrides are cleared, so they do not expand that authorization.
 
 `--env-file` selects another local credential file. Only Melious connection
 keys and their existing upstream aliases are read; dotenv text is never
@@ -70,11 +72,16 @@ worker environment.
 The first independent batch acts as provider preflight. If it cannot complete
 inference, the remaining matrix stays unassessed instead of repeating an
 authentication, unavailable-model or transport failure across every exercise.
-Behavioral failures still allow the complete matrix to run.
+Behavioral failures still allow the complete matrix to run. A resumed run
+repeats this preflight only while no exercise has reached a measured outcome; a
+frozen report fixture does not count.
 
-A transient provider failure on that one probe — `HTTP 5xx`, `429`, a timeout,
-a dropped connection — buys up to `PREFLIGHT_RETRIES` further attempts with a
-growing pause, because one wobble used to abandon a whole run. A rejected key,
+A transient provider failure on that one probe — HTTP `408`, `409`, `425`,
+`429`, `500`, `502`, `503`, `504` or `529`, a timeout, a dropped connection —
+buys up to `PREFLIGHT_RETRIES` (three) further attempts, pausing 5, 10 and 15
+seconds, because one wobble used to abandon a whole run. The budget belongs to
+the probe, not the invocation: `resume` counts the probe's earlier attempts,
+except cancelled ones. A rejected key,
 an unservable model or any other permanent marker still stops on the first
 attempt: those repeat forever, and retrying them only spends money. The
 classifier reads the attempt's own worker log and artifact, which is where the
@@ -104,15 +111,19 @@ comparison contract. Temperature is not a uniform Gym control: harnesses that
 consume their temperature override receive zero; the others retain their
 production routing or harness defaults. Inspect the suite artifacts for effective
 settings. Costs are observations, not automatic spend caps.
-`--judge-model` chooses the diagnostic task judge; `--no-judge` explicitly
-leaves that assessment unperformed. Neither setting changes deterministic gates.
+`--judge-model` chooses the diagnostic task judge, `qwen3.5-122b-a10b` by
+default; `--no-judge` explicitly leaves that assessment unperformed. Neither setting changes deterministic gates.
 
 # Inventory and fidelity
 
 `buildLottiGymCatalog()` imports the same scenario collections used by the live
 tests. Python never parses Dart enum text or maintains a second scenario list.
 The catalog test checks that every live entry point is registered or explicitly
-excluded, that IDs are unique and that dependencies resolve.
+excluded, that IDs are unique and that dependencies resolve. The catalog test is
+`test/tool/lotti_gym_catalog_test.dart`; it also pins the wake restraint cases
+and the query suites' `query-reports` dependency. The offline orchestration
+checks run with `python3 -m unittest tool.lotti_gym_test tool.lotti_gym_results_test
+tool.lotti_gym_billing_test tool.lotti_gym_history_test`.
 
 | Exercise | What is exercised |
 |---|---|
@@ -206,6 +217,9 @@ depend on earlier ones; prior attempts remain available.
 
 A kernel lock prevents two coordinators writing one run. Cancellation and
 worker timeouts stop the owned process group, including compiler descendants.
+Workers time out after 20 minutes, compaction workers after 90 minutes, catalog
+and warmup compilation after 10 minutes and judge runs after 60 minutes; a
+timed-out job is a retriable error.
 Atomic JSON replacement keeps the preceding checkpoint intact if a write is
 interrupted. Resume currently requires the same host, calendar day, source
 revision and worker count. This conservative restriction avoids silently mixing
@@ -259,9 +273,12 @@ workloads. Judging remains diagnostic, including when a candidate and judge
 share a model family; it never promotes a deterministic failure into a pass.
 
 Suite verdicts distinguish checks passed, failed, incomplete, prepared and review
-required. The overall result never automatically certifies unrestricted model
-fitness. Exit codes are `1` for behavioral failure, `2` for incomplete/setup
-failure, `3` for completed work requiring review, and `130` for interruption.
+required. The overall verdict is `incomplete`, `failed` or `review_required`; it
+never automatically certifies unrestricted model fitness, so a run whose every
+suite passes its checks still reports `review_required`. Exit codes are `1` for
+behavioral failure, `2` for incomplete or setup failure, `3` for completed work
+requiring review, including a run whose checks all passed, and `130` for
+interruption.
 Dry-run completion exits `0`.
 
 The report retains observed latency; P95 is omitted below twenty observations.
@@ -297,8 +314,11 @@ The task-wake driver installs the shared interaction-capture bench, matching
 the production billing route and retaining its per-turn consumption events.
 The relay makes up to six attempts to open the provider connection (five
 retries, pausing 1, 2, 4, 8 and 16 seconds) when the DNS lookup, TCP connect or
-TLS handshake fails. That rides out network outages of up to a minute or two;
-a longer outage still ends the job in an infrastructure error for `resume`.
+TLS handshake fails. The pauses total 31 seconds, so an outage whose
+failures return at once is ridden out for about half a minute; when every
+connect hangs until its 30-second timeout, the six attempts span about three and
+a half minutes. A longer outage still ends the job in an infrastructure error
+for `resume`.
 The relay also retries a provider refusal (429, 503 or 529) up to six attempts,
 when that response carries no billing: an overloaded or rate-limited provider is
 not a model failure. It waits for `Retry-After`, in seconds or as an HTTP date
@@ -311,8 +331,9 @@ lookup is not: a failed lookup returns at once and is retried, but a lookup
 that hangs is bounded only by the system resolver. Nothing
 has reached the provider at that point, so the retry cannot double-bill. Each
 retry is journalled as `connect_retry`, which billing totals ignore. A failure
-after the request is sent is never retried and still surfaces as a 502, because
-the provider may already have charged for it.
+after the request is sent is never retried, because the provider may already
+have charged for it: before response headers are forwarded it surfaces as a 502,
+and after that the forwarded response ends early.
 
 ```mermaid
 flowchart LR
@@ -374,8 +395,11 @@ The existing entry points remain available for focused diagnostics:
 
 For the standalone conversation harness, `LOCAL_TASK_AGENT_EVAL_STRICT=1`
 makes deterministic failures fail the test; its diagnostic default still writes
-weak results. `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT` relocates retained artifacts
-outside the repository. Gym supplies explicit selectors and output paths, so
+weak results. `LOCAL_TASK_AGENT_EVAL_JSON` and `LOCAL_TASK_AGENT_EVAL_MARKDOWN` choose its
+artifact paths; otherwise it writes to the system temporary directory.
+`tool/melious_task_agent_model_eval.sh` retains its artifacts under
+`build/task_agent_model_eval/` by default; `LOCAL_TASK_AGENT_EVAL_OUTPUT_ROOT`
+relocates them outside the repository. Gym supplies explicit selectors and output paths, so
 ambient standalone switches do not alter a Gym run.
 
 # Historical findings and related contracts

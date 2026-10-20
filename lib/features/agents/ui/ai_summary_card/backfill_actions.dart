@@ -9,7 +9,8 @@ import 'package:lotti/features/ai/backfill/inference_backfill_queue.dart';
 /// Succeeds as soon as the job is queued, which is what the row needs to
 /// leave the list. The run itself is the queue's business — it reports
 /// through the entry's own inference status like any other run, and a run
-/// that fails puts the suggestion back on the next scan.
+/// that fails puts the suggestion back as soon as the queue lets go of it,
+/// since the entry still lacks what it offered.
 ToolExecutionResult confirmBackfillSuggestion(
   WidgetRef ref,
   PendingSuggestion suggestion,

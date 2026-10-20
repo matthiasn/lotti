@@ -410,7 +410,7 @@ copy-over remains the single demo→real crossing point.
 
 Connecting alone is not enough for the seeded tasks: they were written
 straight into the world, so they carry neither an agent nor a
-`TaskData.profileId`, and `ProfileAutomationResolver.resolveForTask` would
+`TaskData.profileId`, and `ProfileAutomationResolver.resolveForSubject` would
 find nothing to run. The moment the key panel reports a connected provider,
 [`demo_real_ai_wiring.dart`](../../lib/features/demo/ai/demo_real_ai_wiring.dart)
 points the demo world at the provider's bundled profile

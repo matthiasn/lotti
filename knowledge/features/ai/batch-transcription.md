@@ -5,28 +5,29 @@ description: Audio model discovery, streaming transcription, the speech dictiona
 resource: ../../../lib/features/ai/services/audio_transcription_service.dart
 tags: [ai, transcription, audio, attribution]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-10T20:25:15Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: service
     resource: ../../../lib/features/ai/services/audio_transcription_service.dart
     title: AudioTranscriptionService
-    last_modified: 2026-10-09
+    last_modified: 2026-10-11
   - id: daily-os-correction
     resource: ../../../lib/features/daily_os_next/state/daily_os_inference_providers.dart
     title: The Daily OS capture's correction model and correctHeardTranscript
-    last_modified: 2026-10-09
+    last_modified: 2026-10-11
   - id: provider
     resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
     title: Audio inference routing
-    last_modified: 2026-09-06
+    last_modified: 2026-10-06
 ---
 
 # Ownership
 
 `AudioTranscriptionService` transcribes an existing local file through configured
 AI providers. It is shared by [agent voice input](../agents/chat-input-and-reasoning.md)
-and Daily OS capture/outbox processing. It does not record audio, persist journal
+and Daily OS capture/outbox processing; onboarding's first task records through
+the same Daily OS capture controller. It does not record audio, persist journal
 transcripts, or own a chat session. `audioTranscriptionServiceProvider` supplies
 the service through Riverpod.
 
@@ -39,10 +40,10 @@ sequenceDiagram
   participant Config as AiConfigRepository
   participant Usage as AiInteractionCapture
   participant Provider as CloudInferenceRepository
-  Caller->>Service: transcribeStream(file, optional target/session)
+  Caller->>Service: transcribeStream / transcribe(file, optional target/session)
   alt No explicit target
     Service->>Config: load configured models and providers
-    Config-->>Service: compatible batch audio candidates
+    Config-->>Service: model and provider configs
   end
   Service->>Usage: capture attributed interaction when registered
   Service->>Provider: generateWithAudio
@@ -75,15 +76,14 @@ them; the speech dictionary reaches them here instead:
   [speech dictionary](../speech/dictionary.md) entries that reach
   `dictionaryCategoryId` — with none, the entries that apply to every
   category — and the merged list goes to the engine as
-  `speechDictionaryTerms`. Today every caller passes no category, so each
-  hears the global entries; a query chat's category is not threaded through
+  `speechDictionaryTerms`. Today every caller passes no known terms and no
+  category, so each hears the global entries only; a query chat's category is not threaded through
   yet. An unreadable dictionary gives no terms, never a failed request.
 - **A correction by sound and spelling as the words stream.** Complete
   words are corrected against the same terms (`correctTranscriptTerms`) as
   they arrive; the letters a chunk ends in wait for the next chunk, since a
   provider may split a word across two ("Van", "ja"), and flush at the end.
-  Free and local, so chat drafts and onboarding get it with no extra
-  latency.
+  Free and local, so chat drafts get it with no extra latency.
 - **A model's correction where the caller can wait for one.**
   `correctTranscript` asks a tool-capable model, in one pinned
   `report_transcript_corrections` call, for quoted corrections against the
@@ -94,8 +94,9 @@ them; the speech dictionary reaches them here instead:
   than on its own, so the correction's cost sits beside the transcript. The
   foreground capture passes its session; an outbox retry transcribes without
   one, so both calls there stand alone. No entry, an empty text or any
-  failure returns the words as heard. Only Daily
-  OS uses it: `correctHeardTranscript` runs it on the planner profile's audio
+  failure returns the words as heard. Only the
+  Daily OS capture pipeline uses it — including onboarding's first task, which
+  runs on the same capture controller: `correctHeardTranscript` runs it on the planner profile's audio
   post-processing route (`dailyOsTranscriptCorrectionTargetProvider` — its
   slot, else its thinking model, when it can call tools and resolves here),
   for words a speech-to-text engine heard, before the foreground capture

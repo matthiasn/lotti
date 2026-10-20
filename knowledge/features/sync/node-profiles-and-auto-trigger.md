@@ -135,11 +135,13 @@ contract:
    re-transcription.
 5. Find the linked task via `linksForEntryIds`; skip if there is no parent
    `Task`.
-6. Call `ProfileAutomationResolver.resolveProfileIdForTask(taskId)` — same chain
-   as `resolveForTask` (`agentConfig.profileId` → `version.profileId` →
-   `template.profileId` → `task.data.profileId`). It **does not consult
-   `category.defaultProfileId`**, which would let a category edit retroactively
-   re-route claims.
+6. Call `ProfileAutomationResolver.resolveProfileIdForSubject(taskId)` — a raw
+   legacy profile-id selection (`agentConfig.profileId` → `version.profileId` →
+   `template.profileId` → `task.data.profileId`) that returns the first id set
+   without loading it. Unlike `resolveForSubject`, a selected id whose profile
+   no longer exists does not fall back to the task's own profile; step 7 then
+   skips the recording. It **does not consult `category.defaultProfileId`**,
+   which would let a category edit retroactively re-route claims.
 7. Load the raw `AiConfigInferenceProfile`; skip if missing.
 8. Skip if `profile.pinnedHostId == null`.
 9. Skip if `profile.pinnedHostId != localHostId`.
