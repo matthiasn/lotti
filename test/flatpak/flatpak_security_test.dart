@@ -268,13 +268,15 @@ void main() {
         expect(token, isNotEmpty);
         expect(token, contains('security_test_'));
 
-        // Token should include timestamp
+        // Token should include timestamp, then a counter: the counter
+        // starts at 0, so the first token made in a run ends in 0.
         final parts = token.split('_');
-        expect(parts.length, greaterThanOrEqualTo(2));
+        expect(parts.length, greaterThanOrEqualTo(3));
 
-        final timestamp = int.tryParse(parts.last);
+        final timestamp = int.tryParse(parts[parts.length - 2]);
         expect(timestamp, isNotNull);
         expect(timestamp, greaterThan(0));
+        expect(int.tryParse(parts.last), isNotNull);
       });
 
       test('portal timeout prevents hanging', () {

@@ -136,6 +136,9 @@ void main() {
   });
 
   setUp(() {
+    // Created once in setUpAll with its stubs; the entities one test creates
+    // must not be captured by another's verify, whatever the test order.
+    clearInteractions(mockPersistenceLogic);
     mockClipboard = MockSystemClipboard();
     mockReader = MockClipboardReader();
     mockItem = MockClipboardDataReader();

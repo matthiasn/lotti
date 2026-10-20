@@ -175,9 +175,13 @@ void main() {
       MockClient((_) async => http.Response.bytes(data, 200)),
     );
     final path = await repo.install('tiny');
-    await File(
-      p.join(path, 'model.onnx'),
-    ).writeAsBytes(List.filled(data.length, 0));
+    final model = File(p.join(path, 'model.onnx'));
+    final installed = model.statSync().modified;
+    await model.writeAsBytes(List.filled(data.length, 0));
+    // Verification is cached by size and modified time. Corruption comes
+    // long after an install; written right after it, both writes can share
+    // one timestamp tick and look unchanged.
+    model.setLastModifiedSync(installed.add(const Duration(minutes: 1)));
     expect(await repo.isInstalled('tiny'), isFalse);
     await repo.install('tiny');
     expect(await File(p.join(path, 'model.onnx')).readAsBytes(), data);

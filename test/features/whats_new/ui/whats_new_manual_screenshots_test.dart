@@ -32,6 +32,7 @@ import 'package:lotti/features/whats_new/ui/whats_new_modal.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
@@ -280,6 +281,8 @@ void main() {
   });
 
   List<Override> overrides() => [
+    // The settings tree reads it through its provider, not GetIt.
+    navServiceProvider.overrideWithValue(navService),
     whatsNewControllerProvider.overrideWith(_ManualWhatsNewController.new),
     for (final flag in [
       enableHabitsPageFlag,

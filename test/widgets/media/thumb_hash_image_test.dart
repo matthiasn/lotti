@@ -55,11 +55,17 @@ Future<ImageInfo> _firstFrame(ImageProvider<Object> provider) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  tearDown(() {
+  // Before as well as after: in CI a shard's files share one isolate, and
+  // the file before this one may leave its images in the cache, which the
+  // size assertions here would count.
+  void clearImageCache() {
     imageCache
       ..clear()
       ..clearLiveImages();
-  });
+  }
+
+  setUp(clearImageCache);
+  tearDown(clearImageCache);
 
   group('ThumbHashImage', () {
     test('obtainKey answers the provider itself, without a frame delay', () {

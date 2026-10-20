@@ -328,6 +328,67 @@ void main() {
     return container.read(provider.notifier);
   }
 
+  // Stubs every test starts from. Several groups reset these two mocks in
+  // their own setUp; re-applying them before each test keeps a shuffled
+  // order from leaving another group's tests without them.
+  void stubJournalDefaults() {
+    when(
+      () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+    ).thenAnswer((_) async => testTextEntry);
+    when(
+      () => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id),
+    ).thenAnswer((_) async => testTextEntryNoGeo);
+    when(
+      () => mockJournalDb.journalEntityById(testTask.meta.id),
+    ).thenAnswer((_) async => testTask);
+    when(
+      () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+    ).thenAnswer((_) async => testEventEntry);
+    // For addTextToImage tests - ensure these are also available if not overridden in group's setUp
+    when(
+      () => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id),
+    ).thenAnswer((_) async => testImageEntryNoText);
+    when(
+      () => mockJournalDb.journalEntityById(testImageEntryWithMarkdown.meta.id),
+    ).thenAnswer((_) async => testImageEntryWithMarkdown);
+
+    when(
+      () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+    ).thenAnswer((_) async => true);
+
+    // Default stub for session ratings config flag check
+    when(
+      () => mockJournalDb.getConfigFlagByName(any()),
+    ).thenAnswer((_) async => null);
+
+    // Default stub for updateJournalEntityText
+    when(
+      () => mockPersistenceLogic.updateJournalEntityText(
+        any(),
+        any(),
+        any(),
+      ),
+    ).thenAnswer((_) async => true);
+
+    // Default stub for persistence logic updateTask, must return Future<bool>
+    when(
+      () => mockPersistenceLogic.updateTask(
+        entryText: any(named: 'entryText'),
+        journalEntityId: any(named: 'journalEntityId'),
+        change: any(named: 'change'),
+      ),
+    ).thenAnswer((_) async => testTask);
+
+    // Default stub for persistence logic updateEvent
+    when(
+      () => mockPersistenceLogic.updateEvent(
+        entryText: any(named: 'entryText'),
+        journalEntityId: any(named: 'journalEntityId'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer((_) async => true);
+  }
+
   // setUpAll at main scope
   setUpAll(() {
     // File-level GetIt scope: popped in tearDownAll so registrations never
@@ -401,62 +462,8 @@ void main() {
       ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
       ..registerSingleton<EditorStateService>(mockEditorStateService);
 
-    when(
-      () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-    ).thenAnswer((_) async => testTextEntry);
-    when(
-      () => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id),
-    ).thenAnswer((_) async => testTextEntryNoGeo);
-    when(
-      () => mockJournalDb.journalEntityById(testTask.meta.id),
-    ).thenAnswer((_) async => testTask);
-    when(
-      () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
-    ).thenAnswer((_) async => testEventEntry);
-    // For addTextToImage tests - ensure these are also available if not overridden in group's setUp
-    when(
-      () => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id),
-    ).thenAnswer((_) async => testImageEntryNoText);
-    when(
-      () => mockJournalDb.journalEntityById(testImageEntryWithMarkdown.meta.id),
-    ).thenAnswer((_) async => testImageEntryWithMarkdown);
-
-    when(
-      () => mockPersistenceLogic.updateJournalEntity(any(), any()),
-    ).thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
-
-    // Default stub for session ratings config flag check
-    when(
-      () => mockJournalDb.getConfigFlagByName(any()),
-    ).thenAnswer((_) async => null);
-
-    // Default stub for updateJournalEntityText
-    when(
-      () => mockPersistenceLogic.updateJournalEntityText(
-        any(),
-        any(),
-        any(),
-      ),
-    ).thenAnswer((_) async => true);
-
-    // Default stub for persistence logic updateTask, must return Future<bool>
-    when(
-      () => mockPersistenceLogic.updateTask(
-        entryText: any(named: 'entryText'),
-        journalEntityId: any(named: 'journalEntityId'),
-        change: any(named: 'change'),
-      ),
-    ).thenAnswer((_) async => testTask);
-
-    // Default stub for persistence logic updateEvent
-    when(
-      () => mockPersistenceLogic.updateEvent(
-        entryText: any(named: 'entryText'),
-        journalEntityId: any(named: 'journalEntityId'),
-        data: any(named: 'data'),
-      ),
-    ).thenAnswer((_) async => true);
+    stubJournalDefaults();
   });
 
   setUp(() {
@@ -464,6 +471,20 @@ void main() {
     // between tests — several of them assert on exact call counts.
     reset(mockProjectRepository);
     stubProjectRepositoryDefaults();
+    reset(mockJournalDb);
+    reset(mockPersistenceLogic);
+    stubJournalDefaults();
+    // Stubbed per test only: a running timer or a navigation stub one test
+    // sets up must not reach another, whatever order the tests run in.
+    reset(mockTimeService);
+    reset(mockNavService);
+    reset(mockOutboxService);
+    // These keep their setUpAll stubs; only the calls one test records must
+    // not count in another's verify.
+    clearInteractions(mockUpdateNotifications);
+    clearInteractions(secureStorageMock);
+    clearInteractions(mockNotificationService);
+    clearInteractions(mockEditorStateService);
   });
 
   tearDownAll(() async {
@@ -474,9 +495,6 @@ void main() {
   group('EntryController Tests - ', () {
     // Specific setUp for this group if needed (e.g., vcMockNext reset)
     setUp(() {
-      reset(
-        mockPersistenceLogic,
-      ); // Still good to reset per group if tests modify its state
       vcMockNext = '1';
 
       // JournalDb mocks specific to this group, ensure they don't conflict if IDs overlap
@@ -764,7 +782,6 @@ void main() {
     });
 
     test('delete entry & beam back', () async {
-      reset(mockPersistenceLogic);
       final localMockJournalRepository = MockJournalRepository();
       final entryId = testTextEntry.meta.id;
 
@@ -827,7 +844,6 @@ void main() {
     /// Stubs `PersistenceLogic.updateEntity` to answer [stored] for every
     /// entry the toggles write.
     void stubUpdateEntity({bool stored = true}) {
-      reset(mockPersistenceLogic);
       when(
         () => mockPersistenceLogic.updateEntity(any(), any()),
       ).thenAnswer((_) async => stored);
@@ -1786,8 +1802,6 @@ void main() {
     late MockChecklistRepository mockChecklistRepository;
 
     setUp(() {
-      reset(mockPersistenceLogic);
-      reset(mockJournalDb);
       registerFallbackValue((List<String> stored) => stored);
       mockChecklistRepository = MockChecklistRepository();
 
@@ -1933,7 +1947,6 @@ void main() {
 
   group('updateTaskStatus method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
@@ -2200,7 +2213,6 @@ void main() {
   group('updateTaskStatus on the task as stored '
       '(TaskFieldWrites.tla, HistoryComplete)', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
       ).thenAnswer((_) async => testTask);
@@ -2237,7 +2249,6 @@ void main() {
 
   group('updateTaskLanguage method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
       ).thenAnswer((_) async => testTask);
@@ -2382,7 +2393,6 @@ void main() {
 
   group('updateRating method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
@@ -2450,7 +2460,6 @@ void main() {
 
   group('event edits report the persistence result', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
       ).thenAnswer((_) async => testEventEntry);
@@ -2531,7 +2540,6 @@ void main() {
 
   group('updateEventTitle method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
       ).thenAnswer((_) async => testEventEntry);
@@ -2606,7 +2614,6 @@ void main() {
 
   group('updateEventStatus method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
       ).thenAnswer((_) async => testEventEntry);
@@ -2681,7 +2688,6 @@ void main() {
 
   group('updateEventCover method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
       ).thenAnswer((_) async => testEventEntry);
@@ -2766,7 +2772,6 @@ void main() {
 
   group('save method - JournalEvent', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
       when(
         () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
@@ -2811,7 +2816,6 @@ void main() {
 
   group('save method - Task', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
@@ -3199,7 +3203,6 @@ void main() {
 
   group('setCoverArt method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
       ).thenAnswer((_) async => testTask);
@@ -3359,7 +3362,6 @@ void main() {
     }
 
     setUp(() {
-      reset(mockPersistenceLogic);
       tempDir = Directory.systemTemp.createTempSync('paste_cover_');
       if (!getIt.isRegistered<Directory>()) {
         getIt.registerSingleton<Directory>(tempDir);
@@ -3544,7 +3546,6 @@ void main() {
 
   group('updateTaskPriority method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testTask.meta.id),
       ).thenAnswer((_) async => testTask);
@@ -4072,7 +4073,6 @@ void main() {
 
   group('setLanguage method', () {
     setUp(() {
-      reset(mockPersistenceLogic);
       when(
         () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
