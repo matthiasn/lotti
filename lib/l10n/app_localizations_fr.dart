@@ -4055,6 +4055,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
+  String get configFlagUseIsolateSync =>
+      'Processus de synchronisation en arrière-plan';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Expérimental : lance à l’ouverture de l’app le processus d’arrière-plan de la synchronisation. Il ne synchronise encore rien – cela permet de vérifier qu’il fonctionne sur ton appareil. Prend effet après un redémarrage.';
+
+  @override
   String get conflictApplyButton => 'Appliquer';
 
   @override

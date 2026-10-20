@@ -4036,6 +4036,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ative esta opção para reenviar automaticamente uploads de anexos com falha quando a conexão for restaurada.';
 
   @override
+  String get configFlagUseIsolateSync =>
+      'Processo de sincronização em segundo plano';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimental: inicia o processo de sincronização em segundo plano ao abrir a app. Ainda não sincroniza nada; serve para testares se funciona no teu dispositivo. Entra em vigor após reiniciar.';
+
+  @override
   String get conflictApplyButton => 'Aplicar';
 
   @override

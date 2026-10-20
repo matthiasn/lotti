@@ -1892,6 +1892,8 @@
   "configFlagRecordLocationDescription": "Registrera automatiskt din plats med nya poster. Detta hjälper till med platsbaserad organisering och sökning.",
   "configFlagResendAttachments": "Skicka bilagor på nytt",
   "configFlagResendAttachmentsDescription": "Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.",
+  "configFlagUseIsolateSync": "Synkroniseringsprocess i bakgrunden",
+  "configFlagUseIsolateSyncDescription": "Experimentell: startar synkroniseringens bakgrundsprocess när appen öppnas. Den synkroniserar inget ännu – så testar du att den körs på din enhet. Gäller efter en omstart.",
   "conflictApplyButton": "Ansök",
   "conflictApplyFailedTitle": "Kunde inte applicera upplösning",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag sedan} other{{count} dagar sedan}}",

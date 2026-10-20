@@ -113,7 +113,7 @@ All under `lib/features/sync/queue/`:
 | Component | Role |
 |-----------|------|
 | `InboundQueue` | Drift-backed queue in `sync_db` — `inbound_event_queue` plus a per-room `queue_markers` table |
-| `InboundWorker` | Per-room drain loop, gated by `UserActivityGate` |
+| `InboundWorker` | Per-room drain loop. Waits for `UserActivityGate` idle time before each entry; an entry it has started — up to a 50-child bundle, inline descriptor downloads included — runs to completion. Live admission, bridge walks and the `fromSync` notification fan-out are not gated (see [the sync isolate](isolate.md#what-runs-regardless-of-activity)) |
 | `BridgeCoordinator` | Subscribes to `Client.onSync`; runs anchored catch-up walks and retries durable ciphertext floors after to-device traffic. Single-flight |
 | `QueueApplyAdapter` | Bridges the worker to `SyncEventProcessor.prepare` / `apply` |
 | `QueuePipelineCoordinator` | Owns the above plus the live producer subscription; exposed as `MatrixService.queueCoordinator` |
@@ -249,7 +249,8 @@ flowchart TD
   overlap.
 - **Attachment downloads yield to the user and decrypt off the UI isolate.**
   `AttachmentIngestor` waits on the `UserActivityGate` before each queued
-  download starts, like the worker. The Matrix client is built with
+  download starts, like the worker. A descriptor fetched inline during
+  `prepare` has only the worker's check before its entry. The Matrix client is built with
   `MatrixNativeImplementations`
   (`lib/features/sync/matrix/matrix_native_implementations.dart`), so the
   SDK's SHA-256 check and AES-CTR pass over a ciphertext of 64 KiB or more run

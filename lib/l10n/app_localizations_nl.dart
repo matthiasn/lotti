@@ -4015,6 +4015,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel dit in om mislukte bijlageuploads automatisch opnieuw te verzenden wanneer de verbinding hersteld is.';
 
   @override
+  String get configFlagUseIsolateSync =>
+      'Synchronisatieproces op de achtergrond';
+
+  @override
+  String get configFlagUseIsolateSyncDescription =>
+      'Experimenteel: start bij het openen van de app het achtergrondproces van de synchronisatie. Het synchroniseert nog niets; zo test je of het op je apparaat draait. Werkt na een herstart.';
+
+  @override
   String get conflictApplyButton => 'Toepassen';
 
   @override

@@ -1670,6 +1670,8 @@
   "configFlagRecordLocationDescription": "Enregistrer automatiquement ta position avec les nouvelles entrées. Cela facilite l'organisation et la recherche basées sur la localisation.",
   "configFlagResendAttachments": "Renvoyer les pièces jointes",
   "configFlagResendAttachmentsDescription": "Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.",
+  "configFlagUseIsolateSync": "Processus de synchronisation en arrière-plan",
+  "configFlagUseIsolateSyncDescription": "Expérimental : lance à l’ouverture de l’app le processus d’arrière-plan de la synchronisation. Il ne synchronise encore rien – cela permet de vérifier qu’il fonctionne sur ton appareil. Prend effet après un redémarrage.",
   "conflictApplyButton": "Appliquer",
   "conflictApplyFailedTitle": "Impossible d'appliquer la résolution",
   "conflictBannerAgoDays": "{count, plural, =1{il y a 1 jour} other{il y a {count} jours}}",

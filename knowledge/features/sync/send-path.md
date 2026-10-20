@@ -90,8 +90,13 @@ sequenceDiagram
 ```
 
 Sends are nudged by connectivity regain, Matrix login completion, outbox
-row-count changes, and a watchdog for pending-but-idle queues. The whole pass is
-gated by `UserActivityGate`, so the queue waits for idle time before running.
+row-count changes, and a watchdog for pending-but-idle queues. The runner waits
+for `UserActivityGate` idle time before each `sendNext()`; inside it,
+`_drainOutbox()` checks `canProcess` again before every pass and after the
+post-drain settle, and stops with the retry backoff if the user became active in
+between. A pass already running — one `processQueue()` call — is not
+interrupted. What feeds the queue — the enqueue writers, the 10 s watchdog, the
+daily prune — is not gated.
 
 # Media attachments: one decision, two places
 

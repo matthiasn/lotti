@@ -64,6 +64,7 @@ import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_stores.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_startup.dart';
 import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';

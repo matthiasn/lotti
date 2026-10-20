@@ -10,6 +10,7 @@ Single-user, multi-device replication over end-to-end encrypted Matrix.
 * [Receive path](receive-path.md) - the inbound queue pipeline, anchored catch-up, monotonic markers.
 * [Sequence log and backfill](sequence-and-backfill.md) - causal accounting and gap repair.
 * [Node profiles and synced-audio auto-trigger](node-profiles-and-auto-trigger.md) - capability advertisement and local-only inference.
+* [The sync isolate](isolate.md) - the worker isolate sync is moving into behind `use_isolate_sync`, what runs regardless of activity, and the host's lifecycle.
 
 # Related
 

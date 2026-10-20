@@ -348,4 +348,30 @@ class SyncTuning {
   // an answer still on its way is not asked for twice; short enough that a
   // lost request is retried by the user's next round.
   static const Duration deepBackfillRequestExpiry = Duration(hours: 1);
+
+  // How long the sync isolate host waits for a freshly spawned worker to
+  // hand over its command port. Spawning is milliseconds on a desktop; the
+  // margin is for a cold phone still busy starting the app.
+  static const Duration syncIsolateStartTimeout = Duration(seconds: 30);
+
+  // How long one request to the sync isolate may stay unanswered before the
+  // host fails it. Matches the removed actor's budget (ADR 0046): long
+  // enough for a command that touches the network, short enough that a
+  // wedged worker surfaces instead of hanging its caller.
+  static const Duration syncIsolateRequestTimeout = Duration(seconds: 30);
+
+  // Waits before respawning a sync isolate that exited unexpectedly, by
+  // consecutive crash. The last step repeats: sync never gives up, but a
+  // worker that keeps crashing stops costing more than a spawn a minute.
+  static const List<Duration> syncIsolateRespawnBackoff = [
+    Duration(seconds: 1),
+    Duration(seconds: 5),
+    Duration(seconds: 15),
+    Duration(minutes: 1),
+  ];
+
+  // A worker that stayed up this long before exiting counts as having run
+  // fine: its crash restarts the backoff from the first step instead of
+  // continuing an old streak.
+  static const Duration syncIsolateStableUptime = Duration(minutes: 5);
 }

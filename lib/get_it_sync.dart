@@ -444,6 +444,14 @@ Future<String? Function()> _registerMatrixSyncStack({
       dispose: (service) => service.dispose(),
     );
 
+  // Off by default, and then a no-op: the isolate rebuild (ADR 0142) lands
+  // behind `use_isolate_sync` step by step, beside the sync stack above.
+  await registerSyncIsolateIfEnabled(
+    getIt: getIt,
+    journalDb: journalDb,
+    logger: domainLogger,
+  );
+
   return () => client.userID;
 }
 

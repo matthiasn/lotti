@@ -1670,6 +1670,8 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch deinen Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
+  "configFlagUseIsolateSync": "Sync-Hintergrundprozess",
+  "configFlagUseIsolateSyncDescription": "Experimentell: startet beim Öffnen der App den Hintergrundprozess der Synchronisierung. Er synchronisiert noch nichts – so testest du, ob er auf deinem Gerät läuft. Wirkt nach einem Neustart.",
   "conflictApplyButton": "Übernehmen",
   "conflictApplyFailedTitle": "Konflikt konnte nicht angewendet werden",
   "conflictBannerAgoDays": "{count, plural, =1{vor 1 Tag} other{vor {count} Tagen}}",
