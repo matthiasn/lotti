@@ -1385,7 +1385,10 @@ void main() {
       ).thenAnswer((_) async => []);
 
       expect(await service.processAutomaticBackfill(), 0);
-      expect(await service.processAutomaticBackfill(), 0);
+      // The pass a drained queue triggers is the same section: it is the
+      // one that runs at the end of a catch-up.
+      service.nudgeAfterDrain();
+      await pumpEventQueue();
 
       expect(meter.summary(), matches(RegExp(r'backfill \d+ms/2 ')));
     });

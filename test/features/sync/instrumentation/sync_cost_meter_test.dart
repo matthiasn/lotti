@@ -155,6 +155,55 @@ void main() {
     });
   });
 
+  test('a suspended app is not a stall: the gap is dropped and the probe '
+      'measures from the next tick', () {
+    fakeAsync((async) {
+      // No report inside the window: a report would reset the totals and
+      // hide a suspension that was wrongly counted.
+      final meter = SyncCostMeter(
+        logger: logger,
+        reportEvery: const Duration(hours: 1),
+      )..start();
+      async
+        ..elapse(const Duration(milliseconds: 100))
+        // Backgrounded for ten minutes while a sync span was open: no timer
+        // ran, but nothing was holding the UI isolate either.
+        ..elapseBlocking(const Duration(minutes: 10))
+        ..elapse(const Duration(milliseconds: 100))
+        // A real stall after resuming still counts.
+        ..elapseBlocking(const Duration(milliseconds: 160))
+        ..elapse(const Duration(milliseconds: 100));
+
+      expect(
+        meter.summary(),
+        endsWith(
+          '| ui stall 60ms (0ms with sync running), worst 60ms, 1 over 50ms',
+        ),
+      );
+      unawaited(meter.dispose());
+    });
+  });
+
+  test('switching the sync log on starts the stall probe with the first '
+      'counted sync work, not a minute later', () {
+    fakeAsync((async) {
+      enabled = {};
+      final meter = makeMeter()..start();
+      async.elapse(const Duration(seconds: 10));
+
+      enabled = {LogDomain.sync};
+      final span = meter.begin(SyncCostSection.bridgeWalk);
+      async
+        ..elapse(const Duration(milliseconds: 100))
+        ..elapseBlocking(const Duration(milliseconds: 160))
+        ..elapse(const Duration(milliseconds: 100));
+      span.end();
+
+      expect(meter.summary(), contains('(60ms with sync running)'));
+      unawaited(meter.dispose());
+    });
+  });
+
   test('each report writes the minute and starts the next one empty', () {
     fakeAsync((async) {
       final meter = makeMeter()..start();

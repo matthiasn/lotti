@@ -94,6 +94,12 @@ class SyncCostMeter {
   /// at 60 Hz.
   static const Duration noticeableStall = Duration(milliseconds: 50);
 
+  /// A gap between probe ticks this long is the app having been suspended —
+  /// backgrounded, the phone asleep — not the UI isolate being busy: a stall
+  /// that long would have the OS report the app as not responding. Such a
+  /// gap is dropped, and the probe measures from the tick after it.
+  static const Duration suspension = Duration(seconds: 5);
+
   final DomainLogger? _logger;
   final Duration _reportEvery;
   final Duration _probeEvery;
@@ -157,6 +163,9 @@ class SyncCostMeter {
   SyncCostSpan begin(SyncCostSection section) {
     final task = developer.TimelineTask()..start(section.timelineName);
     if (!_counting) return _TimelineSpan(task);
+    // The sync log may have been switched on since the last report; the
+    // stall probe must already run for the burst that is starting now.
+    if (_reportTimer != null) _syncProbe();
     _active++;
     _syncSinceTick = true;
     return _CountedSpan(this, section, task, clock.now());
@@ -202,8 +211,10 @@ class SyncCostMeter {
     final last = _lastTick;
     _lastTick = now;
     if (last == null) return;
-    final stall = now.difference(last) - _probeEvery;
-    _stalls.add(stall, duringSync: _syncSinceTick || _active > 0);
+    final gap = now.difference(last);
+    if (gap < suspension) {
+      _stalls.add(gap - _probeEvery, duringSync: _syncSinceTick || _active > 0);
+    }
     _syncSinceTick = _active > 0;
   }
 

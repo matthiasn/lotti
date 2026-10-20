@@ -136,7 +136,12 @@ Two outputs:
   **ui stall** part is what measures blocking itself — a probe ticks every
   100 ms while the domain is on, and whatever a tick is late by was spent on
   something that held the UI isolate. A stall counts as *with sync running*
-  when a section was open at any point during it.
+  when a section was open at any point during it. The probe starts with the
+  first sync work counted after the log is switched on, so a burst right after
+  switching it on is measured. A gap of five seconds or more between ticks is
+  the app having been suspended — backgrounded, the phone asleep — not a stall,
+  and is dropped. Section times are plain wall clock and do include a
+  suspension that falls inside a run.
 
 To measure a phone: turn the sync log on, use the app through a catch-up (a
 device that has been offline, or a fresh login), and read the `cost` lines in

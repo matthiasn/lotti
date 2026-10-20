@@ -219,10 +219,18 @@ class BackfillRequestService {
   }
 
   /// Runs one automatic pass with the configured gates, quotas and cooldowns.
-  Future<int> processAutomaticBackfill() => _costMeter.measure(
-    SyncCostSection.backfillPass,
-    () => _processBackfillRequests(useLimits: true),
-  );
+  Future<int> processAutomaticBackfill() => _automaticPass();
+
+  /// One bounded automatic pass, timed for the sync cost summary — the
+  /// periodic one and the one a queue drain triggers alike.
+  Future<int> _automaticPass({bool bypassDebounce = false}) =>
+      _costMeter.measure(
+        SyncCostSection.backfillPass,
+        () => _processBackfillRequests(
+          useLimits: true,
+          bypassDebounce: bypassDebounce,
+        ),
+      );
 
   /// Trigger an immediate automatic backfill pass instead of waiting for the
   /// next periodic timer tick.
@@ -254,9 +262,7 @@ class BackfillRequestService {
       'nudge after queue drain (debounce bypassed)',
       subDomain: 'backfill.nudge',
     );
-    unawaited(
-      _processBackfillRequests(useLimits: true, bypassDebounce: true),
-    );
+    unawaited(_automaticPass(bypassDebounce: true));
   }
 
   /// Re-request entries that are in 'requested' status but haven't been received.
