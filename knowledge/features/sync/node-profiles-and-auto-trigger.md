@@ -135,8 +135,8 @@ contract:
    re-transcription.
 5. Find the linked task via `linksForEntryIds`; skip if there is no parent
    `Task`.
-6. Call `ProfileAutomationResolver.resolveProfileIdForTask(taskId)` — same chain
-   as `resolveForTask` (`agentConfig.profileId` → `version.profileId` →
+6. Call `ProfileAutomationResolver.resolveProfileIdForSubject(taskId)` — same chain
+   as `resolveForSubject` (`agentConfig.profileId` → `version.profileId` →
    `template.profileId` → `task.data.profileId`). It **does not consult
    `category.defaultProfileId`**, which would let a category edit retroactively
    re-route claims.

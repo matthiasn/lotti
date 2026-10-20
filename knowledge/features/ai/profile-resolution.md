@@ -5,13 +5,13 @@ description: Which profile drives a run, the optional Chat and audio post-proces
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T20:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: device-default
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
     title: Device-local default profile storage
-    last_modified: 2026-09-12
+    last_modified: 2026-10-11
   - id: resolver
     resource: ../../../lib/features/ai/util/profile_resolver.dart
     title: ProfileResolver
@@ -23,23 +23,40 @@ sources:
   - id: pinning-ui
     resource: ../../../lib/features/ai/ui/widgets/profile_pinning_selector.dart
     title: Profile pinning selector
-    last_modified: 2026-09-05
+    last_modified: 2026-10-04
   - id: adr-0008
     resource: ../../../docs/adr/0008-inference-profiles-agent-provider-mapping.md
     title: ADR 0008 — Inference profiles and agent/provider mapping
-    last_modified: 2026-02-28
+    last_modified: 2026-10-04
+  - id: automation-resolver
+    resource: ../../../lib/features/ai/helpers/profile_automation_resolver.dart
+    title: ProfileAutomationResolver — the skill path's entry points
+    last_modified: 2026-10-08
+  - id: trigger
+    resource: ../../../lib/features/ai/state/skill_trigger_providers.dart
+    title: triggerSkillProvider
+    last_modified: 2026-10-08
+  - id: automation-service
+    resource: ../../../lib/features/ai/services/profile_automation_service.dart
+    title: The direct transcription fallback
+    last_modified: 2026-10-08
+  - id: slot-resolution
+    resource: ../../../lib/features/ai/util/inference_provider_resolver.dart
+    title: Slot and legacy provider resolution
+    last_modified: 2026-10-06
 ---
 
-# Three entry points
+# Entry points
 
 `ProfileResolver` is the shared resolution engine for agent wakes.
 `ProfileAutomationResolver` wraps it for skill execution:
 
 | Entry point | Question it answers |
 |-------------|---------------------|
-| `resolveForTask(taskId)` | Task-linked execution. Tries the agent path, then the task's own `profileId` |
+| `resolveForSubject(subjectId)` | Subject-linked execution (a task, project or person). Tries the agent path, then the subject's own `profileId` |
 | `resolveForCategory(categoryId)` | Standalone entries with no parent task. Reads `CategoryDefinition.defaultProfileId` and resolves it directly |
-| `resolveAutomationFallbacks(taskId)` | The ordered, de-duplicated profiles a task *inherits*. Used only by `ProfileAutomationService` — see [execution paths](execution-paths.md) |
+| `resolveAutomationFallbacks(subjectId)` | The ordered, de-duplicated profiles a subject *inherits*: its own `profileId`, then its category's current `defaultProfileId`. Used only by `ProfileAutomationService` — see [execution paths](execution-paths.md) |
+| `resolveDefaultProfile()` | The device's Settings default profile. Used for recording summaries no task or category reaches, and for the post-processing route of the direct transcription fallback |
 
 The resolver reads agents and their templates through two ports the AI
 feature declares in `profile_automation_providers.dart`:
@@ -49,41 +66,61 @@ agents feature's `AgentTemplateService` implements). Both throw until the
 composition root (`buildProviderOverrides`) wires them, so the AI feature does
 not depend on the agents feature.
 
-`triggerSkillProvider` picks between the first two: with a non-null
-`linkedTaskId` it calls `resolveForTask`, otherwise it looks up the entry, reads
-its `categoryId`, and calls `resolveForCategory`. Skills whose `contextPolicy` is
-`fullTask` are filtered out of the popup for standalone entries, so the
-standalone branch only ever runs `dictionaryOnly` / `taskSummary` / `none`
-skills.
+`triggerSkillProvider` picks between the first two. It takes the caller's
+`linkedTaskId`, else the entry itself when it is a `Task`, else a task found in
+the entry-link graph (outgoing links first, then incoming). With a task it
+calls `resolveForSubject`; otherwise it looks up the entry, reads its
+`categoryId`, and calls `resolveForCategory`. An entry with neither declines
+the skill, except transcription and recording summaries. A transcription that
+resolves no transcription slot falls back to
+`ProfileAutomationService.resolveDirectTranscription`; a recording summary that
+resolves no profile falls back to `resolveDefaultProfile`. Skills whose
+`contextPolicy` is `fullTask` are hidden from the popup for entries without task
+context, except `Summarize Recording`, and the provider declines them without a
+task except for transcription and audio-summary skills.
 
 ```mermaid
 flowchart TD
-  Trigger["triggerSkillProvider"] --> HasTask{"linkedTaskId != null?"}
+  Trigger["triggerSkillProvider"] --> LinkTask["Task id: caller, entry itself if a Task, else link graph"]
+  LinkTask --> HasTask{"linkedTaskId != null?"}
 
-  HasTask -->|yes| TaskBranch["resolveForTask(taskId)"]
-  HasTask -->|no| CategoryBranch["Look up entity → resolveForCategory(entity.categoryId)"]
+  HasTask -->|yes| SubjectBranch["resolveForSubject(taskId)"]
+  HasTask -->|no| HasCategory{"Entry has categoryId?"}
+  HasCategory -->|yes| CategoryProfile["resolveForCategory → resolveByProfileId(category.defaultProfileId)"]
+  HasCategory -->|no, transcription or summary| Result
+  HasCategory -->|no, other skill| Decline["Decline: no profile configured"]
 
-  TaskBranch --> AgentPath{"Agent/template available?"}
+  SubjectBranch --> AgentPath{"Agent, template and active version found?"}
   AgentPath -->|yes| ProfileResolve["ProfileResolver.resolve()"]
-  AgentPath -->|no| TaskProfile["resolveByProfileId(task.profileId)"]
-
-  CategoryBranch --> CategoryProfile["resolveByProfileId(category.defaultProfileId)"]
+  AgentPath -->|no| SubjectProfile["resolveByProfileId(subject profileId)"]
 
   ProfileResolve --> Typed{"Typed setup present?"}
-  Typed -->|yes| Setup["resolveSetup: disabled or configured route"]
-  Setup --> Thinking
-  Typed -->|no| Chain["selected legacy profile → legacy model → Settings default"]
-  Chain --> Thinking{"Thinking slot resolves?"}
-  Thinking -->|no| Abort["Return null and abort"]
+  Typed -->|yes| Setup["resolveSetup: direct override, base profile, or disabled/broken"]
+  Typed -->|no| Chain["first legacy profile id → legacy model → Settings default"]
+  Setup --> Thinking{"Thinking route resolved?"}
+  Chain --> Thinking
+  Thinking -->|no| SubjectProfile
   Thinking -->|yes| Optional["Resolve optional slots if configured"]
-  Optional --> Result["ResolvedProfile"]
-  TaskProfile --> Result
+  Optional --> Result["ResolvedProfile or null"]
+  SubjectProfile --> Result
   CategoryProfile --> Result
+
+  Result --> NeedsStt{"Transcription without a transcription slot?"}
+  NeedsStt -->|yes| Direct["ProfileAutomationService.resolveDirectTranscription()"]
+  NeedsStt -->|no| NeedsDefault{"Audio summary without a profile?"}
+  NeedsDefault -->|yes| Default["resolveDefaultProfile()"]
+  NeedsDefault -->|no| Runnable
+  Direct --> Runnable
+  Default --> Runnable
+  Runnable{"Profile with the needed slot?"} -->|yes| Runner["SkillInferenceRunner"]
+  Runnable -->|no| Decline
 ```
 
 An `AgentConfig.inferenceSetup` is authoritative: `resolveSetup` honors a direct
 thinking-model override and its optional base profile, or returns disabled/broken.
-It never falls through to unrelated defaults. Without a typed setup, the first
+It never falls through to unrelated defaults. On the skill path, a disabled or
+broken setup yields no profile, and `resolveForSubject` then resolves the
+subject's own `profileId`. Without a typed setup, the first
 configured profile id wins selection: agent, version, then template. If that
 profile cannot resolve, the legacy model (`version.modelId ?? template.modelId`)
 is tried, followed by the device's selected Settings default.
@@ -157,12 +194,15 @@ selection, as it did for Chat.
 Model slots store `AiConfigModel.id` — the local model row id — with a legacy
 `providerModelId` fallback. `resolveInferenceProviderForProfileSlot` first tries
 an exact model-row id match, and only then falls back to the old provider-native
-lookup for profiles written before the migration.
+lookup for profiles written before the migration. A matched row whose
+provider is unusable resolves to nothing; the legacy lookup is not tried.
 
 On that legacy path, when multiple synced model rows share the same
-`providerModelId`, provider resolution **walks every candidate** and uses the
-first provider row that still exists, has the required credentials, and matches
-the provider type owning that known model id.
+`providerModelId`, provider resolution **walks every candidate**. It skips rows
+whose provider no longer exists or lacks required credentials, and returns the
+first usable row whose provider type owns that known model id. When no usable
+row matches that type, or the id is not a known model, the first usable row
+wins.
 
 This is deliberate sync hygiene: an orphaned duplicate row from another device
 must not abort an agent wake when a valid provider/model pair is still configured
@@ -170,7 +210,9 @@ locally.
 
 # The direct transcription fallback
 
-Recording-triggered transcription has a fallback in `ProfileAutomationService`:
+Transcription has a fallback in `ProfileAutomationService`, reached by the
+automatic path, by gesture-requested transcription, and by the manual popup via
+`resolveDirectTranscription`:
 it first tries the profile automation path, then scans configured audio-to-text
 model rows when no profile handles transcription. The fallback builds an
 **ephemeral** `ResolvedProfile` around the selected model and the built-in
@@ -188,7 +230,8 @@ post-processing that follows a speech-to-text transcript borrows a route
 instead: the device's Settings default profile's audio post-processing
 model, or its thinking model (`ProfileAutomationResolver.resolveDefaultProfile`,
 copied into the ephemeral profile's post-processing slot, unavailability
-included). With no default selected the ephemeral profile is marked
+included). With no default selected, or a selected default that does not
+resolve, the ephemeral profile is marked
 `audioPostProcessingDisabled`: nothing post-processes, whatever the
 speech-to-text model's own capability flags claim, and the transcript is
 written as heard.
@@ -207,15 +250,19 @@ device that should auto-run this profile on **synced** audio entries.
 `SyncedAudioInferenceDispatcher` consults it at trigger time: **pinned-or-skip,
 with no fallback.**
 
-The pinning UI filters the known sync-node directory by required capabilities and
-is embedded in `inference_profile_form.dart`.
+The pinning UI filters the known sync-node directory by the node capabilities
+the profile's local provider types require; cloud provider types are exempt, so
+a profile with a cloud slot can be pinned but the locality gate then skips
+every entry. The selector is embedded in `inference_profile_form.dart`.
 
 ## Locality is fail-closed
 
 `profileIsLocal(profile, repo)` returns true **iff every populated model id
 resolves to a provider in `{ollama, omlx, voxtral, whisper, sherpa}`**.
 
-A referenced-but-unresolved model id counts as **not local**. That prevents a
+A referenced-but-unresolved model id counts as **not local**. A legacy
+`providerModelId` shared by several model rows also counts as unresolved,
+unlike the resolver's walk over duplicate rows. That prevents a
 deleted cloud-provider config from masking a profile as safe to auto-route. The
 dispatcher gates on this helper *after* the pin match, so even a buggy pinning UI
 cannot route synced audio to a cloud model.
@@ -229,12 +276,15 @@ runs the inference flow itself rather than calling `AutomaticPromptTrigger`.
 which can route through Mistral, OpenAI or Gemini — silently breaking the
 local-only promise of a pinned profile.
 
-The dispatcher also uses `ProfileAutomationResolver.resolveProfileIdForTask` — a
-sibling of `resolveForTask` returning the **raw profile id** rather than a
+The dispatcher also uses `ProfileAutomationResolver.resolveProfileIdForSubject` — a
+sibling of `resolveForSubject` returning the **raw profile id** rather than a
 `ResolvedProfile` — so it can read `pinnedHostId` and call `profileIsLocal` on
 the raw config. It deliberately does **not** consult `category.defaultProfileId`,
 which would skip agent-level overrides and let a category edit retroactively
-re-route which device claims an entry.
+re-route which device claims an entry. It reads only the legacy profile ids
+(agent, version, template) and never `AgentConfig.inferenceSetup`, so a typed
+setup's base profile does not decide pinning. Synced audio with no linked
+parent task is skipped.
 
 The full receive-side flow lives in
 [sync node profiles and auto-trigger](../sync/node-profiles-and-auto-trigger.md).

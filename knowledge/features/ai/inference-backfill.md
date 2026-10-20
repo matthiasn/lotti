@@ -5,13 +5,13 @@ description: How a task's images and recordings that never got their analysis, t
 resource: ../../../lib/features/ai/backfill
 tags: [ai, backfill, image-analysis, transcription, audio-summary, suggestions, agents]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-06T12:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: rule
     resource: ../../../lib/features/ai/backfill/inference_backfill.dart
     title: The missing-inference rule
-    last_modified: 2026-10-06
+    last_modified: 2026-10-07
   - id: detector
     resource: ../../../lib/features/ai/backfill/inference_backfill_detector.dart
     title: InferenceBackfillDetector
@@ -23,7 +23,7 @@ sources:
   - id: providers
     resource: ../../../lib/features/ai/backfill/inference_backfill_providers.dart
     title: Scan, dismissals and the suggestion list
-    last_modified: 2026-10-06
+    last_modified: 2026-10-07
   - id: suggestion-list
     resource: ../../../lib/features/agents/state/unified_suggestion_providers.dart
     title: unifiedSuggestionListProvider
@@ -31,7 +31,19 @@ sources:
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard Confirm all
+    last_modified: 2026-10-19
+  - id: backfill-actions
+    resource: ../../../lib/features/agents/ui/ai_summary_card/backfill_actions.dart
+    title: confirmBackfillSuggestion and dismissBackfillSuggestion
     last_modified: 2026-10-06
+  - id: gate
+    resource: ../../../lib/features/ai/services/profile_automation_service.dart
+    title: hasAutomatedSkillType, the try* resolvers and the transcription fallback
+    last_modified: 2026-10-08
+  - id: runner
+    resource: ../../../lib/features/ai/services/skill_inference_runner.dart
+    title: EntryRuns, and the runs a backfill dispatches to
+    last_modified: 2026-10-08
 ---
 
 # What it is for
@@ -85,8 +97,10 @@ A kind is offered only when automation would run it for the task:
 `ProfileAutomationService.hasAutomatedSkillType` for that skill type. That
 check opens with the [category consent gate](execution-paths.md#the-category-consent-gate)
 — the category's automatic inference switch — and then needs a profile the task
-resolves to that automates the skill with its model slot set. Backfill offers
-what the automatic triggers would have done, not more. A category with the
+resolves to that automates the skill with its model slot set. Transcription has
+one more way through, the same one automatic transcription has: with no such
+profile, a configured speech-to-text model whose provider is usable passes on
+its own. Backfill offers what the automatic triggers would have done, not more. A category with the
 switch off gets no suggestions at all.
 
 The gate is asked once per kind present, not once per entry.
@@ -162,6 +176,7 @@ stateDiagram-v2
   Hidden --> [*]: run lands
   Offered --> Dismissed: reject
   Offered --> Queued: accept or Confirm all
+  Offered --> [*]: rescan finds it landed, or the gate now declines
   Queued --> Skipped: running, landed, or gate declines
   Queued --> Dispatched: re-check passes
   Skipped --> Offered: still missing and not running
@@ -187,7 +202,8 @@ candidate, and that is what routes the row:
   device-local list in `SettingsDb`. A dismissal is a reading preference, not a
   change to the entry, so it rides on no synced entity.
 - **Confirm all** → every backfill row is enqueued; the persisted change sets
-  beside them go to `confirmAll` as before.
+  beside them go to `confirmAll` as before. The button appears once the list
+  holds more than one row.
 
 `InferenceBackfillQueue` runs jobs **one at a time, in acceptance order** — fifteen
 photos must not become fifteen concurrent vision calls — and its state is the
@@ -200,27 +216,32 @@ accepted and makes a second accept of the same row a no-op.
 2. If `InferenceBackfillDetector.isStillMissing` says it landed meanwhile —
    another device's result synced, an automatic run finished — skip it.
 3. Resolve the profile **now** with `tryAnalyzeImage`, `tryTranscribe` or
-   `trySummarizeAudio`. A profile switched while the job waited is the one that
-   runs; a category whose switch was turned off runs nothing.
+   `trySummarizeAudio`; a transcription no profile automates falls back to a
+   configured speech-to-text model, as automatic transcription does. A profile
+   switched while the job waited is the one that runs; a category whose switch
+   was turned off runs nothing.
 4. Dispatch to `SkillInferenceRunner.runImageAnalysis`, `runTranscription` or
    `runAudioSummary` with the task as `linkedTaskId` — the same task context the
    automatic triggers pass.
 
 A failing job is logged and the next one runs. The run reports through the
-entry's own inference status like any other run, and a failed one shows up again
-on the next scan.
+entry's own inference status like any other run, and a failed one returns to the
+list as soon as the queue lets go of it: the stored data still lacks it.
 
 # Gotchas
 
-- **The running check is check-then-act; the runner closes the gap.** The
-  queue reads the entry's status, then awaits the database and the profile
-  walk before it dispatches, so another trigger can start inside that window.
-  That is harmless on one device: the runner keeps one run per entry
+- **The running check is check-then-act; the runner closes the gap for
+  transcriptions and image analyses.** The queue reads the entry's status, then
+  awaits the database and the profile walk before it dispatches, so another
+  trigger can start inside that window. For a transcription or an image
+  analysis that is harmless on one device: the runner keeps one run per entry
   (`EntryRuns` — `transcriptionRunsProvider` and `imageAnalysisRunsProvider`),
   registered before its first await, and a second request joins the run in
   flight (`SingleFlight` in
-  [`TranscriptionRun.tla`](../../../specs/tla/TranscriptionRun.tla)). The
-  queue's own check only spares the profile walk.
+  [`TranscriptionRun.tla`](../../../specs/tla/TranscriptionRun.tla)). A summary
+  has no such registry: two summary requests inside the window both run and
+  both store a summary, and readers take the newest. The queue's own check only
+  spares the profile walk.
 - **The status controllers are in-memory.** `inferenceStatusController` is
   autoDispose with a two-minute cache, so "running" is per device and per
   process. Another device's run is invisible until its result syncs — at which

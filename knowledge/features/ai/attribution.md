@@ -5,17 +5,21 @@ description: How every inference call becomes an auditable, costed record attach
 resource: ../../../lib/features/ai_consumption
 tags: [ai, attribution, consumption, cost, provenance]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-05T16:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: consumption
     resource: ../../../lib/features/ai_consumption
     title: AI consumption feature — audit model and ledger
-    last_modified: 2026-07-26
+    last_modified: 2026-10-14
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner attribution sessions
-    last_modified: 2026-09-05
+    last_modified: 2026-10-08
+  - id: runner-runs
+    resource: ../../../lib/features/ai/services/skill_inference_runner_transcription.dart
+    title: SkillInferenceRunner transcription attribution and failed-segment accounting
+    last_modified: 2026-10-08
 ---
 
 # The boundary
@@ -50,7 +54,10 @@ sequenceDiagram
 ```
 
 `SkillInferenceRunner` begins an in-memory attribution session **before**
-transcription, image analysis, prompt generation or image generation. Each
+transcription, audio summary, image analysis, prompt generation or image
+generation. The per-run code lives in the runner's part files
+(`skill_inference_runner_transcription.dart`, `_media_runs.dart`,
+`_text_runs.dart`, `_recording.dart`). Each
 logical call records usage, digests, and provider-reported cost/impact. The
 completed output embeds the authoritative attribution, and only then is the local
 query projection updated.
@@ -67,7 +74,7 @@ lifecycle hook and is not captured by this failure path.
 
 | Output | Carrier field |
 |--------|---------------|
-| Generated text, authoritative image-analysis results | `AiResponseData.aiAttribution` |
+| Generated text, audio summaries, authoritative image-analysis results | `AiResponseData.aiAttribution` |
 | Generated images | `ImageData.aiAttribution` |
 | Transcripts | `AudioTranscript.id` / `aiAttribution` |
 

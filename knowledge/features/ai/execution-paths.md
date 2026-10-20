@@ -5,8 +5,8 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
-stale_after: 2026-10-22
+generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+stale_after: 2026-12-26
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
@@ -19,15 +19,15 @@ sources:
   - id: auto-trigger
     resource: ../../../lib/features/speech/helpers/automatic_prompt_trigger.dart
     title: AutomaticPromptTrigger
-    last_modified: 2026-09-26
+    last_modified: 2026-10-04
   - id: transcription-model
     resource: ../../../specs/tla/TranscriptionRun.tla
     title: TranscriptionRun TLA+ model
-    last_modified: 2026-09-26
+    last_modified: 2026-10-08
   - id: skill-modal
     resource: ../../../lib/features/ai/ui/unified_ai_skills_modal.dart
     title: Unified AI skills modal
-    last_modified: 2026-09-06
+    last_modified: 2026-10-06
   - id: image-selector
     resource: ../../../lib/features/ai/ui/image_generation/reference_image_selection_widget.dart
     title: Shared reference-image selector
@@ -35,19 +35,31 @@ sources:
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
-    last_modified: 2026-09-06
+    last_modified: 2026-10-08
   - id: prompt-builder
     resource: ../../../lib/features/ai/helpers/skill_prompt_builder.dart
     title: SkillPromptBuilder
-    last_modified: 2026-08-21
+    last_modified: 2026-10-08
   - id: unified
     resource: ../../../lib/features/ai/repository/unified_ai_inference_repository.dart
     title: UnifiedAiInferenceRepository (legacy prompt path)
-    last_modified: 2026-08-20
+    last_modified: 2026-10-06
   - id: image-paths
     resource: ../../../lib/utils/image_utils.dart
     title: Journal image path resolution
     last_modified: 2026-08-15
+  - id: trigger
+    resource: ../../../lib/features/ai/state/skill_trigger_providers.dart
+    title: triggerSkillProvider and the skill filter
+    last_modified: 2026-10-08
+  - id: automation-resolver
+    resource: ../../../lib/features/ai/helpers/profile_automation_resolver.dart
+    title: ProfileAutomationResolver — resolveForSubject and the fallbacks
+    last_modified: 2026-10-08
+  - id: synced-dispatcher
+    resource: ../../../lib/features/sync/services/synced_audio_inference_dispatcher.dart
+    title: SyncedAudioInferenceDispatcher
+    last_modified: 2026-10-04
 ---
 
 # Two systems coexist
@@ -68,7 +80,7 @@ sequenceDiagram
   participant Route as CloudInferenceRepository
   participant Store as Journal or AiResponseEntry
 
-  UI->>Controller: triggerNewInference(promptId, entityId)
+  UI->>Controller: triggerNewInferenceProvider(entityId, promptId) → runInference(linkedEntityId)
   Controller->>Repo: runInference(promptConfig, entityId)
   Repo->>Builder: build prompt inputs
   Builder-->>Repo: system and user message parts
@@ -80,6 +92,9 @@ sequenceDiagram
 `AiResponseType.taskSummary` and `AiResponseType.checklistUpdates` are
 **deprecated**, kept only for persistence compatibility. Prompt generation also
 exists on the skill path via `SkillInferenceRunner.runPromptGeneration()`.
+`UnifiedAiInferenceRepository.runInference` skips prompts of those types and of
+`AiResponseType.imageGeneration`, whose prompt path the cover-art skill replaced
+(`isLegacyType`).
 
 ## Skill/profile path
 
@@ -87,8 +102,8 @@ Two entry styles, with deliberately different reach:
 
 | Entry | Covers |
 |-------|--------|
-| **Automatic** — `ProfileAutomationService` | `tryTranscribe()` and `tryAnalyzeImage()` only |
-| **Direct** — `triggerSkillProvider` | transcription, image analysis, prompt generation, image-prompt generation, image generation |
+| **Automatic** — `ProfileAutomationService` | `tryTranscribe()`, `tryAnalyzeImage()` and `trySummarizeAudio()` only |
+| **Direct** — `triggerSkillProvider` | transcription, image analysis, audio summary, prompt generation, image-prompt generation, image generation |
 
 `promptGeneration` and `imagePromptGeneration` share one dispatch arm: both route
 to `runner.runPromptGeneration()`, which derives the persisted response type from
@@ -130,7 +145,7 @@ only after persistence succeeds; see [persistence](../../architecture/persistenc
 
 ```mermaid
 flowchart TD
-  Trigger["Task-linked entity or skill trigger"] --> Mode{"How was it started?"}
+  Trigger["Subject-linked entity or skill trigger"] --> Mode{"How was it started?"}
 
   Mode -->|automatic| Gate{"Category automatic<br/>inference switched on?"}
   Mode -->|direct skill| Direct["triggerSkillProvider"]
@@ -138,19 +153,30 @@ flowchart TD
   Gate -->|no| Stop["Not handled — no inference"]
   Gate -->|yes| Auto["ProfileAutomationService"]
 
-  Auto --> Resolve["ProfileAutomationResolver.resolveForTask()"]
+  Auto --> Resolve["ProfileAutomationResolver.resolveForSubject()"]
   Resolve --> Match["Find exactly one automate=true skill assignment<br/>with the matching model slot populated"]
   Match --> Runner["SkillInferenceRunner"]
-  Match -->|no match| Inherited["resolveAutomationFallbacks():<br/>task.profileId, then category.defaultProfileId"]
+  Match -->|no match| Inherited["resolveAutomationFallbacks():<br/>subject's profileId, then category.defaultProfileId"]
   Inherited --> Match2["Same per-capability match"]
   Match2 --> Runner
-  Match -->|ambiguous| Stop
-  Match2 -->|no match, transcription only| Fallback["Direct model fallback<br/>(also behind the gate)"]
+  Match -->|ambiguous| Walked{"Transcription?"}
+  Match2 -->|no match or ambiguous| Walked
+  Walked -->|no| Stop
+  Walked -->|yes| Fallback["Direct model fallback<br/>(also behind the gate)"]
   Fallback --> Runner
+  Fallback -->|no usable model| Stop
 
   Direct --> LinkTask["Resolve task id from caller or link graph"]
-  LinkTask --> ResolveDirect["ProfileAutomationResolver.resolveForTask()"]
+  LinkTask -->|task| ResolveDirect["ProfileAutomationResolver.resolveForSubject(task)"]
+  LinkTask -->|no task| ResolveCategory["ProfileAutomationResolver.resolveForCategory()<br/>when the entry has a category"]
   ResolveDirect --> Runner
+  ResolveCategory --> Runner
+  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveDirectTranscription()<br/>(no gate)"]
+  ResolveCategory -->|transcription without a transcription slot| DirectFallback
+  ResolveDirect -->|audio summary without a profile| DefaultProfile["resolveDefaultProfile()"]
+  ResolveCategory -->|audio summary without a profile| DefaultProfile
+  DirectFallback --> Runner
+  DefaultProfile --> Runner
 
   Runner --> Prompt["SkillPromptBuilder"]
   Prompt --> Route["CloudInferenceRepository"]
@@ -159,10 +185,12 @@ flowchart TD
 
 # The category consent gate
 
-Every automatic entry point — `tryTranscribe`, `tryAnalyzeImage`, and the
-`hasAutomatedSkillType` affordance check — first asks whether the entry's
-category has `CategoryDefinition.automaticInferenceEnabled` switched on. **Nothing
-else in the chain runs until it says yes.**
+Every automatic entry point of `ProfileAutomationService` — `tryTranscribe`,
+`tryAnalyzeImage`, `trySummarizeAudio`, and the `hasAutomatedSkillType`
+affordance check — first asks whether the category of the subject the entry
+belongs to has `CategoryDefinition.automaticInferenceEnabled` switched on
+(`automaticInferenceEnabledEffective`; a subject with no category reads as off).
+**Nothing else in the chain runs until it says yes.**
 
 This exists because **selecting a profile is not consent.** Every seeded default
 profile ships `automate: true` skill assignments, so binding a profile to a
@@ -171,10 +199,14 @@ is nullable and an absent value means **off** — including for categories that
 already had a profile before the switch existed — so no install starts spending
 tokens on its own after an upgrade.
 
-**The direct transcription fallback sits behind the same gate.** That path
-synthesises a profile-shaped result from any configured speech-to-text model
-without consulting a profile at all, so leaving it ungated would have preserved
-exactly the behaviour the switch is meant to make explicit.
+**On the automatic path the direct transcription fallback sits behind the same
+gate.** That path synthesises a profile-shaped result from a configured
+speech-to-text model without consulting the subject's profiles at all, so
+leaving it ungated would have preserved exactly the behaviour the switch is
+meant to make explicit. The gesture paths — `requestTranscription`,
+`canTranscribeOnRequest` and `resolveDirectTranscription`, which
+`triggerSkillProvider` uses when no profile owns a transcription slot — reach
+the same fallback without the gate, because a gesture is its own consent.
 
 [Inference backfill](inference-backfill.md#the-consent-gate) asks the same
 question twice: when it offers a suggestion, through `hasAutomatedSkillType`,
@@ -182,10 +214,18 @@ and again when an accepted one runs, through `tryAnalyzeImage`,
 `tryTranscribe` or `trySummarizeAudio` — the last being the standalone
 counterpart of the summary that follows an automated transcription.
 
-One automatic path outside this service asks the same question: the GitHub
-feature's pull request summaries check the switch of the task that holds the
-pull request before resolving its agent's profile
-([GitHub pull requests](../github.md#pull-request-summaries)).
+Automatic paths outside this service decide consent on their own. The GitHub
+feature's pull request summaries check the automatic-inference switch of the
+category of the task that holds the pull request before resolving its agent's
+profile ([GitHub pull requests](../github.md#pull-request-summaries)). The
+synced-audio dispatcher (`SyncedAudioInferenceDispatcher`) never asks the
+category switch: it transcribes a synced recording only on the host the task's
+profile is pinned to (`pinnedHostId`), when that profile is local and owns
+exactly one automated transcription skill, and it hands that assignment to the
+runner. A goal check-in, which has no category, is decided by its goal agent's
+automatic-updates switch (null reads as on) in `AutomaticPromptTrigger` once
+`tryTranscribe` declines; switched off, the decline is recorded as a visible
+failed transcription through `recordTranscriptionDecline`.
 
 Because the fallback needs no profile, the settings switch is offered whenever
 *either* the selected profile carries automated skills *or* the fallback could
@@ -196,8 +236,10 @@ Past the gate the automatic branch is intentionally strict:
 
 - It handles a skill type only when **exactly one** automated assignment matches.
 - Multiple automated skills of the same type make the profile **ambiguous** and
-  automation is skipped — and that *ends the walk* rather than moving on, because
-  guessing between two deliberate assignments is worse than doing nothing.
+  *end the profile walk* rather than moving on, because guessing between two
+  deliberate assignments is worse than doing nothing. For transcription the
+  direct model fallback still runs after an ambiguous walk, exactly as after a
+  walk with no match.
 - The resolved profile must expose the required model slot for that skill type.
 - The per-recording `enableSpeechRecognition: false` opt-out wins independently
   of the category switch.
@@ -216,8 +258,8 @@ rejected a recording or an image:
 | `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
 | `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
 | `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
-| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key) |
-| `resolved` | it *did* run — names the skill and whether it came from the task-linked or an inherited profile |
+| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key; an embedded sherpa model not installed on this device is rejected without a tally) |
+| `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, or names the direct fallback model by sanitized config id and provider type |
 
 `resolved` is not decoration: a run against the wrong profile is as opaque as no
 run at all.
@@ -238,20 +280,25 @@ Two rules keep these lines trustworthy:
   into an exportable log.
 
 The trigger helpers add the outer bookends (`triggerAutomaticPrompts`,
-`triggerAutomaticImageAnalysis`), including the "no linked task" early return
-that happens before this service is reached.
+`triggerAutomaticImageAnalysis`), including the "no linked subject" early return
+that happens before this service is reached. An image's subject defaults to its
+linked task.
 
 # The per-capability profile walk
 
-`resolveForTask` answers *which profile drives this task's agent*. That is the
-right question for the thinking route and the **wrong** one for automated
-capabilities, so `ProfileAutomationService` asks it per capability and walks
-further when the answer does not own the one it needs:
+`resolveForSubject` answers *which profile drives this subject's agent* — a
+task's, a project's or a person's — falling back to the subject's own inherited
+`profileId` when no agent path resolves. That is the right question for the
+thinking route and the **wrong** one for automated capabilities, so
+`ProfileAutomationService` asks it per capability and walks further when the
+answer does not own the one it needs:
 
-1. `resolveForTask(taskId)` — the agent's profile.
-2. `resolveAutomationFallbacks(taskId)` — the task's own inherited `profileId`,
-   then the owning category's `defaultProfileId`, de-duplicated by profile id and
-   resolved lazily (only reached when step 1 produced no match).
+1. `resolveForSubject(subjectId)` — the agent's profile, else the subject's own
+   `profileId`.
+2. `resolveAutomationFallbacks(subjectId)` — the subject's own inherited
+   `profileId`, then the owning category's `defaultProfileId`, de-duplicated by
+   profile id; a profile that cannot be loaded is skipped (only reached when
+   step 1 produced no match).
 
 Each candidate must both automate the skill type **and** have the matching model
 slot populated, so a profile deliberately chosen for a task still wins every
@@ -284,10 +331,11 @@ default profile, whose `task.data.profileId` is null.
 Every route to a skill transcription — the automatic trigger when a recording
 stops, the AI popup and the timelines' Retry through `triggerSkillProvider`
 (which a goal check-in also takes), the synced-audio dispatcher on a pinned
-host, and the relationship check-in service — ends in
+host, the relationship check-in service, and an accepted backfill suggestion
+through `InferenceBackfillQueue` — ends in
 `SkillInferenceRunner.runTranscription`. Daily OS capture does not: it
 transcribes through `AudioTranscriptionService` ([batch
-transcription](batch-transcription.md)). Five rules hold the run together, each
+transcription](batch-transcription.md)). Six rules hold the run together, each
 pinned by a switch in the `TranscriptionRun` TLA+ model
 ([specs/tla/README.md](../../../specs/tla/README.md)):
 
@@ -296,8 +344,12 @@ pinned by a switch in the `TranscriptionRun` TLA+ model
   is rebuilt with its dependencies) keys the run by audio id. A request while one
   is in flight joins it: no second paid inference, no second transcript or
   summary, and the joiner's `onError` fires with the run's failure. The joiner's
-  own model override and known terms are not used. The model is resolved inside
-  the run, so the request that registers first is the one whose model is used.
+  own model override, known terms and linked task id are not used. The model is
+  resolved inside the run, so the request that registers first is the one whose
+  model is used. When neither the override nor the profile yields a
+  transcription provider and model, the run logs a warning and returns without a
+  status or an `onError`; `triggerSkillProvider` and the synced-audio dispatcher
+  decline such a profile before calling the runner.
 - **The write is guarded and checked.** The transcript is appended to the
   history of a fresh re-read, and
   `JournalRepository.updateJournalEntity(onlyIfUnchanged: true)` applies it only
@@ -318,6 +370,13 @@ pinned by a switch in the `TranscriptionRun` TLA+ model
   history. Re-transcribing text that was there *before* the run replaces it, as
   the user asked; earlier transcripts stay in the history, typed corrections do
   not.
+- **A held text lands once, never over an edit.** A speech-to-text transcript
+  that a summary follows joins the history without touching the text. After the
+  summary, `_writeTranscriptText` re-reads the recording and writes the
+  corrected text — or the raw transcript when the summary failed or was
+  skipped — only while the text is still what it was at the run's first read,
+  guarded with `onlyIfUnchanged: true`. A refused write is re-read and tried
+  again, up to three attempts; one that never lands is logged, not thrown.
 - **Follow-ups need a saved transcript.** The audio summary runs only after a
   successful run, and `AutomaticPromptTrigger` nudges the subject's agent only
   when no `onError` fired. The synced-audio dispatcher already nudged only when
@@ -328,13 +387,17 @@ stateDiagram-v2
   [*] --> Joined: a run of this audio is in flight
   [*] --> Inferring: first read, status running
   Joined --> [*]: the run's outcome, onError on failure
-  Inferring --> Failed: provider error
+  Inferring --> Failed: provider error, or an empty response
   Inferring --> Saving: usage recorded
   Saving --> Saving: write refused or threw, re-read (up to 3 attempts)
   Saving --> Failed: disappeared, or attempts used up and no transcript stored
   Saving --> Saved: write applied, or the re-read holds the transcript
-  Saved --> Summary: status idle
-  Summary --> [*]: caller nudges its agent
+  Saved --> [*]: status idle, no post-processing follows, caller nudges its agent
+  Saved --> Summary: status idle, post-processing follows
+  Summary --> [*]: text not held, caller nudges its agent
+  Summary --> FillText: held speech-to-text transcript
+  FillText --> FillText: write refused, re-read (up to 3 attempts)
+  FillText --> [*]: text written, or skipped when edited since or attempts used up, caller nudges its agent
   Failed --> [*]: status error, onError, no summary, no nudge
 ```
 
@@ -374,11 +437,12 @@ The gates, all deliberate:
   context in its own prompt — chains the summary only when it was automated,
   which a non-null `AutomationResult.skillAssignment` records, **and** the
   profile assigns the summary skill with `automate: true` (the
-  already-resolved profile is reused rather than walked again). Only the
-  automated paths set the assignment, and only those passed the category's
-  automatic-inference consent check — the manual picker and
-  `requestTranscription` skip that check because a gesture is its own consent,
-  and that consent covers the transcription asked for, not a second call.
+  already-resolved profile is reused rather than walked again). `ProfileAutomationService`'s gated paths and the synced-audio dispatcher set
+  the assignment; the manual picker, the check-in service and a goal check-in
+  through `triggerSkillProvider` do not, because a gesture is its own consent
+  and covers the transcription asked for, not a second call.
+  `requestTranscription` also returns the matched assignment, without the
+  category check, and has no caller.
 
 - **Failures never propagate.** The transcript is already persisted and is the
   valuable artifact; letting a summary failure reach `_withStatusTracking`
@@ -416,12 +480,13 @@ Two properties are contract rather than detail:
 - **The tiers come back through a tool call, never a parser.** The skill
   sends `recordingSummaryTool` — `entrySummaryTool`'s three tiers plus the
   speech dictionary corrections — with `toolChoice` fixed to it for every model that
-  honours a pinned choice — `entrySummaryToolChoiceFor` omits it for the
-  DeepSeek family, which answers a pinned choice with the call written as
+  honours a pinned choice — `recordingSummaryToolChoiceFor` (through
+  `forcedToolChoiceFor`) omits it for the DeepSeek family, which answers a pinned choice with the call written as
   `<｜DSML｜ invoke …>` prose and an empty `tool_calls`, losing the summary
-  outright; the single-tool list is what steers those. `parseEntrySummaryToolCall`
-  decodes typed arguments — the same shape the
-  agents' `update_report` uses. A rejected call (no tool call, wrong tool,
+  outright; the single-tool list is what steers those. `parseRecordingSummaryToolCall`
+  decodes typed arguments — the tiers through `parseEntrySummaryToolCall`, the
+  same shape the agents' `update_report` uses, and the corrections best effort,
+  so a missing or malformed list is no correction. A rejected call (no tool call, wrong tool,
   a tier missing, not a string or empty) buys exactly one forced retry, whose
   tokens are merged with the first attempt's so a model that needed prompting
   twice is not billed as if it needed one. The one-liner's length is not
@@ -482,7 +547,8 @@ the reader can choose the short version.
 ## Tiered image analysis
 
 **One analysis per image on a device.** `imageAnalysisRunsProvider` keys the
-run by image id, the same `EntryRuns` registry transcription uses: the
+run by image id, in an `EntryRuns` registry of its own — the same mechanism
+transcription uses: the
 automatic import trigger, the AI popup and an accepted
 [backfill suggestion](inference-backfill.md) all end in `runImageAnalysis`,
 and none of them can see the others' run until after their own awaits. A
@@ -568,9 +634,13 @@ need to be copied back into `JournalImage.entryText` to reach the model.
 **After a task-linked analysis is stored**, `runImageAnalysis` marks every parent
 task of the image dirty — all tasks linking to it plus the resolved
 `linkedTaskId`, skipping non-task parents — with the standard child-changed
-notification pairs. The analysis write itself only notifies the image, never the
-tasks, so without this each parent agent would never see it. See
-[wake orchestration](../agents/wake-orchestration.md).
+notification pairs plus an `imageAnalysisNotification` token, which pulls the
+next run of an agent whose wake cadence responds to image analysis
+(`AgentWakeCadence.respondsToImageAnalysis`: every cadence except
+`recordingsOnly`) to within a minute. The analysis write itself only notifies the
+image, never the tasks, so without this each parent agent would never see it. A
+stored audio summary marks its recording's parent tasks dirty the same way,
+without the image token. See [wake orchestration](../agents/wake-orchestration.md).
 
 When the attribution service is not registered (older tests, partial composition
 roots) a legacy compatibility path appends the text to the `JournalImage` entry
@@ -630,13 +700,15 @@ entries only where no usable report exists.
 per entity; the popup uses it via `hasAvailableSkillsProvider`.
 
 - **Modality filter** — `Modality.audio` matches only `JournalAudio`,
-  `Modality.image` only `JournalImage`, `Modality.text` any entity with text
-  content (`JournalAudio` qualifies via its transcript).
+  `Modality.image` only `JournalImage`, `Modality.text` only `JournalEntry`,
+  `JournalAudio` (via its transcript), `Task` and `JournalImage`.
 - **Task-context filter** — a skill needs a task iff
-  `contextPolicy == ContextPolicy.fullTask`. Task context is present when the
-  entity is a `Task`, when the caller passes `linkedFromId`, or when the link
-  graph resolves a parent task in either direction. Full-task skills are hidden
-  only when **all three** checks fail.
+  `contextPolicy == ContextPolicy.fullTask`, except `SkillType.audioSummary`,
+  which frames itself by whatever the recording belongs to and is offered on
+  every recording. Task context is present when the entity is a `Task`, when the
+  caller passes `linkedFromId`, or when the link graph resolves a parent task in
+  either direction. Other full-task skills are hidden only when **all three**
+  checks fail.
 - **Audio-summary modality** — `SkillType.audioSummary` declares
   `Modality.audio` even though its input is the transcript's *text*. The field
   selects the source **entry** type, and `Modality.text` would also match
@@ -648,10 +720,12 @@ per entity; the popup uses it via `hasAvailableSkillsProvider`.
   nowhere to save the cover art.
 
 Seeded task-context skills are therefore hidden for truly standalone entries;
-only their plain counterparts show. `triggerSkillProvider` also carries a
-defensive guard: a `fullTask` skill triggered without a resolvable task id is
-captured as an event and aborted — the popup should never offer one in that
-state, so reaching it means the caller or link graph is missing task context.
+only their plain counterparts show, and `Summarize Recording` shows on every
+recording. `triggerSkillProvider` also carries a defensive guard: a `fullTask`
+skill other than transcription and audio summary, triggered without a
+resolvable task id, is logged and skipped — the popup should never offer one in
+that state, so reaching it means the caller or link graph is missing task
+context.
 
 # Per-invocation model overrides
 
@@ -673,22 +747,27 @@ coding-prompt picker for seconds after each app start.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> SkillTap: tap transcription / image-analysis / prompt-generation skill in popup
-  SkillTap --> ResolveProfile: resolve profile (task or category)
+  [*] --> SkillTap: tap transcription / image-analysis / prompt-generation / image-prompt-generation skill in popup
+  SkillTap --> ResolveProfile: resolveForSubject(task) or resolveForCategory(category)
   ResolveProfile --> LoadModels: read AiConfigModel list via repository
-  LoadModels --> ComputeDefault: variant.slotAccessor(profile) → AiConfigModel.id
+  LoadModels --> ComputeDefault: filter by slot modality and device availability, variant.slotAccessor(profile) → AiConfigModel.id
   ComputeDefault --> Empty: slot-capable list empty
   ComputeDefault --> Single: exactly one slot-capable model
   ComputeDefault --> Many: 2+ slot-capable models
   Empty --> [*]: no-op
-  Single --> FireTrigger: overrideModelId = lone id
+  Single --> PickedDefault: lone id is the default, no modal
+  Single --> PickedOther: lone id is not the default, no modal
   Many --> Picker: InferenceProviderModelPickerModal.show (pick provider → model)
   Picker --> Dismissed: user cancels / dismisses
   Picker --> PickedDefault: tap default-badged row
   Picker --> PickedOther: tap any other row
   Dismissed --> [*]
-  PickedDefault --> FireTrigger: overrideModelId = null
-  PickedOther --> FireTrigger: overrideModelId = picked id
+  PickedDefault --> ThinkingMode: overrideModelId = null
+  PickedOther --> ThinkingMode: overrideModelId = picked id
+  ThinkingMode --> Dismissed: Gemini 3 model, mode sheet dismissed
+  ThinkingMode --> ImageSelection: mode chosen, or not a Gemini 3 model
+  ImageSelection --> Dismissed: task-image selector dismissed
+  ImageSelection --> FireTrigger: images chosen, or not a prompt-generation run with a task and an image-capable chat model
   FireTrigger --> Dispatch: triggerSkillProvider routes by skill.skillType
   Dispatch --> Runner: runTranscription / runImageAnalysis / runPromptGeneration(overrideModelId)
   Runner --> ResolveTarget: _resolveOverrideTarget(override)
@@ -715,13 +794,18 @@ of `(provider, modelId, model)` — the `model` field carries the resolved
 `AiConfigModel` row so per-model settings such as Gemini thinking mode survive
 resolution — preferring the override when it resolves to a real model plus parent
 provider, and falling back to the profile slot with a warning log otherwise.
+The picker flow also carries an optional `geminiThinkingMode` on
+`TriggerSkillParams`: a Gemini 3 model opens a thinking-mode sheet after the
+model pick, and the chosen mode overrides the model row's saved default for
+that run only (`_geminiThinkingModeForTarget`: per-run choice, then the row's
+saved mode, then `GeminiThinkingMode.low`).
 
 Three short-circuits keep the common case one-tap:
 
 | Condition | Behaviour |
 |-----------|-----------|
 | `models.isEmpty` | Picker not shown, trigger not fired (defensive; the modality gate should prevent reaching here) |
-| `models.length == 1` | Picker not shown, trigger fires with the lone id |
+| `models.length == 1` | Picker not shown; the lone id goes through the same default check, so the trigger fires with `null` when it is the profile default and with the lone id otherwise |
 | `picked == defaultModelId` | Override collapsed to `null` at the callsite, so the runner reads the profile slot — and a model deleted between picker and run still falls back gracefully instead of routing to a stale id |
 
 ## Cover art
