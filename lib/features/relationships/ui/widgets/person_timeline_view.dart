@@ -9,7 +9,6 @@ import 'package:lotti/features/design_system/components/empty_states/design_syst
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/photo_chrome_tokens.dart';
-import 'package:lotti/features/journal/state/entry_summary_providers.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
@@ -126,10 +125,15 @@ class PersonTimelineSliver extends ConsumerWidget {
     required this.onFilter,
     required this.actions,
     required this.now,
+    this.summaries = const {},
     super.key,
   });
 
   final PersonTimeline timeline;
+
+  /// The line each recording leads with, by recording id — read with the
+  /// page's detail, so a row is laid out at its final height the first time.
+  final Map<String, String> summaries;
   final String personName;
   final PersonTimelineFilter filter;
   final ValueChanged<PersonTimelineFilter> onFilter;
@@ -203,6 +207,16 @@ class PersonTimelineSliver extends ConsumerWidget {
             (context, key) => PersonTimelineRow(
               key: key,
               item: item,
+              summary: switch (item) {
+                TimelineVoiceNote(:final audio) => summaries[audio.meta.id],
+                TimelineCheckIn(:final entries) =>
+                  summaries[entries
+                      .whereType<JournalAudio>()
+                      .firstOrNull
+                      ?.meta
+                      .id],
+                _ => null,
+              },
               last: index == section.items.length - 1,
               highlighted: highlighted.contains(item.id),
               actions: actions,
@@ -248,12 +262,17 @@ class PersonTimelineRow extends StatelessWidget {
     required this.item,
     required this.actions,
     required this.now,
+    this.summary,
     this.last = false,
     this.highlighted = false,
     super.key,
   });
 
   final PersonTimelineItem item;
+
+  /// The line a spoken row leads with — the newest summary of the voice
+  /// note, or of the recording the check-in holds — when one was written.
+  final String? summary;
   final bool highlighted;
   final PersonTimelineActions actions;
   final DateTime now;
@@ -399,7 +418,7 @@ class PersonTimelineRow extends StatelessWidget {
         final TimelineVoiceNote voice when !row.pending => PersonFoldedWords(
           id: voice.audio.meta.id,
           words: voice.audio.entryText?.plainText.trim() ?? '',
-          summaryOf: voice.audio.meta.id,
+          summary: summary,
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
@@ -411,11 +430,7 @@ class PersonTimelineRow extends StatelessWidget {
           PersonFoldedWords(
             id: checkIn.checkIn.meta.id,
             words: text,
-            summaryOf: checkIn.entries
-                .whereType<JournalAudio>()
-                .firstOrNull
-                ?.meta
-                .id,
+            summary: summary,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: tokens.colors.text.highEmphasis,
             ),
@@ -479,18 +494,23 @@ class PersonTimelineRow extends StatelessWidget {
   }
 }
 
-/// A row's words, folded: the summary of the recording [summaryOf] when one
-/// was written (its newest audio summary's one-liner), else the first three
+/// A row's words, folded: the [summary] of its recording when one was
+/// written (its newest audio summary's one-liner), else the first three
 /// lines of [words] — and, when there is more, *Show more* to read all of
 /// [words] in place, *Show less* to fold them again. A voice note passes its
-/// own recording; a check-in the recording it holds. A minute of speech set
-/// out in full made every spoken row the longest on the page.
-class PersonFoldedWords extends ConsumerStatefulWidget {
+/// own recording's summary; a check-in that of the recording it holds. A
+/// minute of speech set out in full made every spoken row the longest on
+/// the page.
+///
+/// The summary is data, not a lookup: a row that fetched its own line was
+/// laid out three lines tall and shrank when the line arrived, on every
+/// reload and every time it scrolled back into view.
+class PersonFoldedWords extends StatefulWidget {
   const PersonFoldedWords({
     required this.id,
     required this.words,
     required this.style,
-    this.summaryOf,
+    this.summary,
     super.key,
   });
 
@@ -498,15 +518,15 @@ class PersonFoldedWords extends ConsumerStatefulWidget {
   final String id;
   final String words;
 
-  /// The recording whose summary leads, or null for none.
-  final String? summaryOf;
+  /// The line the row leads with, or null to lead with [words].
+  final String? summary;
   final TextStyle style;
 
   @override
-  ConsumerState<PersonFoldedWords> createState() => _PersonFoldedWordsState();
+  State<PersonFoldedWords> createState() => _PersonFoldedWordsState();
 }
 
-class _PersonFoldedWordsState extends ConsumerState<PersonFoldedWords> {
+class _PersonFoldedWordsState extends State<PersonFoldedWords> {
   static const _foldedLines = 3;
   var _expanded = false;
 
@@ -515,8 +535,7 @@ class _PersonFoldedWordsState extends ConsumerState<PersonFoldedWords> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final transcript = widget.words;
-    final source = widget.summaryOf;
-    final summary = source == null ? null : audioSummaryOneLiner(ref, source);
+    final summary = widget.summary;
     return LayoutBuilder(
       builder: (context, constraints) {
         // More to read when there is a summary in front of the words, or

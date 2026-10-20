@@ -58,7 +58,7 @@ that blanks, folds or re-decodes on each of those does not read as "updating";
 it reads as broken. The person page did exactly that after every check-in
 (2026-10-20), and "felt completely broken" is the report it earned.
 
-# Two ways to break it
+# Three ways to break it
 
 ## Swapping content for a loading state
 
@@ -152,6 +152,46 @@ looks each slot up by key, and its header and briefing blocks
 each carry a `person-block-*` key, because the brief card appears above the
 agent's card as soon as a check-in brings notes for next time.
 
+## Letting a row fetch what decides its height
+
+The quietest break. A row in a lazy list that reads its own async data — a
+per-row `autoDispose` provider, a `FutureBuilder` — is built without that
+data every time the list builds it: the first time, after every reload that
+rebuilt it, and every time it scrolls back into view, since the list drops
+rows outside its cache extent and the provider is disposed with its last
+listener. The row is laid out one way and changes height a frame later. Above
+the viewport that forces a scroll-offset correction; below it the scroll
+extent shrinks under the reader. On a long list every flick lands on rows
+that then collapse, so the end keeps receding and the content keeps shifting:
+the person timeline "scrolled forever" and its rows "were being replaced"
+(2026-10-20).
+
+**A row is its data.** Whatever decides a row's size is read with the page's
+own load and handed down, so the first layout is the final one. The person
+page reads each recording's summary line with its detail
+([`getRecordingSummaries`](../../lib/features/relationships/repository/person_timeline_repository.dart))
+and the timeline rows take it as a value. The same shape, from the other
+side, is the Goals list, which stopped being lazy at all: its cards are heavy
+and few, so it builds them whole and keeps them resident, and gates only
+their animation on visibility ([goals](../features/goals.md)).
+
+```dart
+// Before: the row looks its line up; the lookup disposes with the row.
+class _FoldedWordsState extends ConsumerState<FoldedWords> {
+  Widget build(BuildContext context) {
+    final line = ref.watch(summaryProvider(widget.audioId)).value;
+    return Text(line ?? widget.transcript, maxLines: line == null ? 3 : 1);
+  }
+}
+
+// After: the page read the line with its detail; the row takes it.
+class FoldedWords extends StatefulWidget {
+  const FoldedWords({required this.transcript, this.line});
+  final String? line;
+  ...
+}
+```
+
 # Testing it
 
 A test of this rule must observe the reload **while it is in flight** and must
@@ -168,6 +208,9 @@ be able to fail:
   (`tester.element(find.byKey(...))`) before the reload and assert it is
   `identical` afterwards, or assert state the reader set (an expanded row)
   survives.
+- For a lazy list, jump far enough that rows are dropped, jump back, and
+  assert `maxScrollExtent` is the same on every frame after the jump: a row
+  rebuilt at the wrong height moves it.
 - Re-run the test with the fix reverted, as
   [testing conventions](testing.md#the-vacuous-pass-traps) require; an
   `AsyncLoading` carrying the previous value makes a careless assertion pass

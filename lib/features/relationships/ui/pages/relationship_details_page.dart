@@ -500,6 +500,7 @@ class _RelationshipDetailsPageState
                   ),
                   sliver: PersonTimelineSliver(
                     timeline: timeline,
+                    summaries: detail.recordingSummaries,
                     personName: personName,
                     filter: _filter,
                     onFilter: (filter) => setState(() => _filter = filter),

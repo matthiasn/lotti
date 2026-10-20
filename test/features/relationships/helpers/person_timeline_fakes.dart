@@ -20,6 +20,11 @@ Override personTimelineOverride({
         ? entries
         : const [],
   );
+  // The page reads each recording's summary line with its detail; none here.
+  when(() => repository.getRecordingSummaries(any())).thenAnswer(
+    (_) async =>
+        (oneLiners: const <String, String>{}, summaryIds: const <String>{}),
+  );
   // A sort's one line is saved as the voice note's summary.
   when(
     () => repository.saveRecordingSummary(
