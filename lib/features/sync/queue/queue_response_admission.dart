@@ -11,42 +11,47 @@ extension QueueResponseAdmission on QueuePipelineCoordinator {
     final timeline = sync.rooms?.join?[roomId]?.timeline;
     if (timeline == null || (timeline.events?.isEmpty ?? true)) return;
     // Snapshot before another SDK pass or a queued response mutates content.
-    final events = [
-      for (final event in timeline.events ?? <MatrixEvent>[])
-        MatrixEvent.fromJson(
-          jsonDecode(jsonEncode(event.toJson())) as Map<String, dynamic>,
-        ),
-    ];
+    final events = _costMeter.measureSync(
+      SyncCostSection.admissionCopy,
+      () => [
+        for (final event in timeline.events ?? <MatrixEvent>[])
+          MatrixEvent.fromJson(
+            jsonDecode(jsonEncode(event.toJson())) as Map<String, dynamic>,
+          ),
+      ],
+    );
     final limited = timeline.limited == true;
-    final admission = _syncAdmissionTail.then((_) async {
-      if (_roomManager.currentRoomId != roomId) return;
-      if (limited) await _claimCatchUpRange(roomId);
-      final room = await _resolveRoom();
-      if (room == null || room.id != roomId) {
-        // Keep the whole uncaptured response recoverable if room resolution
-        // is temporarily unavailable; no payload may move the anchor past it.
-        await _claimCatchUpRange(roomId);
-        return;
-      }
-      for (final raw in events) {
+    final admission = _syncAdmissionTail.then(
+      (_) => _costMeter.measure(SyncCostSection.admission, () async {
         if (_roomManager.currentRoomId != roomId) return;
-        var event = Event.fromMatrixEvent(raw, room);
-        // SDK local echoes also emit onSync; never decrypt or admit them.
-        if (event.status != EventStatus.synced) continue;
-        if (event.type == EventTypes.Encrypted) {
-          final encryption = _sessionManager.client.encryption;
-          if (encryption != null) {
-            event = await encryption.decryptRoomEvent(event);
+        if (limited) await _claimCatchUpRange(roomId);
+        final room = await _resolveRoom();
+        if (room == null || room.id != roomId) {
+          // Keep the whole uncaptured response recoverable if room resolution
+          // is temporarily unavailable; no payload may move the anchor past it.
+          await _claimCatchUpRange(roomId);
+          return;
+        }
+        for (final raw in events) {
+          if (_roomManager.currentRoomId != roomId) return;
+          var event = Event.fromMatrixEvent(raw, room);
+          // SDK local echoes also emit onSync; never decrypt or admit them.
+          if (event.status != EventStatus.synced) continue;
+          if (event.type == EventTypes.Encrypted) {
+            final encryption = _sessionManager.client.encryption;
+            if (encryption != null) {
+              event = await encryption.decryptRoomEvent(event);
+            }
+          }
+          // The SDK already emitted descriptors on its timeline stream. Only
+          // payloads (or a still-unresolved ciphertext floor) belong here.
+          if (event.type == EventTypes.Encrypted ||
+              MatrixEventClassifier.isSyncPayloadEvent(event)) {
+            await _handleLiveEvent(event);
           }
         }
-        // The SDK already emitted descriptors on its timeline stream. Only
-        // payloads (or a still-unresolved ciphertext floor) belong here.
-        if (event.type == EventTypes.Encrypted ||
-            MatrixEventClassifier.isSyncPayloadEvent(event)) {
-          await _handleLiveEvent(event);
-        }
-      }
-    });
+      }),
+    );
     _syncAdmissionTail = admission.catchError((
       Object error,
       StackTrace stack,

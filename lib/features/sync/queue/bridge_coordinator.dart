@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
@@ -126,9 +127,11 @@ class BridgeCoordinator {
     this._incompleteRetryDelay = const Duration(seconds: 10),
     this._maxIncompleteRetries = 3,
     this._maxIncompleteRetryDelay = const Duration(minutes: 5),
-  });
+    SyncCostMeter? costMeter,
+  }) : _costMeter = costMeter ?? SyncCostMeter.inert();
 
   final Client _client;
+  final SyncCostMeter _costMeter;
   final String? Function() _currentRoomId;
   final Future<Room?> Function() _resolveRoom;
   final Future<BridgeMarker> Function() _readMarker;
@@ -307,7 +310,10 @@ class BridgeCoordinator {
     final completer = Completer<void>();
     _inFlightBridge = completer.future;
     try {
-      await _runBridgeOnce(expectedRoomId);
+      await _costMeter.measure(
+        SyncCostSection.bridgeWalk,
+        () => _runBridgeOnce(expectedRoomId),
+      );
     } catch (error, stackTrace) {
       _logging.error(
         LogDomain.sync,

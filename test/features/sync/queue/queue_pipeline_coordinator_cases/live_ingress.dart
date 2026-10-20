@@ -91,6 +91,26 @@ extension _LiveIngressCases on _QueueCoordinatorTestSetup {
       });
     }
 
+    test('live admission and live timeline events are timed in the sync cost '
+        'summary', () async {
+      final meterLogger = MockDomainLogger();
+      when(() => meterLogger.enabledDomains).thenReturn({LogDomain.sync});
+      final meter = SyncCostMeter(logger: meterLogger);
+      final coordinator = build(costMeter: meter);
+      await coordinator.start();
+      verifyStartClaim();
+
+      deliverPayload(buildEvent(EventTypes.Message));
+      timelineCtl.add(buildEvent(EventTypes.Encrypted));
+      await pumpEventQueue();
+
+      final summary = meter.summary();
+      expect(summary, matches(RegExp(r'copy \d+ms/1 ')));
+      expect(summary, matches(RegExp(r'admit \d+ms/1 ')));
+      expect(summary, matches(RegExp(r'live \d+ms/1 ')));
+      await coordinator.stop();
+    });
+
     test(
       'response recovery failures leave later admissions usable',
       () async {

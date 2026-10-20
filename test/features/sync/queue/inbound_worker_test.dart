@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -187,6 +188,7 @@ void main() {
 
   InboundWorker buildWorker({
     required Future<ApplyOutcome> Function(InboundQueueEntry) apply,
+    SyncCostMeter? costMeter,
   }) {
     return InboundWorker(
       queue: queue,
@@ -197,8 +199,26 @@ void main() {
       initialBackoff: const Duration(milliseconds: 10),
       maxBackoff: const Duration(milliseconds: 100),
       maxAttempts: 4,
+      costMeter: costMeter,
     );
   }
+
+  test('each apply is timed as its own run in the sync cost summary', () async {
+    final meterLogger = MockDomainLogger();
+    when(() => meterLogger.enabledDomains).thenReturn({LogDomain.sync});
+    final meter = SyncCostMeter(logger: meterLogger);
+    await queue.enqueueBatch([
+      _buildSyncEvent(eventId: r'$a', roomId: roomId, originTsMs: 100),
+      _buildSyncEvent(eventId: r'$b', roomId: roomId, originTsMs: 200),
+    ], producer: InboundEventProducer.live);
+
+    await buildWorker(
+      apply: (_) async => ApplyOutcome.applied,
+      costMeter: meter,
+    ).drainToCompletion();
+
+    expect(meter.summary(), matches(RegExp(r'apply \d+ms/2 ')));
+  });
 
   test(
     'drainToCompletion applies every queue entry exactly once. With the '

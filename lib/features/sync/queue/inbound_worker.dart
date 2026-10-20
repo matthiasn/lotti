@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -103,9 +104,11 @@ class InboundWorker {
     this._initialBackoff = const Duration(milliseconds: 500),
     this._maxBackoff = const Duration(seconds: 30),
     this._maxAttempts = 10,
-  });
+    SyncCostMeter? costMeter,
+  }) : _costMeter = costMeter ?? SyncCostMeter.inert();
 
   final InboundQueue _queue;
+  final SyncCostMeter _costMeter;
   final SyncSequenceLogService _sequenceLogService;
   final Future<Room?> Function() _resolveRoom;
   final InboundApplyFn _apply;
@@ -336,7 +339,10 @@ class InboundWorker {
     Room room,
   ) async {
     try {
-      return await _apply(entry, room);
+      return await _costMeter.measure(
+        SyncCostSection.apply,
+        () => _apply(entry, room),
+      );
     } catch (error, stackTrace) {
       _logging.error(
         LogDomain.sync,

@@ -10,6 +10,7 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -303,6 +304,7 @@ void main() {
     Duration? missingDebounce,
     Duration? amnestyWindow,
     OnboardingSyncService? onboardingSyncService,
+    SyncCostMeter? costMeter,
   }) {
     final service = BackfillRequestService(
       sequenceLogService: mockSequenceService,
@@ -318,6 +320,7 @@ void main() {
       missingDebounce: missingDebounce,
       amnestyWindow: amnestyWindow,
       onboardingSyncService: onboardingSyncService,
+      costMeter: costMeter,
     );
     addTearDown(service.dispose);
     return service;
@@ -1362,6 +1365,29 @@ void main() {
 
         service.dispose();
       });
+    });
+
+    test('each automatic pass is timed in the sync cost summary', () async {
+      final meterLogger = MockDomainLogger();
+      when(() => meterLogger.enabledDomains).thenReturn({LogDomain.sync});
+      final meter = SyncCostMeter(logger: meterLogger);
+      final service = buildService(costMeter: meter);
+      when(
+        () => mockSequenceService.getMissingEntriesWithLimits(
+          limit: any(named: 'limit'),
+          maxRequestCount: any(named: 'maxRequestCount'),
+          maxAge: any(named: 'maxAge'),
+          minAge: any(named: 'minAge'),
+          requestedMinAge: any(named: 'requestedMinAge'),
+          maxPerHost: any(named: 'maxPerHost'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      expect(await service.processAutomaticBackfill(), 0);
+      expect(await service.processAutomaticBackfill(), 0);
+
+      expect(meter.summary(), matches(RegExp(r'backfill \d+ms/2 ')));
     });
 
     test('skips processing when no host ID available', () {

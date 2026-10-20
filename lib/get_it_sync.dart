@@ -30,6 +30,16 @@ Future<String? Function()> _registerMatrixSyncStack({
     documentsDirectory: documentsDirectory,
   );
 
+  // What sync costs the UI isolate (ADR 0142, step 2): timeline spans always,
+  // and a minute summary in the sync log while that log is on.
+  final syncCostMeter = SyncCostMeter(logger: domainLogger)
+    ..observeSdkSync(client.onSyncStatus.stream)
+    ..start();
+  getIt.registerSingleton<SyncCostMeter>(
+    syncCostMeter,
+    dispose: (meter) => meter.dispose(),
+  );
+
   final sentEventRegistry = SentEventRegistry();
   final matrixGateway = MatrixSdkGateway(
     client: client,
@@ -151,6 +161,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     updateNotifications: getIt<UpdateNotifications>(),
     attachmentIngestor: queueAttachmentIngestor,
     sentEventRegistry: sentEventRegistry,
+    costMeter: syncCostMeter,
   );
 
   final matrixService = MatrixService(
@@ -306,41 +317,45 @@ Future<String? Function()> _registerMatrixSyncStack({
   late final BackfillRequestService backfillRequestService;
   final syncRecoveryService = SyncRecoveryService(
     logging: domainLogger,
-    recover: () async {
-      try {
-        await vectorClockService.migrateUnrecordedReservations();
-      } catch (error, stackTrace) {
-        // A failed ledger migration must not prevent settlement of counters
-        // already present in the sequence log. The next pass retries both.
-        domainLogger.error(
-          LogDomain.sync,
-          error,
-          message:
-              'unrecorded reservation migration failed; recovery will retry',
-          stackTrace: stackTrace,
-          subDomain: 'vc.reserve.migrate',
-        );
-      }
-      await backfillResponseHandler.settleOrphanedOwnCounters();
-      await backfillRequestService.announceOwnSequenceHead();
-      if (!auditOwnReservations) return;
-      final hostId = await vectorClockService.getHost();
-      if (hostId == null) return;
-      final reservedCounters = await syncSequenceLogService
-          .reservedCountersForHost(hostId: hostId);
-      auditOwnReservations = false;
-      if (reservedCounters.isNotEmpty) {
-        domainLogger.log(
-          LogDomain.sync,
-          'vc.reserved.audit host=$hostId '
-          'count=${reservedCounters.length} '
-          'counters=$reservedCounters',
-          subDomain: 'vc.reserved.audit',
-        );
-      }
-    },
+    recover: () => syncCostMeter.measure(
+      SyncCostSection.recoveryPass,
+      () async {
+        try {
+          await vectorClockService.migrateUnrecordedReservations();
+        } catch (error, stackTrace) {
+          // A failed ledger migration must not prevent settlement of counters
+          // already present in the sequence log. The next pass retries both.
+          domainLogger.error(
+            LogDomain.sync,
+            error,
+            message:
+                'unrecorded reservation migration failed; recovery will retry',
+            stackTrace: stackTrace,
+            subDomain: 'vc.reserve.migrate',
+          );
+        }
+        await backfillResponseHandler.settleOrphanedOwnCounters();
+        await backfillRequestService.announceOwnSequenceHead();
+        if (!auditOwnReservations) return;
+        final hostId = await vectorClockService.getHost();
+        if (hostId == null) return;
+        final reservedCounters = await syncSequenceLogService
+            .reservedCountersForHost(hostId: hostId);
+        auditOwnReservations = false;
+        if (reservedCounters.isNotEmpty) {
+          domainLogger.log(
+            LogDomain.sync,
+            'vc.reserved.audit host=$hostId '
+            'count=${reservedCounters.length} '
+            'counters=$reservedCounters',
+            subDomain: 'vc.reserved.audit',
+          );
+        }
+      },
+    ),
   );
   backfillRequestService = BackfillRequestService(
+    costMeter: syncCostMeter,
     sequenceLogService: syncSequenceLogService,
     syncDatabase: syncDatabase,
     outboxService: outboxService,

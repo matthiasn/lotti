@@ -32,6 +32,10 @@ sources:
     resource: ../../../lib/features/sync/queue/queue_lifecycle.dart
     title: Live admission and catch-up wiring
     last_modified: 2026-10-13
+  - id: cost-meter
+    resource: ../../../lib/features/sync/instrumentation/sync_cost_meter.dart
+    title: SyncCostMeter — timeline spans and the sync cost summary
+    last_modified: 2026-10-20
   - id: adr-0142
     resource: ../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-sync-sqlite.md
     title: The decision and the step plan
@@ -48,9 +52,10 @@ plan are [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-
 this concept is how the pieces work.
 
 **Where it stands.** The host, its supervision and a worker that answers
-liveness exist. With the flag on, the worker is started at launch and pinged
-once, and the answer is written to the sync log; all sync work still runs on
-the UI isolate. Nothing moves until it has been measured (ADR 0142, step 2).
+liveness exist. With the flag on, the worker is started at launch and its
+handshake time is written to the sync log; all sync work still runs on the UI
+isolate. Nothing moves until it has been measured (ADR 0142, step 2), and
+[the cost meter](#measuring-it) is what measures it.
 
 # Who will own what
 
@@ -94,6 +99,49 @@ isolate is for:
 `JournalEntity.fromJson` also always runs on the UI isolate inside the gated
 apply; only payloads of 4 KB and more, gzip and large file decryption are
 already sent to one-off isolates.
+
+# Measuring it
+
+`SyncCostMeter` (`lib/features/sync/instrumentation/`) times the work above
+before any of it moves. One instance is built with the sync stack and threaded
+into the code it times; code built without one — most tests — gets an inert
+meter that only emits timeline spans.
+
+| Section | What one run is | Hooked in |
+|---------|-----------------|-----------|
+| `sdk` | The Matrix SDK handling one `/sync` response, from its `processing` status to `finished` or `error`. The response's JSON decode comes before `processing` and is not in it | `observeSdkSync(client.onSyncStatus.stream)`, wired in `lib/get_it_sync.dart` |
+| `copy` | The synchronous deep copy of a live response's events | `queue/queue_response_admission.dart` |
+| `admit` | Admitting one live response: decrypt, enqueue | `queue/queue_response_admission.dart` |
+| `live` | One live timeline event | `queue/queue_pipeline_coordinator.dart` |
+| `bridge` | One catch-up walk | `queue/bridge_coordinator.dart` |
+| `apply` | Applying one inbound entry — the **gated** work, timed for comparison | `queue/inbound_worker.dart` |
+| `backfill` | One automatic backfill-request pass | `backfill/backfill_request_service.dart` |
+| `recovery` | One sync recovery pass | the recovery closure in `lib/get_it_sync.dart` |
+
+Two outputs:
+
+- **Timeline spans, always** — `sync.<section>` in a DevTools timeline, so a
+  profile-mode capture on a phone labels the sync work beside the frames it
+  overlapped. They do nothing in release builds.
+- **A summary in the sync log, while the `sync` log domain is on** (Settings →
+  Advanced → Logging; off by default). Once a minute, if anything ran:
+
+  ```text
+  sync cost 60s: sdk 1240ms/18 (max 310) · copy 40ms/18 (max 9) · admit 220ms/18 (max 41) · apply 900ms/40 (max 120) | ui stall 1830ms (1510ms with sync running), worst 420ms, 12 over 50ms
+  ```
+
+  Per section: total time, runs, and the longest run. Times are wall clock:
+  for `copy`, which is synchronous, that is UI-isolate time; for the rest,
+  which await the database and the network, it is an upper bound. The
+  **ui stall** part is what measures blocking itself — a probe ticks every
+  100 ms while the domain is on, and whatever a tick is late by was spent on
+  something that held the UI isolate. A stall counts as *with sync running*
+  when a section was open at any point during it.
+
+To measure a phone: turn the sync log on, use the app through a catch-up (a
+device that has been offline, or a fresh login), and read the `cost` lines in
+the sync log; for detail, capture a profile-mode DevTools timeline over the
+same burst.
 
 # The host
 
