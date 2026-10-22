@@ -6450,6 +6450,36 @@ abstract class AppLocalizations {
   /// **'Winter'**
   String get companionSettingsOutfitWinter;
 
+  /// Sass level: teasing, with a smirk, a raised brow or a side-eye.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheeky'**
+  String get companionSettingsSassCheeky;
+
+  /// Explains the companion's sass setting: warm, cheeky, or fully sassy reactions to what she reads.
+  ///
+  /// In en, this message translates to:
+  /// **'How she takes what she reads to you: a warm cheer, a cheeky tease, or full grandma, with eye rolls and the look over her glasses.'**
+  String get companionSettingsSassDescription;
+
+  /// Heading of the companion setting for how much sass she reacts with while reading aloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Sass'**
+  String get companionSettingsSassLabel;
+
+  /// Sass level: full grandma, with hands on hips, eye rolls and the look over the glasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Sassy'**
+  String get companionSettingsSassSassy;
+
+  /// Sass level: encouraging whatever happened, no frowns or eye rolls.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm'**
+  String get companionSettingsSassWarm;
+
   /// Screen-reader name of one skin-tone swatch; tones are numbered from light to deep, never named after a people.
   ///
   /// In en, this message translates to:

@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
@@ -98,6 +101,7 @@ void main() {
       'Skin tone',
       'Hairstyle',
       'Hair color',
+      'Sass',
       'Outfit',
     ]) {
       expect(find.text(title), findsOneWidget);
@@ -219,6 +223,31 @@ void main() {
     expect(sent.customization, contains('"hairStyle":"locs"'));
   });
 
+  testWidgets('a sass segment stores her sass, and she shows it', (
+    tester,
+  ) async {
+    await pumpBody(tester);
+    expect(chosen(tester).sass, CompanionSass.cheeky);
+    final full = previews(tester).first.controller!;
+
+    await tester.tap(find.text('Sassy').last);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(chosen(tester).sass, CompanionSass.sassy);
+    // How she takes a slip at full sass: hands on hips, over the glasses.
+    expect(full.gesture, GestureName.handsOnHips);
+    expect(full.flourishing, CompanionFlourish.overTheGlasses);
+
+    await tester.tap(find.text('Warm').last);
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(chosen(tester).sass, CompanionSass.warm);
+    expect(full.gesture, GestureName.palmsDown);
+    expect(full.flourishing, CompanionFlourish.headTilt);
+
+    await _frames(tester);
+    final stored = await db.itemByKey(companionCustomizationKey);
+    expect(stored, contains('"sass":"warm"'));
+  });
+
   testWidgets('the page wears the settings chrome and its title', (
     tester,
   ) async {
@@ -262,6 +291,10 @@ void main() {
     expect(
       companionOutfits.map((o) => outfitName(m, o)).toSet(),
       hasLength(companionOutfits.length),
+    );
+    expect(
+      CompanionSass.values.map((s) => sassName(m, s)).toSet(),
+      hasLength(CompanionSass.values.length),
     );
   });
 }

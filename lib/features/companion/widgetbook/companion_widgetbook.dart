@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
 import 'package:lotti/features/companion/animation/tone_track.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -17,7 +18,8 @@ import 'package:widgetbook/widgetbook.dart';
 const defaultCompanionLine =
     'Good morning! You finished the migration, well done. '
     'The review is overdue, though, and the tests are falling behind. '
-    'Four things today.';
+    'The docs are late again. Did you look at them? '
+    'The parser finally shipped!';
 
 /// Widgetbook folder for the in-app companion: Lotti, the grandmother of the
 /// pitch videos, and the animals a person may pick instead, drawn live in
@@ -153,7 +155,8 @@ CompanionMood _moodKnob(BuildContext context) => context.knobs.object.dropdown(
   labelBuilder: (m) => m.name,
 );
 
-/// Her, live, with a button to say the line and one per gesture.
+/// Her, live, with a button to say the line, one per gesture and one per
+/// flourish.
 ///
 /// The line is spoken silently: the mouth follows the words
 /// ([TextLipSync]) on the view's own clock from the press of the button, and
@@ -254,6 +257,13 @@ class _CompanionPlaygroundState extends State<CompanionPlayground> {
                   label: g.name,
                   variant: DesignSystemButtonVariant.secondary,
                   onPressed: () => _controller.play(g),
+                ),
+              for (final f in CompanionFlourish.values)
+                DesignSystemButton(
+                  key: ValueKey('companion_flourish_${f.name}'),
+                  label: f.name,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  onPressed: () => _controller.flourish(f),
                 ),
             ],
           ),

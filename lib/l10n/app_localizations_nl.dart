@@ -3829,6 +3829,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Winter';
 
   @override
+  String get companionSettingsSassCheeky => 'Ondeugend';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Hoe ze opvat wat ze je voorleest: warm aanmoedigend, ondeugend plagend of volle oma, met rollende ogen en de blik over haar bril.';
+
+  @override
+  String get companionSettingsSassLabel => 'Pit';
+
+  @override
+  String get companionSettingsSassSassy => 'Brutaal';
+
+  @override
+  String get companionSettingsSassWarm => 'Warm';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Huidskleur $number';
   }

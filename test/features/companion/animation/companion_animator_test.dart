@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
 import 'package:lotti/features/companion/animation/speech_envelope.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
@@ -250,5 +251,65 @@ void main() {
       poses.where((p) => p.earFlick == 0).length,
       greaterThan(poses.length * 0.8),
     );
+  });
+
+  group('flourishes', () {
+    test('a flourish shows on her face, then fades by itself', () {
+      final plain = _run(CompanionAnimator(), 0.5).last;
+      final a = CompanionAnimator()..flourish(CompanionFlourish.oneBrow);
+      expect(a.flourishing, CompanionFlourish.oneBrow);
+      final during = _run(a, 0.5).last;
+      // One brow up: her right brow lifted far above her left.
+      expect(during.browSkew, greaterThan(plain.browSkew + 1));
+      _run(a, 2);
+      expect(a.flourishing, isNull);
+      expect(_run(a, 1).last.browSkew, closeTo(plain.browSkew, 0.1));
+    });
+
+    test('a wink shuts her right eye and leaves the left open', () {
+      final a = CompanionAnimator()..flourish(CompanionFlourish.wink);
+      final poses = _run(a, CompanionFlourish.wink.duration);
+      final peak = poses.reduce((x, y) => x.wink > y.wink ? x : y);
+      expect(peak.blinkOf(1), greaterThan(0.95));
+      expect(peak.blinkOf(-1), lessThan(0.5));
+      expect(poses.last.wink, closeTo(0, 0.05));
+    });
+
+    test('a flourish never moves her arms', () {
+      final plain = _run(CompanionAnimator()..play(GestureName.clap), 1);
+      final pulled = _run(
+        CompanionAnimator()
+          ..play(GestureName.clap)
+          ..flourish(CompanionFlourish.sideEye),
+        1,
+      );
+      for (var i = 0; i < plain.length; i++) {
+        expect(pulled[i].left.wrist, plain[i].left.wrist);
+        expect(pulled[i].right.wrist, plain[i].right.wrist);
+      }
+      // ...while her eyes went sideways.
+      expect(pulled.last.gaze.dx, greaterThan(plain.last.gaze.dx + 0.4));
+    });
+
+    test('the look over the glasses: chin down, eyes up', () {
+      final plain = _run(CompanionAnimator(), 0.7).last;
+      final a = CompanionAnimator()..flourish(CompanionFlourish.overTheGlasses);
+      final look = _run(a, 0.7).last;
+      expect(look.headPitch, greaterThan(plain.headPitch + 0.1));
+      expect(look.gaze.dy, lessThan(plain.gaze.dy - 0.4));
+    });
+
+    test("a fixed gaze wins over a flourish's", () {
+      final a = CompanionAnimator()..flourish(CompanionFlourish.sideEye);
+      final pose = _run(a, 0.8, lookAt: const Offset(-0.5, 0)).last;
+      expect(pose.gaze.dx, closeTo(-0.5, 0.05));
+    });
+
+    test('a new flourish replaces one still showing', () {
+      final a = CompanionAnimator()..flourish(CompanionFlourish.sideEye);
+      _run(a, 0.2);
+      a.flourish(CompanionFlourish.wink);
+      expect(a.flourishing, CompanionFlourish.wink);
+    });
   });
 }

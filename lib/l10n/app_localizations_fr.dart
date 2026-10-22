@@ -3868,6 +3868,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Hiver';
 
   @override
+  String get companionSettingsSassCheeky => 'Espiègle';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Comment elle prend ce qu\'elle te lit : un encouragement chaleureux, une taquinerie espiègle, ou la grand-mère au complet, yeux au ciel et regard par-dessus les lunettes.';
+
+  @override
+  String get companionSettingsSassLabel => 'Répartie';
+
+  @override
+  String get companionSettingsSassSassy => 'Insolente';
+
+  @override
+  String get companionSettingsSassWarm => 'Chaleureuse';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Teint $number';
   }

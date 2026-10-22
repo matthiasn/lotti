@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 
-/// How a person has made her their own: her skin, her hair, its colour, and
-/// the outfit she wears, or none to let her pick one each session.
+/// How a person has made her their own: her skin, her hair, its colour, the
+/// outfit she wears, or none to let her pick one each session, and how much
+/// sass she reads with.
 ///
 /// The default is Lotti as the pitch videos draw her: [CompanionSkinTone.tone1],
-/// a silver [CompanionHairStyle.bun], and a random outfit.
+/// a silver [CompanionHairStyle.bun], a random outfit, and
+/// [CompanionSass.cheeky] — a tease, never a scold.
 @immutable
 class CompanionCustomization {
   const CompanionCustomization({
@@ -14,6 +17,7 @@ class CompanionCustomization {
     this.hairStyle = CompanionHairStyle.bun,
     this.hairColour = CompanionHairColour.silver,
     this.outfitId,
+    this.sass = CompanionSass.cheeky,
   });
 
   /// Reads what [toJson] wrote. A part this version does not know — written
@@ -42,6 +46,7 @@ class CompanionCustomization {
       outfitId: CompanionLook.all.any((l) => l.id == outfit)
           ? outfit as String
           : null,
+      sass: part(CompanionSass.values, json['sass'], CompanionSass.cheeky),
     );
   }
 
@@ -52,6 +57,9 @@ class CompanionCustomization {
   /// The `CompanionLook.id` of the outfit she always wears, or null for one
   /// drawn at random each session.
   final String? outfitId;
+
+  /// How much sass she puts into what she reads.
+  final CompanionSass sass;
 
   /// [outfit] in this skin and hair: the outfit keeps its clothes and props,
   /// and takes the face and hair from here. Lips an outfit paints — the rock
@@ -82,11 +90,13 @@ class CompanionCustomization {
     CompanionHairStyle? hairStyle,
     CompanionHairColour? hairColour,
     ValueGetter<String?>? outfitId,
+    CompanionSass? sass,
   }) => CompanionCustomization(
     skinTone: skinTone ?? this.skinTone,
     hairStyle: hairStyle ?? this.hairStyle,
     hairColour: hairColour ?? this.hairColour,
     outfitId: outfitId == null ? this.outfitId : outfitId(),
+    sass: sass ?? this.sass,
   );
 
   Map<String, dynamic> toJson() => {
@@ -94,6 +104,7 @@ class CompanionCustomization {
     'hairStyle': hairStyle.name,
     'hairColour': hairColour.name,
     'outfit': ?outfitId,
+    'sass': sass.name,
   };
 
   /// [toJson] laid over [stored], the JSON this was changed from: a part
@@ -122,8 +133,10 @@ class CompanionCustomization {
       other.skinTone == skinTone &&
       other.hairStyle == hairStyle &&
       other.hairColour == hairColour &&
-      other.outfitId == outfitId;
+      other.outfitId == outfitId &&
+      other.sass == sass;
 
   @override
-  int get hashCode => Object.hash(skinTone, hairStyle, hairColour, outfitId);
+  int get hashCode =>
+      Object.hash(skinTone, hairStyle, hairColour, outfitId, sass);
 }

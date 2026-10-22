@@ -3795,6 +3795,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Winter';
 
   @override
+  String get companionSettingsSassCheeky => 'Cheeky';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'How she takes what she reads to you: a warm cheer, a cheeky tease, or full grandma, with eye rolls and the look over her glasses.';
+
+  @override
+  String get companionSettingsSassLabel => 'Sass';
+
+  @override
+  String get companionSettingsSassSassy => 'Sassy';
+
+  @override
+  String get companionSettingsSassWarm => 'Warm';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Skin tone $number';
   }

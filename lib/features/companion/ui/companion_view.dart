@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
 import 'package:lotti/features/companion/animation/tone_track.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -14,10 +15,16 @@ import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/rig/supersampled_painter.dart';
 
+/// How close to the end of the words the voice must get for a read to
+/// count as heard out: the last frames before a clip ends, which a playhead
+/// that stops reporting may never show.
+const _lastWordSlack = Duration(milliseconds: 250);
+
 /// Reads where a voice's playhead is, or null while nothing plays.
 typedef PlayheadReader = Duration? Function();
 
-/// Lets the owner of a [CompanionView] cue her: a gesture now, a blink now.
+/// Lets the owner of a [CompanionView] cue her: a gesture now, a face now, a
+/// blink now.
 class CompanionController {
   CompanionAnimator? _animator;
 
@@ -32,8 +39,16 @@ class CompanionController {
   /// ready or no view is attached.
   GestureName? get gesture => _animator?.gesture;
 
+  /// The face the attached view is pulling, or null once it has faded or
+  /// no view is attached.
+  CompanionFlourish? get flourishing => _animator?.flourishing;
+
   /// Plays [gesture] now; ignored while no view is attached.
   void play(GestureName gesture) => _animator?.play(gesture);
+
+  /// Pulls [face] now, over whatever she is doing; ignored while no view is
+  /// attached.
+  void flourish(CompanionFlourish face) => _animator?.flourish(face);
 
   /// Blinks now.
   void blink() => _animator?.blink();
@@ -93,6 +108,11 @@ class CompanionView extends StatefulWidget {
   /// [sass] takes over her face from [mood], and each change of tone cues
   /// that reaction's gesture once; between such sentences, and once she is
   /// quiet, she is in [mood] again.
+  ///
+  /// On top, each beat the voice reaches — a question, a "but", a
+  /// "finally" — pulls its [companionBeat] face, and when the words are over
+  /// she has the last word: [companionSignOff], held a moment after the
+  /// voice stops.
   final ToneTrack? tone;
 
   /// How much sass her reactions to [tone] carry.
@@ -128,6 +148,17 @@ class _CompanionViewState extends State<CompanionView>
 
   // The approval of the words she is saying now, so a change cues once.
   int? _approval;
+
+  // The tone she is reading and the cue the voice is in, so each beat cues
+  // once and the end of the read is noticed; null while she is quiet.
+  ToneTrack? _reading;
+  int _cue = -1;
+
+  // How far the voice got into [_reading], and where its words are over:
+  // a playhead gone after that point is a read heard out, before it one
+  // stopped or paused short.
+  Duration _heard = Duration.zero;
+  Duration _wordsEnd = Duration.zero;
 
   @override
   void initState() {
@@ -176,7 +207,8 @@ class _CompanionViewState extends State<CompanionView>
 
   /// Her mood for the words at [position]: the reaction to their tone while
   /// they read one way or the other, the host's [CompanionView.mood]
-  /// otherwise.
+  /// otherwise. Cues on the way what the words cue: a reaction's gesture as
+  /// the tone changes, a beat's face, and her last word ([_followBeats]).
   CompanionMood _moodAt(MouthTrack? track, Duration? position) {
     final tone = widget.tone;
     final speaking =
@@ -185,6 +217,7 @@ class _CompanionViewState extends State<CompanionView>
         position != null &&
         !position.isNegative &&
         position < track.length;
+    _followBeats(speaking ? tone : null, track, position);
     final approval = speaking ? tone.approvalAt(position) : null;
     if (approval == null) {
       _approval = null;
@@ -197,6 +230,45 @@ class _CompanionViewState extends State<CompanionView>
       if (gesture != null) _animator.play(gesture);
     }
     return reaction.mood;
+  }
+
+  /// Pulls the face of each beat [tone] reaches at [position], and her last
+  /// word once a read is over: [tone] null after the voice got within
+  /// [_lastWordSlack] of the words' end ([ToneTrack.end], or the end of
+  /// [track]). The speaker's playhead goes null for a pause and for a stop
+  /// alike, so how far the voice got is what tells a read heard out from
+  /// one cut short; a read cut short has no last word and keeps its place,
+  /// so a resume does not pull the same face again.
+  void _followBeats(ToneTrack? tone, MouthTrack? track, Duration? position) {
+    if (tone != null && !identical(tone, _reading)) {
+      _reading = tone;
+      _cue = -1;
+      _heard = Duration.zero;
+      _wordsEnd = (tone.end ?? track!.length) - _lastWordSlack;
+    }
+    if (position != null && position > _heard) _heard = position;
+    final reading = _reading;
+    if (reading == null) return;
+    if (tone == null) {
+      if (_heard < _wordsEnd) return;
+      _reading = null;
+      _cue = -1;
+      final last = companionSignOff(
+        reading.cues.map((c) => c.approval),
+        sass: widget.sass,
+      );
+      if (last != null) _animator.flourish(last);
+      return;
+    }
+    final index = tone.indexAt(position!);
+    if (index == _cue) return;
+    _cue = index;
+    if (index < 0) return;
+    final cue = tone.cues[index];
+    final beat = cue.beat;
+    if (beat == null) return;
+    final face = companionBeat(beat, cue.approval, sass: widget.sass);
+    if (face != null) _animator.flourish(face);
   }
 
   void _onTick(Duration elapsed) {

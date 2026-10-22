@@ -58,6 +58,7 @@ class CompanionPose {
     ),
     this.gaze = Offset.zero,
     this.blink = 0,
+    this.wink = 0,
     this.squint = 0,
     this.browRaise = 0,
     this.browTilt = 0,
@@ -98,6 +99,15 @@ class CompanionPose {
 
   /// 0 open .. 1 shut.
   final double blink;
+
+  /// Shuts one eye on top of [blink]: the right (screen right) towards 1, the
+  /// left towards -1.
+  final double wink;
+
+  /// How far the eye on [side] (-1 left, +1 right) is shut: [blink], and
+  /// the [wink] if it is that eye's.
+  double blinkOf(int side) =>
+      side * wink > 0 ? blink + (1 - blink) * wink.abs() : blink;
   final double squint;
   final double browRaise;
 

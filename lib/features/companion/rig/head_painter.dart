@@ -114,9 +114,16 @@ void _humanFace(Canvas canvas, CompanionLook look, CompanionPose p) {
 
   final fx = yaw * 6.5;
   final fy = pitch * 3.5;
-  final lids = p.blink;
   for (final s in [-1, 1]) {
-    drawEye(canvas, c, Offset(s * 19 + fx, -6 + fy), s, lids, p.squint, p.gaze);
+    drawEye(
+      canvas,
+      c,
+      Offset(s * 19 + fx, -6 + fy),
+      s,
+      p.blinkOf(s),
+      p.squint,
+      p.gaze,
+    );
     drawBrow(
       canvas,
       c,

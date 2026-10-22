@@ -3818,6 +3818,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Vinter';
 
   @override
+  String get companionSettingsSassCheeky => 'Busig';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Hur hon tar det hon läser för dig: en varm peppning, en busig retning eller mormor på full styrka, med himlande ögon och blicken över glasögonen.';
+
+  @override
+  String get companionSettingsSassLabel => 'Kaxighet';
+
+  @override
+  String get companionSettingsSassSassy => 'Kaxig';
+
+  @override
+  String get companionSettingsSassWarm => 'Varm';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Hudton $number';
   }
