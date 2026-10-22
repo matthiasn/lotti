@@ -6,6 +6,7 @@ import 'package:lotti/features/companion/animation/tone_track.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
+import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
@@ -23,7 +24,9 @@ import 'package:lotti/services/domain_logging.dart';
 /// from the playback state, so what the host shows now cannot put other words
 /// in her mouth — and each frame her mouth follows the player's playhead.
 /// Her face follows the same words ([ToneTrack]): pleased through praise, a
-/// different face where they turn to what needs work.
+/// different face where they turn to what needs work, a face on each beat,
+/// and the last word — with the sass the person chose
+/// ([companionCustomizationProvider]).
 /// Another source playing, or none, leaves her silent but alive. The voice
 /// knows nothing about her.
 ///
@@ -163,6 +166,9 @@ class _CompanionSpeakerState extends ConsumerState<CompanionSpeaker> {
     holding: widget.holding,
     track: _track,
     tone: _tone,
+    sass: ref.watch(
+      companionCustomizationProvider.select((custom) => custom.sass),
+    ),
     playhead: _playhead,
   );
 }

@@ -3858,6 +3858,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Zima';
 
   @override
+  String get companionSettingsSassCheeky => 'Šibalská';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Jak bere to, co ti čte: vřelé povzbuzení, šibalské popíchnutí, nebo babička naplno, s obracením očí v sloup a pohledem přes brýle.';
+
+  @override
+  String get companionSettingsSassLabel => 'Drzost';
+
+  @override
+  String get companionSettingsSassSassy => 'Drzá';
+
+  @override
+  String get companionSettingsSassWarm => 'Vřelá';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Odstín pleti $number';
   }

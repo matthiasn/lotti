@@ -40,6 +40,12 @@ nudges), is
   praise, neither, or something that needs work, read on the device from its
   words, its emoji and its section's heading (`ToneTrack`) — gives her the
   matching reaction, timed by the same playhead as her mouth.
+- **She pulls faces on the beats.** A question, a "but", an "again", a
+  "finally" each get a face of their own for a moment (`CompanionFlourish`):
+  one brow up, the side-eye, narrowed eyes, the look over her glasses, a
+  smirk, a wink. They move only her face, so they land in the middle of a
+  gesture. When a read is over she has the last word: a wink for good news,
+  the look over the glasses for trouble, the side-eye for both.
 - **She has moods** (`calm`, `bright`, `busy`, `frazzled`, `sleepy`) that show
   on her face and in her breathing, never as guilt.
 - **She reacts.** `companionReaction` rates a piece of work from -3 to +3,
@@ -47,8 +53,8 @@ nudges), is
   or a celebration at the top, a raised brow, an eye roll or hands on the
   hips below. Seven more moods carry it (`proud`, `delighted`, `smug`,
   `skeptical`, `unimpressed`, `disappointed`, `stern`), some of them
-  lopsided: one brow up, a smirk. Disapproval is sass, never hurt. The goal
-  card uses its warm end.
+  lopsided: one brow up, a smirk. Disapproval is sass, never hurt. How much
+  sass is the person's choice; the goal card uses its warm end.
 - **She has looks**: everyday (teal dress, mustard cardigan), stage (raspberry
   dress, ivory cardigan), rock (beret, yellow sunglasses, beads, a red
   glove), garden (sage and straw), lavender (lavender and dove grey) and
@@ -60,8 +66,10 @@ nudges), is
 - **A person makes her their own.** In Settings › Preferences › Companion
   (shown with the flag) they pick her skin tone (six, numbered, never named
   after a people), her hairstyle (bun, curls, afro, locs, bob), her hair
-  colour (silver, white, grey, black, brown, auburn, pink, lavender, blue)
-  and an outfit she always wears, or "Surprise me". Every part combines with
+  colour (silver, white, grey, black, brown, auburn, pink, lavender, blue),
+  an outfit she always wears, or "Surprise me", and her sass — warm,
+  cheeky (the default) or sassy — which her preview acts out when it is
+  picked. Every part combines with
   every other. The choice is stored and synced to the person's other devices
   (`companionCustomizationProvider`), the most recent change winning.
 - **She can be an animal.** A look names its species (`CompanionSpecies`):
@@ -76,7 +84,7 @@ nudges), is
 
 | Directory | What |
 |---|---|
-| `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale, and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
+| `model/` | The data: looks and their palettes, poses, gestures, hand and mouth shapes, moods, the reaction scale with its beats and last word, the faces she pulls for a moment (`companion_flourish.dart`), and the parts a person dresses her in (`companion_parts.dart`, `companion_customization.dart`) |
 | `rig/` | Drawing: the arm solver, the limb ribbon, the frames a pose resolves into, and one painter per body part, composed by `CompanionPainter`; the animals' head and tail in `animal_head_painter.dart` and `tail_painter.dart`; her hairstyles in `hair_styles_painter.dart`, the bun in `hair_painter.dart` |
 | `animation/` | Motion: `CompanionAnimator` turns time, a mood, gestures and speech into a pose per frame; the mouth tracks; `PlayheadClock`, the playhead between a player's reports |
 | `state/` | `loadSpokenTrack`: the mouth for a clip the voice plays, read once off the UI isolate; the session's outfit, her stored customization, and `companionLookProvider`, the two together |
@@ -113,7 +121,8 @@ open **Companion → Lotti (grandma)**, **Cat** or **Red panda**; each has the
 same use cases, its look knob limited to its own looks:
 
 - **Playground**: the look, mood, framing, stage, smoothing and sass as
-  knobs, a line to say (her face follows it), and a button per gesture;
+  knobs, a line to say (her face follows it, beats and all), a button per
+  gesture and one per flourish;
 - **Talking with a voice (WAV)**: give it a 16-bit PCM WAV path (and, for
   better mouth shapes, its words), press Play, and she says it out loud;
 - **Looks**, **Moods**, **Reactions** (every approval at every sass) and

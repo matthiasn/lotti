@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:lotti/features/companion/animation/arm_rig.dart';
 import 'package:lotti/features/companion/animation/mouth_track.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
@@ -30,8 +31,9 @@ const List<GestureName> talkingGestures = [
 /// a little overshoot and the settle for free. On top run the layers that
 /// make a figure read as alive: breathing, a sway of the weight, glances,
 /// blinks, a nod and a hand beat when the voice swells, and hair and hem that
-/// trail the body. Everything random comes from one seeded generator, so a
-/// test run is reproducible.
+/// trail the body. A flourish ([flourish]) — a wink, a side-eye — is laid
+/// over the face for a moment without touching the arms. Everything random
+/// comes from one seeded generator, so a test run is reproducible.
 ///
 /// This is the pitch videos' `motion.py`, made live: the videos know the
 /// whole timeline in advance, here the next gesture or line arrives at any
@@ -79,6 +81,8 @@ class CompanionAnimator {
   Offset _glance = Offset.zero;
   GestureName? _gesture;
   double _gestureStart = 0;
+  CompanionFlourish? _flourish;
+  double _flourishStart = 0;
   double _nextTalkGesture = 0;
   bool _wasSpeaking = false;
   double _lastBeat = -10;
@@ -100,6 +104,19 @@ class CompanionAnimator {
 
   /// Blinks now, as at the end of a phrase.
   void blink() => _blinkStart = _t;
+
+  /// The flourish on her face, or null once it has faded.
+  CompanionFlourish? get flourishing {
+    final f = _flourish;
+    return f != null && _t - _flourishStart < f.duration ? f : null;
+  }
+
+  /// Pulls [face] now, over her mood and whatever gesture is playing; it
+  /// fades by itself. A new one replaces one still showing.
+  void flourish(CompanionFlourish face) {
+    _flourish = face;
+    _flourishStart = _t;
+  }
 
   (GestureName, CompanionGesture)? _gestureAt() {
     final g = _gesture;
@@ -196,8 +213,17 @@ class CompanionAnimator {
 
     final current = _gestureAt();
     final g = current?.$2 ?? CompanionGesture.ready;
-    final gaze =
+    // The flourish and how strongly it shows this frame. Without one, any
+    // flourish at zero strength adds nothing, which keeps the sums below
+    // free of null checks; one that has faded is at zero by its envelope.
+    final f = _flourish ?? CompanionFlourish.browPop;
+    final fe = _flourish == null ? 0.0 : f.envelope(t - _flourishStart);
+    var gaze =
         lookAt ?? (g.gaze == null ? _glance : Offset(g.gaze!.$1, g.gaze!.$2));
+    final faceGaze = f.gaze;
+    if (lookAt == null && faceGaze != null) {
+      gaze = Offset.lerp(gaze, Offset(faceGaze.$1, faceGaze.$2), fe)!;
+    }
     final bounceEnv = s['bounce']!.step(g.bounce + mood.bounce, dt);
     final bounce = -bounceEnv * math.sin(2 * math.pi * 1.6 * t).abs();
     _breathPhase += dt * 2 * math.pi / 4 * mood.breathRate;
@@ -210,30 +236,52 @@ class CompanionAnimator {
     _tailPhase += dt * 2 * math.pi * 0.3 * mood.breathRate;
     final pelvisX = 3.2 * noise1(t * 0.35, 1);
     final baseSmile = (speaking ? 0.3 : 0.5) + mood.smile;
-    final lids = s['lids']!.step(clampUnit(mood.lids + g.lids), dt);
+    final lids = s['lids']!.step(
+      clampUnit(mood.lids + g.lids + fe * f.lids),
+      dt,
+    );
     final pulse = _blinkAmount();
 
     final pose = CompanionPose(
       pelvis: Offset(pelvisX, bounce + 0.8 * noise1(t * 0.6, 4)),
       lean: s['lean']!.step(g.lean + 0.012 * noise1(t * 0.3, 2), dt),
       breath: math.sin(_breathPhase),
-      headRoll: s['roll']!.step(g.roll + 0.025 * noise1(t * 0.5, 3), dt),
-      headYaw: s['yaw']!.step(g.yaw + 0.08 * noise1(t * 0.4, 5), dt),
+      headRoll: s['roll']!.step(
+        g.roll + fe * f.roll + 0.025 * noise1(t * 0.5, 3),
+        dt,
+      ),
+      headYaw: s['yaw']!.step(
+        g.yaw + fe * f.yaw + 0.08 * noise1(t * 0.4, 5),
+        dt,
+      ),
       headPitch:
-          s['pitch']!.step(g.pitch + mood.pitch, dt) + nod * 0.6 + 0.12 * loud,
+          s['pitch']!.step(g.pitch + mood.pitch + fe * f.pitch, dt) +
+          nod * 0.6 +
+          0.12 * loud,
       headOffset: Offset(0, nod * 2 - 0.6 * loud),
       gaze: Offset(s['gx']!.step(gaze.dx, dt), s['gy']!.step(gaze.dy, dt)),
       blink: lids + (1 - lids) * pulse,
-      squint: s['squint']!.step(g.squint + mood.squint, dt),
+      // Not sprung: a wink is quick.
+      wink: fe * f.oneEye,
+      squint: s['squint']!.step(g.squint + mood.squint + fe * f.squint, dt),
       browRaise: s['brow']!.step(
-        g.brow + mood.brow + (speaking ? 0.35 * loud : 0),
+        g.brow + mood.brow + fe * f.brow + (speaking ? 0.35 * loud : 0),
         dt,
       ),
-      browTilt: s['tilt']!.step(g.tilt + mood.tilt, dt),
-      browSkew: s['browSkew']!.step(g.browSkew + mood.browSkew, dt),
+      browTilt: s['tilt']!.step(g.tilt + mood.tilt + fe * f.tilt, dt),
+      browSkew: s['browSkew']!.step(
+        g.browSkew + mood.browSkew + fe * f.browSkew,
+        dt,
+      ),
       // Down to -1: a reaction may frown.
-      smile: s['smile']!.step(clampUnit(baseSmile + g.smile, -1), dt),
-      smileSkew: s['smileSkew']!.step(g.smileSkew + mood.smileSkew, dt),
+      smile: s['smile']!.step(
+        clampUnit(baseSmile + g.smile + fe * f.smile, -1),
+        dt,
+      ),
+      smileSkew: s['smileSkew']!.step(
+        g.smileSkew + mood.smileSkew + fe * f.smileSkew,
+        dt,
+      ),
       mouth: mouth,
       left: _left.step(
         g.left ?? CompanionGesture.readyLeft,
@@ -289,6 +337,7 @@ CompanionPose _withTrail(CompanionPose p, Offset hairLag, double hemLag) =>
       right: p.right,
       gaze: p.gaze,
       blink: p.blink,
+      wink: p.wink,
       squint: p.squint,
       browRaise: p.browRaise,
       browTilt: p.browTilt,

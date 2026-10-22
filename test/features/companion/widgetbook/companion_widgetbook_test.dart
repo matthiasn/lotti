@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -116,6 +119,33 @@ void main() {
   });
 
   group('CompanionPlayground', () {
+    testWidgets('has a button per flourish, each one pulls its face', (
+      tester,
+    ) async {
+      setTestSurfaceSize(tester, const Size(1400, 900));
+      await tester.pumpWidget(_host(_playground));
+      for (final f in CompanionFlourish.values) {
+        expect(
+          find.byKey(ValueKey('companion_flourish_${f.name}')),
+          findsOneWidget,
+        );
+      }
+      await tester.tap(
+        find.byKey(
+          ValueKey('companion_flourish_${CompanionFlourish.wink.name}'),
+        ),
+      );
+      var shut = 0.0;
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        shut = math.max(
+          shut,
+          _pose(tester).blinkOf(1) - _pose(tester).blinkOf(-1),
+        );
+      }
+      expect(shut, greaterThan(0.5));
+    });
+
     testWidgets('has a button per gesture, each one plays it', (tester) async {
       setTestSurfaceSize(tester, const Size(1400, 900));
       await tester.pumpWidget(_host(_playground));

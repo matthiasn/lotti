@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/text_lip_sync.dart';
 import 'package:lotti/features/companion/animation/tone_track.dart';
+import 'package:lotti/features/companion/model/companion_flourish.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
@@ -275,6 +278,283 @@ void main() {
       expect(quiet.smile, closeTo(0.5, 0.05));
       expect(quiet.smile, greaterThan(concerned.smile));
     });
+  });
+
+  group('her sass on the beats', () {
+    const line =
+        'Four things today. The docs are late again. '
+        'The parser finally shipped. Did you look at it?';
+    final mouth = TextLipSync(line);
+    final tone = ToneTrack.read(line, mouth);
+    Duration at(String words) => mouth.timeOf(line.indexOf(words)) + _ms(50);
+    // Inside the last word, as the voice is about to finish.
+    final finishing = tone.end! - _ms(100);
+
+    Future<CompanionController> speak(
+      WidgetTester tester,
+      Duration? Function() playhead,
+      CompanionSass sass,
+    ) async {
+      final controller = CompanionController();
+      await tester.pumpWidget(
+        _host(
+          CompanionView(
+            track: mouth,
+            tone: tone,
+            sass: sass,
+            playhead: playhead,
+            controller: controller,
+            autoGestures: false,
+          ),
+        ),
+      );
+      return controller;
+    }
+
+    testWidgets('each beat pulls its face as the voice reaches it', (
+      tester,
+    ) async {
+      var position = at('Four');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+
+      position = at('again');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.overTheGlasses);
+
+      position = at('finally');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(
+        controller.flourishing,
+        companionBeat(
+          SassBeat.atLast,
+          tone.approvalAt(position),
+          sass: CompanionSass.sassy,
+        ),
+      );
+
+      position = at(' Did you');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.narrow);
+    });
+
+    testWidgets('a word beat waits for its word, not the sentence start', (
+      tester,
+    ) async {
+      var position = at(' The docs');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+
+      position = at('again');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.overTheGlasses);
+    });
+
+    testWidgets('a beat pulls its face once, not on every frame', (
+      tester,
+    ) async {
+      final controller = await speak(
+        tester,
+        () => at('again'),
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      // Faded, and not pulled again while the voice stays in the sentence.
+      expect(controller.flourishing, isNull);
+    });
+
+    testWidgets('the face shows: the look over the glasses tips her chin', (
+      tester,
+    ) async {
+      var position = at('Four');
+      await speak(tester, () => position, CompanionSass.sassy);
+      final before = (await _frames(tester, 0.5)).last;
+      position = at('again');
+      final during = (await _frames(tester, 0.6)).last;
+      expect(during.headPitch, greaterThan(before.headPitch + 0.08));
+    });
+
+    testWidgets('once the words are over she has the last word', (
+      tester,
+    ) async {
+      Duration? position = finishing;
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      expect(controller.flourishing, isNull);
+
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      // Late docs and a shipped parser: both, so the side-eye.
+      expect(controller.flourishing, CompanionFlourish.sideEye);
+      await _frames(tester, 2);
+      expect(controller.flourishing, isNull);
+    });
+
+    testWidgets('a pause mid-read is not the end: no last word yet', (
+      tester,
+    ) async {
+      Duration? position = at('again');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      expect(controller.flourishing, isNull);
+
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+    });
+
+    testWidgets('a stop in the last sentence is not the end either', (
+      tester,
+    ) async {
+      // The voice is in the last sentence, but its words are not over.
+      Duration? position = at(' Did you');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+    });
+
+    testWidgets('a voice that runs past the words is heard out', (
+      tester,
+    ) async {
+      Duration? position = at(' Did you');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      // Past the end of the clip, the playhead still reporting.
+      position = mouth.length + _ms(200);
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.sideEye);
+    });
+
+    testWidgets('a tone without a known end is over at the end of the clip', (
+      tester,
+    ) async {
+      Duration? position = _ms(100);
+      final controller = CompanionController();
+      await tester.pumpWidget(
+        _host(
+          CompanionView(
+            track: mouth,
+            tone: ToneTrack([(start: Duration.zero, approval: 2, beat: null)]),
+            sass: CompanionSass.sassy,
+            playhead: () => position,
+            controller: controller,
+            autoGestures: false,
+          ),
+        ),
+      );
+      await _frames(tester, 0.2);
+      // Short of the clip's end: no last word.
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+
+      position = mouth.length - _ms(100);
+      await tester.pump(const Duration(milliseconds: 16));
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      // All good news, sassy: a smirk.
+      expect(controller.flourishing, CompanionFlourish.smirk);
+    });
+
+    testWidgets('a resume picks up where she was, without a repeat face', (
+      tester,
+    ) async {
+      Duration? position = at('again');
+      final controller = await speak(
+        tester,
+        () => position,
+        CompanionSass.sassy,
+      );
+      await _frames(tester, 2);
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+
+      position = at('again');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+
+      // The next beat still lands, and the end still gets its last word.
+      position = at(' Did you');
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.narrow);
+      await _frames(tester, 2);
+      position = finishing;
+      await tester.pump(const Duration(milliseconds: 16));
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, CompanionFlourish.sideEye);
+    });
+
+    testWidgets('words that read neither way leave her no last word', (
+      tester,
+    ) async {
+      const plain = 'Four things today. Three meetings.';
+      final plainMouth = TextLipSync(plain);
+      Duration? position = _ms(100);
+      final controller = CompanionController();
+      await tester.pumpWidget(
+        _host(
+          CompanionView(
+            track: plainMouth,
+            tone: ToneTrack.read(plain, plainMouth),
+            sass: CompanionSass.sassy,
+            playhead: () => position,
+            controller: controller,
+            autoGestures: false,
+          ),
+        ),
+      );
+      await _frames(tester, 0.5);
+      position = plainMouth.length - _ms(100);
+      await tester.pump(const Duration(milliseconds: 16));
+      position = null;
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(controller.flourishing, isNull);
+    });
+  });
+
+  testWidgets('the controller pulls a face, and none while detached', (
+    tester,
+  ) async {
+    final controller = CompanionController()
+      ..flourish(CompanionFlourish.wink); // Ignored while detached.
+    expect(controller.flourishing, isNull);
+    await tester.pumpWidget(_host(CompanionView(controller: controller)));
+    controller.flourish(CompanionFlourish.wink);
+    final poses = await _frames(tester, 0.3);
+    expect(controller.flourishing, CompanionFlourish.wink);
+    expect(
+      poses.map((p) => p.blinkOf(1) - p.blinkOf(-1)).reduce(math.max),
+      greaterThan(0.5),
+    );
   });
 
   testWidgets('the controller cues a gesture and lets go when disposed', (

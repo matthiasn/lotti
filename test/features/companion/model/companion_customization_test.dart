@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 
 void main() {
   test('the default draws her exactly as the pitch videos do', () {
@@ -61,11 +62,17 @@ void main() {
         hairStyle: CompanionHairStyle.afro,
         hairColour: CompanionHairColour.auburn,
         outfitId: 'grandma_winter',
+        sass: CompanionSass.sassy,
       ),
     ]) {
       expect(CompanionCustomization.fromJson(custom.toJson()), custom);
     }
     expect(const CompanionCustomization().toJson(), isNot(contains('outfit')));
+  });
+
+  test('she teases by default, a cheeky sass, never a scold', () {
+    expect(const CompanionCustomization().sass, CompanionSass.cheeky);
+    expect(const CompanionCustomization().toJson()['sass'], 'cheeky');
   });
 
   test('a part a newer version wrote falls back to its default', () {
@@ -74,6 +81,7 @@ void main() {
       'hairStyle': 'mohawk',
       'hairColour': 'green',
       'outfit': 'grandma_space',
+      'sass': 'savage',
     });
     expect(read, const CompanionCustomization());
     expect(
@@ -114,6 +122,19 @@ void main() {
       );
     });
 
+    test('writes a changed sass, and keeps one an older read left alone', () {
+      expect(
+        read.copyWith(sass: CompanionSass.warm).toJsonOver(newer),
+        {...newer, 'sass': 'warm'},
+      );
+      // Stored before there was a sass: a change to another part does not
+      // write the default in.
+      expect(
+        read.copyWith(skinTone: CompanionSkinTone.tone4).toJsonOver(newer),
+        isNot(contains('sass')),
+      );
+    });
+
     test('clears an outfit set back to a surprise', () {
       const stored = {
         'skinTone': 'tone1',
@@ -140,6 +161,11 @@ void main() {
       'grandma_rock',
     );
     expect(custom.copyWith(outfitId: () => null).outfitId, isNull);
+    expect(
+      custom.copyWith(sass: CompanionSass.sassy).sass,
+      CompanionSass.sassy,
+    );
+    expect(custom.copyWith(sass: CompanionSass.sassy), isNot(custom));
     expect(custom.copyWith(), custom);
     expect(custom.copyWith().hashCode, custom.hashCode);
   });

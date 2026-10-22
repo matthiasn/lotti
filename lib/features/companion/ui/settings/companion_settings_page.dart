@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
@@ -31,17 +32,38 @@ class CompanionSettingsPage extends StatelessWidget {
 }
 
 /// Where a person makes her their own: her skin tone, her hairstyle and its
-/// colour, and the outfit she wears or none, so she picks one each session.
+/// colour, the outfit she wears or none, so she picks one each session, and
+/// how much sass she reads with.
 ///
 /// She stands above the choices, head to toe and as a portrait, in what is
 /// chosen; every change shows at once and is stored
-/// ([companionCustomizationProvider]). Shared by the mobile page and the
-/// desktop settings panel.
-class CompanionSettingsBody extends ConsumerWidget {
+/// ([companionCustomizationProvider]). A sass picked shows too: she takes
+/// a slip that way ([companionReaction], [companionSignOff]). Shared by the
+/// mobile page and the desktop settings panel.
+class CompanionSettingsBody extends ConsumerStatefulWidget {
   const CompanionSettingsBody({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CompanionSettingsBody> createState() =>
+      _CompanionSettingsBodyState();
+}
+
+class _CompanionSettingsBodyState extends ConsumerState<CompanionSettingsBody> {
+  final _preview = CompanionController();
+
+  /// Makes her [sass] and has her show it: how she takes a slip.
+  void _setSass(CompanionSass sass) {
+    ref
+        .read(companionCustomizationProvider.notifier)
+        .set(ref.read(companionCustomizationProvider).copyWith(sass: sass));
+    final gesture = companionReaction(-2, sass: sass).gesture;
+    if (gesture != null) _preview.play(gesture);
+    final face = companionSignOff(const [-2], sass: sass);
+    if (face != null) _preview.flourish(face);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final custom = ref.watch(companionCustomizationProvider);
     final controller = ref.read(companionCustomizationProvider.notifier);
     final look = ref.watch(companionLookProvider);
@@ -68,6 +90,7 @@ class CompanionSettingsBody extends ConsumerWidget {
                         look: look,
                         stage: true,
                         autoGestures: false,
+                        controller: _preview,
                       ),
                     ),
                     SizedBox(width: spacing.step4),
@@ -141,6 +164,21 @@ class CompanionSettingsBody extends ConsumerWidget {
               ],
             ),
             SettingsFormSection(
+              title: messages.companionSettingsSassLabel,
+              description: messages.companionSettingsSassDescription,
+              children: [
+                DsSegmentedToggle<CompanionSass>(
+                  expand: true,
+                  selected: custom.sass,
+                  onChanged: _setSass,
+                  segments: [
+                    for (final sass in CompanionSass.values)
+                      DsSegment(sass, sassName(messages, sass)),
+                  ],
+                ),
+              ],
+            ),
+            SettingsFormSection(
               title: messages.companionSettingsOutfitLabel,
               description: messages.companionSettingsOutfitDescription,
               children: [
@@ -207,3 +245,10 @@ String outfitName(AppLocalizations m, CompanionLook outfit) =>
       'grandma_winter' => m.companionSettingsOutfitWinter,
       _ => m.companionSettingsOutfitEveryday,
     };
+
+/// [sass]'s name in the picker.
+String sassName(AppLocalizations m, CompanionSass sass) => switch (sass) {
+  CompanionSass.warm => m.companionSettingsSassWarm,
+  CompanionSass.cheeky => m.companionSettingsSassCheeky,
+  CompanionSass.sassy => m.companionSettingsSassSassy,
+};

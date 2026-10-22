@@ -185,7 +185,7 @@ void drawAnimalFace(Canvas canvas, CompanionLook look, CompanionPose p) {
       c,
       Offset(s * 20 + fx, -7 + fy),
       s,
-      p.blink,
+      p.blinkOf(s),
       p.squint,
       p.gaze,
       irisRadius: panda ? 8.6 : 8.4,

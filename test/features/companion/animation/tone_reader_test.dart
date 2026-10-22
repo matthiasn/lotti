@@ -1,11 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/tone_reader.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 
 /// The approval of the single cue [text] reads as.
 int? _one(String text) {
   final cues = readTones(text);
   expect(cues, hasLength(1), reason: text);
   return cues.single.approval;
+}
+
+/// The beat [text] turns on: that of its one cue with a beat, or null.
+SassBeat? _beat(String text) {
+  final beats = readTones(text).where((c) => c.beat != null);
+  expect(beats.length, lessThanOrEqualTo(1), reason: text);
+  return beats.singleOrNull?.beat;
 }
 
 void main() {
@@ -16,6 +24,13 @@ void main() {
         _one('You finished the migration, well done!'),
         greaterThan(_one('Good progress on the parser.')!),
       );
+    });
+
+    test('work that landed reads as approval', () {
+      expect(_one('The parser shipped.'), greaterThan(0));
+      expect(_one('The fix is merged and released.'), greaterThan(0));
+      expect(_one('The crash is resolved.'), greaterThan(0));
+      expect(_one('The parser is not merged.'), lessThan(0));
     });
 
     test('what needs work reads as disapproval', () {
@@ -111,6 +126,106 @@ void main() {
 
   test('a cue that repeats the one before it is left out', () {
     final cues = readTones('Four things. Three meetings. One walk.');
-    expect(cues, [(offset: 0, approval: null)]);
+    expect(cues, [(offset: 0, approval: null, beat: null)]);
+  });
+
+  group('beats', () {
+    test('a question, an exclamation', () {
+      expect(_beat('Did you look at the docs?'), SassBeat.question);
+      expect(_beat('Four things today!'), SassBeat.exclaim);
+      expect(_beat('Four things today.'), isNull);
+    });
+
+    test('the catch after a "but", in English and German', () {
+      expect(_beat('The parser ships, but the docs wait.'), SassBeat.turn);
+      expect(_beat('However, the vendor answers on Friday.'), SassBeat.turn);
+      expect(_beat('Der Parser läuft, aber die Doku fehlt.'), SassBeat.turn);
+    });
+
+    test('the same thing again, and the wait over', () {
+      expect(_beat('The docs are late again.'), SassBeat.again);
+      expect(_beat('The tests are still red.'), SassBeat.again);
+      expect(_beat('Die Doku ist immer noch offen.'), SassBeat.again);
+      expect(_beat('The parser finally shipped.'), SassBeat.atLast);
+      expect(_beat('At last, the parser shipped.'), SassBeat.atLast);
+      expect(_beat('Der Parser ist endlich fertig.'), SassBeat.atLast);
+    });
+
+    test('words outrank the stop: "finally" before a question', () {
+      expect(_beat('Is it finally done?'), SassBeat.atLast);
+      expect(_beat('But why?'), SassBeat.turn);
+    });
+
+    test('a whole word, never a part of one', () {
+      // "but" inside "button", "still" inside "stillness", "at last"
+      // inside "at lasting".
+      expect(_beat('Press the button.'), isNull);
+      expect(_beat('Enjoy the stillness.'), isNull);
+      expect(_beat('Aim at lasting change.'), isNull);
+    });
+
+    test('a beat is kept in the same tone, so a run of praise gets faces', () {
+      final cues = readTones(
+        'Well done. Great job! You finally finished it.',
+      );
+      expect(cues.map((c) => c.beat), [
+        null,
+        SassBeat.exclaim,
+        SassBeat.atLast,
+      ]);
+      expect(cues.every((c) => (c.approval ?? 0) > 0), isTrue);
+    });
+
+    group('timing', () {
+      test("a word's beat is cued at the word, the tone at the sentence", () {
+        const text =
+            'The migration completed after a long wait, but the tests failed.';
+        final cues = readTones(text);
+        expect(cues.map((c) => (c.offset, c.beat)), [
+          (0, null),
+          (text.indexOf('but'), SassBeat.turn),
+        ]);
+        // Both carry the sentence's tone.
+        expect(cues.first.approval, cues.last.approval);
+      });
+
+      test('a phrase is cued at its first word', () {
+        const atLast = 'The parser shipped at last.';
+        expect(readTones(atLast).last.offset, atLast.indexOf('at last'));
+        const still = 'Die Doku ist immer noch offen.';
+        expect(readTones(still).last.offset, still.indexOf('immer'));
+      });
+
+      test('the first time a word turns up is its beat', () {
+        const text = 'Again the docs, and again the tests.';
+        expect(readTones(text).last.offset, 0);
+        const later = 'The docs again, and again the tests.';
+        expect(readTones(later).last.offset, later.indexOf('again'));
+      });
+
+      test('a beat on the first word is one cue, not two', () {
+        expect(readTones('But why?'), [
+          (offset: 0, approval: null, beat: SassBeat.turn),
+        ]);
+      });
+
+      test('a question or an exclamation is cued at its start', () {
+        const text = 'Four things today. Did you look at them?';
+        expect(readTones(text).last, (
+          offset: text.indexOf(' Did'),
+          approval: null,
+          beat: SassBeat.question,
+        ));
+      });
+
+      test('a word beat in a later sentence counts from that sentence', () {
+        const text = 'Four things today. The docs are late again.';
+        expect(readTones(text).last.offset, text.indexOf('again'));
+      });
+    });
+
+    test('a heading is never a beat', () {
+      expect(readTones('## Done again?\n').single.beat, isNull);
+    });
   });
 }

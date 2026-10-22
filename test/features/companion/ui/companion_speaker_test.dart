@@ -10,6 +10,7 @@ import 'package:lotti/features/companion/model/companion_gesture.dart';
 import 'package:lotti/features/companion/model/companion_look.dart';
 import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
@@ -191,6 +192,22 @@ void main() {
       view(tester).look.palette.dress,
       CompanionLook.grandmaWinter.palette.dress,
     );
+  });
+
+  testWidgets('reads with the sass the person chose, and follows a change', (
+    tester,
+  ) async {
+    await pumpSpeaker(tester);
+    expect(view(tester).sass, const CompanionCustomization().sass);
+
+    ProviderScope.containerOf(
+          tester.element(find.byType(CompanionSpeaker)),
+        )
+        .read(companionCustomizationProvider.notifier)
+        .set(const CompanionCustomization(sass: CompanionSass.sassy));
+    await tester.pump();
+
+    expect(view(tester).sass, CompanionSass.sassy);
   });
 
   testWidgets('stands her on the stage when the host asks', (tester) async {

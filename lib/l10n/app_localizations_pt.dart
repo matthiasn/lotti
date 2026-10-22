@@ -3850,6 +3850,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Inverno';
 
   @override
+  String get companionSettingsSassCheeky => 'Marota';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Como ela reage ao que lê para ti: um incentivo caloroso, uma provocação marota ou avó a sério, com olhos revirados e o olhar por cima dos óculos.';
+
+  @override
+  String get companionSettingsSassLabel => 'Atrevimento';
+
+  @override
+  String get companionSettingsSassSassy => 'Atrevida';
+
+  @override
+  String get companionSettingsSassWarm => 'Calorosa';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Tom de pele $number';
   }

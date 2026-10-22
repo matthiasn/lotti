@@ -1,27 +1,33 @@
 import 'package:lotti/features/companion/model/companion_reaction.dart';
 
 /// Where a stretch of the words starts and how it reads: an approval on the
-/// `companionReaction` scale, or null where it reads neither way.
-typedef ToneCue = ({int offset, int? approval});
+/// `companionReaction` scale, or null where it reads neither way, and the
+/// [SassBeat] its sentence turns on, if any.
+typedef ToneCue = ({int offset, int? approval, SassBeat? beat});
 
 /// Reads how each sentence of [text] lands, on the device and without a
-/// model: praise, neither, or something that needs work.
+/// model: praise, neither, or something that needs work — and where a
+/// sentence asks, exclaims, turns on a "but", says "again" or "finally",
+/// the beat she pulls a face on (`companionBeat`).
 ///
 /// [text] is what the voice speaks, Markdown included. Every line and every
-/// sentence within a line gets a cue at its first character. A sentence's
+/// sentence within a line gets a cue at its first character, and a beat on
+/// a word ("but", "again", "finally") one at that word. A sentence's
 /// own words decide its tone; one that reads neither way takes the tone of
 /// its section, set by the heading above it — so the lines under "⚠️ Risks"
 /// keep her concerned and the ones under "✅ Achieved" keep her pleased.
 ///
 /// The words are a short English and German list, and a few emoji that read
 /// the same in any language; a report in another language reads neither way
-/// except by its emoji. A cue repeating the one before it is left out.
+/// except by its emoji. A cue repeating the one before it, with no beat of
+/// its own, is left out; a beat is kept even in the same tone, so a run of
+/// praise still gets its faces.
 List<ToneCue> readTones(String text) {
   final cues = <ToneCue>[];
   int? section;
-  void add(int offset, int? approval) {
-    if (cues.isEmpty || cues.last.approval != approval) {
-      cues.add((offset: offset, approval: approval));
+  void add(int offset, int? approval, [SassBeat? beat]) {
+    if (beat != null || cues.isEmpty || cues.last.approval != approval) {
+      cues.add((offset: offset, approval: approval, beat: beat));
     }
   }
 
@@ -36,7 +42,14 @@ List<ToneCue> readTones(String text) {
         add(lineStart, section);
       } else {
         for (final match in _sentence.allMatches(line)) {
-          add(lineStart + match.start, _approval(match[0]!) ?? section);
+          final sentence = match[0]!;
+          final start = lineStart + match.start;
+          final approval = _approval(sentence) ?? section;
+          final beat = _beat(sentence);
+          // The tone from the sentence's start; a beat on a later word
+          // gets a cue of its own there.
+          if (beat == null || beat.at > 0) add(start, approval);
+          if (beat != null) add(start + beat.at, approval, beat.beat);
         }
       }
     }
@@ -53,6 +66,43 @@ final _sentence = RegExp(r'[^.!?]+(?:[.!?]+|$)');
 
 final _token = RegExp(r"[\p{L}\p{N}']+", unicode: true);
 
+List<String> _tokens(String lower) => [
+  for (final m in _token.allMatches(lower)) m[0]!,
+];
+
+/// The beat [sentence] turns on and where in it, or null. Its words outrank
+/// its stop: "Is it finally done?" is a "finally" before it is a question.
+///
+/// A word's beat is `at` the word's first character, so her face lands as
+/// the voice says it, not when the sentence starts. A stop's beat — a
+/// question, an exclamation — is at 0: a face that asks shows it from the
+/// first word.
+({SassBeat beat, int at})? _beat(String sentence) {
+  final matches = _token.allMatches(sentence).toList();
+  final tokens = [for (final m in matches) m[0]!.toLowerCase()];
+  for (final (beat, words, phrases) in _wordBeats) {
+    for (var i = 0; i < tokens.length; i++) {
+      if (words.contains(tokens[i]) ||
+          phrases.any((phrase) => _startsAt(tokens, i, phrase))) {
+        return (beat: beat, at: matches[i].start);
+      }
+    }
+  }
+  final end = sentence.trimRight();
+  if (end.endsWith('?')) return (beat: SassBeat.question, at: 0);
+  if (end.endsWith('!')) return (beat: SassBeat.exclaim, at: 0);
+  return null;
+}
+
+/// Whether [words] appear in [tokens] from [i] on, word for word.
+bool _startsAt(List<String> tokens, int i, List<String> words) {
+  if (i + words.length > tokens.length) return false;
+  for (var j = 0; j < words.length; j++) {
+    if (tokens[i + j] != words[j]) return false;
+  }
+  return true;
+}
+
 /// The approval [words] read as, or null where they read neither way.
 int? _approval(String words) {
   final lower = words.toLowerCase();
@@ -60,7 +110,7 @@ int? _approval(String words) {
   for (final MapEntry(key: mark, value: weight) in _marks.entries) {
     if (lower.contains(mark)) score += weight;
   }
-  final tokens = [for (final m in _token.allMatches(lower)) m[0]!];
+  final tokens = _tokens(lower);
   var i = 0;
   while (i < tokens.length) {
     // A phrase counts once, as a whole, and its words not again.
@@ -85,12 +135,9 @@ int? _approval(String words) {
 /// The phrase starting at token [i], matched word for word, or null.
 ({int weight, int length})? _phraseAt(List<String> tokens, int i) {
   for (final (:words, :weight) in _phrases) {
-    if (i + words.length > tokens.length) continue;
-    var matches = true;
-    for (var j = 0; j < words.length && matches; j++) {
-      matches = tokens[i + j] == words[j];
+    if (_startsAt(tokens, i, words)) {
+      return (weight: weight, length: words.length);
     }
-    if (matches) return (weight: weight, length: words.length);
   }
   return null;
 }
@@ -152,6 +199,11 @@ const _exact = {
   'super': 2,
   'toll': 2,
   'fertig': 2,
+  'shipped': 2,
+  'merged': 2,
+  'released': 2,
+  'resolved': 2,
+  'fixed': 1,
   'good': 1,
   'nice': 1,
   'gut': 1,
@@ -209,3 +261,36 @@ const _stems = {
   'verzög': -1,
   'fehlt': -1,
 };
+
+/// "Finally", at last: the wait is over, and she has noticed how long it was.
+const _atLastWords = {'finally', 'endlich'};
+const _atLastPhrases = [
+  ['at', 'last'],
+];
+
+/// The same thing once more.
+const _againWords = {'again', 'still', 'wieder', 'erneut', 'nochmal'};
+const _againPhrases = [
+  ['immer', 'noch'],
+  ['noch', 'immer'],
+];
+
+/// The catch: what comes after the "but".
+const _turnWords = {
+  'but',
+  'however',
+  'although',
+  'though',
+  'aber',
+  'jedoch',
+  'allerdings',
+  'trotzdem',
+};
+
+/// The beats a word sets off, with its words and phrases, in the order they
+/// outrank each other: a "finally" beats an "again", an "again" a "but".
+const _wordBeats = <(SassBeat, Set<String>, List<List<String>>)>[
+  (SassBeat.atLast, _atLastWords, _atLastPhrases),
+  (SassBeat.again, _againWords, _againPhrases),
+  (SassBeat.turn, _turnWords, []),
+];

@@ -3810,6 +3810,22 @@ class AppLocalizationsDa extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Vinter';
 
   @override
+  String get companionSettingsSassCheeky => 'Drilsk';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Hvordan hun tager det, hun læser op for dig: en varm opmuntring, en drilsk bemærkning eller fuld bedstemor, med himmelvendte øjne og blikket over brillerne.';
+
+  @override
+  String get companionSettingsSassLabel => 'Frækhed';
+
+  @override
+  String get companionSettingsSassSassy => 'Fræk';
+
+  @override
+  String get companionSettingsSassWarm => 'Varm';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Hudfarve $number';
   }

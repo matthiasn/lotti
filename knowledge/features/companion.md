@@ -15,11 +15,11 @@ sources:
   - id: animator
     resource: ../../lib/features/companion/animation/companion_animator.dart
     title: CompanionAnimator
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: view
     resource: ../../lib/features/companion/ui/companion_view.dart
     title: CompanionView and CompanionController
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: gesture
     resource: ../../lib/features/companion/model/companion_gesture.dart
     title: CompanionGesture and GestureName
@@ -27,7 +27,11 @@ sources:
   - id: reaction
     resource: ../../lib/features/companion/model/companion_reaction.dart
     title: companionReaction, CompanionCue and CompanionSass
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
+  - id: flourish
+    resource: ../../lib/features/companion/model/companion_flourish.dart
+    title: CompanionFlourish, the faces she pulls for a moment
+    last_modified: 2026-10-22
   - id: arm-solver
     resource: ../../lib/features/companion/rig/arm_solver.dart
     title: solveArm and its preferred elbow
@@ -51,7 +55,7 @@ sources:
   - id: speaker
     resource: ../../lib/features/companion/ui/companion_speaker.dart
     title: CompanionSpeaker
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: spoken-track
     resource: ../../lib/features/companion/state/spoken_track.dart
     title: loadSpokenTrack and spokenTrackLoaderProvider
@@ -59,11 +63,11 @@ sources:
   - id: tone-reader
     resource: ../../lib/features/companion/animation/tone_reader.dart
     title: readTones, the on-device tone of each sentence
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: tone-track
     resource: ../../lib/features/companion/animation/tone_track.dart
     title: ToneTrack, the tones timed by the playhead
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: look-controller
     resource: ../../lib/features/companion/state/companion_look_controller.dart
     title: companionOutfitProvider and companionLookProvider
@@ -71,7 +75,7 @@ sources:
   - id: customization
     resource: ../../lib/features/companion/state/companion_customization_controller.dart
     title: companionCustomizationProvider, her stored customization
-    last_modified: 2026-10-19
+    last_modified: 2026-10-22
   - id: parts
     resource: ../../lib/features/companion/model/companion_parts.dart
     title: Skin tones, hairstyles and hair colours
@@ -292,7 +296,7 @@ bust both watch it, and no host passes a look. It is two things together:
 
 ```mermaid
 flowchart LR
-  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit?]
+  DB[(SettingsDb<br/>COMPANION_CUSTOMIZATION)] -->|loaded once| C[companionCustomizationProvider<br/>skin tone · hairstyle · hair colour · outfit? · sass]
   C -->|outfitId| O[companionOutfitProvider<br/>the chosen outfit, or a random one]
   R[companionOutfitRandomProvider] --> O
   Stage[stage palette button] -->|next| O
@@ -300,6 +304,7 @@ flowchart LR
   C -->|dress| L[companionLookProvider]
   O --> L
   L --> Hosts[CompanionSpeaker · GoalCompanionBust · settings preview]
+  C -->|sass| Speaker[CompanionSpeaker]
 ```
 
 - **The outfit** (`companionOutfitProvider`): the one chosen in her
@@ -310,7 +315,8 @@ flowchart LR
   outfits and wrapping, for the session only; a new choice in settings
   starts over from that choice.
 - **The customization** (`companionCustomizationProvider`): her skin tone,
-  hairstyle, hair colour and outfit, stored as JSON under
+  hairstyle, hair colour, outfit and sass (default `cheeky`), stored as JSON
+  under
   `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
   `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at
   the default — Lotti as the videos draw her — and refines when the load
@@ -361,7 +367,9 @@ for the hand in every gesture (a test walks each gesture through its phases).
 
 A host cues her through `CompanionController.play` (a gesture once) or keeps a
 gesture up with `CompanionView.holding`, which her ticker replays whenever it
-relaxes — no timer. `CompanionController.gesture` reads the gesture in play.
+relaxes — no timer. `CompanionController.gesture` reads the gesture in play;
+`CompanionController.flourish` pulls a face and `flourishing` reads it (see
+[flourishes](#flourishes-and-beats)).
 
 # Reactions
 
@@ -372,9 +380,14 @@ hold. Warm is encouraging whatever happened; sassy is hands on hips, slow
 claps and eye rolls. Two rules hold across the table, and its tests keep
 them: her smile never falls as approval rises, and warm uses none of the
 sassy faces or gestures. Disapproval stops at sass: no reaction is hurt or
-sad, and none is ever tied to a notification. Nothing passes a sass other
-than warm yet; the coaching agent's charter is meant to choose it (plan
-2026-10-12, "Revision").
+sad, and none is ever tied to a notification.
+
+The sass is the person's: Settings › Preferences › Companion stores it in her
+customization (`CompanionCustomization.sass`, default `cheeky`), and
+`CompanionSpeaker` hands it to her view, so every read — the AI summary, the
+Day briefing, onboarding — reacts with it. Picking a level in settings has
+the preview take a slip that way, so the difference shows before a read. The
+goal card does not read it: it uses the table's warm end by design.
 
 # Her face on the words
 
@@ -414,7 +427,76 @@ stateDiagram-v2
 In a reaction her mood is `companionReaction(approval, sass:).mood`; the
 gesture is played once when the tone changes, not held, so her talking
 gestures resume after it. `sass` is warm unless the view is given another;
-no host gives one yet.
+`CompanionSpeaker` gives the person's.
+
+# Flourishes and beats
+
+A reaction changes her face only when the tone changes, so a run of praise
+would get one thumbs up and then nothing. On top of it runs a second,
+face-only layer.
+
+**Flourishes** (`CompanionFlourish`) are faces she pulls for a moment: a
+brow pop, one brow up, the side-eye, the look over the glasses (chin down,
+eyes up), a wink, a smirk, narrowed eyes, a head tilt. Each is a handful of
+face and head offsets with an envelope — a quick rise, a hold, a fade over
+its last third — that `CompanionAnimator.flourish` adds to the mood's and
+the gesture's targets, pulling her gaze towards its own unless `lookAt` fixes
+it. It never touches the arms, so it lands in the middle of a talking
+gesture or a held reaction. The wink is the one that needs the pose:
+`CompanionPose.wink` shuts one eye on top of `blink`, and both head painters
+draw each eye at `blinkOf(side)`; it is applied unsprung, so it stays quick.
+
+```mermaid
+stateDiagram-v2
+  [*] --> None
+  None --> Showing: flourish(face)
+  Showing --> Showing: flourish(another) replaces it
+  Showing --> None: its duration runs out
+```
+
+**Beats** (`SassBeat`) are what a sentence turns on, read by `readTones`
+alongside its tone: a question, an exclamation, a turn ("but", "however",
+"aber"), the same thing again ("again", "still", "immer noch") and the wait
+over ("finally", "at last", "endlich"). Words outrank the stop, so "Is it
+finally done?" is a "finally". A cue with a beat is kept even in the same
+tone. A word's beat gets a cue of its own at the word, so the side-eye lands
+on the "but", not on the sentence's first word; a question or an exclamation
+is cued at the sentence's start. `companionBeat(beat, approval, sass:)` maps each to a flourish: warm
+only tilts her head or pops her brows; cheeky and sassy add the side-eye on a
+turn, narrowed eyes or the look over the glasses on a slip said again, and a
+smirk or a wink on praise exclaimed. Good news said "again" or "still" is
+never scolded.
+
+**Her last word** (`companionSignOff(approvals, sass:)`): when a read ends,
+the view looks at every approval it held and pulls one more face — a wink
+for all good news (a smirk, sassy), for only trouble a head tilt, a raised
+brow or the look over the glasses, and for both the side-eye at full sass.
+Words that read neither way leave her quiet. The speaker's playhead goes
+null for a pause and for a stop alike (`TtsPlaybackStatus.stopped` covers a
+finish and a user stop), so the view tells a read heard out by how far the
+voice got: within a quarter second of `ToneTrack.end`, when the last word is
+spoken (the clip's end for a track built without one). A read cut short
+has no last word and keeps its place, so a resume does not pull the current
+beat's face again.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Quiet
+  Quiet --> Reading: playhead inside a tone
+  Reading --> Reading: a new cue (its beat's face, if any)
+  Reading --> Paused: playhead null short of the words' end
+  Paused --> Reading: the same tone again
+  Paused --> Reading: another tone (starts afresh)
+  Reading --> Quiet: playhead gone at the words' end / companionSignOff
+```
+
+```mermaid
+flowchart LR
+  P[playhead] --> T[ToneTrack.indexAt]
+  T -->|new cue with a beat| B[companionBeat] --> F[animator.flourish]
+  T -->|tone changes| R[companionReaction] --> G[animator.play gesture]
+  T -->|words heard out, then over| S[companionSignOff] --> F
+```
 
 # Gotchas
 

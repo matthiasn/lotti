@@ -3876,6 +3876,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get companionSettingsOutfitWinter => 'Iarnă';
 
   @override
+  String get companionSettingsSassCheeky => 'Poznașă';
+
+  @override
+  String get companionSettingsSassDescription =>
+      'Cum reacționează la ceea ce vă citește: o încurajare caldă, o tachinare poznașă sau bunica în toată splendoarea, cu ochii dați peste cap și privirea pe deasupra ochelarilor.';
+
+  @override
+  String get companionSettingsSassLabel => 'Îndrăzneală';
+
+  @override
+  String get companionSettingsSassSassy => 'Obraznică';
+
+  @override
+  String get companionSettingsSassWarm => 'Caldă';
+
+  @override
   String companionSettingsSkinTone(int number) {
     return 'Nuanța pielii $number';
   }
