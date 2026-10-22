@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -646,6 +647,32 @@ void main() {
       ).called(1);
     },
   );
+
+  test('each catch-up walk is timed in the sync cost summary', () async {
+    final room = MockRoom();
+    when(() => room.id).thenReturn(roomId);
+    final runner = _RecordingRunner();
+    final meterLogger = MockDomainLogger();
+    when(() => meterLogger.enabledDomains).thenReturn({LogDomain.sync});
+    final meter = SyncCostMeter(logger: meterLogger);
+    final coordinator = BridgeCoordinator(
+      client: client,
+      currentRoomId: () => roomId,
+      resolveRoom: () async => room,
+      readMarker: () async => const BridgeMarker(
+        lastAppliedTs: 5000,
+        lastAppliedEventId: r'$anchor-event',
+      ),
+      bootstrapRunner: runner.runner,
+      logging: logging,
+      costMeter: meter,
+    );
+
+    await coordinator.bridgeNow();
+
+    expect(runner.calls, hasLength(1));
+    expect(meter.summary(), matches(RegExp(r'bridge \d+ms/1 ')));
+  });
 
   test(
     'marker with anchor event id forwards both through to the runner — '

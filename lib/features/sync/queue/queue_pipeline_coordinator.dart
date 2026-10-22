@@ -6,6 +6,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
@@ -73,7 +74,9 @@ class QueuePipelineCoordinator {
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
     QueueMarkerSeeder? seederOverride,
-  }) : _syncDb = syncDb,
+    SyncCostMeter? costMeter,
+  }) : _costMeter = costMeter ?? SyncCostMeter.inert(),
+       _syncDb = syncDb,
        _settingsDb = settingsDb,
        _logging = logging,
        _syncEventTrust = syncEventTrust,
@@ -103,6 +106,7 @@ class QueuePipelineCoordinator {
           prepareBatch: _applyAdapter.bindPrepareBatch(),
           logging: _logging,
           activityGate: _activityGate,
+          costMeter: _costMeter,
         );
     _bridge =
         bridgeOverride ??
@@ -114,9 +118,13 @@ class QueuePipelineCoordinator {
           bootstrapRunner: _runBootstrap,
           logging: _logging,
           claimGap: _claimCatchUpRange,
+          costMeter: _costMeter,
         );
   }
 
+  /// Times the live admission and timeline paths, and the worker and bridge
+  /// built here, for the sync cost summary (ADR 0142).
+  final SyncCostMeter _costMeter;
   final SyncDatabase _syncDb;
   final SettingsDb _settingsDb;
   final MatrixSessionManager _sessionManager;
@@ -460,7 +468,10 @@ class QueuePipelineCoordinator {
             MatrixEventClassifier.isSyncPayloadEvent(event))) {
       return Future<void>.value();
     }
-    final future = _handleLiveEvent(event);
+    final future = _costMeter.measure(
+      SyncCostSection.liveEvent,
+      () => _handleLiveEvent(event),
+    );
     _trackEnqueue(future);
     return future;
   }

@@ -5,6 +5,7 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/sync_sequence_head_tracker.dart';
+import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
@@ -43,7 +44,9 @@ class BackfillRequestService {
     Duration? requestRetryCooldown,
     int? maxPerHost,
     Duration? amnestyWindow,
-  }) : _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
+    SyncCostMeter? costMeter,
+  }) : _costMeter = costMeter ?? SyncCostMeter.inert(),
+       _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
        // Use processing batch size for per-cycle limits (smaller to avoid
        // overwhelming the network). backfillBatchSize is for DB fetch limits.
        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,
@@ -82,6 +85,9 @@ class BackfillRequestService {
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
   final OnboardingSyncService? _onboardingSyncService;
+
+  /// Times each automatic pass for the sync cost summary (ADR 0142).
+  final SyncCostMeter _costMeter;
   final Duration _requestInterval;
   final int _maxBatchSize;
   final int _maxRequestCount;
@@ -213,8 +219,18 @@ class BackfillRequestService {
   }
 
   /// Runs one automatic pass with the configured gates, quotas and cooldowns.
-  Future<int> processAutomaticBackfill() =>
-      _processBackfillRequests(useLimits: true);
+  Future<int> processAutomaticBackfill() => _automaticPass();
+
+  /// One bounded automatic pass, timed for the sync cost summary — the
+  /// periodic one and the one a queue drain triggers alike.
+  Future<int> _automaticPass({bool bypassDebounce = false}) =>
+      _costMeter.measure(
+        SyncCostSection.backfillPass,
+        () => _processBackfillRequests(
+          useLimits: true,
+          bypassDebounce: bypassDebounce,
+        ),
+      );
 
   /// Trigger an immediate automatic backfill pass instead of waiting for the
   /// next periodic timer tick.
@@ -246,9 +262,7 @@ class BackfillRequestService {
       'nudge after queue drain (debounce bypassed)',
       subDomain: 'backfill.nudge',
     );
-    unawaited(
-      _processBackfillRequests(useLimits: true, bypassDebounce: true),
-    );
+    unawaited(_automaticPass(bypassDebounce: true));
   }
 
   /// Re-request entries that are in 'requested' status but haven't been received.

@@ -257,7 +257,9 @@ class _QueueCoordinatorTestSetup {
   QueuePipelineCoordinator build({
     AttachmentIngestor? attachmentIngestor,
     SyncEventTrust? syncEventTrust,
+    SyncCostMeter? costMeter,
   }) => QueuePipelineCoordinator(
+    costMeter: costMeter,
     syncEventTrust: syncEventTrust ?? AdmittingSyncEventTrust(),
     syncDb: syncDb,
     settingsDb: settingsDb,
