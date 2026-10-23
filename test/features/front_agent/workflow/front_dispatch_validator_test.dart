@@ -158,6 +158,12 @@ void main() {
         validate([segment(span: gardenSpan, kind: 'hologram')]).error,
         contains('destination.kind'),
       );
+      final notAnObject = segment(span: gardenSpan)..['destination'] = 'task';
+      expect(validate([notAnObject]).error, contains('destination.kind'));
+      final blankNote = validate([
+        segment(span: gardenSpan)..['note'] = '   ',
+      ]);
+      expect(blankNote.dispatch!.segments.first.note, isNull);
       expect(
         validate([segment(span: gardenSpan, intent: 'wish')]).error,
         contains('intent'),

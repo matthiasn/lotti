@@ -489,6 +489,16 @@ void main() {
     });
   });
 
+  test('a payload that is not a dispatch record reads back as nothing', () {
+    expect(frontDispatchFromPayload(makeTestMessagePayload()), isNull);
+    expect(
+      frontDispatchFromPayload(
+        makeTestMessagePayload(content: const {'segments': <Object?>[]}),
+      )?.segments,
+      isEmpty,
+    );
+  });
+
   group('a question', () {
     test('is persisted as its own record with the options', () async {
       seedMessage();

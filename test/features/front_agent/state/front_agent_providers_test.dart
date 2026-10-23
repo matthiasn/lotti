@@ -2,14 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/service/front_agent_service.dart';
+import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -157,6 +166,87 @@ void main() {
       // Nothing configured and no built-in model present: no route.
       expect(setup, isNull);
       verify(() => aiConfigRepository.getDefaultProfileId()).called(1);
+    });
+
+    test('hands the registry the resolved setup when the built-in model '
+        'is configured', () async {
+      final provider =
+          AiConfig.inferenceProvider(
+                id: 'melious-provider',
+                baseUrl: 'https://api.melious.ai',
+                apiKey: 'key',
+                name: 'Melious',
+                createdAt: DateTime(2026),
+                inferenceProviderType: InferenceProviderType.melious,
+              )
+              as AiConfigInferenceProvider;
+      final flash =
+          AiConfig.model(
+                id: 'model-flash',
+                name: 'Flash',
+                providerModelId: meliousDeepseekV41FlashModelId,
+                inferenceProviderId: provider.id,
+                createdAt: DateTime(2026),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: true,
+                supportsFunctionCalling: true,
+                description: 'flash',
+              )
+              as AiConfigModel;
+      when(
+        () => repository.getEntity(frontAgentId),
+      ).thenAnswer((_) async => identity);
+      when(
+        () => aiConfigRepository.getDefaultProfileId(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [flash]);
+      when(
+        () => aiConfigRepository.getConfigById(provider.id),
+      ).thenAnswer((_) async => provider);
+
+      final setup =
+          await container.read(_setupProvider(frontAgentId).future)
+              as ResolvedAgentSetup?;
+
+      expect(setup?.status, AgentSetupResolutionStatus.resolved);
+      expect(setup?.profile?.thinkingModelId, meliousDeepseekV41FlashModelId);
+    });
+  });
+
+  group('wiring', () {
+    test('every provider of the feature builds from its leaves', () {
+      final wired = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          journalDbProvider.overrideWithValue(MockJournalDb()),
+          agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          agentServiceProvider.overrideWithValue(MockAgentService()),
+          wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+          updateNotificationsProvider.overrideWithValue(
+            MockUpdateNotifications(),
+          ),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            MockCloudInferenceRepository(),
+          ),
+          conversationRepositoryProvider.overrideWith(
+            () => MockConversationRepository(MockConversationManager()),
+          ),
+        ],
+      );
+      addTearDown(wired.dispose);
+
+      // No full-text index is registered in a bare test, so the builder
+      // has no corpus matcher.
+      final builder = wired.read(frontRoutingIndexBuilderProvider);
+      expect(builder.fts5Db, isNull);
+      expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
+      expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
+      expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
     });
   });
 }

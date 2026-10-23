@@ -199,7 +199,13 @@ void main() {
       await s.processToolCalls(
         toolCalls: [
           _call('read_tldr', {
-            'ids': ['task:garden', 'person:pip', 'task:unknown', 'garbage'],
+            'ids': [
+              'task:garden',
+              'person:pip',
+              'task:unknown',
+              'garbage',
+              'hologram:x',
+            ],
           }),
           _call('read_tldr', {
             'ids': ['task:garden'],
@@ -213,7 +219,8 @@ void main() {
 task:garden: The hose is the last thing to buy.
 person:pip: no TL;DR yet
 task:unknown: not listed
-garbage: not listed''');
+garbage: not listed
+hologram:x: not listed''');
       expect(answers.last, frontTldrExhaustedAnswer);
       expect(s.lookupCalls, 1);
     });
