@@ -36,6 +36,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
@@ -382,6 +383,7 @@ List<Override> appFeatureWiringOverrides() => [
       ...ref.watch(dayAgentWakeRunnersProvider),
       ...ref.watch(goalAgentWakeRunnersProvider),
       ...ref.watch(relationshipAgentWakeRunnersProvider),
+      ...ref.watch(frontAgentWakeRunnersProvider),
     },
   ),
   // A speech model download or removal re-advertises this node's
@@ -399,6 +401,7 @@ List<Override> appFeatureWiringOverrides() => [
   ),
   agentResolvedSetupResolversProvider.overrideWithValue({
     AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
+    AgentKinds.frontAgent: resolveFrontAgentSetup,
   }),
   agentRuntimeMaintenanceProvider.overrideWith(
     (ref) => [

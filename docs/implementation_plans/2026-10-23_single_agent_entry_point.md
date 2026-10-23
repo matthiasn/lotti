@@ -430,25 +430,42 @@ checked, not assumed.
 Each slice is one PR, green, flagged, with its tests; nothing in a slice depends
 on a later one. `enable_front_agent` is seeded off until slice 3.
 
-### Slice 0 — the dispatcher without a face (no UI)
+### Slice 0 — the dispatcher without a face (no UI) — landed
 
-- `AgentKinds.frontAgent`, the singleton identity and its lazy creation.
-- `FrontRoutingIndex` and the lift of the corpus snapshot's shared part out of
-  `daily_os_next` into `lib/features/agents` (the day agent keeps its wrapper;
-  byte-stable output is pinned by the existing corpus tests).
-- `FrontAgentWorkflow` + strategy, the `dispatch` contract and its code-side
-  validation, the capped lookups, registration through `agentWakeRunnersProvider`.
-- **The eval first**: penguin-world scenarios in the existing harness
-  (`test/features/ai/eval/support/`) — single intent strong, two near
-  candidates, an open task the truncated index omits, a closed task named by
-  the user (expected: not a destination, she says so), three-intent voice
-  note, nothing matches, "move the dentist", and the 41-call turn as a
-  regression case once its surface is known (decision 6). Reports a
-  confusion matrix, tool calls per turn against the three-call bound, and
-  cache-hit ratio across the cheap tier (`deepseek-v4.1-flash`,
-  `glm-5.3-flash`, `qwen3.5-122b-a10b`). This is where the thresholds and
-  the index format get tuned, before any UI exists.
-- Deterministic unit tests for the index, the validator and the caps.
+What is in `lib/features/front_agent/` (and its README):
+
+- `AgentKinds.frontAgent`, the singleton identity under the fixed id
+  `front_agent` and its lazy, transaction-rechecked creation
+  (`FrontAgentService`).
+- `FrontRoutingIndex` with the caps of 2.3, and the lift of the corpus out
+  of `daily_os_next`: `lib/features/agents/service/open_task_corpus.dart`
+  owns which open tasks are listed and in which order (and the FTS phrase
+  match, ranks included); `DayAgentCorpusService` keeps its row shaping and
+  `blockedBy`, byte-identical, pinned by its existing tests.
+- `FrontAgentWorkflow` + `FrontAgentStrategy`, the `dispatch` contract, the
+  validator (the rules of 2.5 in code), count-and-refuse lookups, the
+  repair round inside the three-call bound, deterministic record ids with a
+  committed-check over all three carriers, and registration through
+  `agentWakeRunnersProvider` and `agentResolvedSetupResolversProvider`
+  (pinned in `test/app_bootstrap_test.dart`). Model resolution is
+  `ProfileResolver.resolveStandalone` — the chain of 2.1 already existed.
+- `FrontChatService` (persist, notify, wake, await) pulled forward from
+  slice 1 so a turn can be driven end to end; the ADR 0069 recovery record
+  stays in slice 1 with the UI.
+- **The eval**: `test/features/ai/eval/front_agent_routing_eval_live_test.dart`
+  over `support/front_agent_routing_scenarios.dart` — single intent strong,
+  two near candidates, a closed task named by the user (expected: not a
+  destination, she says so), three-intent voice note, nothing matches,
+  "push the survey to tomorrow", a project statement (decision 5). Per
+  scenario it reports the outcome, lookups, provider calls against the
+  three-call bound and cached input tokens, to an artifact outside the
+  repository; `FRONT_AGENT_EVAL_MODEL` picks the model. The 41-call turn is
+  added as a regression case once its surface is known (decision 6). The
+  "open task the truncated index omits" case needs a real journal and joins
+  the eval when slice 1 runs it through the workflow.
+- Deterministic tests, one per file, for the index, the validator, the
+  strategy, the contract, the resolution, the workflow, the builder, the
+  services and the providers.
 
 ### Slice 1 — ask anything, she finds who knows (smallest useful slice)
 

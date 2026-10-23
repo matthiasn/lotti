@@ -823,6 +823,25 @@ void main() {
       expect(runners.keys, contains(AgentKinds.dayAgent));
     });
 
+    test('registers the front_agent wake runner and its setup resolver', () {
+      // Without the runner a front-chat wake silently falls through to the
+      // task-agent workflow; without the resolver the agent internals' setup
+      // row looks for a template the front agent does not have.
+      final container = containerFor(realContext());
+      final runners = container.read(agentWakeRunnersProvider);
+
+      expect(runners.keys, contains(AgentKinds.frontAgent));
+      expect(runners[AgentKinds.frontAgent], isNotNull);
+      // And the merge kept every other kind intact.
+      expect(runners.keys, contains(AgentKinds.relationshipAgent));
+      expect(runners.keys, contains(AgentKinds.goalAgent));
+      expect(runners.keys, contains(AgentKinds.dayAgent));
+
+      final resolvers = container.read(agentResolvedSetupResolversProvider);
+      expect(resolvers.keys, contains(AgentKinds.frontAgent));
+      expect(resolvers.keys, contains(AgentKinds.relationshipAgent));
+    });
+
     test('registers relationship runtime maintenance alongside the others', () {
       // Without this no relationship subscription survives a restart and a
       // missed cadence re-arm is never healed.
