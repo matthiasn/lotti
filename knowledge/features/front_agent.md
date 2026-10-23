@@ -74,7 +74,7 @@ flowchart TD
   C --> S[FrontAgentStrategy]
   S -->|dispatch / ask_user / reply_to_user| E{terminal?}
   E -->|no, and a call is left| P[repair instruction once]
-  E -->|no, budget spent| F[WakeResult failed, nothing persisted]
+  E -->|no, budget spent| F[WakeResult failed, no agent output persisted;<br/>the user turn stays durable]
   E -->|yes| O[one transaction: dispatch, ask, reply records<br/>deterministic ids per agent and run]
   O --> D
 ```
@@ -160,8 +160,10 @@ gap containing a word becomes one. The thresholds are the day agent's
 one completion. A turn that ends without a terminal call gets
 `frontDispatchRepairInstruction` once, with whatever is left of the three.
 A turn still without a terminal call after that **fails closed**: the wake
-returns a failed `WakeResult`, nothing is persisted, no reply is invented,
-and the durable user message stays retryable.
+returns a failed `WakeResult` and persists **no agent output** — no
+dispatch, no question, no invented reply. What `FrontChatService` wrote
+before the wake — the user payload and the user message — stays durable,
+which is what makes the turn retryable rather than lost.
 
 # What a turn leaves behind
 

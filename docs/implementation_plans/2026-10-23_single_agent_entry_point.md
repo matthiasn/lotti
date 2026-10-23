@@ -205,9 +205,17 @@ the two leaves a retry trigger; and before a door is invoked the segment is
 **claimed** with a conditional update under a stable idempotency key
 (`<dispatchMessageId>:<segmentIndex>`), so two devices or a retry cannot walk
 the same segment twice — the claim, then the door, then the result ids, the
-`ChangeDispatchIntents` discipline. A door that enqueues a wake does not
-block the walker either; the reply arrives through the projection when it
-lands.
+`ChangeDispatchIntents` discipline. **A door schedules, it never waits:**
+for a goal or person segment the walker persists the specialist's user turn
+and enqueues its wake the way `GoalChatService.sendMessage` does, but
+through a variant that returns the message id *without* awaiting
+`runCompletions` — the awaiting form exists for a composer that holds a
+turn open, not for a walker. The segment is walked once that message is
+durable and the wake enqueued; the walker is complete, and the front
+recovery record is consumed, when every segment is. The specialist's reply
+arrives through the projection when it lands, and a specialist wake that
+fails is the specialist chat's own retryable turn (REQ-14), shown in the
+front thread the same way — never a reason to re-walk the segment.
 
 The chat UI is `AgentChatView` over `agentChatProjectionProvider(front_agent)`,
 extended with a card registry entry for the new `dispatch` action kind (REQ-06:
