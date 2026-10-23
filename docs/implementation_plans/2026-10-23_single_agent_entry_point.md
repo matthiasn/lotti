@@ -1,7 +1,7 @@
 # Single Agent Entry Point: one front agent that dispatches
 
 Date: 2026-10-23
-Status: concept and plan, nothing built
+Status: concept and plan; the owner's decisions on the open questions are in §5 (2026-10-23); slice 0 in progress
 Builds on: [2026-10-12_in_app_agent_avatar.md](2026-10-12_in_app_agent_avatar.md)
 (the companion, whose branch 6 "hold her to talk" this plan re-points),
 [2026-08-08_reusable_chat_interface_requirements.md](2026-08-08_reusable_chat_interface_requirements.md)
@@ -156,9 +156,18 @@ flowchart TD
 - `AgentKinds.frontAgent = 'front_agent'` (`lib/classes/agents/agent_constants.dart`),
   one singleton identity per user with the fixed id `front_agent`, created
   lazily on first open the way `daily_os_planner` is
-  (`getOrCreatePlannerAgent`). Its `allowedCategoryIds` default to *all*; the
-  existing per-identity allow-list is the privacy boundary if the user wants
-  one.
+  (`getOrCreatePlannerAgent`). Its `allowedCategoryIds` start **narrow**:
+  the day planner's allow-list when one exists, otherwise empty until the user
+  opts categories in. **Every index source and every lookup filters through
+  that allow-list** — tasks, projects and goals are category-scoped and a
+  project or goal outside it is neither listed nor a valid destination. People
+  rows are a second, separate opt-in (decision 4).
+- **Her own inference setup**, resolved through
+  `agentResolvedSetupResolversProvider` like the relationship agent, defaulting
+  to the cheapest evaluated model that passes slice 0. It is used for routing
+  only, where a stable prefix pays; a question walked through a door runs on
+  the destination's setup, so answers keep the quality the user chose there
+  (decision 8).
 - **Template-less runtime kind**, the goal/relationship precedent (ADR 0053,
   0059): a `FrontAgentWorkflow` contributed through `agentWakeRunnersProvider`
   (`lib/features/agents/state/agent_runtime_registry.dart`), registered in the
@@ -184,9 +193,23 @@ exactly once by whichever device wins the lease:
    triggerTokens: {front-chat-message:<id>}, supersede: false, initiator: user)`
    and await `runCompletions` for that run key.
 
+**The front wake writes the dispatch record and nothing else.** Walking the
+doors happens in `FrontChatService` *after* `runCompletions` reports the
+front run finished, outside any wake slot. The goal and person chat services
+enqueue a specialist wake and await its completion; calling them from inside
+the front wake would deadlock at concurrency 1, with the front run holding the
+only slot while it waits for a run that cannot start. The walker is
+idempotent per segment: each segment records its result ids as it is walked,
+so a crash, a retry or a second device re-walks only what is unwalked (the
+`ChangeDispatchIntents` precedent). A door that enqueues a wake does not
+block the walker either; the reply arrives through the projection when it
+lands.
+
 The chat UI is `AgentChatView` over `agentChatProjectionProvider(front_agent)`,
 extended with a card registry entry for the new `dispatch` action kind (REQ-06:
-unknown kinds already degrade to text).
+unknown kinds already degrade to text). The thread is **one continuous
+thread** with day dividers rendered by the projection; "today" and the inbox
+are filtered views of it, never separate threads (decision 7).
 
 ### 2.3 Routing: the index first, lookups second, search never by default
 
@@ -197,11 +220,18 @@ call:
 | Rows | Source | Fields rendered |
 |---|---|---|
 | open tasks, ≤200 | `DayAgentCorpusService.buildTaskCorpusSnapshot` generalised to the front agent's allow-list and no day (lift the shared part into `lib/features/agents`, the day agent keeps its day-ordering and `blockedBy`) | `id, title, status, category, due, oneLiner?` |
-| projects | project list + `getLatestReportsByAgentIds` | `id, title, oneLiner?` |
-| active goals | goal spec heads + goal report heads | `id, statement, oneLiner?` |
-| tracked people | relationship list | `id, name` |
+| projects, ≤50, in the allow-list | project list + `getLatestReportsByAgentIds` | `id, title, oneLiner?` |
+| active goals, ≤50, in the allow-list | goal spec heads + goal report heads | `id, statement, oneLiner?` |
+| tracked people, ≤100, only when opted in | relationship list | `id, name` |
 
-Rows are **sorted by id and rendered with one fixed format** so the block is
+Every cap is deterministic: tasks keep the corpus ordering (due and overdue
+first, then open by recency), the other kinds take the most recently updated.
+When a kind is truncated the block says so (`+N projects not shown`) and the
+model's only move for a name it cannot see is `match_to_corpus` for tasks or
+`ask_user` for the rest — it never guesses an id. So the whole block stays
+under ~400 rows and ~8k tokens whatever the workspace holds.
+
+Rows are **sorted by id within each kind and rendered with one fixed format** so the block is
 byte-stable between turns unless the record changed. One-liners are included
 on purpose: they are the "action-focused" sentence that says what a task is
 *about right now*, which is the routing signal; query chat's reason for
@@ -209,22 +239,26 @@ excluding them (it answers *questions* from TL;DRs) does not apply to picking
 a destination. ~200 rows × ~25 tokens ≈ 5k tokens, inside the ≤8k cold-prefill
 target ADR 0057 sets for once-a-day agents, and far under a warm prefix.
 
-**One completion per turn**, with a fixed tool list:
+**One completion per turn in the common case, never more than three**, with a
+fixed tool list:
 
 | Tool | Purpose | Cap |
 |---|---|---|
 | `dispatch` | the terminal artifact: `segments[]`, see 2.5 | once, ends the turn |
 | `read_tldr(ids ≤ 5)` | second rung of the ladder for a shortlist the model cannot separate on one-liners | 1 |
-| `match_to_corpus(phrase)` | FTS fallback when the name is not in the index (closed task, truncated catalogue) | 1 |
+| `match_to_corpus(phrase)` | FTS fallback for an **open** task the truncated index omits; closed tasks are not destinations and the lookup does not return them | 1 |
 | `ask_user(question, options ≤ 3)` | the short clarifying question; terminal | once |
 | `reply_to_user(text)` | her own words, terminal when nothing is dispatched | once |
 
 Lookups are capped the goal-memory way: the tool **stays listed** and the
 handler returns a refusal string once the cap is reached. Removing a tool
 mid-conversation changes the request prefix and voids the provider cache,
-which is the opposite of what a routing turn wants. The whole turn is bounded
-by the existing `maxTurnsPerWake`; the front agent's own cap is `turnBudget:
-3` (index → at most two lookups → dispatch). With DeepSeek Flash the tool
+which is the opposite of what a routing turn wants. The front agent's own cap
+is **three provider calls per user turn**, and the repair round counts against
+it: two lookups then `dispatch`, or one lookup, an invalid `dispatch` and its
+one repair. An invalid `dispatch` after two lookups fails closed with her
+"I could not place that" reply, and the message stays retryable. The eval
+reports calls per turn against that bound. With DeepSeek Flash the tool
 list must never shrink to one, or `tool_choice` gets rewritten; it has five.
 
 The index is the cheap lookup the brief asks for. FTS is the only search, it
@@ -255,7 +289,8 @@ to *cover the input*:
 ```text
 dispatch {
   segments: [
-    { text: "<verbatim span of the user's words>",
+    { span: { start, end },          // offsets into the input, in order, disjoint
+      text: "<the input slice at span, verbatim>",
       intent: question | statement | instruction,
       destination: { kind: task|project|goal|person|day|new|journal|unrouted, id? , newKind?: task|goal|project },
       confidence: 0..1,
@@ -264,18 +299,21 @@ dispatch {
 }
 ```
 
-Rules enforced in code, not prompt: ≤8 segments; `text` spans must be
-substrings of the input; the concatenation of spans must cover ≥80 % of the
-input's non-whitespace characters or the remainder becomes an `unrouted`
-segment; a destination id must exist in the index or in a lookup result this
-turn (the `QueryTaskActionTargetUnavailable` retry pattern: one repair
-completion, then fail closed). A voice note that mentions three tasks and a
+Rules enforced in code, not prompt: ≤8 segments; spans are given as offsets,
+must be **ordered and non-overlapping**, and `text` must equal the input slice
+at those offsets, so a repeated or overlapping phrase cannot stand in for
+words the model skipped; the spans and the gaps between them form a partition
+of the input, and any gap holding ≥20 % of the input's non-whitespace
+characters becomes an `unrouted` segment of its own; a destination id must
+exist in the index or in a lookup result this turn (the
+`QueryTaskActionTargetUnavailable` retry pattern: one repair completion,
+inside the three-call bound of 2.3, then fail closed). A voice note that mentions three tasks and a
 goal becomes four segments, four doors, one confirmation card with one row
 per segment, the way the Daily OS reconcile list shows parsed items.
 
 ### 2.6 Voice of the conversation: one persona, attributed words
 
-Recommendation: **single persona, no relay in v1.** The companion is one
+Decision 2 (2026-10-23): **single persona, attributed text, no relay.** The companion is one
 character because one voice (TTS) and one face say every reply; the *text* of
 a specialist's answer is shown as it came, with a small owner badge. This is
 the honest version of a single persona:
@@ -296,8 +334,9 @@ mentions routing. The block changes only when the user changes sass, so it is
 cache-neutral. Sass therefore reaches a prompt for the first time, but only
 this one; the specialists keep their souls.
 
-A relay mode (she rewords specialist replies) is listed as a later slice behind
-its own flag, if the attributed version feels like a hand-over in practice.
+A relay mode (she rewords specialist replies) is not planned: it is a lossy,
+costly extra hop. It would only be reconsidered if the attributed version
+reads as a hand-over in practice.
 
 ### 2.7 Approval and traceability
 
@@ -307,7 +346,8 @@ Nothing the front agent does alters the record by itself:
 |---|---|---|
 | question to a task/project | `QueryAnswerBuilder` answer in the front thread; proposed actions go through the existing `QueryActionReview` → change set | as today |
 | question to a goal/person | the specialist's `reply_to_user` in its own thread, mirrored into the front thread by `operationId` | none needed, nothing changes |
-| statement under a task/project | a journal **text entry with the user's verbatim words**, linked to the owner — the same write dictation into a task makes today | one tap on the confirmation card (v1 always asks) |
+| statement under a task | a journal **text entry with the user's verbatim words**, linked to the task — the same write dictation into a task makes today | one tap on the confirmation card; always, by decision 1. Auto-filing strong matches may return later as an **opt-in setting**, once the slice-0 eval and real use show it is reliably right |
+| statement under a project | **deferred** (decision 5): no project door yet. She asks which of the project's tasks it belongs to (`ask_user` with the project's open tasks as chips) or it goes to the inbox | — |
 | statement to a goal/person | `GoalChatService` / `RelationshipChatService.sendMessage` with the segment text | none; it is a chat turn, the specialist's own proposals stay gated as today |
 | "move the dentist to tomorrow" | Daily OS refine capture for today | the plan diff review that exists |
 | new task | a `create_task` change set item (the project agent's existing gated tool, category suggested from the index) | change set confirmation |
@@ -328,8 +368,8 @@ dispatch record is the only trace. Flagged as an open question.
 
 ### 2.8 Cost
 
-Per turn: one routing completion on the cheap tier, at most two lookup rounds,
-plus whatever the door costs (a query answer, or a specialist wake that would
+Per turn: one routing completion on the cheap tier in the common case, three
+provider calls at the most (2.3), plus whatever the door costs (a query answer, or a specialist wake that would
 have run anyway had the user gone there directly). Attribution:
 `consumptionAgentId: front_agent`, `consumptionThreadId: <front thread>`,
 `wakeRunKey` per turn, through the existing `ConversationRepository.sendMessage`
@@ -373,14 +413,15 @@ checked, not assumed.
    chips for goals and projects, a journal-note chip; the segment stays in the
    inbox until acted on. (2.4, 2.7)
 4. **Voice** — one persona carried by voice, face and her own sentences;
-   specialist text shown attributed; relay mode later behind a flag. (2.6)
+   specialist text shown attributed; no relay. (2.6)
 5. **Approval** — every record write goes through a door that already has a
    gate, or a one-tap confirmation; the `dispatch` action record is the audit
    trail. (2.7)
 6. **Multi-intent** — `dispatch.segments[]` with verbatim spans, coverage and id
    validity enforced in code; one confirmation card per turn. (2.5)
-7. **Cost** — one cheap completion plus capped lookups, count-and-refuse rather
-   than tool removal, attributed to `front_agent` and shown in the chat. (2.8)
+7. **Cost** — one cheap completion in the common case and never more than
+   three, count-and-refuse rather than tool removal, attributed to
+   `front_agent` and shown in the chat. (2.8)
 8. **Context and caching** — five blocks by volatility, sorted index, no raw
    entries, measured cache-hit ratio in the eval. (2.9)
 
@@ -399,8 +440,11 @@ on a later one. `enable_front_agent` is seeded off until slice 3.
   validation, the capped lookups, registration through `agentWakeRunnersProvider`.
 - **The eval first**: penguin-world scenarios in the existing harness
   (`test/features/ai/eval/support/`) — single intent strong, two near
-  candidates, closed task by name, three-intent voice note, nothing matches,
-  "move the dentist". Reports a confusion matrix, tool calls per turn and
+  candidates, an open task the truncated index omits, a closed task named by
+  the user (expected: not a destination, she says so), three-intent voice
+  note, nothing matches, "move the dentist", and the 41-call turn as a
+  regression case once its surface is known (decision 6). Reports a
+  confusion matrix, tool calls per turn against the three-call bound, and
   cache-hit ratio across the cheap tier (`deepseek-v4.1-flash`,
   `glm-5.3-flash`, `qwen3.5-122b-a10b`). This is where the thresholds and
   the index format get tuned, before any UI exists.
@@ -418,7 +462,10 @@ on a later one. `enable_front_agent` is seeded off until slice 3.
   Clarifying chips. Unrouted questions get her honest "nothing I know owns
   that" reply.
 - Cost pill, per-turn cost line, the `thread_id` index.
-- No record writes at all in this slice. Screenshots per surface.
+- No journal writes in this slice: no task, project, goal, person or entry is
+  created or changed. The only writes are the front thread's own — chat
+  payloads, messages, dispatch records and the recovery record — all in
+  `agent.sqlite`. Screenshots per surface.
 
 ### Slice 2 — statements, filing, and the inbox
 
@@ -443,36 +490,36 @@ on a later one. `enable_front_agent` is seeded off until slice 3.
 ### Slice 4 — the doors that need their own work
 
 - Daily OS: `day` segments become refine captures for today.
-- Optional relay persona behind `enable_front_agent_relay`.
-- Auto-filing strong statement matches, if the slice-2 confirmation data says
-  the false-positive rate justifies it.
+- The project door: filing a statement under a project, once project agents
+  have a way to take one.
+- Auto-filing strong statement matches as an **opt-in setting**, if the
+  slice-2 confirmation data says the false-positive rate justifies it.
 - A knowledge concept `knowledge/features/front_agent.md` written with slice 1
   and kept current; the doc drift listed in §1 fixed in the same change.
 
-## 5. Open questions for Matthias
+## 5. Decisions (owner, 2026-10-23)
 
-1. **Filing without asking.** Is a verbatim user note placed under a task at
-   ≥0.75 confidence a record change that needs approval, or the user's own
-   capture that only needs an undo? The plan asks in v1 and measures; say if
-   auto-file is acceptable from the start.
-2. **Single persona vs attributed text.** 2.6 keeps specialist text as written
-   with an owner badge and gives her the voice. If the character must *reword*
-   every reply, that is the relay slice and roughly doubles cost per dispatch.
-3. **Where she lives.** App-shell sheet reachable from every tab (proposed), or
-   her own tab in the ten-stack `IndexedStack`? A tab gives a route and history;
-   a sheet keeps "one place" out of the tab model and works on phone unchanged.
-4. **Privacy boundary.** Should the front agent default to *all* categories,
-   or inherit the day planner's allow-list, so a private category never shows
-   its one-liners to the router?
-5. **Projects as destinations.** Project agents have no chat and project "Ask"
-   is query-only; filing a statement under a project is a new door (an entry
-   linked to the project). Fine, or route project statements to the project's
-   tasks only?
-6. **The 41-call incident.** It is not written down anywhere; which surface
-   and model was it? The slice-0 eval should include that shape of input.
-7. **Thread lifetime.** One endless front thread with compaction (proposed), or
-   one thread per day like the Daily OS?
-8. **Model.** Pin the front agent to the cheap tier through its own inference
-   setup (like the day planner), or resolve from the category default of the
-   destination? Proposed: its own setup, defaulting to the cheapest evaluated
-   model that passes slice 0.
+The questions the first draft left open, and the answers the sections above
+now reflect:
+
+1. **Filing without asking: no.** Always confirm with one tap; agents do not
+   change the record without approval. Auto-filing returns, if at all, as an
+   opt-in setting once the slice-0 eval and real use show high-confidence
+   routing is reliably right. (2.4, 2.7)
+2. **Attributed specialist text, no relay.** Keeps traceability and avoids a
+   lossy, costly hop; the persona is voice, face and her own sentences. (2.6)
+3. **An app-shell sheet**, reachable from anywhere, not an eleventh tab. (slice 1)
+4. **Narrow allow-list by default**, categories opted in by the user; people
+   one-liners are a separate opt-in. (2.1, 2.3)
+5. **Project statements deferred.** Until a project door exists she asks which
+   task it belongs to, or it goes to the inbox. (2.7, slice 4)
+6. **The 41-call turn** becomes an eval regression case once the owner has
+   found which surface it was. (slice 0)
+7. **One continuous thread** with day dividers; per-day and inbox are filtered
+   views. (2.2)
+8. **Her own cheap inference setup for routing** (stable, cached prefix); the
+   destination's setup for the answers. (2.1)
+
+Still open, for the provenance work rather than this plan: a filed entry is
+user-authored text placed by an agent, and `Metadata` has no field to say so
+(2.7).
