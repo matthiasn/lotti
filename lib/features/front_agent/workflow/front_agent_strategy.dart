@@ -92,6 +92,7 @@ class FrontAgentStrategy extends ConversationStrategy
     required ConversationManager manager,
   }) async {
     await recordAssistantMessage();
+    final rejectedBefore = _rejectedDispatches;
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -132,6 +133,16 @@ class FrontAgentStrategy extends ConversationStrategy
         default:
           await _reject(call, manager, 'Error: unknown tool "$toolName".');
       }
+    }
+
+    // A reply may only accompany an accepted dispatch. When this batch
+    // rejected a dispatch and accepted neither a dispatch nor a question,
+    // the reply described a routing that did not happen: drop it so the
+    // turn stays open for the repair round instead of ending on it.
+    if (_rejectedDispatches > rejectedBefore &&
+        _dispatch == null &&
+        _askUser == null) {
+      _replyToUser = null;
     }
 
     return hasTerminalOutput
@@ -312,6 +323,15 @@ class FrontAgentStrategy extends ConversationStrategy
       );
       return;
     }
+    if (_replyToUser != null) {
+      await _reject(
+        call,
+        manager,
+        'Error: the turn already ended with reply_to_user; do not reply and '
+        'ask in the same turn.',
+      );
+      return;
+    }
     final question = _trimmed(args['question']);
     if (question.isEmpty) {
       await _reject(call, manager, 'Error: ask_user needs a question.');
@@ -377,6 +397,15 @@ class FrontAgentStrategy extends ConversationStrategy
         call,
         manager,
         'Error: reply_to_user may be called at most once per turn.',
+      );
+      return;
+    }
+    if (_askUser != null) {
+      await _reject(
+        call,
+        manager,
+        'Error: the turn already ended with ask_user; do not ask and reply '
+        'in the same turn.',
       );
       return;
     }

@@ -181,12 +181,27 @@ List<FrontDispatchSegment> _withUnroutedGaps(
   if (totalNonWhitespace == 0) return segments;
   final threshold = frontUnroutedGapShare * totalNonWhitespace;
 
+  // Several small omissions must not add up to uncovered text: when the
+  // gaps together reach the share, every gap that holds a word is kept,
+  // not only the ones that reach it alone.
+  var gapsTogether = 0;
+  var previousEnd = 0;
+  for (final segment in segments) {
+    gapsTogether += _nonWhitespace(input.substring(previousEnd, segment.start));
+    previousEnd = segment.end;
+  }
+  gapsTogether += _nonWhitespace(input.substring(previousEnd));
+  final keepEveryWordedGap = gapsTogether >= threshold;
+
   final result = <FrontDispatchSegment>[];
   var cursor = 0;
   void gap(int from, int to) {
     if (to <= from) return;
     final slice = input.substring(from, to);
-    if (_nonWhitespace(slice) < threshold) return;
+    final keep =
+        _nonWhitespace(slice) >= threshold ||
+        (keepEveryWordedGap && _hasWord(slice));
+    if (!keep) return;
     result.add(
       FrontDispatchSegment(
         start: from,
@@ -210,6 +225,12 @@ List<FrontDispatchSegment> _withUnroutedGaps(
 
 int _nonWhitespace(String text) =>
     text.runes.where((rune) => !_isWhitespace(rune)).length;
+
+/// Whether [text] holds a letter or a digit — punctuation alone is not a
+/// word the user said and is absorbed.
+bool _hasWord(String text) => _word.hasMatch(text);
+
+final RegExp _word = RegExp(r'[\p{L}\p{N}]', unicode: true);
 
 bool _isWhitespace(int rune) =>
     rune == 0x20 || rune == 0x09 || rune == 0x0A || rune == 0x0D;

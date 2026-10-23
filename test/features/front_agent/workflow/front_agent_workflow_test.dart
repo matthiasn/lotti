@@ -350,6 +350,7 @@ void main() {
               id: 'msg-1',
               agentId: frontAgentId,
               kind: AgentMessageKind.user,
+              contentEntryId: 'payload-1',
             ),
             makeTestMessage(
               id: 'old-reply',
@@ -360,6 +361,7 @@ void main() {
                 runKey: 'run-0',
                 operationId: 'old-user',
               ),
+              contentEntryId: 'old-reply-payload',
               createdAt: DateTime(2026, 10, 22, 9),
             ),
             // The strategy's log row for the same tool: no operationId, so
@@ -376,6 +378,7 @@ void main() {
               id: 'old-user',
               agentId: frontAgentId,
               kind: AgentMessageKind.user,
+              contentEntryId: 'old-user-payload',
               createdAt: DateTime(2026, 10, 22, 8),
             ),
             makeTestMessage(
@@ -385,6 +388,25 @@ void main() {
             ),
           ],
         );
+        // The tail's payloads are read in one batch, by the ids it needs.
+        when(() => repository.getEntitiesByIds(any())).thenAnswer((
+          invocation,
+        ) async {
+          final ids = invocation.positionalArguments.first as Set<String>;
+          expect(ids, {'old-user-payload', 'old-reply-payload'});
+          return {
+            'old-user-payload': makeTestMessagePayload(
+              id: 'old-user-payload',
+              agentId: frontAgentId,
+              content: const {'text': 'What about the garden?'},
+            ),
+            'old-reply-payload': makeTestMessagePayload(
+              id: 'old-reply-payload',
+              agentId: frontAgentId,
+              content: const {'text': 'Filed under Garden.'},
+            ),
+          };
+        });
 
         await run();
 
@@ -404,10 +426,18 @@ void main() {
           ],
         );
         expect(sent, contains('- task:garden | Garden | OPEN'));
-        expect(sent, contains('- user: old-user\n- reply_to_user: old-reply'));
+        // The words, in order, never the ids; the log row and the pending
+        // message itself stay out of the tail.
+        expect(
+          sent,
+          contains(
+            '- user: What about the garden?\n- reply: Filed under Garden.',
+          ),
+        );
         expect(sent, isNot(contains('old-thought')));
-        expect(sent, isNot(contains('old-reply-log')));
-        expect(sent, isNot(contains('- user: msg-1')));
+        expect(sent, isNot(contains('old-reply')));
+        expect(sent, isNot(contains('old-user')));
+        expect(sent, isNot(contains('- user: $input')));
         expect(sent, endsWith('$input\n$frontPendingUserMessageFooter'));
       },
     );
@@ -486,6 +516,138 @@ void main() {
       expect(conversationRepository.turnBudgets, hasLength(1));
       expect(upserts.whereType<AgentMessageEntity>(), isEmpty);
       expect(conversationRepository.deletedConversationIds, ['test-conv-id']);
+    });
+  });
+
+  group('frontRecentTurnOf', () {
+    AgentMessageEntity action(String toolName) => makeTestMessage(
+      id: 'm',
+      agentId: frontAgentId,
+      kind: AgentMessageKind.action,
+      metadata: AgentMessageMetadata(
+        toolName: toolName,
+        runKey: 'run-0',
+        operationId: 'u',
+      ),
+      contentEntryId: 'p',
+    );
+    AgentMessagePayloadEntity payload(Map<String, Object?> content) =>
+        makeTestMessagePayload(
+          id: 'p',
+          agentId: frontAgentId,
+          content: content,
+        );
+
+    test('renders a question with its option labels and ids', () {
+      final turn = frontRecentTurnOf(
+        action(FrontAgentToolNames.askUser),
+        payload({
+          'question': 'The garden or the shed?',
+          'options': [
+            {'kind': 'task', 'id': 'garden', 'label': 'Garden'},
+            {'kind': 'task', 'id': 'shed', 'label': 'Shed'},
+          ],
+        }),
+      );
+      expect(turn, (
+        role: 'question',
+        text:
+            'The garden or the shed? — options: Garden (task:garden), '
+            'Shed (task:shed)',
+      ));
+    });
+
+    test('renders a dispatch as its segments and destinations', () {
+      final turn = frontRecentTurnOf(
+        action(FrontAgentToolNames.dispatch),
+        payload({
+          'input': 'Buy the hose. Learn the accordion. Whatever.',
+          'segments': [
+            const FrontDispatchSegment(
+              start: 0,
+              end: 13,
+              text: 'Buy the hose.',
+              intent: FrontSegmentIntent.instruction,
+              kind: FrontDestinationKind.task,
+              destinationId: 'garden',
+              confidence: 0.9,
+            ).toJson(),
+            const FrontDispatchSegment(
+              start: 14,
+              end: 34,
+              text: 'Learn the accordion.',
+              intent: FrontSegmentIntent.statement,
+              kind: FrontDestinationKind.newThing,
+              newKind: FrontNewKind.goal,
+              confidence: 0.3,
+            ).toJson(),
+            const FrontDispatchSegment(
+              start: 35,
+              end: 44,
+              text: 'Whatever.',
+              intent: FrontSegmentIntent.statement,
+              kind: FrontDestinationKind.unrouted,
+              confidence: 0,
+            ).toJson(),
+          ],
+        }),
+      );
+      expect(turn, (
+        role: 'dispatch',
+        text:
+            '"Buy the hose." → task:garden; "Learn the accordion." → new '
+            'goal; "Whatever." → unrouted',
+      ));
+    });
+
+    test('renders user and reply text, collapsed and clipped', () {
+      final user = makeTestMessage(
+        id: 'u',
+        agentId: frontAgentId,
+        kind: AgentMessageKind.user,
+        contentEntryId: 'p',
+      );
+      expect(
+        frontRecentTurnOf(user, payload({'text': '  two\n\nlines  '})),
+        (role: 'user', text: 'two lines'),
+      );
+      final long = 'x' * (frontRecentTurnMaxChars + 10);
+      final reply = frontRecentTurnOf(
+        action(FrontAgentToolNames.replyToUser),
+        payload({'text': long}),
+      );
+      expect(reply!.role, 'reply');
+      expect(reply.text.length, frontRecentTurnMaxChars + 1);
+      expect(reply.text, endsWith('…'));
+    });
+
+    test('a payload of the wrong shape, or an unknown tool, is nothing', () {
+      expect(
+        frontRecentTurnOf(action(FrontAgentToolNames.askUser), payload({})),
+        isNull,
+      );
+      expect(
+        frontRecentTurnOf(
+          action(FrontAgentToolNames.replyToUser),
+          payload({'text': 1}),
+        ),
+        isNull,
+      );
+      expect(
+        frontRecentTurnOf(action(FrontAgentToolNames.dispatch), payload({})),
+        isNull,
+      );
+      expect(
+        frontRecentTurnOf(action('record_observations'), payload({})),
+        isNull,
+      );
+      final user = makeTestMessage(
+        id: 'u',
+        agentId: frontAgentId,
+        kind: AgentMessageKind.user,
+        contentEntryId: 'p',
+      );
+      expect(frontRecentTurnOf(user, payload({'text': null})), isNull);
     });
   });
 

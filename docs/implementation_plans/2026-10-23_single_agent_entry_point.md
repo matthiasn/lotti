@@ -199,9 +199,13 @@ front run finished, outside any wake slot. The goal and person chat services
 enqueue a specialist wake and await its completion; calling them from inside
 the front wake would deadlock at concurrency 1, with the front run holding the
 only slot while it waits for a run that cannot start. The walker is
-idempotent per segment: each segment records its result ids as it is walked,
-so a crash, a retry or a second device re-walks only what is unwalked (the
-`ChangeDispatchIntents` precedent). A door that enqueues a wake does not
+durable and duplicate-safe: the recovery record stays **pending until the
+walker has finished**, not until the front run completes, so a crash between
+the two leaves a retry trigger; and before a door is invoked the segment is
+**claimed** with a conditional update under a stable idempotency key
+(`<dispatchMessageId>:<segmentIndex>`), so two devices or a retry cannot walk
+the same segment twice — the claim, then the door, then the result ids, the
+`ChangeDispatchIntents` discipline. A door that enqueues a wake does not
 block the walker either; the reply arrives through the projection when it
 lands.
 
@@ -221,15 +225,29 @@ call:
 |---|---|---|
 | open tasks, ≤200 | `DayAgentCorpusService.buildTaskCorpusSnapshot` generalised to the front agent's allow-list and no day (lift the shared part into `lib/features/agents`, the day agent keeps its day-ordering and `blockedBy`) | `id, title, status, category, due, oneLiner?` |
 | projects, ≤50, in the allow-list | project list + `getLatestReportsByAgentIds` | `id, title, oneLiner?` |
-| active goals, ≤50, in the allow-list | goal spec heads + goal report heads | `id, statement, oneLiner?` |
-| tracked people, ≤100, only when opted in | relationship list | `id, name` |
+| active goals, ≤50 | goal spec heads + goal report heads | `id, statement, oneLiner?` |
+| tracked people, ≤50, only when opted in | relationship list | `id, name` |
+
+**What a row's `id` is.** A task or project row carries the journal entity's
+id; a goal row carries the **goal agent's id** (goals have no journal record;
+the statement is the active spec head's), which is exactly what
+`GoalChatService.sendMessage` requires; a person row carries the
+**relationship entry's id**, and the door resolves it through
+`relationshipAgentIdFor(relationshipId)` and refuses unless
+`usableRelationshipAgent` finds an active `relationship_agent` behind it —
+the same gate the person chat applies. Both chat services re-check the
+kind and lifecycle themselves, so a stale row cannot reach a wrong agent.
 
 Every cap is deterministic: tasks keep the corpus ordering (due and overdue
 first, then open by recency), the other kinds take the most recently updated.
 When a kind is truncated the block says so (`+N projects not shown`) and the
 model's only move for a name it cannot see is `match_to_corpus` for tasks or
-`ask_user` for the rest — it never guesses an id. So the whole block stays
-under ~400 rows and ~8k tokens whatever the workspace holds.
+`ask_user` for the rest — it never guesses an id. The bound, counted over
+every row at every cap: 200 task rows at ~25 tokens, 50 project and 50 goal
+rows at ~20, 50 name-only people rows at ~8 — ~7.5k, plus the ~1k contract
+above it, lands at the 8k cold-prefill target of ADR 0057 in the worst case
+and well under it on a typical day; the warm prefix is what the cache pays
+for.
 
 Rows are **sorted by id within each kind and rendered with one fixed format** so the block is
 byte-stable between turns unless the record changed. One-liners are included
@@ -303,8 +321,11 @@ Rules enforced in code, not prompt: ≤8 segments; spans are given as offsets,
 must be **ordered and non-overlapping**, and `text` must equal the input slice
 at those offsets, so a repeated or overlapping phrase cannot stand in for
 words the model skipped; the spans and the gaps between them form a partition
-of the input, and any gap holding ≥20 % of the input's non-whitespace
-characters becomes an `unrouted` segment of its own; a destination id must
+of the input, and the gaps are never dropped: a gap holding ≥20 % of the
+input's non-whitespace characters becomes an `unrouted` segment of its own,
+and when the gaps **together** hold ≥20 % every gap that contains a word
+becomes one (punctuation-only gaps are absorbed), so several small
+omissions cannot add up to uncovered text; a destination id must
 exist in the index or in a lookup result this turn (the
 `QueryTaskActionTargetUnavailable` retry pattern: one repair completion,
 inside the three-call bound of 2.3, then fail closed). A voice note that mentions three tasks and a

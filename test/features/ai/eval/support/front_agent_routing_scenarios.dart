@@ -198,10 +198,13 @@ final List<FrontEvalScenario> frontEvalScenarios = [
         'The relocation is slipping, the shelf survey keeps getting '
         'bumped.',
     outcome: FrontEvalOutcome.ask,
-    askCandidates: {'task-iceberg-survey', 'project-relocation'},
+    // Only tasks may be offered; the project itself is never a destination
+    // for a statement, in the question or in a dispatch.
+    askCandidates: {'task-iceberg-survey', 'task-bay-c-seam'},
     forbiddenDestinationIds: {'project-relocation'},
     note:
         'A statement about a project has no door (decision 5): she asks '
-        'which task it belongs to. Dispatching to the project is wrong.',
+        'which task it belongs to. Offering or dispatching to the project '
+        'is wrong.',
   ),
 ];

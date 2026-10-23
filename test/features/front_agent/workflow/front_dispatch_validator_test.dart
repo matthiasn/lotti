@@ -224,6 +224,27 @@ void main() {
       expect(segments[1].text, ' Ask Pip about Friday.');
     });
 
+    test('several small gaps that together reach the share are each kept, '
+        'punctuation-only gaps aside', () {
+      // "Buy the hose" | " for " dropped | "the garden" | ". " dropped |
+      // "Ask Pip about" | " Friday." dropped — no gap reaches 20 % alone,
+      // together they do.
+      final result = validate([
+        segment(span: (0, 12)),
+        segment(span: (17, 27)),
+        segment(span: (29, 42), intent: 'question', kind: 'person', id: 'pip'),
+      ]);
+      final segments = result.dispatch!.segments;
+      expect(segments.map((s) => (s.kind, s.text)), [
+        (FrontDestinationKind.task, 'Buy the hose'),
+        (FrontDestinationKind.unrouted, ' for '),
+        (FrontDestinationKind.task, 'the garden'),
+        // ". " holds no word and is absorbed even now.
+        (FrontDestinationKind.person, 'Ask Pip about'),
+        (FrontDestinationKind.unrouted, ' Friday.'),
+      ]);
+    });
+
     test('a small gap — punctuation, a word — is absorbed', () {
       final result = validate([
         segment(span: (0, 27)), // drops the full stop

@@ -1,11 +1,14 @@
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 
-/// Caps per kind. Deterministic, so the rendered block stays under ~400
-/// rows whatever the workspace holds; a truncated kind says so in the block.
+/// Caps per kind. Deterministic, so the rendered block is bounded whatever
+/// the workspace holds; a truncated kind says so in the block. At every
+/// cap the block is ~7.5k tokens — 200 task rows at ~25, 50 project and 50
+/// goal rows at ~20, 50 name-only people rows at ~8 — which with the ~1k
+/// contract above it lands near the 8k cold-prefill target of ADR 0057.
 const int frontIndexMaxTasks = 200;
 const int frontIndexMaxProjects = 50;
 const int frontIndexMaxGoals = 50;
-const int frontIndexMaxPeople = 100;
+const int frontIndexMaxPeople = 50;
 
 /// How many open tasks one `match_to_corpus` may return.
 const int frontCorpusMatchLimit = 8;

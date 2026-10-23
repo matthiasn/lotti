@@ -102,7 +102,7 @@ void main() {
     expect(frontIndexMaxTasks, 200);
     expect(frontIndexMaxProjects, 50);
     expect(frontIndexMaxGoals, 50);
-    expect(frontIndexMaxPeople, 100);
+    expect(frontIndexMaxPeople, 50);
     expect(frontCorpusMatchLimit, 8);
   });
 }

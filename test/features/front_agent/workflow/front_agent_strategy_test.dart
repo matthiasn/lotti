@@ -383,6 +383,80 @@ hologram:x: not listed''');
     });
   });
 
+  group('terminal calls are exclusive', () {
+    test('a reply beside a rejected dispatch is dropped so the turn stays '
+        'open for the repair', () async {
+      final s = strategy();
+      final action = await s.processToolCalls(
+        toolCalls: [
+          _call('reply_to_user', {'message': 'Filed under Garden.'}),
+          _call('dispatch', {
+            'segments': [segment(start: 0, end: 13, id: 'nope')],
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+
+      expect(action, ConversationAction.continueConversation);
+      expect(s.replyToUser, isNull);
+      expect(s.hasTerminalOutput, isFalse);
+
+      // The repair round may still end with a valid reply.
+      final repaired = await s.processToolCalls(
+        toolCalls: [
+          _call('reply_to_user', {'message': 'Nothing fits.'}),
+        ],
+        manager: manager,
+      );
+      expect(repaired, ConversationAction.complete);
+      expect(s.replyToUser, 'Nothing fits.');
+    });
+
+    test('a reply beside a rejected dispatch survives when a question was '
+        'accepted in the same batch', () async {
+      final s = strategy();
+      await s.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {'question': 'Which?'}),
+          _call('dispatch', {
+            'segments': [segment(start: 0, end: 13, id: 'nope')],
+          }, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+      expect(s.askUser, isNotNull);
+      expect(s.hasTerminalOutput, isTrue);
+    });
+
+    test(
+      'ask_user and reply_to_user refuse each other in either order',
+      () async {
+        final s = strategy();
+        await s.processToolCalls(
+          toolCalls: [
+            _call('ask_user', {'question': 'Which?'}),
+            _call('reply_to_user', {'message': 'Hi'}, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+        expect(responses().last, contains('already ended with ask_user'));
+        expect(s.replyToUser, isNull);
+
+        final t = strategy();
+        await t.processToolCalls(
+          toolCalls: [
+            _call('reply_to_user', {'message': 'Hi'}),
+            _call('ask_user', {'question': 'Which?'}, id: 'call-2'),
+          ],
+          manager: manager,
+        );
+        expect(responses().last, contains('already ended with reply_to_user'));
+        expect(t.askUser, isNull);
+        expect(t.replyToUser, 'Hi');
+      },
+    );
+  });
+
   group('reply_to_user', () {
     test('one reply may accompany a dispatch; a second is refused', () async {
       final s = strategy();

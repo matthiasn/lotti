@@ -34,5 +34,7 @@ query pipeline for a task question, a goal or person chat turn, a filed entry
 — is the next slice, and happens in the chat service after the wake
 completes, never inside it.
 
-The concept, the decisions and the slices are in
-[the implementation plan](../../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md).
+The decisions and the slices are in
+[the implementation plan](../../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md);
+how a turn actually runs is in
+[the front agent concept](../../../knowledge/features/front_agent.md).

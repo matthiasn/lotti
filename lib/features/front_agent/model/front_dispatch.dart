@@ -162,9 +162,15 @@ class FrontDispatchSegment {
       intent: intent,
       kind: kind,
       confidence: confidence.toDouble(),
-      destinationId: destinationMap['id'] as String?,
+      destinationId: switch (destinationMap['id']) {
+        final String id => id,
+        _ => null,
+      },
       newKind: FrontNewKind.fromName(destinationMap['newKind']),
-      note: json['note'] as String?,
+      note: switch (json['note']) {
+        final String note => note,
+        _ => null,
+      },
     );
   }
 }

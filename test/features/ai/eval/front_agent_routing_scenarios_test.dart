@@ -30,6 +30,23 @@ void main() {
     }
   });
 
+  test('no scenario forbids an id it also offers as a candidate', () {
+    for (final scenario in frontEvalScenarios) {
+      expect(
+        scenario.askCandidates.intersection(scenario.forbiddenDestinationIds),
+        isEmpty,
+        reason: scenario.id,
+      );
+      for (final segment in scenario.expectedSegments) {
+        expect(
+          scenario.forbiddenDestinationIds,
+          isNot(contains(segment.id)),
+          reason: scenario.id,
+        );
+      }
+    }
+  });
+
   test('scenario ids are unique and every scenario says why it exists', () {
     final ids = frontEvalScenarios.map((s) => s.id).toSet();
     expect(ids, hasLength(frontEvalScenarios.length));

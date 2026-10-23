@@ -358,7 +358,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
   /// A persisted output carries the source message as its `operationId`;
   /// the strategy's own tool-call log rows share the tool name but not
   /// that, which is what keeps them out of the tail.
-  Future<List<AgentMessageEntity>> _recentTurns(
+  Future<List<FrontRecentTurn>> _recentTurns(
     String agentId,
     String sourceMessageId,
   ) async {
@@ -366,6 +366,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
     final visible =
         messages.where((m) {
           if (m.id == sourceMessageId || m.deletedAt != null) return false;
+          if (m.contentEntryId == null) return false;
           if (m.kind == AgentMessageKind.user) return m.metadata.runKey == null;
           return m.kind == AgentMessageKind.action &&
               m.metadata.operationId != null &&
@@ -378,9 +379,19 @@ class FrontAgentWorkflow with AgentErrorLogging {
           final byTime = a.createdAt.compareTo(b.createdAt);
           return byTime != 0 ? byTime : a.id.compareTo(b.id);
         });
-    return visible.length <= frontRecentTurns
+    final tail = visible.length <= frontRecentTurns
         ? visible
         : visible.sublist(visible.length - frontRecentTurns);
+    if (tail.isEmpty) return const [];
+    final payloads = await _repository.getEntitiesByIds({
+      for (final message in tail) message.contentEntryId!,
+    });
+    return [
+      for (final message in tail)
+        if (payloads[message.contentEntryId]
+            case final AgentMessagePayloadEntity payload)
+          ?frontRecentTurnOf(message, payload),
+    ];
   }
 
   /// Everything the model reads, in one transaction, under deterministic
@@ -474,7 +485,7 @@ class FrontAgentWorkflow with AgentErrorLogging {
 @visibleForTesting
 String renderFrontTurn({
   required FrontRoutingIndex index,
-  required List<AgentMessageEntity> recent,
+  required List<FrontRecentTurn> recent,
   required String input,
   required DateTime now,
 }) {
@@ -482,12 +493,8 @@ String renderFrontTurn({
     ..writeln(index.render())
     ..writeln()
     ..writeln('<recent_turns>');
-  for (final message in recent) {
-    buffer.writeln(
-      message.kind == AgentMessageKind.user
-          ? '- user: ${message.id}'
-          : '- ${message.metadata.toolName}: ${message.id}',
-    );
+  for (final turn in recent) {
+    buffer.writeln('- ${turn.role}: ${turn.text}');
   }
   buffer
     ..writeln('</recent_turns>')
@@ -506,4 +513,79 @@ String renderFrontTurn({
 FrontDispatch? frontDispatchFromPayload(AgentMessagePayloadEntity payload) {
   if (payload.content['segments'] is! List) return null;
   return FrontDispatch.fromJson(payload.content);
+}
+
+/// One earlier turn as the model reads it: who spoke, and what was said —
+/// the words themselves, so a short answer to the agent's own question
+/// ("the first one") can resolve against the question and its options.
+typedef FrontRecentTurn = ({String role, String text});
+
+/// How much of one earlier turn the prompt carries; the tail is bounded
+/// so a long note cannot crowd out the index.
+const int frontRecentTurnMaxChars = 400;
+
+/// Renders a persisted message and its payload as a recent turn, or null
+/// when the payload is not the shape the message's kind writes.
+@visibleForTesting
+FrontRecentTurn? frontRecentTurnOf(
+  AgentMessageEntity message,
+  AgentMessagePayloadEntity payload,
+) {
+  String clip(String text) {
+    final flat = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return flat.length <= frontRecentTurnMaxChars
+        ? flat
+        : '${flat.substring(0, frontRecentTurnMaxChars)}…';
+  }
+
+  final content = payload.content;
+  if (message.kind == AgentMessageKind.user) {
+    return switch (content['text']) {
+      final String text => (role: 'user', text: clip(text)),
+      _ => null,
+    };
+  }
+  switch (message.metadata.toolName) {
+    case FrontAgentToolNames.replyToUser:
+      return switch (content['text']) {
+        final String text => (role: 'reply', text: clip(text)),
+        _ => null,
+      };
+    case FrontAgentToolNames.askUser:
+      final question = content['question'];
+      if (question is! String) return null;
+      final options = content['options'];
+      final labels = [
+        if (options is List)
+          for (final option in options)
+            if (option is Map && option['label'] is String)
+              '${option['label']} (${option['kind']}:${option['id']})',
+      ];
+      return (
+        role: 'question',
+        text: clip(
+          labels.isEmpty
+              ? question
+              : '$question — options: ${labels.join(', ')}',
+        ),
+      );
+    case FrontAgentToolNames.dispatch:
+      final dispatch = frontDispatchFromPayload(payload);
+      if (dispatch == null) return null;
+      return (
+        role: 'dispatch',
+        text: clip(
+          [
+            for (final segment in dispatch.segments)
+              '"${segment.text}" → ${switch (segment.kind) {
+                FrontDestinationKind.newThing => 'new ${segment.newKind?.name}',
+                final kind when kind.needsId => '${kind.wireName}:${segment.destinationId}',
+                final kind => kind.wireName,
+              }}',
+          ].join('; '),
+        ),
+      );
+    default:
+      return null;
+  }
 }
