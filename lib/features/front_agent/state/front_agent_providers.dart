@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
-import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -25,9 +23,8 @@ final frontRoutingIndexBuilderProvider = Provider<FrontRoutingIndexBuilder>(
   (ref) => FrontRoutingIndexBuilder(
     journalDb: ref.watch(journalDbProvider),
     agentRepository: ref.watch(agentRepositoryProvider),
-    // The full-text index is a GetIt singleton with no provider; a host
-    // without one (tests) simply has no corpus match.
-    fts5Db: getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
+    // A host without a full-text index simply has no corpus match.
+    fts5Db: ref.watch(fts5DbProvider),
   ),
   name: 'frontRoutingIndexBuilderProvider',
 );

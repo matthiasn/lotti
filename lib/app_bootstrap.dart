@@ -12,6 +12,7 @@ import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -301,6 +302,10 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       ),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
+    // A guest profile registers no full-text index.
+    fts5DbProvider.overrideWithValue(
+      getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
+    ),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),

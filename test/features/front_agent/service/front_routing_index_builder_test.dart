@@ -175,10 +175,14 @@ void main() {
   group('tasks', () {
     test("rows carry status, due date and the owner report's one-liner and "
         'TL;DR; the allow-list reaches the corpus query', () async {
-      // The front cap and the query's default are both 200; the stub
-      // matching the default is the proof that the cap reaches the query.
+      // The front cap and the query's default are both 200; the stub names
+      // the cap so the test still pins it if either side moves.
       when(
-        () => journalDb.getOpenTasksForDayAgentCorpus(categoryIds: {'work'}),
+        () => journalDb.getOpenTasksForDayAgentCorpus(
+          categoryIds: {'work'},
+          // ignore: avoid_redundant_argument_values
+          limit: frontIndexMaxTasks,
+        ),
       ).thenAnswer(
         (_) async => [_task('t1', due: DateTime(2026, 10, 30)), _task('t2')],
       );

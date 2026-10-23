@@ -224,6 +224,7 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalDbProvider.overrideWithValue(MockJournalDb()),
+          fts5DbProvider.overrideWithValue(null),
           agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
           agentServiceProvider.overrideWithValue(MockAgentService()),
           wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
@@ -240,8 +241,8 @@ void main() {
       );
       addTearDown(wired.dispose);
 
-      // No full-text index is registered in a bare test, so the builder
-      // has no corpus matcher.
+      // A host without a full-text index gives the builder no corpus
+      // matcher.
       final builder = wired.read(frontRoutingIndexBuilderProvider);
       expect(builder.fts5Db, isNull);
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());

@@ -192,6 +192,11 @@ Future<Map<String, Object?>> buildLottiGymCatalog() async {
     'excludedEntryPoints': {
       '$_ai/qwen_local_inference_eval_live_test.dart':
           'oMLX-only compatibility harness; not the Melious transport.',
+      '$_ai/front_agent_routing_eval_live_test.dart':
+          'Front-agent routing over a hand-held index (slice 0 of the '
+          'single-entry-point plan); run directly with '
+          'FRONT_AGENT_EVAL_OUTPUT. A Gym adapter follows with the chat '
+          'surface in slice 1.',
     },
   };
 }
