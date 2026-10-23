@@ -6,15 +6,20 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_strategy.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -477,7 +482,9 @@ void main() {
                     : [call('dispatch', dispatchArgs())],
                 manager: manager,
               );
-              return null;
+              return calls == 1
+                  ? const InferenceUsage(inputTokens: 10, outputTokens: 5)
+                  : const InferenceUsage(inputTokens: 20, outputTokens: 7);
             };
 
       final result = await run();
@@ -488,6 +495,12 @@ void main() {
         frontProviderCallsPerTurn,
         frontProviderCallsPerTurn - 1,
       ]);
+      // Both rounds' usage is one synced row for the wake.
+      final usage = upserts.whereType<WakeTokenUsageEntity>().single;
+      expect(usage.inputTokens, 30);
+      expect(usage.outputTokens, 12);
+      expect(usage.runKey, runKey);
+      expect(usage.modelId, meliousDeepseekV41FlashModelId);
     });
 
     test('with the budget spent and no terminal call, the wake fails closed '
@@ -700,6 +713,129 @@ void main() {
     });
   });
 
+  group('consumption accounting', () {
+    late MockAiAttributionService attribution;
+
+    setUp(() {
+      attribution = MockAiAttributionService();
+      getIt
+        ..registerSingleton<AiInteractionCapture>(MockAiInteractionCapture())
+        ..registerSingleton<AiAttributionService>(attribution);
+      addTearDown(getIt.reset);
+      // The envelope's preparation fails: the helper contains that, so
+      // bookkeeping can never fail or re-run a wake.
+      when(
+        () => attribution.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: any(named: 'status'),
+          errorCode: any(named: 'errorCode'),
+          errorSummary: any(named: 'errorSummary'),
+        ),
+      ).thenThrow(StateError('no envelope'));
+    });
+
+    test('a routed turn is attributed to the front agent and its envelope '
+        'closed carrierless', () async {
+      seedMessage();
+      stubModel((_) => [call('dispatch', dispatchArgs())]);
+
+      final result = await run();
+
+      expect(result.success, isTrue);
+      expect(conversationRepository.lastConsumptionAgentId, frontAgentId);
+      expect(conversationRepository.lastConsumptionWakeRunKey, runKey);
+      expect(conversationRepository.lastConsumptionThreadId, threadId);
+      verify(
+        () => attribution.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: AiWorkStatus.partial,
+          errorCode: 'output_carrier_unavailable',
+          errorSummary: any(named: 'errorSummary'),
+        ),
+      ).called(1);
+    });
+
+    test('a failed turn closes its envelope as failed', () async {
+      seedMessage();
+      syncService.transactionDelegate = <T>(action) async {
+        throw StateError('database closed');
+      };
+      stubModel((_) => [call('dispatch', dispatchArgs())]);
+
+      final result = await run();
+
+      expect(result.success, isFalse);
+      verify(
+        () => attribution.prepareCompletion(
+          attributionId: any(named: 'attributionId'),
+          outputs: any(named: 'outputs'),
+          status: AiWorkStatus.failed,
+          errorCode: 'StateError',
+          errorSummary: any(named: 'errorSummary'),
+        ),
+      ).called(1);
+    });
+  });
+
+  test('the tail carries only the last six turns', () async {
+    seedMessage();
+    String? sent;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          sent = message;
+          when(() => manager.turnCount).thenReturn(1);
+          await (strategy! as FrontAgentStrategy).processToolCalls(
+            toolCalls: [call('dispatch', dispatchArgs())],
+            manager: manager,
+          );
+          return null;
+        };
+    when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+      (_) async => [
+        for (var i = 1; i <= 8; i++)
+          makeTestMessage(
+            id: 'turn-$i',
+            agentId: frontAgentId,
+            kind: AgentMessageKind.user,
+            contentEntryId: 'turn-$i-payload',
+            createdAt: DateTime(2026, 10, 22, i),
+          ),
+      ],
+    );
+    when(() => repository.getEntitiesByIds(any())).thenAnswer((
+      invocation,
+    ) async {
+      final ids = invocation.positionalArguments.first as Set<String>;
+      return {
+        for (final id in ids)
+          id: makeTestMessagePayload(
+            id: id,
+            agentId: frontAgentId,
+            content: {'text': 'said in $id'},
+          ),
+      };
+    });
+
+    await run();
+
+    expect(sent, isNot(contains('turn-1-payload')));
+    expect(sent, isNot(contains('turn-2-payload')));
+    expect(sent, contains('- user: said in turn-3-payload'));
+    expect(sent, contains('- user: said in turn-8-payload'));
+  });
+
   group('failure handling', () {
     test(
       'an unresolvable inference setup fails before building anything',
@@ -722,27 +858,81 @@ void main() {
       },
     );
 
+    /// Every record the transaction wrote is readable afterwards — the
+    /// marker a committed-then-failed-flush turn is recognised by.
+    void committedRecordsAreReadable() {
+      when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        for (final message in upserts.whereType<AgentMessageEntity>()) {
+          if (message.id == id) return message;
+        }
+        return null;
+      });
+      seedMessage();
+    }
+
     test(
-      'a persistence failure after the record committed is contained',
+      'a persistence failure after the records committed is contained — '
+      'a dispatch with its reply',
       () async {
         seedMessage();
-        stubModel((_) => [call('dispatch', dispatchArgs())]);
+        stubModel(
+          (_) => [
+            call('reply_to_user', {'message': 'Filed.'}),
+            call('dispatch', dispatchArgs()),
+          ],
+        );
         syncService.transactionDelegate = commitThenThrowTransaction;
-        // The committed dispatch record is readable, which is the marker.
-        when(() => repository.getEntity(any())).thenAnswer((invocation) async {
-          final id = invocation.positionalArguments.first as String;
-          if (id == frontAgentDispatchMessageId(frontAgentId, runKey)) {
-            return upserts.whereType<AgentMessageEntity>().firstWhere(
-              (m) => m.id == id,
-            );
-          }
-          return null;
-        });
-        seedMessage();
+        committedRecordsAreReadable();
 
         final result = await run();
 
         expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'a persistence failure after the records committed is contained — '
+      'a question alone',
+      () async {
+        seedMessage();
+        stubModel(
+          (_) => [
+            call('ask_user', {'question': 'Which?'}),
+          ],
+        );
+        syncService.transactionDelegate = commitThenThrowTransaction;
+        committedRecordsAreReadable();
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+      },
+    );
+
+    test(
+      'a committed dispatch whose reply never landed is not taken for a '
+      'committed turn',
+      () async {
+        seedMessage();
+        stubModel(
+          (_) => [
+            call('reply_to_user', {'message': 'Filed.'}),
+            call('dispatch', dispatchArgs()),
+          ],
+        );
+        syncService.transactionDelegate = commitThenThrowTransaction;
+        committedRecordsAreReadable();
+        // The reply record is the one that cannot be read back.
+        when(
+          () => repository.getEntity(
+            frontAgentReplyMessageId(frontAgentId, runKey),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await run();
+
+        expect(result.success, isFalse);
       },
     );
 

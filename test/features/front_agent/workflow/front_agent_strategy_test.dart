@@ -321,6 +321,19 @@ hologram:x: not listed''');
       expect(s.askUser!.options.map((o) => o.id), ['garden', 'pip']);
     });
 
+    test('a second question in one turn is refused', () async {
+      final s = strategy();
+      await s.processToolCalls(
+        toolCalls: [
+          _call('ask_user', {'question': 'Which one?'}),
+          _call('ask_user', {'question': 'Or this?'}, id: 'call-2'),
+        ],
+        manager: manager,
+      );
+      expect(responses().last, contains('at most once per turn'));
+      expect(s.askUser!.question, 'Which one?');
+    });
+
     test(
       'an option must be a listed owner; more than three is refused',
       () async {

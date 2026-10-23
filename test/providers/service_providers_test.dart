@@ -12,6 +12,7 @@ void main() {
     'matrixServiceProvider': matrixServiceProvider,
     'maintenanceProvider': maintenanceProvider,
     'journalDbProvider': journalDbProvider,
+    'fts5DbProvider': fts5DbProvider,
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
     'syncDatabaseProvider': syncDatabaseProvider,
