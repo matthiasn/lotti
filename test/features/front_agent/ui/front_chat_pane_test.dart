@@ -20,12 +20,14 @@ import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
+import '../../ai_consumption/test_utils.dart';
 
 void main() {
   final now = DateTime(2026, 10, 24, 10);
@@ -44,8 +46,15 @@ void main() {
     String id,
     AgentChatRole role,
     String text,
-    DateTime at,
-  ) => AgentChatMessage(id: id, role: role, text: text, createdAt: at);
+    DateTime at, {
+    String? runKey,
+  }) => AgentChatMessage(
+    id: id,
+    role: role,
+    text: text,
+    createdAt: at,
+    runKey: runKey,
+  );
 
   Future<void> pumpPane(
     WidgetTester tester, {
@@ -72,6 +81,20 @@ void main() {
             agentConsumptionTotalsProvider(
               frontAgentId,
             ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
+            // Only her second turn recorded calls.
+            agentRunConsumptionTotalsProvider.overrideWith(
+              (ref, run) => Stream.value(
+                run.runKey == 'run-2'
+                    ? makeConsumptionTotals(
+                        callCount: 2,
+                        totalTokens: 900,
+                        credits: 0.01,
+                        energyKwh: 0.002,
+                        carbonGCo2: 0.5,
+                      )
+                    : ConsumptionTotals.empty,
+              ),
+            ),
           ],
         ),
       );
@@ -160,6 +183,7 @@ void main() {
             AgentChatRole.agent,
             'I asked the garden agent.',
             DateTime(2026, 10, 23, 9, 1),
+            runKey: 'run-1',
           ),
           message('u2', AgentChatRole.user, 'Swim?', DateTime(2026, 10, 24, 9)),
           message(
@@ -167,6 +191,7 @@ void main() {
             AgentChatRole.agent,
             'Which one?',
             DateTime(2026, 10, 24, 9, 1),
+            runKey: 'run-2',
           ),
         ],
         optionsByMessageId: const {
@@ -195,6 +220,20 @@ void main() {
     expect(find.byKey(const ValueKey('front-options-ask2')), findsOneWidget);
     expect(find.byKey(const ValueKey('front-options-ask0')), findsNothing);
     expect(find.byType(FrontAskOptionsRow), findsOneWidget);
+
+    // Her turns carry what they cost, under the chips when there are any;
+    // a wake that recorded no call shows nothing.
+    expect(find.byType(FrontTurnCostLine), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('front-turn-cost-run-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('front-turn-cost-run-1')), findsNothing);
+    expect(
+      tester.getTopLeft(find.byKey(const ValueKey('front-turn-cost-run-2'))).dy,
+      greaterThan(
+        tester
+            .getBottomLeft(find.byKey(const ValueKey('front-options-ask2')))
+            .dy,
+      ),
+    );
   });
 
   testWidgets('a chip answers in its own words through the composer', (

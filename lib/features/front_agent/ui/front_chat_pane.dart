@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
+import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -81,19 +83,31 @@ class _Body extends ConsumerWidget {
             doors: doors,
           );
         }
+        if (message.role != AgentChatRole.agent) return null;
         // Chips only under her latest question: an older one has been
         // answered, or walked away from, and its options would send a reply
         // to a question nobody is asking any more.
         final options = thread.optionsByMessageId[message.id];
-        if (options != null && options.isNotEmpty && message.id == latestId) {
-          return FrontAskOptionsRow(
-            key: ValueKey('front-options-${message.id}'),
-            options: options,
-            enabled: !composer.isSending,
-            onChosen: (option) => controller.sendText(option.label),
-          );
-        }
-        return null;
+        final runKey = message.runKey;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (options != null &&
+                options.isNotEmpty &&
+                message.id == latestId) ...[
+              FrontAskOptionsRow(
+                key: ValueKey('front-options-${message.id}'),
+                options: options,
+                enabled: !composer.isSending,
+                onChosen: (option) => controller.sendText(option.label),
+              ),
+              SizedBox(height: context.designTokens.spacing.step1),
+            ],
+            // What her turn cost: the routing calls of the wake that wrote
+            // this row.
+            if (runKey != null) FrontTurnCostLine(runKey: runKey),
+          ],
+        );
       },
       dividerBuilder: (context, message, previous) {
         if (previous != null &&

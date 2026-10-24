@@ -40,7 +40,7 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
 
   /// The schema this build writes. A restored backup may carry an
   /// older schema, which Drift migrates, but never a newer one.
-  static const int currentSchemaVersion = 4;
+  static const int currentSchemaVersion = 5;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -102,6 +102,13 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
           'CREATE INDEX IF NOT EXISTS idx_attribution_output_latest '
           'ON ai_work_attributions(primary_output_type, primary_output_id, '
           'completed_at DESC, id DESC)',
+        );
+      }
+      if (from < 5) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_consumption_agent_run '
+          'ON consumption_events(agent_id, wake_run_key) '
+          'WHERE wake_run_key IS NOT NULL',
         );
       }
     },

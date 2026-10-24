@@ -2934,6 +2934,10 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     'idx_consumption_agent_created',
     'CREATE INDEX idx_consumption_agent_created ON consumption_events (agent_id, created_at) WHERE agent_id IS NOT NULL',
   );
+  late final Index idxConsumptionAgentRun = Index(
+    'idx_consumption_agent_run',
+    'CREATE INDEX idx_consumption_agent_run ON consumption_events (agent_id, wake_run_key) WHERE wake_run_key IS NOT NULL',
+  );
   late final Index idxConsumptionCategoryCreated = Index(
     'idx_consumption_category_created',
     'CREATE INDEX idx_consumption_category_created ON consumption_events (category_id, created_at)',
@@ -3031,6 +3035,32 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     );
   }
 
+  Selectable<SumConsumptionByAgentRunResult> sumConsumptionByAgentRun(
+    String? agentId,
+    String? wakeRunKey,
+  ) {
+    return customSelect(
+      'SELECT COUNT(*) AS call_count, COUNT(energy_kwh) AS impact_call_count, CAST(COALESCE(SUM(input_tokens), 0) AS INT) AS input_tokens, CAST(COALESCE(SUM(output_tokens), 0) AS INT) AS output_tokens, CAST(COALESCE(SUM(cached_input_tokens), 0) AS INT) AS cached_input_tokens, CAST(COALESCE(SUM(thoughts_tokens), 0) AS INT) AS thoughts_tokens, CAST(COALESCE(SUM(total_tokens), 0) AS INT) AS total_tokens, COALESCE(SUM(credits), 0.0) AS credits, COALESCE(SUM(energy_kwh), 0.0) AS energy_kwh, COALESCE(SUM(carbon_g_co2), 0.0) AS carbon_g_co2, COALESCE(SUM(water_liters), 0.0) AS water_liters, CAST(COALESCE(SUM(duration_ms), 0) AS INT) AS duration_ms FROM consumption_events WHERE agent_id = ?1 AND wake_run_key = ?2',
+      variables: [Variable<String>(agentId), Variable<String>(wakeRunKey)],
+      readsFrom: {consumptionEvents},
+    ).map(
+      (QueryRow row) => SumConsumptionByAgentRunResult(
+        callCount: row.read<int>('call_count'),
+        impactCallCount: row.read<int>('impact_call_count'),
+        inputTokens: row.read<int>('input_tokens'),
+        outputTokens: row.read<int>('output_tokens'),
+        cachedInputTokens: row.read<int>('cached_input_tokens'),
+        thoughtsTokens: row.read<int>('thoughts_tokens'),
+        totalTokens: row.read<int>('total_tokens'),
+        credits: row.read<double>('credits'),
+        energyKwh: row.read<double>('energy_kwh'),
+        carbonGCo2: row.read<double>('carbon_g_co2'),
+        waterLiters: row.read<double>('water_liters'),
+        durationMs: row.read<int>('duration_ms'),
+      ),
+    );
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3039,6 +3069,7 @@ abstract class _$ConsumptionDatabase extends GeneratedDatabase {
     consumptionEvents,
     idxConsumptionTaskCreated,
     idxConsumptionAgentCreated,
+    idxConsumptionAgentRun,
     idxConsumptionCategoryCreated,
     idxConsumptionCreated,
     idxConsumptionAttribution,
@@ -4365,6 +4396,35 @@ class SumConsumptionByAgentResult {
   final double waterLiters;
   final int durationMs;
   SumConsumptionByAgentResult({
+    required this.callCount,
+    required this.impactCallCount,
+    required this.inputTokens,
+    required this.outputTokens,
+    required this.cachedInputTokens,
+    required this.thoughtsTokens,
+    required this.totalTokens,
+    required this.credits,
+    required this.energyKwh,
+    required this.carbonGCo2,
+    required this.waterLiters,
+    required this.durationMs,
+  });
+}
+
+class SumConsumptionByAgentRunResult {
+  final int callCount;
+  final int impactCallCount;
+  final int inputTokens;
+  final int outputTokens;
+  final int cachedInputTokens;
+  final int thoughtsTokens;
+  final int totalTokens;
+  final double credits;
+  final double energyKwh;
+  final double carbonGCo2;
+  final double waterLiters;
+  final int durationMs;
+  SumConsumptionByAgentRunResult({
     required this.callCount,
     required this.impactCallCount,
     required this.inputTokens,
