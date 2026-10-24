@@ -347,6 +347,30 @@ void main() {
       expect(find.byType(IncomingVerificationModal), findsNothing);
     });
 
+    testWidgets("leaves a newer peer's ceremony alone when the sheet closes", (
+      tester,
+    ) async {
+      // The service keeps the latest incoming ceremony. One that arrived
+      // from another device while this sheet was open is not its to cancel.
+      var live = waitingFrom('NEWPHONE');
+      when(() => mockMatrixService.incomingVerification).thenAnswer(
+        (_) => live,
+      );
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+      expect(find.byType(IncomingVerificationModal), findsOneWidget);
+      live = verificationState(
+        id: 'incoming-2',
+        direction: SyncVerificationDirection.incoming,
+        peerDeviceId: 'SOMEONE_ELSE',
+        lastStep: EventTypes.KeyVerificationRequest,
+      );
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockMatrixService.cancelVerification(any()));
+    });
+
     testWidgets('cancels the answered ceremony, not an own one, when the '
         'sheet closes', (tester) async {
       when(

@@ -111,13 +111,19 @@ class _AutoVerificationLauncherState
       );
     } finally {
       // The ceremony this sheet showed: the peer's request if that is what
-      // was answered, else this device's own — or, after a handoff, the
-      // peer's ceremony the sheet carried on with, which lives on the same
-      // runner slot.
-      final shown = waiting != null
-          ? service.incomingVerification
-          : service.outgoingVerification;
-      if (shown != null) await service.cancelVerification(shown.id);
+      // was answered — and only while the service still holds that one,
+      // since it keeps the latest incoming ceremony and a newer peer's is
+      // not this sheet's to cancel — else this device's own, or, after a
+      // handoff, the peer's ceremony the sheet carried on with, which lives
+      // on the same runner slot.
+      final String? shownId;
+      if (waiting != null) {
+        final live = service.incomingVerification;
+        shownId = live?.id == waiting.id ? waiting.id : null;
+      } else {
+        shownId = service.outgoingVerification?.id;
+      }
+      if (shownId != null) await service.cancelVerification(shownId);
       if (mounted) {
         ref
           ..invalidate(matrixUnverifiedControllerProvider)

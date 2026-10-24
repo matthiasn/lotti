@@ -117,6 +117,47 @@ void main() {
     verify(() => mockMatrixService.acceptVerification(requestId)).called(1);
   });
 
+  testWidgets('acts on the request itself until the stream reports the '
+      'ceremony', (tester) async {
+    // The runner stream replays only to its first subscriber, which may be
+    // the add-device page. The sheet must not sit disabled waiting for a
+    // replay it will never get.
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        IncomingVerificationModal(request),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Verify'), findsOneWidget);
+    verify(() => mockMatrixService.acceptVerification(requestId)).called(1);
+  });
+
+  testWidgets("starts from the service's live ceremony for the same request", (
+    tester,
+  ) async {
+    when(
+      () => mockMatrixService.incomingVerification,
+    ).thenReturn(incomingEmoji);
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        IncomingVerificationModal(request),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    // Already at the emoji step: nothing to auto-accept, emoji to compare.
+    expect(find.text('They match'), findsOneWidget);
+    verifyNever(() => mockMatrixService.acceptVerification(any()));
+  });
+
   testWidgets('shows cancel label in emoji verification step', (tester) async {
     await pumpModalAt(tester, incomingEmoji);
 
@@ -225,7 +266,15 @@ void main() {
       if (attempts == 1) throw Exception('network error');
     });
 
-    await pumpModalAt(tester, incomingAt(''));
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        IncomingVerificationModal(request),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+    await tester.pump();
     await tester.tap(find.text('Verify'));
     await tester.pump();
 
@@ -779,7 +828,12 @@ void main() {
     tester,
   ) async {
     // The auto-accept was gated on !isDone, which a cancelled ceremony
-    // satisfies only by accident. Gating on pending states the intent.
+    // satisfies only by accident. Gating on pending states the intent. The
+    // service already holds the cancelled ceremony, so the sheet starts
+    // from it rather than from the request as it arrived.
+    when(
+      () => mockMatrixService.incomingVerification,
+    ).thenReturn(incomingCancelled);
     await pumpModalAt(tester, incomingCancelled);
 
     verifyNever(() => mockMatrixService.acceptVerification(any()));

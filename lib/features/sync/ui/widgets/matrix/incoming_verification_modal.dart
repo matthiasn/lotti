@@ -97,7 +97,13 @@ class _IncomingVerificationModalState
         widget.request.peerDeviceId ??
         'device name not found';
 
+    // The runner stream replays its state only to the first subscriber,
+    // and the add-device page may already be one. Start from what the
+    // service holds for this request, or from the request itself — the
+    // service answers a request by id before it has a runner.
+    final live = _matrixService.incomingVerification;
     return StreamBuilder<SyncVerificationState>(
+      initialData: live?.id == widget.request.id ? live : widget.request,
       stream: _matrixService.incomingVerifications,
       builder: (context, snapshot) {
         final state = snapshot.data;

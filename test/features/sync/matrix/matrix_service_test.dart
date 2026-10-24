@@ -2181,6 +2181,24 @@ void main() {
       expect(states.single.emojis, isNull);
     });
 
+    test('the state streams are the same instance on every read, so a '
+        'StreamBuilder never resubscribes on a rebuild', () {
+      final service = createService();
+
+      expect(
+        service.outgoingVerifications,
+        same(service.outgoingVerifications),
+      );
+      expect(
+        service.incomingVerifications,
+        same(service.incomingVerifications),
+      );
+      expect(
+        service.incomingVerificationRequests,
+        same(service.incomingVerificationRequests),
+      );
+    });
+
     test('a request without a transaction id still gets a stable id', () {
       final service = createService();
       final kv = ceremony(transactionId: 'unused');
@@ -2398,6 +2416,30 @@ void main() {
             LogDomain.sync,
             any<String>(that: startsWith('verification.completed')),
             subDomain: 'verification',
+          ),
+        ).called(1);
+      });
+
+      test('a cancel the SDK refuses is logged and the hand-off still '
+          'completes', () async {
+        final service = createService();
+        final own = ceremony(transactionId: 'txn-own');
+        when(own.cancel).thenThrow(StateError('offline'));
+        attachOutgoing(service, own);
+        final peer = ceremony(transactionId: 'txn-peer', deviceId: 'AAA');
+        service.rememberIncomingRequest(peer);
+
+        await service.handOffOutgoingVerificationTo('txn-peer');
+        addTearDown(service.keyVerificationRunner!.stopTimer);
+
+        verify(peer.acceptVerification).called(1);
+        expect(service.outgoingVerification?.id, 'txn-peer');
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'verification.handOff.cancel',
           ),
         ).called(1);
       });

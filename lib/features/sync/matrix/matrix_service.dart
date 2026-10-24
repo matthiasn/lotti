@@ -353,8 +353,11 @@ class MatrixService implements SyncService {
     }
   }
 
+  // Created once: a getter that mapped the stream afresh would hand every
+  // rebuild of a StreamBuilder a new instance to resubscribe to, and the
+  // controller would replay its state on each of those re-listens.
   @override
-  Stream<SyncVerificationState> get outgoingVerifications =>
+  late final Stream<SyncVerificationState> outgoingVerifications =
       keyVerificationStream.map((runner) => runner.toState());
 
   @override
@@ -362,7 +365,7 @@ class MatrixService implements SyncService {
       keyVerificationRunner?.toState();
 
   @override
-  Stream<SyncVerificationState> get incomingVerifications =>
+  late final Stream<SyncVerificationState> incomingVerifications =
       incomingKeyVerificationRunnerStream.map((runner) => runner.toState());
 
   @override
@@ -370,7 +373,7 @@ class MatrixService implements SyncService {
       incomingKeyVerificationRunner?.toState();
 
   @override
-  Stream<SyncVerificationState> get incomingVerificationRequests =>
+  late final Stream<SyncVerificationState> incomingVerificationRequests =
       incomingKeyVerificationController.stream.map(_requestState);
 
   SyncVerificationState _requestState(KeyVerification request) {
@@ -456,7 +459,19 @@ class MatrixService implements SyncService {
     final outgoing = keyVerificationRunner;
     if (outgoing != null) {
       outgoing.stopTimer();
-      await outgoing.keyVerification.cancel();
+      try {
+        await outgoing.keyVerification.cancel();
+      } catch (error, stackTrace) {
+        // The withdrawn ceremony is detached either way; a cancel the
+        // homeserver did not take must not leave the peer's request
+        // unanswered and the open sheet frozen.
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'verification.handOff.cancel',
+        );
+      }
     }
     final runner = KeyVerificationRunner(
       incoming,

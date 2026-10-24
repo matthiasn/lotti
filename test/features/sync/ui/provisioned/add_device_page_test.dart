@@ -24,7 +24,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -196,7 +195,7 @@ void main() {
   }) => verificationState(
     peerUserId: userId,
     peerDeviceId: deviceId,
-    lastStep: successful ? EventTypes.KeyVerificationDone : '',
+    lastStep: successful ? 'm.key.verification.done' : '',
     outcome: successful
         ? KeyVerificationOutcome.success
         : KeyVerificationOutcome.pending,
