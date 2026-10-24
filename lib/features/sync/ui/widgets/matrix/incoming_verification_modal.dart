@@ -101,10 +101,15 @@ class _IncomingVerificationModalState
     // and the add-device page may already be one. Start from what the
     // service holds for this request, or from the request itself — the
     // service answers a request by id before it has a runner.
+    // Filtered to this request: the service publishes every incoming
+    // ceremony on one stream, and a newer peer's must not be rendered — or
+    // accepted, or cancelled — by the sheet that was opened for this one.
     final live = _matrixService.incomingVerification;
     return StreamBuilder<SyncVerificationState>(
       initialData: live?.id == widget.request.id ? live : widget.request,
-      stream: _matrixService.incomingVerifications,
+      stream: _matrixService.incomingVerifications.where(
+        (state) => state.id == widget.request.id,
+      ),
       builder: (context, snapshot) {
         final state = snapshot.data;
         final emojis = state?.emojis;

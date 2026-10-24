@@ -158,6 +158,32 @@ void main() {
     verifyNever(() => mockMatrixService.acceptVerification(any()));
   });
 
+  testWidgets("ignores another request's ceremony on the shared stream", (
+    tester,
+  ) async {
+    // The service publishes every incoming ceremony on one stream and keeps
+    // only the latest. A newer peer's emoji step must not appear in — or be
+    // confirmed from — the sheet opened for this request.
+    await pumpModalAt(
+      tester,
+      emojiStep(
+        id: 'incoming-2',
+        direction: SyncVerificationDirection.incoming,
+        peerDeviceId: 'SOMEONE_ELSE',
+      ),
+    );
+
+    expect(find.text('They match'), findsNothing);
+    expect(find.text('Verify'), findsOneWidget);
+    verify(() => mockMatrixService.acceptVerification(requestId)).called(1);
+
+    controller.add(incomingEmoji);
+    // Two pumps: the emission crosses the broadcast stream on a microtask.
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('They match'), findsOneWidget);
+  });
+
   testWidgets('shows cancel label in emoji verification step', (tester) async {
     await pumpModalAt(tester, incomingEmoji);
 
