@@ -58,6 +58,8 @@ extension _AppScreenLayout on _AppScreenState {
     // that could name something outside the locked category — saved filters,
     // the activity disclosure, Settings, the contact band.
     final lockdown = ref.watch(lockdownControllerProvider);
+    final frontChatOn =
+        ref.watch(configFlagProvider(enableFrontAgentFlag)).value ?? false;
     final visibleMain = lockdown.isActive
         ? mainDestinations
               .where((dest) => _lockdownVisibleKinds.contains(dest.kind))
@@ -146,6 +148,15 @@ extension _AppScreenLayout on _AppScreenState {
               settingsDestination: lockdown.isActive
                   ? null
                   : settingsDestination?.toDesktopSidebarDestination(),
+              // The companion's chat is not a tab (decision 3): it rides the
+              // utility slot above Settings, available collapsed too, and
+              // opens as a sheet over whatever tab is showing.
+              utilityDestination: frontChatOn && !lockdown.isActive
+                  ? _frontChatDestination(context)
+                  : null,
+              onUtilitySelected: frontChatOn && !lockdown.isActive
+                  ? () => showFrontChatSheet(context)
+                  : null,
               onSettingsSelected: settingsIndex >= 0 && !lockdown.isActive
                   ? () => navService.tapIndex(settingsIndex)
                   : null,
@@ -297,8 +308,17 @@ extension _AppScreenLayout on _AppScreenState {
     // on the list tabs that hand one over, the active page's create action.
     // Built lazily: on routes that suppress the bar entirely it is never
     // constructed.
+    final frontChatOn =
+        ref.watch(configFlagProvider(enableFrontAgentFlag)).value ?? false;
     Widget buildLauncher() => MobileNavigationLauncher(
       onOpenMenu: _mobileDrawer.open,
+      utilityAction: frontChatOn
+          ? MobileNavDockAction.glyph(
+              label: context.messages.frontChatOpen,
+              icon: LottiIcons.assistant,
+              onPressed: () => showFrontChatSheet(context),
+            )
+          : null,
       pageAction: _launcherDockAction(context, destinations[index].kind),
     );
 
@@ -460,6 +480,15 @@ extension _AppScreenLayout on _AppScreenState {
   /// slide the whole launcher away on their detail routes, and an entry's or
   /// an event's page unmounts it for its own action bar, so a stale action is
   /// never on screen.
+  /// The companion's row in the desktop rail: her glyph and her name, a
+  /// sheet opener rather than a destination, so it is never active.
+  DesktopSidebarDestination _frontChatDestination(BuildContext context) =>
+      DesktopSidebarDestination(
+        label: context.messages.frontChatOpen,
+        iconBuilder: ({required bool active}) =>
+            const Icon(LottiIcons.assistant),
+      );
+
   MobileNavDockAction? _launcherDockAction(
     BuildContext context,
     _AppNavigationDestinationKind kind,

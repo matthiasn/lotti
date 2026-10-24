@@ -29,6 +29,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
@@ -37,6 +38,8 @@ import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     as ai_config;
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
@@ -51,6 +54,11 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -93,6 +101,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
@@ -6880,6 +6889,106 @@ void main() {
         await tester.pump();
       },
     );
+  });
+
+  group('the companion chat entry points', () {
+    List<Override> frontChatOverrides({required bool on}) => [
+      configFlagProvider.overrideWith(
+        (ref, flag) => Stream.value(on && flag == enableFrontAgentFlag),
+      ),
+      frontChatThreadProvider.overrideWith(
+        (ref) async => FrontChatThread.empty,
+      ),
+      agentConsumptionTotalsProvider(
+        frontAgentId,
+      ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
+    ];
+
+    Future<MockNavService> stubbedNav() async {
+      final nav = MockNavService();
+      await _stubNavService(
+        nav,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      when(() => nav.index).thenReturn(0);
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      return nav;
+    }
+
+    testWidgets('the desktop rail carries her row above Settings only while '
+        'the flag is on, and the row opens her sheet', (tester) async {
+      final nav = await stubbedNav();
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        viewportSize: _desktopViewportSize,
+        extraOverrides: frontChatOverrides(on: false),
+      );
+      expect(find.text('Ask the companion'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        viewportSize: _desktopViewportSize,
+        extraOverrides: frontChatOverrides(on: true),
+      );
+      final row = find.text('Ask the companion');
+      expect(row, findsOneWidget);
+      expect(
+        tester.getCenter(row).dy,
+        lessThan(tester.getCenter(find.text('Settings')).dy),
+      );
+      final rail = tester.widget<DesktopNavigationSidebar>(
+        find.byType(DesktopNavigationSidebar),
+      );
+      expect(rail.utilityDestination?.label, 'Ask the companion');
+
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.byType(FrontChatPane), findsOneWidget);
+      // A sheet, not a tab: nothing was navigated.
+      verifyNever(() => nav.tapIndex(any()));
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.close));
+      await tester.pumpAndSettle();
+      expect(find.byType(FrontChatPane), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('the phone launcher docks her button beside the menu only '
+        'while the flag is on, and it opens her sheet', (tester) async {
+      final nav = await stubbedNav();
+      final utilityButton = find.byKey(
+        MobileNavigationLauncherKeys.utilityButton,
+      );
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: frontChatOverrides(on: false),
+      );
+      expect(utilityButton, findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      await _pumpAppScreen(
+        tester,
+        navService: nav,
+        extraOverrides: frontChatOverrides(on: true),
+      );
+      expect(utilityButton, findsOneWidget);
+      expect(find.bySemanticsLabel('Ask the companion'), findsOneWidget);
+
+      await tester.tap(utilityButton);
+      await tester.pumpAndSettle();
+      expect(find.byType(FrontChatPane), findsOneWidget);
+      verifyNever(() => nav.tapIndex(any()));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }
 

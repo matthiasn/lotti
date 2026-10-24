@@ -2560,6 +2560,8 @@
   "configFlagEnableEventsDescription": "Show the Events feature to create, track, and manage events in your journal.",
   "configFlagEnableForkHealing": "Agent fork healing",
   "configFlagEnableForkHealingDescription": "Heal divergent agent histories from multi-device use by merging them at the next wake.",
+  "configFlagEnableFrontAgent": "Companion chat",
+  "configFlagEnableFrontAgentDescription": "One place to ask anything: the companion finds the task, goal, project or person agent that knows and brings back its answer. Experimental.",
   "configFlagEnableHabitsPage": "Enable Habits page",
   "configFlagEnableHabitsPageDescription": "Show the Habits page in the main navigation. Track and manage your daily habits here.",
   "configFlagEnableLogging": "Enable logging",
@@ -3988,6 +3990,70 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
+  "frontChatEmpty": "Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.",
+  "frontChatOpen": "Ask the companion",
+  "frontChatPlaceholder": "Ask anything…",
+  "frontChatResponding": "Finding who knows…",
+  "frontChatSubtitle": "Ask anything — she finds who knows",
+  "frontChatTitle": "Companion",
+  "frontChatYesterday": "Yesterday",
+  "frontDoorAttribution": "From {owner}",
+  "@frontDoorAttribution": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorAwaitingReply": "{owner} is still replying…",
+  "@frontDoorAwaitingReply": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorFailed": "Asking {owner} failed.",
+  "@frontDoorFailed": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorIncomplete": "may be incomplete",
+  "frontDoorInferenceUnavailable": "{owner} has no working AI setup.",
+  "@frontDoorInferenceUnavailable": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorKindGoal": "the goal",
+  "frontDoorKindOther": "this",
+  "frontDoorKindPerson": "the person",
+  "frontDoorKindProject": "the project",
+  "frontDoorKindTask": "the task",
+  "frontDoorNoAgent": "{owner} has no agent to ask yet.",
+  "@frontDoorNoAgent": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorNoDoor": "Nowhere to take this yet.",
+  "frontDoorStatementsLater": "Not filed: for now she only answers questions.",
+  "frontDoorSummaryBased": "from summaries",
+  "frontDoorWalking": "Asking {owner}…",
+  "@frontDoorWalking": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
   "geminiThinkingModeHighDescription": "Deepest reasoning; can increase latency and cost.",
   "geminiThinkingModeHighLabel": "High",
   "geminiThinkingModeLowDescription": "Low reasoning for fast everyday prompts.",

@@ -3,6 +3,16 @@ part of 'agent_chat_view.dart';
 typedef AgentChatMessageAttachmentBuilder =
     Widget? Function(BuildContext context, AgentChatMessage message);
 
+/// Builds what separates [message] from [previous] — a day divider in a
+/// thread that runs across days — or null for nothing. [previous] is null
+/// for the first message.
+typedef AgentChatMessageDividerBuilder =
+    Widget? Function(
+      BuildContext context,
+      AgentChatMessage message,
+      AgentChatMessage? previous,
+    );
+
 /// Reusable durable-agent conversation surface. Consumers own sending and
 /// draft state; this component owns only projection, bubbles and composition.
 class AgentChatView extends ConsumerStatefulWidget {
@@ -16,6 +26,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onRetry,
     this.hasFailedTurn = false,
     this.attachmentBuilder,
+    this.dividerBuilder,
     this.history,
     this.emptyState,
     this.emptyMessage,
@@ -46,6 +57,10 @@ class AgentChatView extends ConsumerStatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onRetry;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
+
+  /// Rendered above a message, between it and the one before — the front
+  /// thread's day dividers. Null renders nothing between messages.
+  final AgentChatMessageDividerBuilder? dividerBuilder;
 
   /// A scoped consumer can supply its own privacy-filtered chat projection.
   /// When present the agent-wide message log is never subscribed to.

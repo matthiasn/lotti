@@ -3955,6 +3955,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sloučí rozvětvené historie agenta z více zařízení při příštím probuzení.';
 
   @override
+  String get configFlagEnableFrontAgent => 'Chat se společnicí';
+
+  @override
+  String get configFlagEnableFrontAgentDescription =>
+      'Jedno místo pro jakoukoli otázku: společnice najde agenta úkolu, cíle, projektu nebo člověka, který to ví, a přinese jeho odpověď. Experimentální.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Povolit stránku Návyků';
 
   @override
@@ -6851,6 +6858,86 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get filterSelectionNoMatches => 'Žádné shody';
+
+  @override
+  String get frontChatEmpty =>
+      'Zeptej se na úkol, cíl, projekt nebo člověka. Najde, kdo to ví, a přinese odpověď.';
+
+  @override
+  String get frontChatOpen => 'Zeptat se společnice';
+
+  @override
+  String get frontChatPlaceholder => 'Zeptej se na cokoli…';
+
+  @override
+  String get frontChatResponding => 'Hledá, kdo to ví…';
+
+  @override
+  String get frontChatSubtitle => 'Zeptej se na cokoli — ona najde, kdo to ví';
+
+  @override
+  String get frontChatTitle => 'Společnice';
+
+  @override
+  String get frontChatYesterday => 'Včera';
+
+  @override
+  String frontDoorAttribution(String owner) {
+    return 'Od: $owner';
+  }
+
+  @override
+  String frontDoorAwaitingReply(String owner) {
+    return '$owner ještě odpovídá…';
+  }
+
+  @override
+  String frontDoorFailed(String owner) {
+    return 'Dotaz na $owner selhal.';
+  }
+
+  @override
+  String get frontDoorIncomplete => 'může být neúplné';
+
+  @override
+  String frontDoorInferenceUnavailable(String owner) {
+    return '$owner nemá funkční nastavení AI.';
+  }
+
+  @override
+  String get frontDoorKindGoal => 'cíl';
+
+  @override
+  String get frontDoorKindOther => 'tohle';
+
+  @override
+  String get frontDoorKindPerson => 'osoba';
+
+  @override
+  String get frontDoorKindProject => 'projekt';
+
+  @override
+  String get frontDoorKindTask => 'úkol';
+
+  @override
+  String frontDoorNoAgent(String owner) {
+    return '$owner zatím nemá agenta, kterého by se dalo zeptat.';
+  }
+
+  @override
+  String get frontDoorNoDoor => 'Zatím to není kam vzít.';
+
+  @override
+  String get frontDoorStatementsLater =>
+      'Nezaloženo: zatím odpovídá jen na otázky.';
+
+  @override
+  String get frontDoorSummaryBased => 'ze souhrnů';
+
+  @override
+  String frontDoorWalking(String owner) {
+    return 'Ptá se: $owner…';
+  }
 
   @override
   String get geminiThinkingModeHighDescription =>

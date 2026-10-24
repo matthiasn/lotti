@@ -71,6 +71,7 @@ void main() {
         enableAiStreamingFlag: true,
         enableAiSummaryTtsFlag: false,
         enableCompanionFlag: false,
+        enableFrontAgentFlag: false,
         enableQueryChatFlag: false,
         recordLocationFlag: false,
         resendAttachments: false,

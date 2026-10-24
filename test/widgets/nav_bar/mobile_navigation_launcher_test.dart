@@ -64,6 +64,7 @@ void main() {
 
   Widget subject({
     MobileNavDockAction? pageAction,
+    MobileNavDockAction? utilityAction,
     VoidCallback? openMenu,
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
@@ -74,6 +75,7 @@ void main() {
       child: MobileNavigationLauncher(
         onOpenMenu: openMenu ?? onOpenMenu,
         pageAction: pageAction,
+        utilityAction: utilityAction,
       ),
     ),
     theme: theme ?? DesignSystemTheme.light(),
@@ -241,6 +243,94 @@ void main() {
             leadingGutterOf(tester) -
             trailingGutterOf(tester),
       );
+    });
+  });
+
+  group('the utility button', () {
+    final utilityButton = find.byKey(
+      MobileNavigationLauncherKeys.utilityButton,
+    );
+    MobileNavDockAction utility({VoidCallback? onPressed}) =>
+        MobileNavDockAction.glyph(
+          label: 'Ask the companion',
+          icon: LottiIcons.assistant,
+          onPressed: onPressed ?? onAction,
+        );
+
+    testWidgets('is absent unless the shell docks one', (tester) async {
+      await tester.pumpWidget(subject(pageAction: action()));
+      expect(utilityButton, findsNothing);
+    });
+
+    testWidgets('sits a gap after the menu button, the same disc on the same '
+        'glass, and announces its name', (tester) async {
+      await tester.pumpWidget(
+        subject(utilityAction: utility(), pageAction: action()),
+      );
+
+      final menu = menuRect(tester);
+      final rect = tester.getRect(utilityButton);
+      expect(
+        rect.left,
+        closeTo(
+          menu.right +
+              MobileNavigationLauncher.chipGap(launcherContext(tester)),
+          0.01,
+        ),
+      );
+      expect(rect.width, closeTo(menu.width, 0.01));
+      expect(rect.center.dy, closeTo(menu.center.dy, 0.01));
+      final button = tester.widget<DsGlassRoundButton>(utilityButton);
+      expect(button.icon, LottiIcons.assistant);
+      expect(button.backgroundColor, isNull);
+      final accent = launcherContext(
+        tester,
+      ).designTokens.colors.interactive.enabled;
+      expect(button.outlineColor, accent);
+      expect(button.iconColor, accent);
+      expect(find.bySemanticsLabel('Ask the companion'), findsOneWidget);
+      // The page action still hugs the trailing end.
+      expect(
+        pillRect(tester).right,
+        closeTo(launcherRect(tester).right - trailingGutterOf(tester), 0.01),
+      );
+    });
+
+    testWidgets('opens what it was given when tapped', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        subject(utilityAction: utility(onPressed: () => taps++)),
+      );
+      await tester.tap(utilityButton);
+      expect(taps, 1);
+    });
+
+    testWidgets('takes its chip and gap out of the room the worded action '
+        'has, so the label folds sooner', (tester) async {
+      await pumpAtFitThreshold(tester, pageAction: action(), delta: 0);
+      final context = launcherContext(tester);
+      expect(MobileNavigationLauncher.labelsFit(context, action()), isTrue);
+      expect(
+        MobileNavigationLauncher.labelsFit(
+          context,
+          action(),
+          utilityDocked: true,
+        ),
+        isFalse,
+      );
+
+      await tester.pumpWidget(
+        subject(
+          utilityAction: utility(),
+          pageAction: action(),
+          mediaQueryData: sized(
+            Size(tester.getSize(find.byType(Scaffold)).width, 932),
+          ),
+        ),
+      );
+      expect(find.text('Add a task'), findsNothing);
+      expect(glyphActionButton, findsOneWidget);
+      expect(find.bySemanticsLabel('Add a task'), findsOneWidget);
     });
   });
 

@@ -66,6 +66,69 @@ void main() {
     });
   }
 
+  testWidgets('a divider builder places its widget above a message, keyed '
+      'to it, and is handed the message before', (tester) async {
+    final seen = <(String, String?)>[];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'agent',
+            agentName: 'Habitat Watcher',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+            history: AsyncData([
+              AgentChatMessage(
+                id: 'a',
+                role: AgentChatRole.user,
+                text: 'Monday?',
+                createdAt: DateTime(2026, 9, 14),
+              ),
+              AgentChatMessage(
+                id: 'b',
+                role: AgentChatRole.agent,
+                text: 'Monday.',
+                createdAt: DateTime(2026, 9, 14, 1),
+              ),
+              AgentChatMessage(
+                id: 'c',
+                role: AgentChatRole.user,
+                text: 'Tuesday?',
+                createdAt: DateTime(2026, 9, 15),
+              ),
+            ]),
+            dividerBuilder: (_, message, previous) {
+              seen.add((message.id, previous?.id));
+              if (previous != null &&
+                  previous.createdAt.day == message.createdAt.day) {
+                return null;
+              }
+              return Text('Day ${message.createdAt.day}');
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(seen, [('a', null), ('b', 'a'), ('c', 'b')]);
+    expect(find.text('Day 14'), findsOneWidget);
+    expect(find.text('Day 15'), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-chat-divider-a')), findsOneWidget);
+    expect(find.byKey(const ValueKey('goal-chat-divider-b')), findsNothing);
+    expect(find.byKey(const ValueKey('goal-chat-divider-c')), findsOneWidget);
+    // Above its message, not below.
+    expect(
+      tester.getBottomLeft(find.text('Day 15')).dy,
+      lessThanOrEqualTo(
+        tester.getTopLeft(find.byKey(const ValueKey('goal-chat-message-c'))).dy,
+      ),
+    );
+  });
+
   testWidgets('question recovery stays outside the user bubble', (
     tester,
   ) async {

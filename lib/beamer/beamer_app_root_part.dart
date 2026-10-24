@@ -221,6 +221,15 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
           return showKeyboardShortcutsOverlay(modalContext);
         },
       ),
+      AppCommandId.openFrontChat: AppCommandHandler(
+        isEnabled: () =>
+            ref.read(configFlagProvider(enableFrontAgentFlag)).value ?? false,
+        invoke: (invocation) {
+          final modalContext =
+              routerDelegate.navigatorKey.currentContext ?? invocation.context;
+          return showFrontChatSheet(modalContext);
+        },
+      ),
       AppCommandId.createTextEntry: AppCommandHandler(
         invoke: (_) async {
           final linkedId = await widget.linkedIdResolver();

@@ -126,6 +126,8 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/state/live_world_services.dart';
+import 'package:lotti/features/front_agent/service/front_agent_service.dart';
+import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -1613,6 +1615,10 @@ class MockHabitsRepository extends Mock implements HabitsRepository {}
 class MockGoalAgentService extends Mock implements GoalAgentService {}
 
 class MockGoalChatService extends Mock implements GoalChatService {}
+
+class MockFrontAgentService extends Mock implements FrontAgentService {}
+
+class MockFrontChatService extends Mock implements FrontChatService {}
 
 class MockNudgeInteractions extends Mock implements NudgeInteractions {}
 

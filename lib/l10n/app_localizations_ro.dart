@@ -3974,6 +3974,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Îmbină istoricurile divergente ale agentului rezultate din utilizarea pe mai multe dispozitive la următoarea activare.';
 
   @override
+  String get configFlagEnableFrontAgent => 'Chat cu însoțitoarea';
+
+  @override
+  String get configFlagEnableFrontAgentDescription =>
+      'Un singur loc pentru orice întrebare: însoțitoarea găsește agentul de sarcină, obiectiv, proiect sau persoană care știe și aduce răspunsul acestuia. Experimental.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Activați pagina Obiceiuri';
 
   @override
@@ -6888,6 +6895,86 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get filterSelectionNoMatches => 'Fără rezultate';
+
+  @override
+  String get frontChatEmpty =>
+      'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană. Ea găsește cine știe și aduce răspunsul.';
+
+  @override
+  String get frontChatOpen => 'Întrebați însoțitoarea';
+
+  @override
+  String get frontChatPlaceholder => 'Întrebați orice…';
+
+  @override
+  String get frontChatResponding => 'Caută cine știe…';
+
+  @override
+  String get frontChatSubtitle => 'Întrebați orice — ea găsește cine știe';
+
+  @override
+  String get frontChatTitle => 'Însoțitoare';
+
+  @override
+  String get frontChatYesterday => 'Ieri';
+
+  @override
+  String frontDoorAttribution(String owner) {
+    return 'De la $owner';
+  }
+
+  @override
+  String frontDoorAwaitingReply(String owner) {
+    return '$owner încă răspunde…';
+  }
+
+  @override
+  String frontDoorFailed(String owner) {
+    return 'Întrebarea către $owner a eșuat.';
+  }
+
+  @override
+  String get frontDoorIncomplete => 'poate fi incomplet';
+
+  @override
+  String frontDoorInferenceUnavailable(String owner) {
+    return '$owner nu are o configurație AI funcțională.';
+  }
+
+  @override
+  String get frontDoorKindGoal => 'obiectivul';
+
+  @override
+  String get frontDoorKindOther => 'aceasta';
+
+  @override
+  String get frontDoorKindPerson => 'persoana';
+
+  @override
+  String get frontDoorKindProject => 'proiectul';
+
+  @override
+  String get frontDoorKindTask => 'sarcina';
+
+  @override
+  String frontDoorNoAgent(String owner) {
+    return '$owner nu are încă un agent care să poată fi întrebat.';
+  }
+
+  @override
+  String get frontDoorNoDoor => 'Deocamdată nu există unde să fie dus.';
+
+  @override
+  String get frontDoorStatementsLater =>
+      'Neînregistrat: deocamdată răspunde doar la întrebări.';
+
+  @override
+  String get frontDoorSummaryBased => 'din rezumate';
+
+  @override
+  String frontDoorWalking(String owner) {
+    return 'Întreabă $owner…';
+  }
 
   @override
   String get geminiThinkingModeHighDescription =>

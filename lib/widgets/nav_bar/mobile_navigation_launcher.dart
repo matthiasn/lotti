@@ -75,6 +75,9 @@ class MobileNavDockAction {
 abstract final class MobileNavigationLauncherKeys {
   /// The menu button that opens the sidebar.
   static const Key menuButton = Key('mobile-navigation-menu-button');
+
+  /// The utility button beside the menu button, when the shell docks one.
+  static const Key utilityButton = Key('mobile-navigation-utility-button');
 }
 
 /// The mobile navigation launcher: one floating row over the page.
@@ -100,11 +103,17 @@ class MobileNavigationLauncher extends StatelessWidget {
   const MobileNavigationLauncher({
     required this.onOpenMenu,
     this.pageAction,
+    this.utilityAction,
     super.key,
   });
 
   /// Opens the sidebar.
   final VoidCallback onOpenMenu;
+
+  /// An app-wide action docked beside the menu button, on every tab — the
+  /// companion's chat. A glyph button of the menu button's size and glass,
+  /// never worded: it is not the page's action and must not outrank it.
+  final MobileNavDockAction? utilityAction;
 
   /// The active page's primary action, or null when the page has none — the
   /// menu button then stands alone in its corner.
@@ -164,9 +173,15 @@ class MobileNavigationLauncher extends StatelessWidget {
   ///
   /// Only consulted for a [MobileNavDockAction.worded] action; a
   /// [MobileNavDockAction.glyph] one is round at every width.
-  static bool labelsFit(BuildContext context, MobileNavDockAction action) =>
-      chipHeight(context) +
-          chipGap(context) +
+  ///
+  /// [utilityDocked] reserves the utility button's chip and gap too.
+  static bool labelsFit(
+    BuildContext context,
+    MobileNavDockAction action, {
+    bool utilityDocked = false,
+  }) =>
+      chipHeight(context) * (utilityDocked ? 2 : 1) +
+          chipGap(context) * (utilityDocked ? 2 : 1) +
           DsGlassPill.intrinsicWidth(context, label: action.label) <=
       availableRowWidth(context);
 
@@ -191,6 +206,7 @@ class MobileNavigationLauncher extends StatelessWidget {
     final tokens = context.designTokens;
     final height = chipHeight(context);
     final action = pageAction;
+    final utility = utilityAction;
     // The safe-area insets are physical; the gutters follow the reading
     // direction.
     final insets = MediaQuery.paddingOf(context);
@@ -220,6 +236,23 @@ class MobileNavigationLauncher extends StatelessWidget {
               iconSize: IconSizes.l,
             ),
           ),
+          if (utility != null) ...[
+            SizedBox(width: chipGap(context)),
+            DsGlassChipSurface(
+              radius: BorderRadius.circular(height / 2),
+              blurred: true,
+              child: DsGlassRoundButton(
+                key: MobileNavigationLauncherKeys.utilityButton,
+                icon: utility.icon,
+                semanticLabel: utility.semanticLabel ?? utility.label,
+                onPressed: utility.onPressed,
+                iconColor: tokens.colors.interactive.enabled,
+                outlineColor: tokens.colors.interactive.enabled,
+                diameter: height,
+                iconSize: IconSizes.l,
+              ),
+            ),
+          ],
           if (action != null) ...[
             // The gap is the least the two may sit apart; the action takes
             // whatever the row has left and hugs its trailing end.
@@ -233,7 +266,13 @@ class MobileNavigationLauncher extends StatelessWidget {
                 child: _LauncherPageActionChip(
                   action: action,
                   height: height,
-                  labeled: action.worded && labelsFit(context, action),
+                  labeled:
+                      action.worded &&
+                      labelsFit(
+                        context,
+                        action,
+                        utilityDocked: utility != null,
+                      ),
                 ),
               ),
             ),
