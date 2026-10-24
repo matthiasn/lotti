@@ -19,12 +19,20 @@ void main() {
     VoidCallback? onClose,
     ConsumptionTotals? totals,
     bool companion = false,
+    double width = 400,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        Scaffold(body: FrontChatHeader(onClose: onClose ?? () {})),
+        Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: width,
+              child: FrontChatHeader(onClose: onClose ?? () {}),
+            ),
+          ),
+        ),
         overrides: [
           configFlagProvider.overrideWith(
             (ref, flag) =>
@@ -88,6 +96,32 @@ void main() {
     );
     expect(pill.totals.credits, 0.42);
     expect(pill.totals.totalTokens, 2000);
+    // In the sheet's width the pill sits under the subtitle, so what she
+    // does is never squeezed into an ellipsis.
+    expect(
+      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.cost)).dy,
+      greaterThanOrEqualTo(
+        tester.getBottomLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dy,
+      ),
+    );
+    expect(
+      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.cost)).dx,
+      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dx,
+    );
+  });
+
+  testWidgets('with room for a word beside it the pill rides the title line', (
+    tester,
+  ) async {
+    await pumpHeader(
+      tester,
+      width: 720,
+      totals: makeConsumptionTotals(callCount: 1, totalTokens: 10),
+    );
+    final cost = tester.getRect(find.byKey(FrontChatHeaderKeys.cost));
+    final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
+    expect(cost.left, greaterThan(title.right));
+    expect(cost.top, lessThan(title.bottom));
   });
 
   testWidgets('wears the spark tile when the companion is off', (

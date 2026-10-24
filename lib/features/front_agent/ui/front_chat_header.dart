@@ -7,6 +7,7 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -56,63 +57,78 @@ class FrontChatHeader extends ConsumerWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.step4),
-        child: Row(
-          children: [
-            _Figure(companionOn: companionOn),
-            SizedBox(width: tokens.spacing.step3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    messages.frontChatTitle,
-                    key: FrontChatHeaderKeys.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The pill rides the title line where there is room for a word
+            // beside it — the same fold every page header uses — and drops
+            // under the subtitle in the sheet, whose width would otherwise
+            // squeeze what she does into an ellipsis.
+            final pillInline = constraints.maxWidth >= kPageHeaderFoldWidth;
+            final pill = totals == null
+                ? null
+                : ConsumptionSummaryPill(
+                    key: FrontChatHeaderKeys.cost,
+                    totals: totals,
+                    foregroundColor: tokens.colors.text.mediumEmphasis,
+                  );
+            return Row(
+              children: [
+                _Figure(companionOn: companionOn),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        messages.frontChatTitle,
+                        key: FrontChatHeaderKeys.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(color: tokens.colors.text.highEmphasis),
+                      ),
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        messages.frontChatSubtitle,
+                        key: FrontChatHeaderKeys.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                      if (pill != null && !pillInline) ...[
+                        SizedBox(height: tokens.spacing.step2),
+                        pill,
+                      ],
+                    ],
                   ),
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    messages.frontChatSubtitle,
-                    key: FrontChatHeaderKeys.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
+                ),
+                if (pill != null && pillInline) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  pill,
                 ],
-              ),
-            ),
-            if (totals != null) ...[
-              SizedBox(width: tokens.spacing.step2),
-              ConsumptionSummaryPill(
-                key: FrontChatHeaderKeys.cost,
-                totals: totals,
-                foregroundColor: tokens.colors.text.mediumEmphasis,
-              ),
-            ],
-            SizedBox(width: tokens.spacing.step2),
-            DesignSystemIconAction(
-              key: FrontChatHeaderKeys.internals,
-              tooltip: messages.aiInternalsTitle,
-              onPressed: () => AgentInternalsPanel.show(
-                context: context,
-                agentId: frontAgentId,
-                agentName: messages.frontChatTitle,
-              ),
-              icon: LottiIcons.reasoning,
-            ),
-            DesignSystemIconAction(
-              key: FrontChatHeaderKeys.close,
-              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-              onPressed: onClose,
-              icon: LottiIcons.close,
-            ),
-          ],
+                SizedBox(width: tokens.spacing.step2),
+                DesignSystemIconAction(
+                  key: FrontChatHeaderKeys.internals,
+                  tooltip: messages.aiInternalsTitle,
+                  onPressed: () => AgentInternalsPanel.show(
+                    context: context,
+                    agentId: frontAgentId,
+                    agentName: messages.frontChatTitle,
+                  ),
+                  icon: LottiIcons.reasoning,
+                ),
+                DesignSystemIconAction(
+                  key: FrontChatHeaderKeys.close,
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: onClose,
+                  icon: LottiIcons.close,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
