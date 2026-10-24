@@ -191,6 +191,29 @@ class ConsumptionRepository {
     );
   }
 
+  /// Sum every persisted metric of one wake of [agentId] — the cost of one
+  /// turn in a chat thread, read by the run key its reply row carries.
+  Future<ConsumptionTotals> totalsForAgentRun({
+    required String agentId,
+    required String runKey,
+  }) async {
+    final row = await _db.sumConsumptionByAgentRun(agentId, runKey).getSingle();
+    return ConsumptionTotals(
+      callCount: row.callCount,
+      impactCallCount: row.impactCallCount,
+      inputTokens: row.inputTokens,
+      outputTokens: row.outputTokens,
+      cachedInputTokens: row.cachedInputTokens,
+      thoughtsTokens: row.thoughtsTokens,
+      totalTokens: row.totalTokens,
+      credits: row.credits,
+      energyKwh: row.energyKwh,
+      carbonGCo2: row.carbonGCo2,
+      waterLiters: row.waterLiters,
+      durationMs: row.durationMs,
+    );
+  }
+
   /// Slim projection of every call in `[start, end)` for time-bucketed
   /// per-category aggregation: only `created_at`, the denormalized
   /// `category_id`, and the metric columns — never the `serialized` blob.

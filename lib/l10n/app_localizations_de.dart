@@ -3940,6 +3940,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Auseinandergelaufene Agenten-Verläufe aus der Nutzung mehrerer Geräte beim nächsten Aufwachen zusammenführen.';
 
   @override
+  String get configFlagEnableFrontAgent => 'Begleiterin-Chat';
+
+  @override
+  String get configFlagEnableFrontAgentDescription =>
+      'Ein Ort für alle Fragen: Die Begleiterin findet den Aufgaben-, Ziel-, Projekt- oder Personen-Agenten, der es weiß, und bringt seine Antwort mit. Experimentell.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Seite Gewohnheiten aktivieren';
 
   @override
@@ -6820,6 +6827,86 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get filterSelectionNoMatches => 'Keine Treffer';
+
+  @override
+  String get frontChatEmpty =>
+      'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person. Sie findet, wer es weiß, und bringt die Antwort mit.';
+
+  @override
+  String get frontChatOpen => 'Begleiterin fragen';
+
+  @override
+  String get frontChatPlaceholder => 'Frag irgendwas…';
+
+  @override
+  String get frontChatResponding => 'Sucht, wer es weiß…';
+
+  @override
+  String get frontChatSubtitle => 'Frag irgendwas — sie findet, wer es weiß';
+
+  @override
+  String get frontChatTitle => 'Begleiterin';
+
+  @override
+  String get frontChatYesterday => 'Gestern';
+
+  @override
+  String frontDoorAttribution(String owner) {
+    return 'Von $owner';
+  }
+
+  @override
+  String frontDoorAwaitingReply(String owner) {
+    return '$owner antwortet noch…';
+  }
+
+  @override
+  String frontDoorFailed(String owner) {
+    return '$owner zu fragen ist fehlgeschlagen.';
+  }
+
+  @override
+  String get frontDoorIncomplete => 'womöglich unvollständig';
+
+  @override
+  String frontDoorInferenceUnavailable(String owner) {
+    return '$owner hat keine funktionierende KI-Einrichtung.';
+  }
+
+  @override
+  String get frontDoorKindGoal => 'das Ziel';
+
+  @override
+  String get frontDoorKindOther => 'das';
+
+  @override
+  String get frontDoorKindPerson => 'die Person';
+
+  @override
+  String get frontDoorKindProject => 'das Projekt';
+
+  @override
+  String get frontDoorKindTask => 'die Aufgabe';
+
+  @override
+  String frontDoorNoAgent(String owner) {
+    return '$owner hat noch keinen Agenten, den man fragen könnte.';
+  }
+
+  @override
+  String get frontDoorNoDoor => 'Dafür gibt es noch keinen Ort.';
+
+  @override
+  String get frontDoorStatementsLater =>
+      'Nicht abgelegt: vorerst beantwortet sie nur Fragen.';
+
+  @override
+  String get frontDoorSummaryBased => 'aus Zusammenfassungen';
+
+  @override
+  String frontDoorWalking(String owner) {
+    return 'Fragt $owner…';
+  }
 
   @override
   String get geminiThinkingModeHighDescription =>

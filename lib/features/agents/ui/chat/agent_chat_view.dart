@@ -196,6 +196,11 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             context,
                             message,
                           );
+                          final divider = widget.dividerBuilder?.call(
+                            context,
+                            message,
+                            index == 0 ? null : history[index - 1],
+                          );
                           return Padding(
                             padding: EdgeInsets.only(
                               bottom: tokens.spacing.cardItemSpacing,
@@ -203,6 +208,15 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                if (divider != null) ...[
+                                  KeyedSubtree(
+                                    key: ValueKey(
+                                      'goal-chat-divider-${message.id}',
+                                    ),
+                                    child: divider,
+                                  ),
+                                  SizedBox(height: tokens.spacing.step2),
+                                ],
                                 _MessageBubble(
                                   key: ValueKey(
                                     'goal-chat-message-${message.id}',

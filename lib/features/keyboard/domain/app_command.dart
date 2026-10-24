@@ -12,6 +12,7 @@ export 'package:lotti/features/keyboard/domain/app_shortcut_binding.dart';
 enum AppCommandId {
   openCommandPalette,
   openShortcutHelp,
+  openFrontChat,
   createTextEntry,
   createTask,
   captureScreenshot,

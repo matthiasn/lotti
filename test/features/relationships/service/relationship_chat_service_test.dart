@@ -351,4 +351,67 @@ void main() {
       'The relationship-agent turn failed.',
     );
   });
+
+  group("the door walker's split", () {
+    test('appendMessage makes the turn durable and returns the id without '
+        'waking anything', () async {
+      final messageId = await service.appendMessage(
+        agentId: agentId,
+        text: '  How is Anna?  ',
+      );
+
+      final message = upserts.whereType<AgentMessageEntity>().single;
+      expect(messageId, message.id);
+      expect(message.kind, AgentMessageKind.user);
+      expect(
+        upserts.whereType<AgentMessagePayloadEntity>().single.content,
+        {'text': 'How is Anna?'},
+      );
+      verify(
+        () => notifications.notifyUiOnly({agentId, agentNotification}),
+      ).called(1);
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
+        ),
+      );
+    });
+
+    test('appendMessage returns null for a blank text', () async {
+      expect(await service.appendMessage(agentId: agentId, text: ' '), isNull);
+      expect(upserts, isEmpty);
+    });
+
+    test("enqueueMessage wakes the agent with the turn's token and returns "
+        'the run key without waiting', () {
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
+        ),
+      ).thenReturn('run-9');
+
+      expect(
+        service.enqueueMessage(agentId: agentId, messageId: 'm-9'),
+        'run-9',
+      );
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: agentId,
+          reason: WakeReason.userMessage.name,
+          triggerTokens: {relationshipChatMessageTriggerToken('m-9')},
+          supersede: false,
+          initiator: WakeInitiator.user,
+        ),
+      ).called(1);
+      verifyNever(() => orchestrator.runCompletions);
+    });
+  });
 }

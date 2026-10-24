@@ -124,6 +124,31 @@ final agentConsumptionTotalsProvider = StreamProvider.autoDispose
       name: 'agentConsumptionTotalsProvider',
     );
 
+/// One agent wake's totals — the cost of one turn in a chat thread —
+/// refreshed whenever consumption changes.
+final agentRunConsumptionTotalsProvider = StreamProvider.autoDispose
+    .family<ConsumptionTotals, ({String agentId, String runKey})>(
+      (ref, run) {
+        final repository = ref.watch(consumptionRepositoryProvider);
+        final notifications = ref.watch(maybeUpdateNotificationsProvider);
+        final refetchThrottle = ref.watch(consumptionRefetchThrottleProvider);
+
+        Future<ConsumptionTotals> fetch() => repository.totalsForAgentRun(
+          agentId: run.agentId,
+          runKey: run.runKey,
+        );
+
+        if (notifications == null) return Stream.fromFuture(fetch());
+        return notificationDrivenItemStream<ConsumptionTotals>(
+          notifications: notifications,
+          notificationKeys: const {aiConsumptionNotification},
+          fetcher: fetch,
+          refetchThrottle: refetchThrottle,
+        ).map((totals) => totals ?? ConsumptionTotals.empty);
+      },
+      name: 'agentRunConsumptionTotalsProvider',
+    );
+
 /// Bucketized consumption for the window starting at the given epoch day.
 ///
 /// A structural clone of `insightsBucketsProvider` (same year-window family

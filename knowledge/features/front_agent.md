@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, and how the kind plugs into the shared runtime.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how an unanswered turn is recovered on any device, and what the chat surface renders.
 resource: ../../lib/features/front_agent
-tags: [agents, front-agent, routing, dispatch, companion]
+tags: [agents, front-agent, routing, dispatch, doors, companion, chat]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-23T16:30:00Z }
-stale_after: 2027-04-23
+generated: { by: claude-code/fable-5.1, at: 2026-10-24T18:00:00Z }
+stale_after: 2027-04-24
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
@@ -38,12 +38,48 @@ sources:
     last_modified: 2026-10-23
   - id: chat-service
     resource: ../../lib/features/front_agent/service/front_chat_service.dart
-    title: FrontChatService — persist, notify, wake, await
-    last_modified: 2026-10-23
+    title: FrontChatService — persist, arm recovery, wake, await, consume
+    last_modified: 2026-10-24
+  - id: history-service
+    resource: ../../lib/features/front_agent/service/front_chat_history_service.dart
+    title: FrontChatHistoryService — which turns are still unanswered
+    last_modified: 2026-10-24
+  - id: maintenance
+    resource: ../../lib/features/front_agent/runtime/front_runtime_maintenance.dart
+    title: FrontRuntimeMaintenance — re-arming an unanswered turn on every pass
+    last_modified: 2026-10-24
+  - id: tokens
+    resource: ../../lib/classes/agents/front_chat_tokens.dart
+    title: The chat trigger token and the recovery record's ids
+    last_modified: 2026-10-24
+  - id: door
+    resource: ../../lib/features/front_agent/model/front_door.dart
+    title: FrontDoorRecord — the claim, the outcome, the deterministic id
+    last_modified: 2026-10-24
+  - id: walker
+    resource: ../../lib/features/front_agent/service/front_door_walker.dart
+    title: FrontDoorWalker — one door per segment, claimed, never awaited
+    last_modified: 2026-10-24
+  - id: thread
+    resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
+    title: FrontChatThreadBuilder — the thread with doors, options and mirrored replies
+    last_modified: 2026-10-24
+  - id: controller
+    resource: ../../lib/features/front_agent/state/front_chat_controller.dart
+    title: FrontChatController — the composer
+    last_modified: 2026-10-24
+  - id: pane
+    resource: ../../lib/features/front_agent/ui/front_chat_pane.dart
+    title: FrontChatPane — the thread on the shared AgentChatView
+    last_modified: 2026-10-24
+  - id: sheet
+    resource: ../../lib/features/front_agent/ui/front_chat_sheet.dart
+    title: showFrontChatSheet — the app-shell sheet
+    last_modified: 2026-10-24
   - id: providers
     resource: ../../lib/features/front_agent/state/front_agent_providers.dart
-    title: The registry contributions and the setup resolver
-    last_modified: 2026-10-23
+    title: The registry contributions, the wake runner that routes then walks, and the setup resolver
+    last_modified: 2026-10-24
   - id: plan
     resource: ../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md
     title: The single-entry-point plan — decisions and slices
@@ -55,18 +91,26 @@ sources:
 The front agent is the one agent the user talks to in one place. It owns no
 record and answers for nobody: it reads a bounded index of what exists and
 decides where each part of what the user said belongs. Its one artifact is a
-**dispatch**. Slice 0 (this concept) stops there — no UI, no flag, and no
-door is walked yet; the plan's later slices add the chat surface and the
-walker. The product decisions behind it are in the plan, not here.
+**dispatch**. After the dispatch, the **door walker** takes each segment to
+its owner and the **chat surface** shows what came back, under the owner's
+name. Slice 1 (this concept) answers questions only: no task, project, goal,
+person or entry is created or changed; the only writes are the front
+thread's own, in `agent.sqlite`. The product decisions behind it are in the
+plan, not here.
 
 # One turn
 
 ```mermaid
 flowchart TD
-  U[FrontChatService.sendMessage] -->|AgentMessagePayload + AgentMessage kind user| D[(agent.sqlite)]
+  U[FrontChatService.sendMessage] -->|AgentMessagePayload + AgentMessage kind user<br/>+ ScheduledWake recovery record, a grace later| D[(agent.sqlite)]
   U -->|enqueueManualWake reason userMessage<br/>token front-chat-message:id| W[WakeOrchestrator]
   W --> R[frontAgentWakeRunnersProvider]
-  R --> X[FrontAgentWorkflow.executeUserMessage]
+  R -->|turn still pending| X[FrontAgentWorkflow.executeUserMessage]
+  R -->|then, always| K[FrontDoorWalker.walk]
+  K -->|door records, claimed then done| D
+  K -->|task / project question| Q[QueryAnswerBuilder.build, headless]
+  K -->|goal / person question| G[appendMessage + enqueueMessage<br/>never awaited]
+  U -->|runCompletions for the run key| V[consume the recovery record]
   X --> M[resolveFrontAgentModel<br/>ProfileResolver.resolveStandalone]
   X --> I[FrontRoutingIndexBuilder.build]
   X --> T[recent turns: last 6 user / dispatch / ask / reply rows, with content]
@@ -79,20 +123,44 @@ flowchart TD
   O --> D
 ```
 
-**The turn path is the goal-chat pattern.** `FrontChatService.sendMessage`
-persists the payload and a `user` message whose `threadId` is its own id,
-notifies the UI (`notifyUiOnly`, never `notify`, which would re-wake the
-agent), then `enqueueManualWake(reason: userMessage, supersede: false)` with
-the token `front-chat-message:<id>` and awaits `runCompletions` for that run
-key. A runtime that shuts down first ends the completion stream, which the
-service turns into a `FrontChatTurnException` so a composer never waits
-forever. An append whose transaction committed but whose outbox flush failed
+**The turn path is the goal-chat pattern, with recovery.**
+`FrontChatService.sendMessage` is `appendMessage` then `retryMessage`.
+`appendMessage` persists the payload and a `user` message whose `threadId`
+is its own id, notifies the UI (`notifyUiOnly`, never `notify`, which would
+re-wake the agent), and arms a lease-elected `ScheduledWakeEntity` under
+`frontChatRecoveryRecordId` for `frontChatRecoveryGrace` (30 min) later —
+the ADR 0069 record, whose workspace `front-chat:<id>` the lease predicate in
+`agent_providers.dart` recognises. A recovery record that fails to write
+does not cost the turn. `retryMessage` then `enqueueManualWake(reason:
+userMessage, supersede: false)` with the token `front-chat-message:<id>`,
+awaits `runCompletions` for that run key, and **consumes the record only
+after the run — routing and doors — completed**. A runtime that shuts down
+first ends the completion stream, which the service turns into a
+`FrontChatTurnException` so a composer never waits forever; the record stays
+pending. An append whose transaction committed but whose outbox flush failed
 is reconciled by re-reading the deterministic id, not retried into a
 duplicate.
 
-**The wake runner routes only a chat token.** Any other token — creation, a
-subscription — returns a successful no-op: the front agent has no scheduled
-or subscription wakes.
+**The wake runner routes a still-unrouted turn, then always walks.** Only a
+chat token enters the model; any other token — creation, a subscription —
+returns a successful no-op. `FrontChatHistoryService` keeps two sets apart:
+the **unrouted** turns (no `dispatch`, `ask_user` or `reply_to_user` row
+names them) are what the runner takes through the model, so a recovery wake
+arriving after the author's own run routes nothing; the **pending** turns —
+the unrouted ones plus any routed turn whose newest dispatch still has a
+segment without a `done` door — are what maintenance re-arms. The scheduled
+wake manager consumes a recovery record when it *enqueues* the wake, before
+the doors finish, so a walk that died after the dispatch was written stays
+eligible for the next pass, which walks the doors without routing again;
+the claims below make that idempotent. A failed routing walks nothing:
+there is no dispatch to walk and the record stays pending.
+
+**Recovery runs on every device.** `FrontRuntimeMaintenance` implements all
+three runtime hooks and calls `restoreOldestPendingMessage`: a pending turn
+with no record (or a tombstone) gets one carrying the tombstone's clock; a
+consumed record that did not answer is re-armed for when its lease lapses,
+else a grace past its deadline; a pending record is left alone. Failures are
+contained and logged under `FrontRuntimeMaintenance`.
 
 # The routing index
 
@@ -184,6 +252,74 @@ out of the recent-turns tail, which renders only the persisted records —
 with their content: the user's words, the reply's text, a question with its
 option labels, a dispatch as its destinations.
 
+# The doors
+
+`FrontDoorWalker.walk(messageId)` finds the newest dispatch keyed to the
+turn and takes every segment through a door, one record per segment under
+`frontDoorRecordId(dispatchId, index)` — an `action` row with tool name
+`front_door`, the dispatch's run key and the turn's `operationId`, its
+payload a `FrontDoorRecord`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> claimed: claim written in a transaction
+  claimed --> done: outcome recorded
+  claimed --> claimed: another walker finds a fresh claim and moves on
+  claimed --> [*]: claim older than frontDoorClaimGrace — taken over
+  done --> [*]
+```
+
+A claim is a lease: a second walker — a retry, a recovery wake, another
+device — skips a segment that is `done` or freshly `claimed`, and takes over
+one whose claim is older than `frontDoorClaimGrace` (30 min), because that
+walker died. Outcomes:
+
+| Segment | Door | Outcome |
+|---------|------|---------|
+| `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
+| `goal` / `person` question with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
+| a statement or instruction | none in this slice | `FrontDoorSkipped(statementsLater)` |
+| `day`, `new`, `journal`, `unrouted` | none yet | `FrontDoorSkipped(noDoor)` |
+| no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
+| owner without a usable inference setup | — | `FrontDoorSkipped(inferenceUnavailable)` |
+| a door that throws | — | `FrontDoorFailed(errorType)` — the type, never the text |
+
+The walker never awaits a specialist's wake: the goal and person chat
+services' `sendMessage` awaits its own completion and at concurrency 1 that
+would deadlock inside the front wake, so the walker uses their
+`appendMessage` / `enqueueMessage` split and the reply arrives later.
+
+# The chat surface
+
+`FrontChatThreadBuilder.build` projects the front thread for the shared
+`AgentChatView`: user turns, `reply_to_user` rows and `ask_user` rows (shown
+as her turn, with the options parsed from the record) are the messages,
+newest fifty; a dispatch is never shown — its door records hang off the user
+turn they answer, in segment order, and for a `FrontDoorChatTurn` the
+specialist's reply is read from that agent's thread by the recorded message
+id. `frontChatThreadProvider` reloads on the front agent's update pings,
+whenever a specialist a door handed a turn to finishes a wake here
+(`runCompletions`, by agent id — the sync service pings nobody), and on
+each such specialist's own update pings, which is how a reply written on
+another device arrives through sync.
+`FrontChatController` sends through the chat service (creating the identity
+on first use) and invalidates the thread when the awaited turn completes; a
+failed turn keeps its durable id so the retry re-wakes the same turn.
+
+`FrontChatPane` is the thread on `AgentChatView` with day dividers
+(`dividerBuilder`), the door card under a routed turn, the option chips
+under her **latest** question only (an older question's chips would answer a
+question nobody is asking), and a per-turn cost caption read by the reply
+row's run key (`agentRunConsumptionTotalsProvider`, consumption schema v5's
+`idx_consumption_agent_run`). Her header shows her face when
+`enable_companion` is on, the thread's lifetime cost pill, and the way into
+her internals. `showFrontChatSheet` opens it on the root navigator in the
+agent-chat side sheet — a bottom sheet below the page breakpoint — from the
+desktop rail's utility row above Settings, the phone launcher's utility
+button beside the menu, or the `openFrontChat` keyboard command
+(Cmd/Ctrl+L), all gated by `enable_front_agent` and all closed under
+lockdown: her thread spans every category.
+
 # Where it plugs in
 
 `frontAgentWakeRunnersProvider` and `resolveFrontAgentSetup` are merged in
@@ -198,10 +334,14 @@ without one.
 
 # Gotchas
 
-- **Never wake a specialist from inside the front wake.** The goal and
-  person chat services await their own wake's completion; at concurrency 1
-  that would deadlock. Doors are walked by the service after
-  `runCompletions`, in slice 1.
+- **Never await a specialist from inside the front wake.** The goal and
+  person chat services' `sendMessage` awaits their own wake's completion; at
+  concurrency 1 that would deadlock. The walker runs inside the front wake
+  but only appends and enqueues; the reply is mirrored when it lands.
+- A door record is written twice under one id — the claim, then the
+  outcome. Anything counting rows per door must count by id.
+- Her per-turn cost is the routing calls of her wake only. The owners'
+  answers cost on the owners' agents, where their internals show them.
 - The index must stay byte-stable: do not add a field that changes between
   wakes without the record changing.
 - `match_to_corpus` returns open tasks only; a closed task is not a

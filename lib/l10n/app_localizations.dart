@@ -6618,6 +6618,18 @@ abstract class AppLocalizations {
   /// **'Heal divergent agent histories from multi-device use by merging them at the next wake.'**
   String get configFlagEnableForkHealingDescription;
 
+  /// No description provided for @configFlagEnableFrontAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion chat'**
+  String get configFlagEnableFrontAgent;
+
+  /// No description provided for @configFlagEnableFrontAgentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'One place to ask anything: the companion finds the task, goal, project or person agent that knows and brings back its answer. Experimental.'**
+  String get configFlagEnableFrontAgentDescription;
+
   /// No description provided for @configFlagEnableHabitsPage.
   ///
   /// In en, this message translates to:
@@ -11524,6 +11536,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matches'**
   String get filterSelectionNoMatches;
+
+  /// No description provided for @frontChatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.'**
+  String get frontChatEmpty;
+
+  /// No description provided for @frontChatOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the companion'**
+  String get frontChatOpen;
+
+  /// No description provided for @frontChatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything…'**
+  String get frontChatPlaceholder;
+
+  /// No description provided for @frontChatResponding.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding who knows…'**
+  String get frontChatResponding;
+
+  /// No description provided for @frontChatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything — she finds who knows'**
+  String get frontChatSubtitle;
+
+  /// No description provided for @frontChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Companion'**
+  String get frontChatTitle;
+
+  /// No description provided for @frontChatYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get frontChatYesterday;
+
+  /// No description provided for @frontDoorAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'From {owner}'**
+  String frontDoorAttribution(String owner);
+
+  /// No description provided for @frontDoorAwaitingReply.
+  ///
+  /// In en, this message translates to:
+  /// **'{owner} is still replying…'**
+  String frontDoorAwaitingReply(String owner);
+
+  /// No description provided for @frontDoorFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking {owner} failed.'**
+  String frontDoorFailed(String owner);
+
+  /// No description provided for @frontDoorIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'may be incomplete'**
+  String get frontDoorIncomplete;
+
+  /// No description provided for @frontDoorInferenceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{owner} has no working AI setup.'**
+  String frontDoorInferenceUnavailable(String owner);
+
+  /// No description provided for @frontDoorKindGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'the goal'**
+  String get frontDoorKindGoal;
+
+  /// No description provided for @frontDoorKindOther.
+  ///
+  /// In en, this message translates to:
+  /// **'this'**
+  String get frontDoorKindOther;
+
+  /// No description provided for @frontDoorKindPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'the person'**
+  String get frontDoorKindPerson;
+
+  /// No description provided for @frontDoorKindProject.
+  ///
+  /// In en, this message translates to:
+  /// **'the project'**
+  String get frontDoorKindProject;
+
+  /// No description provided for @frontDoorKindTask.
+  ///
+  /// In en, this message translates to:
+  /// **'the task'**
+  String get frontDoorKindTask;
+
+  /// No description provided for @frontDoorNoAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'{owner} has no agent to ask yet.'**
+  String frontDoorNoAgent(String owner);
+
+  /// No description provided for @frontDoorNoDoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Nowhere to take this yet.'**
+  String get frontDoorNoDoor;
+
+  /// No description provided for @frontDoorStatementsLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Not filed: for now she only answers questions.'**
+  String get frontDoorStatementsLater;
+
+  /// No description provided for @frontDoorSummaryBased.
+  ///
+  /// In en, this message translates to:
+  /// **'from summaries'**
+  String get frontDoorSummaryBased;
+
+  /// No description provided for @frontDoorWalking.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking {owner}…'**
+  String frontDoorWalking(String owner);
 
   /// No description provided for @geminiThinkingModeHighDescription.
   ///

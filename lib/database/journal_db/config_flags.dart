@@ -57,6 +57,14 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableFrontAgentFlag,
+      description:
+          'Enable the companion chat: ask anything, she finds who knows?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,

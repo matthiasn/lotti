@@ -144,15 +144,20 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       triggerTokens: triggerTokens,
       threadId: threadId,
       pendingUserMessage: text.trim(),
+      pendingUserMessageId: messageId,
     );
   }
 
+  /// [pendingUserMessageId] is the durable turn [pendingUserMessage] came
+  /// from; the reply records it as its `operationId`, the way goal replies
+  /// do, so a reader can pair a question with its answer.
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
     required String runKey,
     required Set<String> triggerTokens,
     required String threadId,
     String? pendingUserMessage,
+    String? pendingUserMessageId,
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -508,6 +513,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
           derivation: derivation,
           now: now,
           replyToUser: interactive,
+          replyToMessageId: pendingUserMessageId,
           // Eligibility binds automatic wakes only — the same rule as the
           // pre-inference gate above: chat and the explicit Brief me stay
           // answerable after un-marking.
@@ -621,6 +627,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
     required DateTime now,
     InferenceRunSnapshot? inferenceSnapshot,
     bool replyToUser = false,
+    String? replyToMessageId,
     bool enforceEligibility = false,
   }) async {
     final reportId = strategy.hasBriefing ? _uuid.v4() : null;
@@ -778,6 +785,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
               toolName: replyToUser
                   ? AgentConversationToolNames.replyToUser
                   : null,
+              operationId: replyToUser ? replyToMessageId : null,
             ),
           ),
         );

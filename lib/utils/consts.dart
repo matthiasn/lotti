@@ -24,6 +24,7 @@ const enableAiStreamingFlag = 'enable_ai_streaming';
 const enableQueryChatFlag = 'enable_query_chat';
 const enableAiSummaryTtsFlag = 'enable_ai_summary_tts';
 const enableCompanionFlag = 'enable_companion';
+const enableFrontAgentFlag = 'enable_front_agent';
 const resendAttachments = 'resend_attachments';
 const enableLoggingFlag = 'enable_logging';
 

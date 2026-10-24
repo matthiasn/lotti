@@ -35,6 +35,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_service.dart';
+import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
@@ -125,6 +126,8 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/state/live_world_services.dart';
+import 'package:lotti/features/front_agent/service/front_agent_service.dart';
+import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
@@ -1623,6 +1626,10 @@ class MockGoalAgentService extends Mock implements GoalAgentService {}
 
 class MockGoalChatService extends Mock implements GoalChatService {}
 
+class MockFrontAgentService extends Mock implements FrontAgentService {}
+
+class MockFrontChatService extends Mock implements FrontChatService {}
+
 class MockNudgeInteractions extends Mock implements NudgeInteractions {}
 
 class MockGoalHabitCompletionService extends Mock
@@ -1758,6 +1765,8 @@ class MockImproverAgentService extends Mock implements ImproverAgentService {}
 class MockImproverAgentWorkflow extends Mock implements ImproverAgentWorkflow {}
 
 class MockProjectAgentService extends Mock implements ProjectAgentService {}
+
+class MockQueryAnswerBuilder extends Mock implements QueryAnswerBuilder {}
 
 class MockProjectRecommendationService extends Mock
     implements ProjectRecommendationService {}

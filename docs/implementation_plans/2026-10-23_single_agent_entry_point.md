@@ -1,7 +1,7 @@
 # Single Agent Entry Point: one front agent that dispatches
 
 Date: 2026-10-23
-Status: concept and plan; the owner's decisions on the open questions are in §5 (2026-10-23); slice 0 in progress
+Status: concept and plan; the owner's decisions on the open questions are in §5 (2026-10-23); slice 0 merged (#4830, 2026-10-24); slice 1 in review
 Builds on: [2026-10-12_in_app_agent_avatar.md](2026-10-12_in_app_agent_avatar.md)
 (the companion, whose branch 6 "hold her to talk" this plan re-points),
 [2026-08-08_reusable_chat_interface_requirements.md](2026-08-08_reusable_chat_interface_requirements.md)

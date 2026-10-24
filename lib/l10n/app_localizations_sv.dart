@@ -3915,6 +3915,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Läka divergerande agenthistorier från användning med flera enheter genom att slå ihop dem vid nästa vak.';
 
   @override
+  String get configFlagEnableFrontAgent => 'Följeslagarchatt';
+
+  @override
+  String get configFlagEnableFrontAgentDescription =>
+      'Ett ställe att fråga om allt: följeslagaren hittar den uppgifts-, mål-, projekt- eller personagent som vet och kommer tillbaka med svaret. Experimentellt.';
+
+  @override
   String get configFlagEnableHabitsPage => 'Aktivera Habits-sidan';
 
   @override
@@ -6784,6 +6791,87 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get filterSelectionNoMatches => 'Inga matcher';
+
+  @override
+  String get frontChatEmpty =>
+      'Fråga om en uppgift, ett mål, ett projekt eller en person. Hon hittar den som vet och kommer tillbaka med svaret.';
+
+  @override
+  String get frontChatOpen => 'Fråga följeslagaren';
+
+  @override
+  String get frontChatPlaceholder => 'Fråga vad som helst…';
+
+  @override
+  String get frontChatResponding => 'Letar efter den som vet…';
+
+  @override
+  String get frontChatSubtitle =>
+      'Fråga vad som helst — hon hittar den som vet';
+
+  @override
+  String get frontChatTitle => 'Följeslagare';
+
+  @override
+  String get frontChatYesterday => 'Igår';
+
+  @override
+  String frontDoorAttribution(String owner) {
+    return 'Från $owner';
+  }
+
+  @override
+  String frontDoorAwaitingReply(String owner) {
+    return '$owner svarar fortfarande…';
+  }
+
+  @override
+  String frontDoorFailed(String owner) {
+    return 'Det gick inte att fråga $owner.';
+  }
+
+  @override
+  String get frontDoorIncomplete => 'kan vara ofullständigt';
+
+  @override
+  String frontDoorInferenceUnavailable(String owner) {
+    return '$owner har ingen fungerande AI-inställning.';
+  }
+
+  @override
+  String get frontDoorKindGoal => 'målet';
+
+  @override
+  String get frontDoorKindOther => 'det här';
+
+  @override
+  String get frontDoorKindPerson => 'personen';
+
+  @override
+  String get frontDoorKindProject => 'projektet';
+
+  @override
+  String get frontDoorKindTask => 'uppgiften';
+
+  @override
+  String frontDoorNoAgent(String owner) {
+    return '$owner har ännu ingen agent att fråga.';
+  }
+
+  @override
+  String get frontDoorNoDoor => 'Det finns ännu ingenstans att ta det här.';
+
+  @override
+  String get frontDoorStatementsLater =>
+      'Inte registrerat: än så länge svarar hon bara på frågor.';
+
+  @override
+  String get frontDoorSummaryBased => 'från sammanfattningar';
+
+  @override
+  String frontDoorWalking(String owner) {
+    return 'Frågar $owner…';
+  }
 
   @override
   String get geminiThinkingModeHighDescription =>

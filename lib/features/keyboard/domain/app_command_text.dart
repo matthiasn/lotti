@@ -11,6 +11,7 @@ abstract final class AppCommandText {
     return switch (id) {
       AppCommandId.openCommandPalette => messages.keyboardCommandOpenPalette,
       AppCommandId.openShortcutHelp => messages.keyboardShortcutsTitle,
+      AppCommandId.openFrontChat => messages.frontChatOpen,
       AppCommandId.createTextEntry => messages.fileMenuNewEntry,
       AppCommandId.createTask => messages.fileMenuNewTask,
       AppCommandId.captureScreenshot => messages.fileMenuNewScreenshot,

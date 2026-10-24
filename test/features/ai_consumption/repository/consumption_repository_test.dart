@@ -342,6 +342,67 @@ void main() {
     });
   });
 
+  group('totalsForAgentRun', () {
+    test('sums only the calls of that wake of that agent', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'turn-a',
+          agentId: 'front_agent',
+          wakeRunKey: 'run-1',
+          inputTokens: 100,
+          totalTokens: 150,
+          credits: 0.2,
+          durationMs: 500,
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'turn-a-repair',
+          agentId: 'front_agent',
+          wakeRunKey: 'run-1',
+          inputTokens: 50,
+          totalTokens: 60,
+          credits: 0.1,
+          durationMs: 300,
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'turn-b',
+          agentId: 'front_agent',
+          wakeRunKey: 'run-2',
+          totalTokens: 999,
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'someone-else',
+          agentId: 'goal-1',
+          wakeRunKey: 'run-1',
+          totalTokens: 999,
+        ),
+      );
+
+      final totals = await repo.totalsForAgentRun(
+        agentId: 'front_agent',
+        runKey: 'run-1',
+      );
+
+      expect(totals.callCount, 2);
+      expect(totals.inputTokens, 150);
+      expect(totals.totalTokens, 210);
+      expect(totals.credits, closeTo(0.3, 1e-9));
+      expect(totals.durationMs, 800);
+    });
+
+    test('returns zeroed totals for a wake with no calls', () async {
+      expect(
+        await repo.totalsForAgentRun(agentId: 'front_agent', runKey: 'none'),
+        ConsumptionTotals.empty,
+      );
+    });
+  });
+
   group('projection columns', () {
     test('denormalized columns are populated for aggregation', () async {
       await repo.upsertEvent(

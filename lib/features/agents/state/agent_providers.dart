@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agent_wake_cadence.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -400,6 +401,7 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
         record.workspaceKey == coordinatorDigestWorkspaceKey ||
         isGoalEscalationWorkspace(record.workspaceKey) ||
         isGoalChatRecoveryWorkspace(record.workspaceKey) ||
+        isFrontChatRecoveryWorkspace(record.workspaceKey) ||
         isRelationshipEscalationWorkspace(record.workspaceKey) ||
         isProjectUpdateWorkspace(record.workspaceKey),
     // A project's update slots follow the rules ProjectWakeGovernor.tla

@@ -56,6 +56,12 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableFrontAgentFlag,
+    description:
+        'Enable the companion chat: ask anything, she finds who knows?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: resendAttachments,
     description: 'Resend Attachments',
     status: false,

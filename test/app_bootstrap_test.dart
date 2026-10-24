@@ -33,6 +33,7 @@ import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maint
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
+import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/github/repository/github_account_sync.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
@@ -776,7 +777,7 @@ void main() {
         realContext(),
       ).read(agentRuntimeMaintenanceProvider);
 
-      expect(maintenance, hasLength(3));
+      expect(maintenance, hasLength(4));
       expect(maintenance.first, isA<DailyOsRuntimeMaintenance>());
     });
 
@@ -804,6 +805,19 @@ void main() {
 
       expect(
         maintenance.whereType<GoalRuntimeMaintenance>(),
+        hasLength(1),
+      );
+    });
+
+    test('registers front-agent runtime maintenance alongside the others', () {
+      // Without this a front turn whose author died before routing it is
+      // never recovered on another device (ADR 0069).
+      final maintenance = containerFor(
+        realContext(),
+      ).read(agentRuntimeMaintenanceProvider);
+
+      expect(
+        maintenance.whereType<FrontRuntimeMaintenance>(),
         hasLength(1),
       );
     });
@@ -914,7 +928,7 @@ void main() {
           AgentKinds.relationshipAgent,
         ]),
       );
-      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(3));
+      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(4));
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
     });

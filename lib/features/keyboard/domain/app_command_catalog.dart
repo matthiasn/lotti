@@ -22,6 +22,12 @@ abstract final class AppCommandCatalog {
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
     AppCommandDefinition(
+      id: AppCommandId.openFrontChat,
+      category: AppCommandCategory.general,
+      bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyL)],
+      paletteVisibility: AppCommandPaletteVisibility.global,
+    ),
+    AppCommandDefinition(
       id: AppCommandId.createTextEntry,
       category: AppCommandCategory.creation,
       bindings: [

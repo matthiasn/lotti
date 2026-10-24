@@ -346,6 +346,67 @@ void main() {
     });
   });
 
+  group('agentRunConsumptionTotalsProvider', () {
+    const run = (agentId: 'front_agent', runKey: 'run-1');
+
+    test('emits the totals of one wake of one agent', () async {
+      final totals = makeConsumptionTotals(callCount: 3, totalTokens: 700);
+      when(
+        () => repository.totalsForAgentRun(
+          agentId: 'front_agent',
+          runKey: 'run-1',
+        ),
+      ).thenAnswer((_) async => totals);
+      final container = makeContainer();
+      final sub = container.listen(
+        agentRunConsumptionTotalsProvider(run),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      final emitted = await container.read(
+        agentRunConsumptionTotalsProvider(run).future,
+      );
+
+      expect(emitted, totals);
+      verify(
+        () => repository.totalsForAgentRun(
+          agentId: 'front_agent',
+          runKey: 'run-1',
+        ),
+      ).called(1);
+    });
+
+    test('refetches after a consumption notification', () async {
+      when(
+        () => repository.totalsForAgentRun(
+          agentId: 'front_agent',
+          runKey: 'run-1',
+        ),
+      ).thenAnswer((_) async => makeConsumptionTotals(callCount: 1));
+      final container = makeContainer(withNotifications: notifications);
+      final states = <AsyncValue<ConsumptionTotals>>[];
+      final sub = container.listen(
+        agentRunConsumptionTotalsProvider(run),
+        (_, next) => states.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+      await container.read(agentRunConsumptionTotalsProvider(run).future);
+
+      when(
+        () => repository.totalsForAgentRun(
+          agentId: 'front_agent',
+          runKey: 'run-1',
+        ),
+      ).thenAnswer((_) async => makeConsumptionTotals(callCount: 2));
+      notificationController.add({aiConsumptionNotification});
+      await pumpEventQueue();
+
+      expect(states.last.value?.callCount, 2);
+    });
+  });
+
   group('consumptionBucketsProvider', () {
     test('fetches window start to the moving end and bucketizes rows per '
         'day and category', () async {

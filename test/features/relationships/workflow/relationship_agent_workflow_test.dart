@@ -1745,6 +1745,55 @@ void main() {
     expect(result.error, contains('no inference provider'));
   });
 
+  test('a reply to a durable turn records that turn as its operationId, so '
+      'a reader can pair the question with its answer', () async {
+    when(
+      () => repository.getEntity('msg-1'),
+    ).thenAnswer((_) async => sourceTurn());
+    when(() => repository.getEntity('payload-1')).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentMessagePayload(
+                id: 'payload-1',
+                agentId: agentId,
+                createdAt: testDate,
+                vectorClock: null,
+                content: const <String, Object?>{'text': 'How is Anna?'},
+              )
+              as AgentMessagePayloadEntity,
+    );
+    stubGlmResolution();
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0,
+          strategy,
+        }) async {
+          await strategy!.processToolCalls(
+            toolCalls: [
+              toolCall(RelationshipAgentToolNames.replyToUser, {
+                'message': 'You last spoke two weeks ago.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await runUserMessage();
+
+    expect(result.success, isTrue);
+    final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
+      (m) => m.id == relationshipAgentReplyMessageId(agentId, 'run-1'),
+    );
+    expect(reply.metadata.operationId, 'msg-1');
+  });
+
   test('the mixin wiring exposes the injected logger and the workflow log '
       'domain', () {
     final logger = MockDomainLogger();

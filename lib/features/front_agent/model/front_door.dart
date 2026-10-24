@@ -1,0 +1,252 @@
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+
+/// The tool name under which a walked door is recorded in the front
+/// thread: an `action` row per dispatch segment, keyed to the dispatch, so
+/// a second walker — a retry, another device — finds the claim and moves on.
+const String frontDoorToolName = 'front_door';
+
+/// How long a claim stands before another walker may take the segment
+/// over: a door that has not finished in this time belongs to a walker
+/// that died.
+const Duration frontDoorClaimGrace = Duration(minutes: 30);
+
+/// The deterministic id of segment [index]'s door record under the dispatch
+/// record [dispatchMessageId] — the idempotency key the plan names.
+String frontDoorRecordId(String dispatchMessageId, int index) =>
+    '$dispatchMessageId:door:$index';
+
+/// Where a walked segment ended up.
+enum FrontDoorStatus {
+  /// A walker holds the segment; the door is being walked.
+  claimed,
+
+  /// The door was walked and its outcome recorded.
+  done;
+
+  static FrontDoorStatus? fromName(Object? name) =>
+      values.where((v) => v.name == name).firstOrNull;
+}
+
+/// Why a segment was not walked through a door.
+enum FrontDoorSkipReason {
+  /// Only questions are walked in this slice; a statement or instruction
+  /// waits for the filing slice.
+  statementsLater,
+
+  /// The owner has no agent to take the turn (a task without one, a
+  /// retired goal or person agent).
+  noAgent,
+
+  /// The owner's inference setup resolves to nothing.
+  inferenceUnavailable,
+
+  /// The segment named something new, a note, today's plan, or nothing —
+  /// doors for those come with later slices.
+  noDoor;
+
+  static FrontDoorSkipReason? fromName(Object? name) =>
+      values.where((v) => v.name == name).firstOrNull;
+}
+
+/// What a door produced.
+sealed class FrontDoorOutcome {
+  const FrontDoorOutcome();
+
+  Map<String, Object?> toJson();
+
+  /// Reads an outcome a record stored; null for a shape this build does
+  /// not know, so an old record degrades to "no outcome" rather than a
+  /// crash.
+  static FrontDoorOutcome? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final map = Map<String, Object?>.from(json);
+    switch (map['type']) {
+      case 'answer':
+        final text = map['text'];
+        if (text is! String) return null;
+        final owners = map['ownerIds'];
+        return FrontDoorAnswer(
+          text: text,
+          summaryBased: map['summaryBased'] == true,
+          incomplete: map['incomplete'] == true,
+          ownerIds: [
+            if (owners is List)
+              for (final id in owners)
+                if (id is String) id,
+          ],
+        );
+      case 'chat':
+        final agentId = map['specialistAgentId'];
+        final messageId = map['specialistMessageId'];
+        if (agentId is! String || messageId is! String) return null;
+        return FrontDoorChatTurn(
+          specialistAgentId: agentId,
+          specialistMessageId: messageId,
+        );
+      case 'skipped':
+        final reason = FrontDoorSkipReason.fromName(map['reason']);
+        return reason == null ? null : FrontDoorSkipped(reason);
+      case 'failed':
+        final error = map['errorType'];
+        return FrontDoorFailed(error is String ? error : 'unknown');
+      default:
+        return null;
+    }
+  }
+}
+
+/// The query pipeline answered a task or project question; the text is
+/// shown in the front thread, attributed to its owner.
+class FrontDoorAnswer extends FrontDoorOutcome {
+  const FrontDoorAnswer({
+    required this.text,
+    required this.summaryBased,
+    required this.incomplete,
+    this.ownerIds = const [],
+  });
+
+  final String text;
+  final bool summaryBased;
+  final bool incomplete;
+  final List<String> ownerIds;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'answer',
+    'text': text,
+    'summaryBased': summaryBased,
+    'incomplete': incomplete,
+    'ownerIds': ownerIds,
+  };
+}
+
+/// A goal or person agent received the segment as its own chat turn; its
+/// reply arrives in that agent's thread under this message id.
+class FrontDoorChatTurn extends FrontDoorOutcome {
+  const FrontDoorChatTurn({
+    required this.specialistAgentId,
+    required this.specialistMessageId,
+  });
+
+  final String specialistAgentId;
+  final String specialistMessageId;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'chat',
+    'specialistAgentId': specialistAgentId,
+    'specialistMessageId': specialistMessageId,
+  };
+}
+
+/// The segment has no door in this slice, or its owner cannot take it.
+class FrontDoorSkipped extends FrontDoorOutcome {
+  const FrontDoorSkipped(this.reason);
+
+  final FrontDoorSkipReason reason;
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'skipped', 'reason': reason.name};
+}
+
+/// The door threw; [errorType] is the exception's type, never its text.
+class FrontDoorFailed extends FrontDoorOutcome {
+  const FrontDoorFailed(this.errorType);
+
+  final String errorType;
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'failed', 'errorType': errorType};
+}
+
+/// One walked (or claimed) segment, as its record's payload stores it.
+class FrontDoorRecord {
+  const FrontDoorRecord({
+    required this.segmentIndex,
+    required this.text,
+    required this.kind,
+    required this.status,
+    required this.claimedAt,
+    this.destinationId,
+    this.ownerTitle,
+    this.outcome,
+  });
+
+  final int segmentIndex;
+
+  /// The segment's verbatim span of the user's words.
+  final String text;
+  final FrontDestinationKind kind;
+  final String? destinationId;
+
+  /// The owner's title at the time of walking — a task's title, a goal's
+  /// statement, a person's name — so the thread can say where a segment
+  /// went without a lookup.
+  final String? ownerTitle;
+  final FrontDoorStatus status;
+  final DateTime claimedAt;
+  final FrontDoorOutcome? outcome;
+
+  /// Whether another walker may take this segment: never when done, and
+  /// only after [frontDoorClaimGrace] when claimed.
+  bool isStaleClaimAt(DateTime now) =>
+      status == FrontDoorStatus.claimed &&
+      now.difference(claimedAt) >= frontDoorClaimGrace;
+
+  FrontDoorRecord done(FrontDoorOutcome outcome) => FrontDoorRecord(
+    segmentIndex: segmentIndex,
+    text: text,
+    kind: kind,
+    destinationId: destinationId,
+    ownerTitle: ownerTitle,
+    status: FrontDoorStatus.done,
+    claimedAt: claimedAt,
+    outcome: outcome,
+  );
+
+  Map<String, Object?> toJson() => {
+    'segmentIndex': segmentIndex,
+    'text': text,
+    'kind': kind.wireName,
+    if (destinationId != null) 'destinationId': destinationId,
+    if (ownerTitle != null) 'ownerTitle': ownerTitle,
+    'status': status.name,
+    'claimedAt': claimedAt.toUtc().toIso8601String(),
+    if (outcome != null) 'outcome': outcome!.toJson(),
+  };
+
+  /// Reads a stored record; null when it is not one this build wrote.
+  static FrontDoorRecord? fromJson(Map<String, Object?> json) {
+    final index = json['segmentIndex'];
+    final text = json['text'];
+    final kind = FrontDestinationKind.fromWireName(json['kind']);
+    final status = FrontDoorStatus.fromName(json['status']);
+    final claimedAt = switch (json['claimedAt']) {
+      final String iso => DateTime.tryParse(iso),
+      _ => null,
+    };
+    if (index is! int ||
+        text is! String ||
+        kind == null ||
+        status == null ||
+        claimedAt == null) {
+      return null;
+    }
+    return FrontDoorRecord(
+      segmentIndex: index,
+      text: text,
+      kind: kind,
+      destinationId: switch (json['destinationId']) {
+        final String id => id,
+        _ => null,
+      },
+      ownerTitle: switch (json['ownerTitle']) {
+        final String title => title,
+        _ => null,
+      },
+      status: status,
+      claimedAt: claimedAt,
+      outcome: FrontDoorOutcome.fromJson(json['outcome']),
+    );
+  }
+}

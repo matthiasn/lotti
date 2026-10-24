@@ -55,7 +55,7 @@ void main() {
   });
 
   test(
-    'migrates schema v1 through latest-attribution index schema v4',
+    'migrates schema v1 through the per-run index schema v5',
     () async {
       final directory = Directory.systemTemp.createTempSync('consumption-v1-');
       addTearDown(() {
@@ -126,7 +126,7 @@ void main() {
           .get();
       final names = objects.map((row) => row.read<String>('name')).toSet();
 
-      expect(version.read<int>('user_version'), 4);
+      expect(version.read<int>('user_version'), 5);
       expect(
         columns.map((row) => row.read<String>('name')),
         contains('attribution_id'),
@@ -142,7 +142,18 @@ void main() {
           'idx_attribution_actor_created',
           'idx_attribution_type_created',
           'idx_consumption_agent_created',
+          'idx_consumption_agent_run',
         }),
+      );
+      final runIndex = await migrated
+          .customSelect(
+            'SELECT sql FROM sqlite_master '
+            "WHERE type = 'index' AND name = 'idx_consumption_agent_run'",
+          )
+          .getSingle();
+      expect(
+        runIndex.read<String>('sql'),
+        contains('agent_id, wake_run_key'),
       );
       final latestIndex = await migrated
           .customSelect(

@@ -413,6 +413,7 @@ List<Override> appFeatureWiringOverrides() => [
       ...ref.watch(dailyOsRuntimeMaintenanceProvider),
       ref.watch(goalRuntimeMaintenanceProvider),
       ref.watch(relationshipRuntimeMaintenanceProvider),
+      ref.watch(frontRuntimeMaintenanceProvider),
     ],
   ),
   // The banner dock renders every kind through one substrate; each kind
