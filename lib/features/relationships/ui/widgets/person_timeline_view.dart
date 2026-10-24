@@ -505,6 +505,12 @@ class PersonTimelineRow extends StatelessWidget {
 /// The summary is data, not a lookup: a row that fetched its own line was
 /// laid out three lines tall and shrank when the line arrived, on every
 /// reload and every time it scrolled back into view.
+///
+/// Opened, the row keeps itself alive in the lazy list: the list drops rows
+/// that scroll out of its cache extent and builds them again on the way
+/// back, and a row built again is folded — the reader's *Show more* undone,
+/// and a row above the viewport suddenly shorter, which moves the history
+/// under them. Folded rows are dropped as usual; there is nothing to keep.
 class PersonFoldedWords extends StatefulWidget {
   const PersonFoldedWords({
     required this.id,
@@ -526,12 +532,22 @@ class PersonFoldedWords extends StatefulWidget {
   State<PersonFoldedWords> createState() => _PersonFoldedWordsState();
 }
 
-class _PersonFoldedWordsState extends State<PersonFoldedWords> {
+class _PersonFoldedWordsState extends State<PersonFoldedWords>
+    with AutomaticKeepAliveClientMixin {
   static const _foldedLines = 3;
   var _expanded = false;
 
   @override
+  bool get wantKeepAlive => _expanded;
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    updateKeepAlive();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final tokens = context.designTokens;
     final messages = context.messages;
     final transcript = widget.words;
@@ -563,7 +579,7 @@ class _PersonFoldedWordsState extends State<PersonFoldedWords> {
             if (overflows)
               DsQuietInk(
                 key: ValueKey('person-folded-more-${widget.id}'),
-                onTap: () => setState(() => _expanded = !_expanded),
+                onTap: _toggle,
                 builder: (context, highlighted) => Semantics(
                   button: true,
                   expanded: _expanded,

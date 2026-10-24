@@ -823,6 +823,16 @@ above and below the viewport the scroll extent moved under the reader on
 every flick: the history seemed endless and its rows seemed replaced. The
 rule is [stay while reload](../conventions/stay-while-reload.md).
 
+Two quieter breaks of the same rule, fixed after the first round: the
+header's [`PersonContactRow`](../../lib/features/relationships/ui/widgets/person_contact_row.dart)
+compares the reload's copy of the person's channels by value (`listEquals`),
+not identity — each reload reads the person again and hands the row a new
+list of the same channels, and compared by identity every write emptied the
+Call, Message and Email buttons and asked the platform again. And a row's
+words opened with *Show more* (`PersonFoldedWords`) keep the row alive in the
+lazy list while open (`AutomaticKeepAliveClientMixin`), so a jump down the
+history and back does not build it again folded and shorter.
+
 The page sets four type sizes: the title for the name (23), `heading3` for
 the one headline the brief card leads with (20), 16 for section and card
 titles (`subtitle1`, semibold) and everything the user reads (`bodyMedium`),

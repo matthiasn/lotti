@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
@@ -70,7 +71,13 @@ class _PersonContactRowState extends ConsumerState<PersonContactRow> {
   @override
   void didUpdateWidget(PersonContactRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.relationship.data.contactChannels != _channels) {
+    // By value, never by identity: every reload of the page — a check-in
+    // written, its transcript landing, its summary, the agent's briefing —
+    // reads the person again and hands this row a new list of the same
+    // channels. Compared by identity, each of those emptied the row and
+    // asked the platform again, and the verbs under the name vanished and
+    // came back on every write (the stay-while-reload convention).
+    if (!listEquals(oldWidget.relationship.data.contactChannels, _channels)) {
       // The old answers name channels that may be gone: offer nothing until
       // the new ones are known, rather than a button that dials a removed
       // number.

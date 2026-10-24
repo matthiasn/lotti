@@ -124,6 +124,37 @@ void main() {
       expect(action(ContactAction.message), findsOneWidget);
     });
 
+    testWidgets(
+      'a fresh copy of the same person — what every reload of the '
+      'page hands the row — keeps its buttons and asks the platform nothing',
+      (
+        tester,
+      ) async {
+        final counting = _CountingLauncher();
+        launcher = counting;
+        // Lists as a database read makes them: equal, never identical.
+        await pump(tester, List.of(const [mobile, email]));
+        final probes = counting.probes;
+        expect(probes, greaterThan(0));
+        final call = tester.element(action(ContactAction.call));
+
+        await tester.pumpWidget(build(List.of(const [mobile, email])));
+        await tester.pump();
+
+        // The first frame after the reload, not a settled one: compared by
+        // identity, the row emptied itself here and asked again, and the
+        // verbs under the name vanished and came back on every write.
+        expect(action(ContactAction.call), findsOneWidget);
+        expect(action(ContactAction.email), findsOneWidget);
+        expect(
+          identical(tester.element(action(ContactAction.call)), call),
+          isTrue,
+          reason: 'the same button, not one built again',
+        );
+        expect(counting.probes, probes, reason: 'nothing to ask again');
+      },
+    );
+
     testWidgets('an answer about the old channels that lands late is '
         'discarded: the row never offers a number the person no longer has', (
       tester,
@@ -257,6 +288,17 @@ class _GatedLauncher extends FakeContactLauncher {
   @override
   Future<bool> canLaunch(ContactChannel channel, ContactAction action) async {
     if (channel.value == gated) await _gate.future;
+    return super.canLaunch(channel, action);
+  }
+}
+
+/// Counts how often the platform is asked, so a test can say "not again".
+class _CountingLauncher extends FakeContactLauncher {
+  int probes = 0;
+
+  @override
+  Future<bool> canLaunch(ContactChannel channel, ContactAction action) {
+    probes++;
     return super.canLaunch(channel, action);
   }
 }
