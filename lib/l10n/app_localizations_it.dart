@@ -6937,7 +6937,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontDoorStatementsLater =>
-      'Non archiviato: per ora risponde solo alle domande.';
+      'Non smistato: per ora risponde solo alle domande.';
 
   @override
   String get frontDoorSummaryBased => 'da riepiloghi';

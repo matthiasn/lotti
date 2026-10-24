@@ -3191,7 +3191,7 @@
   "frontDoorKindTask": "l’attività",
   "frontDoorNoAgent": "{owner} non ha ancora un agente a cui chiedere.",
   "frontDoorNoDoor": "Per ora non c’è dove portarlo.",
-  "frontDoorStatementsLater": "Non archiviato: per ora risponde solo alle domande.",
+  "frontDoorStatementsLater": "Non smistato: per ora risponde solo alle domande.",
   "frontDoorSummaryBased": "da riepiloghi",
   "frontDoorWalking": "Sta chiedendo a {owner}…",
   "geminiThinkingModeHighDescription": "Il ragionamento più profondo; può aumentare la latenza e il costo.",

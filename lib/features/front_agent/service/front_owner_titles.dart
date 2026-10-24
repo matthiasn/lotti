@@ -20,16 +20,20 @@ class FrontOwnerTitles {
   final JournalDb _journalDb;
   final AgentRepository _agentRepository;
 
-  /// Null when the owner cannot be found or the kind has no owner.
+  /// Null when the owner cannot be found, when the row under [id] is not
+  /// of [kind] — a dispatch that names a person's id as a task gets no
+  /// title rather than the wrong one — or when the kind has no owner.
   Future<String?> titleFor(FrontDestinationKind kind, String id) async {
     switch (kind) {
       case FrontDestinationKind.task:
       case FrontDestinationKind.project:
       case FrontDestinationKind.person:
-        return switch (await _journalDb.journalEntityById(id)) {
-          final Task task => task.data.title,
-          final ProjectEntry project => project.data.title,
-          final RelationshipEntry person => person.data.title,
+        return switch ((kind, await _journalDb.journalEntityById(id))) {
+          (FrontDestinationKind.task, final Task task) => task.data.title,
+          (FrontDestinationKind.project, final ProjectEntry project) =>
+            project.data.title,
+          (FrontDestinationKind.person, final RelationshipEntry person) =>
+            person.data.title,
           _ => null,
         };
       case FrontDestinationKind.goal:

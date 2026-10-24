@@ -25,20 +25,35 @@ final FutureProvider<FrontChatThread> frontChatThreadProvider =
     FutureProvider.autoDispose<FrontChatThread>(
       (ref) async {
         ref.watch(agentUpdateStreamProvider(frontAgentId));
-        final thread = await ref.watch(frontChatThreadBuilderProvider).build();
-        for (final specialistId in thread.specialistAgentIds) {
-          ref.watch(agentUpdateStreamProvider(specialistId));
-        }
+        // Subscribed before the projection reads, not after: a specialist
+        // can finish while the thread is being read, and a completion that
+        // fired in that window would otherwise be lost — the reply arrives
+        // through the sync service, which pings nobody.
+        FrontChatThread? thread;
+        final completedWhileReading = <String?>{};
         final completions = ref
             .read(wakeOrchestratorProvider)
             .runCompletions
             .listen((completion) {
-              if (thread.specialistAgentIds.contains(completion.agentId)) {
+              final known = thread;
+              if (known == null) {
+                completedWhileReading.add(completion.agentId);
+              } else if (known.specialistAgentIds.contains(
+                completion.agentId,
+              )) {
                 ref.invalidateSelf();
               }
             });
         ref.onDispose(completions.cancel);
-        return thread;
+        final built = await ref.watch(frontChatThreadBuilderProvider).build();
+        thread = built;
+        for (final specialistId in built.specialistAgentIds) {
+          ref.watch(agentUpdateStreamProvider(specialistId));
+        }
+        if (completedWhileReading.any(built.specialistAgentIds.contains)) {
+          ref.invalidateSelf();
+        }
+        return built;
       },
       name: 'frontChatThreadProvider',
     );

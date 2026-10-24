@@ -6882,14 +6882,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorStatementsLater =>
-      'Niet opgeslagen: voorlopig beantwoordt ze alleen vragen.';
+      'Niet als item aangemaakt: voorlopig beantwoordt ze alleen vragen.';
 
   @override
   String get frontDoorSummaryBased => 'uit samenvattingen';
 
   @override
   String frontDoorWalking(String owner) {
-    return 'Vraagt het $owner…';
+    return 'Vraagt $owner…';
   }
 
   @override

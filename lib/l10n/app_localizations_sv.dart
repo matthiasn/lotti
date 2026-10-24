@@ -6863,7 +6863,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontDoorStatementsLater =>
-      'Inte sparat: än så länge svarar hon bara på frågor.';
+      'Inte registrerat: än så länge svarar hon bara på frågor.';
 
   @override
   String get frontDoorSummaryBased => 'från sammanfattningar';

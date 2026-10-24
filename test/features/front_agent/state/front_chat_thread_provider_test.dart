@@ -167,6 +167,34 @@ void main() {
     expect(builder.builds, 2);
   });
 
+  test('a specialist that finishes while the thread is being read is not '
+      'missed: the thread is re-projected once it is known', () async {
+    final builder = _CountingBuilder({'goal-swim'})..gate = Completer<void>();
+    final container = containerWith(builder)
+      ..listen(frontChatThreadProvider, (_, _) {});
+    await container.read(frontChatThreadProvider.future);
+    expect(builder.builds, 1);
+
+    // Trigger a reload, which blocks on the gate...
+    pings.add({frontAgentId});
+    await pumpEventQueue();
+    expect(builder.builds, 2);
+    // ...and let the specialist finish while that read is in flight.
+    completions.add(
+      const WakeRunCompletion(
+        runKey: 'r2',
+        status: WakeRunStatus.completed,
+        agentId: 'goal-swim',
+      ),
+    );
+    await pumpEventQueue();
+    builder.gate!.complete();
+    await pumpEventQueue();
+    await container.read(frontChatThreadProvider.future);
+
+    expect(builder.builds, 3);
+  });
+
   test('stops listening when nobody looks at the thread', () async {
     final builder = _CountingBuilder({'goal-swim'});
     final container = containerWith(builder);

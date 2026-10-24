@@ -3191,7 +3191,7 @@
   "frontDoorKindTask": "opgaven",
   "frontDoorNoAgent": "{owner} har endnu ingen agent at spørge.",
   "frontDoorNoDoor": "Der er endnu ikke noget sted at tage det hen.",
-  "frontDoorStatementsLater": "Ikke gemt: indtil videre svarer hun kun på spørgsmål.",
+  "frontDoorStatementsLater": "Ikke oprettet som post: indtil videre svarer hun kun på spørgsmål.",
   "frontDoorSummaryBased": "fra resuméer",
   "frontDoorWalking": "Spørger {owner}…",
   "geminiThinkingModeHighDescription": "Dybeste ræsonnement; kan øge latenstid og omkostninger.",

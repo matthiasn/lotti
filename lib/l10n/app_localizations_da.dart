@@ -6854,7 +6854,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorStatementsLater =>
-      'Ikke gemt: indtil videre svarer hun kun på spørgsmål.';
+      'Ikke oprettet som post: indtil videre svarer hun kun på spørgsmål.';
 
   @override
   String get frontDoorSummaryBased => 'fra resuméer';

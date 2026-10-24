@@ -108,8 +108,11 @@ void main() {
       ),
     );
     expect(await titles.titleFor(FrontDestinationKind.task, 'x'), isNull);
-    // A person row asked for as a task is still a person: no title.
-    expect(await titles.titleFor(FrontDestinationKind.task, 'r'), 'Pip');
+    // A person row asked for as a task is the wrong kind: no title, rather
+    // than a person's name standing in for a task's.
+    expect(await titles.titleFor(FrontDestinationKind.task, 'r'), isNull);
+    expect(await titles.titleFor(FrontDestinationKind.project, 'r'), isNull);
+    expect(await titles.titleFor(FrontDestinationKind.person, 'r'), 'Pip');
   });
 
   test('a goal is titled by its active spec statement', () async {

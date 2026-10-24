@@ -3191,7 +3191,7 @@
   "frontDoorKindTask": "uppgiften",
   "frontDoorNoAgent": "{owner} har ännu ingen agent att fråga.",
   "frontDoorNoDoor": "Det finns ännu ingenstans att ta det här.",
-  "frontDoorStatementsLater": "Inte sparat: än så länge svarar hon bara på frågor.",
+  "frontDoorStatementsLater": "Inte registrerat: än så länge svarar hon bara på frågor.",
   "frontDoorSummaryBased": "från sammanfattningar",
   "frontDoorWalking": "Frågar {owner}…",
   "geminiThinkingModeHighDescription": "Djupaste resonemang; kan öka latens och kostnad.",
