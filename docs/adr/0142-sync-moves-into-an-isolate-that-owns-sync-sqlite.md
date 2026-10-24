@@ -159,9 +159,9 @@ Each is one mergeable change; the flag stays off until the last.
 
 1. **The flag and the host.** `use_isolate_sync`, the supervised
    `SyncIsolateHost`, and a worker that answers liveness. Flag on, it starts
-   with the app and proves it runs; sync stays where it is. *(Done.)*
+   with the app and proves it runs; sync stays where it is. *(This change.)*
 2. **Measure.** Timeline markers around the ungated paths, and a profile of a
-   catch-up burst on a phone, before anything moves. *(Done: `SyncCostMeter`.)*
+   catch-up burst on a phone, before anything moves.
 3. **Apply without a live `Room`.** In two halves. First, the apply path
    reads a `SyncEnvelope` — the five fields it needs, rebuilt from the stored
    decrypted JSON — instead of an SDK `Event` built against a room, and the
@@ -170,9 +170,9 @@ Each is one mergeable change; the flag stays off until the last.
    the sync isolate later. The inbound worker no longer waits for a room: the
    one observable change is that queued entries apply before the SDK has
    emitted the room, instead of being retried every two seconds until it has.
-   *(This change.)* Second, `AttachmentIndex` holds Room-free descriptors and
-   attachment downloads go through an interface of the same kind. Needed by
-   everything after it.
+   Second, `AttachmentIndex` holds Room-free descriptors and attachment
+   downloads go through an interface of the same kind. Needed by everything
+   after it; which half has landed is tracked in the concept, not here.
 4. **Receive in the isolate.** Matrix client, sync loop, decryption, admission
    and bridge walks move; the lease/acknowledge protocol replaces the UI
    isolate's direct queue writes. A `startSyncServices()` seam keeps the

@@ -110,7 +110,8 @@ sequenceDiagram
   H->>W: SyncIsolateLease request
   W->>S: status = leased, lease_until
   W-->>H: SyncEnvelope + queue row
-  A->>A: prepare, apply in the journal transaction
+  A->>A: prepare outside any writer transaction
+  A->>A: apply under the per-family transaction policy
   A->>U: UpdateNotifications.notify(ids, fromSync: true)
   A->>H: ApplyOutcome + sequence-log effects
   H->>W: SyncIsolateAcknowledge request
