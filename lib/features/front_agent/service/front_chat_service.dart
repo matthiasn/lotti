@@ -13,10 +13,6 @@ import 'package:lotti/features/front_agent/service/front_chat_history_service.da
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
-/// What runs after a front wake completed for a message: the doors of its
-/// dispatch are walked here, outside the wake slot, never inside it.
-typedef FrontTurnCompleted = Future<void> Function(String messageId);
-
 /// Persists one user-authored front-agent turn, then hands routing to the
 /// shared wake runtime (the `GoalChatService` pattern: the chat never owns
 /// an inference loop, and the source turn is durable before inference can
@@ -35,14 +31,12 @@ class FrontChatService {
     required WakeOrchestrator orchestrator,
     required UpdateNotifications notifications,
     required FrontChatHistoryService historyService,
-    FrontTurnCompleted? onTurnCompleted,
   }) : this._(
          repository,
          syncService,
          orchestrator,
          notifications,
          historyService,
-         onTurnCompleted,
        );
 
   FrontChatService._(
@@ -51,7 +45,6 @@ class FrontChatService {
     this._orchestrator,
     this._notifications,
     this._historyService,
-    this._onTurnCompleted,
   );
 
   final AgentRepository _repository;
@@ -60,16 +53,13 @@ class FrontChatService {
   final UpdateNotifications _notifications;
   final FrontChatHistoryService _historyService;
 
-  /// The door walker, when one is wired. Runs after the run completed and
-  /// after the recovery record is consumed; its failures are its own.
-  final FrontTurnCompleted? _onTurnCompleted;
-
   static const _uuid = Uuid();
 
-  /// Appends [text] as a durable user turn, runs the routing wake for it
-  /// and walks its doors. Throws [FrontChatTurnException] when the agent
-  /// cannot take a turn or the wake fails; the message is durable either
-  /// way and [retryMessage] re-runs it.
+  /// Appends [text] as a durable user turn and runs the routing wake for
+  /// it — which routes the turn and walks its doors. Throws
+  /// [FrontChatTurnException] when the agent cannot take a turn or the
+  /// wake fails; the message is durable either way and [retryMessage]
+  /// re-runs it.
   Future<void> sendMessage({required String text}) async {
     final messageId = await appendMessage(text: text);
     if (messageId == null) return;
@@ -165,8 +155,10 @@ class FrontChatService {
         initiator: WakeInitiator.user,
       );
 
-  /// Re-enqueues the already durable source turn, waits for its wake,
-  /// consumes its recovery record and walks its doors.
+  /// Re-enqueues the already durable source turn, waits for its wake and
+  /// consumes its recovery record. The wake routes the turn and walks its
+  /// doors, so the record is consumed only once the walker has finished —
+  /// a wake that dies mid-walk leaves the record pending for the lease.
   ///
   /// Throws [FrontChatTurnException] when the wake fails — including when
   /// the orchestrator shuts down first, which ends the completion stream
@@ -204,7 +196,6 @@ class FrontChatService {
       await subscription.cancel();
     }
     await _consumeRecovery(messageId);
-    await _onTurnCompleted?.call(messageId);
   }
 
   /// Makes sure the oldest unanswered turn can still be routed: arms its

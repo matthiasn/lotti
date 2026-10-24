@@ -1,10 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -14,9 +19,13 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
+import 'package:lotti/features/front_agent/service/front_door_walker.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
+import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -50,9 +59,13 @@ class _RecordingWorkflow extends FrontAgentWorkflow {
     required String messageId,
   }) async {
     calls.add((messageId: messageId, runKey: runKey, threadId: threadId));
-    return const WakeResult(success: true, reportUpdated: true);
+    return result;
   }
+
+  WakeResult result = const WakeResult(success: true, reportUpdated: true);
 }
+
+class _MockWalker extends Mock implements FrontDoorWalker {}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -60,6 +73,7 @@ void main() {
   late MockAgentRepository repository;
   late MockAiConfigRepository aiConfigRepository;
   late _RecordingWorkflow recording;
+  late _MockWalker walker;
   late ProviderContainer container;
 
   final identity = makeTestIdentity(
@@ -85,9 +99,12 @@ void main() {
       ),
       domainLogger: MockDomainLogger(),
     );
+    walker = _MockWalker();
+    when(() => walker.walk(any())).thenAnswer((_) async {});
     container = ProviderContainer(
       overrides: [
         frontAgentWorkflowProvider.overrideWithValue(recording),
+        frontDoorWalkerProvider.overrideWithValue(walker),
         agentRepositoryProvider.overrideWithValue(repository),
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
         domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -102,7 +119,60 @@ void main() {
       expect(runners.keys, [AgentKinds.frontAgent]);
     });
 
-    test('a chat token runs the workflow for that message', () async {
+    /// The front thread holds [pending] as an unanswered turn.
+    void stubThread({required bool pending}) {
+      final payload = makeTestMessagePayload(
+        id: 'msg-7-payload',
+        agentId: frontAgentId,
+        content: const {'text': 'Hello'},
+      );
+      final turn = makeTestMessage(
+        id: 'msg-7',
+        agentId: frontAgentId,
+        kind: AgentMessageKind.user,
+        contentEntryId: payload.id,
+      );
+      final reply = makeTestMessage(
+        id: 'reply-7',
+        agentId: frontAgentId,
+        kind: AgentMessageKind.action,
+        metadata: const AgentMessageMetadata(
+          runKey: 'run-0',
+          toolName: FrontAgentToolNames.replyToUser,
+          operationId: 'msg-7',
+        ),
+      );
+      when(
+        () => repository.getAgentMessages(frontAgentId),
+      ).thenAnswer((_) async => [turn, if (!pending) reply]);
+    }
+
+    test(
+      'a chat token for a pending turn routes it, then walks its doors',
+      () async {
+        stubThread(pending: true);
+        final runner = container.read(
+          frontAgentWakeRunnersProvider,
+        )[AgentKinds.frontAgent]!;
+
+        final result = await runner(
+          agentIdentity: identity,
+          runKey: 'run-1',
+          triggerTokens: {'other', frontChatMessageTriggerToken('msg-7')},
+          threadId: 'thread-1',
+        );
+
+        expect(result.reportUpdated, isTrue);
+        expect(recording.calls, [
+          (messageId: 'msg-7', runKey: 'run-1', threadId: 'thread-1'),
+        ]);
+        verify(() => walker.walk('msg-7')).called(1);
+      },
+    );
+
+    test("a turn already answered — a recovery wake after the author's own "
+        'run — is not routed again, but its doors are still walked', () async {
+      stubThread(pending: false);
       final runner = container.read(
         frontAgentWakeRunnersProvider,
       )[AgentKinds.frontAgent]!;
@@ -110,14 +180,34 @@ void main() {
       final result = await runner(
         agentIdentity: identity,
         runKey: 'run-1',
-        triggerTokens: {'other', frontChatMessageTriggerToken('msg-7')},
+        triggerTokens: {frontChatMessageTriggerToken('msg-7')},
         threadId: 'thread-1',
       );
 
-      expect(result.reportUpdated, isTrue);
-      expect(recording.calls, [
-        (messageId: 'msg-7', runKey: 'run-1', threadId: 'thread-1'),
-      ]);
+      expect(result.success, isTrue);
+      expect(result.reportUpdated, isFalse);
+      expect(recording.calls, isEmpty);
+      verify(() => walker.walk('msg-7')).called(1);
+    });
+
+    test('a routing turn that failed walks nothing: there is no dispatch to '
+        'walk and the recovery record stays pending', () async {
+      stubThread(pending: true);
+      recording.result = const WakeResult(success: false, error: 'boom');
+      final runner = container.read(
+        frontAgentWakeRunnersProvider,
+      )[AgentKinds.frontAgent]!;
+
+      final result = await runner(
+        agentIdentity: identity,
+        runKey: 'run-1',
+        triggerTokens: {frontChatMessageTriggerToken('msg-7')},
+        threadId: 'thread-1',
+      );
+
+      expect(result.success, isFalse);
+      expect(recording.calls, hasLength(1));
+      verifyNever(() => walker.walk(any()));
     });
 
     test('any other token is a successful no-op: the front agent has no '
@@ -136,6 +226,8 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportUpdated, isFalse);
       expect(recording.calls, isEmpty);
+      verifyNever(() => walker.walk(any()));
+      verifyNever(() => repository.getAgentMessages(any()));
     });
   });
 
@@ -238,6 +330,17 @@ void main() {
           conversationRepositoryProvider.overrideWith(
             () => MockConversationRepository(MockConversationManager()),
           ),
+          queryBuilderFactoryProvider.overrideWithValue(
+            (scope, agentId, chatId) async => throw UnimplementedError(),
+          ),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          projectAgentServiceProvider.overrideWithValue(
+            MockProjectAgentService(),
+          ),
+          goalChatServiceProvider.overrideWithValue(MockGoalChatService()),
+          relationshipChatServiceProvider.overrideWithValue(
+            MockRelationshipChatService(),
+          ),
         ],
       );
       addTearDown(wired.dispose);
@@ -249,6 +352,7 @@ void main() {
       expect(wired.read(frontAgentWorkflowProvider), isA<FrontAgentWorkflow>());
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
+      expect(wired.read(frontDoorWalkerProvider), isA<FrontDoorWalker>());
     });
   });
 }

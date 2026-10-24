@@ -35,6 +35,7 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge_service.dart';
+import 'package:lotti/features/agents/query/query_answer_builder.dart';
 import 'package:lotti/features/agents/query/query_chat_action_service.dart';
 import 'package:lotti/features/agents/query/query_chat_store.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
@@ -1746,6 +1747,8 @@ class MockImproverAgentService extends Mock implements ImproverAgentService {}
 class MockImproverAgentWorkflow extends Mock implements ImproverAgentWorkflow {}
 
 class MockProjectAgentService extends Mock implements ProjectAgentService {}
+
+class MockQueryAnswerBuilder extends Mock implements QueryAnswerBuilder {}
 
 class MockProjectRecommendationService extends Mock
     implements ProjectRecommendationService {}

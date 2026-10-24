@@ -31,7 +31,6 @@ void main() {
   late _MockHistory history;
   late StreamController<WakeRunCompletion> completions;
   late List<AgentDomainEntity> upserts;
-  late List<String> walked;
   late FrontChatService service;
 
   AgentIdentityEntity identity(AgentLifecycle lifecycle) => makeTestIdentity(
@@ -56,7 +55,6 @@ void main() {
     completions = StreamController<WakeRunCompletion>.broadcast();
     addTearDown(completions.close);
     upserts = [];
-    walked = [];
     when(
       () => orchestrator.runCompletions,
     ).thenAnswer((_) => completions.stream);
@@ -73,7 +71,6 @@ void main() {
       orchestrator: orchestrator,
       notifications: notifications,
       historyService: history,
-      onTurnCompleted: (messageId) async => walked.add(messageId),
     );
   });
 
@@ -229,8 +226,7 @@ void main() {
   });
 
   group('sendMessage and retryMessage', () {
-    test('a completed wake consumes the pending recovery record and walks '
-        'the doors, in that order', () async {
+    test('a completed wake consumes the pending recovery record', () async {
       stubWake(WakeRunStatus.completed);
       // The record the append wrote is what the consume re-reads.
       when(() => repository.getEntity(any())).thenAnswer((invocation) async {
@@ -248,11 +244,10 @@ void main() {
       final record = recoveryOf(message.id);
       expect(record.status, ScheduledWakeStatus.consumed);
       expect(record.consumedAt, isNotNull);
-      expect(walked, [message.id]);
     });
 
-    test('a failed wake surfaces as a turn exception naming the message, '
-        'leaves the recovery pending and walks nothing', () async {
+    test('a failed wake surfaces as a turn exception naming the message and '
+        'leaves the recovery pending', () async {
       stubWake(WakeRunStatus.failed);
 
       Object? thrown;
@@ -270,7 +265,6 @@ void main() {
             .having((e) => e.toString(), 'detail', 'boom'),
       );
       expect(recoveryOf(message.id).status, ScheduledWakeStatus.pending);
-      expect(walked, isEmpty);
     });
 
     test('a runtime that stops before the turn completes fails the turn '
@@ -321,7 +315,6 @@ void main() {
       await service.retryMessage(messageId: 'm-1');
 
       expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
-      expect(walked, ['m-1']);
     });
   });
 
