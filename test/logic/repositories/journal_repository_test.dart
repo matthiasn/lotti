@@ -4674,7 +4674,7 @@ class _Device {
       () => sync_harness.event.text,
     ).thenReturn(sync_harness.encodeMessage(message));
     await sync_harness.processor.process(
-      event: sync_harness.event,
+      envelope: sync_harness.event,
       journalDb: db,
     );
   }

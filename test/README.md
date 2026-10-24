@@ -728,6 +728,15 @@ a throwaway `test/.leak_bisect_test.dart` that imports a prefix of them as
 the optimizer does — halving the prefix until one file leaks against the
 victim on its own.
 
+## `MockEvent` is also a `SyncEnvelope`
+
+The apply path reads a Room-free `SyncEnvelope` (ADR 0142, step 3) whose
+members are named as on the SDK `Event`, so `MockEvent` implements both and the
+`prepare(envelope: event)` / `process(envelope: event)` calls across the
+processor suites keep their one mock. The one consequence: the combined
+`roomId` is a non-nullable `String`, so stub it with a room id or `''`, never
+`null` — the SDK's nullable `roomId` cannot be faked through `MockEvent`.
+
 ## Stubbing mixin-declared methods: mirror the production call shape
 
 `JournalDb` and `SyncDatabase` get their query members from private mixins in

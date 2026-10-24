@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
@@ -27,11 +28,12 @@ bool _containsOnboardingSnapshotEnd(SyncMessage message) {
 /// [SyncEventProcessor.prepare]/[SyncEventProcessor.apply] path.
 ///
 /// The queue keeps events as JSON and hands the worker an
-/// [InboundQueueEntry]. This adapter materialises the Event against the
-/// current Room, runs prepare outside a write transaction, and runs
-/// apply inside a short `journalDb.transaction` for families without their
-/// own transaction boundary. Sequenced payloads commit their domain store
-/// before writing a receipt to the separate sync database.
+/// [InboundQueueEntry]. This adapter rebuilds the envelope from that JSON —
+/// no live Room is involved, so applying does not wait for the SDK to hold
+/// one (ADR 0142, step 3) — runs prepare outside a write transaction, and
+/// runs apply inside a short `journalDb.transaction` for families without
+/// their own transaction boundary. Sequenced payloads commit their domain
+/// store before writing a receipt to the separate sync database.
 ///
 /// Per-batch parallel prepare: [bindPrepareBatch] returns a hook that
 /// `InboundWorker._runBatch` calls with the whole batch before its
@@ -83,25 +85,19 @@ class QueueApplyAdapter {
   /// prepare.
   InboundPrepareBatchFn bindPrepareBatch() => _prepareBatch;
 
-  Future<void> _prepareBatch(
-    List<InboundQueueEntry> entries,
-    Room room,
-  ) async {
+  Future<void> _prepareBatch(List<InboundQueueEntry> entries) async {
     if (entries.isEmpty) return;
     await Future.wait(
       entries.map((entry) async {
-        final state = await _prepareEntry(entry, room);
+        final state = await _prepareEntry(entry);
         _preparedCache[entry.eventId] = state;
       }),
     );
   }
 
-  Future<ApplyOutcome> _applyOne(
-    InboundQueueEntry entry,
-    Room room,
-  ) async {
+  Future<ApplyOutcome> _applyOne(InboundQueueEntry entry) async {
     final cached = _preparedCache.remove(entry.eventId);
-    final state = cached ?? await _prepareEntry(entry, room);
+    final state = cached ?? await _prepareEntry(entry);
     final terminal = state.terminalOutcome;
     if (terminal != null) {
       return terminal;
@@ -109,21 +105,17 @@ class QueueApplyAdapter {
     return _applyPrepared(entry, state.prepared!);
   }
 
-  /// Deserialises the event and runs prepare. Returns a terminal
-  /// outcome when deserialisation or prepare fails; otherwise returns
+  /// Rebuilds the envelope and runs prepare. Returns a terminal
+  /// outcome when the envelope or prepare fails; otherwise returns
   /// the [PreparedSyncEvent] ready for apply.
-  Future<_PreparedState> _prepareEntry(
-    InboundQueueEntry entry,
-    Room room,
-  ) async {
-    // Step 1 — materialise the Event. `Event.fromJson` requires a live
-    // Room reference; we do not attempt to recover from a throw here
-    // because the stored JSON is produced by `Event.toJson()` from a
-    // fully-decrypted event (F3) so construction failures imply the
-    // row is unrecoverable.
-    final Event event;
+  Future<_PreparedState> _prepareEntry(InboundQueueEntry entry) async {
+    // Step 1 — rebuild the envelope. We do not attempt to recover from a
+    // throw here because the stored JSON is produced by `Event.toJson()`
+    // from a fully-decrypted event (F3), so a row whose JSON does not read
+    // as an event is unrecoverable.
+    final SyncEnvelope envelope;
     try {
-      event = entry.toEvent(room);
+      envelope = entry.toEnvelope();
     } catch (error, stackTrace) {
       _logging.error(
         LogDomain.sync,
@@ -154,7 +146,7 @@ class QueueApplyAdapter {
     // before the human-scale attachment delivery completes.
     final PreparedSyncEvent? prepared;
     try {
-      prepared = await _processor.prepare(event: event);
+      prepared = await _processor.prepare(envelope: envelope);
     } on IOException catch (error, stackTrace) {
       if (error is PendingSyncDescriptorException) {
         return const _PreparedState.terminal(ApplyOutcome.pendingDescriptor);

@@ -78,7 +78,7 @@ void main() {
 
       await notificationProcessor.apply(
         prepared: PreparedSyncEvent.forTesting(
-          event: event,
+          envelope: event,
           syncMessage: message,
           resolvedNotification: notification,
         ),
@@ -121,7 +121,7 @@ void main() {
         Clock.fixed(now),
         () => notificationProcessor.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: SyncMessage.notification(
               id: row.meta.id,
               jsonPath: '/notifications/notification-id.json',
@@ -262,7 +262,7 @@ void main() {
 
         await notificationProcessor.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: SyncMessage.notificationStateUpdate(
               id: base.meta.id,
               seenAt: seenAt,
@@ -298,7 +298,7 @@ void main() {
       await expectLater(
         notificationProcessor.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: const SyncMessage.notificationStateUpdate(
               id: 'missing-notification',
               seenAt: null,
@@ -340,7 +340,7 @@ void main() {
 
         await processorWithLog.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: const SyncMessage.notification(
               id: 'deferred',
               jsonPath: '/notifications/deferred.json',

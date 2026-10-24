@@ -5,9 +5,21 @@ description: The worker isolate sync is moving into behind use_isolate_sync — 
 resource: ../../../lib/features/sync/isolate
 tags: [sync, isolate, performance, jank, supervision, config-flag]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-24T12:00:00Z }
 stale_after: 2026-12-27
 sources:
+  - id: envelope
+    resource: ../../../lib/features/sync/matrix/sync_envelope.dart
+    title: SyncEnvelope — what the apply path reads, without a Room
+    last_modified: 2026-10-24
+  - id: descriptor-fetcher
+    resource: ../../../lib/features/sync/matrix/sync_descriptor_fetcher.dart
+    title: SyncDescriptorFetcher — the one lookup that needed the room
+    last_modified: 2026-10-24
+  - id: apply-adapter
+    resource: ../../../lib/features/sync/queue/queue_apply_adapter.dart
+    title: QueueApplyAdapter — rebuilds the envelope from the stored JSON
+    last_modified: 2026-10-24
   - id: host
     resource: ../../../lib/features/sync/isolate/sync_isolate_host.dart
     title: SyncIsolateHost — spawn, requests, supervision
@@ -52,10 +64,12 @@ plan are [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-
 this concept is how the pieces work.
 
 **Where it stands.** The host, its supervision and a worker that answers
-liveness exist. With the flag on, the worker is started at launch and its
-handshake time is written to the sync log; all sync work still runs on the UI
-isolate. Nothing moves until it has been measured (ADR 0142, step 2), and
-[the cost meter](#measuring-it) is what measures it.
+liveness exist (step 1). With the flag on, the worker is started at launch and
+its handshake time is written to the sync log; all sync work still runs on the
+UI isolate, and [the cost meter](#measuring-it) measures what it costs
+(step 2). The apply path no longer needs a live `Room` (step 3, first half,
+[below](#applying-without-a-room)), which is what lets the receive side move
+without taking the apply step with it.
 
 # Who will own what
 
@@ -72,6 +86,68 @@ the UI isolate acknowledges the apply with its `ApplyOutcome`. A lease that
 expires unacknowledged is delivered again — **an apply is never
 fire-and-forget**, because the sequence log and backfill only work if
 something knows what is still missing.
+
+# How the hand-off works
+
+The decision is [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-sync-sqlite.md#writes-refreshes-and-notifications-across-the-boundary);
+this is the shape it takes in code once the receive side has moved (steps 4
+and 5). Nothing below the diagram exists yet; what does exist is
+[the apply path it depends on](#applying-without-a-room).
+
+```mermaid
+sequenceDiagram
+  participant M as Matrix SDK (sync isolate)
+  participant W as Sync worker
+  participant S as sync.sqlite
+  participant H as SyncIsolateHost (UI isolate)
+  participant A as InboundWorker + apply (UI isolate)
+  participant U as Drift streams, UpdateNotifications
+  M->>W: /sync response, decrypted events
+  W->>S: INSERT inbound_event_queue
+  W-->>H: SyncIsolateTablesChanged([inbound_event_queue])
+  H->>U: notifyUpdates — queue depth streams fire
+  A->>H: next entry? (activity gate allows)
+  H->>W: SyncIsolateLease request
+  W->>S: status = leased, lease_until
+  W-->>H: SyncEnvelope + queue row
+  A->>A: prepare outside any writer transaction
+  A->>A: apply under the per-family transaction policy
+  A->>U: UpdateNotifications.notify(ids, fromSync: true)
+  A->>H: ApplyOutcome + sequence-log effects
+  H->>W: SyncIsolateAcknowledge request
+  W->>S: applied / retrying / abandoned, sequence log, one transaction
+  W-->>H: SyncIsolateTablesChanged([...])
+```
+
+Three things to read off it. The worker is the only writer of `sync.sqlite`,
+on its own Drift connection with the SQLite work on the worker itself and the
+directories it needs handed over at the handshake. Data refresh does not
+change: the apply step, and with it the `fromSync` fan-out, stays on the UI
+isolate. Sync-state refresh is the one new piece: a Drift `watch()` sees only
+its own connection's writes, so the worker names the tables it wrote and the
+host replays them into the UI isolate's connection with `notifyUpdates`; the
+pages keep their streams. An entry whose lease expires unacknowledged is
+leased again, which is why apply stays idempotent.
+
+# Applying without a Room
+
+Step 3's first half, in place. `SyncEventProcessor.prepare` and `apply` read a
+`SyncEnvelope` — event id, room id, sender, timestamp and the base64 body,
+which is everything they ever read from the SDK's `Event` — and
+`QueueApplyAdapter` rebuilds one from the decrypted JSON the queue stores
+(`InboundQueueEntry.toEnvelope`), so no `Room` is built and the inbound worker
+no longer resolves one before a batch. The one place the apply path reached
+through the room, exact descriptor recovery after a restart or a missed file
+event, asks a `SyncDescriptorFetcher` instead: `MatrixDescriptorFetcher` answers
+from the UI isolate's own client today, and in step 4 the host answers it over
+a request to the worker. `StoredSyncEnvelope` is plain values, so it is also
+what the lease above will carry.
+
+The one observable change: a queued entry applies as soon as its turn comes,
+even before the SDK has emitted the room; it used to be retried every two
+seconds until it had. The second half — `AttachmentIndex` holding Room-free
+descriptors, and downloads behind an interface of the same kind — is still
+to come.
 
 # What runs regardless of activity
 

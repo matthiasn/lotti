@@ -9,7 +9,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
     required JournalDb journalDb,
     AfterCommitSink? afterCommit,
   }) async {
-    final event = prepared.event;
+    final envelope = prepared.envelope;
     final syncMessage = prepared.syncMessage;
     // Self-echo short-circuit. Prepare flagged this event as one the local
     // host originated; the journal/agent/outbox payload was written locally
@@ -22,7 +22,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
     if (prepared.isSelfEcho) {
       _trace(
         'apply selfEcho.skip type=${syncMessage.runtimeType} '
-        'eventId=${event.eventId}',
+        'eventId=${envelope.eventId}',
         subDomain: 'processor.apply',
       );
       return null;
@@ -30,7 +30,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
     switch (syncMessage) {
       case final SyncJournalEntity msg:
         return _applyJournalEntity(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           preloaded: prepared.journalEntity,
           isDuplicate: prepared.isDuplicateJournalEntity,
@@ -39,7 +39,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         );
       case final SyncEntryLink msg:
         return _handleEntryLink(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           journalDb: journalDb,
         );
@@ -59,7 +59,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
           aiConfig,
           fromSync: true,
           versionStamp: versionStamp,
-          fallbackStamp: event.originServerTs.millisecondsSinceEpoch,
+          fallbackStamp: envelope.originServerTs.millisecondsSinceEpoch,
           vectorClock: vectorClock,
         );
         await _recordReceivedAiConfig(
@@ -77,7 +77,7 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         :final originatingHostId,
       ):
         final stamp =
-            versionStamp ?? event.originServerTs.millisecondsSinceEpoch;
+            versionStamp ?? envelope.originServerTs.millisecondsSinceEpoch;
         // Current builds only send this envelope, marked, for hard deletes —
         // a deleted prompt or skill, a provider cascade, or a model left
         // under a deleted provider. Applying those softly would keep the
@@ -134,7 +134,8 @@ extension SyncEventProcessorApply on SyncEventProcessor {
         );
         final result = await journalDb.applyConfigFlagVersion(
           configFlag,
-          updatedAt: updatedAt ?? event.originServerTs.millisecondsSinceEpoch,
+          updatedAt:
+              updatedAt ?? envelope.originServerTs.millisecondsSinceEpoch,
         );
         // A build before stamps (#4517) applies flags in arrival order. It
         // sent this unstamped one, or a stamped one reached it after a newer
@@ -547,7 +548,7 @@ class SyncApplyDiagnostics {
 class PreparedSyncEvent {
   @visibleForTesting
   PreparedSyncEvent.forTesting({
-    required this.event,
+    required this.envelope,
     required this.syncMessage,
     this.journalEntity,
     this.isDuplicateJournalEntity = false,
@@ -562,7 +563,7 @@ class PreparedSyncEvent {
   });
 
   PreparedSyncEvent._({
-    required this.event,
+    required this.envelope,
     required this.syncMessage,
     this.journalEntity,
     this.isDuplicateJournalEntity = false,
@@ -576,7 +577,7 @@ class PreparedSyncEvent {
     this.hasUndecodableParts = false,
   });
 
-  final Event event;
+  final SyncEnvelope envelope;
   final SyncMessage syncMessage;
 
   /// Loaded journal entity when [syncMessage] is a [SyncJournalEntity] that

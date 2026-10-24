@@ -101,7 +101,6 @@ class QueuePipelineCoordinator {
         InboundWorker(
           queue: _queue,
           sequenceLogService: _sequenceLogService,
-          resolveRoom: _resolveRoom,
           apply: _applyAdapter.bind(),
           prepareBatch: _applyAdapter.bindPrepareBatch(),
           logging: _logging,

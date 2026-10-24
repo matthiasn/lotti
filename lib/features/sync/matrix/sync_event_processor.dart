@@ -46,6 +46,8 @@ import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
@@ -175,6 +177,7 @@ class SyncEventProcessor {
     this._syncNodeProfileRepository,
     this._fts5Db,
     this._syncEventTrust,
+    this._descriptorFetcher,
     this._gitHubAccountSink,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
@@ -205,6 +208,11 @@ class SyncEventProcessor {
   /// the processor cannot vouch for a fetched descriptor, so exact-id
   /// recovery stays off rather than trusting whatever the server returns.
   final SyncEventTrust? _syncEventTrust;
+
+  /// Finds a descriptor the index lost, by event id, wherever the Matrix
+  /// client lives (ADR 0142). Without it, as without [_syncEventTrust],
+  /// exact-id recovery stays off.
+  final SyncDescriptorFetcher? _descriptorFetcher;
   // Optional prepare-phase DB handle — only the outbox bundle resolver uses
   // it today, for a single bulk vector-clock dominance check across every
   // journal entity in the manifest. Apply-phase DB writes still flow
@@ -391,10 +399,10 @@ class SyncEventProcessor {
   AgentWakeCoordinator? agentWakeCoordinator;
 
   Future<void> process({
-    required Event event,
+    required SyncEnvelope envelope,
     required JournalDb journalDb,
   }) async {
-    final prepared = await prepare(event: event);
+    final prepared = await prepare(envelope: envelope);
     if (prepared == null) return;
     await apply(prepared: prepared, journalDb: journalDb);
   }
@@ -410,9 +418,9 @@ class SyncEventProcessor {
   /// permanently unresolvable. Throws [FileSystemException] for retriable
   /// attachment failures (not-yet-available, stale-but-not-superseded) so the
   /// pipeline can schedule a retry.
-  Future<PreparedSyncEvent?> prepare({required Event event}) async {
+  Future<PreparedSyncEvent?> prepare({required SyncEnvelope envelope}) async {
     try {
-      final raw = event.text;
+      final raw = envelope.text;
       // Base64-decoding + utf8-decoding + JSON parsing a large sync payload is
       // synchronous CPU work. A catch-up slice routinely carries dozens of
       // these events in one transaction; done inline they drop UI frames and
@@ -441,7 +449,7 @@ class SyncEventProcessor {
         }
         _trace(
           'skipping undeserializable sync message: $e '
-          'eventId=${event.eventId}',
+          'eventId=${envelope.eventId}',
           subDomain: 'processor.skipUnrecoverable',
         );
         return null;
@@ -458,21 +466,21 @@ class SyncEventProcessor {
       // Old backfill requests are also not skipped (see above).
 
       _trace(
-        'processing ${event.originServerTs} ${event.eventId}',
+        'processing ${envelope.originServerTs} ${envelope.eventId}',
         subDomain: 'processor.SyncEventProcessor',
       );
 
       // `await` so exceptions from prepare flow through the `catch` below
       // (Dart does not hook `catch` onto a returned future without it).
       return await _prepareForMessage(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         rawMessageJson: messageJson,
       );
     } on UnrecoverableSyncPayloadException catch (error) {
       _trace(
         'skipping unrecoverable sync payload: $error '
-        'eventId=${event.eventId}',
+        'eventId=${envelope.eventId}',
         subDomain: 'processor.skipUnrecoverable',
       );
       return null;
@@ -595,13 +603,13 @@ class SyncEventProcessor {
   /// agent, notification and bundle attachments. Missing descriptors and failed
   /// downloads remain periodically retryable; local I/O keeps bounded retries.
   Future<PreparedSyncEvent> _prepareForMessage({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncMessage syncMessage,
     Map<String, dynamic>? rawMessageJson,
   }) async {
     try {
       return await _prepareMessageOnce(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         rawMessageJson: rawMessageJson,
       );
@@ -609,10 +617,12 @@ class SyncEventProcessor {
       // The volatile descriptor index may have been lost after the cursor
       // passed the file event. Recover its exact identity from retained room
       // history; another forward walk cannot recover events behind the cursor.
-      if (!await _recoverMissingDescriptor(event, syncMessage, error)) rethrow;
+      if (!await _recoverMissingDescriptor(envelope, syncMessage, error)) {
+        rethrow;
+      }
       try {
         return await _prepareMessageOnce(
-          event: event,
+          envelope: envelope,
           syncMessage: syncMessage,
           rawMessageJson: rawMessageJson,
         );
@@ -623,7 +633,7 @@ class SyncEventProcessor {
   }
 
   Future<PreparedSyncEvent> _prepareMessageOnce({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncMessage syncMessage,
     Map<String, dynamic>? rawMessageJson,
   }) async {
@@ -644,21 +654,21 @@ class SyncEventProcessor {
         subDomain: 'processor.selfEcho',
       );
       return PreparedSyncEvent._(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         isSelfEcho: true,
       );
     }
     switch (syncMessage) {
       case final SyncJournalEntity msg:
-        return _prepareJournalEntity(event: event, syncMessage: msg);
+        return _prepareJournalEntity(envelope: envelope, syncMessage: msg);
       case final SyncAgentEntity msg:
         final resolved = await _resolveAgentEntity(
           msg,
           rawMessageJson: rawMessageJson,
         );
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           resolvedAgentEntity: resolved.entity,
           pendingProjectActivityAtWasPresent:
@@ -667,14 +677,14 @@ class SyncEventProcessor {
       case final SyncAgentLink msg:
         final resolved = await _resolveAgentLink(msg);
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           resolvedAgentLink: resolved,
         );
       case final SyncNotification msg:
         final resolved = await _resolveNotification(msg);
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           resolvedNotification: resolved,
         );
@@ -687,14 +697,14 @@ class SyncEventProcessor {
         // them up via the per-entity / per-link path. Logging at info so
         // a sudden reappearance in production surfaces.
         _trace(
-          'legacyAgentBundle.skip eventId=${event.eventId} '
+          'legacyAgentBundle.skip eventId=${envelope.eventId} '
           'agentId=${msg.agentId} wakeRunKey=${msg.wakeRunKey}',
           subDomain: 'processor.resolve.legacyAgentBundle',
         );
-        return PreparedSyncEvent._(event: event, syncMessage: msg);
+        return PreparedSyncEvent._(envelope: envelope, syncMessage: msg);
       case SyncDeepBackfillInventory() || SyncDeepBackfillRequest():
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: await _resolveDeepBackfillMessage(syncMessage),
         );
       case final SyncOutboxBundle msg:
@@ -708,7 +718,7 @@ class SyncEventProcessor {
           _ => const <Map<String, dynamic>?>[],
         };
         final resolved = await _outboxBundleUnpacker.prepare(
-          event: event,
+          envelope: envelope,
           msg: msg,
           rawChildren: rawChildren,
           resolveSidecar:
@@ -719,14 +729,15 @@ class SyncEventProcessor {
                 jsonPath,
                 attachmentEventId: attachmentEventId,
               ),
-          prepareChild: (childEvent, childMsg, childJson) => _prepareForMessage(
-            event: childEvent,
-            syncMessage: childMsg,
-            rawMessageJson: childJson,
-          ),
+          prepareChild: (childEnvelope, childMsg, childJson) =>
+              _prepareForMessage(
+                envelope: childEnvelope,
+                syncMessage: childMsg,
+                rawMessageJson: childJson,
+              ),
         );
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: msg,
           resolvedOutboxBundle: resolved,
           // An unresolvable manifest — a newer version, say — or a child
@@ -734,7 +745,10 @@ class SyncEventProcessor {
           hasUndecodableParts: resolved == null || resolved.incomplete,
         );
       default:
-        return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
+        return PreparedSyncEvent._(
+          envelope: envelope,
+          syncMessage: syncMessage,
+        );
     }
   }
 

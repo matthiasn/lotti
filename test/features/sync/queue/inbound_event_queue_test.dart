@@ -1962,7 +1962,7 @@ void main() {
         });
         await queue.enqueueLive(original);
         final batch = await queue.peekBatchReady();
-        final rehydrated = batch.single.toEvent(room);
+        final rehydrated = batch.single.toEnvelope();
         expect(rehydrated.eventId, r'$mat');
         expect(rehydrated.roomId, roomA);
         expect(

@@ -102,6 +102,9 @@ Future<String? Function()> _registerMatrixSyncStack({
           syncNodeProfileRepository: syncNodeProfileRepository,
           fts5Db: getIt<Fts5Db>(),
           syncEventTrust: syncEventTrust,
+          // Exact-id descriptor recovery asks the client this isolate holds
+          // (ADR 0142, step 3); the apply path itself never sees a Room.
+          descriptorFetcher: MatrixDescriptorFetcher.forClient(client),
           gitHubAccountSink: gitHubTokenStorageForProfile(
             secureStorage,
             getIt<ProfileContext>(),

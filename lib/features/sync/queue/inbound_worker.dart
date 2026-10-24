@@ -8,7 +8,6 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 
 /// Outcome the [InboundApplyFn] returns to the worker per entry.
 enum ApplyOutcome {
@@ -49,12 +48,10 @@ enum ApplyOutcome {
 const undecodableReason = 'undecodable';
 
 /// Apply callback contract. Phase-2 wiring plugs in
-/// `SyncEventProcessor.prepare` + `apply`; Phase-1 tests pass a mock.
-typedef InboundApplyFn =
-    Future<ApplyOutcome> Function(
-      InboundQueueEntry entry,
-      Room room,
-    );
+/// `SyncEventProcessor.prepare` + `apply`; Phase-1 tests pass a mock. The
+/// entry carries everything apply reads; no live Room is involved (ADR
+/// 0142, step 3).
+typedef InboundApplyFn = Future<ApplyOutcome> Function(InboundQueueEntry entry);
 
 /// Optional batch-prepare hook. Called once per batch in
 /// [InboundWorker._runBatch] before the per-entry apply loop so the
@@ -70,10 +67,7 @@ typedef InboundApplyFn =
 /// - Wiring is optional. A worker built without this hook prepares
 ///   each entry inline inside [InboundApplyFn].
 typedef InboundPrepareBatchFn =
-    Future<void> Function(
-      List<InboundQueueEntry> entries,
-      Room room,
-    );
+    Future<void> Function(List<InboundQueueEntry> entries);
 
 const _logSub = 'queue.worker';
 
@@ -95,7 +89,6 @@ class InboundWorker {
   InboundWorker({
     required this._queue,
     required this._sequenceLogService,
-    required this._resolveRoom,
     required this._apply,
     required this._logging,
     this._prepareBatch,
@@ -110,7 +103,6 @@ class InboundWorker {
   final InboundQueue _queue;
   final SyncCostMeter _costMeter;
   final SyncSequenceLogService _sequenceLogService;
-  final Future<Room?> Function() _resolveRoom;
   final InboundApplyFn _apply;
   final InboundPrepareBatchFn? _prepareBatch;
   final DomainLogger _logging;
@@ -242,29 +234,6 @@ class InboundWorker {
   }
 
   Future<int> _runBatch(List<InboundQueueEntry> batch) async {
-    final room = await _resolveRoom();
-    if (room == null) {
-      _logging.log(
-        LogDomain.sync,
-        'queue.worker.noRoom batch=${batch.length}',
-        subDomain: _logSub,
-      );
-      // Release the lease so another drain cycle can retry once the
-      // room becomes available. Batched in a single sync_db
-      // transaction to avoid N round trips for the common wedged-room
-      // path.
-      await _queue.runInTransaction(() async {
-        for (final entry in batch) {
-          await _queue.scheduleRetry(
-            entry,
-            const Duration(seconds: 2),
-            reason: RetryReason.retriable,
-          );
-        }
-      });
-      return 0;
-    }
-
     var appliedCount = 0;
     await _sequenceLogService.runWithDeferredMissingEntries(() async {
       // Phase 0 (optional): batch-parallel prepare. Prepare is
@@ -277,7 +246,7 @@ class InboundWorker {
       final batchPrepare = _prepareBatch;
       if (batchPrepare != null) {
         try {
-          await batchPrepare(batch, room);
+          await batchPrepare(batch);
         } catch (error, stackTrace) {
           // A broken prepareBatch must not skip the apply phase — the
           // adapter already classifies prepare failures per entry, so
@@ -298,7 +267,7 @@ class InboundWorker {
       // second phase can commit/retry/skip in one sync_db transaction.
       final outcomes = <_EntryOutcome>[];
       for (final entry in batch) {
-        final outcome = await _applyOne(entry, room);
+        final outcome = await _applyOne(entry);
         outcomes.add(_EntryOutcome(entry, outcome));
       }
 
@@ -334,14 +303,11 @@ class InboundWorker {
     return appliedCount;
   }
 
-  Future<ApplyOutcome> _applyOne(
-    InboundQueueEntry entry,
-    Room room,
-  ) async {
+  Future<ApplyOutcome> _applyOne(InboundQueueEntry entry) async {
     try {
       return await _costMeter.measure(
         SyncCostSection.apply,
-        () => _apply(entry, room),
+        () => _apply(entry),
       );
     } catch (error, stackTrace) {
       _logging.error(

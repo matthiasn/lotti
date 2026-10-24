@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
@@ -44,7 +45,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(bundle));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final captured = verify(
           () => aiConfigRepository.deleteConfig(
@@ -403,6 +404,9 @@ void main() {
               // Without a policy the processor cannot vouch for a fetched
               // descriptor, so it must not look one up at all.
               syncEventTrust: lookup == 'noPolicy' ? null : trust,
+              descriptorFetcher: MatrixDescriptorFetcher(
+                resolveRoom: (_) => room,
+              ),
             );
             const message = SyncMessage.outboxBundle(
               children: [],
@@ -416,7 +420,10 @@ void main() {
                 lookup == 'cachedCiphertext' ||
                 lookup == 'server' ||
                 lookup == 'serverCiphertext') {
-              await exactProcessor.process(event: event, journalDb: journalDb);
+              await exactProcessor.process(
+                envelope: event,
+                journalDb: journalDb,
+              );
               verify(
                 () => aiConfigRepository.deleteConfig(
                   'exact-bundle-config',
@@ -435,7 +442,7 @@ void main() {
                 Object? failure;
                 unawaited(
                   exactProcessor
-                      .process(event: event, journalDb: journalDb)
+                      .process(envelope: event, journalDb: journalDb)
                       .then<void>(
                         (_) => settled = true,
                         onError: (Object error, StackTrace stackTrace) {
@@ -464,7 +471,7 @@ void main() {
               );
             } else {
               final attempt = exactProcessor.process(
-                event: event,
+                envelope: event,
                 journalDb: journalDb,
               );
               if (lookup == 'wrongPath' || lookup == 'serverWrongPath') {
@@ -1074,7 +1081,7 @@ void main() {
               ),
             ),
           );
-          final prepared = await processor.prepare(event: event);
+          final prepared = await processor.prepare(envelope: event);
           expect(prepared!.resolvedOutboxBundle!.children, hasLength(1));
           expect(prepared.hasUndecodableParts, isTrue);
           // The envelope-parse error path captured an exception under

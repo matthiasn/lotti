@@ -25,7 +25,6 @@ void main() {
   late AdapterMockSyncEventProcessor processor;
   late JournalDb journalDb;
   late MockDomainLogger logging;
-  late MockRoom room;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -37,8 +36,6 @@ void main() {
     processor = AdapterMockSyncEventProcessor();
     journalDb = JournalDb(inMemoryDatabase: true);
     logging = MockDomainLogger();
-    room = MockRoom();
-    when(() => room.id).thenReturn('!r:example.org');
   });
 
   tearDown(() async {
@@ -61,8 +58,6 @@ void main() {
       final localProcessor = AdapterMockSyncEventProcessor();
       final localJournalDb = JournalDb(inMemoryDatabase: true);
       final localLogging = MockDomainLogger();
-      final localRoom = MockRoom();
-      when(() => localRoom.id).thenReturn('!r:example.org');
       final entry = hBuildEntry(
         eventId: '\$generated-${scenario.slot}',
         roomId: '!r',
@@ -74,7 +69,7 @@ void main() {
         switch (scenario.prepareOutcome) {
           case GeneratedAdapterPrepareOutcome.ready:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenAnswer((_) async => prepared);
             when(() => prepared.syncMessage).thenReturn(scenario.syncMessage());
             switch (scenario.applyOutcome) {
@@ -100,14 +95,14 @@ void main() {
             }
           case GeneratedAdapterPrepareOutcome.nullPrepared:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenAnswer((_) async => null);
           case GeneratedAdapterPrepareOutcome.pendingDescriptor:
           case GeneratedAdapterPrepareOutcome.pendingPath:
           case GeneratedAdapterPrepareOutcome.retriableIo:
           case GeneratedAdapterPrepareOutcome.permanentThrow:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenThrow(scenario.prepareException());
         }
 
@@ -118,13 +113,13 @@ void main() {
           hasOlderActiveEntry: (_) async => false,
         );
         if (scenario.usePrepareBatch) {
-          await adapter.bindPrepareBatch()([entry], localRoom);
+          await adapter.bindPrepareBatch()([entry]);
         }
 
-        final outcome = await adapter.bind()(entry, localRoom);
+        final outcome = await adapter.bind()(entry);
         expect(outcome, scenario.expectedOutcome, reason: '$scenario');
         verify(
-          () => localProcessor.prepare(event: any(named: 'event')),
+          () => localProcessor.prepare(envelope: any(named: 'envelope')),
         ).called(1);
         if (scenario.prepareReady) {
           verify(
@@ -160,7 +155,7 @@ void main() {
       attempts: 0,
       rawJson: 'not-json',
     );
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.permanentSkip);
   });
 
@@ -171,9 +166,9 @@ void main() {
       originTsMs: 1,
     );
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => null);
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.undecodable);
     verifyNever(
       () => processor.apply(
@@ -193,9 +188,9 @@ void main() {
         originTsMs: 1,
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenThrow(const FileSystemException('down'));
-      final outcome = await build().bind()(entry, room);
+      final outcome = await build().bind()(entry);
       expect(outcome, ApplyOutcome.retriable);
     },
   );
@@ -217,7 +212,7 @@ void main() {
             ),
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenAnswer((_) async => prepared);
       when(
         () => processor.apply(
@@ -257,7 +252,7 @@ void main() {
         );
         expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isTrue);
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
 
         expect(outcome, ApplyOutcome.applied);
         expect(log, ['apply', 'effects']);
@@ -276,7 +271,7 @@ void main() {
       );
       expect(QueueApplyAdapter.writesJournalDb(prepared.syncMessage), isFalse);
 
-      final outcome = await build().bind()(entry, room);
+      final outcome = await build().bind()(entry);
 
       expect(outcome, ApplyOutcome.applied);
       expect(log, ['apply', 'effects']);
@@ -291,7 +286,7 @@ void main() {
     );
     final prepared = AdapterMockPreparedSyncEvent();
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(
       () => processor.apply(
@@ -301,7 +296,7 @@ void main() {
       ),
     ).thenAnswer((_) async => null);
 
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.applied);
     verify(
       () => processor.apply(
@@ -320,7 +315,7 @@ void main() {
     );
     final prepared = AdapterMockPreparedSyncEvent();
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(
       () => processor.apply(
@@ -330,7 +325,7 @@ void main() {
       ),
     ).thenThrow(const FileSystemException('disk full'));
 
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.retriable);
   });
 
@@ -344,10 +339,10 @@ void main() {
         originTsMs: 1,
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenThrow(StateError('logic bug'));
 
-      final outcome = await build().bind()(entry, room);
+      final outcome = await build().bind()(entry);
       expect(outcome, ApplyOutcome.undecodable);
       verify(
         () => logging.error(
@@ -594,7 +589,7 @@ void main() {
         );
         when(() => prepared.syncMessage).thenReturn(message);
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenAnswer((_) async => prepared);
         when(
           () => processor.apply(
@@ -604,7 +599,7 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.applied);
         // The classifier introspected the prepared payload; the apply
         // still ran. We do not assert on transaction state directly
@@ -628,7 +623,7 @@ void main() {
         final prepared = AdapterMockPreparedSyncEvent();
         // No stub for syncMessage → mocktail throws on access.
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenAnswer((_) async => prepared);
         when(
           () => processor.apply(
@@ -638,7 +633,7 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.applied);
       },
     );

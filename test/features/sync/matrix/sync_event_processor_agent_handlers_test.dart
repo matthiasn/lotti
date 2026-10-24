@@ -22,6 +22,7 @@ import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/get_it.dart';
@@ -98,7 +99,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verifyNever(
@@ -135,7 +136,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verifyNever(
@@ -161,7 +162,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
       });
@@ -261,7 +262,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored!.items.map((i) => i.status), [
             ChangeItemStatus.confirmed,
@@ -291,7 +292,7 @@ void main() {
         storeChangeSet(local);
         receive(changeSet([estimate], {'local': 1}));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(stored, same(local));
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -309,7 +310,7 @@ void main() {
         final incoming = changeSet([estimate], {'peer': 1});
         receive(incoming);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(stored, incoming);
       });
@@ -326,7 +327,7 @@ void main() {
           );
           receive(incoming);
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored, incoming);
           verify(
@@ -363,7 +364,7 @@ void main() {
           );
 
           final received = processor.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
           await pumpEventQueue();
@@ -479,7 +480,7 @@ void main() {
           store(removal);
           receive(reportHead({'host-A': 1}, at: DateTime(2026, 9, 25, 9)));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(rows['head-removed'], same(removal));
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -502,7 +503,7 @@ void main() {
         );
         receive(removal);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(rows['head-removed'], removal);
       });
@@ -529,7 +530,7 @@ void main() {
           );
 
           final received = processor.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
           await pumpEventQueue();
@@ -682,7 +683,7 @@ void main() {
           );
           receive(incoming);
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored().recentHeadMessageId, 'a1');
           // Every other field is still the last writer's.
@@ -706,7 +707,7 @@ void main() {
             state(head: 'a1', clock: {'peer': 1}, at: DateTime(2026, 9, 1, 9)),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored().recentHeadMessageId, 'a1');
           expect(stored().vectorClock, const VectorClock({'local': 1}));
@@ -727,7 +728,7 @@ void main() {
           ).copyWith(vectorClock: null);
           receive(legacy);
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored().recentHeadMessageId, 'a1');
           // The unclocked version still applies otherwise.
@@ -751,7 +752,7 @@ void main() {
           );
           receive(incoming);
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           expect(stored().recentHeadMessageId, 'a1');
           expect(stored().vectorClock, incoming.vectorClock);
@@ -775,7 +776,7 @@ void main() {
           );
 
           final received = processor.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
           await pumpEventQueue();
@@ -867,7 +868,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertLink(any()));
         },
@@ -905,7 +906,7 @@ void main() {
           );
 
           final received = processor.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
           await pumpEventQueue();
@@ -964,7 +965,7 @@ void main() {
           );
 
           final received = processor.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
           await pumpEventQueue();
@@ -1011,7 +1012,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
@@ -1075,7 +1076,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final applied =
             verify(
@@ -1136,7 +1137,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final applied =
             verify(
@@ -1197,7 +1198,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final applied =
             verify(
@@ -1252,7 +1253,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final applied = verify(
           () => mockAgentRepo.upsertEntity(captureAny()),
@@ -1310,7 +1311,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(incoming)).called(1);
     });
@@ -1332,7 +1333,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
@@ -1364,7 +1365,7 @@ void main() {
         base64.encode(utf8.encode(jsonEncode(envelope))),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       final applied =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
@@ -1406,7 +1407,7 @@ void main() {
         base64.encode(utf8.encode(jsonEncode(envelope))),
       );
 
-      final prepared = await processor.prepare(event: event);
+      final prepared = await processor.prepare(envelope: event);
 
       expect(prepared, isNull);
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -1463,7 +1464,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       final upserted =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
@@ -1512,7 +1513,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       final upserted =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
@@ -1585,7 +1586,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       final upserted =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
@@ -1657,7 +1658,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       final upserted =
           verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
@@ -1722,7 +1723,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final upserted =
             verify(
@@ -1786,7 +1787,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final upserted =
             verify(
@@ -1846,7 +1847,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final upserted =
             verify(
@@ -1900,7 +1901,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final upserted =
             verify(
@@ -1950,7 +1951,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
       },
@@ -1998,7 +1999,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final upserted =
             verify(
@@ -2047,7 +2048,7 @@ void main() {
 
       await withClock(
         Clock.fixed(DateTime(2026, 8, 1, 9)),
-        () => processor.process(event: event, journalDb: journalDb),
+        () => processor.process(envelope: event, journalDb: journalDb),
       );
 
       verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -2101,7 +2102,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         // The retraction wins despite the later edit timestamp, so the
         // incoming confirm is neither applied nor written.
@@ -2153,7 +2154,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(readsInTransaction, {
           'state-bulk-1': true,
@@ -2213,7 +2214,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(rows['state-cache-refresh'], incomingNewer);
         verify(() => mockAgentRepo.upsertEntity(incomingNewer)).called(1);
@@ -2239,7 +2240,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
@@ -2259,7 +2260,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
     });
@@ -2301,7 +2302,7 @@ void main() {
       ).thenAnswer((_) async => [taskLink, deletedTaskLink]);
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
@@ -2340,7 +2341,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final projected =
             verify(
@@ -2418,7 +2419,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         final applied = {
           for (final entity in verify(
@@ -2458,7 +2459,7 @@ void main() {
       ).thenAnswer((_) async => [taskLink]);
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
@@ -2491,7 +2492,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
@@ -2521,7 +2522,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       verify(
@@ -2548,7 +2549,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertLink(link)).called(1);
       verify(
@@ -2606,7 +2607,7 @@ void main() {
             ),
           ),
         );
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
       }
 
       Future<void> processLink(AgentLink incoming) async {
@@ -2618,7 +2619,7 @@ void main() {
             ),
           ),
         );
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
       }
 
       test('applies incoming entity when its updatedAt is newer', () async {
@@ -2807,7 +2808,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         // Bundle is intentionally not applied — the agent repo is not
         // touched, no AGENT_CHANGED notifications fire, and process()
@@ -2888,7 +2889,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
         }
@@ -2926,7 +2927,7 @@ void main() {
       await expectLater(
         withClock(
           Clock.fixed(DateTime(2026, 8, 1, 9)),
-          () => processor.process(event: event, journalDb: journalDb),
+          () => processor.process(envelope: event, journalDb: journalDb),
         ),
         throwsA(isA<StateError>()),
       );
@@ -2954,7 +2955,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await expectLater(
-        processor.process(event: event, journalDb: journalDb),
+        processor.process(envelope: event, journalDb: journalDb),
         throwsA(isA<StateError>()),
       );
 
@@ -2989,7 +2990,7 @@ void main() {
 
       // The processor catches, logs, and rethrows
       await expectLater(
-        () => processor.process(event: event, journalDb: journalDb),
+        () => processor.process(envelope: event, journalDb: journalDb),
         throwsA(isA<Exception>()),
       );
 
@@ -3024,7 +3025,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await expectLater(
-        () => processor.process(event: event, journalDb: journalDb),
+        () => processor.process(envelope: event, journalDb: journalDb),
         throwsA(isA<Exception>()),
       );
 
@@ -3077,7 +3078,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           // The catch block in _localAgentPayloadDominates logs and returns
           // false, so the entity is upserted anyway.
@@ -3126,7 +3127,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           // Dominance check failed (VclockException caught), falls through to
           // upsert.
@@ -3223,7 +3224,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await proc.process(event: event, journalDb: journalDb);
+          await proc.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepoSeq.upsertEntity(any()));
           verify(
@@ -3304,7 +3305,7 @@ void main() {
             ),
           );
 
-          await proc.process(event: event, journalDb: journalDb);
+          await proc.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepoSeq.upsertEntity(any()));
           verify(
@@ -3373,7 +3374,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await proc.process(event: event, journalDb: journalDb);
+          await proc.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepoSeq.upsertEntity(incoming)).called(1);
         },
@@ -3430,7 +3431,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await proc.process(event: event, journalDb: journalDb);
+          await proc.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepoSeq.upsertLink(any()));
           verify(
@@ -3496,7 +3497,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => mockSeqService.recordReceivedEntry(
@@ -3556,7 +3557,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => loggingService.log(
@@ -3614,7 +3615,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await expectLater(
-          proc.process(event: event, journalDb: journalDb),
+          proc.process(envelope: event, journalDb: journalDb),
           throwsA(isA<Exception>()),
         );
 
@@ -3668,7 +3669,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => mockSeqService.recordReceivedEntry(
@@ -3725,7 +3726,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => loggingService.log(
@@ -3775,7 +3776,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
         await expectLater(
-          proc.process(event: event, journalDb: journalDb),
+          proc.process(envelope: event, journalDb: journalDb),
           throwsA(isA<Exception>()),
         );
 
@@ -3824,7 +3825,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verifyNever(
           () => mockSeqService.recordReceivedEntry(
@@ -3871,7 +3872,7 @@ void main() {
         )..agentRepository = mockAgentRepoSeq;
 
         when(() => event.text).thenReturn(encodeMessage(message));
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verifyNever(
           () => mockSeqService.recordReceivedEntry(
@@ -3973,7 +3974,7 @@ void main() {
               () => event.text,
             ).thenReturn(encodeMessage(prerequisite.value));
 
-            await processor.process(event: event, journalDb: journalDb);
+            await processor.process(envelope: event, journalDb: journalDb);
 
             expect(
               seen,
@@ -4019,7 +4020,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         // The thrower ran first and was contained; the recorder still got
         // the identity, and the entity was persisted normally.
@@ -4067,7 +4068,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(seen, ['goal-88']);
         verify(() => mockAgentRepo.upsertEntity(head)).called(1);
@@ -4095,7 +4096,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
@@ -4133,7 +4134,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(
@@ -4193,7 +4194,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final clearedState = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -4289,7 +4290,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final stateWrites = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -4362,7 +4363,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           final repaired =
@@ -4442,7 +4443,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           final repaired =
@@ -4501,7 +4502,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         // A cadence chosen on the other device reaches this one's runtime.
@@ -4572,7 +4573,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
@@ -4616,7 +4617,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
         },
@@ -4662,7 +4663,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.addSubscription(
@@ -4735,7 +4736,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           // The arrival asks the cadence for one synced slot; it writes no
@@ -4798,7 +4799,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           final persistedStates = verify(
@@ -4870,7 +4871,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           final persistedStates = verify(
@@ -4917,7 +4918,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final persisted =
               verify(
@@ -4982,7 +4983,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final applied = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -5038,7 +5039,7 @@ void main() {
             base64.encode(utf8.encode(json.encode(messageJson))),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final applied = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -5103,7 +5104,7 @@ void main() {
             base64.encode(utf8.encode(json.encode(bundleJson))),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final applied = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -5174,7 +5175,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final applied = verify(
             () => mockAgentRepo.upsertEntity(captureAny()),
@@ -5211,7 +5212,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.haltAgent('project-agent-dormant'),
@@ -5281,7 +5282,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -5341,7 +5342,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -5381,7 +5382,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verifyNever(
@@ -5414,7 +5415,7 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
 
         // Should not throw even though lifecycle is dormant.
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verifyNever(
@@ -5475,7 +5476,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
           verify(
@@ -5536,7 +5537,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.mirrorTaskWakeCadence(
@@ -5600,7 +5601,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
           verifyNever(() => mockOrchestrator.addSubscription(any()));
@@ -5647,7 +5648,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.addSubscription(
@@ -5735,7 +5736,7 @@ void main() {
           );
 
           await withClock(Clock.fixed(now), () {
-            return processor.process(event: event, journalDb: journalDb);
+            return processor.process(envelope: event, journalDb: journalDb);
           });
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -5814,7 +5815,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           expect(armedAgentIds, isEmpty);
@@ -5863,7 +5864,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.getEntity('project-agent-1')).called(2);
           verifyNever(() => mockOrchestrator.addSubscription(any()));
@@ -5923,7 +5924,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.disableAutomaticUpdatesRuntime(
@@ -5962,7 +5963,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(
             () => mockOrchestrator.removeSubscription(
@@ -5993,7 +5994,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
           // Mirror remote delete: the per-link subscription must go so this
@@ -6023,7 +6024,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
         // getEntity should not be called for non-agent_task links.
@@ -6045,7 +6046,7 @@ void main() {
 
       Future<void> receive(SyncMessage message) async {
         when(() => event.text).thenReturn(encodeMessage(message));
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
       }
 
       AgentLink taskLink({
@@ -6242,7 +6243,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       });
@@ -6281,7 +6282,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verifyNever(
@@ -6331,7 +6332,7 @@ void main() {
             ),
           );
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           verify(
@@ -6371,7 +6372,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        final prepared = await processor.prepare(event: event);
+        final prepared = await processor.prepare(envelope: event);
 
         expect(prepared, isNull);
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -6415,7 +6416,10 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await explicitProcessor.process(event: event, journalDb: journalDb);
+          await explicitProcessor.process(
+            envelope: event,
+            journalDb: journalDb,
+          );
 
           verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
           expect(
@@ -6464,7 +6468,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           final restored = AgentDomainEntity.fromJson(
@@ -6522,7 +6526,10 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await explicitProcessor.process(event: event, journalDb: journalDb);
+          await explicitProcessor.process(
+            envelope: event,
+            journalDb: journalDb,
+          );
 
           verifyNever(() => mockAgentRepo.upsertEntity(any()));
           final restored = AgentDomainEntity.fromJson(
@@ -6563,7 +6570,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
       });
@@ -6574,7 +6581,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
@@ -6592,7 +6599,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
@@ -6611,7 +6618,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
@@ -6631,7 +6638,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
@@ -6654,7 +6661,7 @@ void main() {
           when(() => event.text).thenReturn(encodeMessage(message));
 
           await expectLater(
-            () => processor.process(event: event, journalDb: journalDb),
+            () => processor.process(envelope: event, journalDb: journalDb),
             throwsA(isA<FileSystemException>()),
           );
         },
@@ -6670,7 +6677,7 @@ void main() {
           when(() => event.text).thenReturn(encodeMessage(message));
 
           await expectLater(
-            () => processor.process(event: event, journalDb: journalDb),
+            () => processor.process(envelope: event, journalDb: journalDb),
             throwsA(isA<FileSystemException>()),
           );
         },
@@ -6689,7 +6696,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertEntity(any()));
         verify(
@@ -6706,9 +6713,11 @@ void main() {
         late AttachmentIndex attachmentIndex;
         late SyncEventProcessor processorWithIndex;
         late MockEvent descriptorEvent;
+        late MockRoom indexRoom;
 
         setUp(() {
           attachmentIndex = AttachmentIndex(logging: loggingService);
+          indexRoom = MockRoom();
           processorWithIndex = SyncEventProcessor(
             loggingService: loggingService,
             updateNotifications: updateNotifications,
@@ -6718,6 +6727,9 @@ void main() {
             journalEntityLoader: journalEntityLoader,
             attachmentIndex: attachmentIndex,
             syncEventTrust: AdmittingSyncEventTrust(),
+            descriptorFetcher: MatrixDescriptorFetcher(
+              resolveRoom: (_) => indexRoom,
+            ),
           );
           processorWithIndex.agentRepository = mockAgentRepo;
 
@@ -6765,7 +6777,7 @@ void main() {
             when(() => event.text).thenReturn(encodeMessage(message));
 
             await processorWithIndex.process(
-              event: event,
+              envelope: event,
               journalDb: journalDb,
             );
 
@@ -6791,7 +6803,7 @@ void main() {
               ),
             );
 
-            expect(await processorWithIndex.prepare(event: event), isNull);
+            expect(await processorWithIndex.prepare(envelope: event), isNull);
             verifyNever(descriptorEvent.downloadAndDecryptAttachment);
             verifyNever(() => mockAgentRepo.upsertEntity(any()));
           },
@@ -6906,7 +6918,7 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
-            await exactProcessor.process(event: event, journalDb: journalDb);
+            await exactProcessor.process(envelope: event, journalDb: journalDb);
 
             verify(() => mockAgentRepo.upsertEntity(olderEntity)).called(1);
             verifyNever(() => mockAgentRepo.upsertEntity(newerEntity));
@@ -7004,7 +7016,7 @@ void main() {
             when(() => event.text).thenReturn(encodeMessage(message));
 
             await exactProcessor.process(
-              event: event,
+              envelope: event,
               journalDb: journalDb,
             );
 
@@ -7042,7 +7054,7 @@ void main() {
 
             await expectLater(
               () => processorWithIndex.process(
-                event: event,
+                envelope: event,
                 journalDb: journalDb,
               ),
               throwsA(isA<FileSystemException>()),
@@ -7072,7 +7084,7 @@ void main() {
 
             // Completes instead of throwing a retryable descriptor error:
             // prepare yields nothing, so the queue marks the row skipped.
-            expect(await processorWithIndex.prepare(event: event), isNull);
+            expect(await processorWithIndex.prepare(envelope: event), isNull);
 
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
             verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -7096,7 +7108,7 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
-            expect(await processorWithIndex.prepare(event: event), isNull);
+            expect(await processorWithIndex.prepare(envelope: event), isNull);
 
             verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
             verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -7122,7 +7134,7 @@ void main() {
             when(() => event.text).thenReturn(encodeMessage(message));
 
             await expectLater(
-              processorWithIndex.prepare(event: event),
+              processorWithIndex.prepare(envelope: event),
               throwsA(isA<FileSystemException>()),
             );
             verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -7144,7 +7156,7 @@ void main() {
 
           await expectLater(
             () => processorWithIndex.process(
-              event: event,
+              envelope: event,
               journalDb: journalDb,
             ),
             throwsA(isA<FileSystemException>()),
@@ -7182,7 +7194,7 @@ void main() {
           when(() => event.text).thenReturn(encodeMessage(message));
 
           await processorWithIndex.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
 
@@ -7220,14 +7232,12 @@ void main() {
               attachmentEventId: 'agent-payload-not-yet-indexed',
             );
             when(() => event.text).thenReturn(encodeMessage(message));
-            final room = MockRoom();
-            when(() => event.room).thenReturn(room);
             when(
-              () => room.getEventById('agent-payload-not-yet-indexed'),
+              () => indexRoom.getEventById('agent-payload-not-yet-indexed'),
             ).thenAnswer((_) async => null);
 
             await expectLater(
-              processorWithIndex.process(event: event, journalDb: journalDb),
+              processorWithIndex.process(envelope: event, journalDb: journalDb),
               throwsA(isA<PendingSyncDescriptorException>()),
             );
 
@@ -7252,7 +7262,7 @@ void main() {
           // Descriptor fetched successfully but JSON parse fails →
           // permanent skip (returns null), not a retry.
           await processorWithIndex.process(
-            event: event,
+            envelope: event,
             journalDb: journalDb,
           );
 
@@ -7281,7 +7291,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => mockAgentRepo.upsertLink(any()));
         verify(
@@ -7340,7 +7350,7 @@ void main() {
             when(() => event.text).thenReturn(encodeMessage(message));
 
             // Should complete without throwing.
-            await processor.process(event: event, journalDb: journalDb);
+            await processor.process(envelope: event, journalDb: journalDb);
 
             // Local dominates → entity NOT upserted.
             verifyNever(() => mockAgentRepo.upsertEntity(any()));
@@ -7394,7 +7404,7 @@ void main() {
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
-            await processor.process(event: event, journalDb: journalDb);
+            await processor.process(envelope: event, journalDb: journalDb);
 
             verifyNever(() => mockAgentRepo.upsertLink(any()));
             verify(
@@ -7418,7 +7428,7 @@ void main() {
     when(() => event.text).thenReturn('not-base64');
 
     await expectLater(
-      processor.process(event: event, journalDb: journalDb),
+      processor.process(envelope: event, journalDb: journalDb),
       throwsA(isA<FormatException>()),
     );
 
@@ -7447,7 +7457,7 @@ void main() {
     ).thenThrow(Exception('load failed'));
 
     await expectLater(
-      processor.process(event: event, journalDb: journalDb),
+      processor.process(envelope: event, journalDb: journalDb),
       throwsA(isA<Exception>()),
     );
 
@@ -7475,7 +7485,7 @@ void main() {
     when(() => event.text).thenReturn(encoded);
 
     // Should NOT throw — the error is caught and logged.
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => loggingService.log(
@@ -7505,7 +7515,7 @@ void main() {
     // ArgumentError or FormatException, it will rethrow through the outer
     // catch. Let's verify it doesn't crash with an unrecoverable retry.
     try {
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
       // If it didn't throw, it was caught as deserialization error → good.
     } on Object {
       // If it threw, it's a non-deserialization error that rethrows → also ok,
@@ -7529,7 +7539,7 @@ void main() {
     final encoded = base64.encode(utf8.encode(json.encode(badJson)));
     when(() => event.text).thenReturn(encoded);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => loggingService.log(

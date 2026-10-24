@@ -13,7 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 // Local mock: the centralized `AdapterMockSyncEventProcessor` ships concrete
 // default `prepare`/`apply` overrides, so `when(() => processor.prepare(
-// event: any(named: 'event')))` would call the real method and leak the
+// envelope: any(named: 'envelope')))` would call the real method and leak the
 // unconsumed matcher. This file stubs both via `when()`, so it needs the
 // bare-Mock variant.
 class AdapterMockSyncEventProcessor extends Mock

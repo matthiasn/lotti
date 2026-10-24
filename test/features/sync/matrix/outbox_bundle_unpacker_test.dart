@@ -4,15 +4,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-PreparedSyncEvent _preparedFor(Event event, SyncMessage msg) =>
-    PreparedSyncEvent.forTesting(event: event, syncMessage: msg);
+PreparedSyncEvent _preparedFor(SyncEnvelope envelope, SyncMessage msg) =>
+    PreparedSyncEvent.forTesting(envelope: envelope, syncMessage: msg);
 
 ResolvedOutboxSyncBundle _resolved(
   SyncOutboxBundle bundle, {
@@ -180,7 +180,7 @@ void main() {
         final preparedRawChildren = <Map<String, dynamic>?>[];
 
         final result = await unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: bundle,
           rawChildren: rawChildren,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async {
@@ -224,7 +224,7 @@ void main() {
         Map<String, dynamic>? preparedRawChild;
 
         final result = await unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: stripped,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async {
             expect(jsonPath, '/outbox_bundles/abc-123.json');
@@ -258,7 +258,7 @@ void main() {
         );
 
         final result = await unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: stripped,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               null,
@@ -284,7 +284,7 @@ void main() {
 
         await expectLater(
           unpacker.prepare(
-            event: event,
+            envelope: event,
             msg: bundle,
             resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
                 _resolved(bundle),
@@ -318,7 +318,7 @@ void main() {
         );
 
         final result = await unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               _resolved(bundle),
@@ -357,7 +357,7 @@ void main() {
         Future<PreparedOutboxSyncBundle?> prepareWith({
           required bool incomplete,
         }) => unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: const SyncOutboxBundle(children: [], jsonPath: '/m.json'),
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               ResolvedOutboxSyncBundle(
@@ -394,7 +394,7 @@ void main() {
         );
 
         final result = await unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               _resolved(bundle),
@@ -427,7 +427,7 @@ void main() {
         );
         final preparedIds = <String>[];
         final prepareFuture = unpacker.prepare(
-          event: event,
+          envelope: event,
           msg: bundle,
           resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
               _resolved(bundle),

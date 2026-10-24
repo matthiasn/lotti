@@ -78,7 +78,7 @@ void main() {
 
     for (var attempt = 0; attempt < 2; attempt++) {
       await expectLater(
-        receiver.process(event: event, journalDb: durableJournal),
+        receiver.process(envelope: event, journalDb: durableJournal),
         throwsA(isA<StateError>()),
       );
       expect(
@@ -87,7 +87,7 @@ void main() {
       );
     }
     refuseReceipt = false;
-    await receiver.process(event: event, journalDb: durableJournal);
+    await receiver.process(envelope: event, journalDb: durableJournal);
     expect(receiptAttempts, 3);
     verify(
       () => journalEntityLoader.load(
@@ -125,7 +125,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => repo.upsertAttribution(attribution)).called(1);
       },
@@ -158,7 +158,7 @@ void main() {
             applied.add(entity);
         receiveImage();
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(applied, [testImageEntry]);
       },
@@ -176,7 +176,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       expect(applied, isEmpty);
     });
@@ -202,7 +202,7 @@ void main() {
         ).thenAnswer((_) async => fallbackJournalEntity);
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => journalEntityLoader.load(
@@ -271,7 +271,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await exactProcessor.process(event: event, journalDb: journalDb);
+        await exactProcessor.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => sequenceLog.recordReceivedEntry(
@@ -340,7 +340,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await exactProcessor.process(event: event, journalDb: journalDb);
+        await exactProcessor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(
           () => sequenceLog.recordReceivedEntry(
@@ -401,7 +401,7 @@ void main() {
         when(() => journalDb.upsertEntryLink(link1)).thenAnswer((_) async => 1);
         when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         // Verify both links were upserted
         verify(() => journalDb.upsertEntryLink(link1)).called(1);
@@ -470,7 +470,7 @@ void main() {
           ),
         ),
       );
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
       verifyNever(
         () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
       );
@@ -483,7 +483,7 @@ void main() {
           ),
         ),
       );
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
       verify(
         () => settingsDb.saveSettingsItem(
           clocklessRepairSettingsKey,
@@ -534,7 +534,7 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => journalDb.updateJournalEntity(any<JournalEntity>()));
         verify(() => journalDb.upsertEntryLink(link)).called(1);
@@ -549,7 +549,7 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
         verify(
           () => journalDb.updateJournalEntity(any<JournalEntity>()),
         ).called(1);
@@ -557,7 +557,7 @@ void main() {
         when(
           () => journalDb.journalEntityByIdIncludingDeleted(any()),
         ).thenAnswer((_) async => fallbackJournalEntity);
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
         verify(
           () => journalDb.updateJournalEntity(any<JournalEntity>()),
         ).called(1);
@@ -571,7 +571,7 @@ void main() {
           ),
         ).thenThrow(StateError('closed'));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => journalDb.updateJournalEntity(any<JournalEntity>()),
@@ -637,7 +637,7 @@ void main() {
       );
       when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 1);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Verify link WAS upserted even though entity update was skipped.
       // EntryLinks have their own vector clock for conflict resolution,
@@ -721,7 +721,7 @@ void main() {
         when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           throwsA(isA<Exception>()),
         );
 
@@ -757,7 +757,7 @@ void main() {
       ).thenAnswer((_) async => fallbackJournalEntity);
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Verify no links were upserted
       verifyNever(() => journalDb.upsertEntryLink(any()));
@@ -796,7 +796,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => journalDb.upsertEntryLink(link)).thenAnswer((_) async => 0);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Verify link upsert was attempted
       verify(() => journalDb.upsertEntryLink(link)).called(1);
@@ -855,7 +855,7 @@ void main() {
         () => journalDb.upsertEntryLink(any<EntryLink>()),
       ).thenAnswer((_) async => 1);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Verify the upserted link has collapsed=true from the incoming link
       final capturedLink =
@@ -899,7 +899,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: realJournalDb);
+        await processor.process(envelope: event, journalDb: realJournalDb);
 
         final stored = await realJournalDb.entryLinkById('sync-blocks-link');
         expect(stored, isA<BlocksLink>());
@@ -946,7 +946,7 @@ void main() {
           () => event.text,
         ).thenReturn(base64.encode(utf8.encode(json.encode(rawJson))));
 
-        await processor.process(event: event, journalDb: realJournalDb);
+        await processor.process(envelope: event, journalDb: realJournalDb);
 
         final stored = await realJournalDb.entryLinkById('sync-future-link');
         expect(stored, isA<BasicLink>());
@@ -1010,7 +1010,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: realJournalDb);
+        await processor.process(envelope: event, journalDb: realJournalDb);
 
         expect(await realJournalDb.entryLinkById('removed-link'), removed);
       },
@@ -1035,7 +1035,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: realJournalDb);
+        await processor.process(envelope: event, journalDb: realJournalDb);
 
         // The entity itself was applied — only the stale link was refused.
         expect(
@@ -1075,7 +1075,7 @@ void main() {
           ),
         ),
       );
-      await processor.process(event: event, journalDb: realJournalDb);
+      await processor.process(envelope: event, journalDb: realJournalDb);
     }
 
     Future<JournalEntry> stored() async =>
@@ -1181,7 +1181,7 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => mockSequenceService.recordReceivedEntryLink(
@@ -1237,7 +1237,7 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => loggingService.log(
@@ -1288,7 +1288,7 @@ void main() {
 
       // Propagate the failure so the queue retries the receipt.
       await expectLater(
-        processorWithSeq.process(event: event, journalDb: journalDb),
+        processorWithSeq.process(envelope: event, journalDb: journalDb),
         throwsA(isA<Exception>()),
       );
 
@@ -1331,7 +1331,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       // Sequence log should NOT be called
       verifyNever(
@@ -1372,7 +1372,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       // Sequence log should NOT be called
       verifyNever(
@@ -1426,7 +1426,7 @@ void main() {
         () => journalDb.entryLinkById('seq-link-exists'),
       ).thenAnswer((_) async => link);
 
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       // Sequence log SHOULD be called because link exists
       verify(
@@ -1488,7 +1488,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [link.copyWith(id: 'derived-id')]);
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         // Received and decided, so backfill stops asking for its counter.
         verify(
@@ -1537,7 +1537,7 @@ void main() {
           () => journalDb.entryLinkById('seq-link-missing'),
         ).thenAnswer((_) async => null);
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         // Sequence log should NOT be called
         verifyNever(
@@ -1591,7 +1591,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => mockSequenceService.recordReceivedEntryLink(
@@ -1634,7 +1634,7 @@ void main() {
         ).thenAnswer((_) async => fallbackJournalEntity);
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           throwsA(isA<FileSystemException>()),
         );
         verify(
@@ -1678,7 +1678,7 @@ void main() {
         // Act: because the lookup threw and returned null, the stale path
         // falls through to "not superseded → rethrow the FileSystemException".
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           throwsA(isA<FileSystemException>()),
         );
 
@@ -1747,7 +1747,7 @@ void main() {
 
         // The domain row is already present, but its receipt still needs retry.
         await expectLater(
-          processorWithSeq.process(event: event, journalDb: journalDb),
+          processorWithSeq.process(envelope: event, journalDb: journalDb),
           throwsA(isA<Exception>()),
         );
 
@@ -1818,7 +1818,7 @@ void main() {
         SyncApplyDiagnostics? captured;
         processor.applyObserver = (diag) => captured = diag;
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         expect(captured, isNotNull);
         // b_gt_a means incoming was newer than existing.
@@ -1866,12 +1866,12 @@ void main() {
         ).thenAnswer((_) async => null);
 
         // First call: entity is applied.
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
         verify(() => journalDb.updateJournalEntity(entityWithNoVc)).called(1);
 
         // Second call: deduplicated — markProcessed used syncVc, so the same
         // (id, syncVc) pair is now in the dedup cache.
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
         // updateJournalEntity must NOT be called a second time.
         verifyNever(() => journalDb.updateJournalEntity(entityWithNoVc));
       },
@@ -1956,7 +1956,7 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         // The fallback stored-row check ran and found the entity, so
         // recordReceivedEntry must have been called.
@@ -2058,7 +2058,7 @@ void main() {
           journalEntityLoader: journalEntityLoader,
           sequenceLogService: sequenceLog,
         );
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
         return sequenceLog;
       }
 
@@ -2167,7 +2167,7 @@ void main() {
           ],
         );
 
-        await processorWithSeq.process(event: event, journalDb: journalDb);
+        await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
         // Verify the gap-detection trace was emitted with both the count and
         // the entity id in a single log call.

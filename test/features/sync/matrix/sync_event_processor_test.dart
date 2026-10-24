@@ -220,7 +220,7 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => event.text).thenReturn(encodeMessage(control));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => onboardingSyncService.handleMessage(control)).called(1);
     }
@@ -242,7 +242,7 @@ void main() {
       ).thenAnswer((_) async => fallbackJournalEntity);
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => journalEntityLoader.load(
@@ -289,7 +289,7 @@ void main() {
         ),
       );
 
-      await fileBackedProcessor.process(event: event, journalDb: journalDb);
+      await fileBackedProcessor.process(envelope: event, journalDb: journalDb);
 
       final applied =
           verify(
@@ -331,7 +331,7 @@ void main() {
       ).thenAnswer((_) async => fallbackJournalEntity);
       when(() => event.text).thenReturn(encoded);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Behaviour must be identical to the inline path: loader still
       // runs, DB update still fires, notifications still dispatch.
@@ -371,8 +371,8 @@ void main() {
     final diags = <SyncApplyDiagnostics>[];
     processor.applyObserver = diags.add;
 
-    await processor.process(event: event, journalDb: journalDb);
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => journalEntityLoader.load(
@@ -443,8 +443,8 @@ void main() {
       ).thenAnswer((_) async => JournalUpdateResult.applied());
 
       // First call applies, second is duplicate
-      await processorWithSeq.process(event: event, journalDb: journalDb);
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       // Entity is only written once — duplicate is skipped
       verify(
@@ -496,7 +496,7 @@ void main() {
       SyncApplyDiagnostics? capturedDiag;
       processor.applyObserver = (diag) => capturedDiag = diag;
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // Observer called with a complete diagnostics payload
       expect(capturedDiag, isNotNull);
@@ -533,7 +533,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     final capturedLink =
         verify(
@@ -566,7 +566,7 @@ void main() {
     SyncApplyDiagnostics? diag;
     processor.applyObserver = (value) => diag = value;
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     expect(diag, isNotNull);
     expect(diag!.payloadType, 'entryLink');
@@ -592,7 +592,7 @@ void main() {
       throw StateError('observer failure');
     };
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
   });
 
   test('EntryLink syncs collapsed state from remote', () async {
@@ -614,7 +614,7 @@ void main() {
       () => journalDb.upsertEntryLink(any<EntryLink>()),
     ).thenAnswer((_) async => 1);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     final capturedLink =
         verify(
@@ -633,7 +633,7 @@ void main() {
       when(() => event.text).thenReturn(
         encodeMessage(const SyncMessage.outboxBundle(children: [])),
       );
-      final unresolved = await processor.prepare(event: event);
+      final unresolved = await processor.prepare(envelope: event);
       expect(unresolved!.resolvedOutboxBundle, isNull);
       expect(unresolved.hasUndecodableParts, isTrue);
 
@@ -644,7 +644,7 @@ void main() {
           ),
         ),
       );
-      final whole = await processor.prepare(event: event);
+      final whole = await processor.prepare(envelope: event);
       expect(whole!.resolvedOutboxBundle!.children, hasLength(1));
       expect(whole.hasUndecodableParts, isFalse);
     },
@@ -657,7 +657,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(() => journalDb.upsertEntityDefinition(measurableWater)).called(1);
   });
@@ -702,7 +702,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(() => fts5Db.reindexMeasurements(renamed, entries)).called(1);
   });
@@ -753,7 +753,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => journalDb.upsertEntityDefinition(renamed)).called(1);
       verify(
@@ -808,7 +808,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => fts5Db.reindexMeasurements(any(), any()));
       verifyNever(
@@ -830,7 +830,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => aiConfigRepository.saveConfig(
@@ -850,7 +850,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => aiConfigRepository.saveConfig(
@@ -871,7 +871,7 @@ void main() {
     var observerCalled = false;
     processor.applyObserver = (_) => observerCalled = true;
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     expect(observerCalled, isFalse);
     verify(
@@ -893,7 +893,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => aiConfigRepository.hardDeleteConfig(
@@ -919,7 +919,7 @@ void main() {
     const message = SyncMessage.aiConfigDelete(id: id);
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => aiConfigRepository.deleteConfig(
@@ -976,7 +976,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await clockedProcessor.process(event: event, journalDb: journalDb);
+      await clockedProcessor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => aiConfigRepository.saveConfig(
@@ -1014,7 +1014,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await clockedProcessor.process(event: event, journalDb: journalDb);
+      await clockedProcessor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => aiConfigRepository.hardDeleteConfig(
@@ -1042,7 +1042,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await clockedProcessor.process(event: event, journalDb: journalDb);
+      await clockedProcessor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(
         () => sequenceLog.recordReceivedEntry(
@@ -1078,7 +1078,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await expectLater(
-        clockedProcessor.process(event: event, journalDb: journalDb),
+        clockedProcessor.process(envelope: event, journalDb: journalDb),
         throwsStateError,
       );
       verify(
@@ -1104,7 +1104,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => savedTaskFiltersRepository.upsert(filter, fromSync: true),
@@ -1120,7 +1120,7 @@ void main() {
     );
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => savedTaskFiltersRepository.delete(
@@ -1136,7 +1136,7 @@ void main() {
     const message = SyncMessage.savedTaskFilterDelete(id: id);
     when(() => event.text).thenReturn(encodeMessage(message));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => savedTaskFiltersRepository.delete(
@@ -1163,7 +1163,7 @@ void main() {
       () => journalDb.getConfigFlagByName(flag.name),
     ).thenAnswer((_) async => null);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => journalDb.applyConfigFlagVersion(
@@ -1211,7 +1211,7 @@ void main() {
           ),
         ),
       );
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
     }
 
     const heldMessage = SyncMessage.configFlag(
@@ -1272,7 +1272,7 @@ void main() {
             ),
           ),
         );
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
       }
 
       when(
@@ -1303,7 +1303,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => aiConfigRepository.resendHeld('cfg')).called(1);
     });
@@ -1321,7 +1321,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => loggingService.error(
@@ -1369,7 +1369,7 @@ void main() {
     test('a flag that changed applies its effects to this device', () async {
       when(() => event.text).thenReturn(encodeMessage(flipped(status: false)));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // The alarms a preference governs are this device's: a switch flipped
       // on the phone has to reach the laptop's alarms, not only its page.
@@ -1387,7 +1387,7 @@ void main() {
     test('a flag with the status already stored applies nothing', () async {
       when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => effects.apply(any()));
     });
@@ -1398,7 +1398,7 @@ void main() {
       ).thenAnswer((_) async => null);
       when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => effects.apply(stored)).called(1);
     });
@@ -1412,7 +1412,7 @@ void main() {
           () => event.text,
         ).thenReturn(encodeMessage(flipped(status: false)));
         final parked = <Future<void> Function()>[];
-        final prepared = await processor.prepare(event: event);
+        final prepared = await processor.prepare(envelope: event);
 
         await processor.apply(
           prepared: prepared!,
@@ -1466,7 +1466,7 @@ void main() {
             if (failLaterChild) throw StateError('later child failed');
           });
           final parked = <Future<void> Function()>[];
-          final prepared = await processor.prepare(event: event);
+          final prepared = await processor.prepare(envelope: event);
           final applying = processor.apply(
             prepared: prepared!,
             journalDb: journalDb,
@@ -1491,7 +1491,7 @@ void main() {
     test('an unchanged flag parks nothing either', () async {
       when(() => event.text).thenReturn(encodeMessage(flipped(status: true)));
       final parked = <Future<void> Function()>[];
-      final prepared = await processor.prepare(event: event);
+      final prepared = await processor.prepare(envelope: event);
 
       await processor.apply(
         prepared: prepared!,
@@ -1518,7 +1518,7 @@ void main() {
         ).thenReturn(encodeMessage(flipped(status: false)));
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           completes,
         );
 
@@ -1550,7 +1550,7 @@ void main() {
         () => journalDb.getConfigFlagByName(flag.name),
       ).thenAnswer((_) async => null);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => journalDb.applyConfigFlagVersion(
@@ -1675,7 +1675,7 @@ void main() {
     when(() => event.text).thenReturn(encodeMessage(message));
     when(() => journalDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => loggingService.log(
@@ -1709,7 +1709,7 @@ void main() {
       SyncApplyDiagnostics? seen;
       processor.applyObserver = (d) => seen = d;
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       // No apply.entryLink log on rows=0
       verifyNever(
@@ -1756,7 +1756,7 @@ void main() {
     ).thenThrow(Exception('logging failed'));
 
     // Should not throw - logging is best-effort
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(() => journalDb.upsertEntryLink(any())).called(1);
     verify(() => updateNotifications.notify(any(), fromSync: true)).called(1);
@@ -1777,7 +1777,7 @@ void main() {
       ).thenThrow(const FileSystemException('missing'));
 
       await expectLater(
-        processor.process(event: event, journalDb: journalDb),
+        processor.process(envelope: event, journalDb: journalDb),
         throwsA(isA<FileSystemException>()),
       );
       verify(
@@ -1816,7 +1816,7 @@ void main() {
     SyncApplyDiagnostics? captured;
     processor.applyObserver = (diag) => captured = diag;
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     expect(captured, isNotNull);
     expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
@@ -1860,7 +1860,7 @@ void main() {
     SyncApplyDiagnostics? captured;
     processor.applyObserver = (diag) => captured = diag;
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     expect(captured?.skipReason, JournalUpdateSkipReason.olderOrEqual);
     expect(captured?.conflictStatus, contains('a_gt_b'));
@@ -1916,7 +1916,7 @@ void main() {
       SyncApplyDiagnostics? captured;
       processorWithSeq.applyObserver = (diag) => captured = diag;
 
-      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(envelope: event, journalDb: journalDb);
 
       expect(captured, isNotNull);
       expect(captured!.skipReason, JournalUpdateSkipReason.olderOrEqual);
@@ -1971,7 +1971,7 @@ void main() {
     ).thenAnswer((_) async => olderEntry);
 
     await expectLater(
-      processor.process(event: event, journalDb: journalDb),
+      processor.process(envelope: event, journalDb: journalDb),
       throwsA(isA<FileSystemException>()),
     );
     verify(
@@ -2040,7 +2040,7 @@ void main() {
         logging: loggingService,
         hasOlderActiveEntry: (_) async => false,
       );
-      expect(await adapter.bind()(entry, room), ApplyOutcome.retriable);
+      expect(await adapter.bind()(entry), ApplyOutcome.retriable);
       expect(await peer.listConfigFlags().getSingle(), before);
       expect(await peer.getConfigFlagByName('private'), before);
       expect(
@@ -2049,7 +2049,7 @@ void main() {
       );
       verifyNever(() => updateNotifications.notify(any(), fromSync: true));
       await peer.customStatement('DROP TRIGGER reject_flag_commit');
-      expect(await adapter.bind()(entry, room), ApplyOutcome.applied);
+      expect(await adapter.bind()(entry), ApplyOutcome.applied);
       expect(await peer.getConfigFlag('private'), isTrue);
       expect((await peer.listConfigFlags().getSingle()).status, isTrue);
       expect(
@@ -2093,7 +2093,7 @@ void main() {
               when(
                 () => event.text,
               ).thenReturn(encodeMessage(SyncMessage.fromJson(payload)));
-              await processor.process(event: event, journalDb: peer);
+              await processor.process(envelope: event, journalDb: peer);
             }
             final winner = await peer.getConfigFlagByName(name);
             expect(winner?.status, scenario == 'equal');
@@ -2172,7 +2172,7 @@ void main() {
     for (final scenario in cases) {
       Future<void> apply() async {
         when(() => event.text).thenReturn(encodeMessage(scenario.message));
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
       }
 
       Future<Map<String, String>> stored() async => {
@@ -2231,7 +2231,10 @@ void main() {
             );
             for (final message in messages) {
               when(() => event.text).thenReturn(encodeMessage(message));
-              await peerProcessor.process(event: event, journalDb: journalDb);
+              await peerProcessor.process(
+                envelope: event,
+                journalDb: journalDb,
+              );
             }
             expect({
               for (final row in await peerSettings.loadSettingsItems(
@@ -2302,11 +2305,11 @@ void main() {
             "WHEN NEW.config_key = '${scenario.stampKey}' BEGIN "
             "SELECT RAISE(ABORT, 'injected stamp failure'); END",
           );
-          expect(await adapter.bind()(entry, room), ApplyOutcome.retriable);
+          expect(await adapter.bind()(entry), ApplyOutcome.retriable);
           expect(await stored(), isEmpty);
           verifyNever(() => updateNotifications.notify(any(), fromSync: true));
           await realSettings.customStatement('DROP TRIGGER reject_stamp');
-          expect(await adapter.bind()(entry, room), ApplyOutcome.applied);
+          expect(await adapter.bind()(entry), ApplyOutcome.applied);
           expect(await stored(), scenario.values);
         },
       );
@@ -2360,7 +2363,7 @@ void main() {
           ),
         ),
       );
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
       expect(await realSettings.itemByKey('THEME_MODE'), 'system');
     });
   });
@@ -2382,7 +2385,7 @@ void main() {
 
     Future<void> deliver(SyncMessage message) async {
       when(() => event.text).thenReturn(encodeMessage(message));
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
     }
 
     SyncMessage account({required int updatedAt, String? token}) =>
@@ -2514,7 +2517,7 @@ void main() {
       // LateInitializationError so misconfigured boot fails loudly rather
       // than silently dropping inbound backfill traffic.
       await expectLater(
-        processor.process(event: event, journalDb: journalDb),
+        processor.process(envelope: event, journalDb: journalDb),
         throwsA(
           isA<Error>().having(
             (e) => e.toString(),
@@ -2540,7 +2543,7 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           throwsA(
             isA<Error>().having(
               (e) => e.toString(),
@@ -2573,7 +2576,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockHandler.handleBackfillRequest(message)).called(1);
       },
@@ -2596,7 +2599,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockHandler.handleMediaRequest(message)).called(1);
       },
@@ -2617,7 +2620,7 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           completes,
         );
       },
@@ -2648,7 +2651,7 @@ void main() {
           processor.deepBackfillService = service;
           when(() => event.text).thenReturn(encodeMessage(inventory));
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => service.handleInventory(inventory)).called(1);
           verifyNever(() => service.handleRequest(any()));
@@ -2661,7 +2664,7 @@ void main() {
         processor.deepBackfillService = service;
         when(() => event.text).thenReturn(encodeMessage(request));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => service.handleRequest(request)).called(1);
         verifyNever(() => service.handleInventory(any()));
@@ -2672,7 +2675,7 @@ void main() {
         for (final message in <SyncMessage>[inventory, request]) {
           when(() => event.text).thenReturn(encodeMessage(message));
           await expectLater(
-            processor.process(event: event, journalDb: journalDb),
+            processor.process(envelope: event, journalDb: journalDb),
             completes,
           );
         }
@@ -2698,7 +2701,7 @@ void main() {
         processor.agentWakeCoordinator = coordinator;
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => coordinator.onMessage(message)).called(1);
       },
@@ -2725,7 +2728,7 @@ void main() {
           ),
         );
 
-        expect(await processor.prepare(event: event), isNull);
+        expect(await processor.prepare(envelope: event), isNull);
         verifyNever(() => coordinator.onMessage(any()));
       },
     );
@@ -2751,7 +2754,7 @@ void main() {
         );
 
         await expectLater(
-          processor.process(event: event, journalDb: journalDb),
+          processor.process(envelope: event, journalDb: journalDb),
           completes,
         );
       },
@@ -2775,7 +2778,7 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(() => mockHandler.handleBackfillResponse(message)).called(1);
       },
@@ -2812,7 +2815,10 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => event.eventId).thenReturn('old-backfill-event');
 
-        await processorWithStartup.process(event: event, journalDb: journalDb);
+        await processorWithStartup.process(
+          envelope: event,
+          journalDb: journalDb,
+        );
 
         // Handler SHOULD be called — old backfill requests are still valid
         // and the response handler's cooldown + rate limiter prevent
@@ -2850,7 +2856,10 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => event.eventId).thenReturn('old-response-event');
 
-        await processorWithStartup.process(event: event, journalDb: journalDb);
+        await processorWithStartup.process(
+          envelope: event,
+          journalDb: journalDb,
+        );
 
         // Old backfill responses are never skipped — handleBackfillResponse
         // is idempotent, and skipping caused a deadlock when gap detection
@@ -2886,7 +2895,7 @@ void main() {
       when(() => event.text).thenReturn(encodeMessage(message));
       when(() => event.eventId).thenReturn('old-response-event');
 
-      await processorWithStartup.process(event: event, journalDb: journalDb);
+      await processorWithStartup.process(envelope: event, journalDb: journalDb);
 
       verify(() => mockHandler.handleBackfillResponse(message)).called(1);
     });
@@ -2920,7 +2929,10 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => event.eventId).thenReturn('old-response-event');
 
-        await processorWithStartup.process(event: event, journalDb: journalDb);
+        await processorWithStartup.process(
+          envelope: event,
+          journalDb: journalDb,
+        );
 
         // handleBackfillResponse is idempotent — safe to call even for
         // already-resolved entries.
@@ -2957,7 +2969,10 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => event.eventId).thenReturn('old-response-event');
 
-        await processorWithStartup.process(event: event, journalDb: journalDb);
+        await processorWithStartup.process(
+          envelope: event,
+          journalDb: journalDb,
+        );
 
         // Old backfill responses are never skipped, regardless of whether
         // the counter exists in the sequence log.
@@ -2997,7 +3012,10 @@ void main() {
         when(() => event.text).thenReturn(encodeMessage(message));
         when(() => event.eventId).thenReturn('new-backfill-event');
 
-        await processorWithStartup.process(event: event, journalDb: journalDb);
+        await processorWithStartup.process(
+          envelope: event,
+          journalDb: journalDb,
+        );
 
         // Handler SHOULD be called - event is newer than startup
         verify(() => mockHandler.handleBackfillRequest(message)).called(1);
@@ -3099,7 +3117,7 @@ void main() {
         when(() => event.text).thenReturn(
           base64.encode(utf8.encode(json.encode(<String, dynamic>{}))),
         );
-        await proc.process(event: event, journalDb: journalDb);
+        await proc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => domainLogger.log(
@@ -3149,7 +3167,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(bundle));
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => aiConfigRepository.deleteConfig(
@@ -3197,7 +3215,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(selfBundle));
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         // The bundle's child (an aiConfigDelete) would normally drive a
         // hardDeleteConfig call inside the unpacker apply phase. With the
@@ -3236,7 +3254,7 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(peerBundle));
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => aiConfigRepository.deleteConfig(
@@ -3279,7 +3297,7 @@ void main() {
           ),
         );
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => coordinator.onMessage(any()));
       },
@@ -3327,9 +3345,9 @@ void main() {
         );
         when(() => event.text).thenReturn(encodeMessage(peer));
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
-        await processorWithVc.process(event: event, journalDb: journalDb);
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         verify(localVcService.getHost).called(1);
       },
@@ -3373,7 +3391,7 @@ void main() {
         // The prior bug raised `Null check operator used on a null value`
         // here. expectLater would mask future regressions; assert no throw
         // by simply awaiting and then asserting on the side effects.
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         // Self-echo must skip the loader entirely (we already wrote the
         // entity locally before sending) and must not touch the DB.
@@ -3408,7 +3426,7 @@ void main() {
           originatingHostId: 'host-self',
         );
         final prepared = PreparedSyncEvent.forTesting(
-          event: event,
+          envelope: event,
           syncMessage: message,
           isSelfEcho: true,
           // journalEntity intentionally left null — that was the crash
@@ -3440,7 +3458,7 @@ void main() {
           originatingHostId: 'host-self',
         );
         final prepared = PreparedSyncEvent.forTesting(
-          event: event,
+          envelope: event,
           syncMessage: message,
           isSelfEcho: true,
           // resolvedOutboxBundle intentionally left null.
@@ -3473,7 +3491,7 @@ void main() {
           originatingHostId: 'host-self',
         );
         final prepared = PreparedSyncEvent.forTesting(
-          event: event,
+          envelope: event,
           syncMessage: message,
         );
 
@@ -3520,7 +3538,7 @@ void main() {
         ).thenAnswer((_) async => fallbackJournalEntity);
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => journalEntityLoader.load(
@@ -3659,8 +3677,8 @@ void main() {
       // Two events so we can assert the failed lookup is cached: getHost is
       // attempted once, the null result memoized, and the message still
       // applies (not skipped as a self-echo).
-      await processorWithVc.process(event: event, journalDb: journalDb);
-      await processorWithVc.process(event: event, journalDb: journalDb);
+      await processorWithVc.process(envelope: event, journalDb: journalDb);
+      await processorWithVc.process(envelope: event, journalDb: journalDb);
 
       verify(localVcService.getHost).called(1);
       verify(
@@ -3687,7 +3705,7 @@ void main() {
       );
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => journalDb.upsertEntityDefinition(testLabelDefinition1),
@@ -3724,7 +3742,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => updateNotifications.notify(
@@ -3766,7 +3784,7 @@ void main() {
       );
 
       await expectLater(
-        processorWithRepo.process(event: event, journalDb: journalDb),
+        processorWithRepo.process(envelope: event, journalDb: journalDb),
         throwsA(isA<Exception>()),
       );
       verify(() => repo.upsertNode(profile)).called(1);
