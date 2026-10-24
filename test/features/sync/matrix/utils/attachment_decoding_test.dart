@@ -31,12 +31,9 @@ void main() {
       'returns bytes verbatim when no encoding header is present',
       () async {
         final logging = MockDomainLogger();
-        final event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{});
-
         final payload = Uint8List.fromList([1, 2, 3, 4, 5]);
         final decoded = await decodeAttachmentBytes(
-          event: event,
+          encoding: null,
           downloadedBytes: payload,
           relativePath: '/foo.json',
           logging: logging,
@@ -60,14 +57,9 @@ void main() {
         // receivers must pass the bytes through untouched rather than
         // panic or corrupt the file.
         final logging = MockDomainLogger();
-        final event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{
-          attachmentEncodingKey: 'brotli',
-        });
-
         final payload = Uint8List.fromList([9, 8, 7]);
         final decoded = await decodeAttachmentBytes(
-          event: event,
+          encoding: 'brotli',
           downloadedBytes: payload,
           relativePath: '/bar.json',
           logging: logging,
@@ -79,7 +71,6 @@ void main() {
 
     group('decompression limit', () {
       late MockDomainLogger logging;
-      late MockEvent event;
 
       setUp(() {
         logging = MockDomainLogger();
@@ -90,15 +81,11 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).thenAnswer((_) async {});
-        event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{
-          attachmentEncodingKey: attachmentEncodingGzip,
-        });
       });
 
       Future<Uint8List> decode(Uint8List compressed, int limit) =>
           decodeAttachmentBytes(
-            event: event,
+            encoding: attachmentEncodingGzip,
             downloadedBytes: compressed,
             relativePath: '/agent_entities/bomb.json',
             logging: logging,
@@ -235,11 +222,6 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{
-          attachmentEncodingKey: attachmentEncodingGzip,
-        });
-
         // A repetitive JSON-shaped payload so gzip has something to crunch.
         final original = List<String>.filled(
           64,
@@ -248,7 +230,7 @@ void main() {
         final compressed = Uint8List.fromList(gzip.encode(original));
 
         final decoded = await decodeAttachmentBytes(
-          event: event,
+          encoding: attachmentEncodingGzip,
           downloadedBytes: compressed,
           relativePath: '/agent_entities/foo.json',
           logging: logging,
@@ -290,11 +272,6 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{
-          attachmentEncodingKey: attachmentEncodingGzip,
-        });
-
         // Deterministic but gzip-incompressible bytes (fixed seed for
         // reproducibility). Repetitive or low-entropy content compresses
         // below the 2 KB inline threshold and skips the offload branch
@@ -312,7 +289,7 @@ void main() {
         );
 
         final decoded = await decodeAttachmentBytes(
-          event: event,
+          encoding: attachmentEncodingGzip,
           downloadedBytes: compressed,
           relativePath: '/agent_entities/large.json',
           logging: logging,
@@ -350,17 +327,13 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = MockEvent();
-        when(() => event.content).thenReturn(<String, dynamic>{
-          attachmentEncodingKey: attachmentEncodingGzip,
-        });
         const originalJson = '{"hello":"world","n":42}';
         final compressed = Uint8List.fromList(
           gzip.encode(originalJson.codeUnits),
         );
 
         final decoded = await decodeAttachmentBytes(
-          event: event,
+          encoding: attachmentEncodingGzip,
           downloadedBytes: compressed,
           relativePath: '/agent_entities/x.json',
           logging: logging,

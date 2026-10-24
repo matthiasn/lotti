@@ -184,6 +184,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -191,6 +192,8 @@ import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart'
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -426,8 +429,15 @@ class MockEvent extends Mock implements Event, SyncEnvelope {
     // non-null DateTime — MatrixStreamSignalBinder reads it for Phase 0
     // `onTimelineEvent.ordering` diagnostics on every timeline event.
     when(() => originServerTs).thenReturn(DateTime(2026, 4, 20));
+    // Likewise a room id: `AttachmentDescriptor.fromEvent` reads it for every
+    // descriptor a test records, and the combined signature is non-nullable.
+    when(() => roomId).thenReturn('!mock-room:example.org');
   }
 }
+
+class MockSyncAttachmentFetcher extends Mock implements SyncAttachmentFetcher {}
+
+class MockSyncDescriptorFetcher extends Mock implements SyncDescriptorFetcher {}
 
 class MockSurfaceController extends Mock implements genui.SurfaceController {}
 
@@ -1664,6 +1674,8 @@ class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockInboundQueue extends Mock implements InboundQueue {}
+
+class MockSyncIsolateHost extends Mock implements SyncIsolateHost {}
 
 class MockSyncEventTrust extends Mock implements SyncEventTrust {}
 

@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'recorded_attachment_stack.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 const _path = '/deep_backfill/upload-1.json';
@@ -19,7 +19,7 @@ const _clock = VectorClock({'host-a': 3});
 
 void main() {
   late Directory tempDir;
-  late AttachmentIndex index;
+  late RecordedAttachmentStack index;
   late SyncEventProcessor resolver;
 
   const inventory = SyncDeepBackfillInventory(
@@ -58,7 +58,7 @@ void main() {
   setUp(() {
     setUpProcessorMocks();
     tempDir = Directory.systemTemp.createTempSync('deep_backfill_resolve');
-    index = AttachmentIndex();
+    index = RecordedAttachmentStack();
     resolver = SyncEventProcessor(
       loggingService: loggingService,
       updateNotifications: updateNotifications,
@@ -67,7 +67,8 @@ void main() {
       settingsDb: settingsDb,
       journalEntityLoader: journalEntityLoader,
       documentsDirectory: tempDir,
-      attachmentIndex: index,
+      attachmentIndex: index.index,
+      attachmentFetcher: index.fetcher,
     );
   });
 

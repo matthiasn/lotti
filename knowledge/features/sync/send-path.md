@@ -199,8 +199,9 @@ Three properties are load-bearing:
   ([ADR 0137](../../../docs/adr/0137-a-short-media-copy-is-fetched-again.md)).
 
 This loop sees a file that is missing when its entry is loaded, and one
-shorter than its attachment event declares (`declaredMediaSize` in
-`matrix/utils/attachment_decoding.dart`) while that event is still indexed:
+shorter than its attachment event declares (`AttachmentDescriptor.declaredSize`
+in `matrix/pipeline/attachment_descriptor.dart`) while that event is still
+indexed:
 the loader logs `smart.media.truncated` and downloads it again. A file whose
 event is gone, or that belongs to an entry nobody opens, is found by the
 manual deep-backfill round instead, which compares file sizes between devices

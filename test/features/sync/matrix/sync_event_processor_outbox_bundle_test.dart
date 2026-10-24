@@ -11,7 +11,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -23,6 +22,7 @@ import 'package:path/path.dart' as path;
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
+import 'recorded_attachment_stack.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -219,7 +219,7 @@ void main() {
             eventId: 'manifest-event-newer',
             payload: manifest('from-newer-path-manifest'),
           );
-          final index = AttachmentIndex()
+          final index = RecordedAttachmentStack()
             ..record(olderDescriptor)
             ..record(newerDescriptor);
           final exactProcessor = SyncEventProcessor(
@@ -230,7 +230,8 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             documentsDirectory: tempDir,
-            attachmentIndex: index,
+            attachmentIndex: index.index,
+            attachmentFetcher: index.fetcher,
           );
 
           File(
@@ -321,10 +322,15 @@ void main() {
                 name: 'exact-process.json',
               ),
             );
-            final index = AttachmentIndex();
+            final room = MockRoom();
+            final roomDescriptors = MatrixDescriptorFetcher(
+              resolveRoom: (_) => room,
+            );
+            // An indexed descriptor downloads without asking the room; one
+            // the processor recovers is served by the room mocks below.
+            final index = RecordedAttachmentStack(fallback: roomDescriptors);
             addTearDown(index.dispose);
             if (indexed) index.record(descriptor);
-            final room = MockRoom();
             when(() => room.id).thenReturn('!retained:example.org');
             when(() => event.room).thenReturn(room);
             when(() => event.roomId).thenReturn('!retained:example.org');
@@ -400,13 +406,12 @@ void main() {
               settingsDb: settingsDb,
               journalEntityLoader: journalEntityLoader,
               documentsDirectory: tempDir,
-              attachmentIndex: index,
+              attachmentIndex: index.index,
               // Without a policy the processor cannot vouch for a fetched
               // descriptor, so it must not look one up at all.
               syncEventTrust: lookup == 'noPolicy' ? null : trust,
-              descriptorFetcher: MatrixDescriptorFetcher(
-                resolveRoom: (_) => room,
-              ),
+              descriptorFetcher: roomDescriptors,
+              attachmentFetcher: index.fetcher,
             );
             const message = SyncMessage.outboxBundle(
               children: [],
@@ -433,8 +438,8 @@ void main() {
               ).called(1);
               verify(descriptor.downloadAndDecryptAttachment).called(1);
               expect(
-                index.findByEventId('exact-process-event'),
-                same(descriptor),
+                index.index.findByEventId('exact-process-event')?.eventId,
+                'exact-process-event',
               );
             } else if (lookup == 'timeout' || lookup == 'serverTimeout') {
               fakeAsync((async) {
@@ -482,14 +487,20 @@ void main() {
                   attempt,
                   throwsA(isNot(isA<PendingSyncDescriptorException>())),
                 );
-                expect(index.findByEventId('exact-process-event'), isNull);
+                expect(
+                  index.index.findByEventId('exact-process-event'),
+                  isNull,
+                );
               } else {
                 await expectLater(
                   attempt,
                   throwsA(isA<PendingSyncDescriptorException>()),
                 );
-                expect(index.findByEventId('exact-process-event'), isNull);
-                expect(index.find(bundleRelativePath), isNull);
+                expect(
+                  index.index.findByEventId('exact-process-event'),
+                  isNull,
+                );
+                expect(index.index.find(bundleRelativePath), isNull);
               }
               verifyNever(
                 () => aiConfigRepository.deleteConfig(
@@ -550,7 +561,7 @@ void main() {
               name: 'newer.json',
             ),
           );
-          final index = AttachmentIndex()..record(newerDescriptor);
+          final index = RecordedAttachmentStack()..record(newerDescriptor);
           final exactProcessor = SyncEventProcessor(
             loggingService: loggingService,
             updateNotifications: updateNotifications,
@@ -559,7 +570,8 @@ void main() {
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
             documentsDirectory: tempDir,
-            attachmentIndex: index,
+            attachmentIndex: index.index,
+            attachmentFetcher: index.fetcher,
           );
           File(
               path.join(

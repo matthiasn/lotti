@@ -212,6 +212,81 @@ void main() {
     });
   });
 
+  group('memo', () {
+    test('a descriptor that decrypted is served from memory next time, so '
+        'a download after recovery costs no second lookup', () async {
+      final cached = descriptor();
+      when(() => room.getEventById(eventId)).thenAnswer((_) async => cached);
+
+      final first = await fetcher.fetch(roomId: roomId, eventId: eventId);
+      final second = await fetcher.fetch(roomId: roomId, eventId: eventId);
+
+      expect(first.source, 'cacheOrServer');
+      expect(second.source, 'memo');
+      expect(second.descriptor, same(cached));
+      verify(() => room.getEventById(eventId)).called(1);
+    });
+
+    test('ciphertext is never remembered: its key may arrive later', () async {
+      final ciphertext = descriptor(
+        type: EventTypes.Encrypted,
+        content: const {},
+      );
+      when(
+        () => room.getEventById(eventId),
+      ).thenAnswer((_) async => ciphertext);
+      when(
+        () => encryption.decryptRoomEvent(ciphertext),
+      ).thenAnswer((_) async => ciphertext);
+
+      await fetcher.fetch(roomId: roomId, eventId: eventId);
+      final again = await fetcher.fetch(roomId: roomId, eventId: eventId);
+
+      expect(again.source, 'cacheOrServer');
+      verify(() => room.getEventById(eventId)).called(2);
+    });
+
+    test('a miss is not remembered either', () async {
+      when(() => room.getEventById(eventId)).thenAnswer((_) async => null);
+
+      await fetcher.fetch(roomId: roomId, eventId: eventId);
+      await fetcher.fetch(roomId: roomId, eventId: eventId);
+
+      verify(() => room.getEventById(eventId)).called(2);
+    });
+
+    test(
+      'holds at most memoCapacity descriptors, the oldest going first',
+      () async {
+        final small = MatrixDescriptorFetcher(
+          resolveRoom: (_) => room,
+          memoCapacity: 1,
+        );
+        const other = r'$other';
+        when(() => room.getEventById(eventId)).thenAnswer(
+          (_) async => descriptor(),
+        );
+        when(() => room.getEventById(other)).thenAnswer((_) async {
+          final e = descriptor();
+          when(() => e.eventId).thenReturn(other);
+          return e;
+        });
+
+        await small.fetch(roomId: roomId, eventId: eventId);
+        await small.fetch(roomId: roomId, eventId: other);
+        // The other descriptor took the one slot: the first is looked up
+        // again, and then holds the slot in its turn.
+        final evicted = await small.fetch(roomId: roomId, eventId: eventId);
+        final remembered = await small.fetch(roomId: roomId, eventId: eventId);
+
+        expect(evicted.source, 'cacheOrServer');
+        expect(remembered.source, 'memo');
+        verify(() => room.getEventById(eventId)).called(2);
+        verify(() => room.getEventById(other)).called(1);
+      },
+    );
+  });
+
   test('forClient resolves rooms through the client', () async {
     when(() => client.getRoomById(roomId)).thenReturn(room);
     when(() => client.getRoomById('!elsewhere:example.org')).thenReturn(null);

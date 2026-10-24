@@ -69,6 +69,11 @@ Future<String? Function()> _registerMatrixSyncStack({
     logging: domainLogger,
   );
 
+  // The apply path knows events and attachments without a Room (ADR 0142,
+  // step 3); these two answer its lookups from the client this isolate holds.
+  final descriptorFetcher = MatrixDescriptorFetcher.forClient(client);
+  final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
+
   // SyncEventProcessor is constructed first; its `backfillResponseHandler`
   // (a `late final`) is assigned below once BackfillResponseHandler exists.
   // The chain BackfillResponseHandler → OutboxService → MatrixService →
@@ -83,6 +88,7 @@ Future<String? Function()> _registerMatrixSyncStack({
           settingsDb: settingsDb,
           journalEntityLoader: SmartJournalEntityLoader(
             attachmentIndex: attachmentIndex,
+            attachmentFetcher: attachmentFetcher,
             loggingService: domainLogger,
           ),
           attachmentIndex: attachmentIndex,
@@ -102,9 +108,8 @@ Future<String? Function()> _registerMatrixSyncStack({
           syncNodeProfileRepository: syncNodeProfileRepository,
           fts5Db: getIt<Fts5Db>(),
           syncEventTrust: syncEventTrust,
-          // Exact-id descriptor recovery asks the client this isolate holds
-          // (ADR 0142, step 3); the apply path itself never sees a Room.
-          descriptorFetcher: MatrixDescriptorFetcher.forClient(client),
+          descriptorFetcher: descriptorFetcher,
+          attachmentFetcher: attachmentFetcher,
           gitHubAccountSink: gitHubTokenStorageForProfile(
             secureStorage,
             getIt<ProfileContext>(),
@@ -149,6 +154,18 @@ Future<String? Function()> _registerMatrixSyncStack({
     localVcDominates: localVcDominanceCheck.check,
     activityGate: userActivityGate,
   );
+  // Off by default, and then a no-op: the isolate rebuild (ADR 0142) lands
+  // behind `use_isolate_sync` step by step. With the flag on, the worker
+  // owns the inbound queue's leases and settlements, and the inbound worker
+  // below reaches it through the host.
+  final syncIsolateHost = await registerSyncIsolateIfEnabled(
+    getIt: getIt,
+    journalDb: journalDb,
+    syncDatabase: syncDatabase,
+    documentsDirectory: documentsDirectory,
+    temporaryDirectory: getTemporaryDirectory,
+    logger: domainLogger,
+  );
   final queuePipelineCoordinator = QueuePipelineCoordinator(
     syncDb: syncDatabase,
     settingsDb: settingsDb,
@@ -165,6 +182,12 @@ Future<String? Function()> _registerMatrixSyncStack({
     attachmentIngestor: queueAttachmentIngestor,
     sentEventRegistry: sentEventRegistry,
     costMeter: syncCostMeter,
+    queueGateway: syncIsolateHost == null
+        ? null
+        : (queue) => IsolateInboundQueueGateway(
+            host: syncIsolateHost,
+            localQueue: queue,
+          ),
   );
 
   final matrixService = MatrixService(
@@ -461,14 +484,6 @@ Future<String? Function()> _registerMatrixSyncStack({
       mediaRepairService,
       dispose: (service) => service.dispose(),
     );
-
-  // Off by default, and then a no-op: the isolate rebuild (ADR 0142) lands
-  // behind `use_isolate_sync` step by step, beside the sync stack above.
-  await registerSyncIsolateIfEnabled(
-    getIt: getIt,
-    journalDb: journalDb,
-    logger: domainLogger,
-  );
 
   return () => client.userID;
 }

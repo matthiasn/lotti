@@ -3,10 +3,11 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 
 /// The accepted descriptor JSON and its decoded byte length, returned by
 /// [DescriptorDownloader.download].
@@ -34,6 +35,7 @@ class DescriptorDownloader {
   DescriptorDownloader({
     required DomainLogger loggingService,
     required this._validator,
+    required this._fetcher,
     this.onCachePurge,
   }) : _logging = loggingService;
 
@@ -41,6 +43,7 @@ class DescriptorDownloader {
 
   final DomainLogger _logging;
   final VectorClockValidator _validator;
+  final SyncAttachmentFetcher _fetcher;
   void Function()? onCachePurge;
 
   /// Downloads and validates the descriptor for [jsonPath], retrying after a
@@ -48,21 +51,17 @@ class DescriptorDownloader {
   /// throws [FileSystemException] when the bytes stay stale/empty/missing a
   /// vector clock after all attempts.
   Future<DescriptorDownloadResult> download({
-    required Event descriptorEvent,
+    required AttachmentDescriptor descriptor,
     required VectorClock incomingVectorClock,
     required String jsonPath,
   }) async {
     for (var attempt = 0; attempt < maxDescriptorDownloadAttempts; attempt++) {
-      final matrixFile = await downloadAttachmentWithTimeout(
-        descriptorEvent,
+      final downloadedBytes = await _fetcher.download(
+        descriptor,
         pathForError: jsonPath,
       );
-      final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
-        final purged = await _maybePurgeCachedDescriptor(
-          descriptorEvent,
-          jsonPath,
-        );
+        final purged = await _maybePurgeCachedDescriptor(descriptor, jsonPath);
         if (purged && attempt + 1 < maxDescriptorDownloadAttempts) {
           onCachePurge?.call();
           _logging.log(
@@ -75,7 +74,7 @@ class DescriptorDownloader {
         throw const FileSystemException('empty attachment bytes');
       }
       final bytes = await decodeAttachmentBytes(
-        event: descriptorEvent,
+        encoding: descriptor.encoding,
         downloadedBytes: downloadedBytes,
         relativePath: jsonPath,
         logging: _logging,
@@ -100,7 +99,7 @@ class DescriptorDownloader {
           );
         case VectorClockDecision.retryAfterPurge:
           final purged = await _maybePurgeCachedDescriptor(
-            descriptorEvent,
+            descriptor,
             jsonPath,
           );
           if (purged) {
@@ -129,11 +128,11 @@ class DescriptorDownloader {
   }
 
   Future<bool> _maybePurgeCachedDescriptor(
-    Event event,
+    AttachmentDescriptor descriptor,
     String jsonPath,
   ) async {
     try {
-      final uri = event.attachmentOrThumbnailMxcUrl();
+      final uri = await _fetcher.purgeCached(descriptor);
       if (uri == null) {
         _logging.log(
           LogDomain.sync,
@@ -142,7 +141,6 @@ class DescriptorDownloader {
         );
         return false;
       }
-      await event.room.client.database.deleteFile(uri);
       _logging.log(
         LogDomain.sync,
         'smart.fetch.stale_vc.purge path=$jsonPath mxc=$uri',

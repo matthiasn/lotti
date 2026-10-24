@@ -6,6 +6,8 @@ import 'package:clock/clock.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -28,8 +30,10 @@ enum SyncIsolateState {
   disposed,
 }
 
-/// Owns the sync isolate from the UI isolate's side (ADR 0142): spawns it,
-/// numbers each request and matches its reply, and supervises it.
+/// Owns the sync isolate from the UI isolate's side (ADR 0142): spawns it
+/// with its [SyncIsolateConfig], numbers each request and matches its reply,
+/// supervises it, and relays what it reports — log lines to the sync log,
+/// the tables it wrote to [tablesChanged].
 ///
 /// Supervision is what the removed actor lacked (ADR 0046): a worker that
 /// exits without being asked to is logged, every request still out to it
@@ -45,6 +49,7 @@ enum SyncIsolateState {
 class SyncIsolateHost {
   SyncIsolateHost({
     required this._logger,
+    required this._config,
     this._entry = syncIsolateEntry,
     this._startTimeout = SyncTuning.syncIsolateStartTimeout,
     this._requestTimeout = SyncTuning.syncIsolateRequestTimeout,
@@ -56,6 +61,7 @@ class SyncIsolateHost {
   static const _subDomain = 'isolate';
 
   final DomainLogger _logger;
+  final SyncIsolateConfig _config;
   final SyncIsolateEntry _entry;
   final Duration _startTimeout;
   final Duration _requestTimeout;
@@ -67,6 +73,7 @@ class SyncIsolateHost {
   final Timer Function(Duration delay, void Function() callback) _createTimer;
 
   final _states = StreamController<SyncIsolateState>.broadcast();
+  final _tablesChanged = StreamController<List<String>>.broadcast();
   final _pending = <int, Completer<Object?>>{};
   var _nextRequestId = 0;
   SyncIsolateState _state = SyncIsolateState.stopped;
@@ -78,6 +85,11 @@ class SyncIsolateHost {
 
   /// Every state change, as it happens.
   Stream<SyncIsolateState> get states => _states.stream;
+
+  /// The `sync.sqlite` tables the worker reports having written, by Drift
+  /// name. The UI isolate's connection does not see those writes on its own
+  /// (ADR 0142), so the startup bridges this into its `notifyUpdates`.
+  Stream<List<String>> get tablesChanged => _tablesChanged.stream;
 
   /// Starts spawning the first worker and returns at once: nothing waits on
   /// a spawn, startup least of all. Watch [states] for
@@ -94,6 +106,17 @@ class SyncIsolateHost {
   /// Asks the worker whether it is alive.
   Future<SyncIsolateHealth> ping() async =>
       (await _request(const SyncIsolatePing()))! as SyncIsolateHealth;
+
+  /// Leases up to [maxBatch] ready inbound entries from the worker, the
+  /// queue's owner, for the UI isolate to apply.
+  Future<List<InboundQueueEntry>> lease({required int maxBatch}) async =>
+      (await _request(SyncIsolateLeaseEntries(maxBatch: maxBatch)))!
+          as List<InboundQueueEntry>;
+
+  /// Acknowledges applied entries with their outcomes; the worker records
+  /// each one's next state. Returns how many were applied.
+  Future<int> settle(List<InboundEntryOutcome> outcomes) async =>
+      (await _request(SyncIsolateSettleEntries(outcomes)))! as int;
 
   /// Shuts the worker down and fails whatever is still waiting on it.
   ///
@@ -120,6 +143,7 @@ class SyncIsolateHost {
     }
     _failPending(SyncIsolateErrorCode.notRunning, 'host disposed');
     await _states.close();
+    await _tablesChanged.close();
   }
 
   Future<Object?> _request(SyncIsolateCommand command) {
@@ -174,8 +198,17 @@ class SyncIsolateHost {
           if (!ready.isCompleted) ready.complete(commands);
         case SyncIsolateReply():
           _onReply(message);
-        case SyncIsolateLog(:final message, :final level):
-          _log(message, level: level);
+        case SyncIsolateLog(:final message, :final level, :final subDomain):
+          _logger.log(
+            LogDomain.sync,
+            message,
+            subDomain: subDomain == null
+                ? _subDomain
+                : '$_subDomain.$subDomain',
+            level: level,
+          );
+        case SyncIsolateTablesChanged(:final tables):
+          if (!_tablesChanged.isClosed) _tablesChanged.add(tables);
         case [final Object? error, final Object? stackTrace]:
           _logger.error(
             LogDomain.sync,
@@ -205,7 +238,7 @@ class SyncIsolateHost {
     try {
       isolate = await Isolate.spawn(
         _entry,
-        port.sendPort,
+        SyncIsolateBoot(host: port.sendPort, config: _config),
         onError: port.sendPort,
         onExit: port.sendPort,
         debugName: 'sync',

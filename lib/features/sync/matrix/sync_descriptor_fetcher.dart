@@ -39,8 +39,17 @@ abstract interface class SyncDescriptorFetcher {
 }
 
 /// Answers descriptor lookups from the Matrix client this isolate holds.
+///
+/// A descriptor that decrypted is remembered, up to [memoCapacity] of them:
+/// recovery looks a descriptor up once, and every download of its bytes
+/// (`MatrixAttachmentFetcher`) needs the same event again, so without the
+/// memo each download would cost an SDK database read. Ciphertext is never
+/// remembered — its key may arrive later, and the next lookup must see it.
 class MatrixDescriptorFetcher implements SyncDescriptorFetcher {
-  MatrixDescriptorFetcher({required this._resolveRoom});
+  MatrixDescriptorFetcher({
+    required this._resolveRoom,
+    this.memoCapacity = 512,
+  });
 
   /// Builds the fetcher on a [client], answering from the rooms it holds.
   MatrixDescriptorFetcher.forClient(Client client)
@@ -48,11 +57,21 @@ class MatrixDescriptorFetcher implements SyncDescriptorFetcher {
 
   final Room? Function(String roomId) _resolveRoom;
 
+  /// How many decrypted descriptors are kept; the oldest goes first.
+  final int memoCapacity;
+
+  final Map<String, Event> _memo = <String, Event>{};
+
   @override
   Future<SyncDescriptorLookup> fetch({
     required String roomId,
     required String eventId,
   }) async {
+    final memoKey = '$roomId/$eventId';
+    final remembered = _memo[memoKey];
+    if (remembered != null) {
+      return SyncDescriptorLookup(descriptor: remembered, source: 'memo');
+    }
     final room = _resolveRoom(roomId);
     if (room == null) return SyncDescriptorLookup.none;
     var descriptor = await room
@@ -78,6 +97,12 @@ class MatrixDescriptorFetcher implements SyncDescriptorFetcher {
           : null;
       descriptor = await _decrypt(descriptor, room);
       source = 'server';
+    }
+    if (descriptor != null && descriptor.type != EventTypes.Encrypted) {
+      _memo[memoKey] = descriptor;
+      while (_memo.length > memoCapacity) {
+        _memo.remove(_memo.keys.first);
+      }
     }
     return SyncDescriptorLookup(descriptor: descriptor, source: source);
   }

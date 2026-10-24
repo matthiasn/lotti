@@ -3,9 +3,12 @@ import 'dart:isolate';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
 import 'package:lotti/services/logging_domains.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,47 +18,95 @@ import '../../../mocks/mocks.dart';
 // and keep no state the test could share with them.
 
 /// Shakes hands, then exits on the first request it receives.
-void _exitOnRequest(SendPort host) {
+void _exitOnRequest(SyncIsolateBoot boot) {
   final commands = ReceivePort();
-  host.send(SyncIsolateReady(commands.sendPort));
+  boot.host.send(SyncIsolateReady(commands.sendPort));
   commands.listen((_) => Isolate.exit());
 }
 
 /// Shakes hands, then throws out of its handler on the first request.
-void _throwOnRequest(SendPort host) {
+void _throwOnRequest(SyncIsolateBoot boot) {
   final commands = ReceivePort();
-  host.send(SyncIsolateReady(commands.sendPort));
+  boot.host.send(SyncIsolateReady(commands.sendPort));
   commands.listen((_) => throw StateError('worker blew up'));
 }
 
 /// Shakes hands and never answers anything — not even shutdown.
-void _neverAnswers(SendPort host) {
+void _neverAnswers(SyncIsolateBoot boot) {
   final commands = ReceivePort();
-  host.send(SyncIsolateReady(commands.sendPort));
+  boot.host.send(SyncIsolateReady(commands.sendPort));
   commands.listen((_) {});
 }
 
 /// Exits without ever shaking hands.
-void _exitsBeforeHandshake(SendPort host) => Isolate.exit();
+void _exitsBeforeHandshake(SyncIsolateBoot boot) => Isolate.exit();
 
 /// Stays alive without ever shaking hands.
-void _neverShakesHands(SendPort host) => ReceivePort().listen((_) {});
+void _neverShakesHands(SyncIsolateBoot boot) => ReceivePort().listen((_) {});
+
+/// Plays the queue's owner: leases two canned entries, settles with the
+/// count it was given, and reports the tables it wrote and a line of log.
+void _ownsTheQueue(SyncIsolateBoot boot) {
+  final commands = ReceivePort();
+  boot.host.send(SyncIsolateReady(commands.sendPort));
+  commands.listen((message) {
+    final request = message as SyncIsolateRequest;
+    switch (request.command) {
+      case SyncIsolateLeaseEntries(:final maxBatch):
+        boot.host.send(
+          SyncIsolateReply.success(request.requestId, [
+            for (var i = 0; i < maxBatch && i < 2; i++)
+              InboundQueueEntry(
+                queueId: i,
+                eventId: '\$e$i',
+                roomId: '!room:example.org',
+                originTs: i,
+                enqueuedAt: i,
+                attempts: 0,
+                rawJson: '{}',
+              ),
+          ]),
+        );
+      case SyncIsolateSettleEntries(:final outcomes):
+        boot.host
+          ..send(
+            SyncIsolateLog(
+              'settled ${outcomes.length}',
+              subDomain: 'queue',
+              level: InsightLevel.warn,
+            ),
+          )
+          ..send(const SyncIsolateTablesChanged(['inbound_event_queue']))
+          ..send(
+            SyncIsolateReply.success(
+              request.requestId,
+              outcomes.where((o) => o.outcome == ApplyOutcome.applied).length,
+            ),
+          );
+      case SyncIsolateShutdown():
+        boot.host.send(SyncIsolateReply.success(request.requestId, null));
+        commands.close();
+      case SyncIsolatePing():
+        throw StateError('not in this test');
+    }
+  });
+}
 
 /// Shakes hands and then idles.
-void _idles(SendPort host) {
+void _idles(SyncIsolateBoot boot) {
   final commands = ReceivePort();
-  host.send(SyncIsolateReady(commands.sendPort));
+  boot.host.send(SyncIsolateReady(commands.sendPort));
   commands.listen((_) {});
 }
 
 /// Answers every request with a failure of its own, and exits on shutdown
 /// as a well-behaved worker does.
-void _rejectsEverything(SendPort host) {
+void _rejectsEverything(SyncIsolateBoot boot) {
   final commands = ReceivePort();
-  host.send(SyncIsolateReady(commands.sendPort));
+  boot.host.send(SyncIsolateReady(commands.sendPort));
   commands.listen((message) {
     final request = message as SyncIsolateRequest;
-    host.send(
+    boot.host.send(
       SyncIsolateReply.failure(
         request.requestId,
         const SyncIsolateFailure(SyncIsolateErrorCode.failed, 'nope'),
@@ -64,6 +115,14 @@ void _rejectsEverything(SendPort host) {
     if (request.command is SyncIsolateShutdown) commands.close();
   });
 }
+
+/// A worker's configuration for tests: an in-memory `sync.sqlite`, so no
+/// directory is needed.
+const inMemoryConfig = SyncIsolateConfig(
+  documentsPath: '',
+  temporaryPath: '',
+  inMemoryDatabase: true,
+);
 
 Matcher _failsWith(SyncIsolateErrorCode code) => throwsA(
   isA<SyncIsolateFailure>().having((f) => f.code, 'code', code),
@@ -126,6 +185,7 @@ void main() {
   }) {
     final host = SyncIsolateHost(
       logger: logger,
+      config: inMemoryConfig,
       entry: entry,
       requestTimeout: requestTimeout,
       startTimeout: startTimeout,
@@ -488,6 +548,58 @@ void main() {
       expect(host.state, SyncIsolateState.disposed);
       await expectLater(
         host.ping(),
+        _failsWith(SyncIsolateErrorCode.notRunning),
+      );
+    });
+  });
+
+  group('the queue hand-off', () {
+    test(
+      'lease and settle are typed requests answered by the worker',
+      () async {
+        final host = makeHost(entry: _ownsTheQueue);
+        await startRunning(host);
+
+        final leased = await host.lease(maxBatch: 5);
+        final applied = await host.settle([
+          InboundEntryOutcome(leased[0], ApplyOutcome.applied),
+          InboundEntryOutcome(leased[1], ApplyOutcome.retriable),
+        ]);
+
+        expect(leased.map((e) => e.eventId), [r'$e0', r'$e1']);
+        expect(applied, 1);
+      },
+    );
+
+    test('the tables the worker wrote reach tablesChanged, and its log line '
+        'the sync log under its sub-domain and level', () async {
+      final host = makeHost(entry: _ownsTheQueue);
+      await startRunning(host);
+      final tables = <List<String>>[];
+      final sub = host.tablesChanged.listen(tables.add);
+      addTearDown(sub.cancel);
+
+      await host.settle(const []);
+      await pumpEventQueue();
+
+      expect(tables, [
+        ['inbound_event_queue'],
+      ]);
+      verify(
+        () => logger.log(
+          LogDomain.sync,
+          'settled 0',
+          subDomain: 'isolate.queue',
+          level: InsightLevel.warn,
+        ),
+      ).called(1);
+    });
+
+    test('a lease while no worker runs fails as notRunning, not as a hang', () {
+      final host = makeHost(entry: _ownsTheQueue);
+
+      expect(
+        host.lease(maxBatch: 1),
         _failsWith(SyncIsolateErrorCode.notRunning),
       );
     });

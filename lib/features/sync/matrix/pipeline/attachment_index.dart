@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
@@ -9,11 +9,13 @@ import 'package:matrix/matrix.dart';
 typedef ObservedAttachment = ({String relativePath, int? declaredSize});
 
 /// Lightweight, in-memory index mapping both relative paths and exact Matrix
-/// event ids to attachment events.
+/// event ids to attachment descriptors.
 ///
 /// Used by the apply phase to locate download descriptors for JSON files based
 /// on the path referenced in the text message. Populated passively by the
-/// stream consumer; never triggers rescans.
+/// stream consumer; never triggers rescans. It holds [AttachmentDescriptor]s,
+/// not SDK events (ADR 0142, step 3): what the apply path reads needs no
+/// `Room`, and fetching the bytes is `SyncAttachmentFetcher`'s job.
 ///
 /// Emits a broadcast [pathRecorded] stream whenever the index mutates so
 /// subscribers — notably `QueuePipelineCoordinator`, which resurrects
@@ -28,8 +30,10 @@ class AttachmentIndex {
   /// it enabled so existing per-event assertions remain valid.
   final bool verboseLogging;
 
-  final Map<String, Event> _byPath = <String, Event>{};
-  final Map<String, Event> _byEventId = <String, Event>{};
+  final Map<String, AttachmentDescriptor> _byPath =
+      <String, AttachmentDescriptor>{};
+  final Map<String, AttachmentDescriptor> _byEventId =
+      <String, AttachmentDescriptor>{};
 
   // Per-eventId idempotency guard. Keyed by eventId so repeated observations
   // of the same Matrix event (from live scan + catch-up + backfill passes)
@@ -52,15 +56,11 @@ class AttachmentIndex {
   Stream<String> get pathRecorded => _pathCtl.stream;
 
   /// [pathRecorded] with the size each recorded attachment declares
-  /// (`declaredMediaSize`): what a media answer held back for another holder
-  /// compares against its own copy.
+  /// ([AttachmentDescriptor.declaredSize]): what a media answer held back for
+  /// another holder compares against its own copy.
   Stream<ObservedAttachment> get attachmentsObserved =>
       pathRecorded.map((path) {
-        final event = find(path);
-        return (
-          relativePath: path,
-          declaredSize: event == null ? null : declaredMediaSize(event, path),
-        );
+        return (relativePath: path, declaredSize: find(path)?.declaredSize);
       });
 
   /// Releases the underlying broadcast controller. Call from the owner
@@ -78,34 +78,34 @@ class AttachmentIndex {
   /// Returns true when the index changes (new event or updated eventId).
   bool record(Event e) {
     try {
-      final mimetype = e.attachmentMimetype;
-      final rp = e.content['relativePath'];
-      if (rp is String && rp.isNotEmpty) {
-        final eventId = _safeEventId(e);
-        if (eventId != null && !_seenEventIds.add(eventId)) {
-          return false;
-        }
-        final key = rp.startsWith('/') ? rp : '/$rp';
-        final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
-        _byPath[key] = e;
-        // For robustness, also record a variant without the leading slash in
-        // case callers use that form.
-        _byPath[noSlash] = e;
-        if (eventId != null) {
-          _byEventId[eventId] = e;
-        }
-        if (verboseLogging) {
-          _logging?.log(
-            LogDomain.sync,
-            'attachmentIndex.record path=$key mime=$mimetype id=${eventId ?? '?'}',
-            subDomain: 'attachmentIndex.record',
-          );
-        }
-        if (!_pathCtl.isClosed) {
-          _pathCtl.add(key);
-        }
-        return true;
+      final descriptor = AttachmentDescriptor.fromEvent(e);
+      if (descriptor == null) return false;
+      final rp = descriptor.relativePath;
+      final eventId = descriptor.eventId.isEmpty ? null : descriptor.eventId;
+      if (eventId != null && !_seenEventIds.add(eventId)) {
+        return false;
       }
+      final key = rp.startsWith('/') ? rp : '/$rp';
+      final noSlash = rp.startsWith('/') ? rp.substring(1) : rp;
+      _byPath[key] = descriptor;
+      // For robustness, also record a variant without the leading slash in
+      // case callers use that form.
+      _byPath[noSlash] = descriptor;
+      if (eventId != null) {
+        _byEventId[eventId] = descriptor;
+      }
+      if (verboseLogging) {
+        _logging?.log(
+          LogDomain.sync,
+          'attachmentIndex.record path=$key mime=${descriptor.mimetype} '
+          'id=${eventId ?? '?'}',
+          subDomain: 'attachmentIndex.record',
+        );
+      }
+      if (!_pathCtl.isClosed) {
+        _pathCtl.add(key);
+      }
+      return true;
     } catch (err) {
       _logging?.log(
         LogDomain.sync,
@@ -116,20 +116,8 @@ class AttachmentIndex {
     return false;
   }
 
-  // Safe access to [Event.eventId]. Returns null when the field is missing or
-  // empty, so callers can treat the event as "not known yet" instead of
-  // failing the whole record path.
-  static String? _safeEventId(Event e) {
-    try {
-      final id = e.eventId;
-      return id.isEmpty ? null : id;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Returns the last-seen attachment event for [relativePath], or null.
-  Event? find(String relativePath) {
+  /// Returns the last-seen attachment descriptor for [relativePath], or null.
+  AttachmentDescriptor? find(String relativePath) {
     final key1 = relativePath;
     final key2 = relativePath.startsWith('/')
         ? relativePath.substring(1)
@@ -140,18 +128,19 @@ class AttachmentIndex {
         LogDomain.sync,
         hit == null
             ? 'attachmentIndex.miss path=$relativePath alt=$key2'
-            : 'attachmentIndex.hit path=$relativePath id=${_safeEventId(hit) ?? '?'}',
+            : 'attachmentIndex.hit path=$relativePath '
+                  'id=${hit.eventId.isEmpty ? '?' : hit.eventId}',
         subDomain: 'attachmentIndex.find',
       );
     }
     return hit;
   }
 
-  /// Returns the attachment event with the exact Matrix [eventId].
+  /// Returns the attachment descriptor with the exact Matrix [eventId].
   ///
   /// Unlike [find], this lookup preserves older generations after a newer
   /// attachment reuses the same relative path.
-  Event? findByEventId(String eventId) {
+  AttachmentDescriptor? findByEventId(String eventId) {
     final hit = _byEventId[eventId];
     if (verboseLogging) {
       _logging?.log(

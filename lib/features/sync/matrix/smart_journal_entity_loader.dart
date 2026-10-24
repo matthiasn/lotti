@@ -7,7 +7,9 @@ import 'dart:typed_data';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
@@ -16,7 +18,6 @@ import 'package:lotti/utils/atomic_write.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:matrix/matrix.dart' show Event;
 
 /// Smart loader that ensures JSON presence/currency based on an incoming vector
 /// clock. Exact-generation envelopes are parsed directly from their referenced
@@ -25,10 +26,12 @@ import 'package:matrix/matrix.dart' show Event;
 class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required this._attachmentIndex,
+    required SyncAttachmentFetcher attachmentFetcher,
     required DomainLogger loggingService,
     this.documentsDirectory,
     void Function()? onCachePurge,
-  }) : _logging = loggingService,
+  }) : _fetcher = attachmentFetcher,
+       _logging = loggingService,
        _fileLoader = FileSyncJournalEntityLoader(
          documentsDirectory: documentsDirectory,
        ) {
@@ -38,11 +41,13 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     _descriptorDownloader = DescriptorDownloader(
       loggingService: loggingService,
       validator: _vectorClockValidator,
+      fetcher: attachmentFetcher,
       onCachePurge: onCachePurge,
     );
   }
 
   final AttachmentIndex _attachmentIndex;
+  final SyncAttachmentFetcher _fetcher;
   final DomainLogger _logging;
   @override
   final Directory? documentsDirectory;
@@ -140,7 +145,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       }
       try {
         final descriptor = await _descriptorDownloader.download(
-          descriptorEvent: eventForPath,
+          descriptor: eventForPath,
           incomingVectorClock: incomingVectorClock,
           jsonPath: jsonPath,
         );
@@ -185,16 +190,15 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           );
         }
         try {
-          final matrixFile = await downloadAttachmentWithTimeout(
+          final downloadedBytes = await _fetcher.download(
             eventForPath,
             pathForError: jsonPath,
           );
-          final downloadedBytes = matrixFile.bytes;
           if (downloadedBytes.isEmpty) {
             throw const FileSystemException('empty attachment bytes');
           }
           final bytes = await decodeAttachmentBytes(
-            event: eventForPath,
+            encoding: eventForPath.encoding,
             downloadedBytes: downloadedBytes,
             relativePath: jsonPath,
             logging: _logging,
@@ -250,9 +254,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       );
     }
 
-    final descriptorPath = descriptorEvent.content['relativePath'];
-    if (descriptorPath is! String ||
-        _buildIndexKey(descriptorPath) != indexKey) {
+    if (_buildIndexKey(descriptorEvent.relativePath) != indexKey) {
       throw FormatException(
         'attachment descriptor path does not match envelope path',
         attachmentEventId,
@@ -263,23 +265,22 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     var bytesLength = 0;
     if (incomingVectorClock != null) {
       final descriptor = await _descriptorDownloader.download(
-        descriptorEvent: descriptorEvent,
+        descriptor: descriptorEvent,
         incomingVectorClock: incomingVectorClock,
         jsonPath: jsonPath,
       );
       candidateJson = descriptor.json;
       bytesLength = descriptor.bytesLength;
     } else {
-      final matrixFile = await downloadAttachmentWithTimeout(
+      final downloadedBytes = await _fetcher.download(
         descriptorEvent,
         pathForError: jsonPath,
       );
-      final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
       final bytes = await decodeAttachmentBytes(
-        event: descriptorEvent,
+        encoding: descriptorEvent.encoding,
         downloadedBytes: downloadedBytes,
         relativePath: jsonPath,
         logging: _logging,
@@ -341,7 +342,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     try {
       if (f.existsSync()) {
         final length = f.lengthSync();
-        final declared = ev == null ? null : declaredMediaSize(ev, rp);
+        final declared = ev?.declaredSize;
         // A file shorter than its attachment declared is a truncated copy —
         // an interrupted write, or one an older build kept — and is fetched
         // again rather than shown cut off.
@@ -375,9 +376,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     try {
       Uint8List? downloadedBytes;
       for (var attempt = 0; attempt < 2; attempt++) {
-        final file = await downloadAttachmentWithTimeout(ev, pathForError: rp);
-        if (file.bytes.isNotEmpty) {
-          downloadedBytes = file.bytes;
+        final bytes = await _fetcher.download(ev, pathForError: rp);
+        if (bytes.isNotEmpty) {
+          downloadedBytes = bytes;
           break;
         }
         final purged = await _maybePurgeCachedAttachment(ev, rp);
@@ -391,7 +392,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         );
       }
       final bytes = await decodeAttachmentBytes(
-        event: ev,
+        encoding: ev.encoding,
         downloadedBytes: downloadedBytes!,
         relativePath: rp,
         logging: _logging,
@@ -423,11 +424,13 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
           );
   }
 
-  Future<bool> _maybePurgeCachedAttachment(Event event, String path) async {
+  Future<bool> _maybePurgeCachedAttachment(
+    AttachmentDescriptor descriptor,
+    String path,
+  ) async {
     try {
-      final uri = event.attachmentOrThumbnailMxcUrl();
+      final uri = await _fetcher.purgeCached(descriptor);
       if (uri == null) return false;
-      await event.room.client.database.deleteFile(uri);
       _logging.log(
         LogDomain.sync,
         'smart.media.empty_bytes.purge path=$path mxc=$uri',

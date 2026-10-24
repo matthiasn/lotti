@@ -25,8 +25,8 @@ extension _AttachmentSaver on AttachmentIngestor {
       return false;
     }
 
-    final attachmentMimetype = event.attachmentMimetype;
-    if (attachmentMimetype.isEmpty) {
+    final descriptor = AttachmentDescriptor.fromEvent(event);
+    if (descriptor == null || descriptor.mimetype.isEmpty) {
       return false;
     }
 
@@ -104,7 +104,7 @@ extension _AttachmentSaver on AttachmentIngestor {
       if (!isAgentPayload && await file.exists()) {
         try {
           existingLength = await file.length();
-          final declared = declaredMediaSize(event, relativePath);
+          final declared = descriptor.declaredSize;
           if (existingLength > 0 &&
               (declared == null || existingLength >= declared)) {
             return false; // already present
@@ -135,7 +135,7 @@ extension _AttachmentSaver on AttachmentIngestor {
       }
 
       final bytes = await decodeAttachmentBytes(
-        event: event,
+        encoding: descriptor.encoding,
         downloadedBytes: downloadedBytes,
         relativePath: relativePath,
         logging: logging,

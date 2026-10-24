@@ -126,13 +126,14 @@ extension _DescriptorCache on SyncEventProcessor {
     bool writeToDisk = true,
   }) async {
     final index = _attachmentIndex;
-    if (index == null) return null;
+    final fetcher = _attachmentFetcher;
+    if (index == null || fetcher == null) return null;
 
     final indexKey = _buildAgentIndexKey(jsonPath);
-    final descriptorEvent = attachmentEventId == null
+    final descriptor = attachmentEventId == null
         ? index.find(indexKey)
         : index.findByEventId(attachmentEventId);
-    if (descriptorEvent == null) {
+    if (descriptor == null) {
       _trace(
         '$typeName.descriptor.miss path=$jsonPath key=$indexKey '
         'eventId=${attachmentEventId ?? 'legacy'}',
@@ -141,16 +142,13 @@ extension _DescriptorCache on SyncEventProcessor {
       return null;
     }
 
-    if (attachmentEventId != null) {
-      final descriptorPath = descriptorEvent.content['relativePath'];
-      if (descriptorPath is! String ||
-          _buildAgentIndexKey(descriptorPath) != indexKey) {
-        throw UnrecoverableSyncPayloadException(typeName);
-      }
+    if (attachmentEventId != null &&
+        _buildAgentIndexKey(descriptor.relativePath) != indexKey) {
+      throw UnrecoverableSyncPayloadException(typeName);
     }
 
     final dedupeKey =
-        '$indexKey@${descriptorEvent.eventId}@writeToDisk=$writeToDisk';
+        '$indexKey@${descriptor.eventId}@writeToDisk=$writeToDisk';
     final existing = _inFlightDescriptorFetches[dedupeKey];
     if (existing != null) {
       return existing;
@@ -160,7 +158,8 @@ extension _DescriptorCache on SyncEventProcessor {
       jsonPath: jsonPath,
       targetFile: targetFile,
       typeName: typeName,
-      descriptorEvent: descriptorEvent,
+      descriptor: descriptor,
+      fetcher: fetcher,
       writeToDisk: writeToDisk,
     );
     _inFlightDescriptorFetches[dedupeKey] = future;
@@ -173,22 +172,22 @@ extension _DescriptorCache on SyncEventProcessor {
     required String jsonPath,
     required File targetFile,
     required String typeName,
-    required Event descriptorEvent,
+    required AttachmentDescriptor descriptor,
+    required SyncAttachmentFetcher fetcher,
     required bool writeToDisk,
   }) async {
     final String jsonString;
     final int bytesLength;
     try {
-      final matrixFile = await downloadAttachmentWithTimeout(
-        descriptorEvent,
+      final downloadedBytes = await fetcher.download(
+        descriptor,
         pathForError: jsonPath,
       );
-      final downloadedBytes = matrixFile.bytes;
       if (downloadedBytes.isEmpty) {
         throw const FileSystemException('empty attachment bytes');
       }
       final bytes = await decodeAttachmentBytes(
-        event: descriptorEvent,
+        encoding: descriptor.encoding,
         downloadedBytes: downloadedBytes,
         relativePath: jsonPath,
         logging: _loggingService,

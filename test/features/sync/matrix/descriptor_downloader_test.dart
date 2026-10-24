@@ -7,50 +7,41 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/descriptor_downloader.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
+  const descriptor = AttachmentDescriptor(
+    eventId: r'$descriptor',
+    roomId: '!room:example.org',
+    relativePath: '/path',
+    mimetype: 'application/json',
+  );
+  final purgedUri = Uri.parse('mxc://server/file');
+
   setUpAll(() {
-    registerFallbackValue(Uri.parse('mxc://placeholder'));
+    registerFallbackValue(descriptor);
   });
 
   group('DescriptorDownloader', () {
     late MockDomainLogger logging;
     late VectorClockValidator validator;
     late DescriptorDownloader downloader;
-    late MockEvent descriptorEvent;
-    late MockRoom room;
-    late MockMatrixClient client;
-    late MockMatrixDatabase database;
+    late MockSyncAttachmentFetcher fetcher;
 
     setUp(() {
       logging = MockDomainLogger();
       validator = VectorClockValidator(loggingService: logging);
+      fetcher = MockSyncAttachmentFetcher();
       downloader = DescriptorDownloader(
         loggingService: logging,
         validator: validator,
+        fetcher: fetcher,
       );
-
-      descriptorEvent = MockEvent();
-      room = MockRoom();
-      client = MockMatrixClient();
-      database = MockMatrixDatabase();
-
-      when(() => descriptorEvent.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
-      when(
-        () => descriptorEvent.attachmentMimetype,
-      ).thenReturn('application/json');
-      when(() => descriptorEvent.content).thenReturn({'relativePath': '/path'});
-      when(
-        () => descriptorEvent.attachmentOrThumbnailMxcUrl(),
-      ).thenReturn(Uri.parse('mxc://server/file'));
     });
 
     JournalEntry buildEntry(VectorClock? vc) => JournalEntry(
@@ -74,15 +65,21 @@ void main() {
         downloader.onCachePurge = onCachePurge;
       }
       var index = 0;
-      when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer((_) async {
+      when(
+        () => fetcher.download(
+          descriptor,
+          pathForError: any(named: 'pathForError'),
+        ),
+      ).thenAnswer((_) async {
         final entry = responses[index.clamp(0, responses.length - 1)];
         index++;
-        final bytes = Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits);
-        return MatrixFile(bytes: bytes, name: 'entry.json');
+        return Uint8List.fromList(jsonEncode(entry.toJson()).codeUnits);
       });
-      when(() => database.deleteFile(any<Uri>())).thenAnswer((_) async => true);
+      when(
+        () => fetcher.purgeCached(descriptor),
+      ).thenAnswer((_) async => purgedUri);
       return downloader.download(
-        descriptorEvent: descriptorEvent,
+        descriptor: descriptor,
         incomingVectorClock: incoming,
         jsonPath: '/path.json',
       );
@@ -104,7 +101,7 @@ void main() {
         expect(journal.entryText?.plainText, 'text');
         expect(journal.meta.vectorClock, const VectorClock({'n': 2}));
         expect(result.bytesLength, isPositive);
-        verifyNever(() => database.deleteFile(any<Uri>()));
+        verifyNever(() => fetcher.purgeCached(any()));
       },
     );
 
@@ -125,7 +122,7 @@ void main() {
       expect(journal.entryText?.plainText, 'text');
       expect(journal.meta.vectorClock, const VectorClock({'n': 3}));
       expect(purges, 1);
-      verify(() => database.deleteFile(any<Uri>())).called(1);
+      verify(() => fetcher.purgeCached(descriptor)).called(1);
       verify(
         () => logging.log(
           LogDomain.sync,
@@ -152,7 +149,7 @@ void main() {
           ),
         ),
       );
-      verify(() => database.deleteFile(any<Uri>())).called(1);
+      verify(() => fetcher.purgeCached(descriptor)).called(1);
     });
 
     test('throws circuit breaker after repeated stale downloads', () async {
@@ -206,7 +203,7 @@ void main() {
           ),
         ),
       );
-      verifyNever(() => database.deleteFile(any<Uri>()));
+      verifyNever(() => fetcher.purgeCached(any()));
     });
   });
 }

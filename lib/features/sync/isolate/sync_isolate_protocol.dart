@@ -12,13 +12,43 @@
 /// * worker → host, answering: a [SyncIsolateReply] with that id;
 /// * worker → host, unprompted: a [SyncIsolateEvent].
 ///
-/// The handshake is the one exception: the worker's first message is a
-/// [SyncIsolateReady] holding the port commands go to.
+/// Two exceptions: the worker is spawned with a [SyncIsolateBoot], and its
+/// first message is a [SyncIsolateReady] holding the port commands go to.
 library;
 
 import 'dart:isolate';
 
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
+
+/// What the worker needs from the platform, handed over at spawn because the
+/// worker uses no Flutter plugins: the database opener would otherwise ask
+/// one for these directories.
+final class SyncIsolateConfig {
+  const SyncIsolateConfig({
+    required this.documentsPath,
+    required this.temporaryPath,
+    this.inMemoryDatabase = false,
+  });
+
+  /// The active profile's documents directory, where `sync.sqlite` lives.
+  final String documentsPath;
+
+  /// Where SQLite may put its temporary files.
+  final String temporaryPath;
+
+  /// Tests only: an in-memory `sync.sqlite` instead of the file.
+  final bool inMemoryDatabase;
+}
+
+/// The message a worker is spawned with: where to reach the host, and what
+/// it needs to open its database.
+final class SyncIsolateBoot {
+  const SyncIsolateBoot({required this.host, required this.config});
+
+  final SendPort host;
+  final SyncIsolateConfig config;
+}
 
 /// The worker's first message: where the host sends commands from now on.
 final class SyncIsolateReady {
@@ -42,6 +72,25 @@ final class SyncIsolatePing extends SyncIsolateCommand {
 /// just before its ports close.
 final class SyncIsolateShutdown extends SyncIsolateCommand {
   const SyncIsolateShutdown();
+}
+
+/// Asks the worker, as the queue's owner, to lease up to [maxBatch] ready
+/// inbound entries for the UI isolate to apply (ADR 0142). Answered with a
+/// `List<InboundQueueEntry>`, oldest first; the rows turn `leased`.
+final class SyncIsolateLeaseEntries extends SyncIsolateCommand {
+  const SyncIsolateLeaseEntries({required this.maxBatch});
+
+  final int maxBatch;
+}
+
+/// Acknowledges applied entries: the worker records each outcome as the
+/// row's next state, in one transaction. Answered with the `int` count of
+/// entries that were applied. An entry never acknowledged is leased again
+/// once its lease expires — the invariant behind the hand-off.
+final class SyncIsolateSettleEntries extends SyncIsolateCommand {
+  const SyncIsolateSettleEntries(this.outcomes);
+
+  final List<InboundEntryOutcome> outcomes;
 }
 
 /// A [command] on its way to the worker, numbered so its reply finds the
@@ -113,10 +162,27 @@ sealed class SyncIsolateEvent {
 }
 
 /// A log line from the worker. Logging lives in the UI isolate's getIt, so
-/// the worker forwards its lines and the host writes them to the sync log.
+/// the worker forwards its lines and the host writes them to the sync log,
+/// under the `isolate` sub-domain or `isolate.<subDomain>`.
 final class SyncIsolateLog extends SyncIsolateEvent {
-  const SyncIsolateLog(this.message, {this.level = InsightLevel.info});
+  const SyncIsolateLog(
+    this.message, {
+    this.level = InsightLevel.info,
+    this.subDomain,
+  });
 
   final String message;
   final InsightLevel level;
+  final String? subDomain;
+}
+
+/// Tables of `sync.sqlite` the worker just wrote. A Drift `watch()` sees
+/// only its own connection's writes, so the host replays this into the UI
+/// isolate's connection (`notifyUpdates`) and its streams fire as if the
+/// write had been local (ADR 0142).
+final class SyncIsolateTablesChanged extends SyncIsolateEvent {
+  const SyncIsolateTablesChanged(this.tables);
+
+  /// Table names, as Drift knows them.
+  final List<String> tables;
 }

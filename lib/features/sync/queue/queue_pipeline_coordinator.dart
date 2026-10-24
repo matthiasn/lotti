@@ -21,6 +21,7 @@ import 'package:lotti/features/sync/queue/attachment_aware_bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_gateway.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
@@ -71,6 +72,7 @@ class QueuePipelineCoordinator {
     this._attachmentIngestor,
     this._sentEventRegistry,
     InboundQueue? queueOverride,
+    InboundQueueGateway Function(InboundQueue queue)? queueGateway,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
     QueueMarkerSeeder? seederOverride,
@@ -100,6 +102,9 @@ class QueuePipelineCoordinator {
         workerOverride ??
         InboundWorker(
           queue: _queue,
+          // With `use_isolate_sync` on, the sync isolate owns the queue's
+          // leases and settlements (ADR 0142); in-process, the queue itself.
+          gateway: queueGateway?.call(_queue),
           sequenceLogService: _sequenceLogService,
           apply: _applyAdapter.bind(),
           prepareBatch: _applyAdapter.bindPrepareBatch(),

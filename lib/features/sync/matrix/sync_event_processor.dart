@@ -44,8 +44,10 @@ import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
@@ -178,6 +180,7 @@ class SyncEventProcessor {
     this._fts5Db,
     this._syncEventTrust,
     this._descriptorFetcher,
+    this._attachmentFetcher,
     this._gitHubAccountSink,
   }) : _documentsDirectory =
            journalEntityLoader?.documentsDirectory ?? documentsDirectory,
@@ -213,6 +216,11 @@ class SyncEventProcessor {
   /// client lives (ADR 0142). Without it, as without [_syncEventTrust],
   /// exact-id recovery stays off.
   final SyncDescriptorFetcher? _descriptorFetcher;
+
+  /// Fetches the bytes an indexed descriptor points at, wherever the Matrix
+  /// client lives (ADR 0142). Descriptor-based payload resolution needs it
+  /// together with [_attachmentIndex]; without either it is off.
+  final SyncAttachmentFetcher? _attachmentFetcher;
   // Optional prepare-phase DB handle — only the outbox bundle resolver uses
   // it today, for a single bulk vector-clock dominance check across every
   // journal entity in the manifest. Apply-phase DB writes still flow

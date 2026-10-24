@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -83,6 +84,9 @@ void main() {
           addTearDown(queue.dispose);
           final index = AttachmentIndex();
           addTearDown(index.dispose);
+          final descriptorFetcher = MatrixDescriptorFetcher(
+            resolveRoom: (_) => room,
+          );
           final directory = await Directory.systemTemp.createTemp(
             'aged-bundle-',
           );
@@ -108,8 +112,9 @@ void main() {
             documentsDirectory: directory,
             attachmentIndex: index,
             syncEventTrust: AdmittingSyncEventTrust(),
-            descriptorFetcher: MatrixDescriptorFetcher(
-              resolveRoom: (_) => room,
+            descriptorFetcher: descriptorFetcher,
+            attachmentFetcher: MatrixAttachmentFetcher(
+              events: descriptorFetcher,
             ),
           );
           final link = EntryLink.basic(

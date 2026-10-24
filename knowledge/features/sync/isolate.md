@@ -5,9 +5,29 @@ description: The worker isolate sync is moving into behind use_isolate_sync — 
 resource: ../../../lib/features/sync/isolate
 tags: [sync, isolate, performance, jank, supervision, config-flag]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-24T18:00:00Z }
 stale_after: 2026-12-27
 sources:
+  - id: gateway
+    resource: ../../../lib/features/sync/queue/inbound_queue_gateway.dart
+    title: InboundQueueGateway — how the apply side reaches the queue's owner
+    last_modified: 2026-10-24
+  - id: isolate-gateway
+    resource: ../../../lib/features/sync/isolate/isolate_inbound_queue_gateway.dart
+    title: The gateway across the isolate boundary
+    last_modified: 2026-10-24
+  - id: settlement
+    resource: ../../../lib/features/sync/queue/inbound_queue_settlement.dart
+    title: InboundQueueSettlement — the shared rule book for acknowledgements
+    last_modified: 2026-10-24
+  - id: attachment-descriptor
+    resource: ../../../lib/features/sync/matrix/pipeline/attachment_descriptor.dart
+    title: AttachmentDescriptor — an attachment event without its Room
+    last_modified: 2026-10-24
+  - id: attachment-fetcher
+    resource: ../../../lib/features/sync/matrix/sync_attachment_fetcher.dart
+    title: SyncAttachmentFetcher — bytes by descriptor
+    last_modified: 2026-10-24
   - id: envelope
     resource: ../../../lib/features/sync/matrix/sync_envelope.dart
     title: SyncEnvelope — what the apply path reads, without a Room
@@ -63,17 +83,23 @@ rest of this bundle describes. The decision, the ownership split and the step
 plan are [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-sync-sqlite.md);
 this concept is how the pieces work.
 
-**Where it stands.** The host, its supervision and a worker that answers
-liveness exist (step 1). With the flag on, the worker is started at launch and
-its handshake time is written to the sync log; all sync work still runs on the
-UI isolate, and [the cost meter](#measuring-it) measures what it costs
-(step 2). The apply path no longer needs a live `Room` (step 3, first half,
-[below](#applying-without-a-room)), which is what lets the receive side move
-without taking the apply step with it.
+**Where it stands.** The host and its supervision exist (step 1), and
+[the cost meter](#measuring-it) measures what sync costs the UI isolate
+(step 2). The apply path needs no live `Room` and no SDK `Event`
+([below](#applying-without-a-room); step 3, both halves). With the flag on,
+the worker opens its own connection to `sync.sqlite` and owns the inbound
+queue's leases and acknowledgements, which the UI isolate's inbound worker
+sends it ([the hand-off](#how-the-hand-off-works)); the writes it reports
+reach the UI isolate's Drift streams. Receiving — the Matrix client, admission,
+bridge walks, attachment ingestion — still runs on the UI isolate, so nothing
+measurable has moved yet; that is step 4.
 
 # Who will own what
 
-The split is by database, so every database keeps exactly one writer:
+The target split is by database, so that every database ends with exactly
+one writer. Until the receive side has moved, `inbound_event_queue` has two,
+as [the hand-off](#how-the-hand-off-works) spells out; the rows below are the
+assignments the steps work towards:
 
 | Isolate | Owns | Writes |
 |---------|------|--------|
@@ -90,64 +116,107 @@ something knows what is still missing.
 # How the hand-off works
 
 The decision is [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-sync-sqlite.md#writes-refreshes-and-notifications-across-the-boundary);
-this is the shape it takes in code once the receive side has moved (steps 4
-and 5). Nothing below the diagram exists yet; what does exist is
-[the apply path it depends on](#applying-without-a-room).
+this is the shape it takes in code. Everything in the diagram runs today
+with the flag on; the one thing that changes in step 4 is who inserts the
+rows — the worker, receiving from Matrix, instead of the UI isolate's
+admission.
 
 ```mermaid
 sequenceDiagram
-  participant M as Matrix SDK (sync isolate)
   participant W as Sync worker
   participant S as sync.sqlite
   participant H as SyncIsolateHost (UI isolate)
   participant A as InboundWorker + apply (UI isolate)
   participant U as Drift streams, UpdateNotifications
-  M->>W: /sync response, decrypted events
-  W->>S: INSERT inbound_event_queue
-  W-->>H: SyncIsolateTablesChanged([inbound_event_queue])
-  H->>U: notifyUpdates — queue depth streams fire
-  A->>H: next entry? (activity gate allows)
-  H->>W: SyncIsolateLease request
+  A->>S: INSERT inbound_event_queue (admission, until step 4)
+  Note over W,S: step 4 — the worker receives from Matrix and inserts the rows itself
+  A->>H: lease (activity gate allows)
+  H->>W: SyncIsolateLeaseEntries
   W->>S: status = leased, lease_until
-  W-->>H: SyncEnvelope + queue row
+  W-->>H: SyncIsolateTablesChanged
+  W-->>H: List<InboundQueueEntry>
+  H->>U: notifyUpdates — queue streams fire
   A->>A: prepare outside any writer transaction
   A->>A: apply under the per-family transaction policy
   A->>U: UpdateNotifications.notify(ids, fromSync: true)
-  A->>H: ApplyOutcome + sequence-log effects
-  H->>W: SyncIsolateAcknowledge request
-  W->>S: applied / retrying / abandoned, sequence log, one transaction
-  W-->>H: SyncIsolateTablesChanged([...])
+  A->>H: settle(List<InboundEntryOutcome>)
+  H->>W: SyncIsolateSettleEntries
+  W->>S: applied / retrying / abandoned, marker, one transaction
+  W-->>H: SyncIsolateTablesChanged
+  W-->>H: applied count
+  H->>U: notifyUpdates
 ```
 
-Three things to read off it. The worker is the only writer of `sync.sqlite`,
-on its own Drift connection with the SQLite work on the worker itself and the
-directories it needs handed over at the handshake. Data refresh does not
-change: the apply step, and with it the `fromSync` fan-out, stays on the UI
-isolate. Sync-state refresh is the one new piece: a Drift `watch()` sees only
-its own connection's writes, so the worker names the tables it wrote and the
-host replays them into the UI isolate's connection with `notifyUpdates`; the
-pages keep their streams. An entry whose lease expires unacknowledged is
-leased again, which is why apply stays idempotent.
+Three things to read off it. The worker writes `sync.sqlite` on its own
+Drift connection, and records only queue state — the sequence-log receipts
+an apply produces are written by the apply itself, on the UI isolate, as
+today. The worker writes with the SQLite work on the worker itself and the
+documents and temporary directories handed to it in the `SyncIsolateBoot` it is
+spawned with (the opener would otherwise ask a path plugin); it shakes hands only once
+that database answers. Data refresh does not change: the apply step, and with
+it the `fromSync` fan-out, stays on the UI isolate. Sync-state refresh is the
+one new piece: a Drift `watch()` sees only its own connection's writes, so the
+worker names the tables it wrote (`SyncIsolateTablesChanged`) and the startup
+replays them into the UI isolate's connection with `notifyUpdates`; the pages
+keep their streams. An entry whose lease expires unacknowledged is leased
+again, so apply must remain idempotent — which vector-clock supersession
+already makes it.
+
+In code, `InboundWorker` talks to the queue's owner through an
+`InboundQueueGateway`: lease, settle, the next ready time, and a change
+signal. In-process that is `LocalInboundQueueGateway` over the UI isolate's
+own `InboundQueue`; with the flag on, `IsolateInboundQueueGateway` sends the
+lease and the acknowledgement to the worker, answers empty while the worker is
+starting or respawning, and wakes the loop when it is back. Both owners apply
+the same rule book, `InboundQueueSettlement` — commit, the per-reason backoff
+ladders, the attempt and wall-clock budgets — so an acknowledgement means the
+same thing on either side. Reads stay local: the UI isolate's connection sees
+every committed row, so queue statistics and the next ready time need no round
+trip — and while the worker is not running, the gateway reports no ready time
+at all, so the loop waits for the worker's `running` state instead of polling.
+
+Until step 4 moves the receive side, `inbound_event_queue` has two writers,
+split by operation rather than by column. The worker records leases and
+acknowledgements on the rows the UI isolate's inbound worker drains. The UI
+isolate still writes the rest of the table's life: admission inserts rows,
+`pruneStrandedEntries` abandons the rows of a room that is no longer current
+when the room changes, and the resurrections — `resurrectByPaths` when an
+attachment lands, `resurrectByReason` at start and after a device is
+verified, `readmitUntrusted`, and the user's "retry skipped" — re-arm
+abandoned rows. Only the prune can touch a row the worker holds under lease —
+it abandons the leased rows of a room the device has left — and the
+acknowledgement that follows records its outcome over that, exactly as the
+in-process owner does when a prune races a running batch today. Step 4 moves
+all of them across with admission.
 
 # Applying without a Room
 
-Step 3's first half, in place. `SyncEventProcessor.prepare` and `apply` read a
+Step 3, in place. `SyncEventProcessor.prepare` and `apply` read a
 `SyncEnvelope` — event id, room id, sender, timestamp and the base64 body,
 which is everything they ever read from the SDK's `Event` — and
 `QueueApplyAdapter` rebuilds one from the decrypted JSON the queue stores
 (`InboundQueueEntry.toEnvelope`), so no `Room` is built and the inbound worker
-no longer resolves one before a batch. The one place the apply path reached
-through the room, exact descriptor recovery after a restart or a missed file
-event, asks a `SyncDescriptorFetcher` instead: `MatrixDescriptorFetcher` answers
-from the UI isolate's own client today, and in step 4 the host answers it over
-a request to the worker. `StoredSyncEnvelope` is plain values, so it is also
-what the lease above will carry.
+no longer resolves one before a batch. `StoredSyncEnvelope` is plain values,
+which is what the lease above carries.
+
+Attachments follow the same shape. `AttachmentIndex` holds
+`AttachmentDescriptor`s — event id, room id, path, MIME type, declared size,
+encoding — not SDK events, and everything that downloads an attachment's
+bytes or purges the client's cached copy goes through `SyncAttachmentFetcher`.
+The two places the apply path reached through the SDK ask an interface
+instead: exact descriptor recovery after a restart or a missed file event
+asks `SyncDescriptorFetcher` for the event by id, and downloads ask the
+attachment fetcher by descriptor. `MatrixDescriptorFetcher` and
+`MatrixAttachmentFetcher` answer both from the UI isolate's own client today —
+the attachment fetcher finds the event through the descriptor fetcher, which
+remembers decrypted descriptors so a download after a recovery costs no
+second lookup — and in step 4 the host answers them over requests to the
+worker. Ingestion, which records live events into the index and saves their
+files, stays on the SDK event; it moves with the client.
 
 The one observable change: a queued entry applies as soon as its turn comes,
 even before the SDK has emitted the room; it used to be retried every two
-seconds until it had. The second half — `AttachmentIndex` holding Room-free
-descriptors, and downloads behind an interface of the same kind — is still
-to come.
+seconds until it had.
 
 # What runs regardless of activity
 
@@ -281,17 +350,28 @@ as `SyncIsolateLog` events and are written to the sync log under the
 
 `use_isolate_sync` is seeded off, sits in the Advanced group of the Config
 Flags page, and is hidden in guest worlds with the other sync-only flags. It
-is read once, by `registerSyncIsolateIfEnabled` at the end of the real
-profile's sync-stack registration in `lib/get_it_sync.dart`: toggling it takes
-effect at the next start. Startup never waits on the spawn, and a worker
-that cannot start is logged and retried by the host, never thrown into
-startup.
+is read once, by `registerSyncIsolateIfEnabled` during the real profile's
+sync-stack registration in `lib/get_it_sync.dart`, before the queue pipeline
+is built: toggling it takes effect at the next start. With the flag on, the
+host is given the documents and temporary directories, the tables the worker
+reports are bridged into the UI isolate's `SyncDatabase`, and the queue
+pipeline's inbound worker is built over an `IsolateInboundQueueGateway`.
+Startup never waits on the spawn, and a worker that cannot start is logged
+and retried by the host, never thrown into startup.
 
 # Tests
 
 - `test/features/sync/isolate/` spawns real isolates — the production worker
   and fake top-level workers that exit, throw, hang or reject — with zero
-  backoffs and timeouts instead of waits.
+  backoffs and timeouts instead of waits. The hand-off is tested end to end
+  over a real `sync.sqlite` file in a temporary directory that the test's own
+  connection and the spawned worker share: the UI isolate's `InboundWorker`
+  drains rows the worker leases and settles, an unacknowledged lease stays
+  leased, and a settlement the database refuses comes back as a failure with
+  the rows still leased.
+- `test/features/sync/queue/inbound_queue_settlement_test.dart` and
+  `inbound_queue_gateway_test.dart` pin the rule book and the in-process
+  owner; the worker tests drive the ladders through it.
 - `integration_test/sync_isolate_test.dart` runs the flag-to-worker path in
   the app build, first in `integration_test/run_matrix_tests.sh`. Later steps
   grow it into the two-device suite the isolated sync is specified by.
