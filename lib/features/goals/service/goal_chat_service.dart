@@ -87,8 +87,22 @@ class GoalChatService {
     required String agentId,
     required String text,
   }) async {
+    final messageId = await appendMessage(agentId: agentId, text: text);
+    if (messageId == null) return;
+    await retryMessage(agentId: agentId, messageId: messageId);
+  }
+
+  /// Makes [text] a durable user turn of [agentId] and arms its recovery
+  /// record, without running anything. Returns the message id, or null for
+  /// a blank text. The front agent's door walker uses this with
+  /// [enqueueMessage], so a turn it files is answered by the goal agent's
+  /// own wake while the walker moves on.
+  Future<String?> appendMessage({
+    required String agentId,
+    required String text,
+  }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return null;
 
     final identity = await _repository.getEntity(agentId);
     if (identity is! AgentIdentityEntity ||
@@ -163,9 +177,19 @@ class GoalChatService {
     } on Object {
       // Deliberately swallowed; see above.
     }
-
-    await retryMessage(agentId: agentId, messageId: messageId);
+    return messageId;
   }
+
+  /// Enqueues the answering wake for an already durable turn and returns
+  /// its run key, without waiting for it.
+  String enqueueMessage({required String agentId, required String messageId}) =>
+      _orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: WakeReason.userMessage.name,
+        triggerTokens: {goalChatMessageTriggerToken(messageId)},
+        supersede: false,
+        initiator: WakeInitiator.user,
+      );
 
   /// Re-enqueues the already durable source turn after a failed wake.
   ///
@@ -183,13 +207,7 @@ class GoalChatService {
       }
     });
     try {
-      runKey = _orchestrator.enqueueManualWake(
-        agentId: agentId,
-        reason: WakeReason.userMessage.name,
-        triggerTokens: {goalChatMessageTriggerToken(messageId)},
-        supersede: false,
-        initiator: WakeInitiator.user,
-      );
+      runKey = enqueueMessage(agentId: agentId, messageId: messageId);
       final result = await completion.future;
       if (result.status != WakeRunStatus.completed) {
         throw GoalChatTurnException(

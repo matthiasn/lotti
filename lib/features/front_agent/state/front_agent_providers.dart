@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -8,8 +9,9 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/runtime/front_runtime_maintenance.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
+import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
@@ -52,15 +54,34 @@ final frontAgentServiceProvider = Provider<FrontAgentService>(
   name: 'frontAgentServiceProvider',
 );
 
-/// Durable user-authored turns (the goal-chat pattern).
+/// Which turns are still unanswered.
+final frontChatHistoryServiceProvider = Provider<FrontChatHistoryService>(
+  (ref) => FrontChatHistoryService(
+    repository: ref.watch(agentRepositoryProvider),
+  ),
+  name: 'frontChatHistoryServiceProvider',
+);
+
+/// Durable user-authored turns (the goal-chat pattern, with recovery).
 final frontChatServiceProvider = Provider<FrontChatService>(
   (ref) => FrontChatService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     notifications: ref.watch(updateNotificationsProvider),
+    historyService: ref.watch(frontChatHistoryServiceProvider),
   ),
   name: 'frontChatServiceProvider',
+);
+
+/// The front agent's contribution to `agentRuntimeMaintenanceProvider`:
+/// the recovery of an unanswered turn, on every device, every pass.
+final frontRuntimeMaintenanceProvider = Provider<FrontRuntimeMaintenance>(
+  (ref) => FrontRuntimeMaintenance(
+    chatService: ref.watch(frontChatServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  ),
+  name: 'frontRuntimeMaintenanceProvider',
 );
 
 /// The front agent's contribution to `agentResolvedSetupResolversProvider`:

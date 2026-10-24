@@ -742,5 +742,69 @@ void main() {
     expect(const GoalChatTurnException('offline').toString(), 'offline');
   });
 
+  group("the door walker's split", () {
+    test('appendMessage makes the turn durable, arms its recovery and '
+        'returns the id without waking anything', () async {
+      final messageId = await service.appendMessage(
+        agentId: 'goal-1',
+        text: '  Am I on track?  ',
+      );
+
+      final message = upserts.whereType<AgentMessageEntity>().single;
+      expect(messageId, message.id);
+      expect(message.kind, AgentMessageKind.user);
+      expect(
+        upserts.whereType<AgentMessagePayloadEntity>().single.content,
+        {'text': 'Am I on track?'},
+      );
+      expect(
+        upserts.whereType<ScheduledWakeEntity>().single.workspaceKey,
+        'goal-chat:${message.id}',
+      );
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
+        ),
+      );
+    });
+
+    test('appendMessage returns null for a blank text', () async {
+      expect(await service.appendMessage(agentId: 'goal-1', text: ' '), isNull);
+      expect(upserts, isEmpty);
+    });
+
+    test("enqueueMessage wakes the agent with the turn's token and returns "
+        'the run key without waiting', () {
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: any(named: 'supersede'),
+          initiator: any(named: 'initiator'),
+        ),
+      ).thenReturn('run-9');
+
+      expect(
+        service.enqueueMessage(agentId: 'goal-1', messageId: 'm-9'),
+        'run-9',
+      );
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: 'goal-1',
+          reason: WakeReason.userMessage.name,
+          triggerTokens: {goalChatMessageTriggerToken('m-9')},
+          supersede: false,
+          initiator: WakeInitiator.user,
+        ),
+      ).called(1);
+      verifyNever(() => orchestrator.runCompletions);
+    });
+  });
+
   _registerChatModelConformance();
 }

@@ -15,21 +15,3 @@ AgentIdentityEntity? usableFrontAgent(AgentDomainEntity? identity) =>
         identity.lifecycle == AgentLifecycle.active
     ? identity
     : null;
-
-const _frontChatMessageTokenPrefix = 'front-chat-message:';
-
-/// The wake token that names the durable user turn a front wake answers.
-String frontChatMessageTriggerToken(String messageId) =>
-    '$_frontChatMessageTokenPrefix$messageId';
-
-/// The message id a front-chat token carries, or null when [tokens] hold
-/// none.
-String? frontChatMessageIdFromTriggerTokens(Iterable<String> tokens) {
-  for (final token in tokens) {
-    if (token.startsWith(_frontChatMessageTokenPrefix)) {
-      final id = token.substring(_frontChatMessageTokenPrefix.length);
-      if (id.isNotEmpty) return id;
-    }
-  }
-  return null;
-}
