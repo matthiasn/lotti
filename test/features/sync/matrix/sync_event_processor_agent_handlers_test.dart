@@ -21,7 +21,6 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
@@ -36,6 +35,7 @@ import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/test_data/evolution_factories.dart';
 import '../../ai_consumption/test_utils.dart';
+import 'recorded_attachment_stack.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -6710,13 +6710,13 @@ void main() {
       });
 
       group('descriptor-based resolution (AttachmentIndex)', () {
-        late AttachmentIndex attachmentIndex;
+        late RecordedAttachmentStack attachmentIndex;
         late SyncEventProcessor processorWithIndex;
         late MockEvent descriptorEvent;
         late MockRoom indexRoom;
 
         setUp(() {
-          attachmentIndex = AttachmentIndex(logging: loggingService);
+          attachmentIndex = RecordedAttachmentStack(logging: loggingService);
           indexRoom = MockRoom();
           processorWithIndex = SyncEventProcessor(
             loggingService: loggingService,
@@ -6725,7 +6725,8 @@ void main() {
             savedTaskFiltersRepository: savedTaskFiltersRepository,
             settingsDb: settingsDb,
             journalEntityLoader: journalEntityLoader,
-            attachmentIndex: attachmentIndex,
+            attachmentIndex: attachmentIndex.index,
+            attachmentFetcher: attachmentIndex.fetcher,
             syncEventTrust: AdmittingSyncEventTrust(),
             descriptorFetcher: MatrixDescriptorFetcher(
               resolveRoom: (_) => indexRoom,
@@ -6905,7 +6906,8 @@ void main() {
               savedTaskFiltersRepository: savedTaskFiltersRepository,
               settingsDb: settingsDb,
               journalEntityLoader: journalEntityLoader,
-              attachmentIndex: attachmentIndex,
+              attachmentIndex: attachmentIndex.index,
+              attachmentFetcher: attachmentIndex.fetcher,
               sequenceLogService: sequenceLog,
             )..agentRepository = mockAgentRepo;
 
@@ -7003,7 +7005,8 @@ void main() {
               savedTaskFiltersRepository: savedTaskFiltersRepository,
               settingsDb: settingsDb,
               journalEntityLoader: journalEntityLoader,
-              attachmentIndex: attachmentIndex,
+              attachmentIndex: attachmentIndex.index,
+              attachmentFetcher: attachmentIndex.fetcher,
               sequenceLogService: sequenceLog,
             )..agentRepository = mockAgentRepo;
 

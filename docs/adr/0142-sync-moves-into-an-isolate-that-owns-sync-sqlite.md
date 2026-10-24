@@ -138,8 +138,8 @@ with what already exists rather than with new machinery.
   not share is Drift's table-change tracking, which is why the next two
   points exist. The UI isolate keeps a connection for the pages that read
   sync state and, during the transition steps, for the tables it still owns.
-  Each step names which side writes which table; no table has two writers at
-  once.
+  Each step names which side writes which table; what both sides still write
+  while the receive side has not moved is tracked in the concept.
 - **Data refresh.** Journal, settings, agent and notification data change
   only inside the apply step, which stays on the UI isolate, so the
   `UpdateNotifications` fan-out keeps firing where it fires today and no
@@ -172,7 +172,11 @@ Each is one mergeable change; the flag stays off until the last.
    emitted the room, instead of being retried every two seconds until it has.
    Second, `AttachmentIndex` holds Room-free descriptors and attachment
    downloads go through an interface of the same kind. Needed by everything
-   after it; which half has landed is tracked in the concept, not here.
+   after it. Then, before any receive code moves, the hand-off itself: the
+   worker opens `sync.sqlite`, serves leases and acknowledgements, and
+   reports the tables it wrote; with the flag on, the UI isolate's inbound
+   worker leases and acknowledges through it. Which parts have landed is
+   tracked in the concept, not here.
 4. **Receive in the isolate.** Matrix client, sync loop, decryption, admission
    and bridge walks move; the lease/acknowledge protocol replaces the UI
    isolate's direct queue writes. A `startSyncServices()` seam keeps the

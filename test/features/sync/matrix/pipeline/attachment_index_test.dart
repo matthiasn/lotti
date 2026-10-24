@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -185,6 +186,25 @@ extension _AnyGeneratedAttachmentScenario on glados.Any {
           );
 }
 
+/// The index hands back a descriptor of [event]: same id (empty when the
+/// event has none) and the path the event declared. Null matches null.
+Matcher _describes(Event? event) {
+  if (event == null) return isNull;
+  String id;
+  try {
+    id = event.eventId;
+  } catch (_) {
+    id = '';
+  }
+  return isA<AttachmentDescriptor>()
+      .having((d) => d.eventId, 'eventId', id)
+      .having(
+        (d) => d.relativePath,
+        'relativePath',
+        event.content['relativePath'],
+      );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -288,9 +308,9 @@ void main() {
     expect(index.record(older), isTrue);
     expect(index.record(newer), isTrue);
 
-    expect(index.find('/agent_entities/agent-1.json'), same(newer));
-    expect(index.findByEventId('older-event'), same(older));
-    expect(index.findByEventId('newer-event'), same(newer));
+    expect(index.find('/agent_entities/agent-1.json'), _describes(newer));
+    expect(index.findByEventId('older-event'), _describes(older));
+    expect(index.findByEventId('newer-event'), _describes(newer));
     expect(index.findByEventId('missing-event'), isNull);
   });
 
@@ -478,13 +498,13 @@ void main() {
             case _GeneratedAttachmentOperationKind.find:
               expect(
                 index.find(operation.queryPath),
-                same(model.find(operation.queryPath)),
+                _describes(model.find(operation.queryPath)),
                 reason: '$scenario\n$operation',
               );
             case _GeneratedAttachmentOperationKind.findByEventId:
               expect(
                 index.findByEventId(operation.eventId),
-                same(model.findByEventId(operation.eventId)),
+                _describes(model.findByEventId(operation.eventId)),
                 reason: '$scenario\n$operation',
               );
           }

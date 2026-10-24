@@ -38,7 +38,9 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
       QueuePipelineCoordinator buildIntegration({
         AttachmentIndex? attachmentIndex,
         AttachmentIngestor? attachmentIngestor,
+        InboundQueueGateway Function(InboundQueue queue)? queueGateway,
       }) => QueuePipelineCoordinator(
+        queueGateway: queueGateway,
         syncEventTrust: AdmittingSyncEventTrust(),
         syncDb: syncDb,
         settingsDb: settingsDb,
@@ -52,6 +54,60 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
         bridgeOverride: bridge,
         attachmentIndex: attachmentIndex,
         attachmentIngestor: attachmentIngestor,
+      );
+
+      test(
+        'the inbound worker leases and settles through the gateway the '
+        "coordinator is given, built over the coordinator's own queue; "
+        'how the sync isolate takes over the queue with use_isolate_sync on',
+        () async {
+          final prepared = MockPreparedSyncEvent();
+          when(
+            () => liveProcessor.prepare(envelope: any(named: 'envelope')),
+          ).thenAnswer((_) async => prepared);
+          when(
+            () => liveProcessor.apply(
+              prepared: any(named: 'prepared'),
+              journalDb: journalDb,
+              afterCommit: any(named: 'afterCommit'),
+            ),
+          ).thenAnswer((_) async => null);
+          late _RecordingGateway gateway;
+          InboundQueue? givenQueue;
+
+          final coordinator = buildIntegration(
+            queueGateway: (queue) {
+              givenQueue = queue;
+              return gateway = _RecordingGateway(
+                LocalInboundQueueGateway(
+                  queue: queue,
+                  settlement: InboundQueueSettlement(queue: queue),
+                ),
+              );
+            },
+          );
+          await coordinator.start();
+          addTearDown(() => coordinator.stop(drainFirst: true));
+          expect(givenQueue, same(coordinator.queue));
+
+          deliverPayload(
+            _buildLiveSyncEvent(
+              eventId: r'$viaGateway',
+              roomId: roomId,
+              originTsMs: 1000,
+            ),
+          );
+          await gateway.settled.first;
+          await coordinator.queue.waitForDrainAtMostTo(0);
+
+          expect(gateway.leases, greaterThanOrEqualTo(1));
+          expect(gateway.settledOutcomes.single.entry.eventId, r'$viaGateway');
+          expect(
+            gateway.settledOutcomes.single.outcome,
+            ApplyOutcome.applied,
+          );
+          expect((await coordinator.queue.stats()).applied, 1);
+        },
       );
 
       test(
@@ -428,4 +484,36 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
       );
     });
   }
+}
+
+/// Counts what the inbound worker asks of the queue's owner.
+class _RecordingGateway implements InboundQueueGateway {
+  _RecordingGateway(this._inner);
+
+  final InboundQueueGateway _inner;
+  int leases = 0;
+  final settledOutcomes = <InboundEntryOutcome>[];
+  final _settled = StreamController<void>.broadcast();
+
+  Stream<void> get settled => _settled.stream;
+
+  @override
+  Future<List<InboundQueueEntry>> lease({required int maxBatch}) {
+    leases++;
+    return _inner.lease(maxBatch: maxBatch);
+  }
+
+  @override
+  Future<int> settle(List<InboundEntryOutcome> outcomes) async {
+    final applied = await _inner.settle(outcomes);
+    settledOutcomes.addAll(outcomes);
+    _settled.add(null);
+    return applied;
+  }
+
+  @override
+  Future<int?> earliestReadyAt() => _inner.earliestReadyAt();
+
+  @override
+  Stream<void> get changes => _inner.changes;
 }

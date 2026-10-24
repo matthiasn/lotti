@@ -30,6 +30,8 @@ import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -313,6 +315,8 @@ Future<MatrixService> _createMatrixService({
     syncDb: syncDb,
     logging: loggingService,
   );
+  final descriptorFetcher = MatrixDescriptorFetcher.forClient(gateway.client);
+  final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     domainLogger: loggingService,
@@ -325,11 +329,14 @@ Future<MatrixService> _createMatrixService({
     ),
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: sharedAttachmentIndex,
+      attachmentFetcher: attachmentFetcher,
       loggingService: loggingService,
       documentsDirectory: documentsDirectory,
     ),
     documentsDirectory: documentsDirectory,
     attachmentIndex: sharedAttachmentIndex,
+    descriptorFetcher: descriptorFetcher,
+    attachmentFetcher: attachmentFetcher,
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,

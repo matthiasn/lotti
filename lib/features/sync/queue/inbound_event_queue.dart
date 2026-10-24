@@ -121,6 +121,11 @@ class InboundQueue {
 
   Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 
+  /// Tells [depthChanges] subscribers that another connection — the sync
+  /// isolate's, which owns leases and settlements when `use_isolate_sync`
+  /// is on (ADR 0142) — changed the queue, so they re-read.
+  void noteExternalChange() => _depthEmitter.schedule();
+
   Future<void> dispose() => _depthEmitter.dispose();
 
   /// Lightweight active-depth snapshot for UI seed values.

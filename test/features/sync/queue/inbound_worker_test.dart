@@ -914,14 +914,14 @@ void main() {
             if (peeks == 1) throw StateError('database is locked');
             return peeks == 2 ? [entry] : const <InboundQueueEntry>[];
           });
-          // The worker's phase-2 body is an `async` closure without a
-          // return, so the transaction's type argument is inferred as Null.
+          // The settlement records the batch in one transaction that
+          // returns the applied count, so the type argument is int.
           when(
-            () => flakyQueue.runInTransaction<Null>(any()),
+            () => flakyQueue.runInTransaction<int>(any()),
           ).thenAnswer(
             (invocation) =>
                 (invocation.positionalArguments.first
-                    as Future<Null> Function())(),
+                    as Future<int> Function())(),
           );
           when(() => flakyQueue.commitApplied(entry)).thenAnswer((_) async {});
           final applied = <String>[];

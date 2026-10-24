@@ -17,8 +17,9 @@ import 'package:matrix/matrix.dart';
 /// UI isolate keeps ticking while the decode runs.
 const int _inlineGzipThreshold = 2 * 1024;
 
-/// Decodes the raw downloaded attachment bytes according to any encoding
-/// declared in the Matrix event content. Currently only gzip is recognized.
+/// Decodes the raw downloaded attachment bytes according to the [encoding]
+/// the Matrix event content declared (`AttachmentDescriptor.encoding`).
+/// Currently only gzip is recognized.
 ///
 /// Returns the bytes unchanged when no `com.lotti.encoding` header is present,
 /// so the decoder is a safe no-op on non-encoded attachments and on every
@@ -29,8 +30,8 @@ const int _inlineGzipThreshold = 2 * 1024;
 /// isolate during a catch-up slice. Small payloads stay inline to avoid the
 /// one-shot isolate spin-up cost dominating their decode time.
 ///
-/// Must wrap every caller of `event.downloadAndDecryptAttachment()` that
-/// treats the bytes as a concrete payload (JSON, media file, etc.), otherwise
+/// Must wrap every download that treats the bytes as a concrete payload
+/// (JSON, media file, etc.), otherwise
 /// a gzipped `.json` attachment reaches `utf8.decode` as `0x1f 0x8b ...` and
 /// explodes with `FormatException: Unexpected extension byte`.
 ///
@@ -39,13 +40,12 @@ const int _inlineGzipThreshold = 2 * 1024;
 /// [AttachmentTooLargeException] — a [FormatException], so every caller
 /// handles it exactly like the corrupt gzip it effectively is.
 Future<Uint8List> decodeAttachmentBytes({
-  required Event event,
+  required String? encoding,
   required Uint8List downloadedBytes,
   required String relativePath,
   required DomainLogger logging,
   int maxDecodedBytes = SyncTuning.maxDecodedAttachmentBytes,
 }) async {
-  final encoding = event.content[attachmentEncodingKey];
   if (encoding != attachmentEncodingGzip) return downloadedBytes;
   final Uint8List decoded;
   try {
@@ -325,15 +325,4 @@ String? _safeEventId(Event event) {
 String formatCompressionRatio({required int raw, required int compressed}) {
   if (raw <= 0) return '-';
   return (compressed / raw).toStringAsFixed(3);
-}
-
-/// The size the sender declared for a media file (`info.size`, the plaintext
-/// length), or null for JSON payloads — uploaded gzipped, so their declared
-/// size is not the local file's — and for events without one.
-int? declaredMediaSize(Event event, String relativePath) {
-  if (relativePath.toLowerCase().endsWith('.json')) return null;
-  final info = event.content['info'];
-  if (info is! Map) return null;
-  final size = info['size'];
-  return size is int ? size : null;
 }

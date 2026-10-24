@@ -737,6 +737,20 @@ processor suites keep their one mock. The one consequence: the combined
 `roomId` is a non-nullable `String`, so stub it with a room id or `''`, never
 `null` — the SDK's nullable `roomId` cannot be faked through `MockEvent`.
 
+## Attachment downloads in tests: `RecordedAttachmentStack`
+
+The apply path downloads by `AttachmentDescriptor` through a
+`SyncAttachmentFetcher`, never through the SDK event it was recorded from.
+`test/features/sync/matrix/recorded_attachment_stack.dart` is the attachment
+stack as production wires it — an `AttachmentIndex` plus the real
+`MatrixAttachmentFetcher` — over the mock events a test records with
+`stack.record(event)`, so `downloadAndDecryptAttachment` stubs and
+`room.client.database` purge chains keep working on the mock the test built.
+Give the processor or loader `stack.index` and `stack.fetcher`. A test whose
+processor *recovers* a descriptor through a mocked room passes that room's
+`MatrixDescriptorFetcher` as the stack's `fallback`, or wires the production
+fetchers directly.
+
 ## Stubbing mixin-declared methods: mirror the production call shape
 
 `JournalDb` and `SyncDatabase` get their query members from private mixins in

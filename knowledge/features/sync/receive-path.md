@@ -117,7 +117,8 @@ All under `lib/features/sync/queue/`:
 | Component | Role |
 |-----------|------|
 | `InboundQueue` | Drift-backed queue in `sync_db` — `inbound_event_queue` plus a per-room `queue_markers` table |
-| `InboundWorker` | Per-room drain loop. Waits for `UserActivityGate` idle time before each entry; an entry it has started — up to a 50-child bundle, inline descriptor downloads included — runs to completion. Live admission, bridge walks and the `fromSync` notification fan-out are not gated (see [the sync isolate](isolate.md#what-runs-regardless-of-activity)) |
+| `InboundWorker` | Per-room drain loop. Waits for `UserActivityGate` idle time before each entry; an entry it has started — up to a 50-child bundle, inline descriptor downloads included — runs to completion. Leases and acknowledges through an `InboundQueueGateway`: the queue itself in-process, the sync isolate with `use_isolate_sync` on ([the sync isolate](isolate.md#how-the-hand-off-works)). Live admission, bridge walks and the `fromSync` notification fan-out are not gated (see [the sync isolate](isolate.md#what-runs-regardless-of-activity)) |
+| `InboundQueueSettlement` | The rule book an acknowledgement is recorded by — commit, the per-reason backoff ladders, the attempt and wall-clock budgets — shared by both queue owners |
 | `BridgeCoordinator` | Subscribes to `Client.onSync`; runs anchored catch-up walks and retries durable ciphertext floors after to-device traffic. Single-flight |
 | `QueueApplyAdapter` | Bridges the worker to `SyncEventProcessor.prepare` / `apply`. Rebuilds a Room-free `SyncEnvelope` from the row's stored JSON; neither it nor the worker touches an SDK `Room` ([the sync isolate](isolate.md#applying-without-a-room)) |
 | `QueuePipelineCoordinator` | Owns the above plus the live producer subscription; exposed as `MatrixService.queueCoordinator` |
@@ -130,11 +131,14 @@ Two primitives carry the durability guarantees:
   constraint decides.
 - **`lease_until`** is a durable worker lease that survives crashes.
 
-`AttachmentIndex` has two lookup contracts. Latest-by-path remains the
-compatibility path for envelopes from peers that know only `jsonPath`. Exact
-lookup retains every attachment by Matrix event id, so a newer attachment at a
-reused path cannot replace the generation named by an envelope carrying
-`attachmentEventId`. If that exact event has not been observed yet, prepare
+`AttachmentIndex` holds `AttachmentDescriptor`s — what the apply path reads
+of an attachment event, without the SDK `Event` — and has two lookup
+contracts. Latest-by-path remains the compatibility path for envelopes from
+peers that know only `jsonPath`. Exact lookup retains every attachment by
+Matrix event id, so a newer attachment at a reused path cannot replace the
+generation named by an envelope carrying `attachmentEventId`. The bytes a
+descriptor points at, and the purge of the client's cached copy, go through
+`SyncAttachmentFetcher` ([the sync isolate](isolate.md#applying-without-a-room)). If that exact event has not been observed yet, prepare
 stays retryable and does not fall back to a different descriptor or a mutable
 disk cache. Recording the matching attachment still emits the canonical path
 signal, which wakes the pending queue row without weakening the exact-id check.

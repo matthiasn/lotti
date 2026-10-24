@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';

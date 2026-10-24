@@ -321,9 +321,10 @@ why it is taken at enqueue time as well as at send time are in
 ## Attachment encoding
 
 An attachment event may carry a `com.lotti.encoding` key declaring an on-wire
-encoding. The only defined value is `gzip`: the bytes returned from
-`event.downloadAndDecryptAttachment()` are a gzip stream and must be inflated
-before the file is written. `relativePath` remains the logical target path,
+encoding. The only defined value is `gzip`: the downloaded bytes
+(`SyncAttachmentFetcher.download`, the SDK's `downloadAndDecryptAttachment`
+underneath) are a gzip stream and must be inflated before the file is
+written. `relativePath` remains the logical target path,
 unchanged by the encoding.
 
 | Direction | Rule |

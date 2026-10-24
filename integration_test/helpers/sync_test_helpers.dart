@@ -22,6 +22,8 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -352,6 +354,8 @@ Future<SyncTestDevice> createSyncTestDevice({
     syncDb: syncDb,
     logging: loggingService,
   );
+  final descriptorFetcher = MatrixDescriptorFetcher.forClient(gateway.client);
+  final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     updateNotifications: updateNotifications,
@@ -359,6 +363,7 @@ Future<SyncTestDevice> createSyncTestDevice({
     settingsDb: settingsDb,
     journalEntityLoader: SmartJournalEntityLoader(
       attachmentIndex: sharedAttachmentIndex,
+      attachmentFetcher: attachmentFetcher,
       loggingService: loggingService,
       documentsDirectory: documentsDirectory,
     ),
@@ -368,6 +373,8 @@ Future<SyncTestDevice> createSyncTestDevice({
     journalDb: journalDb,
     vectorClockService: vectorClockService,
     syncEventTrust: syncEventTrust,
+    descriptorFetcher: descriptorFetcher,
+    attachmentFetcher: attachmentFetcher,
     savedTaskFiltersRepository: SavedTaskFiltersRepository(
       SavedTaskFiltersPersistence(settingsDb, domainLogger: loggingService),
       updateNotifications,

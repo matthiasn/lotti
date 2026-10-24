@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -22,6 +21,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/vanishing_file.dart';
 import '../../../widget_test_utils.dart';
+import 'recorded_attachment_stack.dart';
 
 /// Wires the `ev.room → room.client → client.database` purge chain with
 /// fresh mocks and returns the database so tests can stub/verify
@@ -84,7 +84,7 @@ void main() {
         final explicitDir = Directory(
           path.join(rootTempDir.path, 'explicit_$caseIndex'),
         )..createSync();
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
@@ -108,7 +108,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
           documentsDirectory: explicitDir,
         );
@@ -153,7 +154,7 @@ void main() {
       );
       final jsonBytes = utf8.encode(jsonEncode(entity.toJson()));
 
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
@@ -166,7 +167,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
 
@@ -229,7 +231,7 @@ void main() {
           eventId: 'journal-payload-newer',
           payload: newer,
         );
-        final index = AttachmentIndex()
+        final index = RecordedAttachmentStack()
           ..record(olderDescriptor)
           ..record(newerDescriptor);
 
@@ -239,7 +241,8 @@ void main() {
         targetFile.writeAsStringSync(jsonEncode(newer.toJson()));
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         final loaded = await loader.load(
@@ -319,13 +322,15 @@ void main() {
           eventId: 'restart-payload-newer',
           payload: newer,
         );
-        final restartedIndex = AttachmentIndex()..record(newerDescriptor);
+        final restartedIndex = RecordedAttachmentStack()
+          ..record(newerDescriptor);
         File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
           ..createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(newer.toJson()));
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: restartedIndex,
+          attachmentIndex: restartedIndex.index,
+          attachmentFetcher: restartedIndex.fetcher,
           loggingService: loggingService,
         );
 
@@ -369,9 +374,10 @@ void main() {
         when(() => descriptor.content).thenReturn({
           'relativePath': '/text_entries/2024-01-01/other.text.json',
         });
-        final index = AttachmentIndex()..record(descriptor);
+        final index = RecordedAttachmentStack()..record(descriptor);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -412,8 +418,10 @@ void main() {
             name: 'exact-no-vc.json',
           ),
         );
+        final attachments = RecordedAttachmentStack()..record(descriptor);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: AttachmentIndex()..record(descriptor),
+          attachmentIndex: attachments.index,
+          attachmentFetcher: attachments.fetcher,
           loggingService: loggingService,
         );
 
@@ -436,8 +444,10 @@ void main() {
       when(descriptor.downloadAndDecryptAttachment).thenAnswer(
         (_) async => MatrixFile(bytes: Uint8List(0), name: 'empty.json'),
       );
+      final attachments = RecordedAttachmentStack()..record(descriptor);
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: AttachmentIndex()..record(descriptor),
+        attachmentIndex: attachments.index,
+        attachmentFetcher: attachments.fetcher,
         loggingService: loggingService,
       );
 
@@ -481,7 +491,7 @@ void main() {
       final mediaFile = File(mediaPathImg);
       expect(mediaFile.existsSync(), isFalse);
 
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-img-empty');
       when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
@@ -495,7 +505,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       final loaded = await loader.load(jsonPath: relJson);
@@ -550,8 +561,10 @@ void main() {
           (_) async =>
               MatrixFile(bytes: Uint8List.fromList([1, 2, 3]), name: 'cut.jpg'),
         );
+        final attachments = RecordedAttachmentStack()..record(ev);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: AttachmentIndex()..record(ev),
+          attachmentIndex: attachments.index,
+          attachmentFetcher: attachments.fetcher,
           loggingService: loggingService,
         );
 
@@ -596,7 +609,7 @@ void main() {
           ..writeAsStringSync(jsonEncode(image.toJson()));
 
         final relMedia = getRelativeImagePath(image);
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
         when(() => ev.content).thenReturn({'relativePath': relMedia});
@@ -606,7 +619,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         String? pendingPath;
@@ -662,7 +676,7 @@ void main() {
       final mediaFile = File(
         path.join(tempDir.path, stripLeadingSlashes(relMedia)),
       );
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       final mediaUri = Uri.parse('mxc://server/img-empty-retry');
       when(() => ev.eventId).thenReturn('evt-img-empty-retry');
@@ -682,7 +696,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       final loaded = await loader.load(jsonPath: relJson);
@@ -733,7 +748,7 @@ void main() {
           ..writeAsStringSync(jsonEncode(image.toJson()));
 
         final relMedia = getRelativeImagePath(image);
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         final mediaUri = Uri.parse('mxc://server/img-delete-throws');
         when(() => ev.eventId).thenReturn('evt-img-delete-throws');
@@ -752,7 +767,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         String? pendingPath;
@@ -811,7 +827,7 @@ void main() {
           ..writeAsStringSync(jsonEncode(image.toJson()));
 
         final relMedia = getRelativeImagePath(image);
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         final mediaUri = Uri.parse('mxc://server/img-empty-twice');
         when(() => ev.eventId).thenReturn('evt-img-empty-twice');
@@ -830,7 +846,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         String? pendingPath;
@@ -876,7 +893,7 @@ void main() {
 
     test('no-VC JSON fetch logs and throws on empty bytes', () async {
       const relJson = '/text_entries/2024-02-01/empty.text.json';
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-json-empty');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -887,7 +904,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       await expectLater(
@@ -933,11 +951,12 @@ void main() {
           ..writeAsStringSync(jsonEncode(image.toJson()));
         expect(createdJson.existsSync(), isTrue);
 
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         String? pendingPath;
         String? pendingEntryId;
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         loader.onMissingMedia = ({required entryId, required relativePath}) {
@@ -991,8 +1010,10 @@ void main() {
           stripLeadingSlashes(getRelativeImagePath(image)),
         );
         String? pendingPath;
+        final attachments = RecordedAttachmentStack(logging: loggingService);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: AttachmentIndex(logging: loggingService),
+          attachmentIndex: attachments.index,
+          attachmentFetcher: attachments.fetcher,
           loggingService: loggingService,
         );
         loader.onMissingMedia = ({required entryId, required relativePath}) {
@@ -1044,8 +1065,10 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(image.toJson()));
         String? pendingPath;
+        final attachments = RecordedAttachmentStack(logging: loggingService);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: AttachmentIndex(logging: loggingService),
+          attachmentIndex: attachments.index,
+          attachmentFetcher: attachments.fetcher,
           loggingService: loggingService,
         );
         loader.onMissingMedia = ({required entryId, required relativePath}) {
@@ -1071,7 +1094,7 @@ void main() {
         await f.create(recursive: true);
         await f.writeAsString('{this is not json');
 
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
@@ -1097,7 +1120,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -1122,7 +1146,7 @@ void main() {
       'no-VC path: throws and logs smart.fetch.miss(noVc) when descriptor not indexed',
       () async {
         const relJson = '/text_entries/2024-01-01/no_descriptor.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         when(
           () => loggingService.log(
             any<LogDomain>(),
@@ -1132,7 +1156,8 @@ void main() {
         ).thenAnswer((_) {});
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -1184,7 +1209,7 @@ void main() {
               ..createSync(recursive: true)
               ..writeAsBytesSync([1, 2, 3, 4]);
 
-        final index = AttachmentIndex();
+        final index = RecordedAttachmentStack();
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-img-present');
         when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
@@ -1198,7 +1223,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -1241,7 +1267,7 @@ void main() {
       final mediaFile = File(mediaPathAud);
       expect(mediaFile.existsSync(), isFalse);
 
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       when(() => ev.attachmentMimetype).thenReturn('audio/aac');
       when(() => ev.content).thenReturn({'relativePath': relMedia});
@@ -1254,7 +1280,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       final loaded = await loader.load(jsonPath: relJson);
@@ -1284,9 +1311,10 @@ void main() {
         ..createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(entity.toJson()));
 
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
 
@@ -1305,9 +1333,10 @@ void main() {
 
     test('VC path: index miss throws and logs fetch.miss', () async {
       const relJson = '/text_entries/2024-01-01/missing.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       when(
@@ -1335,7 +1364,7 @@ void main() {
 
     test('purges cached descriptor and refreshes stale download', () async {
       const relJson = '/text_entries/2024-01-01/stale.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-stale');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1386,7 +1415,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       var purges = 0;
@@ -1428,7 +1458,7 @@ void main() {
 
     test('purges cached descriptor and retries after empty bytes', () async {
       const relJson = '/text_entries/2024-01-01/empty_first.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-empty-first');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1464,7 +1494,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       var purges = 0;
@@ -1492,7 +1523,7 @@ void main() {
 
     test('throws when descriptor remains stale after refresh', () async {
       const relJson = '/text_entries/2024-01-01/staler.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-staler');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1526,7 +1557,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       var purges = 0;
@@ -1560,7 +1592,7 @@ void main() {
 
     test('trips circuit breaker after repeated stale descriptors', () async {
       const relJson = '/text_entries/2024-01-01/always_stale.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-stale-loop');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1604,7 +1636,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       var purges = 0;
@@ -1647,7 +1680,7 @@ void main() {
         'clears failure count on success after prior stale retries',
         () async {
           const relJson = '/text_entries/2024-01-01/reset.text.json';
-          final index = AttachmentIndex(logging: loggingService);
+          final index = RecordedAttachmentStack(logging: loggingService);
           final ev = MockEvent();
           when(() => ev.eventId).thenReturn('evt-reset');
           when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1716,7 +1749,8 @@ void main() {
           index.record(ev);
 
           final loader = SmartJournalEntityLoader(
-            attachmentIndex: index,
+            attachmentIndex: index.index,
+            attachmentFetcher: index.fetcher,
             loggingService: loggingService,
           );
           var purges = 0;
@@ -1743,7 +1777,7 @@ void main() {
       test('maintains separate failure counts by jsonPath', () async {
         const relJsonA = '/text_entries/2024-01-01/a.text.json';
         const relJsonB = '/text_entries/2024-01-01/b.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final evA = MockEvent();
         final evB = MockEvent();
         when(() => evA.eventId).thenReturn('evt-a');
@@ -1820,7 +1854,8 @@ void main() {
           ..record(evB);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         var purges = 0;
@@ -1846,7 +1881,7 @@ void main() {
     group('SmartLoader cache purge edge cases -', () {
       test('onCachePurge not invoked when descriptor lacks MXC', () async {
         const relJson = '/text_entries/2024-01-01/no_mxc.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-no-mxc');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1891,7 +1926,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         var purges = 0;
@@ -1909,7 +1945,7 @@ void main() {
 
       test('onCachePurge not invoked when deleteFile throws', () async {
         const relJson = '/text_entries/2024-01-01/delete_error.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-delete-error');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -1966,7 +2002,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
         var purges = 0;
@@ -1996,7 +2033,7 @@ void main() {
         'succeeds when incoming VC is null but descriptor VC is present',
         () async {
           const relJson = '/text_entries/2024-01-02/vc_present.text.json';
-          final index = AttachmentIndex(logging: loggingService);
+          final index = RecordedAttachmentStack(logging: loggingService);
           final ev = MockEvent();
           when(() => ev.eventId).thenReturn('evt-vc-present');
           when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -2021,7 +2058,8 @@ void main() {
           index.record(ev);
 
           final loader = SmartJournalEntityLoader(
-            attachmentIndex: index,
+            attachmentIndex: index.index,
+            attachmentFetcher: index.fetcher,
             loggingService: loggingService,
           );
 
@@ -2035,7 +2073,7 @@ void main() {
         'throws when descriptor lacks VC but incoming VC provided',
         () async {
           const relJson = '/text_entries/2024-01-03/missing_vc.text.json';
-          final index = AttachmentIndex(logging: loggingService);
+          final index = RecordedAttachmentStack(logging: loggingService);
           final ev = MockEvent();
           when(() => ev.eventId).thenReturn('evt-missing-vc');
           when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -2059,7 +2097,8 @@ void main() {
           index.record(ev);
 
           final loader = SmartJournalEntityLoader(
-            attachmentIndex: index,
+            attachmentIndex: index.index,
+            attachmentFetcher: index.fetcher,
             loggingService: loggingService,
           );
 
@@ -2081,7 +2120,7 @@ void main() {
 
       test('succeeds when both incoming and descriptor VCs are null', () async {
         const relJson = '/text_entries/2024-01-04/both_null.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-both-null');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -2105,7 +2144,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -2118,7 +2158,7 @@ void main() {
     group('SmartLoader error handling -', () {
       test('throws when refreshed descriptor returns empty bytes', () async {
         const relJson = '/text_entries/2024-01-05/empty_second.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-empty-second');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -2156,7 +2196,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -2186,7 +2227,7 @@ void main() {
 
       test('logs and rethrows when descriptor JSON is invalid', () async {
         const relJson = '/text_entries/2024-01-06/invalid_json.text.json';
-        final index = AttachmentIndex(logging: loggingService);
+        final index = RecordedAttachmentStack(logging: loggingService);
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('evt-invalid-json');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -2206,7 +2247,8 @@ void main() {
         index.record(ev);
 
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: index,
+          attachmentIndex: index.index,
+          attachmentFetcher: index.fetcher,
           loggingService: loggingService,
         );
 
@@ -2246,7 +2288,7 @@ void main() {
         ..writeAsStringSync(jsonEncode(entity.toJson()));
 
       var downloads = 0;
-      final index = AttachmentIndex();
+      final index = RecordedAttachmentStack();
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-present');
       when(ev.downloadAndDecryptAttachment).thenAnswer((_) async {
@@ -2258,7 +2300,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       final loaded = await loader.load(jsonPath: relJson);

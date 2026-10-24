@@ -22,7 +22,6 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/github/repository/github_token_storage.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
@@ -41,6 +40,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../github/in_memory_keychain.dart';
+import 'recorded_attachment_stack.dart';
 import 'sync_event_processor_test_helpers.dart';
 
 // --- Glados generators for the _decodeSyncEventPayload round-trip property. ---
@@ -1628,8 +1628,10 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(image.toJson()));
 
+        final attachments = RecordedAttachmentStack(logging: loggingService);
         final loader = SmartJournalEntityLoader(
-          attachmentIndex: AttachmentIndex(logging: loggingService),
+          attachmentIndex: attachments.index,
+          attachmentFetcher: attachments.fetcher,
           loggingService: loggingService,
         );
         final processorWithSmartLoader = SyncEventProcessor(
@@ -3560,7 +3562,7 @@ void main() {
       // The loader caches what it downloads in the documents directory.
       await _registerTempDocumentsDirectory('cache_purge_listener_test');
       const relJson = '/text_entries/2024-01-01/purge.text.json';
-      final index = AttachmentIndex(logging: loggingService);
+      final index = RecordedAttachmentStack(logging: loggingService);
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('evt-purge');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
@@ -3613,7 +3615,8 @@ void main() {
       index.record(ev);
 
       final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
+        attachmentIndex: index.index,
+        attachmentFetcher: index.fetcher,
         loggingService: loggingService,
       );
       final processorWithSmartLoader = SyncEventProcessor(
