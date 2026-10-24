@@ -650,9 +650,10 @@ reach the wrong device or none at all:
 - **Dismissing a live sheet cancels its ceremony.** A backdrop tap used to
   leave the SDK ceremony running: the peer's sheet waited at the emoji step
   for a confirmation that would never come, holding its lock (TLC's
-  `EventuallyOffered`). The sheet's host — the launcher or the wrapper, which
-  await the sheet — cancels a still-pending runner once it closes
-  (`cancelAbandonedVerification`); a finished one is left alone.
+  `EventuallyOffered`). The sheet's host — the launcher, the wrapper or the
+  device card's Verify button, which await the sheet — asks the service to
+  cancel the ceremony by id once it closes (`cancelVerification`, which
+  runs `cancelAbandonedVerification`); a finished one is left alone.
 - That record lives in `matrixVerificationHandledProvider`, not in the widget's
   `State`, because two launchers can be mounted at once — the settings pane
   embeds the roster while the setup modal is open. Per-widget, the one that

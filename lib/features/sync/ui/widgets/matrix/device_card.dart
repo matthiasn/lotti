@@ -217,6 +217,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (!lock.tryAcquire()) return;
 
+    final service = ref.read(matrixServiceProvider);
     try {
       await showVerificationModalSheet(
         context: context,
@@ -224,6 +225,11 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
         child: VerificationModal(device),
       );
     } finally {
+      // A ceremony the user walked away from is cancelled before the lock
+      // frees: left live, it would keep publishing onto the outgoing stream
+      // the next sheet renders. The service leaves a finished one alone.
+      final shown = service.outgoingVerification;
+      if (shown != null) await service.cancelVerification(shown.id);
       lock.release();
       widget.refreshListCallback();
     }

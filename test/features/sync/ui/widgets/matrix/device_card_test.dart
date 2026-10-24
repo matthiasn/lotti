@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../sync_verification_fixtures.dart';
 
 /// A pre-acquired lock so the Verify button's tryAcquire() returns false.
 class _PreAcquiredLock extends MatrixVerificationModalLock {
@@ -883,6 +884,66 @@ void main() {
       expect(find.byType(VerificationModal), findsNothing);
       expect(container.read(matrixVerificationModalLockProvider), isFalse);
       expect(refreshed, isTrue);
+    });
+
+    group('when its sheet closes', () {
+      Future<void> openThenClose(WidgetTester tester) async {
+        when(
+          () => mockMatrixService.verifyDevice(
+            userId: '@user:server',
+            deviceId: 'DEVICE1',
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMatrixService.outgoingVerifications,
+        ).thenAnswer((_) => const Stream.empty());
+        when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
+        when(
+          () => mockMatrixService.cancelVerification(any()),
+        ).thenAnswer((_) async {});
+
+        await pumpCard(tester, buildDevice());
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(VerificationModal), findsOneWidget);
+
+        final closeButton = find.byIcon(LottiIcons.close);
+        await tester.ensureVisible(closeButton);
+        await tester.tap(closeButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(VerificationModal), findsNothing);
+      }
+
+      testWidgets('cancels the ceremony the user walked away from, by id', (
+        tester,
+      ) async {
+        // Dismissed, the ceremony used to stay live: polling, and publishing
+        // onto the outgoing stream the next sheet renders. Whether it is
+        // still live is the service's call.
+        when(() => mockMatrixService.outgoingVerification).thenReturn(
+          verificationState(
+            id: 'own-1',
+            peerUserId: '@user:server',
+            lastStep: 'm.key.verification.request',
+          ),
+        );
+
+        await openThenClose(tester);
+
+        verify(() => mockMatrixService.cancelVerification('own-1')).called(1);
+      });
+
+      testWidgets('cancels nothing when the service holds no ceremony', (
+        tester,
+      ) async {
+        when(() => mockMatrixService.outgoingVerification).thenReturn(null);
+
+        await openThenClose(tester);
+
+        verifyNever(() => mockMatrixService.cancelVerification(any()));
+      });
     });
 
     group('on a device that has not been seen in weeks', () {
