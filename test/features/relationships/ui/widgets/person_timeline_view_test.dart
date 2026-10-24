@@ -581,6 +581,67 @@ void main() {
       expect(find.text('Line many-29.'), findsOneWidget);
     });
 
+    testWidgets('a row the reader opened stays open when the history is '
+        'scrolled far past it and back', (tester) async {
+      // Thirty long recordings; the first is opened, then dropped by the
+      // lazy list on a jump to the end. Built again on the way back it would
+      // be folded — the reader's Show more undone, and a row above the
+      // viewport suddenly shorter, moving the history under them.
+      final many = [
+        for (var i = 0; i < 30; i++)
+          audio(
+            'many-$i',
+            DateTime(2026, 8, 12).subtract(Duration(hours: 7 * i)),
+            words: longWords,
+          ),
+      ];
+      final summaries = {for (final a in many) a.meta.id: 'Line ${a.meta.id}.'};
+      const phone = Size(390, 844);
+      setTestSurfaceSize(tester, phone);
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          CustomScrollView(
+            controller: controller,
+            slivers: [
+              PersonTimelineSliver(
+                timeline: timeline(checkIns: [], tasks: [], entries: many),
+                summaries: summaries,
+                personName: 'Pip',
+                filter: PersonTimelineFilter.all,
+                onFilter: (_) {},
+                actions: actions(),
+                now: now,
+              ),
+            ],
+          ),
+          mediaQueryData: const MediaQueryData(size: phone),
+        ),
+      );
+      await tester.pumpAndSettle();
+      const words = ValueKey('person-folded-words-many-0');
+      const row = ValueKey('person-timeline-row-many-0');
+      await tester.tap(find.byKey(const ValueKey('person-folded-more-many-0')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(find.byKey(words)).maxLines, isNull);
+      final opened = tester.getSize(find.byKey(row)).height;
+      final folded = tester
+          .getSize(find.byKey(const ValueKey('person-timeline-row-many-1')))
+          .height;
+      expect(opened, greaterThan(folded), reason: 'the words are out');
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.byKey(row), findsNothing, reason: 'far away: not on stage');
+      controller.jumpTo(0);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Text>(find.byKey(words)).maxLines, isNull);
+      expect(tester.getSize(find.byKey(row)).height, opened);
+      expect(find.text('Line many-0.'), findsNothing);
+    });
+
     testWidgets('a voice note with words offers Sort this, which sorts it; '
         'one still waiting for its words does not', (tester) async {
       await pump(
