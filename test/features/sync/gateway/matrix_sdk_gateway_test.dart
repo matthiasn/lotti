@@ -378,7 +378,10 @@ void main() {
   test('loginStateChanges exposes the injected login state stream', () async {
     final expectation = expectLater(
       gateway.loginStateChanges,
-      emitsInOrder(<LoginState>[LoginState.loggedIn, LoginState.loggedOut]),
+      emitsInOrder(<LoginState>[
+        LoginState.loggedIn,
+        LoginState.loggedOut,
+      ]),
     );
 
     loginStateController

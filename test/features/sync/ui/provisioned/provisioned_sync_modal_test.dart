@@ -23,17 +23,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late MockMatrixClient mockClient;
 
   setUp(() {
     scannerPreviewOverride = (context, side) => const SizedBox.shrink();
     mockMatrixService = MockMatrixService();
-    mockClient = MockMatrixClient();
 
     when(mockMatrixService.isLoggedIn).thenReturn(false);
     when(() => mockMatrixService.syncRoomId).thenReturn(null);
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn(null);
+    when(() => mockMatrixService.ownUserId).thenReturn(null);
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',
@@ -210,7 +207,9 @@ void main() {
         when(
           () => mockMatrixService.syncRoomId,
         ).thenReturn('!room123:example.com');
-        when(() => mockClient.userID).thenReturn('@alice:example.com');
+        when(
+          () => mockMatrixService.ownUserId,
+        ).thenReturn('@alice:example.com');
 
         await pumpEmptyState(tester);
         await tester.tap(find.byKey(const Key('sync_setup_use_account')));
@@ -299,7 +298,9 @@ void main() {
           when(
             () => mockMatrixService.syncRoomId,
           ).thenReturn('!room123:example.com');
-          when(() => mockClient.userID).thenReturn('@alice:example.com');
+          when(
+            () => mockMatrixService.ownUserId,
+          ).thenReturn('@alice:example.com');
 
           await pumpEmptyState(tester);
 

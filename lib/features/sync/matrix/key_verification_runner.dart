@@ -5,24 +5,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
-/// How a verification ceremony ended, as far as this device is concerned.
-///
-/// The SDK's `KeyVerification.isDone` cannot answer this: it is
-/// `canceled || state in {error, done}`, so it reports true for a ceremony
-/// that was cancelled or failed just as loudly as for one that succeeded.
-enum KeyVerificationOutcome {
-  /// Still running, or not started.
-  pending,
-
-  /// The devices verified each other.
-  success,
-
-  /// Ended without verifying — either side cancelled, or the SDK failed the
-  /// ceremony. Every SDK path that sets `KeyVerificationState.error` also sets
-  /// `canceled`, so failure is not separable from cancellation here (matrix
-  /// 8.1.0, `encryption/utils/key_verification.dart`).
-  cancelled,
-}
+export 'package:lotti/features/sync/models/sync_verification.dart';
 
 /// Classifies a ceremony from the SDK state the runner tracks.
 ///
@@ -59,14 +42,18 @@ KeyVerificationOutcome keyVerificationOutcome({
 ///
 /// Read [outcome] rather than the SDK's `isDone`, which is also true for a
 /// cancelled or failed ceremony.
+///
+/// The UI never sees the runner: it reads [toState] snapshots and acts by
+/// [id] through the sync service (ADR 0142).
 class KeyVerificationRunner {
   KeyVerificationRunner(
     this.keyVerification, {
     required this.controller,
     required this.name,
+    required this.direction,
     required this._domainLogger,
     this.onCompleted,
-  }) {
+  }) : id = verificationIdOf(keyVerification) {
     lastStep = keyVerification.lastStep ?? '';
     _lastIsDone = keyVerification.isDone;
     _previousOnUpdate = keyVerification.onUpdate;
@@ -80,6 +67,10 @@ class KeyVerificationRunner {
     );
   }
 
+  /// The ceremony's identity for the UI; see [verificationIdOf].
+  final String id;
+
+  final SyncVerificationDirection direction;
   String name;
   String lastStep = '';
   List<KeyVerificationEmoji>? emojis;
@@ -138,6 +129,19 @@ class KeyVerificationRunner {
     keyVerification: keyVerification,
   );
 
+  /// This ceremony as the UI sees it right now.
+  SyncVerificationState toState() => SyncVerificationState(
+    id: id,
+    direction: direction,
+    peerUserId: keyVerification.userId,
+    peerDeviceId: keyVerification.deviceId,
+    lastStep: lastStep,
+    emojis: emojis
+        ?.map((e) => SyncVerificationEmoji(emoji: e.emoji, name: e.name))
+        .toList(),
+    outcome: outcome,
+  );
+
   void _notifyCompletionIfNeeded() {
     // Gated on success, not on the SDK's `isDone`: that is true for a cancel
     // too, so every cancelled ceremony used to trigger the completion work
@@ -183,6 +187,13 @@ class KeyVerificationRunner {
   }
 }
 
+/// The identity a ceremony is known by across the UI boundary: the SDK's
+/// transaction id, which both devices share, or — for a request the SDK has
+/// not numbered yet — one tied to the object's lifetime.
+String verificationIdOf(KeyVerification keyVerification) =>
+    keyVerification.transactionId ??
+    'local-${identityHashCode(keyVerification)}';
+
 /// Subscribes to inbound key-verification requests and wraps each one in a
 /// [KeyVerificationRunner] stored on `service.incomingKeyVerificationRunner`,
 /// so the UI can present the incoming-verification flow. Returns the
@@ -203,10 +214,12 @@ listenForKeyVerificationRequestsWithSubscription({
             keyVerification,
             controller: service.incomingKeyVerificationRunnerController,
             name: 'Incoming KeyVerificationRunner',
+            direction: SyncVerificationDirection.incoming,
             domainLogger: loggingService,
             onCompleted: (source) =>
                 service.onVerificationCompleted(source: source),
           );
+          service.rememberIncomingRequest(keyVerification);
 
           loggingService.log(
             LogDomain.sync,
@@ -240,6 +253,7 @@ Future<void> verifyMatrixDevice({
     keyVerification,
     controller: service.keyVerificationController,
     name: 'Outgoing KeyVerificationRunner',
+    direction: SyncVerificationDirection.outgoing,
     domainLogger: loggingService,
     onCompleted: (source) => service.onVerificationCompleted(source: source),
   );

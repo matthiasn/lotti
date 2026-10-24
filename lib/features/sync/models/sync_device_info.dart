@@ -1,5 +1,3 @@
-import 'package:matrix/matrix.dart';
-
 /// A device is considered stale when the homeserver last saw it longer than
 /// this ago — a strong hint that the session belongs to an uninstalled or
 /// abandoned install and should be removed rather than verified.
@@ -11,8 +9,10 @@ const Duration syncDeviceStaleThreshold = Duration(days: 30);
 ///
 /// The homeserver list is the authoritative inventory: sessions that never
 /// published encryption keys (e.g. an install that died mid-provisioning)
-/// appear here with [keys] == null. Such sessions cannot be verified — there
+/// appear here with [hasKeys] false. Such sessions cannot be verified — there
 /// is nothing to verify — and do not block sync; they can only be removed.
+///
+/// Plain values only (ADR 0142): the roster crosses an isolate port.
 class SyncDeviceInfo {
   const SyncDeviceInfo({
     required this.deviceId,
@@ -20,7 +20,7 @@ class SyncDeviceInfo {
     required this.verified,
     this.displayName,
     this.lastSeen,
-    this.keys,
+    this.hasKeys = false,
     this.onServer = true,
     this.ownAccount = true,
     this.userId,
@@ -39,9 +39,9 @@ class SyncDeviceInfo {
   /// true for [isCurrentDevice]; false for sessions without published keys.
   final bool verified;
 
-  /// The published encryption keys, when the device has any. Required for
-  /// starting a verification; null for keyless sessions.
-  final DeviceKeys? keys;
+  /// Whether the device has published encryption keys. Required for
+  /// starting a verification; false for keyless sessions.
+  final bool hasKeys;
 
   /// Whether the homeserver still lists this session. A cache-only entry
   /// (unverified keys the server no longer knows) can never answer a
@@ -101,7 +101,7 @@ class SyncDeviceInfo {
   /// Whether this device is excluded from key sharing: it has published
   /// keys but is unverified, so it receives no megolm keys and cannot read
   /// new entries until it is verified — or removed (ADR 0045).
-  bool get excludedFromSync => !isCurrentDevice && !verified && keys != null;
+  bool get excludedFromSync => !isCurrentDevice && !verified && hasKeys;
 
   bool isStaleAt(DateTime now) {
     final seen = lastSeen;

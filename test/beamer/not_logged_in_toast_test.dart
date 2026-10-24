@@ -10,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -22,8 +23,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/service_overrides.dart';
@@ -167,14 +166,14 @@ MockMatrixService _stubMatrixService() {
   // Stub matrix streams used by IncomingVerificationWrapper to avoid
   // null errors.
   when(
-    mockMatrix.getIncomingKeyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    () => mockMatrix.incomingVerificationRequests,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.incomingKeyVerificationRunnerStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.incomingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.keyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.outgoingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   return mockMatrix;
 }
 
@@ -223,7 +222,7 @@ Future<void> _pumpToastApp(
   required BeamerDelegate routerDelegate,
   required MockMatrixService matrix,
   required MockOutboxService outbox,
-  required LoginState loginState,
+  required SyncLoginState loginState,
 }) async {
   await tester.pumpWidget(
     _buildTestRouterApp(
@@ -231,7 +230,7 @@ Future<void> _pumpToastApp(
       overrides: [
         matrixServiceProvider.overrideWithValue(matrix),
         loginStateStreamProvider.overrideWith(
-          (ref) => Stream<LoginState>.value(loginState),
+          (ref) => Stream<SyncLoginState>.value(loginState),
         ),
         outboxServiceProvider.overrideWithValue(outbox),
         // Prevent What's New from creating pending timers
@@ -319,7 +318,7 @@ void main() {
         routerDelegate: await _createAppDelegate(),
         matrix: mockMatrix,
         outbox: mockOutboxService,
-        loginState: LoginState.loggedOut,
+        loginState: SyncLoginState.loggedOut,
       );
 
       // On startup while logged out: no toast yet (only on outbox attempt)
@@ -339,7 +338,7 @@ void main() {
         routerDelegate: await _createAppDelegate(),
         matrix: mockMatrix,
         outbox: mockOutboxService,
-        loginState: LoginState.loggedIn,
+        loginState: SyncLoginState.loggedIn,
       );
       // No additional SnackBar expected now.
       // We tolerate one lingering SnackBar due to UI rebuilds.
@@ -372,7 +371,7 @@ void main() {
       routerDelegate: await _createAppDelegate(),
       matrix: mockMatrix,
       outbox: mockOutboxService,
-      loginState: LoginState.loggedOut,
+      loginState: SyncLoginState.loggedOut,
     );
     expect(find.byType(SnackBar), findsNothing);
 
@@ -415,7 +414,7 @@ void main() {
       routerDelegate: routerDelegate,
       matrix: mockMatrix,
       outbox: mockOutboxService,
-      loginState: LoginState.loggedOut,
+      loginState: SyncLoginState.loggedOut,
     );
     expect(find.byType(SnackBar), findsNothing);
     controller.add(null);
@@ -428,7 +427,7 @@ void main() {
       routerDelegate: routerDelegate,
       matrix: mockMatrix,
       outbox: mockOutboxService,
-      loginState: LoginState.loggedIn,
+      loginState: SyncLoginState.loggedIn,
     );
 
     // Third build: back to logged out, a new event should show toast again
@@ -437,7 +436,7 @@ void main() {
       routerDelegate: routerDelegate,
       matrix: mockMatrix,
       outbox: mockOutboxService,
-      loginState: LoginState.loggedOut,
+      loginState: SyncLoginState.loggedOut,
     );
     controller.add(null);
     await _pumpGateEvent(tester);

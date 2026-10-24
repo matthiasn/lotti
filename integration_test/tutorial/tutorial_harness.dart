@@ -51,6 +51,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -78,8 +79,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../test/helpers/fallbacks.dart';
@@ -752,7 +751,7 @@ class TutorialAppHarness {
     journalDbProvider.overrideWithValue(journalDb),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     loginStateStreamProvider.overrideWith(
-      (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+      (ref) => Stream<SyncLoginState>.value(SyncLoginState.loggedIn),
     ),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     matrixServiceProvider.overrideWithValue(
@@ -822,14 +821,14 @@ class TutorialAppHarness {
     final matrixService = MockMatrixService();
     final client = MockMatrixClient();
     when(
-      matrixService.getIncomingKeyVerificationStream,
-    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+      () => matrixService.incomingVerificationRequests,
+    ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
     when(
-      () => matrixService.incomingKeyVerificationRunnerStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+      () => matrixService.incomingVerifications,
+    ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
     when(
-      () => matrixService.keyVerificationStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+      () => matrixService.outgoingVerifications,
+    ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
     when(() => matrixService.client).thenReturn(client);
     return matrixService;
   }

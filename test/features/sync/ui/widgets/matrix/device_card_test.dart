@@ -11,13 +11,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -35,7 +35,6 @@ void main() {
   final now = DateTime(2026, 7, 26, 12);
 
   late MockMatrixService mockMatrixService;
-  late MockDeviceKeys mockDeviceKeys;
 
   SyncDeviceInfo buildDevice({
     String deviceId = 'DEVICE1',
@@ -52,7 +51,8 @@ void main() {
     lastSeen: lastSeen,
     isCurrentDevice: isCurrentDevice,
     verified: verified,
-    keys: withKeys ? mockDeviceKeys : null,
+    hasKeys: withKeys,
+    userId: '@user:server',
     onServer: onServer,
     ownAccount: ownAccount,
   );
@@ -61,11 +61,6 @@ void main() {
     // The delete path logs the raw exception instead of showing it.
     ensureDomainLoggerRegistered();
     mockMatrixService = MockMatrixService();
-    mockDeviceKeys = MockDeviceKeys();
-
-    when(() => mockDeviceKeys.deviceDisplayName).thenReturn('Pixel 7');
-    when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
-    when(() => mockDeviceKeys.userId).thenReturn('@user:server');
   });
 
   tearDown(tearDownTestGetIt);
@@ -244,9 +239,7 @@ void main() {
     testWidgets('a rejected password opens the recovery sheet rather than '
         'ending the flow', (tester) async {
       when(() => mockMatrixService.deleteDeviceById('DEVICE1')).thenThrow(
-        MatrixException.fromJson(
-          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
-        ),
+        const SyncReauthRequiredException('Invalid password'),
       );
 
       await pumpCard(tester, buildDevice());
@@ -260,12 +253,10 @@ void main() {
       );
     });
 
-    testWidgets('a non-forbidden MatrixException falls back to the generic '
+    testWidgets('any other failure falls back to the generic '
         'error toast', (tester) async {
       when(() => mockMatrixService.deleteDeviceById('DEVICE1')).thenThrow(
-        MatrixException.fromJson(
-          const {'errcode': 'M_LIMIT_EXCEEDED', 'error': 'Too many requests'},
-        ),
+        Exception('M_LIMIT_EXCEEDED: Too many requests'),
       );
 
       await pumpCard(tester, buildDevice());
@@ -302,9 +293,7 @@ void main() {
       VoidCallback? refreshListCallback,
     }) async {
       when(() => mockMatrixService.deleteDeviceById('DEVICE1')).thenThrow(
-        MatrixException.fromJson(
-          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
-        ),
+        const SyncReauthRequiredException('Invalid password'),
       );
 
       await pumpCard(
@@ -362,9 +351,7 @@ void main() {
           reauthPassword: any(named: 'reauthPassword'),
         ),
       ).thenThrow(
-        MatrixException.fromJson(
-          const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
-        ),
+        const SyncReauthRequiredException('Invalid password'),
       );
 
       var refreshed = false;
@@ -429,9 +416,7 @@ void main() {
           reauthPassword: any(named: 'reauthPassword'),
         ),
       ).thenThrow(
-        MatrixException.fromJson(
-          const {'errcode': 'M_LIMIT_EXCEEDED', 'error': 'Too many requests'},
-        ),
+        Exception('M_LIMIT_EXCEEDED: Too many requests'),
       );
 
       await reachReauthSheet(tester);
@@ -827,10 +812,13 @@ void main() {
     testWidgets('tapping Verify opens verification modal, releases lock and '
         'calls refreshListCallback after close', (tester) async {
       when(
-        () => mockMatrixService.verifyDevice(mockDeviceKeys),
+        () => mockMatrixService.verifyDevice(
+          userId: '@user:server',
+          deviceId: 'DEVICE1',
+        ),
       ).thenAnswer((_) async {});
       when(
-        () => mockMatrixService.keyVerificationStream,
+        () => mockMatrixService.outgoingVerifications,
       ).thenAnswer((_) => const Stream.empty());
       when(
         () => mockMatrixService.getUnverifiedDevices(),
@@ -906,13 +894,16 @@ void main() {
 
       Future<void> tapVerify(WidgetTester tester) async {
         when(
-          () => mockMatrixService.keyVerificationStream,
+          () => mockMatrixService.outgoingVerifications,
         ).thenAnswer((_) => const Stream.empty());
         when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
         // The ceremony retries a failing start with a growing backoff; letting
         // it succeed keeps those timers out of the test.
         when(
-          () => mockMatrixService.verifyDevice(mockDeviceKeys),
+          () => mockMatrixService.verifyDevice(
+            userId: '@user:server',
+            deviceId: 'DEVICE1',
+          ),
         ).thenAnswer((_) async {});
 
         await pumpCard(tester, staleDevice());
@@ -941,7 +932,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(VerificationModal), findsNothing);
-        verifyNever(() => mockMatrixService.verifyDevice(mockDeviceKeys));
+        verifyNever(
+          () => mockMatrixService.verifyDevice(
+            userId: '@user:server',
+            deviceId: 'DEVICE1',
+          ),
+        );
       });
 
       testWidgets('pressing on regardless opens the ceremony', (tester) async {
@@ -964,7 +960,7 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockMatrixService.keyVerificationStream,
+        () => mockMatrixService.outgoingVerifications,
       ).thenAnswer((_) => const Stream.empty());
       when(
         () => mockMatrixService.getUnverifiedDevices(),
@@ -987,7 +983,12 @@ void main() {
       // Lock was pre-acquired so tryAcquire() returns false → no modal shown
       // and the verification service call is short-circuited.
       expect(find.byType(VerificationModal), findsNothing);
-      verifyNever(() => mockMatrixService.verifyDevice(mockDeviceKeys));
+      verifyNever(
+        () => mockMatrixService.verifyDevice(
+          userId: '@user:server',
+          deviceId: 'DEVICE1',
+        ),
+      );
     });
   });
 

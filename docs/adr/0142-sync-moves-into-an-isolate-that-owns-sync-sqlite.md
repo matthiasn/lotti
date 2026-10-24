@@ -177,9 +177,15 @@ Each is one mergeable change; the flag stays off until the last.
    reports the tables it wrote; with the flag on, the UI isolate's inbound
    worker leases and acknowledges through it. Which parts have landed is
    tracked in the concept, not here.
-4. **Receive in the isolate.** Matrix client, sync loop, decryption, admission
-   and bridge walks move; the lease/acknowledge protocol replaces the UI
-   isolate's direct queue writes. A `startSyncServices()` seam keeps the
+4. **Receive in the isolate.** In two halves. First the UI stops seeing the
+   SDK: everything above the sync feature — the settings pages, the device
+   and verification sheets, the outbox, onboarding and provisioning — talks
+   to sync through `SyncService`, in plain types. Device rows, login states
+   and verification snapshots cross that seam; the UI acts on a ceremony by
+   its id, never on an SDK object, because every one of those values is
+   about to cross a port. Then the Matrix client, sync loop, decryption,
+   admission and bridge walks move; the lease/acknowledge protocol replaces
+   the UI isolate's direct queue writes. A `startSyncServices()` seam keeps the
    legacy producers from starting when the flag is on. The docker two-device
    suite is rebuilt against the isolate, and the SDK database's "API misuse"
    error the actor only worked around is fixed at its cause.

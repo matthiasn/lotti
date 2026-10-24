@@ -2,6 +2,7 @@
 
 import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/services/outbox_service.dart';
 
 import 'outbox_service_test_harness.dart';
@@ -430,7 +431,7 @@ void main() {
       when(
         () => repository.fetchPending(limit: any(named: 'limit')),
       ).thenAnswer((_) async => const <OutboxItem>[]);
-      final matrixService = stubMatrixService(loginState: LoginState.loggedIn);
+      final matrixService = stubMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       when(
         () => processor.processQueue(),
@@ -515,7 +516,7 @@ void main() {
       late Completer<void> gateReleased;
       when(gate.waitUntilIdle).thenAnswer((_) => gateReleased.future);
 
-      final matrixService = stubMatrixService(loginState: LoginState.loggedIn);
+      final matrixService = stubMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
 
       // Track db count stream
@@ -613,14 +614,11 @@ void main() {
         when(gate.waitUntilIdle).thenAnswer((_) => gateReleased.future);
 
         final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        final loginController = StreamController<LoginState>.broadcast();
+        final loginController = StreamController<SyncLoginState>.broadcast();
         addTearDown(loginController.close);
-        when(() => matrixService.client).thenReturn(client);
-        final cached = MockCachedLoginController();
-        when(() => cached.stream).thenAnswer((_) => loginController.stream);
-        when(() => cached.value).thenReturn(LoginState.loggedOut);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        when(
+          () => matrixService.loginStateChanges,
+        ).thenAnswer((_) => loginController.stream);
         when(() => matrixService.isLoggedIn()).thenReturn(false);
 
         final connectivityController =
@@ -656,7 +654,7 @@ void main() {
 
           // T=10ms: Login completes → enqueue
           when(() => matrixService.isLoggedIn()).thenReturn(true);
-          loginController.add(LoginState.loggedIn);
+          loginController.add(SyncLoginState.loggedIn);
           async.flushMicrotasks();
 
           // T=10s: Watchdog fires while queue active → should not enqueue
@@ -717,9 +715,7 @@ void main() {
         // Gate immediate
         final gate = createGate();
 
-        final matrixService = stubMatrixService(
-          loginState: LoginState.loggedIn,
-        );
+        final matrixService = stubMatrixService();
         when(() => matrixService.isLoggedIn()).thenReturn(true);
 
         // DB count stream for nudge

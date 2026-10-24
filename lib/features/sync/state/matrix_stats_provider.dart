@@ -13,7 +13,7 @@ final StreamProvider<MatrixStats> matrixStatsStreamProvider =
       name: 'matrixStatsStreamProvider',
     );
 Stream<MatrixStats> matrixStatsStream(Ref ref) {
-  return ref.watch(matrixServiceProvider).messageCountsController.stream;
+  return ref.watch(matrixServiceProvider).stats;
 }
 
 /// Exposes the latest [MatrixStats], seeded from the service's current counts
@@ -26,7 +26,7 @@ matrixStatsControllerProvider =
     );
 
 class MatrixStatsController extends AsyncNotifier<MatrixStats> {
-  MatrixService get _matrixService => ref.read(matrixServiceProvider);
+  SyncService get _matrixService => ref.read(matrixServiceProvider);
 
   @override
   Future<MatrixStats> build() async {

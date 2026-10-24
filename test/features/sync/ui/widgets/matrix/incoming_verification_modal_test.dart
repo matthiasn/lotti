@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
@@ -9,54 +10,98 @@ import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provide
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart' show EventTypes;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../sync_verification_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockMatrixService mockMatrixService;
-  late MockKeyVerification mockKeyVerification;
-  late StreamController<KeyVerificationRunner> controller;
+  const requestId = 'incoming-1';
 
-  setUpAll(() {
-    registerFallbackValue(MockKeyVerificationRunner());
-  });
+  late MockMatrixService mockMatrixService;
+  late StreamController<SyncVerificationState> controller;
+
+  /// The peer's request as the wrapper hands it to the sheet.
+  SyncVerificationState requestFrom(
+    String deviceId, {
+    String id = requestId,
+    KeyVerificationOutcome outcome = KeyVerificationOutcome.pending,
+  }) => verificationState(
+    id: id,
+    direction: SyncVerificationDirection.incoming,
+    peerDeviceId: deviceId,
+    lastStep: EventTypes.KeyVerificationRequest,
+    outcome: outcome,
+  );
+
+  final request = requestFrom('DEVICE1');
+
+  /// The same ceremony, as the incoming stream reports it at [lastStep].
+  SyncVerificationState incomingAt(
+    String lastStep, {
+    List<SyncVerificationEmoji>? emojis,
+    KeyVerificationOutcome outcome = KeyVerificationOutcome.pending,
+  }) => verificationState(
+    id: requestId,
+    direction: SyncVerificationDirection.incoming,
+    lastStep: lastStep,
+    emojis: emojis,
+    outcome: outcome,
+  );
+
+  final incomingEmoji = emojiStep(
+    id: requestId,
+    direction: SyncVerificationDirection.incoming,
+  );
+  final incomingDone = doneStep(
+    id: requestId,
+    direction: SyncVerificationDirection.incoming,
+  );
+  final incomingCancelled = cancelledStep(
+    id: requestId,
+    direction: SyncVerificationDirection.incoming,
+  );
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockKeyVerification = MockKeyVerification();
-    controller = StreamController<KeyVerificationRunner>.broadcast();
+    controller = StreamController<SyncVerificationState>.broadcast();
 
     when(
-      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+      () => mockMatrixService.incomingVerifications,
     ).thenAnswer((_) => controller.stream);
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
-    when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
-    when(() => mockKeyVerification.isDone).thenReturn(false);
+    when(
+      () => mockMatrixService.acceptVerification(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.acceptEmojiVerification(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.cancelVerification(any()),
+    ).thenAnswer((_) async {});
   });
 
-  /// Pumps the modal inside the standard scaffold wrapper, emits [runner]
-  /// on the verification stream, and settles one frame — the shared
-  /// arrangement of nearly every test in this file.
-  Future<void> pumpModalWithRunner(
+  /// Pumps the modal inside the standard scaffold wrapper, emits [state] on
+  /// the incoming stream, and settles one frame — the shared arrangement of
+  /// nearly every test in this file.
+  Future<void> pumpModalAt(
     WidgetTester tester,
-    KeyVerificationRunner runner,
+    SyncVerificationState state,
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        IncomingVerificationModal(mockKeyVerification),
+        IncomingVerificationModal(request),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
         ],
       ),
     );
 
-    controller.add(runner);
+    controller.add(state);
     await tester.pump();
   }
 
@@ -64,32 +109,16 @@ void main() {
     await controller.close();
   });
 
-  testWidgets('shows verify action before emoji step', (tester) async {
-    final runner = MockKeyVerificationRunner();
-
-    when(() => runner.lastStep).thenReturn('');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(runner.acceptVerification).thenAnswer((_) async {});
-
-    await pumpModalWithRunner(tester, runner);
+  testWidgets('answers the request and shows verify action before the emoji '
+      'step', (tester) async {
+    await pumpModalAt(tester, incomingAt(''));
 
     expect(find.text('Verify'), findsOneWidget);
-    verify(runner.acceptVerification).called(1);
+    verify(() => mockMatrixService.acceptVerification(requestId)).called(1);
   });
 
   testWidgets('shows cancel label in emoji verification step', (tester) async {
-    final runner = MockKeyVerificationRunner();
-    final emojis = List.generate(
-      8,
-      (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
-    );
-
-    when(() => runner.lastStep).thenReturn('m.key.verification.key');
-    when(() => runner.emojis).thenReturn(emojis);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-
-    await pumpModalWithRunner(tester, runner);
+    await pumpModalAt(tester, incomingEmoji);
 
     expect(find.text('They differ — cancel'), findsOneWidget);
     expect(find.text('They match'), findsOneWidget);
@@ -97,14 +126,7 @@ void main() {
   });
 
   testWidgets('shows success state when verification is done', (tester) async {
-    final runner = MockKeyVerificationRunner();
-
-    when(() => runner.lastStep).thenReturn('m.key.verification.done');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(() => mockKeyVerification.isDone).thenReturn(true);
-
-    await pumpModalWithRunner(tester, runner);
+    await pumpModalAt(tester, incomingDone);
 
     expect(
       find.byKey(const Key('verification_success_stage')),
@@ -122,27 +144,17 @@ void main() {
   });
 
   testWidgets(
-    'tapping Accept transitions to awaiting other device state',
+    'tapping Accept confirms the emoji by id and awaits the other device',
     (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final emojis = List.generate(
-        8,
-        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
-      );
-
-      when(() => runner.lastStep).thenReturn('m.key.verification.key');
-      when(() => runner.emojis).thenReturn(emojis);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.cancelVerification).thenAnswer((_) async {});
-      when(runner.acceptEmojiVerification).thenAnswer((_) async {});
-
-      await pumpModalWithRunner(tester, runner);
+      await pumpModalAt(tester, incomingEmoji);
 
       await tester.ensureVisible(find.text('They match'));
       await tester.tap(find.text('They match'));
       await tester.pump();
 
-      verify(runner.acceptEmojiVerification).called(1);
+      verify(
+        () => mockMatrixService.acceptEmojiVerification(requestId),
+      ).called(1);
       final context = tester.element(find.byType(IncomingVerificationModal));
       expect(
         find.text(context.messages.settingsMatrixContinueVerificationLabel),
@@ -151,162 +163,135 @@ void main() {
     },
   );
 
-  testWidgets(
-    'cancel button calls runner cancellation',
-    (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final emojis = List.generate(
-        8,
-        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
-      );
+  testWidgets('cancel button cancels the ceremony by id', (tester) async {
+    await pumpModalAt(tester, incomingEmoji);
 
-      when(() => runner.lastStep).thenReturn('m.key.verification.key');
-      when(() => runner.emojis).thenReturn(emojis);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      // As the SDK does: a cancel marks the ceremony cancelled before the
-      // sheet pops, so disposing the sheet has nothing left to cancel.
-      when(runner.cancelVerification).thenAnswer((_) async {
-        when(() => mockKeyVerification.canceled).thenReturn(true);
-      });
+    expect(
+      find.byKey(const Key('matrix_cancel_verification')),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(
+      find.byKey(const Key('matrix_cancel_verification')),
+    );
+    await tester.tap(find.byKey(const Key('matrix_cancel_verification')));
+    await tester.pump();
 
-      await pumpModalWithRunner(tester, runner);
-
-      expect(
-        find.byKey(const Key('matrix_cancel_verification')),
-        findsOneWidget,
-      );
-      await tester.ensureVisible(
-        find.byKey(const Key('matrix_cancel_verification')),
-      );
-      await tester.tap(find.byKey(const Key('matrix_cancel_verification')));
-      await tester.pump();
-
-      verify(runner.cancelVerification).called(1);
-    },
-  );
+    verify(() => mockMatrixService.cancelVerification(requestId)).called(1);
+  });
 
   testWidgets('displays device display name from unverified list', (
     tester,
   ) async {
-    final runner = MockKeyVerificationRunner();
-    final mockDeviceKeys = MockDeviceKeys();
+    when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([
+      unverifiedPeerDevice(displayName: 'My Pixel'),
+    ]);
 
-    when(() => mockDeviceKeys.deviceId).thenReturn('DEVICE1');
-    when(() => mockDeviceKeys.deviceDisplayName).thenReturn('My Pixel');
-    when(
-      () => mockDeviceKeys.userId,
-    ).thenReturn('@alice:example.com');
-    when(
-      () => mockMatrixService.getUnverifiedDevices(),
-    ).thenReturn([mockDeviceKeys]);
-    when(() => runner.lastStep).thenReturn('');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(runner.acceptVerification).thenAnswer((_) async {});
-
-    await pumpModalWithRunner(tester, runner);
+    await pumpModalAt(tester, incomingAt(''));
 
     expect(find.text('My Pixel'), findsOneWidget);
     // The header names the account and session too, in one mono meta line.
     expect(find.textContaining('@alice:example.com'), findsOneWidget);
   });
 
+  testWidgets('falls back to the device id when the roster does not know '
+      'the device', (tester) async {
+    await pumpModalAt(tester, incomingAt(''));
+
+    // Named by its id in the title and again in the meta line.
+    expect(find.text('DEVICE1'), findsNWidgets(2));
+    expect(find.text('device name not found'), findsNothing);
+  });
+
+  testWidgets('auto-accept failure keeps verify button visible', (
+    tester,
+  ) async {
+    when(
+      () => mockMatrixService.acceptVerification(any()),
+    ).thenThrow(Exception('network error'));
+
+    await pumpModalAt(tester, incomingAt(''));
+
+    // Verify button should still be visible as fallback
+    expect(find.text('Verify'), findsOneWidget);
+  });
+
+  testWidgets('the verify button answers the request by id', (tester) async {
+    // The auto-accept failed; the button is the manual fallback.
+    var attempts = 0;
+    when(() => mockMatrixService.acceptVerification(any())).thenAnswer((
+      _,
+    ) async {
+      attempts++;
+      if (attempts == 1) throw Exception('network error');
+    });
+
+    await pumpModalAt(tester, incomingAt(''));
+    await tester.tap(find.text('Verify'));
+    await tester.pump();
+
+    verify(() => mockMatrixService.acceptVerification(requestId)).called(2);
+  });
+
+  testWidgets('Accept failure resets awaiting state and surfaces the error', (
+    tester,
+  ) async {
+    // acceptEmojiVerification fails so the catch block runs: it resets
+    // _awaitingOtherDevice to false and then rethrows.
+    when(
+      () => mockMatrixService.acceptEmojiVerification(any()),
+    ).thenAnswer((_) async => throw Exception('boom'));
+
+    await pumpModalAt(tester, incomingEmoji);
+
+    final acceptFinder = find.text('They match');
+    expect(acceptFinder, findsOneWidget);
+    await tester.ensureVisible(acceptFinder);
+
+    // The rethrow propagates out of the discarded onPressed future as an
+    // unhandled async error; capture it via a guarded zone so it does not
+    // fail the test. Only the tap + pumps that trigger the async failure run
+    // inside the zone, so other assertions still fail the test normally.
+    final asyncErrors = <Object>[];
+    await runZonedGuarded(
+      () async {
+        await tester.tap(acceptFinder);
+        // Flush the microtasks so the failed acceptEmojiVerification future
+        // settles and the catch block runs setState.
+        await tester.pump();
+        await tester.pump();
+      },
+      (error, stack) => asyncErrors.add(error),
+    );
+
+    // The rethrow surfaced as an unhandled async error.
+    expect(asyncErrors, isNotEmpty);
+
+    // After the failure the catch block reset _awaitingOtherDevice to false,
+    // so the button is interactive again and shows the "Accept" label rather
+    // than the "continue verification" awaiting label.
+    verify(
+      () => mockMatrixService.acceptEmojiVerification(requestId),
+    ).called(1);
+    expect(find.text('They match'), findsOneWidget);
+    final context = tester.element(find.byType(IncomingVerificationModal));
+    expect(
+      find.text(context.messages.settingsMatrixContinueVerificationLabel),
+      findsNothing,
+    );
+  });
+
   testWidgets(
-    'auto-accept failure keeps verify button visible',
+    'tapping Accept while not awaiting calls acceptEmojiVerification and '
+    'sets awaiting state',
     (tester) async {
-      final runner = MockKeyVerificationRunner();
-
-      when(() => runner.lastStep).thenReturn('');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.acceptVerification).thenThrow(Exception('network error'));
-
-      await pumpModalWithRunner(tester, runner);
-
-      // Verify button should still be visible as fallback
-      expect(find.text('Verify'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'Accept failure resets awaiting state and surfaces the error',
-    (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final emojis = List.generate(
-        8,
-        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
-      );
-
-      when(() => runner.lastStep).thenReturn('m.key.verification.key');
-      when(() => runner.emojis).thenReturn(emojis);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.cancelVerification).thenAnswer((_) async {});
-      // acceptEmojiVerification fails so the catch block (lines 56-57) runs:
-      // it resets _awaitingOtherDevice to false and then rethrows.
-      when(runner.acceptEmojiVerification).thenAnswer(
-        (_) async => throw Exception('boom'),
-      );
-
-      await pumpModalWithRunner(tester, runner);
-
-      final acceptFinder = find.text('They match');
-      expect(acceptFinder, findsOneWidget);
-      await tester.ensureVisible(acceptFinder);
-
-      // The rethrow propagates out of the discarded onPressed future as an
-      // unhandled async error; capture it via a guarded zone so it does not
-      // fail the test. Only the tap + pumps that trigger the async failure run
-      // inside the zone, so other assertions still fail the test normally.
-      final asyncErrors = <Object>[];
-      await runZonedGuarded(
-        () async {
-          await tester.tap(acceptFinder);
-          // Flush the microtasks so the failed acceptEmojiVerification future
-          // settles and the catch block runs setState.
-          await tester.pump();
-          await tester.pump();
-        },
-        (error, stack) => asyncErrors.add(error),
-      );
-
-      // The rethrow surfaced as an unhandled async error.
-      expect(asyncErrors, isNotEmpty);
-
-      // After the failure the catch block reset _awaitingOtherDevice to false,
-      // so the button is interactive again and shows the "Accept" label rather
-      // than the "continue verification" awaiting label.
-      verify(runner.acceptEmojiVerification).called(1);
-      expect(find.text('They match'), findsOneWidget);
-      final context = tester.element(find.byType(IncomingVerificationModal));
-      expect(
-        find.text(context.messages.settingsMatrixContinueVerificationLabel),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets(
-    'tapping Accept while not awaiting calls acceptEmojiVerification and sets awaiting state',
-    (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final emojis = List.generate(
-        8,
-        (index) => FakeKeyVerificationEmoji('😀', 'emoji$index'),
-      );
-
       // Use a completer that never completes so the awaiting state stays true.
       final completer = Completer<void>();
       addTearDown(completer.future.ignore);
+      when(
+        () => mockMatrixService.acceptEmojiVerification(any()),
+      ).thenAnswer((_) => completer.future);
 
-      when(() => runner.lastStep).thenReturn('m.key.verification.key');
-      when(() => runner.emojis).thenReturn(emojis);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(runner.cancelVerification).thenAnswer((_) async {});
-      when(runner.acceptEmojiVerification).thenAnswer(
-        (_) => completer.future,
-      );
-
-      await pumpModalWithRunner(tester, runner);
+      await pumpModalAt(tester, incomingEmoji);
 
       // Tap Accept — sets _awaitingOtherDevice = true.
       final acceptFinder = find.text('They match');
@@ -316,78 +301,84 @@ void main() {
       await tester.pump();
 
       // While in the awaiting state the button label changes, proving
-      // _awaitingOtherDevice was set to true (line 52).
+      // _awaitingOtherDevice was set to true.
       final context = tester.element(find.byType(IncomingVerificationModal));
       expect(
         find.text(context.messages.settingsMatrixContinueVerificationLabel),
         findsWidgets,
       );
-      // acceptEmojiVerification was called (line 54).
-      verify(runner.acceptEmojiVerification).called(1);
+      verify(
+        () => mockMatrixService.acceptEmojiVerification(requestId),
+      ).called(1);
     },
   );
 
+  testWidgets('success confirm button closes the modal', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => IncomingVerificationModal(request),
+              ),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    controller.add(incomingDone);
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.byKey(const Key('verification_success_stage')),
+      findsOneWidget,
+    );
+
+    final confirmFinder = find.text('Got it');
+    expect(confirmFinder, findsOneWidget);
+    await tester.ensureVisible(confirmFinder);
+    await tester.tap(confirmFinder);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IncomingVerificationModal), findsNothing);
+  });
+
   testWidgets(
-    'success confirm button calls stopTimer and closes the modal',
+    'refreshUnverifiedDevices loops through delay when devices initially '
+    'non-empty',
     (tester) async {
-      final runner = MockKeyVerificationRunner();
-
-      when(() => runner.lastStep).thenReturn('m.key.verification.done');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(() => mockKeyVerification.isDone).thenReturn(true);
-      when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
-      when(runner.stopTimer).thenReturn(null);
-
-      await pumpModalWithRunner(tester, runner);
-
-      expect(
-        find.byKey(const Key('verification_success_stage')),
-        findsOneWidget,
-      );
-
-      final confirmFinder = find.text('Got it');
-      expect(confirmFinder, findsOneWidget);
-      await tester.ensureVisible(confirmFinder);
-      await tester.tap(confirmFinder);
-      await tester.pump();
-
-      verify(runner.stopTimer).called(1);
-    },
-  );
-
-  testWidgets(
-    'refreshUnverifiedDevices loops through delay when devices initially non-empty',
-    (tester) async {
-      final runner = MockKeyVerificationRunner();
-      final mockDeviceKeys = MockDeviceKeys();
-
-      when(() => mockDeviceKeys.deviceId).thenReturn('OTHER_DEVICE');
-      when(() => mockDeviceKeys.deviceDisplayName).thenReturn('Other Device');
-
       // build() calls getUnverifiedDevices() once per build before the loop
       // ever runs, so we keep returning a non-empty list for the first few
-      // calls. That forces the loop's `isEmpty` check (line 73) to fail and
-      // drive execution into the `await Future.delayed` + mounted re-check
-      // (lines 76-77). After enough calls we return empty so the loop breaks.
+      // calls. That forces the loop's `isEmpty` check to fail and drive
+      // execution into the delay + mounted re-check. After enough calls we
+      // return empty so the loop breaks.
       var callCount = 0;
       when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
         callCount++;
-        if (callCount <= 3) return [mockDeviceKeys];
+        if (callCount <= 3) {
+          return [
+            unverifiedPeerDevice(
+              deviceId: 'OTHER_DEVICE',
+              displayName: 'Other Device',
+            ),
+          ];
+        }
         return [];
       });
 
-      when(() => runner.lastStep).thenReturn('m.key.verification.done');
-      when(() => runner.emojis).thenReturn(null);
-      when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      when(() => mockKeyVerification.isDone).thenReturn(true);
-      when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
-      when(runner.stopTimer).thenReturn(null);
-
-      await pumpModalWithRunner(tester, runner);
+      await pumpModalAt(tester, incomingDone);
 
       // Advance time repeatedly so the 400ms delay inside the loop fires more
-      // than once, proving lines 76-77 (the delay + mounted re-check) ran.
+      // than once, proving the delay + mounted re-check ran.
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -399,72 +390,61 @@ void main() {
   );
 
   group('IncomingVerificationWrapper', () {
-    late StreamController<KeyVerification> incomingController;
-    late StreamController<KeyVerificationRunner> ownRunnerController;
+    late StreamController<SyncVerificationState> requests;
+    late StreamController<SyncVerificationState> ownCeremonies;
 
     setUp(() {
-      incomingController = StreamController<KeyVerification>.broadcast();
-      ownRunnerController = StreamController<KeyVerificationRunner>.broadcast();
+      requests = StreamController<SyncVerificationState>.broadcast();
+      ownCeremonies = StreamController<SyncVerificationState>.broadcast();
       when(
-        () => mockMatrixService.getIncomingKeyVerificationStream(),
-      ).thenAnswer((_) => incomingController.stream);
+        () => mockMatrixService.incomingVerificationRequests,
+      ).thenAnswer((_) => requests.stream);
       when(
-        () => mockMatrixService.keyVerificationStream,
-      ).thenAnswer((_) => ownRunnerController.stream);
+        () => mockMatrixService.outgoingVerifications,
+      ).thenAnswer((_) => ownCeremonies.stream);
+      when(() => mockMatrixService.outgoingVerification).thenReturn(null);
+      when(() => mockMatrixService.incomingVerification).thenReturn(null);
     });
 
     tearDown(() async {
-      await incomingController.close();
-      await ownRunnerController.close();
+      await requests.close();
+      await ownCeremonies.close();
+    });
+
+    Future<void> pumpWrapper(
+      WidgetTester tester, {
+      List<Override> overrides = const [],
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const IncomingVerificationWrapper(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            ...overrides,
+          ],
+        ),
+      );
+    }
+
+    testWidgets('renders without error and listens to incoming requests', (
+      tester,
+    ) async {
+      await pumpWrapper(tester);
+
+      // The wrapper renders as SizedBox.shrink when idle.
+      expect(find.byType(IncomingVerificationWrapper), findsOneWidget);
+      // The request stream must have been subscribed once during initState.
+      verify(() => mockMatrixService.incomingVerificationRequests).called(1);
     });
 
     testWidgets(
-      'renders without error and listens to incoming stream',
+      'shows verification modal when a request arrives and lock is free',
       (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-            ],
-          ),
-        );
+        await pumpWrapper(tester);
 
-        // The wrapper renders as SizedBox.shrink when idle.
-        expect(find.byType(IncomingVerificationWrapper), findsOneWidget);
-        // getIncomingKeyVerificationStream must have been called once during
-        // initState to set up the subscription.
-        verify(
-          () => mockMatrixService.getIncomingKeyVerificationStream(),
-        ).called(1);
-      },
-    );
-
-    testWidgets(
-      'shows verification modal when incoming stream emits and lock is free',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-            ],
-          ),
-        );
-
-        // Stub the runner stream so IncomingVerificationModal doesn't crash.
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-
-        when(
-          () => mockKeyVerification.deviceId,
-        ).thenReturn('DEVICE1');
-
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pumpAndSettle();
 
-        // The modal content (IncomingVerificationModal) should now be visible.
         expect(find.byType(IncomingVerificationModal), findsOneWidget);
       },
     );
@@ -472,28 +452,15 @@ void main() {
     testWidgets(
       'closing the modal releases the lock so a later request reopens it',
       (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-            ],
-          ),
-        );
-
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-        when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
+        await pumpWrapper(tester);
 
         // First request opens the modal (lock acquired).
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pumpAndSettle();
         expect(find.byType(IncomingVerificationModal), findsOneWidget);
 
         // Dismiss the modal by popping the navigator. This completes the
-        // showVerificationModalSheet future and runs the finally block
-        // (lines 268-269 invalidate while mounted, 271 lock.release()).
+        // showVerificationModalSheet future and runs the finally block.
         final modalContext = tester.element(
           find.byType(IncomingVerificationModal),
         );
@@ -502,9 +469,9 @@ void main() {
         expect(find.byType(IncomingVerificationModal), findsNothing);
 
         // The lock was released, so a second incoming request must be able to
-        // reopen the modal. If release() (line 271) had not run, tryAcquire()
-        // would return false and no modal would appear.
-        incomingController.add(mockKeyVerification);
+        // reopen the modal. If release() had not run, tryAcquire() would
+        // return false and no modal would appear.
+        requests.add(request);
         await tester.pumpAndSettle();
         expect(find.byType(IncomingVerificationModal), findsOneWidget);
 
@@ -521,26 +488,16 @@ void main() {
       (tester) async {
         // Override the lock provider with one that starts already acquired so
         // tryAcquire() returns false and the modal is never shown.
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-              matrixVerificationModalLockProvider.overrideWith(
-                _PreAcquiredLock.new,
-              ),
-            ],
-          ),
+        await pumpWrapper(
+          tester,
+          overrides: [
+            matrixVerificationModalLockProvider.overrideWith(
+              _PreAcquiredLock.new,
+            ),
+          ],
         );
 
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-        when(
-          () => mockKeyVerification.deviceId,
-        ).thenReturn('DEVICE1');
-
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pump();
 
         // No modal should open because the lock is already held.
@@ -549,25 +506,10 @@ void main() {
     );
 
     group('when its sheet closes', () {
-      late MockKeyVerificationRunner runner;
-
       Future<void> showThenPop(WidgetTester tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-            ],
-          ),
-        );
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunner,
-        ).thenReturn(runner);
+        await pumpWrapper(tester);
 
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pumpAndSettle();
         expect(find.byType(IncomingVerificationModal), findsOneWidget);
 
@@ -577,42 +519,40 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      setUp(() {
-        runner = MockKeyVerificationRunner();
-        when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-      });
-
-      testWidgets('cancels a ceremony the user walked away from', (
+      testWidgets('cancels the ceremony the user walked away from', (
         tester,
       ) async {
         // A backdrop tap used to leave the ceremony live: the peer's sheet
         // kept waiting on a device that was gone, with nothing to free its
         // lock (TLC's `EventuallyOffered` with `CancelOnDismiss = FALSE`).
-        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+        // The service leaves a finished ceremony alone; the sheet asks by id.
+        when(
+          () => mockMatrixService.incomingVerification,
+        ).thenReturn(incomingAt(EventTypes.KeyVerificationRequest));
 
         await showThenPop(tester);
 
-        verify(runner.cancelVerification).called(1);
-      });
-
-      testWidgets('leaves a finished ceremony alone', (tester) async {
-        when(() => runner.lastStep).thenReturn('m.key.verification.done');
-
-        await showThenPop(tester);
-
-        verifyNever(runner.cancelVerification);
+        verify(() => mockMatrixService.cancelVerification(requestId)).called(1);
       });
 
       testWidgets("leaves a newer request's ceremony alone", (tester) async {
-        // The service keeps the latest incoming runner; one for another
+        // The service keeps the latest incoming ceremony; one for another
         // request is not this sheet's to cancel.
-        final other = MockKeyVerification();
-        when(() => runner.keyVerification).thenReturn(other);
-        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+        when(
+          () => mockMatrixService.incomingVerification,
+        ).thenReturn(requestFrom('OTHER', id: 'incoming-2'));
 
         await showThenPop(tester);
 
-        verifyNever(runner.cancelVerification);
+        verifyNever(() => mockMatrixService.cancelVerification(any()));
+      });
+
+      testWidgets('cancels nothing when the service holds no ceremony', (
+        tester,
+      ) async {
+        await showThenPop(tester);
+
+        verifyNever(() => mockMatrixService.cancelVerification(any()));
       });
     });
 
@@ -621,17 +561,7 @@ void main() {
       late MatrixVerificationModalLock lock;
 
       Future<void> pumpWrapperBehindLock(WidgetTester tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const IncomingVerificationWrapper(),
-            overrides: [
-              matrixServiceProvider.overrideWithValue(mockMatrixService),
-            ],
-          ),
-        );
-        when(
-          () => mockMatrixService.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        await pumpWrapper(tester);
         container = ProviderScope.containerOf(
           tester.element(find.byType(IncomingVerificationWrapper)),
         );
@@ -645,10 +575,9 @@ void main() {
         // Dropped, the request could never be shown again: the launcher
         // offers each device once and never asked (TLC's `AutoVerifies` with
         // `DeferIncoming = FALSE`).
-        when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
         await pumpWrapperBehindLock(tester);
 
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pump();
         expect(find.byType(IncomingVerificationModal), findsNothing);
 
@@ -662,12 +591,14 @@ void main() {
       testWidgets('drops a held request the peer has since cancelled', (
         tester,
       ) async {
-        when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
         await pumpWrapperBehindLock(tester);
 
-        incomingController.add(mockKeyVerification);
+        requests.add(request);
         await tester.pump();
-        when(() => mockKeyVerification.isDone).thenReturn(true);
+        // The service's live ceremony for the same request is cancelled now.
+        when(
+          () => mockMatrixService.incomingVerification,
+        ).thenReturn(incomingCancelled);
 
         lock.release();
         await tester.pumpAndSettle();
@@ -681,149 +612,82 @@ void main() {
       });
 
       group('with an unanswered ceremony of its own', () {
-        late MockKeyVerification outgoingKeyVerification;
-        late MockKeyVerificationRunner outgoing;
-        late StreamController<KeyVerificationRunner> outgoingStream;
+        /// This device's own request toward PEER, not yet answered.
+        final outgoing = verificationState(
+          id: 'outgoing',
+          peerDeviceId: 'PEER',
+          lastStep: EventTypes.KeyVerificationRequest,
+        );
+        const peerIdentity = '@alice:example.com/PEER';
 
         setUp(() {
-          outgoingKeyVerification = MockKeyVerification();
           when(
-            () => outgoingKeyVerification.userId,
-          ).thenReturn('@alice:example.com');
-          when(() => outgoingKeyVerification.deviceId).thenReturn('PEER');
-          when(
-            () => outgoingKeyVerification.cancel(),
-          ).thenAnswer((_) async {});
-          outgoing = MockKeyVerificationRunner();
-          when(
-            () => outgoing.lastStep,
-          ).thenReturn('m.key.verification.request');
-          when(() => outgoing.keyVerification).thenReturn(
-            outgoingKeyVerification,
-          );
-          when(outgoing.stopTimer).thenReturn(null);
-          outgoingStream = StreamController<KeyVerificationRunner>.broadcast();
-          addTearDown(outgoingStream.close);
-          when(
-            () => mockMatrixService.keyVerificationRunner,
+            () => mockMatrixService.outgoingVerification,
           ).thenReturn(outgoing);
           when(
-            () => mockMatrixService.keyVerificationController,
-          ).thenReturn(outgoingStream);
+            () => mockMatrixService.handOffOutgoingVerificationTo(any()),
+          ).thenAnswer((_) async {});
           when(
             () => mockMatrixService.ownUserId,
           ).thenReturn('@alice:example.com');
-          when(
-            () => mockKeyVerification.userId,
-          ).thenReturn('@alice:example.com');
-          when(
-            () => mockKeyVerification.lastStep,
-          ).thenReturn('m.key.verification.request');
-          when(mockKeyVerification.acceptVerification).thenAnswer((_) async {});
         });
 
-        testWidgets('yields it to a smaller identity inside the open sheet', (
-          tester,
-        ) async {
+        testWidgets('yields it to a smaller identity and records the peer '
+            'it now shows as the one shown last', (tester) async {
           // Both devices started at each other. The larger identity withdraws
-          // its own request, answers the peer's on the stream the open sheet
-          // renders, and frees the withdrawn target for the launcher: it was
-          // never really offered a ceremony.
+          // its own request, hands the open sheet to the peer's, and frees the
+          // withdrawn target for the launcher: it was never really offered a
+          // ceremony. The launcher's sheet shows the peer's ceremony after
+          // the handoff, so "Show the emoji" must reopen that peer, not the
+          // withdrawn one, and the launcher must not offer it again unasked
+          // once the sheet closes (`RecordHandedOff`).
           when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
-          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
-          await pumpWrapperBehindLock(tester);
-          container
-              .read(matrixVerificationHandledProvider.notifier)
-              .markShown('@alice:example.com/PEER');
-
-          incomingController.add(mockKeyVerification);
-          await tester.pump();
-
-          expect(find.byType(IncomingVerificationModal), findsNothing);
-          verifyInOrder([
-            outgoing.stopTimer,
-            () => outgoingKeyVerification.cancel(),
-          ]);
-          verify(mockKeyVerification.acceptVerification).called(1);
-          expect(
-            container.read(matrixVerificationHandledProvider),
-            isNot(contains('@alice:example.com/PEER')),
-          );
-          final handedOff =
-              verify(
-                    () =>
-                        mockMatrixService.keyVerificationRunner = captureAny(),
-                  ).captured.single
-                  as KeyVerificationRunner;
-          expect(handedOff.keyVerification, same(mockKeyVerification));
-          handedOff.stopTimer();
-        });
-
-        testWidgets('records the peer it now shows as the one shown last', (
-          tester,
-        ) async {
-          // The launcher's sheet shows the peer's ceremony after the handoff,
-          // so "Show the emoji" must reopen that peer, not the withdrawn one,
-          // and the launcher must not offer it again unasked once the sheet
-          // closes (`RecordHandedOff`).
-          when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
-          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
           await pumpWrapperBehindLock(tester);
           final handled = container.read(
             matrixVerificationHandledProvider.notifier,
-          )..markShown('@alice:example.com/PEER');
+          )..markShown(peerIdentity);
 
-          incomingController.add(mockKeyVerification);
+          requests.add(requestFrom('AAA'));
           await tester.pump();
 
+          expect(find.byType(IncomingVerificationModal), findsNothing);
+          verify(
+            () => mockMatrixService.handOffOutgoingVerificationTo(requestId),
+          ).called(1);
           expect(handled.lastShown, '@alice:example.com/AAA');
           expect(
             container.read(matrixVerificationHandledProvider),
             {'@alice:example.com/AAA'},
           );
-          (verify(
-                    () =>
-                        mockMatrixService.keyVerificationRunner = captureAny(),
-                  ).captured.single
-                  as KeyVerificationRunner)
-              .stopTimer();
         });
 
-        testWidgets('a request that lands before its own runner is stored '
-            'yields once the runner is', (tester) async {
+        testWidgets('a request that lands before its own ceremony is stored '
+            'yields once the ceremony is', (tester) async {
           // verifyMatrixDevice stores the runner only after the send: a
           // request crossing it finds no own ceremony and is held. Offered
-          // again when the runner appears, the larger identity yields; held
+          // again when the ceremony appears, the larger identity yields; held
           // for good, neither device ever moved
           // (VerificationLaunch.tla, ReofferOnRegister).
-          KeyVerificationRunner? stored;
+          SyncVerificationState? stored;
           when(
-            () => mockMatrixService.keyVerificationRunner,
+            () => mockMatrixService.outgoingVerification,
           ).thenAnswer((_) => stored);
           when(() => mockMatrixService.ownDeviceId).thenReturn('ZZZ');
-          when(() => mockKeyVerification.deviceId).thenReturn('AAA');
-          when(() => mockKeyVerification.isDone).thenReturn(false);
           await pumpWrapperBehindLock(tester);
 
-          incomingController.add(mockKeyVerification);
+          requests.add(requestFrom('AAA'));
           await tester.pump();
-          verifyNever(mockKeyVerification.acceptVerification);
+          verifyNever(
+            () => mockMatrixService.handOffOutgoingVerificationTo(any()),
+          );
 
           stored = outgoing;
-          ownRunnerController.add(outgoing);
+          ownCeremonies.add(outgoing);
           await tester.pump();
 
-          verifyInOrder([
-            outgoing.stopTimer,
-            () => outgoingKeyVerification.cancel(),
-          ]);
-          verify(mockKeyVerification.acceptVerification).called(1);
-          (verify(
-                    () =>
-                        mockMatrixService.keyVerificationRunner = captureAny(),
-                  ).captured.single
-                  as KeyVerificationRunner)
-              .stopTimer();
+          verify(
+            () => mockMatrixService.handOffOutgoingVerificationTo(requestId),
+          ).called(1);
         });
 
         testWidgets('keeps it against a larger identity and holds theirs', (
@@ -832,14 +696,14 @@ void main() {
           // Exactly one side yields; this one is the smaller, so the peer
           // will. Its request waits for the lock like any other.
           when(() => mockMatrixService.ownDeviceId).thenReturn('AAA');
-          when(() => mockKeyVerification.deviceId).thenReturn('ZZZ');
           await pumpWrapperBehindLock(tester);
 
-          incomingController.add(mockKeyVerification);
+          requests.add(requestFrom('ZZZ'));
           await tester.pump();
 
-          verifyNever(() => outgoingKeyVerification.cancel());
-          verifyNever(mockKeyVerification.acceptVerification);
+          verifyNever(
+            () => mockMatrixService.handOffOutgoingVerificationTo(any()),
+          );
           expect(find.byType(IncomingVerificationModal), findsNothing);
 
           lock.release();
@@ -856,19 +720,8 @@ void main() {
     // This modal has no cancellation branch of its own, so the SDK's isDone —
     // true for a cancel as well as a success — put the green shield and
     // "You've successfully verified" in front of a user whose ceremony had
-    // just been refused.
-    final runner = MockKeyVerificationRunner();
-    when(() => mockKeyVerification.canceled).thenReturn(true);
-    when(
-      () => mockKeyVerification.state,
-    ).thenReturn(KeyVerificationState.error);
-
-    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(() => mockKeyVerification.isDone).thenReturn(true);
-
-    await pumpModalWithRunner(tester, runner);
+    // just been refused. The state carries the outcome explicitly.
+    await pumpModalAt(tester, incomingCancelled);
 
     final context = tester.element(find.byType(IncomingVerificationModal));
     expect(
@@ -885,29 +738,17 @@ void main() {
     );
   });
 
-  testWidgets('confirming a cancelled ceremony closes the sheet and stops '
-      'its timer', (tester) async {
-    // The confirm button is the only way out of the cancelled state, and the
-    // runner polls the SDK every 100 ms until something stops it.
-    final runner = MockKeyVerificationRunner();
-    when(() => mockKeyVerification.canceled).thenReturn(true);
-    when(
-      () => mockKeyVerification.state,
-    ).thenReturn(KeyVerificationState.error);
-
-    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(() => mockKeyVerification.isDone).thenReturn(true);
-    when(runner.stopTimer).thenReturn(null);
-
+  testWidgets('confirming a cancelled ceremony closes the sheet', (
+    tester,
+  ) async {
+    // The confirm button is the only way out of the cancelled state.
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         Builder(
           builder: (context) => TextButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
-                builder: (_) => IncomingVerificationModal(mockKeyVerification),
+                builder: (_) => IncomingVerificationModal(request),
               ),
             ),
             child: const Text('open'),
@@ -921,7 +762,7 @@ void main() {
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    controller.add(runner);
+    controller.add(incomingCancelled);
     // Two pumps: the emission crosses the broadcast stream on a microtask, so
     // one frame is not enough once the modal sits on a pushed route.
     await tester.pump();
@@ -931,7 +772,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    verify(runner.stopTimer).called(1);
     expect(find.byType(IncomingVerificationModal), findsNothing);
   });
 
@@ -940,21 +780,9 @@ void main() {
   ) async {
     // The auto-accept was gated on !isDone, which a cancelled ceremony
     // satisfies only by accident. Gating on pending states the intent.
-    final runner = MockKeyVerificationRunner();
-    when(() => mockKeyVerification.canceled).thenReturn(true);
-    when(
-      () => mockKeyVerification.state,
-    ).thenReturn(KeyVerificationState.error);
+    await pumpModalAt(tester, incomingCancelled);
 
-    when(() => runner.lastStep).thenReturn('m.key.verification.cancel');
-    when(() => runner.emojis).thenReturn(null);
-    when(() => runner.keyVerification).thenReturn(mockKeyVerification);
-    when(() => mockKeyVerification.isDone).thenReturn(true);
-    when(runner.acceptVerification).thenAnswer((_) async {});
-
-    await pumpModalWithRunner(tester, runner);
-
-    verifyNever(runner.acceptVerification);
+    verifyNever(() => mockMatrixService.acceptVerification(any()));
   });
 }
 

@@ -13,12 +13,13 @@ import 'package:lotti/database/outbox_status.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/outbox/outbox_enqueue_writer.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -27,7 +28,6 @@ import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
@@ -40,7 +40,7 @@ abstract class _OutboxServiceBase {
   DomainLogger get _loggingService;
   bool get _isDisposed;
   OutboxRepository get _repository;
-  MatrixService? get _matrixService;
+  SyncService? get _matrixService;
   OutboxProcessor get _processor;
   JournalDb get _journalDb;
   DateTime get _createdAt;
@@ -93,7 +93,7 @@ class MatrixOutboxService extends _OutboxServiceBase
     OutboxMessageSender? messageSender,
     OutboxProcessor? processor,
     int maxRetries = 10,
-    MatrixService? matrixService,
+    SyncService? matrixService,
     bool? ownsActivityGate,
     Future<void> Function(String path, String json)? saveJsonHandler,
     this._connectivityStream,
@@ -177,10 +177,10 @@ class MatrixOutboxService extends _OutboxServiceBase
 
     // Post-login nudge: if connectivity regain fired too early, ensure a
     // deterministic enqueue once the Matrix client reports logged in.
-    final client = _matrixService?.client;
-    if (client != null) {
-      _loginSubscription = client.onLoginStateChanged.stream.listen((state) {
-        if (state == LoginState.loggedIn) {
+    final service = _matrixService;
+    if (service != null) {
+      _loginSubscription = service.loginStateChanges.listen((state) {
+        if (state == SyncLoginState.loggedIn) {
           _loggingService.log(
             LogDomain.sync,
             'login.loggedIn → enqueue',
@@ -242,7 +242,7 @@ class MatrixOutboxService extends _OutboxServiceBase
   @override
   late final OutboxProcessor _processor;
   @override
-  final MatrixService? _matrixService;
+  final SyncService? _matrixService;
   final Stream<List<ConnectivityResult>>? _connectivityStream;
   final SyncSequenceLogService? _sequenceLogService;
 
@@ -270,7 +270,7 @@ class MatrixOutboxService extends _OutboxServiceBase
   @override
   late ClientRunner<int> _clientRunner;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  StreamSubscription<LoginState>? _loginSubscription;
+  StreamSubscription<SyncLoginState>? _loginSubscription;
   StreamSubscription<int>? _outboxCountSubscription;
   // clock.now() (package:clock) so tests can drive the startup grace
   // window with withClock instead of waiting out real seconds.
@@ -632,13 +632,13 @@ class MatrixOutboxService extends _OutboxServiceBase
 }
 
 /// Production [OutboxMessageSender] that delivers a queued [SyncMessage] over
-/// Matrix by delegating to [MatrixService.sendMatrixMsg]. The boolean it
+/// Matrix by delegating to [SyncService.sendMatrixMsg]. The boolean it
 /// returns is the processor's retry signal; a `SyncMessageTooLargeException`
 /// it lets through is the processor's drop signal.
 class MatrixOutboxMessageSender implements OutboxMessageSender {
   MatrixOutboxMessageSender(this._matrixService);
 
-  final MatrixService _matrixService;
+  final SyncService _matrixService;
 
   @override
   Future<bool> send(SyncMessage message) {

@@ -481,7 +481,10 @@ void main() {
         aliceAccepted = false;
         bobAccepted = false;
 
-        await alice.verifyDevice(device);
+        await alice.verifyDevice(
+          userId: device.userId!,
+          deviceId: device.deviceId,
+        );
 
         await waitUntil(() => emojisFromAlice.isNotEmpty, timeout: timeout);
         await waitUntil(() => emojisFromBob.isNotEmpty, timeout: timeout);

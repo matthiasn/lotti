@@ -32,8 +32,8 @@ void main() {
     matrixStatsController = StreamController<MatrixStats>.broadcast();
 
     when(
-      () => mockMatrixService.messageCountsController,
-    ).thenReturn(matrixStatsController);
+      () => mockMatrixService.stats,
+    ).thenAnswer((_) => matrixStatsController.stream);
     when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
     when(() => mockMatrixService.sentCount).thenReturn(0);
   });

@@ -5,10 +5,10 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_reauth_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
@@ -20,7 +20,6 @@ import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 
 /// Card width at which the name and its trust badges stop stacking. Below it
 /// a phone card would cramp; above it the stacked layout wastes most of the
@@ -29,7 +28,6 @@ const double kDeviceCardWideBreakpoint = 420;
 
 /// The homeserver's answer when user-interactive authentication is rejected —
 /// for a device removal that means the stored password, not the request.
-const String _forbidden = 'M_FORBIDDEN';
 
 /// One session of the sync account: name, trust state, last-seen, and the
 /// actions that apply to it.
@@ -109,20 +107,19 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
   /// caller should offer the re-authentication sheet.
   Future<bool> _attemptRemoval(
     BuildContext context,
-    MatrixService matrixService,
+    SyncService matrixService,
     String deviceName,
   ) async {
     try {
       await matrixService.deleteDeviceById(device.deviceId);
       widget.refreshListCallback();
       if (context.mounted) _showRemovedToast(context, deviceName);
-    } on MatrixException catch (e, stackTrace) {
+    } on SyncReauthRequiredException catch (e, stackTrace) {
+      _logRemovalFailure(e, stackTrace);
+      return true;
+    } catch (e, stackTrace) {
       // The raw exception goes to the log, not to a toast: `M_LIMIT_EXCEEDED:
       // Too many requests` told the user nothing they could act on.
-      _logRemovalFailure(e, stackTrace);
-      if (e.errcode == _forbidden) return true;
-      if (context.mounted) _showRemovalFailed(context);
-    } catch (e, stackTrace) {
       _logRemovalFailure(e, stackTrace);
       if (context.mounted) _showRemovalFailed(context);
     }
@@ -147,11 +144,9 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
         );
         removed = true;
         return null;
-      } on MatrixException catch (e, stackTrace) {
+      } on SyncReauthRequiredException catch (e, stackTrace) {
         _logRemovalFailure(e, stackTrace);
-        return e.errcode == _forbidden
-            ? messages.syncReauthInvalidPassword
-            : messages.deviceDeleteFailedGeneric;
+        return messages.syncReauthInvalidPassword;
       } catch (e, stackTrace) {
         _logRemovalFailure(e, stackTrace);
         return messages.deviceDeleteFailedGeneric;
@@ -200,8 +195,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
   }
 
   Future<void> _verifyDevice(BuildContext context) async {
-    final keys = device.keys;
-    if (keys == null || _busy) return;
+    if (!device.hasKeys || _busy) return;
 
     // A session the homeserver has not heard from in weeks almost certainly
     // cannot answer an emoji ceremony, and a waiting ceremony looks identical
@@ -227,7 +221,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
       await showVerificationModalSheet(
         context: context,
         title: context.messages.syncVerifyModalTitle,
-        child: VerificationModal(keys),
+        child: VerificationModal(device),
       );
     } finally {
       lock.release();
@@ -247,7 +241,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     final canVerify =
         !device.isCurrentDevice &&
         !device.verified &&
-        device.keys != null &&
+        device.hasKeys &&
         (device.onServer || !device.ownAccount);
     final canDelete = !device.isCurrentDevice && device.ownAccount;
 
@@ -270,7 +264,7 @@ class _DeviceCardState extends ConsumerState<DeviceCard> {
     // amber chip would cry wolf, so they get the neutral outlined variant
     // and an explanatory hint instead.
     final keyless =
-        !device.isCurrentDevice && !device.verified && device.keys == null;
+        !device.isCurrentDevice && !device.verified && !device.hasKeys;
 
     final trustBadges = <Widget>[
       if (device.isCurrentDevice)

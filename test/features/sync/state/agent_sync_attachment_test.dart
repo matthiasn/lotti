@@ -15,10 +15,8 @@ void main() {
     test('opens with sync off, and with sync on only while logged in with '
         'the inbox drained', () async {
       final matrixService = MockMatrixService();
-      final coordinator = MockQueuePipelineCoordinator();
       final queue = MockInboundQueue();
-      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
-      when(() => coordinator.queue).thenReturn(queue);
+      when(() => matrixService.inboundQueue).thenReturn(queue);
       when(
         () => queue.waitForDrainAtMostTo(0, timeout: any(named: 'timeout')),
       ).thenAnswer((_) async {});

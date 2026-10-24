@@ -1,20 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
   // Matrix SAS verification shows seven emoji.
   final emojis = List.generate(
     7,
-    (index) => FakeKeyVerificationEmoji('🐧', 'penguin$index'),
+    (index) => SyncVerificationEmoji(emoji: '🐧', name: 'penguin$index'),
   );
 
   group('VerificationCeremonyHeader', () {
@@ -116,7 +116,7 @@ void main() {
           SingleChildScrollView(
             child: VerificationEmojiGrid(
               emojis: [
-                FakeKeyVerificationEmoji('📎', 'Büroklammer'),
+                const SyncVerificationEmoji(emoji: '📎', name: 'Büroklammer'),
                 ...emojis.skip(1),
               ],
             ),

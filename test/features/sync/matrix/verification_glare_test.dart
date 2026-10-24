@@ -2,38 +2,33 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:matrix/matrix.dart';
+import 'package:matrix/matrix.dart' show EventTypes;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../sync_verification_fixtures.dart';
 
 void main() {
-  late MockKeyVerification incoming;
+  /// The peer's unanswered request, from `@alice:example.com/[deviceId]`.
+  SyncVerificationState incomingFrom(String deviceId) => verificationState(
+    id: 'incoming',
+    direction: SyncVerificationDirection.incoming,
+    peerDeviceId: deviceId,
+    lastStep: EventTypes.KeyVerificationRequest,
+  );
 
-  setUpAll(() {
-    registerFallbackValue(MockKeyVerificationRunner());
-  });
-
-  setUp(() {
-    incoming = MockKeyVerification();
-    when(() => incoming.userId).thenReturn('@alice:example.com');
-    when(() => incoming.deviceId).thenReturn('AAA');
-  });
-
-  /// An outgoing runner whose ceremony sits at [lastStep].
-  MockKeyVerificationRunner outgoingAt(
+  /// This device's own ceremony toward PEER, sitting at [lastStep].
+  SyncVerificationState outgoingAt(
     String lastStep, {
-    bool canceled = false,
-  }) {
-    final keyVerification = MockKeyVerification();
-    when(() => keyVerification.canceled).thenReturn(canceled);
-    when(() => keyVerification.userId).thenReturn('@alice:example.com');
-    when(() => keyVerification.deviceId).thenReturn('PEER');
-    final runner = MockKeyVerificationRunner();
-    when(() => runner.lastStep).thenReturn(lastStep);
-    when(() => runner.keyVerification).thenReturn(keyVerification);
-    return runner;
-  }
+    bool cancelled = false,
+  }) => verificationState(
+    id: 'outgoing',
+    peerDeviceId: 'PEER',
+    lastStep: lastStep,
+    outcome: cancelled
+        ? KeyVerificationOutcome.cancelled
+        : KeyVerificationOutcome.pending,
+  );
 
   group('verificationIdentity', () {
     test('orders by user, then device, as the SDK orders a glare', () {
@@ -47,6 +42,13 @@ void main() {
 
     test('tolerates a session without an identity yet', () {
       expect(verificationIdentity(userId: null, deviceId: null), '|');
+    });
+
+    test('is the identity a state reports for its peer', () {
+      expect(
+        incomingFrom('AAA').peerIdentity,
+        verificationIdentity(userId: '@alice:example.com', deviceId: 'AAA'),
+      );
     });
   });
 
@@ -66,7 +68,7 @@ void main() {
       );
       expect(
         isUnansweredRequest(
-          outgoingAt(EventTypes.KeyVerificationRequest, canceled: true),
+          outgoingAt(EventTypes.KeyVerificationRequest, cancelled: true),
         ),
         isFalse,
       );
@@ -77,7 +79,7 @@ void main() {
     test('yields an unanswered request to a smaller identity', () {
       expect(
         shouldYieldTo(
-          incoming: incoming,
+          incoming: incomingFrom('AAA'),
           outgoing: outgoingAt(EventTypes.KeyVerificationRequest),
           ownUserId: '@alice:example.com',
           ownDeviceId: 'ZZZ',
@@ -88,10 +90,9 @@ void main() {
 
     test('keeps its own request against a larger identity', () {
       // Exactly one side yields: the peer, being larger, is the one to.
-      when(() => incoming.deviceId).thenReturn('ZZZ');
       expect(
         shouldYieldTo(
-          incoming: incoming,
+          incoming: incomingFrom('ZZZ'),
           outgoing: outgoingAt(EventTypes.KeyVerificationRequest),
           ownUserId: '@alice:example.com',
           ownDeviceId: 'AAA',
@@ -103,7 +104,7 @@ void main() {
     test('never yields a ceremony the peer has answered, nor without one', () {
       expect(
         shouldYieldTo(
-          incoming: incoming,
+          incoming: incomingFrom('AAA'),
           outgoing: outgoingAt(EventTypes.KeyVerificationReady),
           ownUserId: '@alice:example.com',
           ownDeviceId: 'ZZZ',
@@ -112,7 +113,7 @@ void main() {
       );
       expect(
         shouldYieldTo(
-          incoming: incoming,
+          incoming: incomingFrom('AAA'),
           outgoing: null,
           ownUserId: '@alice:example.com',
           ownDeviceId: 'ZZZ',
@@ -122,96 +123,32 @@ void main() {
     });
   });
 
-  group('handOffOutgoingVerification', () {
-    late MockMatrixService service;
-    late StreamController<KeyVerificationRunner> outgoingStream;
-    late List<KeyVerificationRunner> published;
-
-    setUp(() {
-      service = MockMatrixService();
-      outgoingStream = StreamController<KeyVerificationRunner>.broadcast();
-      addTearDown(outgoingStream.close);
-      published = [];
-      final subscription = outgoingStream.stream.listen(published.add);
-      addTearDown(subscription.cancel);
-      when(
-        () => service.keyVerificationController,
-      ).thenReturn(outgoingStream);
-      when(
-        () => incoming.lastStep,
-      ).thenReturn(EventTypes.KeyVerificationRequest);
-      when(() => incoming.isDone).thenReturn(false);
-      when(incoming.acceptVerification).thenAnswer((_) async {});
-    });
-
-    test(
-      "detaches and cancels the own ceremony, then accepts the peer's in its "
-      'place on the stream the open sheet renders',
-      () async {
-        final outgoing = outgoingAt(EventTypes.KeyVerificationRequest);
-        final outgoingKeyVerification = outgoing.keyVerification;
-        when(outgoing.stopTimer).thenReturn(null);
-        when(outgoingKeyVerification.cancel).thenAnswer((_) async {});
-        when(() => service.keyVerificationRunner).thenReturn(outgoing);
-
-        final runner = await handOffOutgoingVerification(
-          service: service,
-          incoming: incoming,
-          domainLogger: MockDomainLogger(),
-        );
-        addTearDown(runner.stopTimer);
-        await pumpEventQueue();
-
-        // Detached first: a still-attached runner would publish the cancelled
-        // state and the sheet would arm its auto-dismiss mid-ceremony.
-        verifyInOrder([
-          outgoing.stopTimer,
-          outgoingKeyVerification.cancel,
-        ]);
-        expect(runner.keyVerification, same(incoming));
-        verify(() => service.keyVerificationRunner = runner).called(1);
-        verify(incoming.acceptVerification).called(1);
-        expect(published, [runner]);
-      },
-    );
-
-    test("with no ceremony of its own it simply answers the peer's", () async {
-      when(() => service.keyVerificationRunner).thenReturn(null);
-
-      final runner = await handOffOutgoingVerification(
-        service: service,
-        incoming: incoming,
-        domainLogger: MockDomainLogger(),
-      );
-      addTearDown(runner.stopTimer);
-
-      verify(() => service.keyVerificationRunner = runner).called(1);
-      verify(incoming.acceptVerification).called(1);
-    });
-  });
-
-  group('reofferOnOwnRunner', () {
-    test('calls back once for each runner the service stores, not for a '
-        "runner's later updates nor for one it does not hold", () async {
+  group('reofferOnOwnVerification', () {
+    test('calls back once for each ceremony the service stores, not for a '
+        "ceremony's later steps nor for one it does not hold", () async {
       final service = MockMatrixService();
-      final stream = StreamController<KeyVerificationRunner>.broadcast();
+      final stream = StreamController<SyncVerificationState>.broadcast();
       addTearDown(stream.close);
       when(
-        () => service.keyVerificationStream,
+        () => service.outgoingVerifications,
       ).thenAnswer((_) => stream.stream);
-      final first = MockKeyVerificationRunner();
-      final second = MockKeyVerificationRunner();
-      final stranger = MockKeyVerificationRunner();
-      KeyVerificationRunner? stored;
-      when(() => service.keyVerificationRunner).thenAnswer((_) => stored);
+      final first = verificationState(id: 'first');
+      final firstLater = verificationState(
+        id: 'first',
+        lastStep: EventTypes.KeyVerificationRequest,
+      );
+      final second = verificationState(id: 'second');
+      final stranger = verificationState(id: 'stranger');
+      SyncVerificationState? stored;
+      when(() => service.outgoingVerification).thenAnswer((_) => stored);
       var reoffers = 0;
-      final subscription = reofferOnOwnRunner(service, () => reoffers++);
+      final subscription = reofferOnOwnVerification(service, () => reoffers++);
       addTearDown(subscription.cancel);
 
       stored = first;
       stream
         ..add(first)
-        ..add(first)
+        ..add(firstLater)
         ..add(stranger);
       await pumpEventQueue();
       expect(reoffers, 1);

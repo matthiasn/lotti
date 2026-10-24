@@ -25,6 +25,7 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -48,8 +49,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/theming_settings_keys.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test/mocks/mocks.dart';
@@ -316,14 +315,14 @@ MockMatrixService _createMatrixServiceMock() {
   final client = MockMatrixClient();
 
   when(
-    matrixService.getIncomingKeyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    () => matrixService.incomingVerificationRequests,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => matrixService.incomingKeyVerificationRunnerStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => matrixService.incomingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => matrixService.keyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => matrixService.outgoingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(() => matrixService.client).thenReturn(client);
 
   return matrixService;
@@ -356,7 +355,7 @@ List<Override> _providerOverrides(_InMemoryFullAppHarness harness) {
     journalDbProvider.overrideWithValue(harness.journalDb),
     loggingServiceProvider.overrideWithValue(harness.loggingService),
     loginStateStreamProvider.overrideWith(
-      (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+      (ref) => Stream<SyncLoginState>.value(SyncLoginState.loggedIn),
     ),
     maintenanceProvider.overrideWithValue(harness.maintenance),
     matrixServiceProvider.overrideWithValue(harness.matrixService),

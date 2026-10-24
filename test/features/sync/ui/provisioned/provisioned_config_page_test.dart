@@ -73,13 +73,14 @@ void main() {
 
   /// A peer awaiting the emoji ceremony. The launcher keys devices by
   /// `(userId, deviceId)`, so both have to be stubbed.
-  MockDeviceKeys unverifiedPeer() {
-    final keys = MockDeviceKeys();
-    when(() => keys.deviceId).thenReturn('PEERDEVICE');
-    when(() => keys.userId).thenReturn('@alice:example.com');
-    when(() => keys.deviceDisplayName).thenReturn('Peer');
-    return keys;
-  }
+  SyncDeviceInfo unverifiedPeer() => const SyncDeviceInfo(
+    deviceId: 'PEERDEVICE',
+    userId: '@alice:example.com',
+    displayName: 'Peer',
+    isCurrentDevice: false,
+    verified: false,
+    hasKeys: true,
+  );
 
   const testBundle = SyncProvisioningBundle(
     v: 2,
@@ -128,10 +129,10 @@ void main() {
     );
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => const Stream.empty());
     when(
-      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+      () => mockMatrixService.incomingVerifications,
     ).thenAnswer((_) => const Stream.empty());
   });
 
@@ -252,19 +253,26 @@ void main() {
     testWidgets(
       'auto-triggers verification modal when unverified devices exist',
       (tester) async {
-        final mockDevice = MockDeviceKeys();
-        when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
-        when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
-        when(() => mockDevice.userId).thenReturn('@alice:example.com');
+        const mockDevice = SyncDeviceInfo(
+          deviceId: 'OTHERDEVICE',
+          displayName: 'Other Device',
+          userId: '@alice:example.com',
+          isCurrentDevice: false,
+          verified: false,
+          hasKeys: true,
+        );
 
         when(
           () => mockMatrixService.getUnverifiedDevices(),
         ).thenReturn([mockDevice]);
         when(
-          () => mockMatrixService.verifyDevice(mockDevice),
+          () => mockMatrixService.verifyDevice(
+            userId: '@alice:example.com',
+            deviceId: 'OTHERDEVICE',
+          ),
         ).thenAnswer((_) async {});
         when(
-          () => mockMatrixService.keyVerificationStream,
+          () => mockMatrixService.outgoingVerifications,
         ).thenAnswer((_) => const Stream.empty());
 
         await pumpConfigWidget(

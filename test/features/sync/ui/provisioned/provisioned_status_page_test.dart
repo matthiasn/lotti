@@ -18,26 +18,24 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late MockMatrixClient mockClient;
-
-  setUpAll(() {
-    registerFallbackValue(FakeDeviceKeys());
-  });
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockClient = MockMatrixClient();
 
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn('@alice:example.com');
+    when(() => mockMatrixService.ownUserId).thenReturn('@alice:example.com');
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => mockMatrixService.getSyncDevices()).thenAnswer((_) async => []);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => const Stream.empty());
-    when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.verifyDevice(
+        userId: any(named: 'userId'),
+        deviceId: any(named: 'deviceId'),
+      ),
+    ).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',
@@ -279,11 +277,6 @@ void main() {
 
     testWidgets('shows device cards and the paused banner when an unverified '
         'device blocks sync', (tester) async {
-      final keys = MockDeviceKeys();
-      when(() => keys.deviceDisplayName).thenReturn('Pixel 7');
-      when(() => keys.deviceId).thenReturn('DEVICE1');
-      when(() => keys.userId).thenReturn('@alice:example.com');
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const ProvisionedStatusWidget(),
@@ -300,12 +293,13 @@ void main() {
                   isCurrentDevice: true,
                   verified: true,
                 ),
-                SyncDeviceInfo(
+                const SyncDeviceInfo(
                   deviceId: 'DEVICE1',
                   displayName: 'Pixel 7',
+                  userId: '@alice:example.com',
                   isCurrentDevice: false,
                   verified: false,
-                  keys: keys,
+                  hasKeys: true,
                 ),
               ]),
             ),

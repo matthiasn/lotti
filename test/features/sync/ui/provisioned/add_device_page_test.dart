@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -30,6 +31,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
+import '../../sync_verification_fixtures.dart';
 
 /// Call counters, held outside the notifiers on purpose: both providers are
 /// autoDispose, so an override factory must mint a fresh instance every time
@@ -117,8 +119,8 @@ void main() {
   const handover = 'dGVzdC1oYW5kb3Zlci1kYXRh';
 
   late MockMatrixService mockMatrixService;
-  late StreamController<KeyVerificationRunner> outgoingVerifications;
-  late StreamController<KeyVerificationRunner> incomingVerifications;
+  late StreamController<SyncVerificationState> outgoingVerifications;
+  late StreamController<SyncVerificationState> incomingVerifications;
 
   setUpAll(() {
     registerFallbackValue(
@@ -154,8 +156,8 @@ void main() {
     // The generate path logs failures through DomainLogger.
     ensureDomainLoggerRegistered();
     mockMatrixService = MockMatrixService();
-    outgoingVerifications = StreamController<KeyVerificationRunner>.broadcast();
-    incomingVerifications = StreamController<KeyVerificationRunner>.broadcast();
+    outgoingVerifications = StreamController<SyncVerificationState>.broadcast();
+    incomingVerifications = StreamController<SyncVerificationState>.broadcast();
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',
@@ -170,14 +172,14 @@ void main() {
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => existing);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => outgoingVerifications.stream);
     when(
-      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+      () => mockMatrixService.incomingVerifications,
     ).thenAnswer((_) => incomingVerifications.stream);
-    when(() => mockMatrixService.keyVerificationRunner).thenReturn(null);
+    when(() => mockMatrixService.outgoingVerification).thenReturn(null);
     when(
-      () => mockMatrixService.incomingKeyVerificationRunner,
+      () => mockMatrixService.incomingVerification,
     ).thenReturn(null);
   });
 
@@ -187,21 +189,18 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  KeyVerificationRunner verificationRunner({
+  SyncVerificationState verificationRunner({
     required String userId,
     required String? deviceId,
     bool successful = true,
-  }) {
-    final verification = MockKeyVerification();
-    when(() => verification.userId).thenReturn(userId);
-    when(() => verification.deviceId).thenReturn(deviceId);
-    final runner = MockKeyVerificationRunner();
-    when(() => runner.keyVerification).thenReturn(verification);
-    when(() => runner.lastStep).thenReturn(
-      successful ? EventTypes.KeyVerificationDone : '',
-    );
-    return runner;
-  }
+  }) => verificationState(
+    peerUserId: userId,
+    peerDeviceId: deviceId,
+    lastStep: successful ? EventTypes.KeyVerificationDone : '',
+    outcome: successful
+        ? KeyVerificationOutcome.success
+        : KeyVerificationOutcome.pending,
+  );
 
   /// Sizes the surface for the sheet's tall single column; without it the
   /// lower controls sit outside the view and taps miss.
@@ -845,18 +844,18 @@ void main() {
         );
         if (incoming) {
           when(
-            () => mockMatrixService.incomingKeyVerificationRunner,
+            () => mockMatrixService.incomingVerification,
           ).thenReturn(staleRunner);
           when(
-            () => mockMatrixService.incomingKeyVerificationRunnerStream,
-          ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
+            () => mockMatrixService.incomingVerifications,
+          ).thenAnswer((_) => Stream<SyncVerificationState>.value(staleRunner));
         } else {
           when(
-            () => mockMatrixService.keyVerificationRunner,
+            () => mockMatrixService.outgoingVerification,
           ).thenReturn(staleRunner);
           when(
-            () => mockMatrixService.keyVerificationStream,
-          ).thenAnswer((_) => Stream<KeyVerificationRunner>.value(staleRunner));
+            () => mockMatrixService.outgoingVerifications,
+          ).thenAnswer((_) => Stream<SyncVerificationState>.value(staleRunner));
         }
         final signal = newSignal(tester);
         await pumpAddDevice(tester, signal: signal);

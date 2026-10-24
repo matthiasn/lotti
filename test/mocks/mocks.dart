@@ -267,7 +267,6 @@ import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/encryption/utils/session_key.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -533,24 +532,9 @@ class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
 
 class MockOutboxProcessor extends Mock implements OutboxProcessor {}
 
-class MockCachedLoginController extends Mock
-    implements CachedStreamController<LoginState> {}
-
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
-
-/// Identical fake used by both verification-modal test files: a fixed
-/// (emoji, name) pair for the SAS comparison row.
-class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
-  FakeKeyVerificationEmoji(this.emoji, this.name);
-
-  @override
-  final String emoji;
-
-  @override
-  final String name;
-}
 
 class MockDeviceKeysList extends Mock implements DeviceKeysList {}
 

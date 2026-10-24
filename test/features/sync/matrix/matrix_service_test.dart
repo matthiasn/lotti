@@ -13,16 +13,20 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
-import 'package:matrix/matrix.dart' show Device;
+import 'package:matrix/matrix.dart' show Device, LoginState, MatrixException;
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -2025,6 +2029,11 @@ void main() {
     // starts SDK verification and stores the resulting runner on the service.
     test('verifyDevice starts verification and sets keyVerificationRunner', () {
       final deviceKeys = MockDeviceKeys();
+      final deviceKeysList = MockDeviceKeysList();
+      when(() => deviceKeysList.deviceKeys).thenReturn({'DEVICE1': deviceKeys});
+      when(
+        () => client.userDeviceKeys,
+      ).thenReturn({'@alice:example.com': deviceKeysList});
       final verification = MockKeyVerification();
       when(deviceKeys.startVerification).thenAnswer((_) async => verification);
       when(() => verification.lastStep).thenReturn(null);
@@ -2035,7 +2044,10 @@ void main() {
 
       return Future<void>(() async {
         expect(service.keyVerificationRunner, isNull);
-        await service.verifyDevice(deviceKeys);
+        await service.verifyDevice(
+          userId: '@alice:example.com',
+          deviceId: 'DEVICE1',
+        );
 
         verify(deviceKeys.startVerification).called(1);
         final runner = service.keyVerificationRunner;
@@ -2045,6 +2057,476 @@ void main() {
         // Cancel the runner's 100ms poll timer so it does not leak.
         runner.stopTimer();
       });
+    });
+  });
+
+  group('MatrixService plain-typed verification API (ADR 0142)', () {
+    /// An SDK ceremony with the stubs the runner reads on construction.
+    MockKeyVerification ceremony({
+      required String transactionId,
+      String userId = '@alice:example.com',
+      String deviceId = 'PEER',
+      String? lastStep,
+    }) {
+      final kv = MockKeyVerification();
+      when(() => kv.transactionId).thenReturn(transactionId);
+      when(() => kv.userId).thenReturn(userId);
+      when(() => kv.deviceId).thenReturn(deviceId);
+      when(() => kv.lastStep).thenReturn(lastStep);
+      when(() => kv.isDone).thenReturn(false);
+      when(() => kv.sasEmojis).thenReturn([]);
+      when(() => kv.onUpdate).thenReturn(null);
+      when(() => kv.onUpdate = any()).thenReturn(null);
+      when(kv.acceptVerification).thenAnswer((_) async {});
+      when(kv.acceptSas).thenAnswer((_) async {});
+      when(kv.cancel).thenAnswer((_) async {});
+      return kv;
+    }
+
+    KeyVerificationRunner attachOutgoing(
+      MatrixService service,
+      MockKeyVerification kv,
+    ) {
+      final runner = KeyVerificationRunner(
+        kv,
+        controller: service.keyVerificationController,
+        name: 'Outgoing KeyVerificationRunner',
+        direction: SyncVerificationDirection.outgoing,
+        domainLogger: loggingService,
+      );
+      addTearDown(runner.stopTimer);
+      service.keyVerificationRunner = runner;
+      return runner;
+    }
+
+    KeyVerificationRunner attachIncoming(
+      MatrixService service,
+      MockKeyVerification kv,
+    ) {
+      final runner = KeyVerificationRunner(
+        kv,
+        controller: service.incomingKeyVerificationRunnerController,
+        name: 'Incoming KeyVerificationRunner',
+        direction: SyncVerificationDirection.incoming,
+        domainLogger: loggingService,
+      );
+      addTearDown(runner.stopTimer);
+      service.incomingKeyVerificationRunner = runner;
+      return runner;
+    }
+
+    test('outgoingVerifications publishes the runner as plain state and '
+        'outgoingVerification is its latest snapshot', () async {
+      final service = createService();
+      final states = <SyncVerificationState>[];
+      final sub = service.outgoingVerifications.listen(states.add);
+      addTearDown(sub.cancel);
+
+      attachOutgoing(
+        service,
+        ceremony(transactionId: 'txn-out', lastStep: 'm.key.verification.key'),
+      ).publishState();
+      await pumpEventQueue();
+
+      expect(states, isNotEmpty);
+      final state = states.last;
+      expect(state.id, 'txn-out');
+      expect(state.direction, SyncVerificationDirection.outgoing);
+      expect(state.peerUserId, '@alice:example.com');
+      expect(state.peerDeviceId, 'PEER');
+      expect(state.lastStep, 'm.key.verification.key');
+      expect(state.outcome, KeyVerificationOutcome.pending);
+      expect(service.outgoingVerification?.id, 'txn-out');
+      expect(service.incomingVerification, isNull);
+    });
+
+    test('incomingVerifications and incomingVerification report the incoming '
+        'runner', () async {
+      final service = createService();
+      final states = <SyncVerificationState>[];
+      final sub = service.incomingVerifications.listen(states.add);
+      addTearDown(sub.cancel);
+
+      attachIncoming(service, ceremony(transactionId: 'txn-in')).publishState();
+      await pumpEventQueue();
+
+      expect(states.last.id, 'txn-in');
+      expect(states.last.direction, SyncVerificationDirection.incoming);
+      expect(service.incomingVerification?.id, 'txn-in');
+      expect(service.outgoingVerification, isNull);
+    });
+
+    test('incomingVerificationRequests maps each SDK request to a pending '
+        'incoming state', () async {
+      final service = createService();
+      final states = <SyncVerificationState>[];
+      final sub = service.incomingVerificationRequests.listen(states.add);
+      addTearDown(sub.cancel);
+
+      service.incomingKeyVerificationController.add(
+        ceremony(
+          transactionId: 'txn-req',
+          deviceId: 'AAA',
+          lastStep: 'm.key.verification.request',
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(states, hasLength(1));
+      expect(states.single.id, 'txn-req');
+      expect(states.single.direction, SyncVerificationDirection.incoming);
+      expect(states.single.peerDeviceId, 'AAA');
+      expect(states.single.lastStep, 'm.key.verification.request');
+      expect(states.single.isPending, isTrue);
+      expect(states.single.emojis, isNull);
+    });
+
+    test('a request without a transaction id still gets a stable id', () {
+      final service = createService();
+      final kv = ceremony(transactionId: 'unused');
+      when(() => kv.transactionId).thenReturn(null);
+
+      final runner = attachIncoming(service, kv);
+
+      expect(runner.id, startsWith('local-'));
+      expect(service.incomingVerification?.id, runner.id);
+    });
+
+    group('acceptVerification', () {
+      test('answers a remembered request before it has a runner', () async {
+        final service = createService();
+        final request = ceremony(transactionId: 'txn-req');
+        service.rememberIncomingRequest(request);
+
+        await service.acceptVerification('txn-req');
+
+        verify(request.acceptVerification).called(1);
+      });
+
+      test('answers through the runner once one exists', () async {
+        final service = createService();
+        final kv = ceremony(transactionId: 'txn-in');
+        attachIncoming(service, kv);
+
+        await service.acceptVerification('txn-in');
+
+        verify(kv.acceptVerification).called(1);
+      });
+
+      test('ignores an id it does not know', () async {
+        final service = createService();
+
+        await expectLater(service.acceptVerification('nobody'), completes);
+      });
+
+      test('keeps only the most recent requests', () async {
+        final service = createService();
+        final oldest = ceremony(transactionId: 'txn-0');
+        service.rememberIncomingRequest(oldest);
+        for (var i = 1; i <= 16; i++) {
+          service.rememberIncomingRequest(ceremony(transactionId: 'txn-$i'));
+        }
+
+        await service.acceptVerification('txn-0');
+        await service.acceptVerification('txn-16');
+
+        verifyNever(oldest.acceptVerification);
+      });
+    });
+
+    test('acceptEmojiVerification confirms the SAS of the runner with that id '
+        'and nothing else', () async {
+      final service = createService();
+      final outgoing = ceremony(transactionId: 'txn-out');
+      final incoming = ceremony(transactionId: 'txn-in');
+      attachOutgoing(service, outgoing);
+      attachIncoming(service, incoming);
+
+      await service.acceptEmojiVerification('txn-in');
+      await service.acceptEmojiVerification('nobody');
+
+      verify(incoming.acceptSas).called(1);
+      verifyNever(outgoing.acceptSas);
+    });
+
+    group('cancelVerification', () {
+      test('cancels a live runner by id', () async {
+        final service = createService();
+        final kv = ceremony(transactionId: 'txn-out');
+        attachOutgoing(service, kv);
+
+        await service.cancelVerification('txn-out');
+
+        verify(kv.cancel).called(1);
+      });
+
+      test('leaves a finished runner alone', () async {
+        final service = createService();
+        final kv = ceremony(
+          transactionId: 'txn-out',
+          lastStep: 'm.key.verification.done',
+        );
+        when(() => kv.isDone).thenReturn(true);
+        attachOutgoing(service, kv);
+
+        await service.cancelVerification('txn-out');
+
+        verifyNever(kv.cancel);
+      });
+
+      test('cancels a remembered request that was never answered', () async {
+        final service = createService();
+        final request = ceremony(transactionId: 'txn-req');
+        service.rememberIncomingRequest(request);
+
+        await service.cancelVerification('txn-req');
+
+        verify(request.cancel).called(1);
+      });
+
+      test('leaves a finished request alone and ignores unknown ids', () async {
+        final service = createService();
+        final request = ceremony(transactionId: 'txn-req');
+        when(() => request.isDone).thenReturn(true);
+        service.rememberIncomingRequest(request);
+
+        await service.cancelVerification('txn-req');
+        await service.cancelVerification('nobody');
+
+        verifyNever(request.cancel);
+      });
+
+      test('logs a cancel the SDK refuses instead of throwing', () async {
+        final service = createService();
+        final request = ceremony(transactionId: 'txn-req');
+        when(request.cancel).thenThrow(StateError('gone'));
+        service.rememberIncomingRequest(request);
+
+        await expectLater(service.cancelVerification('txn-req'), completes);
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'verification.cancelRequest',
+          ),
+        ).called(1);
+      });
+    });
+
+    group('handOffOutgoingVerificationTo', () {
+      test("withdraws the own ceremony, continues the peer's on the outgoing "
+          'stream and answers it', () async {
+        final service = createService();
+        final own = ceremony(transactionId: 'txn-own');
+        final ownRunner = attachOutgoing(service, own);
+        final peer = ceremony(transactionId: 'txn-peer', deviceId: 'AAA');
+        service.rememberIncomingRequest(peer);
+        final published = <SyncVerificationState>[];
+        final sub = service.outgoingVerifications.listen(published.add);
+        addTearDown(sub.cancel);
+
+        await service.handOffOutgoingVerificationTo('txn-peer');
+        await pumpEventQueue();
+
+        verify(own.cancel).called(1);
+        verify(peer.acceptVerification).called(1);
+        final handedOff = service.keyVerificationRunner!;
+        addTearDown(handedOff.stopTimer);
+        expect(handedOff, isNot(same(ownRunner)));
+        expect(handedOff.keyVerification, same(peer));
+        expect(handedOff.direction, SyncVerificationDirection.outgoing);
+        expect(service.outgoingVerification?.id, 'txn-peer');
+        expect(published.map((s) => s.id), contains('txn-peer'));
+        // Detached before the cancel: the withdrawn runner never published
+        // its cancelled state onto the sheet's stream.
+        expect(
+          published.where((s) => s.id == 'txn-own'),
+          everyElement(
+            isA<SyncVerificationState>().having(
+              (s) => s.outcome,
+              'outcome',
+              KeyVerificationOutcome.pending,
+            ),
+          ),
+        );
+      });
+
+      test(
+        "with no ceremony of its own it simply answers the peer's",
+        () async {
+          final service = createService();
+          final peer = ceremony(transactionId: 'txn-peer');
+          attachIncoming(service, peer);
+
+          await service.handOffOutgoingVerificationTo('txn-peer');
+
+          verify(peer.acceptVerification).called(1);
+          final handedOff = service.keyVerificationRunner!;
+          addTearDown(handedOff.stopTimer);
+          expect(handedOff.keyVerification, same(peer));
+        },
+      );
+
+      test('a handed-off ceremony that completes refreshes device trust like '
+          'any other', () async {
+        final service = createService();
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        final peer = ceremony(transactionId: 'txn-peer');
+        service.rememberIncomingRequest(peer);
+
+        await service.handOffOutgoingVerificationTo('txn-peer');
+        addTearDown(service.keyVerificationRunner!.stopTimer);
+        // The runner hooks the SDK's onUpdate; drive it as the SDK would.
+        final onUpdate =
+            verify(() => peer.onUpdate = captureAny()).captured.last
+                as void Function();
+        when(() => peer.lastStep).thenReturn('m.key.verification.done');
+        when(() => peer.state).thenReturn(KeyVerificationState.done);
+        when(() => peer.isDone).thenReturn(true);
+
+        onUpdate();
+        await pumpEventQueue();
+
+        expect(
+          service.outgoingVerification?.outcome,
+          KeyVerificationOutcome.success,
+        );
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: startsWith('verification.completed')),
+            subDomain: 'verification',
+          ),
+        ).called(1);
+      });
+
+      test('refuses an id it does not know', () async {
+        final service = createService();
+
+        await expectLater(
+          service.handOffOutgoingVerificationTo('nobody'),
+          throwsStateError,
+        );
+      });
+    });
+
+    test('loginStateChanges maps every SDK login state', () async {
+      final service = createService();
+      final sdkStates = CachedStreamController<LoginState>();
+      when(() => client.onLoginStateChanged).thenReturn(sdkStates);
+
+      final mapped = service.loginStateChanges.take(3).toList();
+      sdkStates
+        ..add(LoginState.loggedIn)
+        ..add(LoginState.softLoggedOut)
+        ..add(LoginState.loggedOut);
+
+      expect(await mapped, [
+        SyncLoginState.loggedIn,
+        SyncLoginState.softLoggedOut,
+        SyncLoginState.loggedOut,
+      ]);
+    });
+
+    test('homeserverHost is the host of the resolved homeserver, or null', () {
+      final service = createService();
+
+      when(() => client.homeserver).thenReturn(null);
+      expect(service.homeserverHost, isNull);
+
+      when(
+        () => client.homeserver,
+      ).thenReturn(Uri.parse('https://matrix.example.com:8448'));
+      expect(service.homeserverHost, 'matrix.example.com');
+    });
+
+    test('stats is the message-count stream and inboundQueue the '
+        "coordinator's queue", () async {
+      final queue = MockInboundQueue();
+      when(() => queueCoordinator.queue).thenReturn(queue);
+      final service = createService();
+
+      final next = service.stats.first;
+      service.incrementSentCountOf('journalEntity');
+
+      expect((await next).sentCount, 1);
+      expect(service.inboundQueue, same(queue));
+    });
+
+    group('deleteDeviceById error mapping', () {
+      setUp(() {
+        when(() => client.userID).thenReturn('@me:server');
+        when(() => gateway.currentDeviceId).thenReturn('THIS_DEVICE');
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://hs',
+            user: '@me:server',
+            password: 'secret',
+          ),
+        );
+      });
+
+      test(
+        'a refused credential surfaces as SyncReauthRequiredException',
+        () async {
+          when(
+            () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+          ).thenThrow(
+            MatrixException.fromJson(
+              const {'errcode': 'M_FORBIDDEN', 'error': 'Invalid password'},
+            ),
+          );
+
+          await expectLater(
+            createService().deleteDeviceById('OTHER'),
+            throwsA(
+              isA<SyncReauthRequiredException>().having(
+                (e) => e.toString(),
+                'toString',
+                allOf(
+                  startsWith('SyncReauthRequiredException:'),
+                  contains('Invalid password'),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('any other homeserver error passes through unchanged', () async {
+        when(
+          () => gateway.deleteDevice(any(), auth: any(named: 'auth')),
+        ).thenThrow(
+          MatrixException.fromJson(
+            const {'errcode': 'M_LIMIT_EXCEEDED', 'error': 'Too many'},
+          ),
+        );
+
+        await expectLater(
+          createService().deleteDeviceById('OTHER'),
+          throwsA(
+            isA<MatrixException>().having(
+              (e) => e.errcode,
+              'errcode',
+              'M_LIMIT_EXCEEDED',
+            ),
+          ),
+        );
+      });
+    });
+
+    test('verifyDevice refuses a device without published keys', () async {
+      when(() => client.userDeviceKeys).thenReturn({});
+
+      await expectLater(
+        createService().verifyDevice(
+          userId: '@alice:example.com',
+          deviceId: 'KEYLESS',
+        ),
+        throwsStateError,
+      );
     });
   });
 }

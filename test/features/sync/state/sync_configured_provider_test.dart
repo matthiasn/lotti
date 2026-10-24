@@ -2,17 +2,17 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/sync_configured_provider.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
   late MockMatrixService service;
-  late StreamController<LoginState> loginStates;
+  late StreamController<SyncLoginState> loginStates;
   late StreamController<String?> roomIds;
 
   /// Mutable backing values so a test can change what the service reports and
@@ -22,7 +22,7 @@ void main() {
 
   setUp(() {
     service = MockMatrixService();
-    loginStates = StreamController<LoginState>.broadcast();
+    loginStates = StreamController<SyncLoginState>.broadcast();
     roomIds = StreamController<String?>.broadcast();
     loggedIn = true;
     roomId = '!room:server';
@@ -107,7 +107,7 @@ void main() {
         expect(container.read(syncConfiguredProvider), isTrue);
 
         loggedIn = false;
-        loginStates.add(LoginState.loggedOut);
+        loginStates.add(SyncLoginState.loggedOut);
         await pumpEventQueue();
 
         expect(container.read(syncConfiguredProvider), isFalse);

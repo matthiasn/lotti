@@ -4,28 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 
 class VerificationModal extends ConsumerStatefulWidget {
   const VerificationModal(
-    this.deviceKeys, {
+    this.device, {
     super.key,
   });
 
-  final DeviceKeys deviceKeys;
+  /// The device to verify; `hasKeys` is true.
+  final SyncDeviceInfo device;
 
   @override
   ConsumerState<VerificationModal> createState() => _VerificationModalState();
 }
 
 class _VerificationModalState extends ConsumerState<VerificationModal> {
-  MatrixService get _matrixService => ref.read(matrixServiceProvider);
-  KeyVerificationRunner? _runner;
+  SyncService get _matrixService => ref.read(matrixServiceProvider);
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
   bool _verificationStartInFlight = false;
@@ -34,7 +34,6 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
   @override
   void dispose() {
     _autoDismiss?.cancel();
-    _runner?.stopTimer();
     super.dispose();
   }
 
@@ -60,7 +59,10 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
       for (var attempt = 0; attempt < maxAttempts; attempt++) {
         if (!mounted) return;
         try {
-          await _matrixService.verifyDevice(widget.deviceKeys);
+          await _matrixService.verifyDevice(
+            userId: widget.device.userId ?? '',
+            deviceId: widget.device.deviceId,
+          );
           return;
         } catch (_) {
           // Keep retrying in auto mode; manual fallback remains available.
@@ -79,11 +81,11 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
     }
   }
 
-  Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
-    if (runner == null || _awaitingOtherDevice) return;
+  Future<void> _acceptEmojiVerification(SyncVerificationState? state) async {
+    if (state == null || _awaitingOtherDevice) return;
     setState(() => _awaitingOtherDevice = true);
     try {
-      await runner.acceptEmojiVerification();
+      await _matrixService.acceptEmojiVerification(state.id);
     } catch (_) {
       if (mounted) {
         setState(() => _awaitingOtherDevice = false);
@@ -119,20 +121,19 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
       ref.invalidate(matrixUnverifiedControllerProvider);
     }
 
-    return StreamBuilder<KeyVerificationRunner>(
-      stream: _matrixService.keyVerificationStream,
+    return StreamBuilder<SyncVerificationState>(
+      stream: _matrixService.outgoingVerifications,
       builder: (context, snapshot) {
-        final runner = snapshot.data;
-        _runner = runner;
-        final lastStep = runner?.lastStep;
-        final emojis = runner?.emojis;
+        final state = snapshot.data;
+        final lastStep = state?.lastStep;
+        final emojis = state?.emojis;
         final isLastStepKey = lastStep == 'm.key.verification.key';
 
         // Not the SDK's `isDone`, which is equally true for a cancelled
         // ceremony — the modal used to render the cancellation notice and the
         // green success shield at the same time, telling the user a device had
         // been verified when it had not.
-        final outcome = runner?.outcome ?? KeyVerificationOutcome.pending;
+        final outcome = state?.outcome ?? KeyVerificationOutcome.pending;
         final isSuccess = outcome == KeyVerificationOutcome.success;
         final isCancelled = outcome == KeyVerificationOutcome.cancelled;
 
@@ -160,15 +161,12 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 VerificationCeremonyHeader(
-                  deviceName:
-                      widget.deviceKeys.deviceDisplayName ??
-                      widget.deviceKeys.deviceId ??
-                      '',
-                  userId: widget.deviceKeys.userId,
-                  deviceId: widget.deviceKeys.deviceId,
+                  deviceName: widget.device.label,
+                  userId: widget.device.userId,
+                  deviceId: widget.device.deviceId,
                 ),
                 SizedBox(height: tokens.spacing.step5),
-                if (runner == null)
+                if (state == null)
                   DesignSystemButton(
                     key: const Key('matrix_start_verify'),
                     onPressed: _verificationStartInFlight
@@ -203,15 +201,12 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                 if (isCancelled)
                   VerificationCancelledStage(
                     confirmKey: const Key('matrix_cancelled_confirm'),
-                    onConfirm: () {
-                      runner?.stopTimer();
-                      pop();
-                    },
+                    onConfirm: pop,
                   ),
                 if (isLastStepKey && emojis == null)
                   DesignSystemButton(
                     key: const Key('matrix_accept_verify'),
-                    onPressed: () => _acceptEmojiVerification(runner),
+                    onPressed: () => _acceptEmojiVerification(state),
                     label:
                         context.messages.settingsMatrixAcceptVerificationLabel,
                     size: DesignSystemButtonSize.large,
@@ -220,9 +215,11 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   VerificationEmojiStage(
                     emojis: emojis,
                     awaitingOtherDevice: _awaitingOtherDevice,
-                    onAccept: () => unawaited(_acceptEmojiVerification(runner)),
+                    onAccept: () => unawaited(_acceptEmojiVerification(state)),
                     onCancel: () => unawaited(() async {
-                      await runner?.cancelVerification();
+                      if (state != null) {
+                        await _matrixService.cancelVerification(state.id);
+                      }
                       pop();
                     }()),
                   ),
@@ -230,7 +227,6 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   VerificationSuccessStage(
                     onConfirm: () {
                       unawaited(refreshUnverifiedDevices());
-                      runner?.stopTimer();
                       pop();
                     },
                   ),

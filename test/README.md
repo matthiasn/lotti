@@ -728,6 +728,19 @@ a throwaway `test/.leak_bisect_test.dart` that imports a prefix of them as
 the optimizer does — halving the prefix until one file leaks against the
 victim on its own.
 
+## Sync UI tests never import the Matrix SDK
+
+Everything above `lib/features/sync` talks to sync through `SyncService` in
+plain types (ADR 0142), so a widget or provider test for a sync page stubs
+`outgoingVerifications`, `incomingVerification`, `ownUserId`,
+`loginStateChanges` and friends on `MockMatrixService` — never `client`,
+`keyVerificationRunner` or a `DeviceKeys`. Build the values with
+`test/features/sync/sync_verification_fixtures.dart` (`verificationState`,
+`emojiStep`, `doneStep`, `cancelledStep`, `unverifiedPeerDevice`) and assert
+on the ceremony id the widget acts with (`cancelVerification('sas-7')`).
+Only the runner, gateway and `MatrixService` suites still build SDK
+`KeyVerification`s.
+
 ## `MockEvent` is also a `SyncEnvelope`
 
 The apply path reads a Room-free `SyncEnvelope` (ADR 0142, step 3) whose

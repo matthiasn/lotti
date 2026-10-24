@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
-import '../../../mocks/mocks.dart';
 
 void main() {
   SyncDeviceInfo device({
@@ -16,7 +15,7 @@ void main() {
     lastSeen: lastSeen,
     isCurrentDevice: isCurrentDevice,
     verified: verified,
-    keys: withKeys ? MockDeviceKeys() : null,
+    hasKeys: withKeys,
   );
 
   group('label', () {

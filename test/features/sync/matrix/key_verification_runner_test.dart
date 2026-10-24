@@ -54,6 +54,7 @@ void main() {
 
           final runner = KeyVerificationRunner(
             verification,
+            direction: SyncVerificationDirection.outgoing,
             controller: controller,
             name: 'Test runner',
             domainLogger: MockDomainLogger(),
@@ -110,6 +111,7 @@ void main() {
           var callbackCount = 0;
           final runner = KeyVerificationRunner(
             verification,
+            direction: SyncVerificationDirection.outgoing,
             controller: controller,
             name: 'Completion runner',
             domainLogger: MockDomainLogger(),
@@ -174,6 +176,7 @@ void main() {
           final completions = <String>[];
           final runner = KeyVerificationRunner(
             verification,
+            direction: SyncVerificationDirection.outgoing,
             controller: controller,
             name: 'Generated runner',
             domainLogger: MockDomainLogger(),
@@ -289,6 +292,7 @@ void main() {
 
           final runner = KeyVerificationRunner(
             verification,
+            direction: SyncVerificationDirection.outgoing,
             controller: controller,
             name: 'Action runner',
             domainLogger: MockDomainLogger(),
@@ -493,6 +497,7 @@ void main() {
 
         final runner = KeyVerificationRunner(
           verification,
+          direction: SyncVerificationDirection.outgoing,
           controller: controller,
           name: 'Forward test',
           domainLogger: MockDomainLogger(),
@@ -514,6 +519,7 @@ void main() {
       when(() => verification.isDone).thenReturn(false);
       final runner = KeyVerificationRunner(
         verification,
+        direction: SyncVerificationDirection.outgoing,
         controller: controller,
         name: 'Closed stream test',
         domainLogger: MockDomainLogger(),
@@ -548,6 +554,7 @@ void main() {
 
         final runner = KeyVerificationRunner(
           verification,
+          direction: SyncVerificationDirection.outgoing,
           controller: controller,
           name: 'Cancel test',
           domainLogger: MockDomainLogger(),
@@ -673,6 +680,7 @@ void main() {
       when(() => verification.onUpdate = any()).thenReturn(null);
       final runner = KeyVerificationRunner(
         verification,
+        direction: SyncVerificationDirection.outgoing,
         controller: runnerController(),
         name: 'Outcome runner',
         domainLogger: MockDomainLogger(),
@@ -756,6 +764,103 @@ void main() {
       });
 
       expect(completions, isEmpty);
+    });
+  });
+
+  group('plain state (ADR 0142)', () {
+    KeyVerificationRunner makeRunner(
+      MockKeyVerification verification, {
+      SyncVerificationDirection direction = SyncVerificationDirection.outgoing,
+    }) {
+      when(() => verification.onUpdate).thenReturn(null);
+      when(() => verification.onUpdate = any()).thenReturn(null);
+      final runner = KeyVerificationRunner(
+        verification,
+        direction: direction,
+        controller: runnerController(),
+        name: 'State runner',
+        domainLogger: MockDomainLogger(),
+      );
+      addTearDown(runner.stopTimer);
+      return runner;
+    }
+
+    test('verificationIdOf prefers the SDK transaction id and otherwise mints '
+        'one stable per ceremony', () {
+      final withId = MockKeyVerification();
+      when(() => withId.transactionId).thenReturn('txn-1');
+      final withoutId = MockKeyVerification();
+      when(() => withoutId.transactionId).thenReturn(null);
+
+      expect(verificationIdOf(withId), 'txn-1');
+      expect(verificationIdOf(withoutId), startsWith('local-'));
+      expect(verificationIdOf(withoutId), verificationIdOf(withoutId));
+      expect(
+        verificationIdOf(withoutId),
+        isNot(verificationIdOf(MockKeyVerification())),
+      );
+    });
+
+    test(
+      'toState carries the id, direction, peer, step, emoji and outcome',
+      () {
+        final verification = MockKeyVerification();
+        when(() => verification.transactionId).thenReturn('txn-1');
+        when(() => verification.userId).thenReturn('@alice:example.com');
+        when(() => verification.deviceId).thenReturn('PHONE');
+        when(
+          () => verification.lastStep,
+        ).thenReturn('m.key.verification.key');
+        when(() => verification.isDone).thenReturn(false);
+        when(() => verification.sasEmojis).thenReturn([
+          KeyVerificationEmoji(0),
+          KeyVerificationEmoji(1),
+        ]);
+
+        final runner = makeRunner(
+          verification,
+          direction: SyncVerificationDirection.incoming,
+        )..readEmojis();
+        final state = runner.toState();
+
+        expect(state.id, 'txn-1');
+        expect(state.direction, SyncVerificationDirection.incoming);
+        expect(state.peerUserId, '@alice:example.com');
+        expect(state.peerDeviceId, 'PHONE');
+        expect(state.lastStep, 'm.key.verification.key');
+        expect(state.outcome, KeyVerificationOutcome.pending);
+        expect(state.isPending, isTrue);
+        expect(state.peerIdentity, '@alice:example.com|PHONE');
+        expect(
+          state.emojis!.map((e) => (e.emoji, e.name)),
+          [
+            (KeyVerificationEmoji(0).emoji, KeyVerificationEmoji(0).name),
+            (KeyVerificationEmoji(1).emoji, KeyVerificationEmoji(1).name),
+          ],
+        );
+      },
+    );
+
+    test('toState reports no emoji before the key step and the outcome once '
+        'the ceremony ends', () {
+      final verification = MockKeyVerification();
+      when(() => verification.transactionId).thenReturn('txn-2');
+      when(() => verification.userId).thenReturn('@bob:example.com');
+      when(() => verification.deviceId).thenReturn(null);
+      when(() => verification.canceled).thenReturn(true);
+      when(() => verification.state).thenReturn(KeyVerificationState.error);
+      when(
+        () => verification.lastStep,
+      ).thenReturn(EventTypes.KeyVerificationCancel);
+      when(() => verification.isDone).thenReturn(true);
+
+      final state = makeRunner(verification).toState();
+
+      expect(state.emojis, isNull);
+      expect(state.outcome, KeyVerificationOutcome.cancelled);
+      expect(state.isPending, isFalse);
+      expect(state.peerDeviceId, isNull);
+      expect(state.peerIdentity, '@bob:example.com|');
     });
   });
 }

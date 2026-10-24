@@ -2583,7 +2583,10 @@ Future<void> _performSasVerification({
   await waitSeconds(defaultDelay);
 
   debugPrint('\n--- Alice verifies Bob');
-  await alice.verifyDevice(unverifiedAlice.first);
+  await alice.verifyDevice(
+    userId: unverifiedAlice.first.userId!,
+    deviceId: unverifiedAlice.first.deviceId,
+  );
 
   await waitUntil(() => emojisFromAlice.isNotEmpty, timeout: timeout);
   await waitUntil(
