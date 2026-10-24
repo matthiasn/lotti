@@ -12,6 +12,7 @@ import 'package:lotti/beamer/journal_detail_slots_wiring.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -36,6 +37,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup
 import 'package:lotti/features/dashboards/state/dashboard_habit_chart_slot.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/github/state/github_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
@@ -300,6 +302,10 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       ),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     journalDbProvider.overrideWithValue(getIt<JournalDb>()),
+    // A guest profile registers no full-text index.
+    fts5DbProvider.overrideWithValue(
+      getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
+    ),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     domainLoggerProvider.overrideWithValue(getIt<DomainLogger>()),
@@ -382,6 +388,7 @@ List<Override> appFeatureWiringOverrides() => [
       ...ref.watch(dayAgentWakeRunnersProvider),
       ...ref.watch(goalAgentWakeRunnersProvider),
       ...ref.watch(relationshipAgentWakeRunnersProvider),
+      ...ref.watch(frontAgentWakeRunnersProvider),
     },
   ),
   // A speech model download or removal re-advertises this node's
@@ -399,6 +406,7 @@ List<Override> appFeatureWiringOverrides() => [
   ),
   agentResolvedSetupResolversProvider.overrideWithValue({
     AgentKinds.relationshipAgent: resolveRelationshipAgentSetup,
+    AgentKinds.frontAgent: resolveFrontAgentSetup,
   }),
   agentRuntimeMaintenanceProvider.overrideWith(
     (ref) => [

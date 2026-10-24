@@ -143,7 +143,10 @@ tool.lotti_gym_billing_test tool.lotti_gym_history_test`.
 | Compaction | Full-context and hierarchical arms paired per fixture; truncation remains a standalone experiment |
 
 The oMLX-only Qwen compatibility harness is explicitly excluded from a Melious
-assessment. Vision, audio transcription, relationship persistence and query
+assessment, and so is the front agent's routing harness
+(`front_agent_routing_eval_live_test.dart`): it routes a hand-held index and
+runs directly with `FRONT_AGENT_EVAL_OUTPUT`, and gets a Gym adapter once the
+chat surface exists. Vision, audio transcription, relationship persistence and query
 action application remain visible coverage gaps. A text transcript does not
 measure speech recognition. Historical prompt/editor experiments remain
 available through the individual harnesses; they are not multiplied into the

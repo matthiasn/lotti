@@ -11,6 +11,11 @@ abstract final class AgentKinds {
   static const goalAgent = 'goal_agent';
   static const relationshipAgent = 'relationship_agent';
   static const categoryAgent = 'category_agent';
+
+  /// The single front agent the user talks to in one place; it dispatches
+  /// each request to the task, goal, project or person agent that owns it
+  /// (`docs/implementation_plans/2026-10-23_single_agent_entry_point.md`).
+  static const frontAgent = 'front_agent';
 }
 
 /// Notification scopes that carry meaning beyond a single agent entity ID.

@@ -66,6 +66,7 @@ verifiable saved quotations, gated by the source's current privacy metadata.
 | `goal_agent` | goal spec head (no single slot) | `GoalAgentWorkflow` | deterministic cadence, signal subscriptions, escalation wakes |
 | `relationship_agent` | relationship context | `RelationshipAgentWorkflow` | conversation and relationship activity |
 | `category_agent` | deterministic category ID | query conversation only | explicit user question; no wake subscription |
+| `front_agent` | the fixed id `front_agent`, one per user | `FrontAgentWorkflow` | a durable user turn (`front-chat-message:<id>` token) only; any other token is a no-op |
 
 The day agent is the single long-lived Daily OS planner (ADR 0022). Its workflow
 and service live in [`daily_os_next`](../daily_os_next/), not here — and
@@ -75,13 +76,22 @@ service live in [`goals`](../goals.md), also outside this tree, and it plugs in
 through the same registry mechanism as the day agent. So does the relationship
 agent, whose workflow lives in
 [`relationships`](../../../lib/features/relationships/workflow/relationship_agent_workflow.dart).
+The front agent — the one agent the user talks to in one place, which
+dispatches each request to the owner that should take it — lives in
+[`front_agent`](../../../lib/features/front_agent) and plugs in the same way;
+its concept and slices are in
+[the single-entry-point plan](../../../docs/implementation_plans/2026-10-23_single_agent_entry_point.md).
+The open-task corpus it routes against is shared with the day agent's capture
+wake: [`open_task_corpus.dart`](../../../lib/features/agents/service/open_task_corpus.dart)
+owns which open tasks are listed and in which order, and both features shape
+their own rows from it.
 
 ## How an owning feature plugs a kind in
 
 The first four kinds above are wired directly in `wireWakeExecutor`, because this
 feature owns their workflows: the improver, project and event agents inline, the
-task agent as the fallback after the registry lookup. `day_agent`, `goal_agent`
-and `relationship_agent` are not: they are contributed through the registries in
+task agent as the fallback after the registry lookup. `day_agent`, `goal_agent`,
+`relationship_agent` and `front_agent` are not: they are contributed through the registries in
 `agent_runtime_registry.dart`, which default to empty and are overridden in the
 composition root (`buildProviderOverrides`, which spreads
 `appFeatureWiringOverrides`; the sync attachment is added there only when
@@ -92,7 +102,7 @@ features.
 |----------|-------------|-------------|
 | `agentWakeRunnersProvider` | one `AgentWakeRunner` per kind | `wireWakeExecutor`, consulted before the task-agent default |
 | `agentRuntimeMaintenanceProvider` | `beforeWakeScan()` / `restoreSubscriptions()` hooks | `scheduledWakeManagerProvider`'s pre-check and the startup restoration pass |
-| `agentResolvedSetupResolversProvider` | an `AgentResolvedSetupResolver` per kind that resolves its own inference setup (relationship agents) | `taskAgentResolvedSetup`, consulted before the template lookup |
+| `agentResolvedSetupResolversProvider` | an `AgentResolvedSetupResolver` per kind that resolves its own inference setup (relationship and front agents) | `taskAgentResolvedSetup`, consulted before the template lookup |
 | `agentSyncAttachmentProvider` | sync's `AgentSyncAttachment` (`SyncEventProcessorAgentAttachment`): the repository, then the wake runtime | `agentInitialization`, which attaches the repository before building any runtime provider |
 | `promptLogWrapRenderersProvider` | per-`wrap`-kind prompt-log splices | `WakePromptReconstructor` |
 | `dailyOsSetupSheetLauncherProvider` | the inference-setup sheet opener | the agent internals "current setup" row |

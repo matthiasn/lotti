@@ -86,6 +86,7 @@ const featureOrder = <String>[
   'relationships',
   'events',
   'backup_restore',
+  'front_agent',
 ];
 
 /// Shared code every feature may use, so it must use none of them.

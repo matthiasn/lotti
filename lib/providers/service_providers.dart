@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -29,6 +30,15 @@ final journalDbProvider = Provider<JournalDb>(
     'journalDbProvider must be overridden before use.',
   ),
   name: 'journalDbProvider',
+);
+
+/// Provides the shared full-text index, or null on a host without one (a
+/// guest profile, a bare test). Must be overridden in [ProviderScope].
+final fts5DbProvider = Provider<Fts5Db?>(
+  (ref) => throw UnimplementedError(
+    'fts5DbProvider must be overridden before use.',
+  ),
+  name: 'fts5DbProvider',
 );
 
 /// Provides the shared [SyncDatabase] instance. Must be overridden in [ProviderScope].

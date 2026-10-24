@@ -2,8 +2,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/agents/service/open_task_corpus.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
@@ -11,7 +11,10 @@ import 'package:lotti/utils/day_agent_capture_helpers.dart';
 
 /// FTS corpus matching + corpus-snapshot logic for the day-agent capture
 /// flow. The capture service keeps thin delegators so mocks of the service
-/// still intercept the public methods.
+/// still intercept the public methods. The corpus itself — which open tasks,
+/// in which order — is `readOpenTaskCorpus` / `matchOpenTasksByPhrase` in
+/// `features/agents`, shared with the front agent's routing index; this
+/// service only shapes the day agent's rows and blockers from it.
 class DayAgentCorpusService {
   /// Creates the corpus collaborator.
   DayAgentCorpusService({
@@ -49,35 +52,22 @@ class DayAgentCorpusService {
     int limit = maxCorpusTasks,
     TaskDependencyResolver? dependencyResolver,
   }) async {
-    final dayStart = localDay(day);
-    final openTasks = await journalDb.getOpenTasksForDayAgentCorpus(
-      categoryIds: allowedCategoryIds,
+    final tasks = await readOpenTaskCorpus(
+      journalDb: journalDb,
+      allowedCategoryIds: allowedCategoryIds,
+      day: day,
       limit: limit,
     );
-    final overdueAndToday = await journalDb.getTasksDueOnOrBefore(dayStart);
-
-    final byId = <String, Task>{};
-    for (final task in [...overdueAndToday, ...openTasks]) {
-      if (isClosedTask(task)) continue;
-      if (!categoryAllowed(
-        task.meta.categoryId,
-        allowedCategoryIds,
-      )) {
-        continue;
-      }
-      byId.putIfAbsent(task.id, () => task);
-      if (byId.length >= limit) break;
-    }
 
     final blockedBy = dependencyResolver == null
         ? const <String, List<ResolvedBlocker>>{}
         : await dependencyResolver.resolveBlockedStatus(
-            byId.keys.toSet(),
+            {for (final task in tasks) task.id},
             allowedCategoryIds: allowedCategoryIds,
           );
 
     return [
-      for (final task in byId.values)
+      for (final task in tasks)
         {
           'taskId': task.id,
           'title': task.data.title,
@@ -114,31 +104,17 @@ class DayAgentCorpusService {
       return const <DayAgentCorpusMatch>[];
     }
 
-    final ids = await fts5Db.watchFullTextMatches(trimmed).first;
-    if (ids.isEmpty) return const <DayAgentCorpusMatch>[];
-
-    final entities = await journalDb.getJournalEntitiesForIdsUnordered(
-      ids.toSet(),
+    final matches = await matchOpenTasksByPhrase(
+      fts5Db: fts5Db,
+      journalDb: journalDb,
+      phrase: trimmed,
+      categoryFilter: categoryFilter,
+      limit: maxMatchCandidates,
     );
-    final taskById = {
-      for (final entity in entities)
-        if (entity is Task && !isClosedTask(entity)) entity.id: entity,
-    };
-
-    final matches = <DayAgentCorpusMatch>[];
-    for (var i = 0; i < ids.length; i++) {
-      final task = taskById[ids[i]];
-      if (task == null) continue;
-      if (!categoryAllowed(
-        task.meta.categoryId,
-        categoryFilter,
-      )) {
-        continue;
-      }
-      matches.add(corpusMatchFromTask(task, 1 / (i + 1)));
-      if (matches.length >= maxMatchCandidates) break;
-    }
-    return matches;
+    return [
+      for (final match in matches)
+        corpusMatchFromTask(match.task, 1 / (match.rank + 1)),
+    ];
   }
 
   Set<String>? _categoryFilterForHint({

@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-23
+* **New**: [Front agent](features/front_agent.md) — the one agent the user
+  talks to in one place: the turn path, the routing index, the dispatch
+  contract and its validator, the capped lookups and repair round, the
+  deterministic records, and the registry contributions.
+* **Update**: [Agents overview](features/agents/overview.md) — the
+  `front_agent` kind and the open-task corpus shared with the day agent;
+  [Model evaluation](features/ai/model-evaluation.md) — the routing harness
+  excluded from the Gym until it has an adapter.
+
 ## 2026-10-15
 * **Update**: [Onboarding](features/onboarding.md) — the companion: her beats,
   her lines as the captions, and why her voice writes run after the frame;
