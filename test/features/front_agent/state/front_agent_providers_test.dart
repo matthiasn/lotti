@@ -170,7 +170,7 @@ void main() {
       },
     );
 
-    test("a turn already answered — a recovery wake after the author's own "
+    test("a turn already routed — a recovery wake after the author's own "
         'run — is not routed again, but its doors are still walked', () async {
       stubThread(pending: false);
       final runner = container.read(

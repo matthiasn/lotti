@@ -3,6 +3,8 @@ import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:mocktail/mocktail.dart';
@@ -44,6 +46,8 @@ void main() {
   setUp(() {
     repository = MockAgentRepository();
     service = FrontChatHistoryService(repository: repository);
+    // Payloads exist only where a test stubs them.
+    when(() => repository.getEntity(any())).thenAnswer((_) async => null);
   });
 
   test('a turn is answered by a dispatch, a question or a reply — and only '
@@ -105,6 +109,122 @@ void main() {
       ],
     );
     expect(await service.pendingMessageIds(), ['u']);
+  });
+
+  group('a routed turn whose doors are not all walked', () {
+    const turn = 'u-routed';
+    const dispatchId = 'd-routed';
+
+    AgentMessagePayloadEntity dispatchPayload() => makeTestMessagePayload(
+      id: 'p-$dispatchId',
+      agentId: frontAgentId,
+      content: {
+        'input': 'Garden? Swim?',
+        ...FrontDispatch(
+          segments: [
+            for (final (start, end, kind, id) in [
+              (0, 7, FrontDestinationKind.task, 'garden'),
+              (8, 13, FrontDestinationKind.goal, 'goal-swim'),
+            ])
+              FrontDispatchSegment(
+                start: start,
+                end: end,
+                text: 'Garden? Swim?'.substring(start, end),
+                intent: FrontSegmentIntent.question,
+                kind: kind,
+                destinationId: id,
+                confidence: 0.9,
+              ),
+          ],
+        ).toJson(),
+      },
+    );
+
+    AgentMessageEntity door(int index, FrontDoorStatus status) {
+      final id = frontDoorRecordId(dispatchId, index);
+      final payload = makeTestMessagePayload(
+        id: '$id:payload',
+        agentId: frontAgentId,
+        content: FrontDoorRecord(
+          segmentIndex: index,
+          text: 'segment $index',
+          kind: FrontDestinationKind.task,
+          destinationId: 'garden',
+          status: status,
+          claimedAt: DateTime.utc(2026, 10, 24),
+          outcome: status == FrontDoorStatus.done
+              ? const FrontDoorSkipped(FrontDoorSkipReason.noDoor)
+              : null,
+        ).toJson(),
+      );
+      when(() => repository.getEntity(payload.id)).thenAnswer(
+        (_) async => payload,
+      );
+      return makeTestMessage(
+        id: id,
+        agentId: frontAgentId,
+        kind: AgentMessageKind.action,
+        metadata: const AgentMessageMetadata(
+          runKey: 'run-d-routed',
+          toolName: frontDoorToolName,
+          operationId: turn,
+        ),
+        contentEntryId: payload.id,
+        createdAt: DateTime(2026, 10, 24, 13),
+      );
+    }
+
+    void stub(List<AgentMessageEntity> doors) {
+      final payload = dispatchPayload();
+      when(
+        () => repository.getEntity(payload.id),
+      ).thenAnswer((_) async => payload);
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          user(turn, 9),
+          answer(dispatchId, FrontAgentToolNames.dispatch, operationId: turn),
+          ...doors,
+        ],
+      );
+    }
+
+    test('is routed — never routed again — but still pending for recovery '
+        'while a door is missing or only claimed', () async {
+      stub([door(0, FrontDoorStatus.done)]);
+      expect(await service.unroutedMessageIds(), isEmpty);
+      expect(await service.pendingMessageIds(), [turn]);
+
+      stub([door(0, FrontDoorStatus.done), door(1, FrontDoorStatus.claimed)]);
+      expect(await service.pendingMessageIds(), [turn]);
+    });
+
+    test('is finished once every segment has a done door', () async {
+      stub([door(0, FrontDoorStatus.done), door(1, FrontDoorStatus.done)]);
+      expect(await service.unroutedMessageIds(), isEmpty);
+      expect(await service.pendingMessageIds(), isEmpty);
+      expect(await service.oldestPendingMessageId(), isNull);
+    });
+
+    test('a dispatch this build cannot read, or a question or reply with no '
+        'doors to walk, leaves nothing pending', () async {
+      final payload = makeTestMessagePayload(
+        id: 'p-$dispatchId',
+        agentId: frontAgentId,
+        content: const {'input': 'Garden?'},
+      );
+      when(
+        () => repository.getEntity(payload.id),
+      ).thenAnswer((_) async => payload);
+      when(() => repository.getAgentMessages(frontAgentId)).thenAnswer(
+        (_) async => [
+          user(turn, 9),
+          answer(dispatchId, FrontAgentToolNames.dispatch, operationId: turn),
+          user('u-asked', 10),
+          answer('a', FrontAgentToolNames.askUser, operationId: 'u-asked'),
+        ],
+      );
+      expect(await service.pendingMessageIds(), isEmpty);
+    });
   });
 
   test('nothing pending reads as null', () async {

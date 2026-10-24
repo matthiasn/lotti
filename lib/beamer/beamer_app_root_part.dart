@@ -222,8 +222,12 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         },
       ),
       AppCommandId.openFrontChat: AppCommandHandler(
+        // Her thread spans every category, so lockdown closes this door
+        // the way it drops her row from the rail.
         isEnabled: () =>
-            ref.read(configFlagProvider(enableFrontAgentFlag)).value ?? false,
+            (ref.read(configFlagProvider(enableFrontAgentFlag)).value ??
+                false) &&
+            !ref.read(lockdownControllerProvider).isActive,
         invoke: (invocation) {
           final modalContext =
               routerDelegate.navigatorKey.currentContext ?? invocation.context;

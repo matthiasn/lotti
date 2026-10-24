@@ -141,14 +141,19 @@ pending. An append whose transaction committed but whose outbox flush failed
 is reconciled by re-reading the deterministic id, not retried into a
 duplicate.
 
-**The wake runner routes a still-pending turn, then always walks.** Only a
+**The wake runner routes a still-unrouted turn, then always walks.** Only a
 chat token enters the model; any other token — creation, a subscription —
-returns a successful no-op. A turn that `FrontChatHistoryService` no longer
-lists as pending (a `dispatch`, `ask_user` or `reply_to_user` row with its
-`operationId` exists) is not routed again, which is what makes a recovery
-wake arriving after the author's own run harmless; its doors are still
-walked, which the claims below make idempotent. A failed routing walks
-nothing: there is no dispatch to walk and the record stays pending.
+returns a successful no-op. `FrontChatHistoryService` keeps two sets apart:
+the **unrouted** turns (no `dispatch`, `ask_user` or `reply_to_user` row
+names them) are what the runner takes through the model, so a recovery wake
+arriving after the author's own run routes nothing; the **pending** turns —
+the unrouted ones plus any routed turn whose newest dispatch still has a
+segment without a `done` door — are what maintenance re-arms. The scheduled
+wake manager consumes a recovery record when it *enqueues* the wake, before
+the doors finish, so a walk that died after the dispatch was written stays
+eligible for the next pass, which walks the doors without routing again;
+the claims below make that idempotent. A failed routing walks nothing:
+there is no dispatch to walk and the record stays pending.
 
 **Recovery runs on every device.** `FrontRuntimeMaintenance` implements all
 three runtime hooks and calls `restoreOldestPendingMessage`: a pending turn
@@ -292,9 +297,11 @@ as her turn, with the options parsed from the record) are the messages,
 newest fifty; a dispatch is never shown — its door records hang off the user
 turn they answer, in segment order, and for a `FrontDoorChatTurn` the
 specialist's reply is read from that agent's thread by the recorded message
-id. `frontChatThreadProvider` reloads on the front agent's update pings and
-whenever a specialist a door handed a turn to finishes a wake
-(`runCompletions`, by agent id) — the sync service pings nobody.
+id. `frontChatThreadProvider` reloads on the front agent's update pings,
+whenever a specialist a door handed a turn to finishes a wake here
+(`runCompletions`, by agent id — the sync service pings nobody), and on
+each such specialist's own update pings, which is how a reply written on
+another device arrives through sync.
 `FrontChatController` sends through the chat service (creating the identity
 on first use) and invalidates the thread when the awaited turn completes; a
 failed turn keeps its durable id so the retry re-wakes the same turn.
@@ -310,7 +317,8 @@ her internals. `showFrontChatSheet` opens it on the root navigator in the
 agent-chat side sheet — a bottom sheet below the page breakpoint — from the
 desktop rail's utility row above Settings, the phone launcher's utility
 button beside the menu, or the `openFrontChat` keyboard command
-(Cmd/Ctrl+L), all gated by `enable_front_agent`.
+(Cmd/Ctrl+L), all gated by `enable_front_agent` and all closed under
+lockdown: her thread spans every category.
 
 # Where it plugs in
 

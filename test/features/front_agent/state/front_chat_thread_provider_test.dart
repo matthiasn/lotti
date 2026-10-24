@@ -20,9 +20,14 @@ class _CountingBuilder extends FrontChatThreadBuilder {
   final Set<String> specialists;
   int builds = 0;
 
+  /// When set, every build after the first waits on it — a re-projection
+  /// still in flight.
+  Completer<void>? gate;
+
   @override
   Future<FrontChatThread> build() async {
     builds++;
+    if (builds > 1 && gate != null) await gate!.future;
     return FrontChatThread(
       messages: const [],
       specialistAgentIds: specialists,
@@ -34,10 +39,13 @@ void main() {
   late StreamController<WakeRunCompletion> completions;
   late MockWakeOrchestrator orchestrator;
   late StreamController<Set<String>> pings;
+  late StreamController<Set<String>> specialistPings;
 
   setUp(() {
     completions = StreamController<WakeRunCompletion>.broadcast();
     pings = StreamController<Set<String>>.broadcast();
+    specialistPings = StreamController<Set<String>>.broadcast();
+    addTearDown(specialistPings.close);
     orchestrator = MockWakeOrchestrator();
     when(() => orchestrator.runCompletions).thenAnswer(
       (_) => completions.stream,
@@ -54,6 +62,9 @@ void main() {
         agentUpdateStreamProvider(
           frontAgentId,
         ).overrideWith((ref) => pings.stream),
+        agentUpdateStreamProvider(
+          'goal-swim',
+        ).overrideWith((ref) => specialistPings.stream),
       ],
     );
     addTearDown(container.dispose);
@@ -88,7 +99,7 @@ void main() {
         agentId: 'someone-else',
       ),
     );
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
     expect(builder.builds, 1);
 
     completions.add(
@@ -98,7 +109,7 @@ void main() {
         agentId: 'goal-swim',
       ),
     );
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
     await container.read(frontChatThreadProvider.future);
     expect(builder.builds, 2);
   });
@@ -110,7 +121,7 @@ void main() {
     await container.read(frontChatThreadProvider.future);
 
     pings.add({frontAgentId});
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
     await container.read(frontChatThreadProvider.future);
 
     expect(builder.builds, 2);
@@ -119,7 +130,7 @@ void main() {
   test(
     'keeps the shown thread while re-projecting (stay while reload)',
     () async {
-      final builder = _CountingBuilder({'goal-swim'});
+      final builder = _CountingBuilder({'goal-swim'})..gate = Completer<void>();
       final container = containerWith(builder)
         ..listen(frontChatThreadProvider, (_, _) {});
       final first = await container.read(frontChatThreadProvider.future);
@@ -131,13 +142,30 @@ void main() {
           agentId: 'goal-swim',
         ),
       );
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final reloading = container.read(frontChatThreadProvider);
       expect(reloading.isLoading, isTrue);
       expect(reloading.value, same(first));
+      builder.gate!.complete();
+      await container.read(frontChatThreadProvider.future);
+      expect(builder.builds, 2);
     },
   );
+
+  test("re-projects on a specialist's own update ping — a reply that "
+      'arrived through sync from another device', () async {
+    final builder = _CountingBuilder({'goal-swim'});
+    final container = containerWith(builder)
+      ..listen(frontChatThreadProvider, (_, _) {});
+    await container.read(frontChatThreadProvider.future);
+
+    specialistPings.add({'goal-swim'});
+    await pumpEventQueue();
+    await container.read(frontChatThreadProvider.future);
+
+    expect(builder.builds, 2);
+  });
 
   test('stops listening when nobody looks at the thread', () async {
     final builder = _CountingBuilder({'goal-swim'});
@@ -147,7 +175,7 @@ void main() {
     expect(completions.hasListener, isTrue);
 
     subscription.close();
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     expect(completions.hasListener, isFalse);
   });

@@ -308,8 +308,10 @@ extension _AppScreenLayout on _AppScreenState {
     // on the list tabs that hand one over, the active page's create action.
     // Built lazily: on routes that suppress the bar entirely it is never
     // constructed.
+    // Her thread spans every category: no button under lockdown.
     final frontChatOn =
-        ref.watch(configFlagProvider(enableFrontAgentFlag)).value ?? false;
+        (ref.watch(configFlagProvider(enableFrontAgentFlag)).value ?? false) &&
+        !ref.watch(lockdownControllerProvider).isActive;
     Widget buildLauncher() => MobileNavigationLauncher(
       onOpenMenu: _mobileDrawer.open,
       utilityAction: frontChatOn

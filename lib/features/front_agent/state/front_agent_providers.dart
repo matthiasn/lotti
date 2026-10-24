@@ -141,10 +141,10 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
 ///
 /// Only a chat token enters the model: the front agent has no scheduled or
 /// subscription wakes, so any other token is a no-op success. A turn that
-/// is already answered — a recovery wake arriving after the author's own
-/// run — is not routed again (the goal runner's rule); its doors are still
-/// walked, which the claims make idempotent, so a walk that died with its
-/// device is finished here.
+/// is already routed, asked about or replied to — a recovery wake arriving
+/// after the author's own run — is not routed again (the goal runner's
+/// rule); its doors are still walked, which the claims make idempotent, so a
+/// walk that died with its device is finished here.
 final frontAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
   (ref) => <String, AgentWakeRunner>{
     AgentKinds.frontAgent:
@@ -156,11 +156,11 @@ final frontAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
         }) async {
           final messageId = frontChatMessageIdFromTriggerTokens(triggerTokens);
           if (messageId == null) return const WakeResult(success: true);
-          final pending = await ref
+          final unrouted = await ref
               .read(frontChatHistoryServiceProvider)
-              .pendingMessageIds();
+              .unroutedMessageIds();
           var result = const WakeResult(success: true);
-          if (pending.contains(messageId)) {
+          if (unrouted.contains(messageId)) {
             result = await ref
                 .read(frontAgentWorkflowProvider)
                 .executeUserMessage(

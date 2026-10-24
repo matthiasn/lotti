@@ -6915,7 +6915,15 @@ void main() {
         isDashboardsEnabled: () => true,
       );
       when(() => nav.index).thenReturn(0);
+      // Lockdown mirrors its scope into the cache and resets the tabs.
+      when(() => nav.journalIndex).thenReturn(5);
+      when(() => nav.isTabAllowed(any())).thenReturn(true);
+      when(() => nav.setIndex(any())).thenReturn(null);
+      when(() => nav.resetTabRootWithinTab(any())).thenReturn(null);
       await _registerAppScreenGetIt(nav);
+      getIt.registerSingleton<EntitiesCacheService>(
+        MockEntitiesCacheService(),
+      );
       addTearDown(tearDownTestGetIt);
       return nav;
     }
@@ -6979,6 +6987,16 @@ void main() {
         mockNavService,
         registeredNavService: registeredNavService,
       );
+      // Lockdown mirrors its scope into the cache and resets the tabs.
+      getIt.registerSingleton<EntitiesCacheService>(
+        MockEntitiesCacheService(),
+      );
+      when(() => mockNavService.journalIndex).thenReturn(5);
+      when(() => mockNavService.isTabAllowed(any())).thenReturn(true);
+      when(() => mockNavService.setIndex(any())).thenReturn(null);
+      when(
+        () => mockNavService.resetTabRootWithinTab(any()),
+      ).thenReturn(null);
       addTearDown(tearDownTestGetIt);
       final userActivityService = _SpyUserActivityService();
       addTearDown(userActivityService.dispose);
@@ -7046,6 +7064,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(await invocation, isTrue);
       expect(find.byType(FrontChatPane), findsNothing);
+
+      // Lockdown closes this door too, flag or no flag.
+      ProviderScope.containerOf(
+        commandContext,
+      ).read(lockdownControllerProvider.notifier).lockToCategory('work');
+      await tester.pump();
+      expect(
+        commandController.isAvailable(
+          commandContext,
+          AppCommandId.openFrontChat,
+        ),
+        isFalse,
+      );
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
@@ -7075,6 +7106,15 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FrontChatPane), findsOneWidget);
       verifyNever(() => nav.tapIndex(any()));
+      await tester.tap(find.byKey(FrontChatHeaderKeys.close));
+      await tester.pumpAndSettle();
+
+      // Her thread spans every category: lockdown takes the button away.
+      ProviderScope.containerOf(
+        tester.element(find.byType(AppScreen)),
+      ).read(lockdownControllerProvider.notifier).lockToCategory('work');
+      await tester.pump();
+      expect(utilityButton, findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });
