@@ -5,13 +5,17 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-24T12:00:00Z }
 stale_after: 2027-01-03
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
     title: Exact attachment discovery after a restart or missed descriptor
-    last_modified: 2026-10-02
+    last_modified: 2026-10-24
+  - id: descriptor-fetcher
+    resource: ../../../lib/features/sync/matrix/sync_descriptor_fetcher.dart
+    title: The SDK-backed descriptor lookup the recovery goes through
+    last_modified: 2026-10-24
   - id: tla-spec
     resource: ../../../specs/tla/InboundQueue.tla
     title: TLA+ model of the inbound queue, its walks and its marker
@@ -115,7 +119,7 @@ All under `lib/features/sync/queue/`:
 | `InboundQueue` | Drift-backed queue in `sync_db` — `inbound_event_queue` plus a per-room `queue_markers` table |
 | `InboundWorker` | Per-room drain loop. Waits for `UserActivityGate` idle time before each entry; an entry it has started — up to a 50-child bundle, inline descriptor downloads included — runs to completion. Live admission, bridge walks and the `fromSync` notification fan-out are not gated (see [the sync isolate](isolate.md#what-runs-regardless-of-activity)) |
 | `BridgeCoordinator` | Subscribes to `Client.onSync`; runs anchored catch-up walks and retries durable ciphertext floors after to-device traffic. Single-flight |
-| `QueueApplyAdapter` | Bridges the worker to `SyncEventProcessor.prepare` / `apply` |
+| `QueueApplyAdapter` | Bridges the worker to `SyncEventProcessor.prepare` / `apply`. Rebuilds a Room-free `SyncEnvelope` from the row's stored JSON; neither it nor the worker touches an SDK `Room` ([the sync isolate](isolate.md#applying-without-a-room)) |
 | `QueuePipelineCoordinator` | Owns the above plus the live producer subscription; exposed as `MatrixService.queueCoordinator` |
 | `QueueMarkerSeeder` | One-shot migration copying legacy `lastReadMatrixEventTs`/`Id` into `queue_markers`. Never overwrites an existing row |
 
@@ -140,13 +144,15 @@ the same normalized `relativePath` as the envelope; a mismatched immutable id is
 malformed rather than a reason to read some other file.
 
 The index is volatile. If preparation needs an exact descriptor that is absent,
-`SyncEventProcessor` retrieves that event by ID from the envelope's room through
-the SDK's database/server lookup and retries decryption of cached ciphertext.
-If cached plaintext lacks a nonempty attachment path, it fetches the same event
-directly from the room endpoint so an incomplete cache cannot trap every retry.
-The wire event ID and optional room ID are checked before constructing an SDK
-event (which assigns its supplied room), and the resulting descriptor's identity
-is checked again before indexing it and retrying preparation once. This repairs a restart or missed file event even
+`SyncEventProcessor` asks its `SyncDescriptorFetcher` for that event by ID in
+the envelope's room. `MatrixDescriptorFetcher` answers through the SDK's
+database/server lookup and retries decryption of cached ciphertext. If cached
+plaintext lacks a nonempty attachment path, it fetches the same event directly
+from the room endpoint so an incomplete cache cannot trap every retry. The wire
+event ID and optional room ID are checked before constructing an SDK event
+(which assigns its supplied room), and the processor checks the resulting
+descriptor's identity again before indexing it and retrying preparation once.
+This repairs a restart or missed file event even
 when the durable cursor has already passed the descriptor. Existing canonical
 data that satisfies preparation needs no lookup. Missing, still-encrypted or
 temporarily unavailable descriptors produce `PendingSyncDescriptorException`.
@@ -161,8 +167,8 @@ only once both a day has passed since it was queued and a day's worth of
 30-second descriptor retries (2880) has run, so neither a long app shutdown nor
 an offline day alone drops it. Those retries are counted in the row's own
 `descriptor_attempts` column (sync DB v33), because `attempts` also grows with
-no-room and barrier retries; a row that waited a day for its room is not
-dropped on its first descriptor miss. Resurrection resets both counters, and
+generic and barrier retries; a row that retried for a day is not dropped on its
+first descriptor miss. Resurrection resets both counters, and
 abandoned rows stay resurrectable. Local cache writes preserve their original filesystem error and
 use bounded generic retries; a parent bundle descriptor does not turn a child
 cache-write failure into unlimited attachment recovery.

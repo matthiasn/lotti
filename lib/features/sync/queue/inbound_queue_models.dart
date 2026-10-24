@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/database/sync_db.dart';
-import 'package:matrix/matrix.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 
 /// The skip reason of an event held because its sending device was not
 /// trusted yet — unverified, or its keys not arrived. Device verification
@@ -71,9 +71,10 @@ enum RetryReason {
   pendingDescriptor,
 }
 
-/// A queue row materialised for the worker. [rawJson] is the bytes the
-/// worker passes to `Event.fromJson(room, ...)` at apply time; the
-/// queue itself does not keep SDK objects alive.
+/// A queue row materialised for the worker. [rawJson] is the decrypted
+/// event as `Event.toJson()` wrote it, from which [toEnvelope] rebuilds
+/// what the apply path reads; the queue itself does not keep SDK objects
+/// alive, and applying needs no live `Room` (ADR 0142, step 3).
 class InboundQueueEntry {
   const InboundQueueEntry({
     required this.queueId,
@@ -111,12 +112,14 @@ class InboundQueueEntry {
   /// all-reason counter.
   final int descriptorAttempts;
 
-  /// Materialises the stored event against the given [room]. The room
-  /// must belong to the same client the event was enqueued from.
-  Event toEvent(Room room) {
-    final decoded = jsonDecode(rawJson) as Map<String, dynamic>;
-    return Event.fromJson(decoded, room);
-  }
+  /// Rebuilds the envelope the apply path reads from the stored JSON, for
+  /// the room the row was enqueued from. Throws on JSON that is not an
+  /// event's: the row is unrecoverable then, since it was written from a
+  /// fully decrypted event.
+  SyncEnvelope toEnvelope() => StoredSyncEnvelope.fromStoredJson(
+    jsonDecode(rawJson) as Map<String, dynamic>,
+    roomId: roomId,
+  );
 }
 
 /// Lightweight depth snapshot emitted on the queue's depth-change stream so UI

@@ -90,7 +90,7 @@ void main() {
         );
         final seenAt = DateTime.utc(2026, 5, 17, 11);
         final state = PreparedSyncEvent.forTesting(
-          event: event,
+          envelope: event,
           syncMessage: SyncMessage.notificationStateUpdate(
             id: base.id,
             seenAt: seenAt,
@@ -101,7 +101,7 @@ void main() {
         Future<void> applyFull(NotificationEntity row) =>
             processorWithLog.apply(
               prepared: PreparedSyncEvent.forTesting(
-                event: event,
+                envelope: event,
                 syncMessage: SyncMessage.notification(
                   id: row.id,
                   jsonPath: '/notifications/model-trace.json',
@@ -179,7 +179,7 @@ void main() {
 
         await processorWithLog.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: message,
             resolvedNotification: notification,
           ),
@@ -219,7 +219,7 @@ void main() {
 
         await processorWithLog.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: SyncMessage.notificationStateUpdate(
               id: 'state-gap',
               seenAt: DateTime.utc(2026, 5, 17, 14),
@@ -250,7 +250,7 @@ void main() {
 
         await processorWithLog.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: SyncMessage.notificationStateUpdate(
               id: 'state-receipt',
               seenAt: DateTime.utc(2026, 5, 17, 13),
@@ -287,7 +287,7 @@ void main() {
 
         await processorNoDb.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: const SyncMessage.notification(
               id: 'no-db',
               jsonPath: '/notifications/no-db.json',
@@ -327,7 +327,7 @@ void main() {
 
         await processorNoDb.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: const SyncMessage.notificationStateUpdate(
               id: 'no-db-state',
               vectorClock: VectorClock({'remote-host': 1}),
@@ -370,7 +370,7 @@ void main() {
         await expectLater(
           processorWithLog.apply(
             prepared: PreparedSyncEvent.forTesting(
-              event: event,
+              envelope: event,
               syncMessage: SyncMessage.notification(
                 id: notification.meta.id,
                 jsonPath: '/notifications/throwing-receipt.json',
@@ -413,7 +413,7 @@ void main() {
         await expectLater(
           processorWithLog.apply(
             prepared: PreparedSyncEvent.forTesting(
-              event: event,
+              envelope: event,
               syncMessage: SyncMessage.notificationStateUpdate(
                 id: 'state-throwing',
                 seenAt: DateTime.utc(2026, 5, 17, 14),
@@ -476,7 +476,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await processorWithLog.process(event: event, journalDb: journalDb);
+          await processorWithLog.process(envelope: event, journalDb: journalDb);
 
           expect(
             await notificationsDb.notificationById(notification.meta.id),
@@ -574,7 +574,7 @@ void main() {
           );
           when(() => event.text).thenReturn(encodeMessage(message));
 
-          await exactProcessor.process(event: event, journalDb: journalDb);
+          await exactProcessor.process(envelope: event, journalDb: journalDb);
 
           expect(
             await notificationsDb.notificationById(older.meta.id),
@@ -617,7 +617,7 @@ void main() {
 
         await processorWithLog.apply(
           prepared: PreparedSyncEvent.forTesting(
-            event: event,
+            envelope: event,
             syncMessage: SyncMessage.notification(
               id: notification.meta.id,
               jsonPath: '/notifications/no-origin.json',

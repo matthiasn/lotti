@@ -124,19 +124,55 @@ same way, and nothing — startup least of all — waits on a spawn.
 The worker uses no Flutter plugins. Paths, credentials and connectivity come
 from the host.
 
+### Writes, refreshes and notifications across the boundary
+
+Three questions every isolate design has to answer. This one answers them
+with what already exists rather than with new machinery.
+
+- **Database writes.** The sync isolate opens its own Drift connection to
+  `sync.sqlite`, with the SQLite work running on the worker itself rather
+  than in a nested isolate, and with the documents and temporary directories
+  handed over by the host at the handshake — the database opener otherwise
+  asks a path plugin, which the worker cannot call. SQLite's WAL mode and the
+  5 s busy timeout already let two connections share the file; what they do
+  not share is Drift's table-change tracking, which is why the next two
+  points exist. The UI isolate keeps a connection for the pages that read
+  sync state and, during the transition steps, for the tables it still owns.
+  Each step names which side writes which table; no table has two writers at
+  once.
+- **Data refresh.** Journal, settings, agent and notification data change
+  only inside the apply step, which stays on the UI isolate, so the
+  `UpdateNotifications` fan-out keeps firing where it fires today and no
+  widget learns anything new.
+- **Sync-state refresh.** A Drift `watch()` stream fires only for writes made
+  through its own connection. The worker reports every table it wrote as a
+  `SyncIsolateTablesChanged` event, and the host replays that into the UI
+  isolate's connection with Drift's `notifyUpdates`, so the outbox count,
+  queue depth, backfill and conflict streams the pages already watch fire as
+  if the write had been local. Work for the UI isolate — an entry to apply —
+  arrives as an event too, replacing the in-process depth stream the inbound
+  worker listens to today.
+
 ### The steps
 
 Each is one mergeable change; the flag stays off until the last.
 
 1. **The flag and the host.** `use_isolate_sync`, the supervised
    `SyncIsolateHost`, and a worker that answers liveness. Flag on, it starts
-   with the app and proves it runs; sync stays where it is. *(This change.)*
+   with the app and proves it runs; sync stays where it is. *(Done.)*
 2. **Measure.** Timeline markers around the ungated paths, and a profile of a
-   catch-up burst on a phone, before anything moves.
-3. **Apply without a live `Room`.** `QueueApplyAdapter` rebuilds the event from
-   the stored decrypted JSON instead of `entry.toEvent(room)`, and descriptor
-   downloads in `prepare` go through an interface the isolate can answer.
-   Neutral to behaviour, and needed by everything after it.
+   catch-up burst on a phone, before anything moves. *(Done: `SyncCostMeter`.)*
+3. **Apply without a live `Room`.** In two halves. First, the apply path
+   reads a `SyncEnvelope` — the five fields it needs, rebuilt from the stored
+   decrypted JSON — instead of an SDK `Event` built against a room, and the
+   one lookup that needed the room, exact descriptor recovery, goes through
+   `SyncDescriptorFetcher`, answered by the UI isolate's client today and by
+   the sync isolate later. The inbound worker no longer waits for a room: the
+   one observable change is that queued entries apply before the SDK has
+   emitted the room, instead of being retried every two seconds until it has.
+   *(This change.)* Second, `AttachmentIndex` holds Room-free descriptors and
+   attachment downloads go through an interface of the same kind. Needed by
+   everything after it.
 4. **Receive in the isolate.** Matrix client, sync loop, decryption, admission
    and bridge walks move; the lease/acknowledge protocol replaces the UI
    isolate's direct queue writes. A `startSyncServices()` seam keeps the

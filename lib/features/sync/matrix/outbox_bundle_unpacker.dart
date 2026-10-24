@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 
 /// Carrier for a fully-resolved [SyncOutboxBundle]: each child has been
 /// recursively run through the parent processor's prepare phase so apply
@@ -80,7 +80,7 @@ typedef OutboxBundleSidecarResolver =
 /// outbox bundle. Returns the resolved [PreparedSyncEvent] for that child.
 typedef OutboxBundleChildPreparer =
     Future<PreparedSyncEvent> Function(
-      Event event,
+      SyncEnvelope envelope,
       SyncMessage syncMessage,
       Map<String, dynamic>? rawMessageJson,
     );
@@ -127,7 +127,7 @@ class OutboxBundleUnpacker {
   ///   left out; the remaining children still apply, and the result is
   ///   [PreparedOutboxSyncBundle.incomplete], so the bundle is tried again.
   Future<PreparedOutboxSyncBundle?> prepare({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncOutboxBundle msg,
     required OutboxBundleSidecarResolver resolveSidecar,
     required OutboxBundleChildPreparer prepareChild,
@@ -169,7 +169,7 @@ class OutboxBundleUnpacker {
       }
       try {
         final childPrepared = await prepareChild(
-          event,
+          envelope,
           syncMessage,
           child.rawJson,
         );

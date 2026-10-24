@@ -196,7 +196,6 @@ class _HeadReplica {
       originTsMs: 1,
       body: processor_harness.encodeMessage(message),
     ),
-    room,
   );
 
   /// Model a process restart at a quiescent boundary: durable stores survive,

@@ -15,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
@@ -107,6 +108,9 @@ void main() {
             documentsDirectory: directory,
             attachmentIndex: index,
             syncEventTrust: AdmittingSyncEventTrust(),
+            descriptorFetcher: MatrixDescriptorFetcher(
+              resolveRoom: (_) => room,
+            ),
           );
           final link = EntryLink.basic(
             id: 'recovered-bundle-link',
@@ -179,7 +183,6 @@ void main() {
           final worker = InboundWorker(
             queue: queue,
             sequenceLogService: sequence,
-            resolveRoom: () async => room,
             apply: adapter.bind(),
             prepareBatch: adapter.bindPrepareBatch(),
             logging: logging,
@@ -329,7 +332,7 @@ void main() {
               ''');
             }
 
-            expect(await apply(entry, room), ApplyOutcome.retriable);
+            expect(await apply(entry), ApplyOutcome.retriable);
             expect(await syncDb.getEntryByHostAndCounter('sender', 1), isNull);
             expect(
               await journalDb.entryLinkById(link.id),
@@ -344,14 +347,14 @@ void main() {
               await syncDb.customStatement('DROP TRIGGER fail_receipt');
             }
 
-            expect(await apply(entry, room), ApplyOutcome.applied);
+            expect(await apply(entry), ApplyOutcome.applied);
             expect(await journalDb.entryLinkById(link.id), link);
             final receipt = await syncDb.getEntryByHostAndCounter('sender', 1);
             expect(receipt?.entryId, link.id);
             expect(receipt?.status, SyncSequenceStatus.received.index);
 
             // Replayed delivery must preserve both durable witnesses.
-            expect(await apply(entry, room), ApplyOutcome.applied);
+            expect(await apply(entry), ApplyOutcome.applied);
             expect(await journalDb.entryLinkById(link.id), link);
             final replayReceipt = await syncDb.getEntryByHostAndCounter(
               'sender',
@@ -374,8 +377,6 @@ void main() {
       final localProcessor = AdapterMockSyncEventProcessor();
       final localJournalDb = JournalDb(inMemoryDatabase: true);
       final localLogging = MockDomainLogger();
-      final localRoom = MockRoom();
-      when(() => localRoom.id).thenReturn('!r:example.org');
       final entry = hBuildEntry(
         eventId: '\$generated-${scenario.slot}',
         roomId: '!r',
@@ -387,7 +388,7 @@ void main() {
         switch (scenario.prepareOutcome) {
           case GeneratedAdapterPrepareOutcome.ready:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenAnswer((_) async => prepared);
             when(() => prepared.syncMessage).thenReturn(scenario.syncMessage());
             switch (scenario.applyOutcome) {
@@ -413,14 +414,14 @@ void main() {
             }
           case GeneratedAdapterPrepareOutcome.nullPrepared:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenAnswer((_) async => null);
           case GeneratedAdapterPrepareOutcome.pendingDescriptor:
           case GeneratedAdapterPrepareOutcome.pendingPath:
           case GeneratedAdapterPrepareOutcome.retriableIo:
           case GeneratedAdapterPrepareOutcome.permanentThrow:
             when(
-              () => localProcessor.prepare(event: any(named: 'event')),
+              () => localProcessor.prepare(envelope: any(named: 'envelope')),
             ).thenThrow(scenario.prepareException());
         }
 
@@ -431,13 +432,13 @@ void main() {
           hasOlderActiveEntry: (_) async => false,
         );
         if (scenario.usePrepareBatch) {
-          await adapter.bindPrepareBatch()([entry], localRoom);
+          await adapter.bindPrepareBatch()([entry]);
         }
 
-        final outcome = await adapter.bind()(entry, localRoom);
+        final outcome = await adapter.bind()(entry);
         expect(outcome, scenario.expectedOutcome, reason: '$scenario');
         verify(
-          () => localProcessor.prepare(event: any(named: 'event')),
+          () => localProcessor.prepare(envelope: any(named: 'envelope')),
         ).called(1);
         if (scenario.prepareReady) {
           verify(
@@ -473,7 +474,7 @@ void main() {
       attempts: 0,
       rawJson: 'not-json',
     );
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.permanentSkip);
   });
 
@@ -485,9 +486,9 @@ void main() {
       originTsMs: 1,
     );
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => null);
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.undecodable);
     verifyNever(
       () => processor.apply(
@@ -507,9 +508,9 @@ void main() {
         originTsMs: 1,
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenThrow(const FileSystemException('down'));
-      final outcome = await build().bind()(entry, room);
+      final outcome = await build().bind()(entry);
       expect(outcome, ApplyOutcome.retriable);
     },
   );
@@ -522,7 +523,7 @@ void main() {
     );
     final prepared = AdapterMockPreparedSyncEvent();
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(
       () => processor.apply(
@@ -532,7 +533,7 @@ void main() {
       ),
     ).thenAnswer((_) async => null);
 
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.applied);
     verify(
       () => processor.apply(
@@ -559,7 +560,7 @@ void main() {
       reason: OnboardingSyncEndReason.complete,
     );
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(() => prepared.syncMessage).thenReturn(end);
 
@@ -573,7 +574,7 @@ void main() {
       },
     );
 
-    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    expect(await adapter.bind()(entry), ApplyOutcome.pendingBarrier);
     verifyNever(
       () => processor.apply(
         prepared: any(named: 'prepared'),
@@ -603,7 +604,7 @@ void main() {
       ],
     );
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(() => prepared.syncMessage).thenReturn(bundle);
 
@@ -617,7 +618,7 @@ void main() {
       },
     );
 
-    expect(await adapter.bind()(entry, room), ApplyOutcome.pendingBarrier);
+    expect(await adapter.bind()(entry), ApplyOutcome.pendingBarrier);
     verifyNever(
       () => processor.apply(
         prepared: any(named: 'prepared'),
@@ -635,7 +636,7 @@ void main() {
     );
     final prepared = AdapterMockPreparedSyncEvent();
     when(
-      () => processor.prepare(event: any(named: 'event')),
+      () => processor.prepare(envelope: any(named: 'envelope')),
     ).thenAnswer((_) async => prepared);
     when(
       () => processor.apply(
@@ -645,7 +646,7 @@ void main() {
       ),
     ).thenThrow(const FileSystemException('disk full'));
 
-    final outcome = await build().bind()(entry, room);
+    final outcome = await build().bind()(entry);
     expect(outcome, ApplyOutcome.retriable);
   });
 
@@ -659,10 +660,10 @@ void main() {
         originTsMs: 1,
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenThrow(StateError('logic bug'));
 
-      final outcome = await build().bind()(entry, room);
+      final outcome = await build().bind()(entry);
       expect(outcome, ApplyOutcome.undecodable);
       verify(
         () => logging.error(
@@ -681,14 +682,14 @@ void main() {
       roomId: '!r',
       originTsMs: 1,
     );
-    when(() => processor.prepare(event: any(named: 'event'))).thenThrow(
+    when(() => processor.prepare(envelope: any(named: 'envelope'))).thenThrow(
       MatrixException.fromJson(const {
         'errcode': 'M_LIMIT_EXCEEDED',
         'error': 'Too many requests',
       }),
     );
 
-    expect(await build().bind()(entry, room), ApplyOutcome.retriable);
+    expect(await build().bind()(entry), ApplyOutcome.retriable);
   });
 
   test(
@@ -701,12 +702,12 @@ void main() {
         originTsMs: 1,
       );
       final prepared = PreparedSyncEvent.forTesting(
-        event: MockEvent(),
+        envelope: MockEvent(),
         syncMessage: const SyncMessage.outboxBundle(children: []),
         hasUndecodableParts: true,
       );
       when(
-        () => processor.prepare(event: any(named: 'event')),
+        () => processor.prepare(envelope: any(named: 'envelope')),
       ).thenAnswer((_) async => prepared);
       when(
         () => processor.apply(
@@ -716,7 +717,7 @@ void main() {
         ),
       ).thenAnswer((_) async => null);
 
-      expect(await build().bind()(entry, room), ApplyOutcome.undecodable);
+      expect(await build().bind()(entry), ApplyOutcome.undecodable);
       verify(
         () => processor.apply(
           prepared: prepared,
@@ -735,10 +736,12 @@ void main() {
         roomId: '!r',
         originTsMs: 1,
       );
-      when(() => processor.prepare(event: any(named: 'event'))).thenAnswer(
+      when(
+        () => processor.prepare(envelope: any(named: 'envelope')),
+      ).thenAnswer(
         (_) async => throw const PendingSyncDescriptorException(),
       );
-      expect(await build().bind()(entry, room), ApplyOutcome.pendingDescriptor);
+      expect(await build().bind()(entry), ApplyOutcome.pendingDescriptor);
       verifyNever(
         () => processor.apply(
           prepared: any(named: 'prepared'),
@@ -762,12 +765,12 @@ void main() {
           originTsMs: 1,
         );
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenThrow(
           const FileSystemException('attachment descriptor not yet available'),
         );
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.pendingAttachment);
       },
     );
@@ -783,7 +786,7 @@ void main() {
           originTsMs: 1,
         );
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenThrow(
           const PathNotFoundException(
             '/Users/test/Documents/audio/2026-04-21/foo.m4a.json',
@@ -791,7 +794,7 @@ void main() {
           ),
         );
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.pendingAttachment);
       },
     );
@@ -807,7 +810,7 @@ void main() {
           originTsMs: 1,
         );
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenThrow(
           const PathNotFoundException(
             '/Users/test/Documents/agent_entities/abc.json',
@@ -815,7 +818,7 @@ void main() {
           ),
         );
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.pendingAttachment);
       },
     );
@@ -832,7 +835,7 @@ void main() {
           originTsMs: 1,
         );
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenThrow(
           const FileSystemException(
             'unrelated disk error',
@@ -840,7 +843,7 @@ void main() {
           ),
         );
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.retriable);
       },
     );
@@ -857,7 +860,7 @@ void main() {
         );
         final prepared = AdapterMockPreparedSyncEvent();
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenAnswer((_) async => prepared);
         when(
           () => processor.apply(
@@ -869,7 +872,7 @@ void main() {
           const FileSystemException('attachment descriptor not yet available'),
         );
 
-        final outcome = await build().bind()(entry, room);
+        final outcome = await build().bind()(entry);
         expect(outcome, ApplyOutcome.pendingAttachment);
       },
     );
@@ -889,7 +892,9 @@ void main() {
         final allStarted = Completer<void>();
         final release = Completer<void>();
         var prepareCalls = 0;
-        when(() => processor.prepare(event: any(named: 'event'))).thenAnswer((
+        when(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).thenAnswer((
           _,
         ) async {
           prepareCalls++;
@@ -901,12 +906,14 @@ void main() {
         });
 
         final adapter = build();
-        final prepareBatch = adapter.bindPrepareBatch()([a, b, c], room);
+        final prepareBatch = adapter.bindPrepareBatch()([a, b, c]);
         await allStarted.future;
         expect(prepareCalls, 3);
         release.complete();
         await prepareBatch;
-        verify(() => processor.prepare(event: any(named: 'event'))).called(3);
+        verify(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).called(3);
       },
     );
 
@@ -922,7 +929,7 @@ void main() {
 
         final prepared = AdapterMockPreparedSyncEvent();
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenAnswer((_) async => prepared);
         when(
           () => processor.apply(
@@ -933,13 +940,15 @@ void main() {
         ).thenAnswer((_) async => null);
 
         final adapter = build();
-        await adapter.bindPrepareBatch()([entry], room);
-        final outcome = await adapter.bind()(entry, room);
+        await adapter.bindPrepareBatch()([entry]);
+        final outcome = await adapter.bind()(entry);
 
         expect(outcome, ApplyOutcome.applied);
         // Exactly one prepare: batched ahead of time. No inline
         // re-prepare in the apply phase.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
+        verify(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).called(1);
         verify(
           () => processor.apply(
             prepared: prepared,
@@ -968,7 +977,7 @@ void main() {
 
         final prepared = AdapterMockPreparedSyncEvent();
         when(
-          () => processor.prepare(event: any(named: 'event')),
+          () => processor.prepare(envelope: any(named: 'envelope')),
         ).thenAnswer((_) async => prepared);
         when(
           () => processor.apply(
@@ -981,15 +990,17 @@ void main() {
         final adapter = build();
         // prepareBatch only covers `batched` — `late` has no cache
         // entry when apply runs.
-        await adapter.bindPrepareBatch()([batched], room);
+        await adapter.bindPrepareBatch()([batched]);
 
-        final first = await adapter.bind()(batched, room);
-        final second = await adapter.bind()(late, room);
+        final first = await adapter.bind()(batched);
+        final second = await adapter.bind()(late);
         expect(first, ApplyOutcome.applied);
         expect(second, ApplyOutcome.applied);
 
         // Two prepare calls total: one batched, one inline fallback.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(2);
+        verify(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).called(2);
       },
     );
 
@@ -1006,20 +1017,24 @@ void main() {
 
         // Prepare throws the sentinel FileSystemException that the
         // adapter classifies as pendingAttachment.
-        when(() => processor.prepare(event: any(named: 'event'))).thenThrow(
+        when(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).thenThrow(
           const FileSystemException('attachment descriptor not yet available'),
         );
 
         final adapter = build();
-        await adapter.bindPrepareBatch()([entry], room);
-        final outcome = await adapter.bind()(entry, room);
+        await adapter.bindPrepareBatch()([entry]);
+        final outcome = await adapter.bind()(entry);
 
         expect(outcome, ApplyOutcome.pendingAttachment);
         // Exactly one prepare: the batched one. Apply consumed the
         // cached terminal outcome instead of re-trying. No apply was
         // ever attempted — the stubbed `processor.apply` was never
         // configured, so calling it would have thrown.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
+        verify(
+          () => processor.prepare(envelope: any(named: 'envelope')),
+        ).called(1);
       },
     );
 
@@ -1027,8 +1042,8 @@ void main() {
       'prepareBatch with an empty entry list is a no-op — safe for '
       'a worker that happens to peek an empty batch',
       () async {
-        await build().bindPrepareBatch()(const [], room);
-        verifyNever(() => processor.prepare(event: any(named: 'event')));
+        await build().bindPrepareBatch()(const []);
+        verifyNever(() => processor.prepare(envelope: any(named: 'envelope')));
       },
     );
   });

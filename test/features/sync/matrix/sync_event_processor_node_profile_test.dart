@@ -64,7 +64,7 @@ void main() {
       () => event2.text,
     ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: profile)));
 
-    await processorWithRepo.process(event: event2, journalDb: journalDb);
+    await processorWithRepo.process(envelope: event2, journalDb: journalDb);
 
     expect(await repo.listKnownNodes(), [profile]);
   });
@@ -81,7 +81,7 @@ void main() {
       () => event2.text,
     ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: profile)));
 
-    await processorWithRepo.process(event: event2, journalDb: journalDb);
+    await processorWithRepo.process(envelope: event2, journalDb: journalDb);
 
     verifyNever(() => journalDb.updateJournalEntity(any()));
     verifyNever(
@@ -113,12 +113,12 @@ void main() {
       when(
         () => event2.text,
       ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: newer)));
-      await processorWithRepo.process(event: event2, journalDb: journalDb);
+      await processorWithRepo.process(envelope: event2, journalDb: journalDb);
 
       when(
         () => event2.text,
       ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: stale)));
-      await processorWithRepo.process(event: event2, journalDb: journalDb);
+      await processorWithRepo.process(envelope: event2, journalDb: journalDb);
 
       expect((await repo.listKnownNodes()).single.displayName, 'Newer');
     },
@@ -146,7 +146,7 @@ void main() {
     ).thenReturn(_encode(SyncMessage.syncNodeProfile(profile: profile)));
 
     await expectLater(
-      processorNoRepo.process(event: event2, journalDb: journalDb),
+      processorNoRepo.process(envelope: event2, journalDb: journalDb),
       completes,
     );
   });

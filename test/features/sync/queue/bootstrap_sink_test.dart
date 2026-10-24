@@ -16,7 +16,7 @@ import '../../../mocks/mocks.dart';
 Event _buildEvent({
   required String eventId,
   required int originTsMs,
-  String? roomId = '!roomA:example.org',
+  String roomId = '!roomA:example.org',
   String type = EventTypes.Message,
 }) {
   final event = MockEvent();
@@ -411,7 +411,7 @@ void main() {
       final event = _buildEvent(
         eventId: r'$roomless',
         originTsMs: 15,
-        roomId: null,
+        roomId: '',
         type: EventTypes.Encrypted,
       );
 

@@ -157,7 +157,6 @@ void main() {
   late MockDomainLogger logging;
   late InboundQueue queue;
   late _SpySequenceLog sequenceLog;
-  late MockRoom room;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -177,8 +176,6 @@ void main() {
       vectorClockService: MockVectorClockService(),
       loggingService: logging,
     );
-    room = MockRoom();
-    when(() => room.id).thenReturn(roomId);
   });
 
   tearDown(() async {
@@ -193,8 +190,7 @@ void main() {
     return InboundWorker(
       queue: queue,
       sequenceLogService: sequenceLog,
-      resolveRoom: () async => room,
-      apply: (entry, _) => apply(entry),
+      apply: apply,
       logging: logging,
       initialBackoff: const Duration(milliseconds: 10),
       maxBackoff: const Duration(milliseconds: 100),
@@ -488,11 +484,11 @@ void main() {
     });
 
     test(
-      'does not count no-room or barrier retries toward the budget',
+      'does not count earlier generic retries toward the budget',
       () async {
         var virtualNow = DateTime(2024);
         await withClock(Clock(() => virtualNow), () async {
-          // A week of 2 s no-room retries, then the first descriptor miss.
+          // A week of 2 s generic retries, then the first descriptor miss.
           await seedDescriptorRow(
             priorDescriptorAttempts: 0,
             priorAttempts: 7 * 43200,
@@ -599,27 +595,6 @@ void main() {
     },
   );
 
-  test('noRoom defers the batch via retry, never marks skipped', () async {
-    await queue.enqueueLive(
-      _buildSyncEvent(
-        eventId: r'$noroom',
-        roomId: roomId,
-        originTsMs: 1,
-      ),
-    );
-    final worker = InboundWorker(
-      queue: queue,
-      sequenceLogService: sequenceLog,
-      resolveRoom: () async => null,
-      apply: (_, _) async => ApplyOutcome.applied,
-      logging: logging,
-      initialBackoff: const Duration(milliseconds: 10),
-    );
-    await worker.drainToCompletion();
-    final stats = await queue.stats();
-    expect(stats.total, 1);
-  });
-
   test(
     'permanentSkip outcome deletes the row via markSkipped and advances '
     'the marker past the poison event',
@@ -720,9 +695,6 @@ void main() {
         vectorClockService: MockVectorClockService(),
         loggingService: localLogging,
       );
-      final localRoom = MockRoom();
-      when(() => localRoom.id).thenReturn(roomId);
-
       var virtualNow = DateTime(2024);
       try {
         await withClock(Clock(() => virtualNow), () async {
@@ -738,8 +710,7 @@ void main() {
           final worker = InboundWorker(
             queue: localQueue,
             sequenceLogService: localSequenceLog,
-            resolveRoom: () async => localRoom,
-            apply: (entry, _) async => scenario.outcomeAt(applyCalls++),
+            apply: (entry) async => scenario.outcomeAt(applyCalls++),
             logging: localLogging,
             initialBackoff: const Duration(milliseconds: 10),
             maxBackoff: const Duration(milliseconds: 100),
@@ -845,7 +816,7 @@ void main() {
 
     test(
       'loop wakes up near the soonest retry nextDueAt instead of sleeping '
-      'for the full idleTick (P1 — decryptionPending/missingBase/noRoom '
+      'for the full idleTick (P1 — decryptionPending/missingBase '
       'retries were previously rounded up to idleTick)',
       () async {
         var attempt = 0;
@@ -853,8 +824,7 @@ void main() {
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (_, _) async {
+          apply: (_) async {
             attempt++;
             if (attempt == 1) return ApplyOutcome.decryptionPending;
             appliedDone.complete();
@@ -890,8 +860,7 @@ void main() {
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (entry, _) async {
+          apply: (entry) async {
             applied.add(entry.eventId);
             appliedDone.complete();
             return ApplyOutcome.applied;
@@ -959,8 +928,7 @@ void main() {
           final worker = InboundWorker(
             queue: flakyQueue,
             sequenceLogService: sequenceLog,
-            resolveRoom: () async => room,
-            apply: (e, _) async {
+            apply: (e) async {
               applied.add(e.eventId);
               return ApplyOutcome.applied;
             },
@@ -1009,8 +977,7 @@ void main() {
           final worker = InboundWorker(
             queue: brokenQueue,
             sequenceLogService: sequenceLog,
-            resolveRoom: () async => room,
-            apply: (_, _) async => ApplyOutcome.applied,
+            apply: (_) async => ApplyOutcome.applied,
             logging: logging,
             idleTick: const Duration(minutes: 10),
           );
@@ -1040,8 +1007,7 @@ void main() {
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (_, _) async => ApplyOutcome.applied,
+          apply: (_) async => ApplyOutcome.applied,
           logging: logging,
           activityGate: gate,
         );
@@ -1075,8 +1041,7 @@ void main() {
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (entry, _) async {
+          apply: (entry) async {
             applyInvocations.add(entry.eventId);
             // Each apply observes a prepareBatch call that ran ahead
             // of it for the same single-row batch.
@@ -1084,7 +1049,7 @@ void main() {
             expect(prepareInvocations.last, [entry.eventId]);
             return ApplyOutcome.applied;
           },
-          prepareBatch: (entries, _) async {
+          prepareBatch: (entries) async {
             prepareInvocations.add([for (final e in entries) e.eventId]);
           },
           logging: logging,
@@ -1119,12 +1084,11 @@ void main() {
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
-          resolveRoom: () async => room,
-          apply: (entry, _) async {
+          apply: (entry) async {
             applied.add(entry.eventId);
             return ApplyOutcome.applied;
           },
-          prepareBatch: (entries, _) async {
+          prepareBatch: (entries) async {
             throw StateError('prepareBatch boom');
           },
           logging: logging,

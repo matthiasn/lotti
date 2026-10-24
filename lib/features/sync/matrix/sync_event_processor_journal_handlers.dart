@@ -63,7 +63,7 @@ extension _JournalHandlers on SyncEventProcessor {
   }
 
   Future<SyncApplyDiagnostics?> _maybeSkipSupersededStaleDescriptor({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncJournalEntity syncMessage,
     required JournalDb journalDb,
     required List<EntryLink>? entryLinks,
@@ -119,14 +119,14 @@ extension _JournalHandlers on SyncEventProcessor {
     );
 
     final diag = SyncApplyDiagnostics(
-      eventId: event.eventId,
+      eventId: envelope.eventId,
       payloadType: 'journalEntity',
       conflictStatus: status.toString(),
       applied: false,
       skipReason: JournalUpdateSkipReason.olderOrEqual,
     );
     _trace(
-      'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
+      'apply journalEntity skipped staleDescriptor eventId=${envelope.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
       subDomain: 'processor.apply',
     );
 
@@ -164,12 +164,12 @@ extension _JournalHandlers on SyncEventProcessor {
   /// apply phase: the supersession check needs the writer transaction, so
   /// apply decides whether to skip the event or rethrow for retry.
   Future<PreparedSyncEvent> _prepareJournalEntity({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncJournalEntity syncMessage,
   }) async {
     if (_dedupCache.isDuplicate(syncMessage.id, syncMessage.vectorClock)) {
       return PreparedSyncEvent._(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         isDuplicateJournalEntity: true,
       );
@@ -188,7 +188,7 @@ extension _JournalHandlers on SyncEventProcessor {
               attachmentEventId: attachmentEventId,
             );
       return PreparedSyncEvent._(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         journalEntity: journalEntity,
       );
@@ -198,7 +198,7 @@ extension _JournalHandlers on SyncEventProcessor {
         // version already dominates the incoming one (in which case the
         // event is skipped) or must be retried later (rethrown from apply).
         return PreparedSyncEvent._(
-          event: event,
+          envelope: envelope,
           syncMessage: syncMessage,
           deferredStaleDescriptorError: error,
         );
@@ -220,7 +220,7 @@ extension _JournalHandlers on SyncEventProcessor {
   /// Applies an already-[PreparedSyncEvent] to local stores. Runs entirely in
   /// the writer transaction — it must not do attachment I/O.
   Future<SyncApplyDiagnostics?> _applyJournalEntity({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncJournalEntity syncMessage,
     required JournalEntity? preloaded,
     required bool isDuplicate,
@@ -229,7 +229,7 @@ extension _JournalHandlers on SyncEventProcessor {
   }) async {
     if (deferredStaleError != null) {
       final skipped = await _maybeSkipSupersededStaleDescriptor(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
         journalDb: journalDb,
         entryLinks: syncMessage.entryLinks,
@@ -249,7 +249,7 @@ extension _JournalHandlers on SyncEventProcessor {
     if (isDuplicate) {
       await _projectJournalAttribution(preloaded);
       return _recordDuplicateJournalEntity(
-        event: event,
+        envelope: envelope,
         syncMessage: syncMessage,
       );
     }
@@ -257,7 +257,7 @@ extension _JournalHandlers on SyncEventProcessor {
     // preloaded must be non-null when we reach this branch.
     final journalEntity = preloaded!;
     final diagnostics = await _persistJournalEntity(
-      event: event,
+      envelope: envelope,
       syncMessage: syncMessage,
       journalEntity: journalEntity,
       journalDb: journalDb,
@@ -275,7 +275,7 @@ extension _JournalHandlers on SyncEventProcessor {
   /// Records the duplicate in the sequence log so `resolvePendingHints` still
   /// runs; the duplicate detection itself lives in the prepare phase.
   Future<SyncApplyDiagnostics?> _recordDuplicateJournalEntity({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncJournalEntity syncMessage,
   }) async {
     // Even for duplicates, record in the sequence log so that
@@ -306,14 +306,14 @@ extension _JournalHandlers on SyncEventProcessor {
     }
 
     final diag = SyncApplyDiagnostics(
-      eventId: event.eventId,
+      eventId: envelope.eventId,
       payloadType: 'journalEntity',
       conflictStatus: VclockStatus.equal.toString(),
       applied: false,
       skipReason: JournalUpdateSkipReason.olderOrEqual,
     );
     _trace(
-      'apply journalEntity skipped duplicate eventId=${event.eventId} '
+      'apply journalEntity skipped duplicate eventId=${envelope.eventId} '
       'id=${syncMessage.id}',
       subDomain: 'processor.apply',
     );
@@ -364,7 +364,7 @@ extension _JournalHandlers on SyncEventProcessor {
   /// [journalEntity] argument was already loaded by the prepare phase, so
   /// this runs entirely in the writer transaction.
   Future<SyncApplyDiagnostics?> _persistJournalEntity({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncJournalEntity syncMessage,
     required JournalEntity journalEntity,
     required JournalDb journalDb,
@@ -454,14 +454,14 @@ extension _JournalHandlers on SyncEventProcessor {
     final rows = updateResult.rowsWritten ?? 0;
 
     final diag = SyncApplyDiagnostics(
-      eventId: event.eventId,
+      eventId: envelope.eventId,
       payloadType: 'journalEntity',
       conflictStatus: predictedStatus.toString(),
       applied: updateResult.applied,
       skipReason: updateResult.skipReason,
     );
     _trace(
-      'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} '
+      'apply journalEntity eventId=${envelope.eventId} id=${journalEntity.meta.id} '
       'rowsWritten=$rows applied=${updateResult.applied} '
       'skip=${updateResult.skipReason?.label ?? 'none'} '
       'status=${diag.conflictStatus} '
@@ -560,7 +560,7 @@ extension _JournalHandlers on SyncEventProcessor {
 
   /// Handles a SyncEntryLink message.
   Future<SyncApplyDiagnostics?> _handleEntryLink({
-    required Event event,
+    required SyncEnvelope envelope,
     required SyncEntryLink syncMessage,
     required JournalDb journalDb,
   }) async {
@@ -588,7 +588,7 @@ extension _JournalHandlers on SyncEventProcessor {
     if (applyObserver != null) {
       try {
         final diag = SyncApplyDiagnostics(
-          eventId: event.eventId,
+          eventId: envelope.eventId,
           payloadType: 'entryLink',
           conflictStatus: rows == 0 ? 'entryLink.noop' : 'applied',
           applied: rows > 0,

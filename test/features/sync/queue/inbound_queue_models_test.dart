@@ -5,9 +5,6 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mocktail/mocktail.dart';
-
-import '../../../mocks/mocks.dart';
 
 InboundEventQueueItem _buildRow({
   int queueId = 7,
@@ -93,8 +90,6 @@ void main() {
   group('InboundQueueEntry.toEvent', () {
     test('materialises the stored rawJson against the given room', () {
       const roomId = '!room:example.org';
-      final room = MockRoom();
-      when(() => room.id).thenReturn(roomId);
       final entry = InboundQueueEntry.fromRow(
         _buildRow(
           eventId: r'$mat',
@@ -109,12 +104,12 @@ void main() {
           }),
         ),
       );
-      final event = entry.toEvent(room);
-      expect(event.eventId, r'$mat');
-      expect(event.roomId, roomId);
-      expect(event.originServerTs.millisecondsSinceEpoch, 4242);
-      expect(event.senderId, '@alice:example.org');
-      expect(event.content['body'], 'hi');
+      final envelope = entry.toEnvelope();
+      expect(envelope.eventId, r'$mat');
+      expect(envelope.roomId, roomId);
+      expect(envelope.originServerTs.millisecondsSinceEpoch, 4242);
+      expect(envelope.senderId, '@alice:example.org');
+      expect(envelope.text, 'hi');
     });
   });
 

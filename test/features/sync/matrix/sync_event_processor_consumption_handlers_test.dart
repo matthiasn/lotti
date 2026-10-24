@@ -60,7 +60,7 @@ void main() {
         ),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => repo.upsertEvent(payload)).called(1);
       verify(
@@ -82,7 +82,7 @@ void main() {
       ).thenAnswer((_) async => const VectorClock({'remote': 4}));
       _stubIncomingEvent(payload);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => repo.upsertEvent(any()));
     });
@@ -98,7 +98,7 @@ void main() {
       ).thenAnswer((_) async => const VectorClock({'other-host': 9}));
       _stubIncomingEvent(payload);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => repo.upsertEvent(payload)).called(1);
     });
@@ -113,7 +113,7 @@ void main() {
       );
       _stubIncomingEvent(payload);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => repo.upsertEvent(payload)).called(1);
       verify(
@@ -130,7 +130,7 @@ void main() {
         makeConsumptionEvent(vectorClock: const VectorClock({'remote': 4})),
       );
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => repo.upsertEvent(any()));
       verifyNever(
@@ -183,7 +183,7 @@ void main() {
           final payload = makeConsumptionEvent(id: 'evt-1', vectorClock: vc);
           _stubIncomingEvent(payload);
 
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => repo.upsertEvent(payload)).called(1);
           verify(
@@ -205,14 +205,14 @@ void main() {
           // (b) no originating host. Both still apply the event itself.
           final clocklessPayload = makeConsumptionEvent(id: 'evt-novc');
           _stubIncomingEvent(clocklessPayload);
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           final hostlessPayload = makeConsumptionEvent(
             id: 'evt-nohost',
             vectorClock: const VectorClock({'remote': 4}),
           );
           _stubIncomingEvent(hostlessPayload, originatingHostId: null);
-          await processor.process(event: event, journalDb: journalDb);
+          await processor.process(envelope: event, journalDb: journalDb);
 
           verify(() => repo.upsertEvent(clocklessPayload)).called(1);
           verify(() => repo.upsertEvent(hostlessPayload)).called(1);
@@ -236,7 +236,7 @@ void main() {
         ).thenAnswer((_) async => const VectorClock({'remote': 5}));
         _stubIncomingEvent(payload);
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(() => repo.upsertEvent(any()));
         verify(
@@ -269,7 +269,7 @@ void main() {
           ),
         );
 
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verify(
           () => loggingService.log(
@@ -304,7 +304,7 @@ void main() {
           _stubIncomingEvent(payload);
 
           await expectLater(
-            processor.process(event: event, journalDb: journalDb),
+            processor.process(envelope: event, journalDb: journalDb),
             throwsA(isA<StateError>()),
           );
 

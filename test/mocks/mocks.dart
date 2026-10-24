@@ -192,6 +192,7 @@ import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
+import 'package:lotti/features/sync/matrix/sync_envelope.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
@@ -417,7 +418,9 @@ class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
 
-class MockEvent extends Mock implements Event {
+/// The SDK event carries every member of [SyncEnvelope], so one mock serves
+/// the live ingestion paths and the Room-free apply path alike.
+class MockEvent extends Mock implements Event, SyncEnvelope {
   MockEvent() {
     // Default stub so tests that don't care about originServerTs still get a
     // non-null DateTime — MatrixStreamSignalBinder reads it for Phase 0
@@ -1354,7 +1357,9 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   // in-transaction fallback calls `process` as before. Tests exercising the
   // new prepare/apply split use a local mock and stub both via `when(...)`.
   @override
-  Future<PreparedSyncEvent?> prepare({required Event event}) async => null;
+  Future<PreparedSyncEvent?> prepare({
+    required SyncEnvelope envelope,
+  }) async => null;
 
   @override
   Future<SyncApplyDiagnostics?> apply({

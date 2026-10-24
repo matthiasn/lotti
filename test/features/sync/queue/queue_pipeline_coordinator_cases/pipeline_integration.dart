@@ -59,7 +59,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
         () async {
           final prepared = MockPreparedSyncEvent();
           when(
-            () => liveProcessor.prepare(event: any(named: 'event')),
+            () => liveProcessor.prepare(envelope: any(named: 'envelope')),
           ).thenAnswer((_) async => prepared);
           final applied = Completer<void>();
           when(
@@ -93,7 +93,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
           await coordinator.queue.waitForDrainAtMostTo(0);
 
           verify(
-            () => liveProcessor.prepare(event: any(named: 'event')),
+            () => liveProcessor.prepare(envelope: any(named: 'envelope')),
           ).called(1);
           verify(
             () => liveProcessor.apply(
@@ -123,7 +123,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
           final prepared = MockPreparedSyncEvent();
           var attachmentAvailable = false;
           when(
-            () => liveProcessor.prepare(event: any(named: 'event')),
+            () => liveProcessor.prepare(envelope: any(named: 'envelope')),
           ).thenAnswer((_) async {
             if (!attachmentAvailable) {
               throw const FileSystemException(
@@ -275,7 +275,7 @@ extension _PipelineIntegrationCases on _QueueCoordinatorTestSetup {
           final prepared = MockPreparedSyncEvent();
           var attachmentAvailable = false;
           when(
-            () => liveProcessor.prepare(event: any(named: 'event')),
+            () => liveProcessor.prepare(envelope: any(named: 'envelope')),
           ).thenAnswer((_) async {
             if (!attachmentAvailable) {
               throw const FileSystemException(

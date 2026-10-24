@@ -107,7 +107,7 @@ void main() {
       journalAnswers(1);
       receive(testLabelDefinition1.copyWith(vectorClock: null));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => settingsDb.saveSettingsItem(
@@ -122,11 +122,11 @@ void main() {
       () async {
         journalAnswers(1);
         receive(label);
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         journalAnswers(0);
         receive(testLabelDefinition1.copyWith(vectorClock: null));
-        await processor.process(event: event, journalDb: journalDb);
+        await processor.process(envelope: event, journalDb: journalDb);
 
         verifyNever(
           () => settingsDb.saveSettingsItem(clocklessRepairSettingsKey, any()),
@@ -142,7 +142,7 @@ void main() {
       ).thenThrow(StateError('settings closed'));
       receive(testLabelDefinition1.copyWith(vectorClock: null));
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(
         () => loggingService.error(
@@ -161,7 +161,7 @@ void main() {
       journalAnswers(1);
       receive(label);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => journalDb.upsertEntityDefinition(label)).called(1);
       verify(
@@ -181,7 +181,7 @@ void main() {
     journalAnswers(0, storedClock: const VectorClock({'remote': 5}));
     receive(label);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verifyNever(
       () => updateNotifications.notify(any(), fromSync: any(named: 'fromSync')),
@@ -205,7 +205,7 @@ void main() {
       journalAnswers(0);
       receive(label);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verify(() => stamper.stamp(label.id, over: incomingClock)).called(1);
       verifyRecorded();
@@ -216,7 +216,7 @@ void main() {
     journalAnswers(0);
     receive(label.copyWith(vectorClock: null));
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verifyNever(() => stamper.stamp(any(), over: any(named: 'over')));
     verifyNothingRecorded();
@@ -229,7 +229,7 @@ void main() {
     ).thenThrow(StateError('outbox closed'));
     receive(label);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verify(
       () => loggingService.error(
@@ -249,7 +249,7 @@ void main() {
       journalAnswers(0);
       receive(label);
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => stamper.stamp(any(), over: any(named: 'over')));
       verifyRecorded();
@@ -275,7 +275,7 @@ void main() {
       journalAnswers(1);
       receive(label, originatingHostId: 'host-self');
 
-      await processor.process(event: event, journalDb: journalDb);
+      await processor.process(envelope: event, journalDb: journalDb);
 
       verifyNever(() => journalDb.upsertEntityDefinition(any()));
       verifyNever(
@@ -292,7 +292,7 @@ void main() {
     journalAnswers(1);
     receive(label, originatingHostId: null);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verifyNothingRecorded();
   });
@@ -311,7 +311,7 @@ void main() {
     receive(label);
 
     await expectLater(
-      processor.process(event: event, journalDb: journalDb),
+      processor.process(envelope: event, journalDb: journalDb),
       throwsStateError,
     );
 
@@ -338,7 +338,7 @@ void main() {
     ).thenAnswer((_) async => [(hostId: 'remote', counter: 3)]);
     receive(label);
 
-    await processor.process(event: event, journalDb: journalDb);
+    await processor.process(envelope: event, journalDb: journalDb);
 
     verifyRecorded();
   });
