@@ -185,6 +185,9 @@ void main() {
         FrontDestinationKind.goal,
         FrontDestinationKind.person,
         FrontDestinationKind.day,
+        FrontDestinationKind.newThing,
+        FrontDestinationKind.journal,
+        FrontDestinationKind.unrouted,
       ].indexed)
         FrontDoorEntry(
           record: record(
@@ -200,7 +203,9 @@ void main() {
     expect(statusOf(tester, 1), 'Asking the project…');
     expect(statusOf(tester, 2), 'Asking the goal…');
     expect(statusOf(tester, 3), 'Asking the person…');
-    expect(statusOf(tester, 4), 'Asking this…');
+    for (final index in [4, 5, 6, 7]) {
+      expect(statusOf(tester, index), 'Asking this…');
+    }
     expect(find.textContaining('id-'), findsNothing);
   });
 }

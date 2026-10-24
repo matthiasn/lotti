@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
@@ -38,6 +43,11 @@ void main() {
             (ref, flag) =>
                 Stream.value(companion && flag == enableCompanionFlag),
           ),
+          // The internals panel resolves the identity; it may stay in flight.
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) => Completer<AgentDomainEntity?>().future,
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
           agentConsumptionTotalsProvider(frontAgentId).overrideWith(
             (ref) => totals == null
                 ? const Stream<ConsumptionTotals>.empty()
@@ -71,6 +81,23 @@ void main() {
 
     await tester.tap(find.byKey(FrontChatHeaderKeys.close));
     expect(closed, 1);
+  });
+
+  testWidgets('the internals action opens her internals panel', (
+    tester,
+  ) async {
+    await pumpHeader(tester);
+
+    await tester.tap(find.byKey(FrontChatHeaderKeys.internals));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    final panel = tester.widget<AgentInternalsPanel>(
+      find.byType(AgentInternalsPanel),
+    );
+    expect(panel.agentId, frontAgentId);
+    expect(panel.agentName, 'Companion');
   });
 
   testWidgets('shows no cost before the totals are known', (tester) async {

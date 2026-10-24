@@ -6961,6 +6961,94 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('the keyboard command is unavailable until the flag is on, '
+        'then opens her sheet', (tester) async {
+      final mockNavService = MockNavService();
+      final registeredNavService = MockNavService();
+      for (final nav in [mockNavService, registeredNavService]) {
+        await _stubNavService(
+          nav,
+          indexStream: const Stream<int>.empty(),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+      }
+      await _registerAppScreenGetIt(
+        mockNavService,
+        registeredNavService: registeredNavService,
+      );
+      addTearDown(tearDownTestGetIt);
+      final userActivityService = _SpyUserActivityService();
+      addTearDown(userActivityService.dispose);
+      final flag = StreamController<bool>.broadcast();
+      addTearDown(flag.close);
+
+      await _pumpReadyMyBeamerApp(
+        tester,
+        app: MyBeamerApp(
+          navService: mockNavService,
+          userActivityService: userActivityService,
+          linkedIdResolver: () async => null,
+          createTextEntryAction: ({String? linkedId}) async => null,
+          createTaskAction: ({String? linkedId}) async => null,
+          captureScreenshotAction: ({String? linkedId}) async => null,
+        ),
+        extraOverrides: [
+          configFlagProvider.overrideWith(
+            (ref, name) => name == enableFrontAgentFlag
+                ? flag.stream
+                : Stream.value(false),
+          ),
+          frontChatThreadProvider.overrideWith(
+            (ref) async => FrontChatThread.empty,
+          ),
+          agentConsumptionTotalsProvider(
+            frontAgentId,
+          ).overrideWith((ref) => const Stream<ConsumptionTotals>.empty()),
+        ],
+      );
+
+      final commandContext = tester.element(find.byType(ZoomWrapper));
+      final commandController = AppCommandControllerProvider.of(
+        commandContext,
+      );
+      expect(
+        commandController.isAvailable(
+          commandContext,
+          AppCommandId.openFrontChat,
+        ),
+        isFalse,
+      );
+
+      flag.add(true);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        commandController.isAvailable(
+          commandContext,
+          AppCommandId.openFrontChat,
+        ),
+        isTrue,
+      );
+
+      final invocation = commandController.invoke(
+        commandContext,
+        AppCommandId.openFrontChat,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(FrontChatPane), findsOneWidget);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.close));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(await invocation, isTrue);
+      expect(find.byType(FrontChatPane), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('the phone launcher docks her button beside the menu only '
         'while the flag is on, and it opens her sheet', (tester) async {
       final nav = await stubbedNav();

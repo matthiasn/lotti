@@ -219,6 +219,11 @@ void main() {
         expect((question.data as QueryChatQuestion).text, 'How is the garden?');
         expect(question.agentId, 'agent-garden');
         expect(chat.events, [question]);
+        // Progress has nobody to report to in a headless run.
+        (invocation.namedArguments[#onProgress] as QueryProgress)(
+          3,
+          expanded: true,
+        );
         return const QueryBuiltAnswer(
           answer: QueryChatAnswer(
             questionId: 'q',

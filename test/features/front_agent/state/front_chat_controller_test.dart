@@ -57,10 +57,20 @@ void main() {
       container.read(frontChatControllerProvider.notifier);
   FrontChatComposerState state() => container.read(frontChatControllerProvider);
 
-  test('a draft is kept and clears a previous failure', () {
+  test('a draft is kept and clears a previous failure', () async {
+    when(
+      () => chatService.sendMessage(text: 'Hello'),
+    ).thenThrow(StateError('db closed'));
+    controller().updateDraft('Hello');
+    await controller().send();
+    expect(state().failedMessage, 'Hello');
+
     controller().updateDraft('Hel');
+
     expect(state().draft, 'Hel');
     expect(state().isSending, isFalse);
+    expect(state().failedMessage, isNull);
+    expect(state().failedMessageId, isNull);
   });
 
   group('send', () {
@@ -187,6 +197,25 @@ void main() {
 
       expect(state().failedMessage, 'Hello');
       expect(state().failedMessageId, 'm-2');
+      expect(state().draft, 'Hello');
+    });
+
+    test('a retry that fails for an unexpected reason keeps the id it '
+        'already had', () async {
+      when(() => chatService.sendMessage(text: 'Hello')).thenThrow(
+        const FrontChatTurnException('boom', messageId: 'm-1'),
+      );
+      when(
+        () => chatService.retryMessage(messageId: 'm-1'),
+      ).thenThrow(StateError('db closed'));
+      controller().updateDraft('Hello');
+      await controller().send();
+
+      await controller().retry();
+
+      expect(state().isSending, isFalse);
+      expect(state().failedMessage, 'Hello');
+      expect(state().failedMessageId, 'm-1');
       expect(state().draft, 'Hello');
     });
 

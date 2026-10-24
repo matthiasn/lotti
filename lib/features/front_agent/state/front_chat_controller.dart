@@ -23,16 +23,13 @@ class FrontChatComposerState {
   /// retry re-wakes the same turn instead of writing a duplicate.
   final String? failedMessageId;
 
-  FrontChatComposerState copyWith({
-    String? draft,
-    bool? isSending,
-    bool clearFailure = false,
-  }) => FrontChatComposerState(
-    draft: draft ?? this.draft,
-    isSending: isSending ?? this.isSending,
-    failedMessage: clearFailure ? null : failedMessage,
-    failedMessageId: clearFailure ? null : failedMessageId,
-  );
+  /// A copy never carries the failure: an edit to the draft and the start
+  /// of a send both clear it, and a failure is only ever set whole.
+  FrontChatComposerState copyWith({String? draft, bool? isSending}) =>
+      FrontChatComposerState(
+        draft: draft ?? this.draft,
+        isSending: isSending ?? this.isSending,
+      );
 }
 
 /// Keep-alive: a draft survives closing and reopening the sheet (the goal
@@ -49,7 +46,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   FrontChatComposerState build() => const FrontChatComposerState();
 
   void updateDraft(String value) {
-    state = state.copyWith(draft: value, clearFailure: true);
+    state = state.copyWith(draft: value);
   }
 
   /// Sends the draft.
@@ -60,7 +57,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> sendText(String text) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
-    state = state.copyWith(isSending: true, clearFailure: true);
+    state = state.copyWith(isSending: true);
     try {
       // The identity is created on first use, with the narrow default
       // allow-list (decision 4).
@@ -87,7 +84,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     final failed = state.failedMessage;
     final messageId = state.failedMessageId;
     if (failed == null || state.isSending) return;
-    state = state.copyWith(isSending: true, clearFailure: true);
+    state = state.copyWith(isSending: true);
     try {
       final service = ref.read(frontChatServiceProvider);
       if (messageId == null) {
