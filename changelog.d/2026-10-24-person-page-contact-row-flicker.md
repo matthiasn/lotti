@@ -8,6 +8,8 @@
   kept flickering after the rest of it had learned to stay put. The buttons
   now stay through a reload and are only re-checked when the person's
   contact details actually change.
-- **A transcript opened with Show more on a person's timeline stayed open.**
-  Scrolling far down the history and back folded it again, and the history
-  shifted under the reader as the row came back shorter.
+- **A transcript opened with Show more on a person's timeline folded itself
+  again.** Scrolling far down the history and back rebuilt the row folded,
+  and the history shifted under the reader as it came back shorter. An
+  opened row now stays open, at its full height, however far you scroll
+  away and back.
