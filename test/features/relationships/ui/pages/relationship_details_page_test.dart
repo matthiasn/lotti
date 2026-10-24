@@ -2571,8 +2571,18 @@ void main() {
     when(
       () => mockNotifications.updateStream,
     ).thenAnswer((_) => updates.stream);
+    // Each read builds the person afresh, as the database does: the same
+    // channels, never the same list.
     when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
-      (_) async => relationship(important: true),
+      (_) async => relationship(
+        important: true,
+        contactChannels: [
+          const ContactChannel(
+            type: ContactChannelType.mobile,
+            value: '+49 151 1234567',
+          ),
+        ],
+      ),
     );
     final older = checkIn('ci-old', narrative: 'Coffee in July.');
     var checkIns = [older];
@@ -2582,13 +2592,21 @@ void main() {
     // A phone: the blocks share one list with the timeline.
     const phone = Size(390, 2400);
     setTestSurfaceSize(tester, phone);
-    await pumpPage(tester, mediaQueryData: const MediaQueryData(size: phone));
+    await pumpPage(
+      tester,
+      mediaQueryData: const MediaQueryData(size: phone),
+      overrides: [
+        contactLauncherProvider.overrideWithValue(FakeContactLauncher()),
+      ],
+    );
 
     Element block(Key key) => tester.element(find.byKey(key));
     const briefingKey = ValueKey('person-block-briefing');
     const olderRowKey = ValueKey('person-timeline-row-ci-old');
+    const callKey = ValueKey('person-contact-call');
     final briefing = block(briefingKey);
     final olderRow = block(olderRowKey);
+    final call = block(callKey);
     expect(find.byKey(const ValueKey('person-block-brief')), findsNothing);
 
     // The check-in arrives with something to bring up next time, so the
@@ -2610,6 +2628,10 @@ void main() {
     // re-resolves its photos — the flicker after every check-in.
     expect(identical(block(briefingKey), briefing), isTrue);
     expect(identical(block(olderRowKey), olderRow), isTrue);
+    // The verbs under the name too: the reload hands the header a fresh copy
+    // of the person, and a row that took that for new channels emptied
+    // itself and asked the platform again on every write.
+    expect(identical(block(callKey), call), isTrue);
   });
 }
 

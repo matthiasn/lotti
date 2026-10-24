@@ -18,8 +18,12 @@ sources:
     last_modified: 2026-10-20
   - id: person-timeline
     resource: ../../lib/features/relationships/ui/widgets/person_timeline_view.dart
-    title: The person timeline's keyed builder list
-    last_modified: 2026-10-20
+    title: The person timeline's keyed builder list, and its opened rows kept alive
+    last_modified: 2026-10-24
+  - id: person-contact-row
+    resource: ../../lib/features/relationships/ui/widgets/person_contact_row.dart
+    title: The contact row, which compares a reload's copy of the person by value
+    last_modified: 2026-10-24
   - id: riverpod-async-value
     resource: https://pub.dev/documentation/riverpod/3.4.3/riverpod/AsyncValue-class.html
     title: Riverpod 3.4.3 AsyncValue — when, value, whenData, unwrapPrevious
@@ -58,7 +62,7 @@ that blanks, folds or re-decodes on each of those does not read as "updating";
 it reads as broken. The person page did exactly that after every check-in
 (2026-10-20), and "felt completely broken" is the report it earned.
 
-# Three ways to break it
+# Four ways to break it
 
 ## Swapping content for a loading state
 
@@ -152,6 +156,17 @@ looks each slot up by key, and its header and briefing blocks
 each carry a `person-block-*` key, because the brief card appears above the
 agent's card as soon as a check-in brings notes for next time.
 
+Keys keep an element through a reload; they do not keep it through a scroll.
+A lazy list drops the rows outside its cache extent and builds them again on
+the way back, folded, so state the reader set in a row — *Show more* on a
+transcript — is lost the moment they scroll far enough, and the row comes
+back shorter above the viewport, which moves the history under them. A row
+holding such state keeps itself alive while it holds it:
+`AutomaticKeepAliveClientMixin` with `wantKeepAlive` true only while opened
+(and `updateKeepAlive()` on each toggle), so folded rows are dropped as usual
+and an opened one is not. The person timeline's `PersonFoldedWords` does
+this.
+
 ## Letting a row fetch what decides its height
 
 The quietest break. A row in a lazy list that reads its own async data — a
@@ -192,6 +207,39 @@ class FoldedWords extends StatefulWidget {
 }
 ```
 
+## Taking a reload's fresh copy for a change
+
+The reload hands every widget a new object for the same data: a person read
+from the database again is a new `RelationshipEntry` with a new list of the
+same contact channels. A `didUpdateWidget` that compares the old and new by
+identity — a plain `!=` on a `List`, a `Map`, or anything else without value
+equality — sees a change on every reload, and whatever it does on a change
+happens on every write: state reset, a probe started, a cache dropped. The
+person page's contact row did exactly that: each reload emptied the Call,
+Message and Email buttons, asked the platform again which it can service,
+and filled them in a moment later — long after the rest of the page had
+learned to stay put.
+
+```dart
+// Before: a new list of the same channels is "a change", on every reload.
+void didUpdateWidget(PersonContactRow oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  if (oldWidget.relationship.data.contactChannels != _channels) {
+    setState(() => _reachable = null);
+    _resolve();
+  }
+}
+
+// After: the row reacts only when the channels themselves differ.
+if (!listEquals(oldWidget.relationship.data.contactChannels, _channels)) {
+```
+
+Compare by value (`listEquals`, `mapEquals`, `DeepCollectionEquality`, or the
+value type's own `==`), and test it with a *fresh copy*: build the widget
+twice from equal, non-identical data and assert the element and its state
+survive. A `const` fixture is canonicalised and identical, so it cannot catch
+this.
+
 # Testing it
 
 A test of this rule must observe the reload **while it is in flight** and must
@@ -207,7 +255,10 @@ be able to fail:
 - For the identity half, take the `Element` of a child below the change
   (`tester.element(find.byKey(...))`) before the reload and assert it is
   `identical` afterwards, or assert state the reader set (an expanded row)
-  survives.
+  survives. Feed the reload *fresh copies* of unchanged data — `List.of`, not
+  a `const` list — so a widget that compares by identity is caught too.
+- For a row's kept state, open it, jump far enough that the lazy list drops
+  it, jump back, and assert it is still open and the same height.
 - For a lazy list, jump far enough that rows are dropped, jump back, and
   assert `maxScrollExtent` is the same on every frame after the jump: a row
   rebuilt at the wrong height moves it.
