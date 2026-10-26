@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/nudges
     title: Nudges feature source
-    last_modified: 2026-08-16
+    last_modified: 2026-10-26
   - id: vocabulary
     resource: ../../lib/classes/nudge_models.dart
     title: The kind-agnostic nudge vocabulary
@@ -227,6 +227,55 @@ tenure state across a tenant arriving or leaving. On an ineligible surface the
 slot holds a `SizedBox.shrink()` and no dock at all, exactly as the bottom dock
 behaved. A `Column` reconciles positionally, so that slot changing type cannot
 disturb the shell beside it.
+
+# The action group: one filled control, two quiet ones
+
+A banner offers three controls — the CTA, the rating star and Snooze — and
+their visual weight is an invariant, not a per-surface choice. The CTA pill
+(`NudgeBannerCtaPill`) is the **only filled control** and the **only place
+the accent appears at full strength**: the `washControl` fill over the
+register-tinted surface, edged in the undiluted accent, so it is the one
+element that advertises pressability (design handover 1a) and the strongest
+colour on the banner. Everything else in the hue stays below it — the chip
+at `washChip`, the card border at `washBorder`, the current pagination dot at
+`SurfaceAlphas.linework`, and the tenure hairline and queued dots at `muted`,
+with the current dot a disc and the queued ones rings so position is carried
+by shape, not alpha alone. Rate and Snooze are
+`NudgeBannerQuietActions` (`ui/nudge_banner_quiet_actions.dart`): the same
+`quiet` dense `DesignSystemButton` twice, star and snooze glyph, in the
+neutral medium-emphasis ink on one `TapTargets.minimum` floor with no fill at
+rest, Snooze's label ending on the host's trailing edge. Both are labelled: a
+lone glyph reads as a state, and on touch there is no hover to explain it.
+Snooze used to be a *primary* button here, which put the brand fill on the
+dismissal and a wash on the way forward; the hierarchy was inverted and the
+row read as three unrelated components.
+
+Both hosts are quiet doorways (`DsQuietInk`): the body opens the
+conversation but paints no hover wash, so the pill stays the one thing that
+looks pressable, and on the goal's own page the body follows the host's CTA
+override exactly as the pill does — one doorway, one verb. Rate keeps its
+footprint while hidden, on both surfaces: the card's header never reflows
+after a rating, and the dock's pill holds one position across tenants whether
+or not each has been rated. The pill itself stands on the same
+`TapTargets.minimum` floor as the quiet pair, and the dock's dots overlay the
+tenant's bottom inset as the hairline overlays its top, so a second tenant
+never changes the dock's height. The strip and the card share one frame
+radius.
+
+The compact (phone) dock is **the card's grammar at phone width**, not a
+third layout: identity and the quiet actions share the caption row, the
+headline (the `subtitle1` tier on both surfaces) runs full width beneath, and
+the CTA sits flush left under it. The quiet pair is the same labelled pair as
+everywhere else — a lone snooze glyph read as a state, not an action — and
+only on a compact host above `TextScales.large` does it fall back to named
+glyphs, because two scaled labels no longer fit a phone's caption row; a wide
+host keeps the words at every scale. Before this the phone strip dropped the
+CTA entirely, so the only visible control was the exit. A hold on the dock
+body pauses the rotation and its release is not a tap: the body owns the
+long press, so a touch user cannot be navigated away by letting go. The vertical rhythm is one interval once each row's own slack
+is counted — the 48 dp action row's `step3` around its glyphs, the headline's
+leading, the pill's floor — so a `step2` top inset, a `step1` gap and
+`step4` before the pill all render as the bottom `cardPadding` does.
 
 # Interactions: serialized, transactional, durably committed
 

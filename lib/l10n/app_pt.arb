@@ -4660,6 +4660,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Ocultar por hoje",
+  "nudgeBannerRateLabel": "Avaliar",
   "nudgeBannerRateTooltip": "Avaliar este banner",
   "nudgeBannerRatingSkip": "Ignorar",
   "nudgeBannerRatingTitle": "O que você achou deste banner?",

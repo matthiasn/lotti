@@ -57,7 +57,13 @@ class NudgeBannerPersonaChip extends StatelessWidget {
 }
 
 /// The one pressable-looking element that is actually pressable: the
-/// accent-washed CTA pill. Shared by the banner card and the dock.
+/// accent-washed CTA pill, edged in the accent at full strength — the only
+/// place on a banner the hue appears undiluted, which is what makes it the
+/// primary at a glance and keeps figure-ground on the light theme's paler
+/// wash. Its pointer target is the same [TapTargets.minimum] floor the
+/// quiet pair stands on, with the visible pill centred in it — the
+/// design-system button's padded-target pattern. Shared by the banner card
+/// and the dock.
 class NudgeBannerCtaPill extends StatelessWidget {
   const NudgeBannerCtaPill({
     required this.label,
@@ -74,26 +80,50 @@ class NudgeBannerCtaPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    return Material(
-      color: style.controlFill,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step4,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            // High-emphasis over the accent wash — same contrast reason as
-            // the persona monogram. The pill reads as accent through its
-            // fill; the label stays legible on light accents.
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
+    // The whole floor is the target, not just the painted pill: the pill's
+    // own InkWell wins the arena inside it and carries the ink; a tap in
+    // the slot's slack around it lands here.
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: TapTargets.minimum,
+          minHeight: TapTargets.minimum,
+        ),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: Ink(
+              decoration: BoxDecoration(
+                color: style.controlFill,
+                borderRadius: radius,
+                border: Border.all(color: style.accent),
+              ),
+              child: InkWell(
+                borderRadius: radius,
+                onTap: onTap,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step4,
+                    vertical: tokens.spacing.step3,
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    // High-emphasis over the accent wash — same contrast reason as
+                    // the persona monogram. The pill reads as accent through its
+                    // fill; the label stays legible on light accents.
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

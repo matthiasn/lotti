@@ -10874,6 +10874,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Voor vandaag verbergen';
 
   @override
+  String get nudgeBannerRateLabel => 'Beoordelen';
+
+  @override
   String get nudgeBannerRateTooltip => 'Beoordeel deze banner';
 
   @override

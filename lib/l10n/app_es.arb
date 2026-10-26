@@ -4155,6 +4155,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Ocultar por hoy",
+  "nudgeBannerRateLabel": "Valorar",
   "nudgeBannerRateTooltip": "Valorar este banner",
   "nudgeBannerRatingSkip": "Omitir",
   "nudgeBannerRatingTitle": "¿Qué te pareció este banner?",

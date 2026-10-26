@@ -10981,6 +10981,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Skrýt na dnešek';
 
   @override
+  String get nudgeBannerRateLabel => 'Ohodnotit';
+
+  @override
   String get nudgeBannerRateTooltip => 'Ohodnotit tento banner';
 
   @override
