@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_payload_source.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart'
     show MatrixMessageSender;
@@ -48,10 +48,10 @@ class MatrixPayloadSender {
   }) : gzipEncode = gzipEncode ?? gzipEncodeJson;
 
   final DomainLogger loggingService;
-  final JournalDb journalDb;
+  final SyncPayloadSource journalDb;
   final Directory documentsDirectory;
   final SentEventRegistry sentEventRegistry;
-  final VectorClockService? vectorClockService;
+  final SyncHostIdSource? vectorClockService;
   final DomainLogger? domainLogger;
 
   /// Gzip+JSON encoder for outbox bundle manifests. Injectable so tests can

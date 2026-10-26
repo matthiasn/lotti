@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -57,7 +57,7 @@ class MatrixServiceOps {
   final void Function(StreamSubscription<KeyVerification>?)
   setKeyVerificationRequestSubscription;
   final MatrixService Function() service;
-  final SettingsDb settingsDb;
+  final SyncKeyValueStore settingsDb;
 
   MatrixStreamConsumer? get _pipeline => _pipelineAccessor();
   Client get _client => sessionManager.client;

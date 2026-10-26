@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 
 part 'settings_db.g.dart';
 
@@ -14,7 +15,7 @@ const settingsDbFileName = 'settings.sqlite';
 typedef SavedSettingsGroup = ({int updatedAt, Map<String, String> values});
 
 @DriftDatabase(include: {'settings_db.drift'})
-class SettingsDb extends _$SettingsDb {
+class SettingsDb extends _$SettingsDb implements SyncKeyValueStore {
   SettingsDb({
     this.inMemoryDatabase = false,
     // Settings reads and writes are tiny and latency-sensitive. Running them on
@@ -139,6 +140,7 @@ class SettingsDb extends _$SettingsDb {
     _resolveQueuedRead(configKey, value);
   }
 
+  @override
   Future<int> saveSettingsItem(String configKey, String value) =>
       _write(() async {
         if (_cache.containsKey(configKey) && _cache[configKey] == value) {
@@ -293,6 +295,7 @@ class SettingsDb extends _$SettingsDb {
     return true;
   });
 
+  @override
   Future<void> removeSettingsItem(String configKey) => _write(() async {
     await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
     _publishValue(configKey, null);
@@ -338,6 +341,7 @@ class SettingsDb extends _$SettingsDb {
     return result;
   }
 
+  @override
   Future<String?> itemByKey(String configKey) {
     if (_cache.containsKey(configKey)) {
       return Future<String?>.value(_cache[configKey]);

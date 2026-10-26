@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -228,7 +228,7 @@ class MatrixService implements SyncService {
   final DomainLogger _loggingService;
   final UserActivityGate _activityGate;
   final MatrixMessageSender _messageSender;
-  final SettingsDb _settingsDb;
+  final SyncKeyValueStore _settingsDb;
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;

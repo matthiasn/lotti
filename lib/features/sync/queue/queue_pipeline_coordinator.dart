@@ -4,8 +4,8 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -58,7 +58,7 @@ const _logSub = 'queue.coordinator';
 class QueuePipelineCoordinator {
   QueuePipelineCoordinator({
     required SyncDatabase syncDb,
-    required SettingsDb settingsDb,
+    required SyncKeyValueStore settingsDb,
     required JournalDb journalDb,
     required this._sessionManager,
     required this._roomManager,
@@ -130,7 +130,7 @@ class QueuePipelineCoordinator {
   /// built here, for the sync cost summary (ADR 0142).
   final SyncCostMeter _costMeter;
   final SyncDatabase _syncDb;
-  final SettingsDb _settingsDb;
+  final SyncKeyValueStore _settingsDb;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final SyncSequenceLogService _sequenceLogService;

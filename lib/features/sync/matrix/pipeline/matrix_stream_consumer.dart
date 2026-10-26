@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_signals.dart';
@@ -49,7 +49,7 @@ class MatrixStreamConsumer implements SyncPipeline {
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final DomainLogger _loggingService;
-  final SettingsDb _settingsDb;
+  final SyncKeyValueStore _settingsDb;
   final SyncEventProcessor _eventProcessor;
   final MetricsCounters _metrics;
 

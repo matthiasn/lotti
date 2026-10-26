@@ -17,6 +17,7 @@ import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/sync_payload_source.dart';
 import 'package:lotti/database/vector_clock_rows.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/entry_link_creation.dart';
@@ -129,7 +130,8 @@ class JournalDb extends _$JournalDb
         _JournalDbLinksRatings,
         _JournalDbDataQueries,
         _JournalDbDefinitions,
-        _JournalDbEntityOps {
+        _JournalDbEntityOps
+    implements SyncPayloadSource {
   JournalDb({
     this.inMemoryDatabase = false,
     String? overriddenFilename,
