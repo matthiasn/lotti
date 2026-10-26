@@ -51,6 +51,7 @@ void main() {
   final setup = _QueueCoordinatorTestSetup()
     ..registerLifecycle()
     ..registerStart()
+    ..registerProducerOnly()
     ..registerCatchUpClaims()
     ..registerLiveIngress()
     ..registerStartUnwind()

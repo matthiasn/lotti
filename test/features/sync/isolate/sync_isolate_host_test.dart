@@ -3,6 +3,8 @@ import 'dart:isolate';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
@@ -149,6 +151,82 @@ class _FakeHostServices extends Fake implements SyncIsolateHostServices {
   @override
   Future<int> settingsSet(String key, String value) async =>
       throw StateError('read-only');
+}
+
+/// Answers every question the worker's stack can ask, each recognisably.
+class _AnswersEverything implements SyncIsolateHostServices {
+  @override
+  Future<String?> settingsGet(String key) async => '$key-value';
+
+  @override
+  Future<int> settingsSet(String key, String value) async => 1;
+
+  @override
+  Future<void> settingsRemove(String key) async {}
+
+  @override
+  Future<Map<String, JournalEntity>> journalEntities(
+    List<String> ids,
+  ) async => {};
+
+  @override
+  Future<JournalEntity?> openConflictVersion(
+    String id,
+    VectorClock vectorClock,
+  ) async => null;
+
+  @override
+  Future<bool> configFlag(String flagName) async => flagName == 'on';
+
+  @override
+  Future<String?> vectorClockHost() async => 'host-1';
+
+  @override
+  Future<bool> localVcDominates(
+    String relativePath,
+    VectorClock? incomingVectorClock,
+  ) async => incomingVectorClock == null;
+}
+
+/// Shakes hands, asks the host one of everything, and logs each answer.
+void _asksEverything(SyncIsolateBoot boot) {
+  final commands = ReceivePort();
+  boot.host.send(SyncIsolateReady(commands.sendPort));
+  const queries = <SyncIsolateHostQuery>[
+    SyncIsolateHostSettingsGet('room'),
+    SyncIsolateHostSettingsSet('room', '!r'),
+    SyncIsolateHostSettingsRemove('room'),
+    SyncIsolateHostJournalEntities(['a', 'b']),
+    SyncIsolateHostOpenConflictVersion(
+      id: 'a',
+      vectorClock: VectorClock({'h': 1}),
+    ),
+    SyncIsolateHostConfigFlag('on'),
+    SyncIsolateHostVectorClockHost(),
+    SyncIsolateHostLocalVcDominates(
+      relativePath: '/images/a.jpg',
+      incomingVectorClock: null,
+    ),
+  ];
+  for (var i = 0; i < queries.length; i++) {
+    boot.host.send(
+      SyncIsolateHostRequest(requestId: i + 1, query: queries[i]),
+    );
+  }
+  commands.listen((message) {
+    if (message is SyncIsolateHostReply) {
+      boot.host.send(
+        SyncIsolateLog(
+          'reply ${message.requestId} result=${message.result} '
+          'failure=${message.failure?.message}',
+          subDomain: 'asked',
+        ),
+      );
+    } else if (message is SyncIsolateRequest &&
+        message.command is SyncIsolateShutdown) {
+      commands.close();
+    }
+  });
 }
 
 /// Shakes hands and then idles.
@@ -641,6 +719,50 @@ void main() {
       );
 
       expect(logged, ['reply 41 result=room-value failure=null']);
+      await host.dispose();
+    });
+
+    test('every question the stack can ask is answered by its host service, '
+        'argument for argument', () async {
+      final host = makeHost(
+        entry: _asksEverything,
+        services: _AnswersEverything(),
+      );
+      final logged = <String>[];
+      when(
+        () => logger.log(
+          any(),
+          captureAny(that: startsWith('reply ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      ).thenAnswer((invocation) {
+        logged.add(invocation.positionalArguments[1] as String);
+      });
+      host.start();
+      await host.states.firstWhere((s) => s == SyncIsolateState.running);
+      await untilCalled(
+        () => logger.log(
+          any(),
+          any(that: startsWith('reply 8 ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      );
+
+      expect(
+        logged,
+        unorderedEquals([
+          'reply 1 result=room-value failure=null',
+          'reply 2 result=1 failure=null',
+          'reply 3 result=null failure=null',
+          'reply 4 result={} failure=null',
+          'reply 5 result=null failure=null',
+          'reply 6 result=true failure=null',
+          'reply 7 result=host-1 failure=null',
+          'reply 8 result=true failure=null',
+        ]),
+      );
       await host.dispose();
     });
 

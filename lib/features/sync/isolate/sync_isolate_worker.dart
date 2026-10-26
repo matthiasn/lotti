@@ -116,11 +116,16 @@ class SyncIsolateWorker {
     // send — waits for a reply that comes through this same port, and
     // behind a serial loop it would wait for itself. Serving never throws;
     // a failure is the reply.
+    // Once a shutdown is in, nothing else is taken: a request behind it
+    // would run against resources that are closing, and the host has
+    // already failed everything it still had out.
+    var shuttingDown = false;
     final exited = Completer<void>();
     commands.listen((message) {
       if (message is SyncIsolateHostReply) {
         _hostClient.onReply(message);
-      } else if (message is SyncIsolateRequest) {
+      } else if (message is SyncIsolateRequest && !shuttingDown) {
+        shuttingDown = message.command is SyncIsolateShutdown;
         _handled++;
         _serve(
           message,

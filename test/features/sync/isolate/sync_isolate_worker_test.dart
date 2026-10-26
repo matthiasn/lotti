@@ -81,22 +81,27 @@ void main() {
     },
   );
 
-  test('answers shutdown and then stops taking commands', () async {
+  test('answers shutdown and then takes nothing more — not a command behind '
+      'it, not a second shutdown', () async {
     await next(); // startup log line
     commands
       ..send(
         const SyncIsolateRequest(requestId: 1, command: SyncIsolateShutdown()),
       )
       ..send(
-        const SyncIsolateRequest(requestId: 2, command: SyncIsolatePing()),
+        const SyncIsolateRequest(requestId: 2, command: SyncIsolateShutdown()),
+      )
+      ..send(
+        const SyncIsolateRequest(requestId: 3, command: SyncIsolatePing()),
       );
 
     final reply = (await next())! as SyncIsolateReply;
     expect(reply.requestId, 1);
     expect(reply.failure, isNull);
 
-    // The ping went to a closed port: nothing more ever arrives. Closing the
-    // host port ends the inbox, which proves no second reply was queued.
+    // The others arrived while the shutdown was closing the worker's
+    // resources and were dropped unanswered: nothing more ever arrives.
+    // Closing the host port ends the inbox, which proves no reply was queued.
     host.close();
     expect(await inbox.moveNext(), isFalse);
   });

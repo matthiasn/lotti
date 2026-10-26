@@ -1927,6 +1927,51 @@ void main() {
     });
   });
 
+  group("MatrixService without a keychain (the sync isolate's service)", () {
+    // The worker has no secure storage: the credentials arrive in its boot
+    // config and live on the session manager alone.
+    MatrixService buildWithoutStorage() => MatrixService(
+      gateway: gateway,
+      loggingService: loggingService,
+      activityGate: activityGate,
+      messageSender: messageSender,
+      settingsDb: settingsDb,
+      eventProcessor: eventProcessor,
+      queueCoordinator: queueCoordinator,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      syncEngine: syncEngine,
+      connectivityStream: const Stream.empty(),
+    );
+
+    test("the config is the session's: set, load, delete", () async {
+      const config = MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@user:example.com',
+        password: 'secret',
+      );
+      when(() => sessionManager.logout()).thenAnswer((_) async {});
+      final service = buildWithoutStorage();
+
+      await service.setConfig(config);
+      verify(() => sessionManager.matrixConfig = config).called(1);
+
+      when(() => sessionManager.matrixConfig).thenReturn(config);
+      expect(await service.loadConfig(), config);
+
+      await service.deleteConfig();
+      verify(() => sessionManager.matrixConfig = null).called(1);
+      verify(() => sessionManager.logout()).called(1);
+      verifyNever(() => secureStorage.read(key: any(named: 'key')));
+      verifyNever(
+        () => secureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      );
+    });
+  });
+
   group('MatrixService default sub-service construction', () {
     // Builds a service with neither a sessionManager, roomManager, syncEngine,
     // nor a pipelineOverride. This exercises the constructor's default-wiring

@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_client.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_stack.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
@@ -17,6 +20,10 @@ import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/sync_service.dart';
+import 'package:lotti/services/logging_domains.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -590,4 +597,100 @@ void main() {
       expect(events.whereType<SyncIsolateRoomIdChanged>(), hasLength(1));
     },
   );
+
+  group('compose', () {
+    test('builds the real stack over the client it is given, from the boot '
+        'config, and takes it down again', () async {
+      final client = MockMatrixClient();
+      final syncStatuses = CachedStreamController<SyncStatusUpdate>();
+      when(() => client.onSyncStatus).thenReturn(syncStatuses);
+      // The streams the service and its managers subscribe to at construction.
+      when(
+        () => client.onLoginStateChanged,
+      ).thenReturn(CachedStreamController<LoginState>());
+      when(
+        () => client.onKeyVerificationRequest,
+      ).thenReturn(CachedStreamController<KeyVerification>());
+      when(client.dispose).thenAnswer((_) async {});
+      final db = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(db.close);
+      final logger = MockDomainLogger();
+      when(() => logger.enabledDomains).thenReturn({LogDomain.sync});
+      when(
+        () => logger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+        ),
+      ).thenReturn(null);
+      when(
+        () => logger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      ).thenReturn(null);
+      const credentials = MatrixConfig(
+        homeServer: 'https://hs.example.org',
+        user: '@alice:example.org',
+        password: 'pw',
+      );
+      const config = SyncIsolateConfig(
+        documentsPath: '/worker/documents',
+        temporaryPath: '/worker/tmp',
+        hostMatrixStack: true,
+        matrixConfig: credentials,
+        deviceDisplayName: 'Worker box',
+        collectSyncMetrics: true,
+      );
+      var cryptoInits = 0;
+      Directory? clientDirectory;
+      final emitted = <SyncIsolateEvent>[];
+
+      final composed = await SyncIsolateStack.compose(
+        config: config,
+        db: db,
+        host: SyncIsolateHostClient(ReceivePort().sendPort),
+        logger: logger,
+        emit: emitted.add,
+        initCrypto: () async => cryptoInits++,
+        createClient: (directory) async {
+          clientDirectory = directory;
+          return client;
+        },
+      );
+
+      // vodozemac is bound per isolate, and the SDK database lives where the
+      // boot said.
+      expect(cryptoInits, 1);
+      expect(clientDirectory?.path, '/worker/documents');
+      // The pipeline is composed but not started: no leases yet.
+      expect(composed.service.queueCoordinator.isRunning, isFalse);
+      expect(composed.acceptsLeases, isFalse);
+      // The credentials travelled in the boot config; with no keychain in
+      // the worker the service answers them from its session.
+      expect(await composed.service.loadConfig(), credentials);
+      expect(
+        composed.service.inboundQueue,
+        same(composed.service.queueCoordinator.queue),
+      );
+      expect(emitted, isEmpty);
+
+      await composed.dispose();
+
+      verify(client.dispose).called(1);
+      verifyNever(
+        () => logger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      );
+    });
+  });
 }

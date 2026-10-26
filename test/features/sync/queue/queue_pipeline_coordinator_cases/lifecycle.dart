@@ -25,6 +25,55 @@ extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
     );
   }
 
+  void registerProducerOnly() {
+    test(
+      "without an apply side — the sync isolate's coordinator — start and "
+      'stop run with no worker, and the producer seam answers from the '
+      'bridge',
+      () async {
+        final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          activityGate: null,
+          logging: logging,
+          queueOverride: queue,
+          bridgeOverride: bridge,
+          seederOverride: seeder,
+        );
+        var started = false;
+        coordinator.onStarted = () => started = true;
+
+        await coordinator.start();
+        expect(coordinator.isRunning, isTrue);
+        expect(started, isTrue);
+        verify(() => queue.pruneStrandedEntries(roomId)).called(1);
+        verify(bridge.start).called(1);
+        verifyNever(worker.start);
+
+        when(() => bridge.isBridgeInFlight).thenReturn(true);
+        expect(coordinator.isBridgeInFlight, isTrue);
+        void completed() {}
+        coordinator.onBridgeCompleted = completed;
+        verify(() => bridge.onBridgeCompleted = completed).called(1);
+        when(() => bridge.onBridgeCompleted).thenReturn(completed);
+        expect(coordinator.onBridgeCompleted, same(completed));
+        // Start ran its own catch-up pass; the trigger is one more.
+        verify(bridge.bridgeNow).called(1);
+        await coordinator.triggerBridge();
+        verify(bridge.bridgeNow).called(1);
+        // No barren bridge recorded: nothing to recover, nothing thrown.
+        coordinator.maybeStartGapRecovery();
+
+        await coordinator.stop();
+        expect(coordinator.isRunning, isFalse);
+        verifyNever(worker.stop);
+      },
+    );
+  }
+
   void registerStartUnwind() {
     test(
       'startup unwind waits for response admission before stopping worker',
