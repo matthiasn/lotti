@@ -4064,7 +4064,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimental: inicia o processo de sincronização em segundo plano ao abrir a app. Ainda não sincroniza nada; serve para testares se funciona no teu dispositivo. Entra em vigor após reiniciar.';
+      'Experimental: executa a sincronização — o cliente Matrix, a recuperação, as transferências de anexos e o envio — num processo em segundo plano em vez de na interface, que apenas aplica o que chega. Entra em vigor após reiniciar.';
 
   @override
   String get conflictApplyButton => 'Aplicar';

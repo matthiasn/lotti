@@ -1678,7 +1678,7 @@
   "configFlagResendAttachments": "Retrimiteți atașamentele",
   "configFlagResendAttachmentsDescription": "Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.",
   "configFlagUseIsolateSync": "Proces de sincronizare în fundal",
-  "configFlagUseIsolateSyncDescription": "Experimental: pornește la deschiderea aplicației procesul de sincronizare în fundal. Încă nu sincronizează nimic; astfel puteți verifica dacă rulează pe dispozitivul dumneavoastră. Intră în vigoare după o repornire.",
+  "configFlagUseIsolateSyncDescription": "Experimental: rulează sincronizarea – clientul Matrix, recuperarea, descărcarea atașamentelor și trimiterea – într-un proces în fundal, nu în interfață, care doar aplică ce sosește. Intră în vigoare după o repornire.",
   "conflictApplyButton": "Aplicați",
   "conflictApplyFailedTitle": "Rezoluția nu a putut fi aplicată",
   "conflictBannerAgoDays": "{count, plural, =1{acum 1 zi} other{acum {count} zile}}",

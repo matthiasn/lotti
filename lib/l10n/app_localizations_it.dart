@@ -4073,7 +4073,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Sperimentale: avvia all\'apertura dell\'app il processo in background della sincronizzazione. Non sincronizza ancora nulla: serve a verificare che funzioni sul tuo dispositivo. Ha effetto dopo un riavvio.';
+      'Sperimentale: esegue la sincronizzazione – client Matrix, recupero, download degli allegati e invio – in un processo in background invece che nell\'interfaccia, che si limita ad applicare ciò che arriva. Ha effetto dopo un riavvio.';
 
   @override
   String get conflictApplyButton => 'Applicare';

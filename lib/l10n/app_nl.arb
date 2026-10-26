@@ -1899,7 +1899,7 @@
   "configFlagResendAttachments": "Bijlages opnieuw versturen",
   "configFlagResendAttachmentsDescription": "Schakel dit in om mislukte bijlageuploads automatisch opnieuw te verzenden wanneer de verbinding hersteld is.",
   "configFlagUseIsolateSync": "Synchronisatieproces op de achtergrond",
-  "configFlagUseIsolateSyncDescription": "Experimenteel: start bij het openen van de app het achtergrondproces van de synchronisatie. Het synchroniseert nog niets; zo test je of het op je apparaat draait. Werkt na een herstart.",
+  "configFlagUseIsolateSyncDescription": "Experimenteel: voert de synchronisatie – de Matrix-client, het inhalen, het downloaden van bijlagen en het verzenden – uit in een achtergrondproces in plaats van in de interface, die alleen nog toepast wat binnenkomt. Werkt na een herstart.",
   "conflictApplyButton": "Toepassen",
   "conflictApplyFailedTitle": "Kon resolutie niet toepassen",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag geleden} other{{count} dagen geleden}}",

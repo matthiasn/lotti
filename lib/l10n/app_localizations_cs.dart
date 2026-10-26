@@ -4068,7 +4068,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimentální: při otevření aplikace spustí proces synchronizace na pozadí. Zatím nic nesynchronizuje – slouží k ověření, že na tvém zařízení běží. Projeví se po restartu.';
+      'Experimentální: spouští synchronizaci – klienta Matrix, dohánění, stahování příloh a odesílání – v procesu na pozadí místo v rozhraní, které jen použije, co dorazí. Projeví se po restartu.';
 
   @override
   String get conflictApplyButton => 'Použít';

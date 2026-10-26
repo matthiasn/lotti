@@ -4028,7 +4028,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimentell: startar synkroniseringens bakgrundsprocess när appen öppnas. Den synkroniserar inget ännu – så testar du att den körs på din enhet. Gäller efter en omstart.';
+      'Experimentell: kör synkroniseringen – Matrix-klienten, ikappkörningen, bilagenedladdningar och sändning – i en bakgrundsprocess i stället för i gränssnittet, som bara tillämpar det som kommer in. Gäller efter en omstart.';
 
   @override
   String get conflictApplyButton => 'Ansök';
