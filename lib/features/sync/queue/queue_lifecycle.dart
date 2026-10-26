@@ -163,6 +163,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         },
       );
       _started = true;
+      onStarted?.call();
       // Phase-2 equivalent of the legacy pipeline's 300 ms startup
       // `forceRescan`. `connect()` runs before `_maybeStartQueuePipeline`
       // in `MatrixService.init`, so events delivered during the login

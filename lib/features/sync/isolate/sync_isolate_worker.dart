@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -110,33 +111,49 @@ class SyncIsolateWorker {
     if (_stack != null) {
       _host.send(const SyncIsolateStackChanged(ready: true));
     }
-    await for (final message in commands) {
+    // Requests are served as they arrive, not one after the other: a
+    // command that asks the host — the persisted room id, a payload to
+    // send — waits for a reply that comes through this same port, and
+    // behind a serial loop it would wait for itself. Serving never throws;
+    // a failure is the reply.
+    final exited = Completer<void>();
+    commands.listen((message) {
       if (message is SyncIsolateHostReply) {
         _hostClient.onReply(message);
-        continue;
-      }
-      if (message is! SyncIsolateRequest) continue;
-      _handled++;
-      try {
-        _host.send(
-          SyncIsolateReply.success(
-            message.requestId,
-            await _handle(message.command),
-          ),
-        );
-      } catch (error) {
-        _host.send(
-          SyncIsolateReply.failure(
-            message.requestId,
-            SyncIsolateStack.failureFor(message.command, error),
-          ),
+      } else if (message is SyncIsolateRequest) {
+        _handled++;
+        _serve(
+          message,
+          onShutdown: () {
+            commands.close();
+            exited.complete();
+          },
         );
       }
-      if (message.command is SyncIsolateShutdown) {
-        commands.close();
-        break;
-      }
+    });
+    await exited.future;
+  }
+
+  Future<void> _serve(
+    SyncIsolateRequest request, {
+    required void Function() onShutdown,
+  }) async {
+    try {
+      _host.send(
+        SyncIsolateReply.success(
+          request.requestId,
+          await _handle(request.command),
+        ),
+      );
+    } catch (error) {
+      _host.send(
+        SyncIsolateReply.failure(
+          request.requestId,
+          SyncIsolateStack.failureFor(request.command, error),
+        ),
+      );
     }
+    if (request.command is SyncIsolateShutdown) onShutdown();
   }
 
   Future<Object?> _handle(SyncIsolateCommand command) async {
@@ -159,6 +176,12 @@ class SyncIsolateWorker {
         await _db.close();
         return null;
       case SyncIsolateLeaseEntries(:final maxBatch):
+        // A hosted pipeline that has not started yet has not pruned the
+        // rows an earlier room left behind: nothing to lease until it has.
+        final stack = _stack;
+        if (stack != null && !stack.acceptsLeases) {
+          return const <InboundQueueEntry>[];
+        }
         final leased = await _queue.peekBatchReady(maxBatch: maxBatch);
         if (leased.isNotEmpty) _tablesChanged();
         return leased;

@@ -15,7 +15,7 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher_scope.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/app_lifecycle_holder.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -58,10 +58,10 @@ void main() {
         ..registerSingleton<DomainLogger>(MockDomainLogger())
         ..registerSingleton<OutboxService>(MockOutboxService())
         ..registerSingleton<AiConfigRepository>(MockAiConfigRepository());
-      // The real world advertises sync, so its provider bridge resolves a
-      // MatrixService; guest worlds never construct one.
+      // The real world advertises sync, so its provider bridge resolves the
+      // sync service; guest worlds never construct one.
       if (profile.type != ProfileType.guest) {
-        getIt.registerSingleton<MatrixService>(MockMatrixService());
+        getIt.registerSingleton<SyncService>(MockMatrixService());
       }
     }
 

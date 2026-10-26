@@ -219,6 +219,23 @@ void main() {
       );
     });
 
+    test('the pipeline starting names the queue tables and opens leases', () {
+      final started =
+          verify(() => coordinator.onStarted = captureAny()).captured.single
+              as void Function();
+      when(() => coordinator.isRunning).thenReturn(false);
+      expect(stack.acceptsLeases, isFalse);
+
+      started();
+      when(() => coordinator.isRunning).thenReturn(true);
+
+      expect(
+        (events.single as SyncIsolateTablesChanged).tables,
+        inboundQueueTables,
+      );
+      expect(stack.acceptsLeases, isTrue);
+    });
+
     test('a queue write on this connection names the queue tables', () async {
       depth.add(const QueueDepthSignal(total: 1));
       await pumpEventQueue();

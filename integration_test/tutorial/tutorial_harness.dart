@@ -50,10 +50,10 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -545,7 +545,7 @@ class TutorialAppHarness {
       ..registerSingleton<UpdateNotifications>(updateNotifications)
       ..registerSingleton<UserActivityService>(userActivityService)
       ..registerSingleton<SecureStorage>(MockSecureStorage())
-      ..registerSingleton<MatrixService>(matrixService)
+      ..registerSingleton<SyncService>(matrixService)
       ..registerSingleton<OutboxService>(outboxService)
       ..registerSingleton<AiConfigRepository>(aiConfigRepository)
       // Daily OS's audio-capture processing pipeline resolves this via
@@ -755,7 +755,7 @@ class TutorialAppHarness {
     ),
     maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
     matrixServiceProvider.overrideWithValue(
-      getIt<MatrixService>() as MockMatrixService,
+      getIt<SyncService>() as MockMatrixService,
     ),
     outboxServiceProvider.overrideWithValue(
       getIt<OutboxService>() as MockOutboxService,

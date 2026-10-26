@@ -337,6 +337,7 @@ void main() {
       coordinator = MockQueuePipelineCoordinator();
       queue = MockInboundQueue();
       when(() => service.queueCoordinator).thenReturn(coordinator);
+      when(() => coordinator.isRunning).thenReturn(true);
       when(() => service.inboundQueue).thenReturn(queue);
       when(
         () => service.loginStateChanges,
@@ -439,6 +440,55 @@ void main() {
 
       expect(reply.result, isEmpty);
       verify(() => queue.peekBatchReady(maxBatch: 3)).called(1);
+    });
+
+    test(
+      'nothing is leased before the pipeline has started and pruned',
+      () async {
+        await nextStack();
+        await nextStack();
+        when(() => coordinator.isRunning).thenReturn(false);
+
+        final reply = await askStack(
+          const SyncIsolateLeaseEntries(maxBatch: 3),
+        );
+
+        expect(reply.result, isEmpty);
+        verifyNever(
+          () => queue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+        );
+      },
+    );
+
+    test('a command that asks the host completes: the answer comes through '
+        'the command port while the command is still running', () async {
+      await nextStack();
+      await nextStack();
+      when(() => service.getRoom()).thenAnswer(
+        (_) => hostClient.ask<String?>(
+          const SyncIsolateHostSettingsGet('room'),
+        ),
+      );
+
+      stackCommands.send(
+        SyncIsolateRequest(
+          requestId: ++requestId,
+          command: const SyncIsolateGetRoom(),
+        ),
+      );
+      Object? answered;
+      while (answered == null) {
+        final message = await nextStack();
+        if (message is SyncIsolateHostRequest) {
+          stackCommands.send(
+            SyncIsolateHostReply.success(message.requestId, '!room:h'),
+          );
+        } else if (message is SyncIsolateReply) {
+          answered = message.result;
+        }
+      }
+
+      expect(answered, '!room:h');
     });
 
     test("the stack's questions reach the host, and the host's replies the "

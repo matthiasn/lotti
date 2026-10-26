@@ -65,6 +65,12 @@ class SyncIsolateStack {
     this._disposeExtras,
   ) {
     service.queueCoordinator
+      // The UI isolate's apply loop may have asked for a lease before the
+      // pipeline was up and been told there was nothing; the rows that
+      // survived pruning are its to lease now.
+      ..onStarted = () {
+        _emit(const SyncIsolateTablesChanged(inboundQueueTables));
+      }
       ..onBridgeStarted = () {
         _emit(const SyncIsolateBridgeChanged(inFlight: true));
       }
@@ -224,6 +230,12 @@ class SyncIsolateStack {
   final void Function(SyncIsolateEvent event) _emit;
   final StreamController<List<ConnectivityResult>> _connectivity;
   final Future<void> Function()? _disposeExtras;
+
+  /// Whether the UI isolate may lease: only once the pipeline has started
+  /// and pruned what an earlier room left in the queue. Before that a row
+  /// from a room this device has left could be applied, which in-process
+  /// the coordinator prevents by starting its apply worker last.
+  bool get acceptsLeases => service.queueCoordinator.isRunning;
   final _subscriptions = <StreamSubscription<Object?>>[];
 
   void _verification(

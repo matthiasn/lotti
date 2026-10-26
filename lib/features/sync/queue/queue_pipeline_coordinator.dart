@@ -323,6 +323,12 @@ class QueuePipelineCoordinator implements SyncQueueControl {
   set onBridgeCompleted(void Function()? callback) =>
       _bridge.onBridgeCompleted = callback;
 
+  /// Fires once [start] has finished — the stranded rows of an earlier room
+  /// pruned, the live subscription and the bridge attached. The sync isolate
+  /// opens leases to the UI isolate on it (ADR 0142); in-process the apply
+  /// worker is simply started last.
+  void Function()? onStarted;
+
   /// Callback that fires when a bridge walk starts; see
   /// [BridgeCoordinator.onBridgeStarted].
   void Function()? get onBridgeStarted => _bridge.onBridgeStarted;

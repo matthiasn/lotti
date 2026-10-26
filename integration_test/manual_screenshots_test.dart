@@ -24,10 +24,10 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart'
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -248,7 +248,7 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     ..registerSingleton<UpdateNotifications>(updateNotifications)
     ..registerSingleton<UserActivityService>(userActivityService)
     ..registerSingleton<SecureStorage>(MockSecureStorage())
-    ..registerSingleton<MatrixService>(matrixService)
+    ..registerSingleton<SyncService>(matrixService)
     ..registerSingleton<OutboxService>(outboxService)
     ..registerSingleton<AiConfigRepository>(aiConfigRepository);
 
