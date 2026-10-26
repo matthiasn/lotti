@@ -2626,13 +2626,17 @@ void main() {
       for (final c in [1, 2]) {
         await append(agentAt({'host': c}), entryId: 'agent-1');
       }
+      // The collapse stamps the rows it marks sent with `clock.now()`, so the
+      // drain runs under a fixed clock one day before the prune cutoff; on the
+      // wall clock this test would start failing the day the cutoff passed.
+      final sentAt = DateTime(2026, 10, 24);
       final later = DateTime(2026, 10, 25);
 
       expect(
         await db.pruneSentOutboxItems(retention: Duration.zero, now: later),
         0,
       );
-      await drain();
+      await withClock(Clock.fixed(sentAt), drain);
       expect(
         await db.pruneSentOutboxItems(retention: Duration.zero, now: later),
         2,
