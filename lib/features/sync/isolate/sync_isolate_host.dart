@@ -289,34 +289,35 @@ class SyncIsolateHost {
   }
 
   /// Answers a worker's question from the host services on its command
-  /// port. A worker that went away meanwhile simply never gets the reply.
-  void _answer(SyncIsolateHostRequest request, _Worker? worker) {
-    unawaited(() async {
-      SyncIsolateHostReply reply;
-      try {
-        reply = SyncIsolateHostReply.success(
-          request.requestId,
-          await _serve(request.query),
-        );
-      } catch (error, stackTrace) {
-        _logger.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: '$_subDomain.hostRequest',
-          message: '${request.query.runtimeType} failed',
-        );
-        reply = SyncIsolateHostReply.failure(
-          request.requestId,
-          SyncIsolateFailure(
-            SyncIsolateErrorCode.failed,
-            '${request.query.runtimeType}: $error',
-          ),
-        );
-      }
-      final target = worker ?? _worker;
-      target?.commands.send(reply);
-    }());
+  /// port. Never throws — a service that fails becomes a failure reply — and
+  /// the dispatcher does not wait for it, so a slow answer holds up none of
+  /// the messages behind it. A worker that went away meanwhile simply never
+  /// gets the reply.
+  Future<void> _answer(SyncIsolateHostRequest request, _Worker? worker) async {
+    SyncIsolateHostReply reply;
+    try {
+      reply = SyncIsolateHostReply.success(
+        request.requestId,
+        await _serve(request.query),
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$_subDomain.hostRequest',
+        message: '${request.query.runtimeType} failed',
+      );
+      reply = SyncIsolateHostReply.failure(
+        request.requestId,
+        SyncIsolateFailure(
+          SyncIsolateErrorCode.failed,
+          '${request.query.runtimeType}: $error',
+        ),
+      );
+    }
+    final target = worker ?? _worker;
+    target?.commands.send(reply);
   }
 
   Future<Object?> _serve(SyncIsolateHostQuery query) {

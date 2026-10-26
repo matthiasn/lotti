@@ -76,14 +76,12 @@ class BackfillSettingsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // Both are registered with a sync stack, in-process or in the isolate,
-    // and absent in guest worlds.
+    // Registered with a sync stack, in-process or in the isolate, and
+    // absent in guest worlds.
     final syncService = getIt.isRegistered<SyncService>()
         ? getIt<SyncService>()
         : null;
-    final coordinator = getIt.isRegistered<SyncQueueControl>()
-        ? getIt<SyncQueueControl>()
-        : null;
+    final coordinator = syncService?.queueControl;
 
     return _QueueDepthScope(
       queue: syncService?.inboundQueue,

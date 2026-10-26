@@ -71,10 +71,10 @@ Future<void> _registerLateAndOptionalServices({
     'AudioWaveformService',
   );
 
-  // Guest worlds have no MatrixService registered — the sync stack is
+  // Guest worlds have no sync service registered — the sync stack is
   // structurally absent, so there is nothing to init.
   if (profile.capabilities.syncEnabled) {
-    getIt<StartupTasks>().track(getIt<MatrixService>().init());
+    getIt<StartupTasks>().track(getIt<SyncService>().init());
   }
 
   getIt<StartupTasks>().track(_migrateSpeechDictionary());

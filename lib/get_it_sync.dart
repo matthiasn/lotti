@@ -1,9 +1,26 @@
 part of 'get_it.dart';
 
-/// Registers the complete Matrix sync stack for a real profile: client,
-/// gateway, inbound queue pipeline, MatrixService, the Matrix-backed outbox,
-/// onboarding sync, node-profile broadcasting, VC-burn handling, backfill and
-/// media self-healing.
+/// What the two sync compositions hand the shared tail of
+/// [_registerMatrixSyncStack]: the service the rest of the app talks to, the
+/// producer side of the pipeline, the UI isolate's queue connection, the
+/// attachment index the apply step reads, the apply step itself, the cost
+/// meter, and the session identity (ADR 0142).
+typedef _SyncCore = ({
+  SyncService service,
+  SyncQueueControl queueControl,
+  InboundQueue inboundQueue,
+  AttachmentIndex attachmentIndex,
+  SyncEventProcessor processor,
+  SyncCostMeter costMeter,
+  String? Function() ownUserId,
+  String? Function() ownDeviceId,
+});
+
+/// Registers the complete Matrix sync stack for a real profile: the client
+/// and its pipeline — in-process, or in the sync isolate when
+/// `use_isolate_sync` is on — the Matrix-backed outbox, onboarding sync,
+/// node-profile broadcasting, VC-burn handling, backfill and media
+/// self-healing.
 ///
 /// Guest profiles never call this — see [_registerInertSyncStack]. Returns
 /// the Matrix user-id thunk consumed by the AI attribution identity
@@ -26,197 +43,59 @@ Future<String? Function()> _registerMatrixSyncStack({
   required NotificationScheduler notificationScheduler,
   required ConsumptionRepository consumptionRepository,
 }) async {
-  final client = await createMatrixClient(
-    documentsDirectory: documentsDirectory,
-  );
-
-  // What sync costs the UI isolate (ADR 0142, step 2): timeline spans always,
-  // and a minute summary in the sync log while that log is on.
-  final syncCostMeter = SyncCostMeter(logger: domainLogger)
-    ..observeSdkSync(client.onSyncStatus.stream)
-    ..start();
-  getIt.registerSingleton<SyncCostMeter>(
-    syncCostMeter,
-    dispose: (meter) => meter.dispose(),
-  );
-
-  final sentEventRegistry = SentEventRegistry();
-  final matrixGateway = MatrixSdkGateway(
-    client: client,
-    sentEventRegistry: sentEventRegistry,
-  );
-  final matrixMessageSender = MatrixMessageSender(
-    loggingService: domainLogger,
-    journalDb: journalDb,
-    documentsDirectory: documentsDirectory,
-    sentEventRegistry: sentEventRegistry,
-    vectorClockService: vectorClockService,
-    domainLogger: domainLogger,
-  );
-  // Shared in-memory index of latest attachment events keyed by relativePath.
-  // Verbose per-event logging is off in production; SDK pagination bursts
-  // would otherwise produce thousands of `attachmentIndex.*` lines in a
-  // single second. The wrapping `batch.summary` carries the aggregate.
-  final attachmentIndex = AttachmentIndex(
-    logging: domainLogger,
-    verboseLogging: false,
-  );
-
-  // One trust policy guards every inbound door: queue admission, descriptor
-  // indexing and exact-id descriptor recovery.
-  final syncEventTrust = SyncEventTrust(
-    syncDb: syncDatabase,
-    logging: domainLogger,
-  );
-
-  // The apply path knows events and attachments without a Room (ADR 0142,
-  // step 3); these two answer its lookups from the client this isolate holds.
-  final descriptorFetcher = MatrixDescriptorFetcher.forClient(client);
-  final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
-
-  // SyncEventProcessor is constructed first; its `backfillResponseHandler`
-  // (a `late final`) is assigned below once BackfillResponseHandler exists.
-  // The chain BackfillResponseHandler → OutboxService → MatrixService →
-  // SyncEventProcessor prevents constructor-time injection.
-  final syncEventProcessor =
-      SyncEventProcessor(
-          loggingService: domainLogger,
-          domainLogger: domainLogger,
-          updateNotifications: getIt<UpdateNotifications>(),
-          aiConfigRepository: aiConfigRepository,
-          savedTaskFiltersRepository: savedTaskFiltersRepository,
-          settingsDb: settingsDb,
-          journalEntityLoader: SmartJournalEntityLoader(
-            attachmentIndex: attachmentIndex,
-            attachmentFetcher: attachmentFetcher,
-            loggingService: domainLogger,
-          ),
-          attachmentIndex: attachmentIndex,
-          sequenceLogService: syncSequenceLogService,
-          journalDb: journalDb,
-          vectorClockService: vectorClockService,
-          notificationsDb: notificationsDb,
-          notificationScheduler: notificationScheduler,
-          notificationPreferenceEffects: (journalDb) =>
-              NotificationPreferenceEffects(
-                journalDb: journalDb,
-                // ignore: unnecessary_lambdas
-                notificationService: () => getIt<NotificationService>(),
-                scheduler: () => notificationScheduler,
-                logger: domainLogger,
-              ),
-          syncNodeProfileRepository: syncNodeProfileRepository,
-          fts5Db: getIt<Fts5Db>(),
-          descriptorRecovery: TrustedDescriptorRecovery(
-            fetcher: descriptorFetcher,
-            trust: syncEventTrust,
-            logging: domainLogger,
-          ),
-          attachmentFetcher: attachmentFetcher,
-          gitHubAccountSink: gitHubTokenStorageForProfile(
-            secureStorage,
-            getIt<ProfileContext>(),
-          ).applySynced,
-        )
-        ..consumptionRepository = consumptionRepository
-        ..onJournalEntityApplied = ChecklistRepository.settlerForReceived(
-          create: () =>
-              ChecklistRepository(journalRepository: buildJournalRepository()),
-        );
-
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
-  final roomManager = SyncRoomManager(
-    gateway: matrixGateway,
-    settingsDb: settingsDb,
-    loggingService: domainLogger,
-  );
-
-  // Session manager is ordinarily created inside MatrixService, but
-  // Phase 2 needs it at hand to build the QueuePipelineCoordinator
-  // before MatrixService so both end up sharing the same instance.
-  final sessionManager = MatrixSessionManager(
-    gateway: matrixGateway,
-    roomManager: roomManager,
-    loggingService: domainLogger,
-  );
-
-  // Phase-2 queue pipeline owns inbound ingestion unconditionally. The
-  // dedicated ingestor below drives attachment recording + downloads on
-  // the queue's live + bootstrap paths so descriptor JSONs land on disk
-  // before the worker tries to apply their companion sync events.
-  // `verboseLogging: false` matches the `attachmentIndex` setting above
-  // — steady-state per-event logging would flood the general log on
-  // large catch-ups.
-  final localVcDominanceCheck = AgentVcDominanceCheck(
-    agentDb: getIt<AgentDatabase>(),
-  );
-  final queueAttachmentIngestor = AttachmentIngestor(
-    documentsDirectory: documentsDirectory,
-    verboseLogging: false,
-    localVcDominates: localVcDominanceCheck.check,
-    activityGate: userActivityGate,
-  );
-  // Off by default, and then a no-op: the isolate rebuild (ADR 0142) lands
-  // behind `use_isolate_sync` step by step. With the flag on, the worker
-  // owns the inbound queue's leases and settlements, and the inbound worker
-  // below reaches it through the host.
-  final syncIsolateHost = await registerSyncIsolateIfEnabled(
-    getIt: getIt,
-    journalDb: journalDb,
-    syncDatabase: syncDatabase,
-    documentsDirectory: documentsDirectory,
-    temporaryDirectory: getTemporaryDirectory,
-    logger: domainLogger,
-  );
-  final queuePipelineCoordinator = QueuePipelineCoordinator(
-    syncDb: syncDatabase,
-    settingsDb: settingsDb,
-    journalDb: journalDb,
-    sessionManager: sessionManager,
-    roomManager: roomManager,
-    eventProcessor: syncEventProcessor,
-    sequenceLogService: syncSequenceLogService,
-    activityGate: userActivityGate,
-    logging: domainLogger,
-    syncEventTrust: syncEventTrust,
-    attachmentIndex: attachmentIndex,
-    updateNotifications: getIt<UpdateNotifications>(),
-    attachmentIngestor: queueAttachmentIngestor,
-    sentEventRegistry: sentEventRegistry,
-    costMeter: syncCostMeter,
-    queueGateway: syncIsolateHost == null
-        ? null
-        : (queue) => IsolateInboundQueueGateway(
-            host: syncIsolateHost,
-            localQueue: queue,
-          ),
-  );
-
-  final matrixService = MatrixService(
-    gateway: matrixGateway,
-    loggingService: domainLogger,
-    activityGate: userActivityGate,
-    messageSender: matrixMessageSender,
-    settingsDb: settingsDb,
-    eventProcessor: syncEventProcessor,
-    secureStorage: secureStorage,
-    collectSyncMetrics: collectSyncMetrics,
-    roomManager: roomManager,
-    sessionManager: sessionManager,
-    queueCoordinator: queuePipelineCoordinator,
-  );
+  // Off by default: production sync runs in-process exactly as before. On,
+  // the worker isolate hosts the client, admission and the sender, and the
+  // UI isolate keeps the apply step and everything below (ADR 0142).
+  final useIsolate = await journalDb.getConfigFlag(useIsolateSyncFlag);
+  final _SyncCore core;
+  if (useIsolate) {
+    core = await _composeIsolateSyncCore(
+      documentsDirectory: documentsDirectory,
+      domainLogger: domainLogger,
+      userActivityGate: userActivityGate,
+      journalDb: journalDb,
+      notificationsDb: notificationsDb,
+      settingsDb: settingsDb,
+      syncDatabase: syncDatabase,
+      vectorClockService: vectorClockService,
+      secureStorage: secureStorage,
+      aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
+      syncNodeProfileRepository: syncNodeProfileRepository,
+      syncSequenceLogService: syncSequenceLogService,
+      notificationScheduler: notificationScheduler,
+      consumptionRepository: consumptionRepository,
+      collectSyncMetrics: collectSyncMetrics,
+    );
+  } else {
+    core = await _composeInProcessSyncCore(
+      documentsDirectory: documentsDirectory,
+      domainLogger: domainLogger,
+      userActivityGate: userActivityGate,
+      journalDb: journalDb,
+      notificationsDb: notificationsDb,
+      settingsDb: settingsDb,
+      syncDatabase: syncDatabase,
+      vectorClockService: vectorClockService,
+      secureStorage: secureStorage,
+      aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
+      syncNodeProfileRepository: syncNodeProfileRepository,
+      syncSequenceLogService: syncSequenceLogService,
+      notificationScheduler: notificationScheduler,
+      consumptionRepository: consumptionRepository,
+      collectSyncMetrics: collectSyncMetrics,
+    );
+  }
+  final syncService = core.service;
+  final syncEventProcessor = core.processor;
+  final syncCostMeter = core.costMeter;
+  final attachmentIndex = core.attachmentIndex;
 
   getIt
-    ..registerSingleton<MatrixSyncGateway>(matrixGateway)
-    ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
-    ..registerSingleton<SentEventRegistry>(sentEventRegistry)
-    ..registerSingleton<AttachmentIndex>(
-      attachmentIndex,
-      dispose: (index) => index.dispose(),
-    )
-    ..registerSingleton<SyncEventProcessor>(syncEventProcessor)
-    ..registerSingleton<MatrixService>(matrixService)
+    ..registerSingleton<SyncService>(syncService)
     ..registerSingleton<OutboxService>(
       MatrixOutboxService(
         syncDatabase: syncDatabase,
@@ -226,7 +105,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         documentsDirectory: documentsDirectory,
         userActivityService: userActivityService,
         activityGate: userActivityGate,
-        matrixService: matrixService,
+        matrixService: syncService,
         sequenceLogService: syncSequenceLogService,
         domainLogger: domainLogger,
         settingsDb: settingsDb,
@@ -240,12 +119,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     enqueueMessage: outboxService.enqueueMessageOrThrow,
     getHostId: vectorClockService.getHost,
     getSnapshotCoverage: syncDatabase.resolvedSequenceUpperBounds,
-    // trivial accessor thunks, consumed only during
-    // live onboarding-sync rounds against a logged-in client.
-    // coverage:ignore-start
-    getLocalUserId: () => client.userID,
-    getLocalDeviceId: () => client.deviceID,
-    // coverage:ignore-end
+    getLocalUserId: core.ownUserId,
+    getLocalDeviceId: core.ownDeviceId,
     logging: domainLogger,
   );
   syncEventProcessor
@@ -260,7 +135,7 @@ Future<String? Function()> _registerMatrixSyncStack({
       syncDatabase: syncDatabase,
       documentsDirectory: documentsDirectory,
     );
-  matrixService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
+  syncService.onSyncMessageSent = onboardingSyncService.handleMessageSent;
 
   // Sync-node profile broadcaster: probes the local node's capabilities and
   // broadcasts (over the outbox) whenever the snapshot changes. Registered
@@ -391,8 +266,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     vectorClockService: vectorClockService,
     loggingService: domainLogger,
     documentsDirectory: documentsDirectory,
-    queueCoordinator: queuePipelineCoordinator,
-    queue: queuePipelineCoordinator.queue,
+    queueCoordinator: core.queueControl,
+    queue: core.inboundQueue,
     domainLogger: domainLogger,
     onboardingSyncService: onboardingSyncService,
   );
@@ -406,19 +281,19 @@ Future<String? Function()> _registerMatrixSyncStack({
     // a missing counter, run an unbounded history walk to close the
     // hole immediately instead of waiting for the normal backfill
     // cadence. No-op when no barren bridge was recorded.
-    queuePipelineCoordinator.maybeStartGapRecovery();
+    core.queueControl.maybeStartGapRecovery();
   };
 
   // After a bridge walk settles, re-analyse the sequence log and
   // dispatch a backfill request for anything still missing — nudges
   // during the walk are dropped by the `isBridgeInFlight` gate, so
   // this hook is how the service learns the walk finished.
-  queuePipelineCoordinator.onBridgeCompleted = backfillRequestService.nudge;
+  core.queueControl.onBridgeCompleted = backfillRequestService.nudge;
   onboardingSyncService.onInboundSuppressionEnded =
       backfillRequestService.nudgeAfterDrain;
 
   // Set-once assignment of the late-final `backfillResponseHandler`. Must
-  // run before MatrixService consumes any inbound timeline events.
+  // run before the service consumes any inbound timeline events.
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
 
   // Media self-healing, both halves. The requester turns the loader's
@@ -489,7 +364,251 @@ Future<String? Function()> _registerMatrixSyncStack({
       dispose: (service) => service.dispose(),
     );
 
-  return () => client.userID;
+  return core.ownUserId;
+}
+
+/// The apply step, built the same way on either side of the flag: only where
+/// its descriptor recovery and attachment downloads are answered differs.
+SyncEventProcessor _buildSyncEventProcessor({
+  required DomainLogger domainLogger,
+  required JournalDb journalDb,
+  required NotificationsDb notificationsDb,
+  required SettingsDb settingsDb,
+  required VectorClockService vectorClockService,
+  required SecureStorage secureStorage,
+  required AiConfigRepository aiConfigRepository,
+  required SavedTaskFiltersRepository savedTaskFiltersRepository,
+  required SyncNodeProfileRepository syncNodeProfileRepository,
+  required SyncSequenceLogService syncSequenceLogService,
+  required NotificationScheduler notificationScheduler,
+  required ConsumptionRepository consumptionRepository,
+  required AttachmentIndex attachmentIndex,
+  required SyncDescriptorRecovery descriptorRecovery,
+  required SyncAttachmentFetcher attachmentFetcher,
+}) {
+  // SyncEventProcessor is constructed first; its `backfillResponseHandler`
+  // (a `late final`) is assigned later once BackfillResponseHandler exists.
+  // The chain BackfillResponseHandler → OutboxService → SyncService →
+  // SyncEventProcessor prevents constructor-time injection.
+  return SyncEventProcessor(
+      loggingService: domainLogger,
+      domainLogger: domainLogger,
+      updateNotifications: getIt<UpdateNotifications>(),
+      aiConfigRepository: aiConfigRepository,
+      savedTaskFiltersRepository: savedTaskFiltersRepository,
+      settingsDb: settingsDb,
+      journalEntityLoader: SmartJournalEntityLoader(
+        attachmentIndex: attachmentIndex,
+        attachmentFetcher: attachmentFetcher,
+        loggingService: domainLogger,
+      ),
+      attachmentIndex: attachmentIndex,
+      sequenceLogService: syncSequenceLogService,
+      journalDb: journalDb,
+      vectorClockService: vectorClockService,
+      notificationsDb: notificationsDb,
+      notificationScheduler: notificationScheduler,
+      notificationPreferenceEffects: (journalDb) =>
+          NotificationPreferenceEffects(
+            journalDb: journalDb,
+            // ignore: unnecessary_lambdas
+            notificationService: () => getIt<NotificationService>(),
+            scheduler: () => notificationScheduler,
+            logger: domainLogger,
+          ),
+      syncNodeProfileRepository: syncNodeProfileRepository,
+      fts5Db: getIt<Fts5Db>(),
+      descriptorRecovery: descriptorRecovery,
+      attachmentFetcher: attachmentFetcher,
+      gitHubAccountSink: gitHubTokenStorageForProfile(
+        secureStorage,
+        getIt<ProfileContext>(),
+      ).applySynced,
+    )
+    ..consumptionRepository = consumptionRepository
+    ..onJournalEntityApplied = ChecklistRepository.settlerForReceived(
+      create: () =>
+          ChecklistRepository(journalRepository: buildJournalRepository()),
+    );
+}
+
+/// The in-process composition: client, gateway, inbound queue pipeline and
+/// `MatrixService` on the UI isolate, as before the isolate rebuild.
+Future<_SyncCore> _composeInProcessSyncCore({
+  required Directory documentsDirectory,
+  required DomainLogger domainLogger,
+  required UserActivityGate userActivityGate,
+  required JournalDb journalDb,
+  required NotificationsDb notificationsDb,
+  required SettingsDb settingsDb,
+  required SyncDatabase syncDatabase,
+  required VectorClockService vectorClockService,
+  required SecureStorage secureStorage,
+  required AiConfigRepository aiConfigRepository,
+  required SavedTaskFiltersRepository savedTaskFiltersRepository,
+  required SyncNodeProfileRepository syncNodeProfileRepository,
+  required SyncSequenceLogService syncSequenceLogService,
+  required NotificationScheduler notificationScheduler,
+  required ConsumptionRepository consumptionRepository,
+  required bool collectSyncMetrics,
+}) async {
+  final client = await createMatrixClient(
+    documentsDirectory: documentsDirectory,
+  );
+
+  // What sync costs the UI isolate (ADR 0142, step 2): timeline spans always,
+  // and a minute summary in the sync log while that log is on.
+  final syncCostMeter = SyncCostMeter(logger: domainLogger)
+    ..observeSdkSync(client.onSyncStatus.stream)
+    ..start();
+  getIt.registerSingleton<SyncCostMeter>(
+    syncCostMeter,
+    dispose: (meter) => meter.dispose(),
+  );
+
+  final sentEventRegistry = SentEventRegistry();
+  final matrixGateway = MatrixSdkGateway(
+    client: client,
+    sentEventRegistry: sentEventRegistry,
+  );
+  final matrixMessageSender = MatrixMessageSender(
+    loggingService: domainLogger,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+    sentEventRegistry: sentEventRegistry,
+    vectorClockService: vectorClockService,
+    domainLogger: domainLogger,
+  );
+  // Shared in-memory index of latest attachment events keyed by relativePath.
+  // Verbose per-event logging is off in production; SDK pagination bursts
+  // would otherwise produce thousands of `attachmentIndex.*` lines in a
+  // single second. The wrapping `batch.summary` carries the aggregate.
+  final attachmentIndex = AttachmentIndex(
+    logging: domainLogger,
+    verboseLogging: false,
+  );
+
+  // One trust policy guards every inbound door: queue admission, descriptor
+  // indexing and exact-id descriptor recovery.
+  final syncEventTrust = SyncEventTrust(
+    syncDb: syncDatabase,
+    logging: domainLogger,
+  );
+
+  // The apply path knows events and attachments without a Room (ADR 0142,
+  // step 3); these two answer its lookups from the client this isolate holds.
+  final descriptorFetcher = MatrixDescriptorFetcher.forClient(client);
+  final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
+
+  final syncEventProcessor = _buildSyncEventProcessor(
+    domainLogger: domainLogger,
+    journalDb: journalDb,
+    notificationsDb: notificationsDb,
+    settingsDb: settingsDb,
+    vectorClockService: vectorClockService,
+    secureStorage: secureStorage,
+    aiConfigRepository: aiConfigRepository,
+    savedTaskFiltersRepository: savedTaskFiltersRepository,
+    syncNodeProfileRepository: syncNodeProfileRepository,
+    syncSequenceLogService: syncSequenceLogService,
+    notificationScheduler: notificationScheduler,
+    consumptionRepository: consumptionRepository,
+    attachmentIndex: attachmentIndex,
+    descriptorRecovery: TrustedDescriptorRecovery(
+      fetcher: descriptorFetcher,
+      trust: syncEventTrust,
+      logging: domainLogger,
+    ),
+    attachmentFetcher: attachmentFetcher,
+  );
+
+  final roomManager = SyncRoomManager(
+    gateway: matrixGateway,
+    settingsDb: settingsDb,
+    loggingService: domainLogger,
+  );
+
+  // Session manager is ordinarily created inside MatrixService, but
+  // Phase 2 needs it at hand to build the QueuePipelineCoordinator
+  // before MatrixService so both end up sharing the same instance.
+  final sessionManager = MatrixSessionManager(
+    gateway: matrixGateway,
+    roomManager: roomManager,
+    loggingService: domainLogger,
+  );
+
+  // Phase-2 queue pipeline owns inbound ingestion unconditionally. The
+  // dedicated ingestor below drives attachment recording + downloads on
+  // the queue's live + bootstrap paths so descriptor JSONs land on disk
+  // before the worker tries to apply their companion sync events.
+  // `verboseLogging: false` matches the `attachmentIndex` setting above
+  // — steady-state per-event logging would flood the general log on
+  // large catch-ups.
+  final localVcDominanceCheck = AgentVcDominanceCheck(
+    agentDb: getIt<AgentDatabase>(),
+  );
+  final queueAttachmentIngestor = AttachmentIngestor(
+    documentsDirectory: documentsDirectory,
+    verboseLogging: false,
+    localVcDominates: localVcDominanceCheck.check,
+    activityGate: userActivityGate,
+  );
+  final queuePipelineCoordinator = QueuePipelineCoordinator(
+    syncDb: syncDatabase,
+    settingsDb: settingsDb,
+    journalDb: journalDb,
+    sessionManager: sessionManager,
+    roomManager: roomManager,
+    eventProcessor: syncEventProcessor,
+    sequenceLogService: syncSequenceLogService,
+    activityGate: userActivityGate,
+    logging: domainLogger,
+    syncEventTrust: syncEventTrust,
+    attachmentIndex: attachmentIndex,
+    updateNotifications: getIt<UpdateNotifications>(),
+    attachmentIngestor: queueAttachmentIngestor,
+    sentEventRegistry: sentEventRegistry,
+    costMeter: syncCostMeter,
+  );
+
+  final matrixService = MatrixService(
+    gateway: matrixGateway,
+    loggingService: domainLogger,
+    activityGate: userActivityGate,
+    messageSender: matrixMessageSender,
+    settingsDb: settingsDb,
+    eventProcessor: syncEventProcessor,
+    secureStorage: secureStorage,
+    collectSyncMetrics: collectSyncMetrics,
+    roomManager: roomManager,
+    sessionManager: sessionManager,
+    queueCoordinator: queuePipelineCoordinator,
+  );
+
+  getIt
+    ..registerSingleton<MatrixSyncGateway>(matrixGateway)
+    ..registerSingleton<MatrixMessageSender>(matrixMessageSender)
+    ..registerSingleton<SentEventRegistry>(sentEventRegistry)
+    ..registerSingleton<AttachmentIndex>(
+      attachmentIndex,
+      dispose: (index) => index.dispose(),
+    )
+    ..registerSingleton<SyncEventProcessor>(syncEventProcessor);
+
+  return (
+    service: matrixService,
+    queueControl: queuePipelineCoordinator,
+    inboundQueue: queuePipelineCoordinator.queue,
+    attachmentIndex: attachmentIndex,
+    processor: syncEventProcessor,
+    costMeter: syncCostMeter,
+    // trivial accessor thunks, consumed only during
+    // live onboarding-sync rounds against a logged-in client.
+    // coverage:ignore-start
+    ownUserId: () => client.userID,
+    ownDeviceId: () => client.deviceID,
+    // coverage:ignore-end
+  );
 }
 
 /// Registers the sync boundary for guest/demo worlds: an inert outbox and

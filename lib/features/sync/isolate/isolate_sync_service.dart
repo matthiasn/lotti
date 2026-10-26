@@ -8,6 +8,7 @@ import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_stack.dart';
+import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
@@ -74,7 +75,7 @@ class IsolateSyncService implements SyncService {
             ConnectivityResult.mobile,
             ConnectivityResult.ethernet,
           }.intersection(results.toSet()).isNotEmpty;
-          unawaited(_tell(SyncIsolateConnectivityChanged(online: online)));
+          _tell(SyncIsolateConnectivityChanged(online: online));
         });
     queueControl = _IsolateSyncQueueControl(this);
   }
@@ -92,6 +93,7 @@ class IsolateSyncService implements SyncService {
   final InboundQueue inboundQueue;
 
   /// The producer side of the pipeline, answered by the worker.
+  @override
   late final SyncQueueControl queueControl;
 
   late final StreamSubscription<SyncIsolateEvent> _eventSubscription;
@@ -182,7 +184,8 @@ class IsolateSyncService implements SyncService {
   /// its snapshot so the plain readers are current.
   void _onState(SyncIsolateState state) {
     if (state != SyncIsolateState.running || _disposed) return;
-    unawaited(_resume());
+    // Nobody waits for a resume; it catches its own failures below.
+    _resume();
   }
 
   Future<void> _resume() async {
@@ -231,8 +234,10 @@ class IsolateSyncService implements SyncService {
     }
   }
 
-  /// A command whose outcome nobody waits for: a failure is logged.
-  Future<void> _tell(SyncIsolateCommand command) async {
+  /// A command whose outcome the caller does not act on: a failure is
+  /// logged, and a worker that is not running is nothing to report — it is
+  /// handed what it missed when it comes back ([_resume]).
+  Future<void> _notify(SyncIsolateCommand command) async {
     try {
       await _host.send(command);
     } on SyncIsolateFailure catch (failure) {
@@ -243,6 +248,13 @@ class IsolateSyncService implements SyncService {
         subDomain: '$_subDomain.${command.runtimeType}',
       );
     }
+  }
+
+  /// [_notify] from code that cannot await — a stream callback, a
+  /// synchronous reader. The future handles its own errors, so nothing
+  /// reaches the zone, and nothing waits for it.
+  void _tell(SyncIsolateCommand command) {
+    _notify(command);
   }
 
   /// Throws [failure] as the exception the worker caught when the caller
@@ -336,10 +348,7 @@ class IsolateSyncService implements SyncService {
   @override
   Future<MatrixConfig?> loadConfig() async {
     if (_configKnown) return _config;
-    final json = await _secureStorage.read(key: matrixConfigKey);
-    _config = json == null
-        ? null
-        : MatrixConfig.fromJson(jsonDecode(json) as Map<String, dynamic>);
+    _config = await readStoredMatrixConfig(_secureStorage);
     _configKnown = true;
     return _config;
   }
@@ -352,7 +361,7 @@ class IsolateSyncService implements SyncService {
       key: matrixConfigKey,
       value: jsonEncode(config),
     );
-    await _tell(SyncIsolateConfigure(config));
+    await _notify(SyncIsolateConfigure(config));
   }
 
   @override
@@ -360,7 +369,7 @@ class IsolateSyncService implements SyncService {
     _config = null;
     _configKnown = true;
     await _secureStorage.delete(key: matrixConfigKey);
-    await _tell(const SyncIsolateConfigure(null));
+    await _notify(const SyncIsolateConfigure(null));
   }
 
   @override
@@ -426,7 +435,7 @@ class IsolateSyncService implements SyncService {
   /// one in the background, so the next read — the modal polls — is current.
   @override
   List<SyncDeviceInfo> getUnverifiedDevices() {
-    unawaited(_tell(const SyncIsolateGetUnverifiedDevices()));
+    _tell(const SyncIsolateGetUnverifiedDevices());
     return _unverifiedDevices;
   }
 
@@ -534,7 +543,7 @@ class IsolateSyncService implements SyncService {
   Future<void> retryNow() => _run(const SyncIsolateRetryNow());
 
   /// The UI isolate wrote the journal: rows waiting for a base may apply.
-  Future<void> journalChanged() => _tell(const SyncIsolateJournalChanged());
+  Future<void> journalChanged() => _notify(const SyncIsolateJournalChanged());
 }
 
 /// The producer side of the pipeline over the proxy.
@@ -549,7 +558,7 @@ class _IsolateSyncQueueControl implements SyncQueueControl {
 
   @override
   void maybeStartGapRecovery() =>
-      unawaited(_service._tell(const SyncIsolateMaybeStartGapRecovery()));
+      _service._tell(const SyncIsolateMaybeStartGapRecovery());
 
   @override
   bool get isBridgeInFlight => _service._isBridgeInFlight;

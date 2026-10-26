@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -247,6 +248,9 @@ class MatrixService implements SyncService {
 
   /// Exposes the queue coordinator to tests and the Sync Settings UI.
   QueuePipelineCoordinator get queueCoordinator => _queueCoordinator;
+
+  @override
+  SyncQueueControl get queueControl => _queueCoordinator;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;

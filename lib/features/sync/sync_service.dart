@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 
 /// The homeserver refused the stored credential for an interactive operation
 /// (`M_FORBIDDEN`): the password was rotated elsewhere while this device kept
@@ -173,4 +174,9 @@ abstract interface class SyncService {
   /// The inbound queue, for the depth the pages show and the drain the agent
   /// runtime waits for. Reads only; it is the UI isolate's own connection.
   InboundQueue get inboundQueue;
+
+  /// The producer side of that queue — bridge walks, gap recovery, the
+  /// user's retry — wherever it runs: in-process it is the coordinator, in
+  /// the isolate a set of commands.
+  SyncQueueControl get queueControl;
 }

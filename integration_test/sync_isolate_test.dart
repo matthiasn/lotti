@@ -7,11 +7,14 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_services.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_startup.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 
 import '../test/database/test_utils.dart';
 import '../test/features/sync/queue/test_utils.dart';
@@ -22,9 +25,10 @@ import '../test/mocks/mocks.dart';
 ///
 /// Unit tests spawn the worker on the Dart VM; this runs it in the compiled
 /// app, which is where a stray platform-channel call or an isolate the
-/// engine will not start would show. Later steps grow this file into the
-/// two-device suite the isolated sync stack is specified by, the way the
-/// removed actor's network test was (ADR 0046).
+/// engine will not start would show — and, with the stack hosted, where the
+/// worker's own vodozemac and SDK database are proven to open. The
+/// two-device suite the isolated stack is specified by is the docker suite's
+/// device helper under both flag states (ADR 0046 on the removed actor).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(registerJournalDbTestFallbacks);
@@ -72,14 +76,24 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  Future<SyncIsolateHost?> register() => registerSyncIsolateIfEnabled(
-    getIt: services,
-    journalDb: journalDb,
-    syncDatabase: syncDb,
-    documentsDirectory: tempDir,
-    temporaryDirectory: () async => tempDir,
-    logger: logger,
-  );
+  Future<SyncIsolateHost?> register({bool hostMatrixStack = false}) =>
+      registerSyncIsolateIfEnabled(
+        getIt: services,
+        journalDb: journalDb,
+        syncDatabase: syncDb,
+        documentsDirectory: tempDir,
+        temporaryDirectory: () async => tempDir,
+        logger: logger,
+        hostMatrixStack: hostMatrixStack,
+        services: hostMatrixStack
+            ? DatabaseSyncIsolateHostServices(
+                settings: MockSettingsDb(),
+                journal: journalDb,
+                vectorClock: MockVectorClockService(),
+                localVcDominance: (_, _) async => false,
+              )
+            : null,
+      );
 
   testWidgets('a fresh install leaves the sync isolate off', (tester) async {
     final host = await register();
@@ -169,5 +183,57 @@ void main() {
 
     expect((await queue.stats()).applied, 1);
     await tester.runAsync(services.reset);
+  });
+
+  testWidgets('turned on with the stack hosted, the worker composes the Matrix '
+      'client in the app — its own crypto and SDK database — reports the stack '
+      'ready and answers a snapshot for a device that is not logged in', (
+    tester,
+  ) async {
+    await journalDb.upsertConfigFlag(
+      const ConfigFlag(
+        name: useIsolateSyncFlag,
+        description: 'Start the sync isolate?',
+        status: true,
+      ),
+    );
+
+    final host = await register(hostMatrixStack: true);
+    final stackReady = host!.events
+        .where((event) => event is SyncIsolateStackChanged)
+        .cast<SyncIsolateStackChanged>()
+        .first;
+    await tester.runAsync(
+      () => host.states.firstWhere((s) => s == SyncIsolateState.running),
+    );
+    final ready = await tester.runAsync(
+      () => stackReady.timeout(const Duration(seconds: 30)),
+    );
+    expect(ready!.ready, isTrue, reason: ready.error);
+
+    final snapshot = await tester.runAsync(
+      () async =>
+          (await host.send(const SyncIsolateGetSnapshot()))!
+              as SyncIsolateSnapshot,
+    );
+    expect(snapshot!.isLoggedIn, isFalse);
+    expect(snapshot.syncRoomId, isNull);
+    expect(
+      Directory(p.join(tempDir.path, 'matrix')).existsSync(),
+      isTrue,
+      reason: 'the SDK database lives where the worker was told to put it',
+    );
+    verifyNever(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    );
+
+    await tester.runAsync(services.reset);
+    expect(host.state, SyncIsolateState.disposed);
   });
 }

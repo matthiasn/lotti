@@ -31,7 +31,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -466,7 +466,7 @@ void main() {
           getIt
             ..registerSingleton<SecureStorage>(inMemoryKeychain(keychain))
             ..registerSingleton<OutboxService>(outbox)
-            ..registerSingleton<MatrixService>(matrix);
+            ..registerSingleton<SyncService>(matrix);
         },
       );
       addTearDown(tearDownTestGetIt);

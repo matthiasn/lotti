@@ -62,6 +62,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -225,7 +226,7 @@ void main() {
         expect(getIt<Directory>().path, registry.rootFor(guest).path);
 
         // The Matrix stack is structurally absent; the outbox is inert.
-        expect(getIt.isRegistered<MatrixService>(), isFalse);
+        expect(getIt.isRegistered<SyncService>(), isFalse);
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode. The
@@ -302,7 +303,8 @@ void main() {
       expect(getIt<Directory>().path, osRoot.path);
 
       // The full Matrix stack exists in a real profile...
-      expect(getIt.isRegistered<MatrixService>(), isTrue);
+      expect(getIt.isRegistered<SyncService>(), isTrue);
+      expect(getIt<SyncService>(), isA<MatrixService>());
       expect(getIt<OutboxService>(), isA<MatrixOutboxService>());
       // ...its session store lives under the real root...
       expect(
@@ -710,7 +712,7 @@ void main() {
             ..registerSingleton<SyncDatabase>(MockSyncDatabase())
             ..registerSingleton<OutboxService>(MockOutboxService())
             ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
-            ..registerSingleton<MatrixService>(MockMatrixService())
+            ..registerSingleton<SyncService>(MockMatrixService())
             ..registerSingleton<SyncEventProcessor>(MockSyncEventProcessor())
             // The goal agent service carries the off-track alert sink
             // (ADR 0073), whose producer takes the repository from GetIt.

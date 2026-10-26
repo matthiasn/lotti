@@ -3,8 +3,10 @@ import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_services.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_startup.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
@@ -19,6 +21,39 @@ import '../queue/test_utils.dart';
 
 /// Exits without ever shaking hands.
 void _exitsBeforeHandshake(SyncIsolateBoot boot) => Isolate.exit();
+
+/// Shakes hands, then reports what the boot carried as the events a hosted
+/// stack would send — the session for the credentials and display name,
+/// the metrics flag as the stack's readiness — and relays the host's answer
+/// to one settings read as a room-id change.
+Future<void> _echoesBoot(SyncIsolateBoot boot) async {
+  final commands = ReceivePort();
+  boot.host.send(SyncIsolateReady(commands.sendPort));
+  final config = boot.config;
+  boot.host.send(
+    SyncIsolateSessionChanged(
+      isLoggedIn: config.hostMatrixStack,
+      ownUserId: config.matrixConfig?.user,
+      ownDeviceId: config.deviceDisplayName,
+      homeserverHost: config.matrixConfig?.homeServer,
+    ),
+  );
+  boot.host.send(SyncIsolateStackChanged(ready: config.collectSyncMetrics));
+  boot.host.send(
+    const SyncIsolateHostRequest(
+      requestId: 1,
+      query: SyncIsolateHostSettingsGet('answered-by'),
+    ),
+  );
+  await for (final message in commands) {
+    if (message is SyncIsolateHostReply) {
+      boot.host.send(SyncIsolateRoomIdChanged(message.result as String?));
+    } else if (message is SyncIsolateRequest &&
+        message.command is SyncIsolateShutdown) {
+      Isolate.exit();
+    }
+  }
+}
 
 void main() {
   late MockJournalDb journalDb;
@@ -62,16 +97,27 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  Future<SyncIsolateHost?> register({SyncIsolateEntry? entry}) =>
-      registerSyncIsolateIfEnabled(
-        getIt: getIt,
-        journalDb: journalDb,
-        syncDatabase: syncDb,
-        documentsDirectory: tempDir,
-        temporaryDirectory: () async => tempDir,
-        logger: logger,
-        entry: entry ?? syncIsolateEntry,
-      );
+  Future<SyncIsolateHost?> register({
+    SyncIsolateEntry? entry,
+    SyncIsolateHostServices? services,
+    bool hostMatrixStack = false,
+    MatrixConfig? matrixConfig,
+    String deviceDisplayName = 'lotti',
+    bool collectSyncMetrics = false,
+  }) => registerSyncIsolateIfEnabled(
+    getIt: getIt,
+    journalDb: journalDb,
+    syncDatabase: syncDb,
+    documentsDirectory: tempDir,
+    temporaryDirectory: () async => tempDir,
+    logger: logger,
+    entry: entry ?? syncIsolateEntry,
+    services: services,
+    hostMatrixStack: hostMatrixStack,
+    matrixConfig: matrixConfig,
+    deviceDisplayName: deviceDisplayName,
+    collectSyncMetrics: collectSyncMetrics,
+  );
 
   void flag({required bool on}) => when(
     () => journalDb.getConfigFlag(useIsolateSyncFlag),
@@ -108,6 +154,50 @@ void main() {
 
     await getIt.reset();
     expect(host.state, SyncIsolateState.disposed);
+  });
+
+  test('the stack parameters travel in the boot and the host services '
+      "answer the worker's questions", () async {
+    flag(on: true);
+    final settings = MockSettingsDb();
+    when(
+      () => settings.itemByKey('answered-by'),
+    ).thenAnswer((_) async => 'the host services');
+    const config = MatrixConfig(
+      homeServer: 'https://hs.example.org',
+      user: '@alice:example.org',
+      password: 'pw',
+    );
+
+    final host = await register(
+      entry: _echoesBoot,
+      services: DatabaseSyncIsolateHostServices(
+        settings: settings,
+        journal: MockJournalDb(),
+        vectorClock: MockVectorClockService(),
+        localVcDominance: (_, _) async => false,
+      ),
+      hostMatrixStack: true,
+      matrixConfig: config,
+      deviceDisplayName: 'Test box',
+      collectSyncMetrics: true,
+    );
+    final events = await host!.events.take(3).toList();
+
+    final session = events[0] as SyncIsolateSessionChanged;
+    expect(session.isLoggedIn, isTrue, reason: 'hostMatrixStack');
+    expect(session.ownUserId, '@alice:example.org');
+    expect(session.homeserverHost, 'https://hs.example.org');
+    expect(session.ownDeviceId, 'Test box');
+    expect(
+      (events[1] as SyncIsolateStackChanged).ready,
+      isTrue,
+      reason: 'collectSyncMetrics',
+    );
+    expect(
+      (events[2] as SyncIsolateRoomIdChanged).roomId,
+      'the host services',
+    );
   });
 
   test('a worker that cannot start does not fail registration', () async {

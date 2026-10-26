@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
@@ -843,9 +842,8 @@ void main() {
       when(() => coordinator.retrySkipped()).thenAnswer((_) async => 7);
       when(() => coordinator.triggerBridge()).thenAnswer((_) async {});
 
-      getIt
-        ..registerSingleton<SyncService>(matrixService)
-        ..registerSingleton<SyncQueueControl>(coordinator);
+      when(() => matrixService.queueControl).thenReturn(coordinator);
+      getIt.registerSingleton<SyncService>(matrixService);
     });
 
     tearDown(() async {
@@ -1560,9 +1558,8 @@ void main() {
         ),
       );
 
-      getIt
-        ..registerSingleton<SyncService>(matrixService)
-        ..registerSingleton<SyncQueueControl>(coordinator);
+      when(() => matrixService.queueControl).thenReturn(coordinator);
+      getIt.registerSingleton<SyncService>(matrixService);
     });
 
     tearDown(() async {
@@ -1942,9 +1939,8 @@ void main() {
         () => matrixService.inboundQueue,
       ).thenAnswer((_) => useB ? queueB : queueA);
 
-      getIt
-        ..registerSingleton<SyncService>(matrixService)
-        ..registerSingleton<SyncQueueControl>(coordinator);
+      when(() => matrixService.queueControl).thenReturn(coordinator);
+      getIt.registerSingleton<SyncService>(matrixService);
 
       await pumpBody(tester);
 

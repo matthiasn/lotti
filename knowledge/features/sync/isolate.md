@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: The sync isolate
-description: The worker isolate sync is moving into behind use_isolate_sync — what it owns, how the UI isolate supervises it, and the sync work that today runs on the UI isolate regardless of activity.
+description: The worker isolate that hosts sync behind use_isolate_sync — what it owns, how the UI isolate supervises it and talks to it over the port, and the sync work that runs on the UI isolate regardless of activity.
 resource: ../../../lib/features/sync/isolate
 tags: [sync, isolate, performance, jank, supervision, config-flag]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T22:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-26T21:30:00Z }
 stale_after: 2026-12-27
 sources:
   - id: sync-service
@@ -67,7 +67,39 @@ sources:
   - id: startup
     resource: ../../../lib/features/sync/isolate/sync_isolate_startup.dart
     title: Flag-gated registration at startup
-    last_modified: 2026-10-20
+    last_modified: 2026-10-26
+  - id: composition
+    resource: ../../../lib/get_it_sync_isolate.dart
+    title: The flag-on composition around the proxy
+    last_modified: 2026-10-26
+  - id: stack
+    resource: ../../../lib/features/sync/isolate/sync_isolate_stack.dart
+    title: SyncIsolateStack — the Matrix stack composed in the worker
+    last_modified: 2026-10-26
+  - id: proxy
+    resource: ../../../lib/features/sync/isolate/isolate_sync_service.dart
+    title: IsolateSyncService — SyncService over the port
+    last_modified: 2026-10-26
+  - id: host-client
+    resource: ../../../lib/features/sync/isolate/sync_isolate_host_client.dart
+    title: The worker's questions to the host
+    last_modified: 2026-10-26
+  - id: host-services
+    resource: ../../../lib/features/sync/isolate/sync_isolate_host_services.dart
+    title: Host services over the UI isolate's databases
+    last_modified: 2026-10-26
+  - id: apply-loop
+    resource: ../../../lib/features/sync/isolate/isolate_apply_loop.dart
+    title: IsolateApplyLoop — the apply step with the stack in the worker
+    last_modified: 2026-10-26
+  - id: attachment-access
+    resource: ../../../lib/features/sync/isolate/isolate_attachment_access.dart
+    title: Descriptor recovery and attachment downloads over the port
+    last_modified: 2026-10-26
+  - id: queue-control
+    resource: ../../../lib/features/sync/queue/sync_queue_control.dart
+    title: SyncQueueControl — the producer-side seam backfill drives
+    last_modified: 2026-10-26
   - id: activity-gate
     resource: ../../../lib/features/user_activity/state/user_activity_gate.dart
     title: UserActivityGate
@@ -105,16 +137,21 @@ sends it ([the hand-off](#how-the-hand-off-works)); the writes it reports
 reach the UI isolate's Drift streams. The UI no longer sees the SDK: every
 page, sheet and controller above the sync feature talks to
 [`SyncService`](#what-the-ui-sees) in plain types (step 4, first half).
-Receiving — the Matrix client, admission, bridge walks, attachment
-ingestion — still runs on the UI isolate, so nothing measurable has moved
-yet; that is the second half of step 4.
+With the flag on, the worker hosts the Matrix stack — the client, admission,
+bridge walks, attachment ingestion and the message sender — and answers
+`SyncService` over the port through `IsolateSyncService`; the UI isolate
+composes around that proxy and never constructs a client
+([the stack in the worker](#the-stack-in-the-worker); step 4, second
+half). What remains of the plan is the outbox drain itself (step 5),
+dogfooding with the flag on, and retiring the in-process path.
 
 # Who will own what
 
-The target split is by database, so that every database ends with exactly
-one writer. Until the receive side has moved, `inbound_event_queue` has two,
-as [the hand-off](#how-the-hand-off-works) spells out; the rows below are the
-assignments the steps work towards:
+The split is by database, so that every database has exactly one writer.
+With the flag on this is what runs — the UI isolate's own connection to
+`sync.sqlite` reads, and leases and settles through the host, as
+[the hand-off](#how-the-hand-off-works) spells out; with it off the UI
+isolate is the only isolate and writes everything:
 
 | Isolate | Owns | Writes |
 |---------|------|--------|
@@ -131,10 +168,9 @@ something knows what is still missing.
 # How the hand-off works
 
 The decision is [ADR 0142](../../../docs/adr/0142-sync-moves-into-an-isolate-that-owns-sync-sqlite.md#writes-refreshes-and-notifications-across-the-boundary);
-this is the shape it takes in code. Everything in the diagram runs today
-with the flag on; the one thing that changes in step 4 is who inserts the
-rows — the worker, receiving from Matrix, instead of the UI isolate's
-admission.
+this is the shape it takes in code. Everything in the diagram runs with the
+flag on: the worker, receiving from Matrix, inserts the rows itself; with
+the flag off the same queue is fed and drained in-process.
 
 ```mermaid
 sequenceDiagram
@@ -143,8 +179,7 @@ sequenceDiagram
   participant H as SyncIsolateHost (UI isolate)
   participant A as InboundWorker + apply (UI isolate)
   participant U as Drift streams, UpdateNotifications
-  A->>S: INSERT inbound_event_queue (admission, until step 4)
-  Note over W,S: step 4 — the worker receives from Matrix and inserts the rows itself
+  W->>S: INSERT inbound_event_queue (admission, in the worker)
   A->>H: lease (activity gate allows)
   H->>W: SyncIsolateLeaseEntries
   W->>S: status = leased, lease_until
@@ -239,7 +274,8 @@ Step 4, first half, in place. Nothing above `lib/features/sync` imports the
 Matrix SDK any more. The pages, the device and verification sheets, the
 outbox, onboarding and provisioning hold a `SyncService`
 (`lib/features/sync/sync_service.dart`), which `MatrixService` implements
-in-process and which the sync isolate will answer once the client moves.
+in-process and `IsolateSyncService` answers over the port when the flag is
+on.
 Everything that crosses the seam is a plain value, because it is about to
 cross a port:
 
@@ -270,14 +306,13 @@ client. The tests mirror the split: the UI suites build states and device
 rows from `test/features/sync/sync_verification_fixtures.dart` and never
 import the SDK; the runner and service suites still do.
 
-# Moving the stack into the worker
+# The stack in the worker
 
-Step 4, second half — in progress on this branch; what follows is the
-design the code is being built to, and it is corrected here as the code
-lands. The goal is the ownership table above with the flag on: the worker
-runs the Matrix client and everything that needs it, the UI isolate keeps the
-apply step and every other database, and the two meet on `sync.sqlite` and
-the port.
+Step 4, second half. With the flag on, the ownership table above is what
+runs: the worker hosts the Matrix client and everything that needs it, the
+UI isolate keeps the apply step and every other database, and the two meet
+on `sync.sqlite` and the port. With the flag off, nothing in this section is
+constructed.
 
 ## What runs where
 
@@ -372,26 +407,50 @@ same way either side of the flag.
 
 ## Startup
 
-`_registerMatrixSyncStack` splits at the flag: with it off, exactly today's
-in-process composition; with it on, the UI half is composed around the proxy
-and the worker is spawned with everything it needs to compose its half —
-the paths, the stored config and display name, whether metrics are on — and
-the in-process producers (client, coordinator, sender) are never
-constructed. That is the `startSyncServices()` seam the ADR names: the
-worker's entry point builds its stack after the handshake and reports it
-running; the host's supervision restarts it like any other worker, and the
-proxy fails calls fast with `notRunning` in between.
+`_registerMatrixSyncStack` (`lib/get_it_sync.dart`) splits at the flag.
+Off, `_composeInProcessSyncCore` is exactly the in-process composition. On,
+`_composeIsolateSyncCore` (`lib/get_it_sync_isolate.dart`) reads the stored
+`MatrixConfig` from the keychain and the display name from device info —
+both plugins the worker cannot call — and starts the host with
+`hostMatrixStack`, those two values, the metrics flag and
+`DatabaseSyncIsolateHostServices` over `SettingsDb`, `JournalDb`, the vector
+clock and the agent-clock dominance check. The worker's entry point composes
+`SyncIsolateStack` after the handshake and reports `SyncIsolateStackChanged`;
+the host's supervision restarts it like any other worker, and the proxy
+fails calls fast with `notRunning` in between and runs the stack's `init`
+again when the worker is back.
 
-## Tests
+On the UI side the composition is the `AttachmentIndex` mirror, this
+isolate's own `InboundQueue` connection, `IsolateSyncService`, the apply
+step — built by the shared `_buildSyncEventProcessor` with
+`IsolateDescriptorRecovery` and `IsolateAttachmentFetcher` — and
+`IsolateApplyLoop`: the `InboundWorker` over the isolate gateway plus the
+debounced journal-changed relay that re-arms rows the worker parked for a
+missing base. It is registered after the host, so a reset stops the loop
+before the worker. The shared tail — outbox, onboarding, backfill, media
+repair, deep backfill — is built once over a `_SyncCore` record either way,
+and `SyncService` is the type getIt registers — its `queueControl` is the
+producer side the backfill page drives; `MatrixService` is no longer a
+registered type. That is the
+`startSyncServices()` seam the ADR names: with the flag on, no in-process
+client, coordinator or sender is ever constructed.
 
-- Unit: the proxy against a scripted host; the worker's command handler
-  against a fake gateway; the host services; the mirror index; the event
-  mapping both ways.
+## What proves it
+
+- Unit, in `test/features/sync/isolate/`: the proxy against a scripted host
+  (`isolate_sync_service_test.dart`); the worker hosting a fake stack and
+  routing every command (`sync_isolate_worker_test.dart`); the stack's
+  command handling and event mapping over a mocked service
+  (`sync_isolate_stack_test.dart`); the host client's request channel; the
+  host services over the databases; the apply loop; the fetcher proxies;
+  and the startup wiring, through a worker that echoes its boot.
 - Integration (`integration_test/sync_isolate_test.dart`): the worker
-  composes a real stack in the compiled app.
-- The docker two-device suite runs its device helper under both flag
-  states, so the same ceremonies and syncs are proven with the stack
-  in-process and in the worker.
+  composes the real stack in the compiled app — its own vodozemac and SDK
+  database — reports it ready and answers a snapshot.
+- The docker two-device suite still builds its device helper in-process.
+  Running it with the stack in the worker as well is the next change; until
+  then the hosted stack is proven by the tests above and by dogfooding
+  with the flag on.
 
 # What runs regardless of activity
 
@@ -525,14 +584,14 @@ as `SyncIsolateLog` events and are written to the sync log under the
 
 `use_isolate_sync` is seeded off, sits in the Advanced group of the Config
 Flags page, and is hidden in guest worlds with the other sync-only flags. It
-is read once, by `registerSyncIsolateIfEnabled` during the real profile's
-sync-stack registration in `lib/get_it_sync.dart`, before the queue pipeline
-is built: toggling it takes effect at the next start. With the flag on, the
-host is given the documents and temporary directories, the tables the worker
-reports are bridged into the UI isolate's `SyncDatabase`, and the queue
-pipeline's inbound worker is built over an `IsolateInboundQueueGateway`.
-Startup never waits on the spawn, and a worker that cannot start is logged
-and retried by the host, never thrown into startup.
+is read once, by `_registerMatrixSyncStack` in `lib/get_it_sync.dart`, which
+picks the composition: toggling it takes effect at the next start. Off,
+nothing in this concept is constructed. On, the host is given the documents
+and temporary directories, the stored credentials, the display name and the
+host services, the worker hosts the stack ([startup](#startup)), and the
+tables it reports are bridged into the UI isolate's `SyncDatabase`. Startup
+never waits on the spawn, and a worker that cannot start is logged and
+retried by the host, never thrown into startup.
 
 # Tests
 
@@ -548,5 +607,5 @@ and retried by the host, never thrown into startup.
   `inbound_queue_gateway_test.dart` pin the rule book and the in-process
   owner; the worker tests drive the ladders through it.
 - `integration_test/sync_isolate_test.dart` runs the flag-to-worker path in
-  the app build, first in `integration_test/run_matrix_tests.sh`. Later steps
-  grow it into the two-device suite the isolated sync is specified by.
+  the app build, first in `integration_test/run_matrix_tests.sh`, with and
+  without the hosted stack.

@@ -992,6 +992,7 @@ void main() {
     test('queueCoordinator getter returns the coordinator', () {
       final service = createService();
       expect(service.queueCoordinator, same(queueCoordinator));
+      expect(service.queueControl, same(queueCoordinator));
     });
 
     // Covers lines 287-288: publishIncomingRunnerState is a no-op when
