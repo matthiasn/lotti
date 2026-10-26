@@ -129,7 +129,12 @@ jobs:
         working-directory: services/whisper_server
         run: |
           pip install --upgrade pip
-          pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          # Install the torch version pinned in requirements_linux.txt from the
+          # CPU index first. Pinning a different version here lets the
+          # requirements step replace it with the default CUDA wheel, which
+          # pushes the tarball past the 2 GiB release-asset limit.
+          torch_pin=$(grep -E '^torch==' requirements_linux.txt)
+          pip install "$torch_pin" --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements_linux.txt
           pip install pyinstaller
 
