@@ -424,8 +424,8 @@ void main() {
       expect(container.read(frontInboxFilterProvider), isFalse);
     });
 
-    testWidgets('a question that carries doors shows them above its chips, '
-        'all inside her bubble', (tester) async {
+    testWidgets('a question that carries doors shows them under its bubble, '
+        'above its chips', (tester) async {
       await pumpPane(
         tester,
         thread: () async => FrontChatThread(
@@ -474,8 +474,11 @@ void main() {
       final bubble = find.byKey(const ValueKey('goal-chat-message-ask1'));
       final doors = find.byKey(const ValueKey('front-doors-ask1'));
       final chips = find.byKey(const ValueKey('front-options-ask1'));
-      expect(find.descendant(of: bubble, matching: doors), findsOneWidget);
-      expect(find.descendant(of: bubble, matching: chips), findsOneWidget);
+      expect(find.descendant(of: bubble, matching: doors), findsNothing);
+      expect(
+        tester.getTopLeft(doors).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(bubble).dy),
+      );
       expect(
         tester.getTopLeft(chips).dy,
         greaterThan(tester.getBottomLeft(doors).dy),
@@ -557,6 +560,8 @@ void main() {
       addTearDown(() => beamToNamedOverride = null);
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.goal));
 
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-goal-0')));
       await tester.pump();
 
@@ -568,6 +573,8 @@ void main() {
     testWidgets('new project opens the project creation', (tester) async {
       await pumpPane(tester, thread: () async => inbox(FrontNewKind.project));
 
+      await tester.tap(find.byKey(const ValueKey('front-door-menu-0')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('front-door-project-0')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

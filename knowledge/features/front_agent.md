@@ -391,48 +391,40 @@ on first use) and invalidates the thread when the awaited turn completes; a
 failed turn keeps its durable id so the retry re-wakes the same turn.
 
 `FrontChatPane` is the thread on `AgentChatView` with day dividers
-(`dividerBuilder`), the door card under a routed turn, the option chips
+(`dividerBuilder`), the door cards under a routed turn, the option chips
 under her **latest** question only (an older question's chips would answer
-a question nobody is asking; they are grouped into her bubble with
-`groupAttachmentsWithReply`), and a per-turn cost that tails her bubble's
+a question nobody is asking), and a per-turn cost that tails her bubble's
 footer line — `Companion · 8:30 AM · 9.8K tokens`, one meta row — through
 the chat view's `footerTrailingBuilder`, read by the reply row's run key
 (`agentRunConsumptionTotalsProvider`, consumption schema v5's
 `idx_consumption_agent_run`). A send clears the inbox filter: the new turn
 lands in the whole thread.
 
-A turn is two bubbles: the user's, and hers, whose own line heads the
-**door card** (`FrontDoorCard`) — her answer, part by part. The doors are
-keyed by the user turn in the thread but *carried* by her reply right
-after it (`FrontChatThread.carrierOf` / `doorsCarriedBy`), grouped into
-her bubble; until she has replied, or when no reply followed, they hang
-off the user's bubble on a thin rail — never a third bubble between the
-two; embedded, a hairline tells her line from the doors. One door per
-segment between hairlines, and each door reads *label → line → one row*.
-The label is the segment it answers, quoted on one line
-(`frontDoorQuote`: cut at a word boundary, frame closed) and set apart by
-weight alone (`bodyLabelStyle`, small) — the thing the eye lands on; a
-single-door turn is the bubble right above it and carries no label. The
-line under it is `bodySmall` in the same ink, the label's weight the one
-emphasis in a door: the proposal's question naming the task, the inbox
-item's *Where should this go?* (or
-*… go instead?* after a proposal was sent there), or a receipt — settled
-or failed, with a glyph on its line (`confirmCircled` in the success ink,
-`warning` in the error ink) so its state is more than a shade of grey; an
-owner's answer is content, in body type, its attribution and caveats a
-caption below. The row follows one physical rule in every door: the tap
-that writes leads it, filled — *File it*, or the inbox item's *Make it a
-task* — and the way out that writes nothing sits at the trailing edge,
-quiet — *Somewhere else*, *Leave it*, or a receipt's *Undo* across from
-its *Open*; the inbox item's other ways, *Start a goal…* and *New
-project…* (the ellipsis says a wizard opens) and *Save as a note*, follow
-on their own line with their kind glyphs, the router's guess first. Every
-control is the same small size, shrunk to its words. A door is busy while
-its action runs (the filled control shows it) and says so when it failed,
-when the tap reads *Try again* (`FrontChatComposerState.busyDoorIds` /
-`failedDoorIds`). *Open* leaves the sheet for the entry's or the task's
-page. The inbox filter keeps a waiting turn's words and the reply that
-carries its doors together.
+A turn is the user's bubble, her reply, and under her reply the **door
+cards** (`FrontDoorCard`) — her answer, part by part. The doors are keyed
+by the user turn in the thread but *carried* by her reply right after it
+(`FrontChatThread.carrierOf` / `doorsCarriedBy`), so the cards sit under
+her bubble; until she has replied, or when no reply followed, they sit
+under the user's. One card per segment on one surface, hairlines between,
+and every card the same shape: a compact tinted tile with the kind's glyph
+(task, goal, project, person, day, inbox; the done glyph in the success
+ink once something was written, the warning in the error ink when the
+door failed), the user's words in full in body type — or, for an answer,
+the owner's text — one status caption (the proposal's question naming the
+task, *Where should this go?* or *… go instead?* after a proposal was sent
+there, *Filed under …*, *Made into a task*, an answer's attribution and
+caveats, a door still being walked, a reason it went nowhere), at most one
+filled action, and an overflow menu (`DesignSystemContextMenuButton`)
+holding every other way out. The filled action is always a tap that
+writes — *File it*, *Make it a task* — or, on a settled card, a secondary
+*Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
+/ *New project…* (the ellipsis says a wizard opens), *Save as a note* and
+*Leave it* on an inbox item with the router's guess first, and *Undo* on
+anything settled. A busy card's action shows it loading; a failed one's
+status says so in the error ink and the tap reads *Try again*
+(`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
+the sheet for the entry's or the task's page. The inbox filter keeps a
+waiting turn's words and the reply that carries its cards together.
 
 Her header is one row: her face when `enable_companion` is on, her name,
 the inbox chip with its count, and the way into her internals, where the

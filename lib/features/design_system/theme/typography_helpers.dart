@@ -61,21 +61,6 @@ TextStyle captionLabelStyle(DsTokens tokens, {Color? color}) =>
       color: color ?? tokens.colors.text.mediumEmphasis,
     );
 
-/// A label at a body size — the part of a message a door answers, or the
-/// task a proposal would file under, in "File this under *Repair the nest
-/// box*?" — told from the body text around it by weight alone, so inline
-/// emphasis never changes size mid-line. [small] takes `bodySmall` for the
-/// label's size, `bodyMedium` otherwise; `text.highEmphasis` by default.
-TextStyle bodyLabelStyle(DsTokens tokens, {Color? color, bool small = false}) {
-  final base = small
-      ? tokens.typography.styles.body.bodySmall
-      : tokens.typography.styles.body.bodyMedium;
-  return base.copyWith(
-    fontWeight: tokens.typography.weight.semiBold,
-    color: color ?? tokens.colors.text.highEmphasis,
-  );
-}
-
 /// The title of an entry's detail page — a task's, a check-in's: heading2,
 /// a clear step above the card and section headers (subtitle2) so the page
 /// cascades title → section → body, with a slightly looser line height so a

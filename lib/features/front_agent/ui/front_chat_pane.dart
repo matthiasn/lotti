@@ -120,13 +120,12 @@ class _Body extends ConsumerWidget {
       hasFailedTurn: composer.failedMessage != null,
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
-      groupAttachmentsWithReply: true,
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;
         final isHers = message.role == AgentChatRole.agent;
-        // The doors ride her reply, inside her bubble under her own line;
-        // until she has replied they hang off the user's bubble.
+        // The doors ride her reply, as the stack of cards under her bubble;
+        // until she has replied they sit under the user's.
         final doors = thread.doorsCarriedBy(message.id);
         final card = doors == null || doors.isEmpty
             ? null
@@ -136,7 +135,6 @@ class _Body extends ConsumerWidget {
                 actions: actions,
                 busyDoorIds: composer.busyDoorIds,
                 failedDoorIds: composer.failedDoorIds,
-                embedded: isHers,
               );
         // Chips only under her latest question: an older one has been
         // answered, or walked away from, and its options would send a reply
@@ -157,7 +155,7 @@ class _Body extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               card,
-              SizedBox(height: context.designTokens.spacing.step3),
+              SizedBox(height: context.designTokens.spacing.step2),
               chips,
             ],
           );
