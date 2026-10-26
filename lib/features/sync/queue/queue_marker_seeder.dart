@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -24,7 +24,7 @@ class QueueMarkerSeeder {
   });
 
   final SyncDatabase _syncDb;
-  final SettingsDb _settingsDb;
+  final SyncKeyValueStore _settingsDb;
   final DomainLogger _logging;
   final Set<String> _knownSeededRooms = <String>{};
 

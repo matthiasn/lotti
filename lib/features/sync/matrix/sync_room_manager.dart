@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -25,7 +25,7 @@ class SyncRoomManager {
   });
 
   final MatrixSyncGateway _gateway;
-  final SettingsDb _settingsDb;
+  final SyncKeyValueStore _settingsDb;
   final DomainLogger _loggingService;
 
   /// Emits whenever the sync room changes, including when it is cleared.

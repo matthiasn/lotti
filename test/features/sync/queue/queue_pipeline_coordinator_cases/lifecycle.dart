@@ -3,16 +3,82 @@ part of '../queue_pipeline_coordinator_test.dart';
 extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
   void registerStart() {
     test(
-      'start seeds the marker, prunes strays, starts worker + bridge',
+      'start seeds the marker, prunes strays, starts worker + bridge, and '
+      'only then reports it has started',
       () async {
         final coordinator = build();
+        var startedAfterPrune = false;
+        coordinator.onStarted = () {
+          // The hook is what opens the sync isolate's leases: pruning must
+          // be behind it, or a stranded row could be leased first.
+          verify(() => queue.pruneStrandedEntries(roomId)).called(1);
+          verify(worker.start).called(1);
+          startedAfterPrune = true;
+        };
         await coordinator.start();
         expect(coordinator.isRunning, isTrue);
+        expect(startedAfterPrune, isTrue);
         verify(() => seeder.seedIfAbsent(roomId)).called(1);
-        verify(() => queue.pruneStrandedEntries(roomId)).called(1);
-        verify(worker.start).called(1);
         verify(bridge.start).called(1);
         await coordinator.stop();
+      },
+    );
+  }
+
+  void registerProducerOnly() {
+    test(
+      "without an apply side — the sync isolate's coordinator — start and "
+      'stop run with no worker, and the producer seam answers from the '
+      'bridge',
+      () async {
+        final coordinator = QueuePipelineCoordinator(
+          syncEventTrust: AdmittingSyncEventTrust(),
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          activityGate: null,
+          logging: logging,
+          queueOverride: queue,
+          bridgeOverride: bridge,
+          seederOverride: seeder,
+        );
+        var started = false;
+        coordinator.onStarted = () => started = true;
+
+        await coordinator.start();
+        expect(coordinator.isRunning, isTrue);
+        expect(started, isTrue);
+        verify(() => queue.pruneStrandedEntries(roomId)).called(1);
+        verify(bridge.start).called(1);
+        verifyNever(worker.start);
+
+        when(() => bridge.isBridgeInFlight).thenReturn(true);
+        expect(coordinator.isBridgeInFlight, isTrue);
+        void completed() {}
+        coordinator.onBridgeCompleted = completed;
+        verify(() => bridge.onBridgeCompleted = completed).called(1);
+        when(() => bridge.onBridgeCompleted).thenReturn(completed);
+        expect(coordinator.onBridgeCompleted, same(completed));
+        // Start ran its own catch-up pass; the trigger is one more.
+        verify(bridge.bridgeNow).called(1);
+        await coordinator.triggerBridge();
+        verify(bridge.bridgeNow).called(1);
+        // No barren bridge recorded: nothing to recover, nothing thrown.
+        coordinator.maybeStartGapRecovery();
+        when(queue.resurrectAll).thenAnswer((_) async => 3);
+        expect(await coordinator.retrySkipped(), 3);
+        void walkStarted() {}
+        coordinator.onBridgeStarted = walkStarted;
+        verify(() => bridge.onBridgeStarted = walkStarted).called(1);
+        when(() => bridge.onBridgeStarted).thenReturn(walkStarted);
+        expect(coordinator.onBridgeStarted, same(walkStarted));
+        // Nothing to drain here: the UI isolate drains on its own schedule.
+        await coordinator.drainUntilEmpty();
+
+        await coordinator.stop();
+        expect(coordinator.isRunning, isFalse);
+        verifyNever(worker.stop);
       },
     );
   }

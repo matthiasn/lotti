@@ -14,6 +14,10 @@ uuid3=$(uuidgen)
 uuid4=$(uuidgen)
 CROSSING_USER1="$(tr '[:upper:]' '[:lower:]' <<< "$uuid3")"
 CROSSING_USER2="$(tr '[:upper:]' '[:lower:]' <<< "$uuid4")"
+uuid5=$(uuidgen)
+uuid6=$(uuidgen)
+HOSTED_USER1="$(tr '[:upper:]' '[:lower:]' <<< "$uuid5")"
+HOSTED_USER2="$(tr '[:upper:]' '[:lower:]' <<< "$uuid6")"
 
 cd docker
 docker compose up --detach --wait --wait-timeout 60
@@ -21,6 +25,8 @@ docker compose exec -T dendrite create-account -config dendrite.yaml -username "
 docker compose exec -T dendrite create-account -config dendrite.yaml -username "$TEST_USER2" -admin -password "?Secret123@"
 docker compose exec -T dendrite create-account -config dendrite.yaml -username "$CROSSING_USER1" -admin -password "?Secret123@"
 docker compose exec -T dendrite create-account -config dendrite.yaml -username "$CROSSING_USER2" -admin -password "?Secret123@"
+docker compose exec -T dendrite create-account -config dendrite.yaml -username "$HOSTED_USER1" -admin -password "?Secret123@"
+docker compose exec -T dendrite create-account -config dendrite.yaml -username "$HOSTED_USER2" -admin -password "?Secret123@"
 cd - > /dev/null
 cd ..
 
@@ -37,4 +43,12 @@ flutter test integration_test/matrix_service_test.dart \
 flutter test integration_test/verification_crossing_test.dart \
 --dart-define=TEST_USER1="@$CROSSING_USER1:localhost" \
 --dart-define=TEST_USER2="@$CROSSING_USER2:localhost" \
+--dart-define=SLOW_NETWORK="$SLOW_NETWORK" "$@"
+
+# The same crossing with the second device's Matrix stack hosted in the sync
+# isolate (ADR 0142, step 4b): the ceremony crosses the port on one side.
+flutter test integration_test/verification_crossing_test.dart \
+--dart-define=TEST_USER1="@$HOSTED_USER1:localhost" \
+--dart-define=TEST_USER2="@$HOSTED_USER2:localhost" \
+--dart-define=SYNC_STACK_IN_ISOLATE=true \
 --dart-define=SLOW_NETWORK="$SLOW_NETWORK" "$@"

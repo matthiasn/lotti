@@ -992,6 +992,7 @@ void main() {
     test('queueCoordinator getter returns the coordinator', () {
       final service = createService();
       expect(service.queueCoordinator, same(queueCoordinator));
+      expect(service.queueControl, same(queueCoordinator));
     });
 
     // Covers lines 287-288: publishIncomingRunnerState is a no-op when
@@ -1864,6 +1865,110 @@ void main() {
           ..flushMicrotasks();
         expect(attempts, 1);
       });
+    });
+
+    test('a second init replaces the pending retry instead of adding one', () {
+      fakeAsync((async) {
+        var attempts = 0;
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          return false;
+        });
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://matrix.example.com',
+            user: '@user:example.com',
+            password: 'secret',
+          ),
+        );
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        when(() => client.isLogged()).thenReturn(false);
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+        final service = createService();
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 1);
+
+        // The sync isolate's proxy may run init again on a worker that came
+        // back; the first attempt's retry must not keep ticking beside it.
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 2);
+        // The first attempt's retry was due now; it is gone. The second
+        // attempt's own retry comes after the doubled delay.
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 2, reason: 'the superseded retry does not fire');
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 3, reason: 'one retry, not one per init');
+
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
+    });
+  });
+
+  group("MatrixService without a keychain (the sync isolate's service)", () {
+    // The worker has no secure storage: the credentials arrive in its boot
+    // config and live on the session manager alone.
+    MatrixService buildWithoutStorage() => MatrixService(
+      gateway: gateway,
+      loggingService: loggingService,
+      activityGate: activityGate,
+      messageSender: messageSender,
+      settingsDb: settingsDb,
+      eventProcessor: eventProcessor,
+      queueCoordinator: queueCoordinator,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      syncEngine: syncEngine,
+      connectivityStream: const Stream.empty(),
+    );
+
+    test("the config is the session's: set, load, delete", () async {
+      const config = MatrixConfig(
+        homeServer: 'https://matrix.example.com',
+        user: '@user:example.com',
+        password: 'secret',
+      );
+      when(() => sessionManager.logout()).thenAnswer((_) async {});
+      final service = buildWithoutStorage();
+
+      await service.setConfig(config);
+      verify(() => sessionManager.matrixConfig = config).called(1);
+
+      when(() => sessionManager.matrixConfig).thenReturn(config);
+      expect(await service.loadConfig(), config);
+
+      await service.deleteConfig();
+      verify(() => sessionManager.matrixConfig = null).called(1);
+      verify(() => sessionManager.logout()).called(1);
+      verifyNever(() => secureStorage.read(key: any(named: 'key')));
+      verifyNever(
+        () => secureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      );
     });
   });
 

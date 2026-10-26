@@ -48,9 +48,8 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_descriptor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
-import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_recovery.dart';
 import 'package:lotti/features/sync/matrix/sync_envelope.dart';
-import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/media/media_request_handler.dart';
@@ -178,8 +177,7 @@ class SyncEventProcessor {
     this._notificationPreferenceEffects,
     this._syncNodeProfileRepository,
     this._fts5Db,
-    this._syncEventTrust,
-    this._descriptorFetcher,
+    this._descriptorRecovery,
     this._attachmentFetcher,
     this._gitHubAccountSink,
   }) : _documentsDirectory =
@@ -207,15 +205,11 @@ class SyncEventProcessor {
   final SyncSequenceLogService? _sequenceLogService;
   final AttachmentIndex? _attachmentIndex;
 
-  /// Vets a descriptor fetched by event id before it is indexed. Without it
-  /// the processor cannot vouch for a fetched descriptor, so exact-id
-  /// recovery stays off rather than trusting whatever the server returns.
-  final SyncEventTrust? _syncEventTrust;
-
-  /// Finds a descriptor the index lost, by event id, wherever the Matrix
-  /// client lives (ADR 0142). Without it, as without [_syncEventTrust],
-  /// exact-id recovery stays off.
-  final SyncDescriptorFetcher? _descriptorFetcher;
+  /// Recovers a descriptor the index lost, by event id, already vetted by
+  /// the inbound trust gate, wherever the Matrix client lives (ADR 0142).
+  /// Without it exact-id recovery stays off rather than trusting whatever
+  /// the server returns.
+  final SyncDescriptorRecovery? _descriptorRecovery;
 
   /// Fetches the bytes an indexed descriptor points at, wherever the Matrix
   /// client lives (ADR 0142). Descriptor-based payload resolution needs it

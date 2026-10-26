@@ -33,7 +33,10 @@ enum SyncIsolateState {
 /// Owns the sync isolate from the UI isolate's side (ADR 0142): spawns it
 /// with its [SyncIsolateConfig], numbers each request and matches its reply,
 /// supervises it, and relays what it reports — log lines to the sync log,
-/// the tables it wrote to [tablesChanged].
+/// the tables it wrote to [tablesChanged], everything else to [events].
+/// Once the worker hosts the Matrix stack it also asks: each
+/// [SyncIsolateHostRequest] is answered from [SyncIsolateHostServices] on the
+/// worker's command port.
 ///
 /// Supervision is what the removed actor lacked (ADR 0046): a worker that
 /// exits without being asked to is logged, every request still out to it
@@ -50,6 +53,7 @@ class SyncIsolateHost {
   SyncIsolateHost({
     required this._logger,
     required this._config,
+    this._services,
     this._entry = syncIsolateEntry,
     this._startTimeout = SyncTuning.syncIsolateStartTimeout,
     this._requestTimeout = SyncTuning.syncIsolateRequestTimeout,
@@ -62,6 +66,10 @@ class SyncIsolateHost {
 
   final DomainLogger _logger;
   final SyncIsolateConfig _config;
+
+  /// What the worker's questions are answered from; without it every
+  /// host request fails, which a worker that hosts no stack never sends.
+  final SyncIsolateHostServices? _services;
   final SyncIsolateEntry _entry;
   final Duration _startTimeout;
   final Duration _requestTimeout;
@@ -74,6 +82,7 @@ class SyncIsolateHost {
 
   final _states = StreamController<SyncIsolateState>.broadcast();
   final _tablesChanged = StreamController<List<String>>.broadcast();
+  final _events = StreamController<SyncIsolateEvent>.broadcast();
   final _pending = <int, Completer<Object?>>{};
   var _nextRequestId = 0;
   SyncIsolateState _state = SyncIsolateState.stopped;
@@ -90,6 +99,11 @@ class SyncIsolateHost {
   /// name. The UI isolate's connection does not see those writes on its own
   /// (ADR 0142), so the startup bridges this into its `notifyUpdates`.
   Stream<List<String>> get tablesChanged => _tablesChanged.stream;
+
+  /// Everything the worker reports unprompted — the stack's session, room,
+  /// verification, stats, descriptor and bridge events — for the proxy.
+  /// Log lines and table writes are relayed before they land here too.
+  Stream<SyncIsolateEvent> get events => _events.stream;
 
   /// Starts spawning the first worker and returns at once: nothing waits on
   /// a spawn, startup least of all. Watch [states] for
@@ -118,6 +132,10 @@ class SyncIsolateHost {
   Future<int> settle(List<InboundEntryOutcome> outcomes) async =>
       (await _request(SyncIsolateSettleEntries(outcomes)))! as int;
 
+  /// Sends any other [command] — the `SyncService` surface — and returns
+  /// the worker's result, or throws its [SyncIsolateFailure].
+  Future<Object?> send(SyncIsolateCommand command) => _request(command);
+
   /// Shuts the worker down and fails whatever is still waiting on it.
   ///
   /// The worker is asked to exit, which lets it finish the command it holds;
@@ -144,6 +162,7 @@ class SyncIsolateHost {
     _failPending(SyncIsolateErrorCode.notRunning, 'host disposed');
     await _states.close();
     await _tablesChanged.close();
+    await _events.close();
   }
 
   Future<Object?> _request(SyncIsolateCommand command) {
@@ -209,6 +228,11 @@ class SyncIsolateHost {
           );
         case SyncIsolateTablesChanged(:final tables):
           if (!_tablesChanged.isClosed) _tablesChanged.add(tables);
+          if (!_events.isClosed) _events.add(message);
+        case SyncIsolateEvent():
+          if (!_events.isClosed) _events.add(message);
+        case SyncIsolateHostRequest():
+          _answer(message, worker);
         case [final Object? error, final Object? stackTrace]:
           _logger.error(
             LogDomain.sync,
@@ -262,6 +286,64 @@ class SyncIsolateHost {
       port.close();
       rethrow;
     }
+  }
+
+  /// Answers a worker's question from the host services on its command
+  /// port. Never throws — a service that fails becomes a failure reply — and
+  /// the dispatcher does not wait for it, so a slow answer holds up none of
+  /// the messages behind it. A worker that went away meanwhile simply never
+  /// gets the reply.
+  Future<void> _answer(SyncIsolateHostRequest request, _Worker? worker) async {
+    SyncIsolateHostReply reply;
+    try {
+      reply = SyncIsolateHostReply.success(
+        request.requestId,
+        await _serve(request.query),
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: '$_subDomain.hostRequest',
+        message: '${request.query.runtimeType} failed',
+      );
+      reply = SyncIsolateHostReply.failure(
+        request.requestId,
+        SyncIsolateFailure(
+          SyncIsolateErrorCode.failed,
+          '${request.query.runtimeType}: $error',
+        ),
+      );
+    }
+    (worker ?? _worker)?.commands.send(reply);
+  }
+
+  Future<Object?> _serve(SyncIsolateHostQuery query) {
+    final services = _services;
+    if (services == null) {
+      throw StateError('the host answers no requests: no services');
+    }
+    return switch (query) {
+      SyncIsolateHostSettingsGet(:final key) => services.settingsGet(key),
+      SyncIsolateHostSettingsSet(:final key, :final value) =>
+        services.settingsSet(key, value),
+      SyncIsolateHostSettingsRemove(:final key) => services.settingsRemove(key),
+      SyncIsolateHostJournalEntities(:final ids) => services.journalEntities(
+        ids,
+      ),
+      SyncIsolateHostOpenConflictVersion(:final id, :final vectorClock) =>
+        services.openConflictVersion(id, vectorClock),
+      SyncIsolateHostConfigFlag(:final flagName) => services.configFlag(
+        flagName,
+      ),
+      SyncIsolateHostVectorClockHost() => services.vectorClockHost(),
+      SyncIsolateHostLocalVcDominates(
+        :final relativePath,
+        :final incomingVectorClock,
+      ) =>
+        services.localVcDominates(relativePath, incomingVectorClock),
+    };
   }
 
   void _onReply(SyncIsolateReply reply) {

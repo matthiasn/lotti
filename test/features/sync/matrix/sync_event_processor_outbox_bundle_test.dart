@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_recovery.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
@@ -395,7 +396,7 @@ void main() {
             when(
               () => trust.admits(
                 any(),
-                subDomain: 'processor.resolve.descriptorTrust',
+                subDomain: 'descriptorRecovery.trust',
               ),
             ).thenAnswer((_) async => lookup != 'untrusted');
             final exactProcessor = SyncEventProcessor(
@@ -407,10 +408,14 @@ void main() {
               journalEntityLoader: journalEntityLoader,
               documentsDirectory: tempDir,
               attachmentIndex: index.index,
-              // Without a policy the processor cannot vouch for a fetched
+              // Without a recovery the processor cannot vouch for a fetched
               // descriptor, so it must not look one up at all.
-              syncEventTrust: lookup == 'noPolicy' ? null : trust,
-              descriptorFetcher: roomDescriptors,
+              descriptorRecovery: lookup == 'noPolicy'
+                  ? null
+                  : TrustedDescriptorRecovery(
+                      fetcher: roomDescriptors,
+                      trust: trust,
+                    ),
               attachmentFetcher: index.fetcher,
             );
             const message = SyncMessage.outboxBundle(

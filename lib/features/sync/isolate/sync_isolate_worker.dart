@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_client.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_stack.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
@@ -16,42 +19,57 @@ import 'package:lotti/services/logging_service.dart';
 /// spawn workers that crash, hang or answer wrongly.
 typedef SyncIsolateEntry = void Function(SyncIsolateBoot boot);
 
-/// The `sync.sqlite` tables the queue owner writes when it leases and
-/// settles entries; what the worker reports as changed.
-const List<String> inboundQueueTables = [
-  'inbound_event_queue',
-  'queue_markers',
-];
+/// Builds the worker's Matrix stack; injectable so tests run the worker
+/// without native libraries or a client.
+typedef SyncIsolateStackFactory =
+    Future<SyncIsolateStack> Function({
+      required SyncIsolateConfig config,
+      required SyncDatabase db,
+      required SyncIsolateHostClient host,
+      required DomainLogger logger,
+      required void Function(SyncIsolateEvent event) emit,
+    });
 
 /// Production entry point of the sync isolate.
 ///
 /// The worker opens its own connection to `sync.sqlite` — the SQLite work
-/// runs on this isolate, not in a nested one — and shakes hands only once
-/// the database answers, so a database that will not open fails the start,
-/// which the host logs and retries. It then answers the host's commands one
-/// at a time, in order: liveness, and the queue owner's half of the inbound
-/// hand-off (ADR 0142) — leasing ready entries for the UI isolate to apply
-/// and recording the outcomes it acknowledges, after which it names the
-/// tables it wrote. The Matrix client, admission and sending move in behind
-/// the same port in later steps. After answering [SyncIsolateShutdown] it
-/// closes its database and its only port, which ends the isolate.
+/// runs on this isolate, not in a nested one — and, when the config asks for
+/// it, composes the Matrix stack on top ([SyncIsolateStack]): a stack that
+/// will not compose fails the start, like a database that will not open,
+/// which the host logs and retries. It shakes hands only once both are up,
+/// then answers the host's commands one at a time, in order: liveness, the
+/// queue owner's half of the inbound hand-off (ADR 0142) — leasing ready
+/// entries for the UI isolate to apply and recording the outcomes it
+/// acknowledges, after which it names the tables it wrote — and, with a
+/// stack, every `SyncService` command. The stack's own questions to the UI
+/// isolate — settings keys, the sender's journal rows — go out as host
+/// requests and come back on the same command port. After answering
+/// [SyncIsolateShutdown] it stops the stack, closes its database and its
+/// only port, which ends the isolate.
 ///
 /// Runs without Flutter plugins: nothing here may reach a platform channel,
 /// so whatever the worker needs from the platform the host passes in.
 Future<void> syncIsolateEntry(SyncIsolateBoot boot) =>
-    _SyncIsolateWorker(boot).run();
+    SyncIsolateWorker(boot).run();
 
-class _SyncIsolateWorker {
-  _SyncIsolateWorker(this._boot)
-    : _logger = HostForwardingDomainLogger(_boot.host);
+/// The worker behind [syncIsolateEntry]; public so a test can run it with an
+/// injected stack factory.
+class SyncIsolateWorker {
+  SyncIsolateWorker(
+    this._boot, {
+    this._composeStack = SyncIsolateStack.compose,
+  }) : _logger = HostForwardingDomainLogger(_boot.host);
 
   final SyncIsolateBoot _boot;
+  final SyncIsolateStackFactory _composeStack;
   final HostForwardingDomainLogger _logger;
   final DateTime _startedAt = clock.now();
   var _handled = 0;
   late final SyncDatabase _db;
+  late final SyncIsolateHostClient _hostClient;
   late final InboundQueue _queue;
   late final InboundQueueSettlement _settlement;
+  SyncIsolateStack? _stack;
 
   SendPort get _host => _boot.host;
 
@@ -66,43 +84,81 @@ class _SyncIsolateWorker {
     // Opening is lazy; the probe makes a database that will not open fail
     // the start instead of the first lease.
     await _db.customSelect('SELECT 1').get();
-    _queue = InboundQueue(
-      db: _db,
-      logging: _logger,
-      trust: SyncEventTrust(syncDb: _db, logging: _logger),
-    );
+    _hostClient = SyncIsolateHostClient(_host);
+    if (config.hostMatrixStack) {
+      final stack = await _composeStack(
+        config: config,
+        db: _db,
+        host: _hostClient,
+        logger: _logger,
+        emit: _host.send,
+      );
+      _stack = stack;
+      _queue = stack.service.inboundQueue;
+    } else {
+      _queue = InboundQueue(
+        db: _db,
+        logging: _logger,
+        trust: SyncEventTrust(syncDb: _db, logging: _logger),
+      );
+    }
     _settlement = InboundQueueSettlement(queue: _queue);
 
     final commands = ReceivePort();
     _host
       ..send(SyncIsolateReady(commands.sendPort))
       ..send(const SyncIsolateLog('sync isolate started'));
-    await for (final message in commands) {
-      if (message is! SyncIsolateRequest) continue;
-      _handled++;
-      try {
-        _host.send(
-          SyncIsolateReply.success(
-            message.requestId,
-            await _handle(message.command),
-          ),
-        );
-      } catch (error) {
-        _host.send(
-          SyncIsolateReply.failure(
-            message.requestId,
-            SyncIsolateFailure(
-              SyncIsolateErrorCode.failed,
-              '${message.command.runtimeType}: $error',
-            ),
-          ),
-        );
-      }
-      if (message.command is SyncIsolateShutdown) {
-        commands.close();
-        break;
-      }
+    if (_stack != null) {
+      _host.send(const SyncIsolateStackChanged(ready: true));
     }
+    // Requests are served as they arrive, not one after the other: a
+    // command that asks the host — the persisted room id, a payload to
+    // send — waits for a reply that comes through this same port, and
+    // behind a serial loop it would wait for itself. Serving never throws;
+    // a failure is the reply.
+    // Once a shutdown is in, nothing else is taken: a request behind it
+    // would run against resources that are closing, and the host has
+    // already failed everything it still had out.
+    var shuttingDown = false;
+    final exited = Completer<void>();
+    commands.listen((message) {
+      if (message is SyncIsolateHostReply) {
+        _hostClient.onReply(message);
+      } else if (message is SyncIsolateRequest && !shuttingDown) {
+        shuttingDown = message.command is SyncIsolateShutdown;
+        _handled++;
+        _serve(
+          message,
+          onShutdown: () {
+            commands.close();
+            exited.complete();
+          },
+        );
+      }
+    });
+    await exited.future;
+  }
+
+  Future<void> _serve(
+    SyncIsolateRequest request, {
+    required void Function() onShutdown,
+  }) async {
+    try {
+      _host.send(
+        SyncIsolateReply.success(
+          request.requestId,
+          await _handle(request.command),
+        ),
+      );
+    } catch (error) {
+      _host.send(
+        SyncIsolateReply.failure(
+          request.requestId,
+          SyncIsolateStack.failureFor(request.command, error),
+        ),
+      );
+    }
+    if (request.command is SyncIsolateShutdown) onShutdown();
   }
 
   Future<Object?> _handle(SyncIsolateCommand command) async {
@@ -113,10 +169,24 @@ class _SyncIsolateWorker {
           handled: _handled,
         );
       case SyncIsolateShutdown():
-        await _queue.dispose();
+        final stack = _stack;
+        _stack = null;
+        if (stack != null) {
+          // The service disposes its coordinator, and with it the queue.
+          await stack.dispose();
+        } else {
+          await _queue.dispose();
+        }
+        _hostClient.dispose();
         await _db.close();
         return null;
       case SyncIsolateLeaseEntries(:final maxBatch):
+        // A hosted pipeline that has not started yet has not pruned the
+        // rows an earlier room left behind: nothing to lease until it has.
+        final stack = _stack;
+        if (stack != null && !stack.acceptsLeases) {
+          return const <InboundQueueEntry>[];
+        }
         final leased = await _queue.peekBatchReady(maxBatch: maxBatch);
         if (leased.isNotEmpty) _tablesChanged();
         return leased;
@@ -124,6 +194,14 @@ class _SyncIsolateWorker {
         final applied = await _settlement.settle(outcomes);
         _tablesChanged();
         return applied;
+      default:
+        final stack = _stack;
+        if (stack == null) {
+          throw StateError(
+            '${command.runtimeType}: this worker hosts no Matrix stack',
+          );
+        }
+        return stack.handle(command);
     }
   }
 

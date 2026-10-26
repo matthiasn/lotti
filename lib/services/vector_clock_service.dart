@@ -168,7 +168,15 @@ typedef VcBurnHandler = Future<void> Function(String hostId, int counter);
 /// at 0 and simply continue from where they are.
 const int firstVectorClockCounter = 1;
 
-class VectorClockService {
+/// Where a sync message's originating host id comes from: this device's
+/// vector-clock host. In-process it is [VectorClockService]; in the sync
+/// isolate the UI isolate answers it over the port (ADR 0142).
+abstract interface class SyncHostIdSource {
+  /// This device's host id, or null before one was assigned.
+  Future<String?> getHost();
+}
+
+class VectorClockService implements SyncHostIdSource {
   /// [syncDatabase] and [domainLogger] are resolved on each use, not here:
   /// the service is created before sync is wired, and a minimally wired
   /// service (a unit test seeding the counter) has neither. Each returns null
@@ -335,6 +343,7 @@ class VectorClockService {
     return _nextAvailableCounter - 1;
   }
 
+  @override
   Future<String?> getHost() async {
     return _host;
   }

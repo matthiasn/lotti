@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -56,12 +57,12 @@ class MatrixService implements SyncService {
   MatrixService({
     required this._gateway,
     required this._loggingService,
-    required this._activityGate,
     required this._messageSender,
     required this._settingsDb,
-    required this._eventProcessor,
-    required this._secureStorage,
     required this._queueCoordinator,
+    this._activityGate,
+    this._eventProcessor,
+    this._secureStorage,
     bool collectSyncMetrics = false,
     this._ownsActivityGate = false,
     MatrixConfig? matrixConfig,
@@ -149,7 +150,7 @@ class MatrixService implements SyncService {
       _pipeline = pipeline;
 
       if (pipeline != null) {
-        _eventProcessor.applyObserver = pipeline.reportDbApplyDiagnostics;
+        _eventProcessor?.applyObserver = pipeline.reportDbApplyDiagnostics;
       }
 
       _syncEngine = SyncEngine(
@@ -226,17 +227,30 @@ class MatrixService implements SyncService {
 
   final MatrixSyncGateway _gateway;
   final DomainLogger _loggingService;
-  final UserActivityGate _activityGate;
+
+  /// Disposed with the service when it owns it; null in the sync isolate,
+  /// where nothing waits for the user (ADR 0142).
+  final UserActivityGate? _activityGate;
   final MatrixMessageSender _messageSender;
-  final SettingsDb _settingsDb;
-  final SyncEventProcessor _eventProcessor;
-  final SecureStorage _secureStorage;
+  final SyncKeyValueStore _settingsDb;
+
+  /// The UI isolate's apply step, for the pipeline's startup marker and
+  /// its apply diagnostics; null in the sync isolate, which runs none.
+  final SyncEventProcessor? _eventProcessor;
+
+  /// The keychain the credentials live in. Null in the sync isolate —
+  /// secure storage is a plugin — where the host hands the config over and
+  /// [loadConfig], [setConfig] and [deleteConfig] act on the session only.
+  final SecureStorage? _secureStorage;
   final bool _ownsActivityGate;
   final bool _collectSyncMetrics;
   final QueuePipelineCoordinator _queueCoordinator;
 
   /// Exposes the queue coordinator to tests and the Sync Settings UI.
   QueuePipelineCoordinator get queueCoordinator => _queueCoordinator;
+
+  @override
+  SyncQueueControl get queueControl => _queueCoordinator;
 
   late final SyncRoomManager _roomManager;
   late final MatrixSessionManager _sessionManager;
@@ -687,6 +701,9 @@ class MatrixService implements SyncService {
   /// launch. Stops once the client is logged in by any path, without a
   /// configuration, or on [dispose].
   Future<void> _connectUntilConnected() async {
+    // A second attempt — `init` called again after a login — must not leave
+    // the first attempt's retry timer running beside its own.
+    _reconnectTimer?.cancel();
     _reconnectTimer = null;
     if (_disposed) return;
     if (await connect() || isLoggedIn()) {
@@ -754,20 +771,27 @@ class MatrixService implements SyncService {
     await _sessionManager.dispose();
     await _roomManager.dispose();
     if (_ownsActivityGate) {
-      await _activityGate.dispose();
+      await _activityGate?.dispose();
     }
   }
 
   @override
-  Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
-    session: _sessionManager,
-    storage: _secureStorage,
-  );
+  Future<MatrixConfig?> loadConfig() {
+    final storage = _secureStorage;
+    if (storage == null) return Future.value(_sessionManager.matrixConfig);
+    return loadMatrixConfig(session: _sessionManager, storage: storage);
+  }
+
   @override
-  Future<void> deleteConfig() => deleteMatrixConfig(
-    session: _sessionManager,
-    storage: _secureStorage,
-  );
+  Future<void> deleteConfig() async {
+    final storage = _secureStorage;
+    if (storage == null) {
+      _sessionManager.matrixConfig = null;
+      await _sessionManager.logout();
+      return;
+    }
+    await deleteMatrixConfig(session: _sessionManager, storage: storage);
+  }
 
   /// Changes the password for the currently logged-in user and updates
   /// the stored configuration.
@@ -816,11 +840,14 @@ class MatrixService implements SyncService {
   }
 
   @override
-  Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
-    config,
-    session: _sessionManager,
-    storage: _secureStorage,
-  );
+  Future<void> setConfig(MatrixConfig config) {
+    final storage = _secureStorage;
+    if (storage == null) {
+      _sessionManager.matrixConfig = config;
+      return Future.value();
+    }
+    return setMatrixConfig(config, session: _sessionManager, storage: storage);
+  }
 
   // Room, device-verification and diagnostics operations. These thin
   // delegators forward to [MatrixServiceOps] (see matrix_service_ops.dart) and

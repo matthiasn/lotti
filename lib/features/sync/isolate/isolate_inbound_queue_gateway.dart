@@ -1,7 +1,6 @@
 import 'package:async/async.dart' show StreamGroup;
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
-import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_gateway.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';

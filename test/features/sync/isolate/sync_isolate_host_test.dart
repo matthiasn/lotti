@@ -3,6 +3,8 @@ import 'dart:isolate';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
@@ -86,8 +88,143 @@ void _ownsTheQueue(SyncIsolateBoot boot) {
       case SyncIsolateShutdown():
         boot.host.send(SyncIsolateReply.success(request.requestId, null));
         commands.close();
-      case SyncIsolatePing():
+      default:
         throw StateError('not in this test');
+    }
+  });
+}
+
+/// Shakes hands, asks the host one settings question and reports the answer
+/// — or the failure — as a log line, then idles. Sends every event type the
+/// stack would, once, on a `ping`.
+void _asksTheHost(SyncIsolateBoot boot) {
+  final commands = ReceivePort();
+  boot.host
+    ..send(SyncIsolateReady(commands.sendPort))
+    ..send(
+      const SyncIsolateHostRequest(
+        requestId: 41,
+        query: SyncIsolateHostSettingsGet('room'),
+      ),
+    );
+  commands.listen((message) {
+    switch (message) {
+      case SyncIsolateHostReply(
+        :final requestId,
+        :final result,
+        :final failure,
+      ):
+        boot.host.send(
+          SyncIsolateLog(
+            'reply $requestId result=$result failure=${failure?.message}',
+            subDomain: 'asked',
+          ),
+        );
+      case SyncIsolateRequest(:final requestId, :final command):
+        if (command is SyncIsolatePing) {
+          boot.host
+            ..send(const SyncIsolateRoomIdChanged('!room:example.org'))
+            ..send(const SyncIsolateStackChanged(ready: true))
+            ..send(
+              SyncIsolateReply.success(
+                requestId,
+                const SyncIsolateHealth(uptime: Duration.zero, handled: 1),
+              ),
+            );
+        } else if (command is SyncIsolateGetRoom) {
+          boot.host.send(
+            SyncIsolateReply.success(requestId, '!room:example.org'),
+          );
+        } else if (command is SyncIsolateShutdown) {
+          boot.host.send(SyncIsolateReply.success(requestId, null));
+          commands.close();
+        }
+    }
+  });
+}
+
+/// Answers settings reads with a fixed value and refuses everything else.
+class _FakeHostServices extends Fake implements SyncIsolateHostServices {
+  @override
+  Future<String?> settingsGet(String key) async => '$key-value';
+
+  @override
+  Future<int> settingsSet(String key, String value) async =>
+      throw StateError('read-only');
+}
+
+/// Answers every question the worker's stack can ask, each recognisably.
+class _AnswersEverything implements SyncIsolateHostServices {
+  @override
+  Future<String?> settingsGet(String key) async => '$key-value';
+
+  @override
+  Future<int> settingsSet(String key, String value) async => 1;
+
+  @override
+  Future<void> settingsRemove(String key) async {}
+
+  @override
+  Future<Map<String, JournalEntity>> journalEntities(
+    List<String> ids,
+  ) async => {};
+
+  @override
+  Future<JournalEntity?> openConflictVersion(
+    String id,
+    VectorClock vectorClock,
+  ) async => null;
+
+  @override
+  Future<bool> configFlag(String flagName) async => flagName == 'on';
+
+  @override
+  Future<String?> vectorClockHost() async => 'host-1';
+
+  @override
+  Future<bool> localVcDominates(
+    String relativePath,
+    VectorClock? incomingVectorClock,
+  ) async => incomingVectorClock == null;
+}
+
+/// Shakes hands, asks the host one of everything, and logs each answer.
+void _asksEverything(SyncIsolateBoot boot) {
+  final commands = ReceivePort();
+  boot.host.send(SyncIsolateReady(commands.sendPort));
+  const queries = <SyncIsolateHostQuery>[
+    SyncIsolateHostSettingsGet('room'),
+    SyncIsolateHostSettingsSet('room', '!r'),
+    SyncIsolateHostSettingsRemove('room'),
+    SyncIsolateHostJournalEntities(['a', 'b']),
+    SyncIsolateHostOpenConflictVersion(
+      id: 'a',
+      vectorClock: VectorClock({'h': 1}),
+    ),
+    SyncIsolateHostConfigFlag('on'),
+    SyncIsolateHostVectorClockHost(),
+    SyncIsolateHostLocalVcDominates(
+      relativePath: '/images/a.jpg',
+      incomingVectorClock: null,
+    ),
+  ];
+  for (var i = 0; i < queries.length; i++) {
+    boot.host.send(
+      SyncIsolateHostRequest(requestId: i + 1, query: queries[i]),
+    );
+  }
+  commands.listen((message) {
+    if (message is SyncIsolateHostReply) {
+      boot.host.send(
+        SyncIsolateLog(
+          'reply ${message.requestId} result=${message.result} '
+          'failure=${message.failure?.message}',
+          subDomain: 'asked',
+        ),
+      );
+    } else if (message is SyncIsolateRequest &&
+        message.command is SyncIsolateShutdown) {
+      commands.close();
     }
   });
 }
@@ -182,10 +319,12 @@ void main() {
     Duration startTimeout = const Duration(seconds: 30),
     List<Duration> respawnBackoff = const [Duration(seconds: 1)],
     Duration stableUptime = const Duration(hours: 1),
+    SyncIsolateHostServices? services,
   }) {
     final host = SyncIsolateHost(
       logger: logger,
       config: inMemoryConfig,
+      services: services,
       entry: entry,
       requestTimeout: requestTimeout,
       startTimeout: startTimeout,
@@ -550,6 +689,125 @@ void main() {
         host.ping(),
         _failsWith(SyncIsolateErrorCode.notRunning),
       );
+    });
+  });
+
+  group('hosting the stack', () {
+    test("answers the worker's question from the host services on the "
+        'command port', () async {
+      final host = makeHost(entry: _asksTheHost, services: _FakeHostServices());
+      final logged = <String>[];
+      when(
+        () => logger.log(
+          any(),
+          captureAny(that: startsWith('reply ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      ).thenAnswer((invocation) {
+        logged.add(invocation.positionalArguments[1] as String);
+      });
+      host.start();
+      await host.states.firstWhere((s) => s == SyncIsolateState.running);
+      await untilCalled(
+        () => logger.log(
+          any(),
+          any(that: startsWith('reply ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      );
+
+      expect(logged, ['reply 41 result=room-value failure=null']);
+      await host.dispose();
+    });
+
+    test('every question the stack can ask is answered by its host service, '
+        'argument for argument', () async {
+      final host = makeHost(
+        entry: _asksEverything,
+        services: _AnswersEverything(),
+      );
+      final logged = <String>[];
+      when(
+        () => logger.log(
+          any(),
+          captureAny(that: startsWith('reply ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      ).thenAnswer((invocation) {
+        logged.add(invocation.positionalArguments[1] as String);
+      });
+      host.start();
+      await host.states.firstWhere((s) => s == SyncIsolateState.running);
+      await untilCalled(
+        () => logger.log(
+          any(),
+          any(that: startsWith('reply 8 ')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      );
+
+      expect(
+        logged,
+        unorderedEquals([
+          'reply 1 result=room-value failure=null',
+          'reply 2 result=1 failure=null',
+          'reply 3 result=null failure=null',
+          'reply 4 result={} failure=null',
+          'reply 5 result=null failure=null',
+          'reply 6 result=true failure=null',
+          'reply 7 result=host-1 failure=null',
+          'reply 8 result=true failure=null',
+        ]),
+      );
+      await host.dispose();
+    });
+
+    test("a question the services cannot answer fails the worker's query and "
+        'is logged', () async {
+      final host = makeHost(entry: _asksTheHost)..start();
+      await host.states.firstWhere((s) => s == SyncIsolateState.running);
+      await untilCalled(
+        () => logger.log(
+          any(),
+          any(that: startsWith('reply 41 result=null failure=')),
+          subDomain: 'isolate.asked',
+          level: any(named: 'level'),
+        ),
+      );
+
+      verify(
+        () => logger.error(
+          LogDomain.sync,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'isolate.hostRequest',
+          message: 'SyncIsolateHostSettingsGet failed',
+        ),
+      ).called(1);
+      await host.dispose();
+    });
+
+    test("send answers any command, and the worker's events reach the events "
+        'stream', () async {
+      final host = makeHost(entry: _asksTheHost, services: _FakeHostServices());
+      final events = <SyncIsolateEvent>[];
+      host.events.listen(events.add);
+      host.start();
+      await host.states.firstWhere((s) => s == SyncIsolateState.running);
+
+      expect(await host.send(const SyncIsolateGetRoom()), '!room:example.org');
+      await host.ping();
+      await pumpEventQueue();
+
+      expect(
+        events.map((e) => e.runtimeType),
+        [SyncIsolateRoomIdChanged, SyncIsolateStackChanged],
+      );
+      await host.dispose();
     });
   });
 

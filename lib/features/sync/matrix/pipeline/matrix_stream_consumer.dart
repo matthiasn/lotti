@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/database/sync_key_value_store.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_signals.dart';
@@ -26,7 +26,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required this._roomManager,
     required this._loggingService,
     required this._settingsDb,
-    required this._eventProcessor,
+    this._eventProcessor,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
   }) : _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
@@ -49,8 +49,11 @@ class MatrixStreamConsumer implements SyncPipeline {
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final DomainLogger _loggingService;
-  final SettingsDb _settingsDb;
-  final SyncEventProcessor _eventProcessor;
+  final SyncKeyValueStore _settingsDb;
+
+  /// The apply step whose startup timestamp the last-read marker seeds;
+  /// null in the sync isolate, which runs no apply step (ADR 0142).
+  final SyncEventProcessor? _eventProcessor;
   final MetricsCounters _metrics;
 
   late final MatrixStreamProcessor _processor;
@@ -68,7 +71,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     ]);
     final lastEventId = results[0];
     final lastTs = results[1] as num?;
-    _eventProcessor.startupTimestamp = lastTs;
+    _eventProcessor?.startupTimestamp = lastTs;
     _loggingService.log(
       LogDomain.sync,
       _withInstance(

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/service_disposer.dart';
 import 'package:lotti/services/app_prefs_service.dart';
@@ -54,7 +54,7 @@ void main() {
         ..registerSingleton<BackfillRequestService>(mockBackfill)
         ..registerSingleton<EmbeddingService>(mockEmbeddingService)
         ..registerSingleton<OutboxService>(mockOutbox)
-        ..registerSingleton<MatrixService>(mockMatrix);
+        ..registerSingleton<SyncService>(mockMatrix);
     });
 
     tearDown(() async {
@@ -542,7 +542,7 @@ void main() {
       // deterministically await the async chain.
       final matrixDisposed = Completer<void>();
       when(
-        () => (getIt<MatrixService>() as MockMatrixService).dispose(),
+        () => (getIt<SyncService>() as MockMatrixService).dispose(),
       ).thenAnswer((_) async {
         matrixDisposed.complete();
       });
@@ -554,14 +554,14 @@ void main() {
         isMacOSOverride: () => false,
       ).onWindowClose();
 
-      // MatrixService.dispose() is the last service in disposeAll's chain
+      // The sync service's dispose() is the last in disposeAll's chain
       // (databases aren't registered here so _disposeAsyncSafely skips them).
       await matrixDisposed.future;
 
       verify(() => getIt<BackfillRequestService>().dispose()).called(1);
       verify(() => getIt<EmbeddingService>().stop()).called(1);
       verify(() => getIt<OutboxService>().dispose()).called(1);
-      verify(() => getIt<MatrixService>().dispose()).called(1);
+      verify(() => getIt<SyncService>().dispose()).called(1);
     });
   });
 

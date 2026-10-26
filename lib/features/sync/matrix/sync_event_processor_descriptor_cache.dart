@@ -11,7 +11,7 @@ extension _DescriptorCache on SyncEventProcessor {
   /// Rebuilds an exact descriptor after a restart or a missed file event.
   /// Unavailable descriptors request periodic recovery, even for aged rows.
   ///
-  /// The lookup itself goes through [SyncDescriptorFetcher], so this runs
+  /// The lookup itself goes through [SyncDescriptorRecovery], so this runs
   /// without a live `Room` (ADR 0142, step 3): the fetcher answers from
   /// whichever isolate holds the Matrix client.
   Future<bool> _recoverMissingDescriptor(
@@ -49,13 +49,8 @@ extension _DescriptorCache on SyncEventProcessor {
       _ => (null, null),
     };
     final index = _attachmentIndex;
-    final trust = _syncEventTrust;
-    final fetcher = _descriptorFetcher;
-    if (id == null ||
-        index == null ||
-        trust == null ||
-        fetcher == null ||
-        error.path != path) {
+    final recovery = _descriptorRecovery;
+    if (id == null || index == null || recovery == null || error.path != path) {
       return false;
     }
     // Do not promote disk failures (including a bundled child's cache write)
@@ -70,28 +65,16 @@ extension _DescriptorCache on SyncEventProcessor {
       throw const PendingSyncDescriptorException();
     }
     try {
-      final lookup = await fetcher.fetch(
+      // Whatever comes back is already bound to this event and room and
+      // vetted by the inbound trust gate: only a descriptor encrypted by a
+      // trusted device may name the payload's JSON.
+      final descriptor = await recovery.recover(
         roomId: envelope.roomId,
         eventId: id,
       );
-      final descriptor = lookup.descriptor;
-      // The server answers an id lookup with whatever it holds; only a
-      // descriptor encrypted by a trusted device may name the payload's JSON.
-      if (descriptor != null &&
-          descriptor.eventId == id &&
-          descriptor.roomId == envelope.roomId &&
-          await trust.admits(
-            descriptor,
-            subDomain: 'processor.resolve.descriptorTrust',
-          )) {
-        index.record(descriptor);
-      }
+      if (descriptor != null) index.recordDescriptor(descriptor);
       _trace(
         'descriptorLookup.result eventId=$id found=${descriptor != null} '
-        'source=${lookup.source} type=${descriptor?.type} '
-        'msgtype=${descriptor?.content['msgtype']} '
-        'roomMatches=${descriptor?.roomId == envelope.roomId} '
-        'hasRelativePath=${descriptor?.content['relativePath'] is String} '
         'indexed=${index.findByEventId(id) != null}',
         subDomain: 'processor.resolve.descriptorLookup',
       );

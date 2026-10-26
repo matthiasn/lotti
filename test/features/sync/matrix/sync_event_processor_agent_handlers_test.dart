@@ -22,6 +22,7 @@ import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_recovery.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/get_it.dart';
@@ -6727,9 +6728,11 @@ void main() {
             journalEntityLoader: journalEntityLoader,
             attachmentIndex: attachmentIndex.index,
             attachmentFetcher: attachmentIndex.fetcher,
-            syncEventTrust: AdmittingSyncEventTrust(),
-            descriptorFetcher: MatrixDescriptorFetcher(
-              resolveRoom: (_) => indexRoom,
+            descriptorRecovery: TrustedDescriptorRecovery(
+              fetcher: MatrixDescriptorFetcher(
+                resolveRoom: (_) => indexRoom,
+              ),
+              trust: AdmittingSyncEventTrust(),
             ),
           );
           processorWithIndex.agentRepository = mockAgentRepo;

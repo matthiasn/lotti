@@ -6,13 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/sync/sync_node_profile.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
@@ -76,13 +76,15 @@ class BackfillSettingsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final matrixService = getIt.isRegistered<MatrixService>()
-        ? getIt<MatrixService>()
+    // Registered with a sync stack, in-process or in the isolate, and
+    // absent in guest worlds.
+    final syncService = getIt.isRegistered<SyncService>()
+        ? getIt<SyncService>()
         : null;
-    final coordinator = matrixService?.queueCoordinator;
+    final coordinator = syncService?.queueControl;
 
     return _QueueDepthScope(
-      queue: coordinator?.queue,
+      queue: syncService?.inboundQueue,
       builder: (context, depth, skipped) {
         return Padding(
           // Breathing room below the host's page title (desktop leaf panel
@@ -194,7 +196,7 @@ class _RecoverySection extends ConsumerWidget {
   const _RecoverySection({required this.depth, required this.coordinator});
 
   final ValueListenable<QueueDepthSignal?> depth;
-  final QueuePipelineCoordinator? coordinator;
+  final SyncQueueControl? coordinator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

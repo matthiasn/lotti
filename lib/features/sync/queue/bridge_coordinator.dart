@@ -178,6 +178,11 @@ class BridgeCoordinator {
   /// the walk is done.
   void Function()? onBridgeCompleted;
 
+  /// Fires when a walk starts, the counterpart of [onBridgeCompleted]:
+  /// the sync isolate reports [isBridgeInFlight] to the UI isolate as it
+  /// changes rather than being asked (ADR 0142).
+  void Function()? onBridgeStarted;
+
   /// Subscribes to the client's `onSync` stream so each Matrix sync triggers a
   /// forward-walk bridge pass. Idempotent — a second call while already running
   /// is a no-op.
@@ -309,6 +314,7 @@ class BridgeCoordinator {
     }
     final completer = Completer<void>();
     _inFlightBridge = completer.future;
+    onBridgeStarted?.call();
     try {
       await _costMeter.measure(
         SyncCostSection.bridgeWalk,

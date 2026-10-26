@@ -80,6 +80,24 @@ class AttachmentIndex {
     try {
       final descriptor = AttachmentDescriptor.fromEvent(e);
       if (descriptor == null) return false;
+      return recordDescriptor(descriptor);
+    } catch (err) {
+      _logging?.log(
+        LogDomain.sync,
+        'attachmentIndex.record failed: $err',
+        subDomain: 'attachmentIndex',
+      );
+    }
+    return false;
+  }
+
+  /// Records a [descriptor] already read off its event — by whichever
+  /// isolate holds the client (ADR 0142) — keyed by its relativePath.
+  ///
+  /// Returns true when the index changes; a descriptor whose event id was
+  /// recorded before is a no-op, however often it is observed again.
+  bool recordDescriptor(AttachmentDescriptor descriptor) {
+    try {
       final rp = descriptor.relativePath;
       final eventId = descriptor.eventId.isEmpty ? null : descriptor.eventId;
       if (eventId != null && !_seenEventIds.add(eventId)) {

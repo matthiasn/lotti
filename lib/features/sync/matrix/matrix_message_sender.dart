@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/classes/vector_clock.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_payload_source.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -25,10 +25,10 @@ typedef MatrixMessageSentCallback =
 class MatrixMessageSender {
   MatrixMessageSender({
     required this._loggingService,
-    required JournalDb journalDb,
+    required SyncPayloadSource journalDb,
     required Directory documentsDirectory,
     required this._sentEventRegistry,
-    VectorClockService? vectorClockService,
+    SyncHostIdSource? vectorClockService,
     DomainLogger? domainLogger,
     Future<Uint8List> Function(Object? jsonValue)? gzipEncode,
   }) : _vectorClockService = vectorClockService,
@@ -45,7 +45,7 @@ class MatrixMessageSender {
 
   final DomainLogger _loggingService;
   final SentEventRegistry _sentEventRegistry;
-  final VectorClockService? _vectorClockService;
+  final SyncHostIdSource? _vectorClockService;
   final DomainLogger? _domainLogger;
 
   /// File/attachment and outbox-bundle payload uploads. The sender owns the

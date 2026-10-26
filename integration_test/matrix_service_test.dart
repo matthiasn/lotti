@@ -32,6 +32,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_recovery.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -335,12 +336,15 @@ Future<MatrixService> _createMatrixService({
     ),
     documentsDirectory: documentsDirectory,
     attachmentIndex: sharedAttachmentIndex,
-    descriptorFetcher: descriptorFetcher,
+    descriptorRecovery: TrustedDescriptorRecovery(
+      fetcher: descriptorFetcher,
+      trust: syncEventTrust,
+      logging: loggingService,
+    ),
     attachmentFetcher: attachmentFetcher,
     sequenceLogService: sequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,
-    syncEventTrust: syncEventTrust,
   );
   final roomManager = SyncRoomManager(
     gateway: gateway,

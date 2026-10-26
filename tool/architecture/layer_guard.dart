@@ -117,6 +117,7 @@ const shell = <String>[
   'lib/get_it_helpers.dart',
   'lib/get_it_maintenance.dart',
   'lib/get_it_sync.dart',
+  'lib/get_it_sync_isolate.dart',
   'lib/main.dart',
   'lib/service_disposer.dart',
   'lib/widgetbook.dart',

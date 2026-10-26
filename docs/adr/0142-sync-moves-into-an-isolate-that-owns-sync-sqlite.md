@@ -214,6 +214,19 @@ cross a port. Then the receive side moves as step 4 describes. The split
 keeps the flag-off path the only path the first change touches, which is
 what makes the swap reviewable on its own.
 
+## Amendment 2026-10-26 — the sender moves with the client
+
+The second half of step 4 hosts the message sender in the isolate as well:
+`sendMatrixMsg` crosses the port as a command, because the sender needs the
+client and the client now lives in the worker. The outbox — its queue, its
+claims and its drain loop — stays on the UI isolate and enqueues as before;
+what step 5 moves is that drain, not the send. For the same reason the
+login, verification and rescan commands step 6 lists already cross the
+port: `SyncService`, the first half's seam, is what the isolate proxy
+implements. What remains of step 6 is whatever still reaches the outbox
+from the UI isolate — the monitor's actions, media repair — and it follows
+the drain.
+
 ## Related
 
 - [ADR 0046](0046-sync-actor-isolate-removed-and-how-to-rebuild.md) — the

@@ -5,8 +5,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
-import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -36,7 +35,7 @@ class AdvancedRecoveryGroup extends StatefulWidget {
 
   final BackfillStatsState stats;
   final int skipped;
-  final QueuePipelineCoordinator? coordinator;
+  final SyncQueueControl? coordinator;
 
   @override
   State<AdvancedRecoveryGroup> createState() => _AdvancedRecoveryGroupState();
@@ -188,7 +187,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
           tone: _RecoveryTone.primary,
           onPressed: coordinator == null
               ? null
-              : () => _retrySkipped(context, coordinator.queue),
+              : () => _retrySkipped(context, coordinator),
         ),
       _RecoveryAction(
         icon: LottiIcons.restore,
@@ -328,7 +327,7 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
 
   Future<void> _kickCatchUp(
     BuildContext context,
-    QueuePipelineCoordinator coordinator,
+    SyncQueueControl coordinator,
   ) async {
     final messages = context.messages;
     try {
@@ -347,10 +346,13 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     }
   }
 
-  Future<void> _retrySkipped(BuildContext context, InboundQueue queue) async {
+  Future<void> _retrySkipped(
+    BuildContext context,
+    SyncQueueControl coordinator,
+  ) async {
     final messages = context.messages;
     try {
-      final count = await queue.resurrectAll();
+      final count = await coordinator.retrySkipped();
       if (!context.mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.success,

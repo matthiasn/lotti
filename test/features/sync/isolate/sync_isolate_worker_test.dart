@@ -5,11 +5,16 @@ import 'dart:isolate';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_client.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_stack.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_worker.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_settlement.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../queue/test_utils.dart';
@@ -76,22 +81,27 @@ void main() {
     },
   );
 
-  test('answers shutdown and then stops taking commands', () async {
+  test('answers shutdown and then takes nothing more — not a command behind '
+      'it, not a second shutdown', () async {
     await next(); // startup log line
     commands
       ..send(
         const SyncIsolateRequest(requestId: 1, command: SyncIsolateShutdown()),
       )
       ..send(
-        const SyncIsolateRequest(requestId: 2, command: SyncIsolatePing()),
+        const SyncIsolateRequest(requestId: 2, command: SyncIsolateShutdown()),
+      )
+      ..send(
+        const SyncIsolateRequest(requestId: 3, command: SyncIsolatePing()),
       );
 
     final reply = (await next())! as SyncIsolateReply;
     expect(reply.requestId, 1);
     expect(reply.failure, isNull);
 
-    // The ping went to a closed port: nothing more ever arrives. Closing the
-    // host port ends the inbox, which proves no second reply was queued.
+    // The others arrived while the shutdown was closing the worker's
+    // resources and were dropped unanswered: nothing more ever arrives.
+    // Closing the host port ends the inbox, which proves no reply was queued.
     host.close();
     expect(await inbox.moveNext(), isFalse);
   });
@@ -293,6 +303,278 @@ void main() {
       );
       expect(commitLog.subDomain, 'queue.commit');
     });
+  });
+
+  group('hosting the Matrix stack', () {
+    late ReceivePort stackHost;
+    late StreamIterator<Object?> stackInbox;
+    late SendPort stackCommands;
+    late MockMatrixService service;
+    late MockQueuePipelineCoordinator coordinator;
+    late MockInboundQueue queue;
+    late SyncIsolateHostClient hostClient;
+    late List<SyncIsolateConfig> composedWith;
+    var requestId = 0;
+
+    /// Composes a stack over mocks in place of the production one; the
+    /// worker runs in the test isolate so the mocks stay reachable.
+    Future<SyncIsolateStack> fakeStack({
+      required SyncIsolateConfig config,
+      required SyncDatabase db,
+      required SyncIsolateHostClient host,
+      required DomainLogger logger,
+      required void Function(SyncIsolateEvent event) emit,
+    }) async {
+      composedWith.add(config);
+      hostClient = host;
+      return SyncIsolateStack(
+        service: service,
+        attachmentIndex: AttachmentIndex(verboseLogging: false),
+        descriptorRecovery: MockSyncDescriptorRecovery(),
+        attachmentFetcher: MockSyncAttachmentFetcher(),
+        emit: emit,
+      );
+    }
+
+    setUp(() async {
+      composedWith = [];
+      service = MockMatrixService();
+      coordinator = MockQueuePipelineCoordinator();
+      queue = MockInboundQueue();
+      when(() => service.queueCoordinator).thenReturn(coordinator);
+      when(() => coordinator.isRunning).thenReturn(true);
+      when(() => service.inboundQueue).thenReturn(queue);
+      when(
+        () => service.loginStateChanges,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => service.syncRoomIdChanges,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => service.outgoingVerifications,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => service.incomingVerifications,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => service.incomingVerificationRequests,
+      ).thenAnswer((_) => const Stream.empty());
+      when(() => service.stats).thenAnswer((_) => const Stream.empty());
+      when(() => queue.depthChanges).thenAnswer((_) => const Stream.empty());
+      when(() => service.dispose()).thenAnswer((_) async {});
+      when(
+        () => queue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+      ).thenAnswer((_) async => const <InboundQueueEntry>[]);
+      stackHost = ReceivePort();
+      stackInbox = StreamIterator(stackHost);
+      unawaited(
+        SyncIsolateWorker(
+          SyncIsolateBoot(
+            host: stackHost.sendPort,
+            config: const SyncIsolateConfig(
+              documentsPath: '',
+              temporaryPath: '',
+              inMemoryDatabase: true,
+              hostMatrixStack: true,
+              collectSyncMetrics: true,
+            ),
+          ),
+          composeStack: fakeStack,
+        ).run(),
+      );
+      await stackInbox.moveNext();
+      stackCommands = (stackInbox.current! as SyncIsolateReady).commands;
+    });
+
+    tearDown(() async {
+      await stackInbox.cancel();
+      stackHost.close();
+    });
+
+    Future<Object?> nextStack() async {
+      await stackInbox.moveNext();
+      return stackInbox.current;
+    }
+
+    Future<SyncIsolateReply> askStack(SyncIsolateCommand command) async {
+      stackCommands.send(
+        SyncIsolateRequest(requestId: ++requestId, command: command),
+      );
+      while (true) {
+        final message = await nextStack();
+        if (message is SyncIsolateReply) return message;
+      }
+    }
+
+    test('composes the stack from its config before shaking hands and then '
+        'reports it ready', () async {
+      expect(composedWith, hasLength(1));
+      expect(composedWith.single.collectSyncMetrics, isTrue);
+
+      expect(
+        ((await nextStack())! as SyncIsolateLog).message,
+        'sync isolate started',
+      );
+      expect(((await nextStack())! as SyncIsolateStackChanged).ready, isTrue);
+    });
+
+    test("routes a SyncService command to the stack and the stack's failure "
+        'back with its exception type', () async {
+      await nextStack();
+      await nextStack();
+      when(() => service.getRoom()).thenAnswer((_) async => '!room:x');
+      when(
+        () => service.deleteDeviceById('D'),
+      ).thenThrow(const SyncReauthRequiredException('refused'));
+
+      final room = await askStack(const SyncIsolateGetRoom());
+      final refused = await askStack(
+        const SyncIsolateDeleteDevice(deviceId: 'D'),
+      );
+
+      expect(room.result, '!room:x');
+      expect(refused.failure?.thrown, SyncIsolateThrown.reauthRequired);
+      expect(refused.failure?.detail, 'refused');
+    });
+
+    test("leases through the stack's queue, not one of its own", () async {
+      await nextStack();
+      await nextStack();
+
+      final reply = await askStack(const SyncIsolateLeaseEntries(maxBatch: 3));
+
+      expect(reply.result, isEmpty);
+      verify(() => queue.peekBatchReady(maxBatch: 3)).called(1);
+    });
+
+    test(
+      'nothing is leased before the pipeline has started and pruned',
+      () async {
+        await nextStack();
+        await nextStack();
+        when(() => coordinator.isRunning).thenReturn(false);
+
+        final reply = await askStack(
+          const SyncIsolateLeaseEntries(maxBatch: 3),
+        );
+
+        expect(reply.result, isEmpty);
+        verifyNever(
+          () => queue.peekBatchReady(maxBatch: any(named: 'maxBatch')),
+        );
+      },
+    );
+
+    test('a command that asks the host completes: the answer comes through '
+        'the command port while the command is still running', () async {
+      await nextStack();
+      await nextStack();
+      when(() => service.getRoom()).thenAnswer(
+        (_) => hostClient.ask<String?>(
+          const SyncIsolateHostSettingsGet('room'),
+        ),
+      );
+
+      stackCommands.send(
+        SyncIsolateRequest(
+          requestId: ++requestId,
+          command: const SyncIsolateGetRoom(),
+        ),
+      );
+      Object? answered;
+      while (answered == null) {
+        final message = await nextStack();
+        if (message is SyncIsolateHostRequest) {
+          stackCommands.send(
+            SyncIsolateHostReply.success(message.requestId, '!room:h'),
+          );
+        } else if (message is SyncIsolateReply) {
+          answered = message.result;
+        }
+      }
+
+      expect(answered, '!room:h');
+    });
+
+    test("the stack's questions reach the host, and the host's replies the "
+        'stack', () async {
+      await nextStack();
+      await nextStack();
+
+      final asked = hostClient.ask<String?>(
+        const SyncIsolateHostSettingsGet('room'),
+      );
+      final request = (await nextStack())! as SyncIsolateHostRequest;
+      expect((request.query as SyncIsolateHostSettingsGet).key, 'room');
+      stackCommands.send(
+        SyncIsolateHostReply.success(request.requestId, '!room:x'),
+      );
+
+      expect(await asked, '!room:x');
+    });
+
+    test('shutdown disposes the stack and fails its open questions', () async {
+      await nextStack();
+      await nextStack();
+      final asked = hostClient.ask<String?>(
+        const SyncIsolateHostSettingsGet('room'),
+      );
+      await nextStack(); // the request on its way out
+      // Attached before the shutdown: the question fails while the shutdown
+      // is still being answered.
+      final failing = expectLater(
+        asked,
+        throwsA(
+          isA<SyncIsolateFailure>().having(
+            (f) => f.code,
+            'code',
+            SyncIsolateErrorCode.notRunning,
+          ),
+        ),
+      );
+
+      final reply = await askStack(const SyncIsolateShutdown());
+
+      expect(reply.result, isNull);
+      verify(() => service.dispose()).called(1);
+      await failing;
+    });
+  });
+
+  test('a SyncService command to a worker without a stack is a failure, not '
+      'a hang', () async {
+    final host = ReceivePort();
+    final inbox = StreamIterator(host);
+    unawaited(
+      syncIsolateEntry(
+        SyncIsolateBoot(
+          host: host.sendPort,
+          config: const SyncIsolateConfig(
+            documentsPath: '',
+            temporaryPath: '',
+            inMemoryDatabase: true,
+          ),
+        ),
+      ),
+    );
+    await inbox.moveNext();
+    final commands = (inbox.current! as SyncIsolateReady).commands;
+    await inbox.moveNext(); // startup log line
+    commands.send(
+      const SyncIsolateRequest(requestId: 1, command: SyncIsolateGetRoom()),
+    );
+
+    await inbox.moveNext();
+    final reply = inbox.current! as SyncIsolateReply;
+    expect(reply.failure?.thrown, SyncIsolateThrown.state);
+    expect(reply.failure?.message, contains('hosts no Matrix stack'));
+
+    commands.send(
+      const SyncIsolateRequest(requestId: 2, command: SyncIsolateShutdown()),
+    );
+    await inbox.moveNext();
+    await inbox.cancel();
+    host.close();
   });
 
   group('HostForwardingDomainLogger', () {

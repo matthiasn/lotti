@@ -31,7 +31,7 @@ import 'package:lotti/features/github/service/pull_request_summary_tool.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -499,8 +499,8 @@ final gitHubAccountSyncProvider = Provider<GitHubAccountSync>(
         ref.read(outboxServiceProvider).enqueueMessageOrThrow(message),
     rescan:
         ref.watch(syncFeatureAvailableProvider) &&
-            getIt.isRegistered<MatrixService>()
-        ? () => getIt<MatrixService>().forceRescan()
+            getIt.isRegistered<SyncService>()
+        ? () => getIt<SyncService>().forceRescan()
         : null,
   ),
   name: 'gitHubAccountSyncProvider',

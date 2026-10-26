@@ -92,7 +92,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         },
       );
       _bridge.start();
-      await _worker.start();
+      await _worker?.start();
       // An event this build could not decode before may decode now —
       // the app was updated since it arrived — so each start gives the
       // skipped ones another pass. The resurrection cap bounds an event
@@ -163,6 +163,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         },
       );
       _started = true;
+      onStarted?.call();
       // Phase-2 equivalent of the legacy pipeline's 300 ms startup
       // `forceRescan`. `connect()` runs before `_maybeStartQueuePipeline`
       // in `MatrixService.init`, so events delivered during the login
@@ -224,7 +225,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         // Already logged on the bridge side; no recovery available.
       }
       try {
-        await _worker.stop();
+        await _worker?.stop();
       } catch (_) {
         // Same: log-and-continue so unwind always completes.
       }
@@ -251,12 +252,23 @@ extension QueueLifecycle on QueuePipelineCoordinator {
   /// this loop closes that gap by sleeping until the next ready timestamp
   /// and re-peeking until the queue is empty or time runs out.
   Future<void> drainUntilEmptyImpl({Duration? timeout}) async {
+    final worker = _worker;
+    if (worker == null) {
+      // Producer-only: the UI isolate drains what this coordinator admits,
+      // on its own schedule; there is no apply loop here to wait for.
+      _logging.log(
+        LogDomain.sync,
+        'queue.coordinator.drainUntilEmpty.noApplyWorker',
+        subDomain: _logSub,
+      );
+      return;
+    }
     final deadline = clock.now().add(
       timeout ?? QueuePipelineCoordinator.drainUntilEmptyTimeout,
     );
     while (true) {
       try {
-        await _worker.drainToCompletion();
+        await worker.drainToCompletion();
       } catch (error, stackTrace) {
         _logging.error(
           LogDomain.sync,
@@ -396,7 +408,7 @@ extension QueueLifecycle on QueuePipelineCoordinator {
         await tryRun('drain', drainUntilEmpty);
       }
 
-      await tryRun('worker', _worker.stop);
+      await tryRun('worker', () async => _worker?.stop());
       await tryRun('queue', _queue.dispose);
     } finally {
       _started = false;

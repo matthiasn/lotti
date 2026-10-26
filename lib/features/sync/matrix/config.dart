@@ -5,6 +5,15 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/services/secure_storage.dart';
 
+/// The persisted [MatrixConfig] as [storage] (the keychain) holds it, or null
+/// when no config has been provisioned. The sync isolate's host reads it this
+/// way, once, to boot the worker with it (ADR 0142).
+Future<MatrixConfig?> readStoredMatrixConfig(SecureStorage storage) async {
+  final configJson = await storage.read(key: matrixConfigKey);
+  if (configJson == null) return null;
+  return MatrixConfig.fromJson(json.decode(configJson) as Map<String, dynamic>);
+}
+
 /// Returns the persisted [MatrixConfig], preferring the one already cached on
 /// [session]. On a cache miss it reads and decodes the config JSON from
 /// [storage] (the keychain) and memoises it back onto the session. `null` when
@@ -16,13 +25,7 @@ Future<MatrixConfig?> loadMatrixConfig({
   if (session.matrixConfig != null) {
     return session.matrixConfig;
   }
-  final configJson = await storage.read(key: matrixConfigKey);
-  if (configJson != null) {
-    session.matrixConfig = MatrixConfig.fromJson(
-      json.decode(configJson) as Map<String, dynamic>,
-    );
-  }
-  return session.matrixConfig;
+  return session.matrixConfig = await readStoredMatrixConfig(storage);
 }
 
 /// Persists [config] to [storage] and caches it on [session] for the rest of

@@ -19,7 +19,7 @@ import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dar
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/sync_recovery_service.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/services/service_disposal_failure.dart';
 import 'package:lotti/services/time_service.dart';
@@ -109,14 +109,16 @@ class ServiceDisposer {
       'EmbeddingService',
     );
 
-    // 2. Dispose OutboxService (depends on MatrixService).
+    // 2. Dispose OutboxService (depends on the sync service).
     await _disposeAsyncSafely<OutboxService>(
       (s) => s.dispose(),
       'OutboxService',
     );
 
-    // 3. Dispose MatrixService (owns sync engine, streams, FFI database).
-    await _disposeAsyncSafely<MatrixService>(
+    // 3. Dispose the sync service: in-process it owns the sync engine, its
+    // streams and the FFI database; the isolate proxy its subscriptions, and
+    // the worker goes with the host when getIt resets.
+    await _disposeAsyncSafely<SyncService>(
       (s) => s.dispose(),
       'MatrixService',
     );

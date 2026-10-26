@@ -56,13 +56,13 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/agent_sync_attachment.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
@@ -290,7 +290,7 @@ List<Override> buildProviderOverrides(ProfileContext context) {
   return [
     profileContextProvider.overrideWithValue(context),
     if (context.capabilities.syncEnabled) ...[
-      matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
+      matrixServiceProvider.overrideWithValue(getIt<SyncService>()),
       // Sync gates leased project slots; the agent runtime declares the
       // seam, sync fills it.
       syncLeaseGateProvider.overrideWith(buildSyncLeaseGate),

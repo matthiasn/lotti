@@ -298,6 +298,7 @@ void main() {
   BackfillRequestService buildService({
     Directory? documentsDirectory,
     QueuePipelineCoordinator? queueCoordinator,
+    InboundQueue? queue,
     DomainLogger? domainLogger,
     Duration? requestInterval,
     int? maxBatchSize,
@@ -314,6 +315,7 @@ void main() {
       loggingService: mockLogging,
       documentsDirectory: documentsDirectory,
       queueCoordinator: queueCoordinator,
+      queue: queue,
       domainLogger: domainLogger,
       requestInterval: requestInterval,
       maxBatchSize: maxBatchSize,
@@ -2702,7 +2704,6 @@ void main() {
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);
 
-            when(() => coordinator.queue).thenReturn(mockQueue);
             when(() => coordinator.isBridgeInFlight).thenReturn(false);
             when(
               () => mockQueue.depthChanges,
@@ -2722,6 +2723,7 @@ void main() {
 
             final service = buildService(
               queueCoordinator: coordinator,
+              queue: mockQueue,
               requestInterval: const Duration(minutes: 10),
             );
 
@@ -2765,7 +2767,6 @@ void main() {
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);
 
-            when(() => coordinator.queue).thenReturn(mockQueue);
             when(() => coordinator.isBridgeInFlight).thenReturn(false);
             when(
               () => mockQueue.depthChanges,
@@ -2797,6 +2798,7 @@ void main() {
 
             final service = buildService(
               queueCoordinator: coordinator,
+              queue: mockQueue,
               requestInterval: const Duration(minutes: 10),
               missingDebounce: const Duration(minutes: 5),
             );
@@ -2848,7 +2850,6 @@ void main() {
                 StreamController<QueueDepthSignal>.broadcast();
             addTearDown(depthController.close);
 
-            when(() => coordinator.queue).thenReturn(mockQueue);
             when(() => coordinator.isBridgeInFlight).thenReturn(false);
             when(
               () => mockQueue.depthChanges,
@@ -2868,6 +2869,7 @@ void main() {
 
             final service = buildService(
               queueCoordinator: coordinator,
+              queue: mockQueue,
               requestInterval: const Duration(minutes: 10),
             );
 

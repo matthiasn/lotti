@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:get_it/get_it.dart';
+import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
@@ -22,8 +23,10 @@ import 'package:lotti/utils/consts.dart';
 /// temporary files in [temporaryDirectory], and owns the inbound queue's
 /// leases and settlements; the tables it reports written are replayed into
 /// [syncDatabase], the UI isolate's connection, so its `watch()` streams
-/// fire for them. The caller wires the inbound worker to lease through the
-/// returned host.
+/// fire for them. With [hostMatrixStack] the worker composes the Matrix stack
+/// too — from [matrixConfig], [deviceDisplayName] and [collectSyncMetrics] —
+/// and answers the stack's questions from [services] (step 4b); without it
+/// the caller wires the inbound worker to lease through the returned host.
 ///
 /// The flag is read once, here: toggling it takes effect at the next start.
 /// Returns the host, or null when the flag is off.
@@ -35,15 +38,25 @@ Future<SyncIsolateHost?> registerSyncIsolateIfEnabled({
   required Future<Directory> Function() temporaryDirectory,
   required DomainLogger logger,
   SyncIsolateEntry entry = syncIsolateEntry,
+  SyncIsolateHostServices? services,
+  bool hostMatrixStack = false,
+  MatrixConfig? matrixConfig,
+  String deviceDisplayName = 'lotti',
+  bool collectSyncMetrics = false,
 }) async {
   if (!await journalDb.getConfigFlag(useIsolateSyncFlag)) return null;
 
   final host = SyncIsolateHost(
     logger: logger,
     entry: entry,
+    services: services,
     config: SyncIsolateConfig(
       documentsPath: documentsDirectory.path,
       temporaryPath: (await temporaryDirectory()).path,
+      hostMatrixStack: hostMatrixStack,
+      matrixConfig: matrixConfig,
+      deviceDisplayName: deviceDisplayName,
+      collectSyncMetrics: collectSyncMetrics,
     ),
   );
   host.tablesChanged.listen(
