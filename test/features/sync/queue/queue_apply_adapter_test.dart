@@ -17,6 +17,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_attachment_fetcher.dart';
 import 'package:lotti/features/sync/matrix/sync_descriptor_fetcher.dart';
+import 'package:lotti/features/sync/matrix/sync_descriptor_recovery.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
@@ -111,8 +112,10 @@ void main() {
             journalEntityLoader: processor_harness.journalEntityLoader,
             documentsDirectory: directory,
             attachmentIndex: index,
-            syncEventTrust: AdmittingSyncEventTrust(),
-            descriptorFetcher: descriptorFetcher,
+            descriptorRecovery: TrustedDescriptorRecovery(
+              fetcher: descriptorFetcher,
+              trust: AdmittingSyncEventTrust(),
+            ),
             attachmentFetcher: MatrixAttachmentFetcher(
               events: descriptorFetcher,
             ),

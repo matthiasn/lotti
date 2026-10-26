@@ -107,8 +107,11 @@ Future<String? Function()> _registerMatrixSyncStack({
               ),
           syncNodeProfileRepository: syncNodeProfileRepository,
           fts5Db: getIt<Fts5Db>(),
-          syncEventTrust: syncEventTrust,
-          descriptorFetcher: descriptorFetcher,
+          descriptorRecovery: TrustedDescriptorRecovery(
+            fetcher: descriptorFetcher,
+            trust: syncEventTrust,
+            logging: domainLogger,
+          ),
           attachmentFetcher: attachmentFetcher,
           gitHubAccountSink: gitHubTokenStorageForProfile(
             secureStorage,

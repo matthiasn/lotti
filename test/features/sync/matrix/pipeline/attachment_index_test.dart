@@ -222,6 +222,50 @@ void main() {
     return e;
   }
 
+  test('recordDescriptor indexes a plain descriptor by path and event id, '
+      'announces the path once, and dedupes by event id', () async {
+    // The sync isolate records descriptors it read off events the UI
+    // isolate never sees (ADR 0142); the mirror index is fed these.
+    final index = AttachmentIndex(verboseLogging: false);
+    addTearDown(index.dispose);
+    final announced = <String>[];
+    final sub = index.pathRecorded.listen(announced.add);
+    addTearDown(sub.cancel);
+    const descriptor = AttachmentDescriptor(
+      eventId: 'ev-plain',
+      roomId: '!room:example.org',
+      relativePath: 'images/plain.jpg',
+      mimetype: 'image/jpeg',
+      declaredSize: 7,
+    );
+
+    expect(index.recordDescriptor(descriptor), isTrue);
+    expect(index.recordDescriptor(descriptor), isFalse);
+    await pumpEventQueue();
+
+    expect(index.find('images/plain.jpg'), same(descriptor));
+    expect(index.find('/images/plain.jpg'), same(descriptor));
+    expect(index.findByEventId('ev-plain'), same(descriptor));
+    expect(announced, ['/images/plain.jpg']);
+  });
+
+  test('record reads the descriptor off the event and indexes the same '
+      'values recordDescriptor would', () {
+    final fromEvent = AttachmentIndex(verboseLogging: false);
+    final fromDescriptor = AttachmentIndex(verboseLogging: false);
+    final e = makeEvent(eventId: 'ev-same', relativePath: 'images/s.jpg');
+
+    expect(fromEvent.record(e), isTrue);
+    final read = fromEvent.findByEventId('ev-same')!;
+    expect(fromDescriptor.recordDescriptor(read), isTrue);
+
+    expect(fromDescriptor.find('images/s.jpg')?.eventId, 'ev-same');
+    expect(
+      fromDescriptor.find('images/s.jpg')?.relativePath,
+      read.relativePath,
+    );
+  });
+
   test(
     'record is idempotent per eventId — repeat observations are no-ops '
     'and emit no log',
