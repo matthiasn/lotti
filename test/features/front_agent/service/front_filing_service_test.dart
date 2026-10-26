@@ -258,6 +258,17 @@ void main() {
       },
     );
 
+    test('a note that was not written leaves the item in the inbox', () async {
+      seed(
+        const FrontDoorInbox(),
+        kind: FrontDestinationKind.unrouted,
+        destinationId: null,
+      );
+      entryFor = (_) => null;
+      await expectLater(service.saveAsNote(doorId), throwsStateError);
+      expect(upserts, isEmpty);
+    });
+
     test('a task that was not created leaves the item in the inbox', () async {
       seed(
         const FrontDoorInbox(),

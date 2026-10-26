@@ -1,7 +1,7 @@
 # Single Agent Entry Point: one front agent that dispatches
 
 Date: 2026-10-23
-Status: concept and plan; the owner's decisions on the open questions are in §5 (2026-10-23); slice 0 merged (#4830, 2026-10-24); slice 1 in review
+Status: concept and plan; the owner's decisions on the open questions are in §5 (2026-10-23); slices 0 (#4830) and 1 (#4834) merged 2026-10-24; slice 2 in review
 Builds on: [2026-10-12_in_app_agent_avatar.md](2026-10-12_in_app_agent_avatar.md)
 (the companion, whose branch 6 "hold her to talk" this plan re-points),
 [2026-08-08_reusable_chat_interface_requirements.md](2026-08-08_reusable_chat_interface_requirements.md)
@@ -379,8 +379,8 @@ Nothing the front agent does alters the record by itself:
 | statement under a project | **deferred** (decision 5): no project door yet. She asks which of the project's tasks it belongs to (`ask_user` with the project's open tasks as chips) or it goes to the inbox | — |
 | statement to a goal/person | `GoalChatService` / `RelationshipChatService.sendMessage` with the segment text | none; it is a chat turn, the specialist's own proposals stay gated as today |
 | "move the dentist to tomorrow" | Daily OS refine capture for today | the plan diff review that exists |
-| new task | a `create_task` change set item (the project agent's existing gated tool, category suggested from the index) | change set confirmation |
-| new goal / project | a chip that opens the existing wizard pre-filled; no write | the wizard |
+| new task | a chip; creates the task titled with the verbatim text (slice 2 found no owner agent for a `create_task` change set when nothing owns the segment, so the tap itself is the approval, the same one the note chip has) | the tap |
+| new goal / project | a chip that opens the existing wizard; the wizards take no prefill today, so the words stay in the thread and the door keeps waiting | the wizard |
 | journal note | a chip; writes the verbatim text as an entry | the tap |
 
 **The routing decision itself is the audit record.** The `dispatch` tool call
@@ -513,15 +513,18 @@ What is in `lib/features/front_agent/` (and its README):
   payloads, messages, dispatch records and the recovery record — all in
   `agent.sqlite`. Screenshots per surface.
 
-### Slice 2 — statements, filing, and the inbox
+### Slice 2 — statements, filing, and the inbox — landed
 
-- `statement` segments: the confirmation card, filing a verbatim text entry
-  under a task or project (owner's subscription wake does the rest), goal and
-  person statements through their chat services.
-- Multi-segment cards; the inbox chip and its projection filter; the three
-  chips for unrouted segments (`create_task` change set, wizard deep links,
-  journal note).
-- Dispatch record gains the result ids; undo path.
+- `statement` and `instruction` segments under a task: a proposal in the
+  door card, one tap files a verbatim text entry under the task (the
+  owner's subscription wake does the rest); goal and person statements go
+  through their chat services; a project statement waits in the inbox
+  (decision 5).
+- The inbox chip in the header and its filter over the thread; the chips
+  for unrouted and new segments (make it a task, start a goal, new project,
+  save as a note).
+- The door record keeps the result ids (entry, task); unfile deletes the
+  entry and the door is a proposal again.
 
 ### Slice 3 — she talks, and listens
 

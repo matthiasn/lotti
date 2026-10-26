@@ -22,6 +22,10 @@ import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -64,7 +68,13 @@ void main() {
     Future<FrontChatThread> Function()? thread,
     VoidCallback? onClose,
   }) async {
-    await setUpTestGetIt();
+    // The project creation resolves categories through the locator.
+    final cache = MockEntitiesCacheService();
+    when(() => cache.getCategoryById(any())).thenReturn(null);
+    await setUpTestGetIt(
+      additionalSetup: () =>
+          getIt.registerSingleton<EntitiesCacheService>(cache),
+    );
     addTearDown(tearDownTestGetIt);
     // Tall enough that every message of the longest thread is built.
     const window = Size(800, 2400);
@@ -379,6 +389,55 @@ void main() {
     testWidgets('with nothing waiting there is no inbox chip', (tester) async {
       await pumpPane(tester);
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+    });
+  });
+
+  group('the wizard chips', () {
+    FrontChatThread inbox(FrontNewKind kind) => FrontChatThread(
+      messages: [
+        message('u1', AgentChatRole.user, 'Relocate the colony.', now),
+      ],
+      doorsByMessageId: {
+        'u1': [
+          FrontDoorEntry(
+            doorId: 'd:door:0',
+            record: FrontDoorRecord(
+              segmentIndex: 0,
+              text: 'Relocate the colony.',
+              kind: FrontDestinationKind.newThing,
+              status: FrontDoorStatus.done,
+              claimedAt: now.toUtc(),
+              outcome: FrontDoorInbox(newKind: kind),
+            ),
+          ),
+        ],
+      },
+    );
+
+    testWidgets('start a goal leaves the sheet and goes to the goal wizard', (
+      tester,
+    ) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await pumpPane(tester, thread: () async => inbox(FrontNewKind.goal));
+
+      await tester.tap(find.byKey(const ValueKey('front-door-goal-0')));
+      await tester.pump();
+
+      expect(paths, [goalCreatePath]);
+      // Nothing was written: the door still waits.
+      verifyNever(() => filing.saveAsNote(any()));
+    });
+
+    testWidgets('new project opens the project creation', (tester) async {
+      await pumpPane(tester, thread: () async => inbox(FrontNewKind.project));
+
+      await tester.tap(find.byKey(const ValueKey('front-door-project-0')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Create Project'), findsOneWidget);
     });
   });
 }

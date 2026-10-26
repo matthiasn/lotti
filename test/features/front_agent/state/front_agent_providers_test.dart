@@ -6,6 +6,8 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -17,6 +19,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
@@ -27,6 +31,8 @@ import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -35,6 +41,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
 
@@ -357,6 +364,172 @@ void main() {
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
       expect(wired.read(frontDoorWalkerProvider), isA<FrontDoorWalker>());
       expect(wired.read(frontFilingServiceProvider), isA<FrontFilingService>());
+    });
+  });
+
+  group("the filing service's adapters", () {
+    const doorId = 'd:door:0';
+    late MockPersistenceLogic persistence;
+    late MockJournalRepository journalRepository;
+    late ProviderContainer wired;
+
+    FrontDoorRecord record(FrontDoorOutcome outcome) => FrontDoorRecord(
+      segmentIndex: 0,
+      text: 'The hinge arrived.',
+      kind: FrontDestinationKind.task,
+      destinationId: 'garden',
+      status: FrontDoorStatus.done,
+      claimedAt: DateTime.utc(2026, 10, 26),
+      outcome: outcome,
+    );
+
+    setUp(() async {
+      persistence = MockPersistenceLogic();
+      journalRepository = MockJournalRepository();
+      // The journal's creation paths resolve the persistence logic through
+      // the locator, the way every create helper in the app does.
+      await setUpTestGetIt(
+        additionalSetup: () =>
+            getIt.registerSingleton<PersistenceLogic>(persistence),
+      );
+      addTearDown(tearDownTestGetIt);
+      final journalDb = MockJournalDb();
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      final syncService = MockAgentSyncService();
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      wired = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+          journalDbProvider.overrideWithValue(journalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+        ],
+      );
+      addTearDown(wired.dispose);
+      when(
+        () => persistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => Metadata(
+          id: 'entry-1',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          dateFrom: DateTime(2026),
+          dateTo: DateTime(2026),
+          categoryId: invocation.namedArguments[#categoryId] as String?,
+        ),
+      );
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
+    });
+
+    void seed(FrontDoorOutcome outcome) {
+      when(() => repository.getEntity('$doorId:payload')).thenAnswer(
+        (_) async => makeTestMessagePayload(
+          id: '$doorId:payload',
+          agentId: frontAgentId,
+          content: record(outcome).toJson(),
+        ),
+      );
+    }
+
+    test(
+      "filing writes the user's words as a text entry linked to the task",
+      () async {
+        seed(const FrontDoorProposal(ownerId: 'garden'));
+
+        await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+        final entry =
+            verify(
+                  () => persistence.createDbEntity(
+                    captureAny(),
+                    linkedId: 'garden',
+                  ),
+                ).captured.single
+                as JournalEntity;
+        expect(entry, isA<JournalEntry>());
+        expect(entry.entryText?.plainText, 'The hinge arrived.');
+      },
+    );
+
+    test('making a task goes through the task creation with the words as '
+        'the title', () async {
+      seed(const FrontDoorInbox());
+      final status = TaskStatus.open(
+        id: 's',
+        createdAt: DateTime(2026),
+        utcOffset: 0,
+      );
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+          private: any(named: 'private'),
+          labelIds: any(named: 'labelIds'),
+        ),
+      ).thenAnswer(
+        (invocation) async =>
+            JournalEntity.task(
+                  meta: Metadata(
+                    id: 'task-new',
+                    createdAt: DateTime(2026),
+                    updatedAt: DateTime(2026),
+                    dateFrom: DateTime(2026),
+                    dateTo: DateTime(2026),
+                  ),
+                  data: TaskData(
+                    status: status,
+                    statusHistory: [status],
+                    dateFrom: DateTime(2026),
+                    dateTo: DateTime(2026),
+                    title: (invocation.namedArguments[#data] as TaskData).title,
+                  ),
+                )
+                as Task,
+      );
+
+      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                  private: any(named: 'private'),
+                  labelIds: any(named: 'labelIds'),
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.title, 'The hinge arrived.');
+    });
+
+    test('unfiling deletes the entry through the journal repository', () async {
+      seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+      when(
+        () => journalRepository.deleteJournalEntity('entry-1'),
+      ).thenAnswer((_) async => true);
+
+      await wired.read(frontFilingServiceProvider).unfile(doorId);
+
+      verify(() => journalRepository.deleteJournalEntity('entry-1')).called(1);
     });
   });
 }

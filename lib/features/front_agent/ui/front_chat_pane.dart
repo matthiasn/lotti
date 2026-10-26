@@ -85,7 +85,8 @@ class _Body extends ConsumerWidget {
       // the thread, and the door keeps waiting until a chip that writes
       // takes it (nothing is written by opening a wizard).
       onStartGoal: (_) {
-        Navigator.of(context).pop();
+        // Leave the sheet, then go: the wizard is a page, not a modal.
+        Navigator.of(context).maybePop();
         beamToNamed(goalCreatePath);
       },
       onNewProject: (_) => showProjectCreateModal(context: context),

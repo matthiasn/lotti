@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -9,8 +10,14 @@ import 'package:lotti/features/ai_consumption/model/consumption_aggregation_mode
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -25,6 +32,8 @@ void main() {
     ConsumptionTotals? totals,
     bool companion = false,
     double width = 400,
+    FrontChatThread thread = FrontChatThread.empty,
+    FrontChatThread Function()? threadOf,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -48,6 +57,9 @@ void main() {
             (ref, agentId) => Completer<AgentDomainEntity?>().future,
           ),
           agentStateProvider.overrideWith((ref, agentId) async => null),
+          frontChatThreadProvider.overrideWith(
+            (ref) async => threadOf?.call() ?? thread,
+          ),
           agentConsumptionTotalsProvider(frontAgentId).overrideWith(
             (ref) => totals == null
                 ? const Stream<ConsumptionTotals>.empty()
@@ -175,5 +187,81 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
+  });
+
+  group('the inbox chip', () {
+    FrontChatThread waiting(int count) => FrontChatThread(
+      messages: const [],
+      doorsByMessageId: {
+        'u1': [
+          for (var i = 0; i < count; i++)
+            FrontDoorEntry(
+              doorId: 'd:door:$i',
+              record: FrontDoorRecord(
+                segmentIndex: i,
+                text: 'segment $i',
+                kind: FrontDestinationKind.unrouted,
+                status: FrontDoorStatus.done,
+                claimedAt: DateTime.utc(2026, 10, 26),
+                outcome: const FrontDoorInbox(),
+              ),
+            ),
+        ],
+      },
+    );
+
+    testWidgets('is absent while nothing waits on the user', (tester) async {
+      await pumpHeader(tester);
+      expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+    });
+
+    testWidgets('counts the doors that wait and toggles the inbox filter', (
+      tester,
+    ) async {
+      await pumpHeader(tester, thread: waiting(2));
+      final chip = find.byKey(FrontChatHeaderKeys.inbox);
+      expect(tester.widget<DesignSystemChip>(chip).label, 'Inbox 2');
+      expect(tester.widget<DesignSystemChip>(chip).selected, isFalse);
+      // Under the subtitle in the sheet's width, like the cost pill.
+      expect(
+        tester.getTopLeft(chip).dy,
+        greaterThanOrEqualTo(
+          tester.getBottomLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dy,
+        ),
+      );
+
+      await tester.tap(chip);
+      await tester.pump();
+
+      expect(tester.widget<DesignSystemChip>(chip).selected, isTrue);
+      final container = ProviderScope.containerOf(tester.element(chip));
+      expect(container.read(frontInboxFilterProvider), isTrue);
+    });
+
+    testWidgets('stays while the filter is on even when nothing waits any '
+        'more, so it can be switched off', (tester) async {
+      var thread = waiting(1);
+      await pumpHeader(tester, threadOf: () => thread);
+      final chip = find.byKey(FrontChatHeaderKeys.inbox);
+      await tester.tap(chip);
+      await tester.pump();
+      final container = ProviderScope.containerOf(tester.element(chip));
+      expect(container.read(frontInboxFilterProvider), isTrue);
+
+      // The last item was taken somewhere.
+      thread = waiting(0);
+      container.invalidate(frontChatThreadProvider);
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.widget<DesignSystemChip>(chip).label, 'Inbox 0');
+      expect(tester.widget<DesignSystemChip>(chip).selected, isTrue);
+
+      await tester.tap(chip);
+      await tester.pump();
+
+      expect(container.read(frontInboxFilterProvider), isFalse);
+      expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+    });
   });
 }
