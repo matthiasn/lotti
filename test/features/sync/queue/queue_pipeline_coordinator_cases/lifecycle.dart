@@ -3,14 +3,22 @@ part of '../queue_pipeline_coordinator_test.dart';
 extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
   void registerStart() {
     test(
-      'start seeds the marker, prunes strays, starts worker + bridge',
+      'start seeds the marker, prunes strays, starts worker + bridge, and '
+      'only then reports it has started',
       () async {
         final coordinator = build();
+        var startedAfterPrune = false;
+        coordinator.onStarted = () {
+          // The hook is what opens the sync isolate's leases: pruning must
+          // be behind it, or a stranded row could be leased first.
+          verify(() => queue.pruneStrandedEntries(roomId)).called(1);
+          verify(worker.start).called(1);
+          startedAfterPrune = true;
+        };
         await coordinator.start();
         expect(coordinator.isRunning, isTrue);
+        expect(startedAfterPrune, isTrue);
         verify(() => seeder.seedIfAbsent(roomId)).called(1);
-        verify(() => queue.pruneStrandedEntries(roomId)).called(1);
-        verify(worker.start).called(1);
         verify(bridge.start).called(1);
         await coordinator.stop();
       },

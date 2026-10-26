@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:drift/drift.dart' show TableUpdate;
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -16,6 +17,12 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/isolate/isolate_apply_loop.dart';
+import 'package:lotti/features/sync/isolate/isolate_attachment_access.dart';
+import 'package:lotti/features/sync/isolate/isolate_sync_service.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_host_services.dart';
+import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -29,8 +36,10 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_trust.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
@@ -188,27 +197,54 @@ Future<JournalEntry> sendTestMessage({
 /// Database and Matrix-client lifetimes remain owned by the calling fixture.
 class SyncTestDevice {
   SyncTestDevice({
-    required this.matrixService,
-    required this.outbox,
-    required this.backfill,
-    required this.journalDb,
-    required this.syncDb,
-    required this.hostId,
-  });
+    required SyncService service,
+    required MatrixOutboxService outbox,
+    required BackfillRequestService backfill,
+    required JournalDb journalDb,
+    required SyncDatabase syncDb,
+    required String hostId,
+    Future<void> Function()? disposeStack,
+  }) : this._(
+         service,
+         outbox,
+         backfill,
+         journalDb,
+         syncDb,
+         hostId,
+         disposeStack,
+       );
 
-  final MatrixService matrixService;
+  SyncTestDevice._(
+    this.service,
+    this.outbox,
+    this.backfill,
+    this.journalDb,
+    this.syncDb,
+    this.hostId,
+    this._disposeStack,
+  );
+
+  /// What the app talks to: `MatrixService` in-process, or the proxy of a
+  /// stack the sync isolate hosts.
+  final SyncService service;
   final MatrixOutboxService outbox;
   final BackfillRequestService backfill;
   final JournalDb journalDb;
   final SyncDatabase syncDb;
   final String hostId;
+  final Future<void> Function()? _disposeStack;
+
+  /// The in-process service, for suites that drive the SDK directly. A
+  /// device whose stack the worker hosts has none — use [service].
+  MatrixService get matrixService => service as MatrixService;
 
   Future<void> dispose() async {
     backfill.dispose();
     try {
       await outbox.dispose();
     } finally {
-      await matrixService.dispose();
+      await service.dispose();
+      await _disposeStack?.call();
     }
   }
 }
@@ -299,9 +335,15 @@ Future<bool> verifyTestEnvironment() async {
 /// coordinator is passed in as the only inbound path. The caller owns and
 /// closes the supplied databases after disposing the service. Both the loader
 /// and the ingestor resolve attachments in the supplied device directory.
+///
+/// With [hostStack] the device is the flag-on composition instead (ADR 0142,
+/// step 4b): the sync isolate hosts the client, admission, ingestion and the
+/// sender, this side keeps the apply loop, the outbox and backfill, and
+/// [gateway] is not needed. The worker opens its own connection to
+/// `sync.sqlite` in [documentsDirectory], so [syncDb] must be that file.
 Future<SyncTestDevice> createSyncTestDevice({
   required MatrixConfig config,
-  required MatrixSyncGateway gateway,
+  required MatrixSyncGateway? gateway,
   required DomainLogger loggingService,
   required JournalDb journalDb,
   required SettingsDb settingsDb,
@@ -316,7 +358,28 @@ Future<SyncTestDevice> createSyncTestDevice({
   required VectorClockService vectorClockService,
   bool collectSyncMetrics = true,
   AttachmentIndex? attachmentIndex,
+  bool hostStack = false,
 }) async {
+  if (hostStack) {
+    return _createHostedSyncTestDevice(
+      config: config,
+      loggingService: loggingService,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      secureStorage: secureStorage,
+      deviceName: deviceName,
+      activityService: activityService,
+      documentsDirectory: documentsDirectory,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: aiConfigRepository,
+      syncDb: syncDb,
+      vectorClockService: vectorClockService,
+      collectSyncMetrics: collectSyncMetrics,
+      attachmentIndex: attachmentIndex,
+    );
+  }
+  final matrixGateway =
+      gateway ?? (throw ArgumentError('an in-process device needs a gateway'));
   final activityGate = UserActivityGate(
     activityService: activityService,
   );
@@ -355,7 +418,9 @@ Future<SyncTestDevice> createSyncTestDevice({
     syncDb: syncDb,
     logging: loggingService,
   );
-  final descriptorFetcher = MatrixDescriptorFetcher.forClient(gateway.client);
+  final descriptorFetcher = MatrixDescriptorFetcher.forClient(
+    matrixGateway.client,
+  );
   final attachmentFetcher = MatrixAttachmentFetcher(events: descriptorFetcher);
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
@@ -386,13 +451,13 @@ Future<SyncTestDevice> createSyncTestDevice({
   );
 
   final roomManager = SyncRoomManager(
-    gateway: gateway,
+    gateway: matrixGateway,
     settingsDb: settingsDb,
     loggingService: loggingService,
   );
   final sessionManager =
       MatrixSessionManager(
-          gateway: gateway,
+          gateway: matrixGateway,
           roomManager: roomManager,
           loggingService: loggingService,
         )
@@ -416,7 +481,7 @@ Future<SyncTestDevice> createSyncTestDevice({
 
   final matrixService = MatrixService(
     matrixConfig: config,
-    gateway: gateway,
+    gateway: matrixGateway,
     loggingService: loggingService,
     activityGate: activityGate,
     messageSender: messageSender,
@@ -477,12 +542,181 @@ Future<SyncTestDevice> createSyncTestDevice({
   );
   backfill.start();
   return SyncTestDevice(
-    matrixService: matrixService,
+    service: matrixService,
     outbox: outbox,
     backfill: backfill,
     journalDb: journalDb,
     syncDb: syncDb,
     hostId: (await vectorClockService.getHost())!,
+  );
+}
+
+/// [createSyncTestDevice] with the Matrix stack in the sync isolate: the
+/// UI-isolate half of `lib/get_it_sync_isolate.dart`, over the test's
+/// databases. The worker is spawned with the credentials and the display
+/// name in its boot config and answers its settings, journal and host-id
+/// reads from this side's databases through the host services.
+Future<SyncTestDevice> _createHostedSyncTestDevice({
+  required MatrixConfig config,
+  required DomainLogger loggingService,
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required SecureStorage secureStorage,
+  required String deviceName,
+  required UserActivityService activityService,
+  required Directory documentsDirectory,
+  required UpdateNotifications updateNotifications,
+  required AiConfigRepository aiConfigRepository,
+  required SyncDatabase syncDb,
+  required VectorClockService vectorClockService,
+  required bool collectSyncMetrics,
+  required AttachmentIndex? attachmentIndex,
+}) async {
+  final activityGate = UserActivityGate(activityService: activityService);
+  final host = SyncIsolateHost(
+    logger: loggingService,
+    services: DatabaseSyncIsolateHostServices(
+      settings: settingsDb,
+      journal: journalDb,
+      vectorClock: vectorClockService,
+      localVcDominance: (_, _) async => false,
+    ),
+    config: SyncIsolateConfig(
+      documentsPath: documentsDirectory.path,
+      temporaryPath: documentsDirectory.path,
+      hostMatrixStack: true,
+      matrixConfig: config,
+      deviceDisplayName: deviceName,
+      collectSyncMetrics: collectSyncMetrics,
+    ),
+  );
+  // What the worker writes reaches this connection's streams only through
+  // the tables it reports, as the startup wiring does.
+  host.tablesChanged.listen(
+    (tables) => syncDb.notifyUpdates({
+      for (final table in tables) TableUpdate(table),
+    }),
+  );
+  host.start();
+
+  final mirror = attachmentIndex ?? AttachmentIndex(logging: loggingService);
+  final inboundQueue = InboundQueue(
+    db: syncDb,
+    logging: loggingService,
+    trust: SyncEventTrust(syncDb: syncDb, logging: loggingService),
+  );
+  final service = IsolateSyncService(
+    host: host,
+    secureStorage: secureStorage,
+    inboundQueue: inboundQueue,
+    attachmentIndex: mirror,
+    logger: loggingService,
+    connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+  );
+  // The proxy's own copy of the credentials, so `init` configures the
+  // worker with them instead of reading an empty keychain.
+  await service.setConfig(config);
+
+  final sequenceLogService = SyncSequenceLogService(
+    syncDatabase: syncDb,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+  );
+  final attachmentFetcher = IsolateAttachmentFetcher(service);
+  final eventProcessor = SyncEventProcessor(
+    loggingService: loggingService,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+    settingsDb: settingsDb,
+    journalEntityLoader: SmartJournalEntityLoader(
+      attachmentIndex: mirror,
+      attachmentFetcher: attachmentFetcher,
+      loggingService: loggingService,
+      documentsDirectory: documentsDirectory,
+    ),
+    documentsDirectory: documentsDirectory,
+    attachmentIndex: mirror,
+    sequenceLogService: sequenceLogService,
+    journalDb: journalDb,
+    vectorClockService: vectorClockService,
+    descriptorRecovery: IsolateDescriptorRecovery(service),
+    attachmentFetcher: attachmentFetcher,
+    savedTaskFiltersRepository: SavedTaskFiltersRepository(
+      SavedTaskFiltersPersistence(settingsDb, domainLogger: loggingService),
+      updateNotifications,
+    ),
+  );
+  final applyLoop = IsolateApplyLoop(
+    host: host,
+    queue: inboundQueue,
+    processor: eventProcessor,
+    journalDb: journalDb,
+    sequenceLogService: sequenceLogService,
+    logging: loggingService,
+    service: service,
+    updateNotifications: updateNotifications,
+    activityGate: activityGate,
+  );
+  await applyLoop.start();
+
+  await journalDb.upsertConfigFlag(
+    const ConfigFlag(
+      name: enableMatrixFlag,
+      description: 'Enable Matrix Sync',
+      status: true,
+    ),
+  );
+  final outbox = MatrixOutboxService(
+    syncDatabase: syncDb,
+    loggingService: loggingService,
+    vectorClockService: vectorClockService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+    userActivityService: activityService,
+    matrixService: service,
+    connectivityStream: const Stream<List<ConnectivityResult>>.empty(),
+    sequenceLogService: sequenceLogService,
+    domainLogger: loggingService,
+  );
+  final backfill = BackfillRequestService(
+    sequenceLogService: sequenceLogService,
+    syncDatabase: syncDb,
+    outboxService: outbox,
+    vectorClockService: vectorClockService,
+    loggingService: loggingService,
+    documentsDirectory: documentsDirectory,
+    queueCoordinator: service.queueControl,
+    queue: inboundQueue,
+    domainLogger: loggingService,
+  );
+  // The same recovery wiring as the in-process device, over the proxy's
+  // queue control.
+  sequenceLogService.onMissingEntriesDetected = () {
+    backfill.nudge();
+    service.queueControl.maybeStartGapRecovery();
+  };
+  service.queueControl.onBridgeCompleted = backfill.nudge;
+  eventProcessor.backfillResponseHandler = BackfillResponseHandler(
+    journalDb: journalDb,
+    sequenceLogService: sequenceLogService,
+    outboxService: outbox,
+    loggingService: loggingService,
+    vectorClockService: vectorClockService,
+    domainLogger: loggingService,
+  );
+  backfill.start();
+  return SyncTestDevice(
+    service: service,
+    outbox: outbox,
+    backfill: backfill,
+    journalDb: journalDb,
+    syncDb: syncDb,
+    hostId: (await vectorClockService.getHost())!,
+    disposeStack: () async {
+      await applyLoop.dispose();
+      await inboundQueue.dispose();
+      await host.dispose();
+    },
   );
 }
 

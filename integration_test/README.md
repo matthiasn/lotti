@@ -37,7 +37,9 @@ smaller identity and otherwise keeps the peer's request back. The test checks
 that both devices end up verified with the same emoji, that only the larger
 identity withdrew its request, and that the peer sees that request cancelled.
 Without the yield, both devices keep the other's request back and the test
-times out.
+times out. The script runs it a second time on two more fresh accounts with
+`SYNC_STACK_IN_ISOLATE=true`: the second device's Matrix stack then runs in
+the sync isolate (ADR 0142), so the same ceremony is proven across the port.
 
 ### 2. Sync Resilience Tests (`sync_resilience_test.dart`)
 
@@ -180,7 +182,9 @@ project root.
    ```shell
    ./run_matrix_tests.sh
    ```
-   This runs `matrix_service_test.dart`, then `verification_crossing_test.dart`.
+   This runs `sync_isolate_test.dart`, `matrix_service_test.dart`, then
+   `verification_crossing_test.dart` twice: in-process, and with the second
+   device's sync stack hosted in the sync isolate (`SYNC_STACK_IN_ISOLATE=true`).
 
 3. **Run the resilience tests:**
    ```shell

@@ -14,10 +14,10 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/verification_glare.dart';
 import 'package:lotti/features/sync/models/sync_verification.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -45,6 +45,12 @@ import 'matrix_test_room.dart';
 /// `handOffOutgoingVerificationTo`) and otherwise defers. The model takes a
 /// handoff as one step; here it is a timer stop, a cancel round trip and an
 /// accept, racing the peer's own traffic.
+///
+/// With `SYNC_STACK_IN_ISOLATE=true` the second device runs its Matrix stack
+/// in the sync isolate (ADR 0142, step 4b): the same ceremony then crosses
+/// the port on one side, through the same plain service API. The first
+/// device stays in-process because the suite invites by SDK room, which the
+/// app never does and the service does not offer.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -62,6 +68,9 @@ void main() {
     final user2 = const String.fromEnvironment('TEST_USER2').isNotEmpty
         ? const String.fromEnvironment('TEST_USER2')
         : Platform.environment['TEST_USER2'] ?? '';
+    final secondStackHosted =
+        const bool.fromEnvironment('SYNC_STACK_IN_ISOLATE') ||
+        Platform.environment['SYNC_STACK_IN_ISOLATE'] == 'true';
     final skipReason = user1.isEmpty || user2.isEmpty
         ? 'Missing TEST_USER1/TEST_USER2. Run via run_matrix_tests.sh'
         : null;
@@ -130,15 +139,22 @@ void main() {
       await sharedDocumentsDirectory.delete(recursive: true);
     });
 
-    Future<MatrixService> startDevice(String name, String user) async {
+    Future<SyncTestDevice> startDevice(
+      String name,
+      String user, {
+      bool hostStack = false,
+    }) async {
       final documents = await Directory(
         '${sharedDocumentsDirectory.path}/$name-${uuid.v1()}',
       ).create();
-      final client = await createMatrixClient(
-        documentsDirectory: documents,
-        dbName: '${name}_${uuid.v1()}',
-      );
-      addTearDown(client.dispose);
+      // A hosted device's client is the worker's own.
+      final client = hostStack
+          ? null
+          : await createMatrixClient(
+              documentsDirectory: documents,
+              dbName: '${name}_${uuid.v1()}',
+            );
+      if (client != null) addTearDown(client.dispose);
       final registry = SentEventRegistry();
       final journalDb = JournalDb(
         overriddenFilename: '${name}_${uuid.v1()}.sqlite',
@@ -147,7 +163,15 @@ void main() {
       addTearDown(journalDb.close);
       final settingsDb = SettingsDb(inMemoryDatabase: true);
       addTearDown(settingsDb.close);
-      final syncDb = SyncDatabase(inMemoryDatabase: true);
+      // The worker opens its own connection to `sync.sqlite` in the device
+      // directory, so a hosted device's UI-side connection is that file.
+      final syncDb = hostStack
+          ? SyncDatabase(
+              background: false,
+              documentsDirectoryProvider: () async => documents,
+              tempDirectoryProvider: () async => documents,
+            )
+          : SyncDatabase(inMemoryDatabase: true);
       addTearDown(syncDb.close);
       final clock = MockVectorClockService();
       when(() => clock.initialized).thenAnswer((_) async {});
@@ -159,7 +183,9 @@ void main() {
           user: user,
           password: TestConfig.testPassword,
         ),
-        gateway: MatrixSdkGateway(client: client, sentEventRegistry: registry),
+        gateway: client == null
+            ? null
+            : MatrixSdkGateway(client: client, sentEventRegistry: registry),
         loggingService: getIt<DomainLogger>(),
         journalDb: journalDb,
         settingsDb: settingsDb,
@@ -172,19 +198,20 @@ void main() {
         sentEventRegistry: registry,
         syncDb: syncDb,
         vectorClockService: clock,
+        hostStack: hostStack,
       );
       addTearDown(device.dispose);
-      final service = device.matrixService;
+      final service = device.service;
       await service.init();
       await service.login();
-      debugPrint('$name - deviceId: ${service.client.deviceID}');
-      return service;
+      debugPrint('$name - deviceId: ${service.ownDeviceId}');
+      return device;
     }
 
     test(
       'two devices starting the ceremony at each other both end up verified',
       () async {
-        final alice = await startDevice('CrossingAlice', user1);
+        final alice = (await startDevice('CrossingAlice', user1)).matrixService;
         final roomId = await createTestSyncRoom(
           MatrixSdkGateway(
             client: alice.client,
@@ -192,7 +219,11 @@ void main() {
           ),
         );
         await alice.joinRoom(roomId);
-        final bob = await startDevice('CrossingBob', user2);
+        final bob = (await startDevice(
+          'CrossingBob',
+          user2,
+          hostStack: secondStackHosted,
+        )).service;
         await inviteToTestSyncRoom(alice, userId: user2);
         await waitSeconds(5);
         await bob.joinRoom(roomId);
@@ -213,7 +244,7 @@ void main() {
 
         // The app's rules, one device at a time, through the plain service
         // API the sheets use (ADR 0142): states in, ceremony ids out.
-        void follow(String name, MatrixService me) {
+        void follow(String name, SyncService me) {
           // IncomingVerificationWrapper while the launcher's sheet holds the
           // lock: yield to a smaller identity, else keep the request.
           Future<void> offer(SyncVerificationState request) async {
@@ -276,7 +307,7 @@ void main() {
 
         // AutoVerificationLauncher: answer a request the target already sent
         // (IncomingVerificationModal auto-accepts it), else start one.
-        Future<void> launch(String name, MatrixService me) async {
+        Future<void> launch(String name, SyncService me) async {
           final target = me.getUnverifiedDevices().first;
           final waiting = me.incomingVerification;
           if (waiting != null &&
@@ -312,7 +343,7 @@ void main() {
         // identity: the SDK's order, applied one step earlier.
         expect(withdrawn, hasLength(1));
         final yielder = withdrawn.keys.single;
-        final (larger, smaller) = yielder == 'alice'
+        final (SyncService larger, SyncService smaller) = yielder == 'alice'
             ? (alice, bob)
             : (bob, alice);
         expect(

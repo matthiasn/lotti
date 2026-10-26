@@ -447,10 +447,15 @@ client, coordinator or sender is ever constructed.
 - Integration (`integration_test/sync_isolate_test.dart`): the worker
   composes the real stack in the compiled app — its own vodozemac and SDK
   database — reports it ready and answers a snapshot.
-- The docker two-device suite still builds its device helper in-process.
-  Running it with the stack in the worker as well is the next change; until
-  then the hosted stack is proven by the tests above and by dogfooding
-  with the flag on.
+- The docker crossing suite (`integration_test/verification_crossing_test.dart`)
+  runs twice from `integration_test/run_matrix_tests.sh`: in-process, and with
+  the second device's stack hosted in the worker (`SYNC_STACK_IN_ISOLATE`),
+  so the SAS ceremony — requests, glare hand-off, emoji confirmation — is
+  proven across the port against a real homeserver. The device helper's
+  hosted mode is the UI-isolate half of `lib/get_it_sync_isolate.dart` over
+  the test's databases. The first device stays in-process because the suite
+  invites by SDK room, which the app never does; `sync_resilience_test.dart`
+  and `matrix_service_test.dart` drive the SDK directly and stay in-process.
 
 # What runs regardless of activity
 
