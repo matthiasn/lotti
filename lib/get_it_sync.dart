@@ -392,6 +392,7 @@ Future<String? Function()> _registerMatrixSyncStack({
     loggingService: domainLogger,
     documentsDirectory: documentsDirectory,
     queueCoordinator: queuePipelineCoordinator,
+    queue: queuePipelineCoordinator.queue,
     domainLogger: domainLogger,
     onboardingSyncService: onboardingSyncService,
   );

@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/backfill/sync_sequence_head_tracker.dart';
 import 'package:lotti/features/sync/instrumentation/sync_cost_meter.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -34,6 +34,7 @@ class BackfillRequestService {
     required this._loggingService,
     this.documentsDirectory,
     this.queueCoordinator,
+    this._queue,
     this._domainLogger,
     this._onboardingSyncService,
     Duration? requestInterval,
@@ -76,7 +77,11 @@ class BackfillRequestService {
   /// ahead of the inbound path and produce bogus missing-items
   /// requests. Optional so tests that do not exercise the gate can
   /// omit it.
-  final QueuePipelineCoordinator? queueCoordinator;
+  final SyncQueueControl? queueCoordinator;
+
+  /// The UI isolate's queue, whose depth signal re-arms a dispatch after a
+  /// drain. Optional, like [queueCoordinator].
+  final InboundQueue? _queue;
 
   final SyncSequenceLogService _sequenceLogService;
   final SyncDatabase _syncDatabase;
@@ -189,7 +194,7 @@ class BackfillRequestService {
     // for up to 10 minutes — exactly the symptom from the
     // 2026-04-25 phantom-gap audit.
     _depthSubscription?.cancel();
-    final queue = queueCoordinator?.queue;
+    final queue = _queue;
     if (queue != null) {
       _depthSubscription = queue.depthChanges.listen(_onQueueDepth);
     }

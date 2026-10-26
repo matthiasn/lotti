@@ -26,7 +26,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required this._roomManager,
     required this._loggingService,
     required this._settingsDb,
-    required this._eventProcessor,
+    this._eventProcessor,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
   }) : _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
@@ -50,7 +50,10 @@ class MatrixStreamConsumer implements SyncPipeline {
   final SyncRoomManager _roomManager;
   final DomainLogger _loggingService;
   final SyncKeyValueStore _settingsDb;
-  final SyncEventProcessor _eventProcessor;
+
+  /// The apply step whose startup timestamp the last-read marker seeds;
+  /// null in the sync isolate, which runs no apply step (ADR 0142).
+  final SyncEventProcessor? _eventProcessor;
   final MetricsCounters _metrics;
 
   late final MatrixStreamProcessor _processor;
@@ -68,7 +71,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     ]);
     final lastEventId = results[0];
     final lastTs = results[1] as num?;
-    _eventProcessor.startupTimestamp = lastTs;
+    _eventProcessor?.startupTimestamp = lastTs;
     _loggingService.log(
       LogDomain.sync,
       _withInstance(

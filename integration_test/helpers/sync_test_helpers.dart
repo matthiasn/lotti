@@ -457,6 +457,7 @@ Future<SyncTestDevice> createSyncTestDevice({
     loggingService: loggingService,
     documentsDirectory: documentsDirectory,
     queueCoordinator: queueCoordinator,
+    queue: queueCoordinator.queue,
     domainLogger: loggingService,
   );
   // Keep this wiring aligned with get_it_sync.dart: organic sequence gaps,

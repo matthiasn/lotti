@@ -12,12 +12,13 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
@@ -830,8 +831,7 @@ void main() {
       queue = MockInboundQueue();
       depthCtl = StreamController<QueueDepthSignal>.broadcast();
 
-      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
-      when(() => coordinator.queue).thenReturn(queue);
+      when(() => matrixService.inboundQueue).thenReturn(queue);
       when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
       when(() => queue.depthSnapshot()).thenAnswer(
         (_) async => const QueueStats(
@@ -840,10 +840,12 @@ void main() {
           oldestEnqueuedAt: null,
         ),
       );
-      when(() => queue.resurrectAll()).thenAnswer((_) async => 7);
+      when(() => coordinator.retrySkipped()).thenAnswer((_) async => 7);
       when(() => coordinator.triggerBridge()).thenAnswer((_) async {});
 
-      getIt.registerSingleton<MatrixService>(matrixService);
+      getIt
+        ..registerSingleton<SyncService>(matrixService)
+        ..registerSingleton<SyncQueueControl>(coordinator);
     });
 
     tearDown(() async {
@@ -974,7 +976,7 @@ void main() {
       },
     );
 
-    testWidgets('Retry skipped tap calls queue.resurrectAll', (tester) async {
+    testWidgets('Retry skipped tap calls retrySkipped', (tester) async {
       await pumpInScaffold(tester);
       await emitDepth(tester, total: 0, abandoned: 3);
       final messages = messagesOf(tester);
@@ -994,7 +996,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      verify(() => queue.resurrectAll()).called(1);
+      verify(() => coordinator.retrySkipped()).called(1);
     });
 
     testWidgets('Catch-up tap calls coordinator.triggerBridge', (tester) async {
@@ -1548,8 +1550,7 @@ void main() {
       queue = MockInboundQueue();
       depthCtl = StreamController<QueueDepthSignal>.broadcast();
 
-      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
-      when(() => coordinator.queue).thenReturn(queue);
+      when(() => matrixService.inboundQueue).thenReturn(queue);
       when(() => queue.depthChanges).thenAnswer((_) => depthCtl.stream);
       when(() => queue.depthSnapshot()).thenAnswer(
         (_) async => const QueueStats(
@@ -1559,7 +1560,9 @@ void main() {
         ),
       );
 
-      getIt.registerSingleton<MatrixService>(matrixService);
+      getIt
+        ..registerSingleton<SyncService>(matrixService)
+        ..registerSingleton<SyncQueueControl>(coordinator);
     });
 
     tearDown(() async {
@@ -1596,7 +1599,7 @@ void main() {
 
     testWidgets('Retry-skipped failure surfaces a snackbar with the error '
         'message', (tester) async {
-      when(() => queue.resurrectAll()).thenAnswer(
+      when(() => coordinator.retrySkipped()).thenAnswer(
         (_) async => throw Exception('resurrect boom'),
       );
 
@@ -1935,12 +1938,13 @@ void main() {
       // letting a single body rebuild swap the queue identity that the
       // scope sees in `didUpdateWidget`.
       var useB = false;
-      when(() => matrixService.queueCoordinator).thenReturn(coordinator);
       when(
-        () => coordinator.queue,
+        () => matrixService.inboundQueue,
       ).thenAnswer((_) => useB ? queueB : queueA);
 
-      getIt.registerSingleton<MatrixService>(matrixService);
+      getIt
+        ..registerSingleton<SyncService>(matrixService)
+        ..registerSingleton<SyncQueueControl>(coordinator);
 
       await pumpBody(tester);
 

@@ -26,6 +26,7 @@ import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
+import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -55,18 +56,18 @@ const _logSub = 'queue.coordinator';
 /// - Drain stranded rows whenever the current room changes (F6).
 /// - Expose the queue (for UI depth signals) and the worker (for
 ///   drain-before-disable on flag-off).
-class QueuePipelineCoordinator {
+class QueuePipelineCoordinator implements SyncQueueControl {
   QueuePipelineCoordinator({
     required SyncDatabase syncDb,
     required SyncKeyValueStore settingsDb,
-    required JournalDb journalDb,
     required this._sessionManager,
     required this._roomManager,
-    required SyncEventProcessor eventProcessor,
-    required this._sequenceLogService,
     required this._activityGate,
     required DomainLogger logging,
     required SyncEventTrust syncEventTrust,
+    JournalDb? journalDb,
+    SyncEventProcessor? eventProcessor,
+    this._sequenceLogService,
     this._attachmentIndex,
     this._updateNotifications,
     this._attachmentIngestor,
@@ -92,26 +93,35 @@ class QueuePipelineCoordinator {
              settingsDb: settingsDb,
              logging: logging,
            ) {
-    _applyAdapter = QueueApplyAdapter(
-      processor: eventProcessor,
-      journalDb: journalDb,
-      logging: logging,
-      hasOlderActiveEntry: _queue.hasOlderActiveEntry,
-    );
-    _worker =
-        workerOverride ??
-        InboundWorker(
-          queue: _queue,
-          // With `use_isolate_sync` on, the sync isolate owns the queue's
-          // leases and settlements (ADR 0142); in-process, the queue itself.
-          gateway: queueGateway?.call(_queue),
-          sequenceLogService: _sequenceLogService,
-          apply: _applyAdapter.bind(),
-          prepareBatch: _applyAdapter.bindPrepareBatch(),
-          logging: _logging,
-          activityGate: _activityGate,
-          costMeter: _costMeter,
-        );
+    // The apply side is optional: the sync isolate runs admission and the
+    // bridge only, and the UI isolate drains the queue it fills (ADR 0142).
+    final sequenceLogService = _sequenceLogService;
+    if (workerOverride != null) {
+      _worker = workerOverride;
+    } else if (eventProcessor != null &&
+        journalDb != null &&
+        sequenceLogService != null) {
+      final applyAdapter = QueueApplyAdapter(
+        processor: eventProcessor,
+        journalDb: journalDb,
+        logging: logging,
+        hasOlderActiveEntry: _queue.hasOlderActiveEntry,
+      );
+      _worker = InboundWorker(
+        queue: _queue,
+        // With `use_isolate_sync` on, the sync isolate owns the queue's
+        // leases and settlements (ADR 0142); in-process, the queue itself.
+        gateway: queueGateway?.call(_queue),
+        sequenceLogService: sequenceLogService,
+        apply: applyAdapter.bind(),
+        prepareBatch: applyAdapter.bindPrepareBatch(),
+        logging: _logging,
+        activityGate: _activityGate,
+        costMeter: _costMeter,
+      );
+    } else {
+      _worker = null;
+    }
     _bridge =
         bridgeOverride ??
         BridgeCoordinator(
@@ -133,7 +143,7 @@ class QueuePipelineCoordinator {
   final SyncKeyValueStore _settingsDb;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
-  final SyncSequenceLogService _sequenceLogService;
+  final SyncSequenceLogService? _sequenceLogService;
   final UserActivityGate? _activityGate;
   final DomainLogger _logging;
   final SyncEventTrust _syncEventTrust;
@@ -151,8 +161,10 @@ class QueuePipelineCoordinator {
   static const Duration _suppressionLogInterval = Duration(seconds: 30);
   final InboundQueue _queue;
   final QueueMarkerSeeder _seeder;
-  late final QueueApplyAdapter _applyAdapter;
-  late final InboundWorker _worker;
+
+  /// The apply loop, or null for a producer-only coordinator: the sync
+  /// isolate admits and bridges, the UI isolate applies (ADR 0142).
+  late final InboundWorker? _worker;
   late final BridgeCoordinator _bridge;
 
   // These subscriptions are assigned in [QueueLifecycle.startImpl] and
@@ -261,7 +273,12 @@ class QueuePipelineCoordinator {
   /// sync arriving). Exposed so the "Catch up now" action in the Sync
   /// Settings UI can force a /messages walk back to the stored
   /// marker without waiting for the next organic `limited=true`.
+  @override
   Future<void> triggerBridge() => _bridge.bridgeNow();
+
+  /// Re-arms every abandoned queue row; see [SyncQueueControl.retrySkipped].
+  @override
+  Future<int> retrySkipped() => _queue.resurrectAll();
 
   /// Waits until bootstrap attachment workers and their queued downloads are
   /// idle. This is a test synchronisation seam; production bootstrap remains
@@ -293,15 +310,24 @@ class QueuePipelineCoordinator {
   /// the backfill request service can skip analysis+dispatch until
   /// the walk concludes — gaps observed mid-walk may be closed by
   /// events still in the pipe.
+  @override
   bool get isBridgeInFlight => _bridge.isBridgeInFlight;
 
   /// Callback that fires once per terminal bridge pass. Intended for
   /// the backfill request service to be nudged the moment the walk
   /// settles, so it can dispatch requests for any entries still
   /// missing.
+  @override
   void Function()? get onBridgeCompleted => _bridge.onBridgeCompleted;
+  @override
   set onBridgeCompleted(void Function()? callback) =>
       _bridge.onBridgeCompleted = callback;
+
+  /// Callback that fires when a bridge walk starts; see
+  /// [BridgeCoordinator.onBridgeStarted].
+  void Function()? get onBridgeStarted => _bridge.onBridgeStarted;
+  set onBridgeStarted(void Function()? callback) =>
+      _bridge.onBridgeStarted = callback;
 
   Future<void> _safeStartupBridge() async {
     try {
@@ -735,5 +761,6 @@ class QueuePipelineCoordinator {
 
   /// Kick gap recovery if the bridge marker shows a gap;
   /// see [QueueGapRecovery].
+  @override
   void maybeStartGapRecovery() => maybeStartGapRecoveryImpl();
 }
