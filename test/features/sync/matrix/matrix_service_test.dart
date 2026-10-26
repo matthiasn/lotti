@@ -1866,6 +1866,65 @@ void main() {
         expect(attempts, 1);
       });
     });
+
+    test('a second init replaces the pending retry instead of adding one', () {
+      fakeAsync((async) {
+        var attempts = 0;
+        when(
+          () => syncEngine.initialize(
+            onLogin: any(named: 'onLogin'),
+            onLogout: any(named: 'onLogout'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => syncEngine.connect(
+            shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+          ),
+        ).thenAnswer((_) async {
+          attempts++;
+          return false;
+        });
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(() => sessionManager.matrixConfig).thenReturn(
+          const MatrixConfig(
+            homeServer: 'https://matrix.example.com',
+            user: '@user:example.com',
+            password: 'secret',
+          ),
+        );
+        when(() => sessionManager.isLoggedIn()).thenReturn(false);
+        when(() => client.isLogged()).thenReturn(false);
+        when(() => syncEngine.dispose()).thenAnswer((_) async {});
+        when(() => sessionManager.dispose()).thenAnswer((_) async {});
+        when(() => roomManager.dispose()).thenAnswer((_) async {});
+
+        final service = createService();
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 1);
+
+        // The sync isolate's proxy may run init again on a worker that came
+        // back; the first attempt's retry must not keep ticking beside it.
+        unawaited(service.init());
+        async.flushMicrotasks();
+        expect(attempts, 2);
+        // The first attempt's retry was due now; it is gone. The second
+        // attempt's own retry comes after the doubled delay.
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 2, reason: 'the superseded retry does not fire');
+        async
+          ..elapse(SyncTuning.matrixReconnectInitialDelay)
+          ..flushMicrotasks();
+        expect(attempts, 3, reason: 'one retry, not one per init');
+
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
+    });
   });
 
   group('MatrixService default sub-service construction', () {

@@ -701,6 +701,9 @@ class MatrixService implements SyncService {
   /// launch. Stops once the client is logged in by any path, without a
   /// configuration, or on [dispose].
   Future<void> _connectUntilConnected() async {
+    // A second attempt — `init` called again after a login — must not leave
+    // the first attempt's retry timer running beside its own.
+    _reconnectTimer?.cancel();
     _reconnectTimer = null;
     if (_disposed) return;
     if (await connect() || isLoggedIn()) {

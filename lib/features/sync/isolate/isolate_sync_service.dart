@@ -130,6 +130,7 @@ class IsolateSyncService implements SyncService {
 
   /// Whether [init] ran, so a respawned worker is started again.
   var _initialized = false;
+  var _initInFlight = false;
   var _disposed = false;
 
   // ------------------------------------------------------------ events
@@ -184,6 +185,9 @@ class IsolateSyncService implements SyncService {
   /// its snapshot so the plain readers are current.
   void _onState(SyncIsolateState state) {
     if (state != SyncIsolateState.running || _disposed) return;
+    // The worker [init] is waiting for: init configures and starts it itself,
+    // once. A resume here would start the stack a second time.
+    if (_initInFlight) return;
     // Nobody waits for a resume; it catches its own failures below.
     _resume();
   }
@@ -291,15 +295,20 @@ class IsolateSyncService implements SyncService {
   @override
   Future<void> init() async {
     _initialized = true;
-    if (!_configKnown) await loadConfig();
-    // Startup does not wait for the spawn; init does, because it is the
-    // tracked startup task that says sync is up.
-    if (_host.state != SyncIsolateState.running) {
-      await _host.states.firstWhere((s) => s == SyncIsolateState.running);
+    _initInFlight = true;
+    try {
+      if (!_configKnown) await loadConfig();
+      // Startup does not wait for the spawn; init does, because it is the
+      // tracked startup task that says sync is up.
+      if (_host.state != SyncIsolateState.running) {
+        await _host.states.firstWhere((s) => s == SyncIsolateState.running);
+      }
+      await command(SyncIsolateConfigure(_config));
+      await command(const SyncIsolateInitStack());
+      await _refreshSnapshot();
+    } finally {
+      _initInFlight = false;
     }
-    await command(SyncIsolateConfigure(_config));
-    await command(const SyncIsolateInitStack());
-    await _refreshSnapshot();
   }
 
   @override

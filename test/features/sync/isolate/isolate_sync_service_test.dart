@@ -310,9 +310,10 @@ void main() {
         states.add(SyncIsolateState.running);
         await starting;
 
-        // The running transition also resumes; both paths configure and start.
-        expect(sent.whereType<SyncIsolateConfigure>(), isNotEmpty);
-        expect(sent.whereType<SyncIsolateInitStack>(), isNotEmpty);
+        // The running transition init waited for does not resume as well:
+        // the stack is configured and started exactly once.
+        expect(sent.whereType<SyncIsolateConfigure>(), hasLength(1));
+        expect(sent.whereType<SyncIsolateInitStack>(), hasLength(1));
         expect(sent.whereType<SyncIsolateConfigure>().first.config, config);
         expect(service.isLoggedIn(), isTrue);
       },

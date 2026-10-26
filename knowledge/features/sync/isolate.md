@@ -225,19 +225,18 @@ every committed row, so queue statistics and the next ready time need no round
 trip — and while the worker is not running, the gateway reports no ready time
 at all, so the loop waits for the worker's `running` state instead of polling.
 
-Until step 4 moves the receive side, `inbound_event_queue` has two writers,
-split by operation rather than by column. The worker records leases and
-acknowledgements on the rows the UI isolate's inbound worker drains. The UI
-isolate still writes the rest of the table's life: admission inserts rows,
-`pruneStrandedEntries` abandons the rows of a room that is no longer current
-when the room changes, and the resurrections — `resurrectByPaths` when an
-attachment lands, `resurrectByReason` at start and after a device is
-verified, `readmitUntrusted`, and the user's "retry skipped" — re-arm
-abandoned rows. Only the prune can touch a row the worker holds under lease —
-it abandons the leased rows of a room the device has left — and the
-acknowledgement that follows records its outcome over that, exactly as the
-in-process owner does when a prune races a running batch today. Step 4 moves
-all of them across with admission.
+With the flag on, `inbound_event_queue` has one writer. The worker's
+coordinator inserts on admission, abandons the rows of a room that is no
+longer current (`pruneStrandedEntries`), re-arms abandoned rows
+(`resurrectByPaths` when an attachment lands, `resurrectByReason` at start
+and after a device is verified, `readmitUntrusted`), and records the leases
+and acknowledgements of the rows the UI isolate drains. What the UI isolate
+used to write itself it now asks for: the user's "retry skipped" and a
+journal change that may unblock a parked row are commands, and its own
+connection only reads. A prune can abandon a row the worker holds under
+lease, and the acknowledgement that follows records its outcome over that,
+exactly as the in-process owner does when a prune races a running batch.
+With the flag off, the one writer is the UI isolate's coordinator.
 
 # Applying without a Room
 
@@ -400,8 +399,9 @@ trip. `loadConfig` / `setConfig` / `deleteConfig` keep the keychain on the UI
 isolate — secure storage is a plugin — and tell the worker what changed.
 `inboundQueue` stays the UI isolate's own connection, read-only, as today.
 
-`IsolateDescriptorFetcher` and `IsolateAttachmentFetcher` answer the apply
-step's two SDK lookups by command, replacing `MatrixDescriptorFetcher` /
+`IsolateDescriptorRecovery` and `IsolateAttachmentFetcher` answer the apply
+step's two lookups by command — a trusted descriptor by exact event id, an
+attachment's bytes — replacing `TrustedDescriptorRecovery` /
 `MatrixAttachmentFetcher` when the flag is on; the processor is built the
 same way either side of the flag.
 
