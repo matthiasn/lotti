@@ -31,8 +31,6 @@ import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -41,7 +39,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../agents/workflow/task_agent_workflow_test_helpers.dart';
 
@@ -383,16 +380,9 @@ void main() {
       outcome: outcome,
     );
 
-    setUp(() async {
+    setUp(() {
       persistence = MockPersistenceLogic();
       journalRepository = MockJournalRepository();
-      // The journal's creation paths resolve the persistence logic through
-      // the locator, the way every create helper in the app does.
-      await setUpTestGetIt(
-        additionalSetup: () =>
-            getIt.registerSingleton<PersistenceLogic>(persistence),
-      );
-      addTearDown(tearDownTestGetIt);
       final journalDb = MockJournalDb();
       when(
         () => journalDb.journalEntityById(any()),
@@ -409,6 +399,7 @@ void main() {
           updateNotificationsProvider.overrideWithValue(notifications),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           journalRepositoryProvider.overrideWithValue(journalRepository),
+          persistenceLogicProvider.overrideWithValue(persistence),
         ],
       );
       addTearDown(wired.dispose);
@@ -417,6 +408,7 @@ void main() {
           dateFrom: any(named: 'dateFrom'),
           dateTo: any(named: 'dateTo'),
           categoryId: any(named: 'categoryId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
         ),
       ).thenAnswer(
         (invocation) async => Metadata(
@@ -446,28 +438,35 @@ void main() {
       );
     }
 
-    test(
-      "filing writes the user's words as a text entry linked to the task",
-      () async {
-        seed(const FrontDoorProposal(ownerId: 'garden'));
+    test("filing writes the user's words as a text entry linked to the task, "
+        'under the id the door names', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
 
-        await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
 
-        final entry =
-            verify(
-                  () => persistence.createDbEntity(
-                    captureAny(),
-                    linkedId: 'garden',
-                  ),
-                ).captured.single
-                as JournalEntity;
-        expect(entry, isA<JournalEntry>());
-        expect(entry.entryText?.plainText, 'The hinge arrived.');
-      },
-    );
+      final entry =
+          verify(
+                () => persistence.createDbEntity(
+                  captureAny(),
+                  linkedId: 'garden',
+                ),
+              ).captured.single
+              as JournalEntity;
+      expect(entry, isA<JournalEntry>());
+      expect(entry.entryText?.plainText, 'The hinge arrived.');
+      // Under the id the door names, so a retry lands on the same entry.
+      verify(
+        () => persistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: 'front-door:$doorId:entry:0',
+        ),
+      ).called(1);
+    });
 
     test('making a task goes through the task creation with the words as '
-        'the title', () async {
+        'the title, open, under the id the door names', () async {
       seed(const FrontDoorInbox());
       final status = TaskStatus.open(
         id: 's',
@@ -478,10 +477,7 @@ void main() {
         () => persistence.createTaskEntry(
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
-          linkedId: any(named: 'linkedId'),
-          categoryId: any(named: 'categoryId'),
-          private: any(named: 'private'),
-          labelIds: any(named: 'labelIds'),
+          uuidV5Input: any(named: 'uuidV5Input'),
         ),
       ).thenAnswer(
         (invocation) async =>
@@ -511,14 +507,12 @@ void main() {
                 () => persistence.createTaskEntry(
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
-                  linkedId: any(named: 'linkedId'),
-                  categoryId: any(named: 'categoryId'),
-                  private: any(named: 'private'),
-                  labelIds: any(named: 'labelIds'),
+                  uuidV5Input: 'front-door:$doorId:task',
                 ),
               ).captured.single
               as TaskData;
       expect(data.title, 'The hinge arrived.');
+      expect(data.status, isA<TaskOpen>());
     });
 
     test('unfiling deletes the entry through the journal repository', () async {

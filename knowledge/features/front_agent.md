@@ -323,14 +323,27 @@ stateDiagram-v2
   Inbox --> Inbox: Start a goal / New project — the wizard opens, nothing written
 ```
 
-The entry a tap writes goes through the journal's own creation paths —
-`JournalRepository.createTextEntry` with the task's `categoryId` and
-`linkedId`, `createTask` for a task — so a filed entry wakes the task agent
-through its subscription exactly as dictation into the task does, and a
-made task is a task like any other. Unfile deletes the entry through
-`JournalRepository.deleteJournalEntity`. The goal and project wizards take
-no prefill today: their chips open them as they are, the words stay in the
-thread, and the door keeps waiting until a chip that writes takes it.
+The entry a tap writes goes through the persistence logic — a text entry
+with the task's `categoryId` and `linkedId`, a task through
+`createTaskEntry` — so a filed entry wakes the task agent through its
+subscription exactly as dictation into the task does, and a made task is a
+task like any other. **Every write is idempotent per door**: the entry or
+task is created under a deterministic id (`entryIdInput`, `noteIdInput`,
+`taskIdInput` — the door id, and for a proposal its filing *generation*),
+and `createDbEntity` never overwrites an existing id, so a tap retried
+after the write landed but the record did not — the process died in
+between — finds its entry already there. Unfile deletes the entry through
+`JournalRepository.deleteJournalEntity`, refuses when the entry is still
+there undeleted, counts an entry already gone from the journal as taken
+out, and hands the next proposal the generation after the filed one, so a
+re-file gets a fresh entry rather than the soft-deleted one. The goal and
+project wizards take no prefill today: their chips open them as they are,
+the words stay in the thread, and the door keeps waiting until a chip that
+writes takes it.
+
+A turn with a door still waiting on the user never leaves the projection:
+`FrontChatThreadBuilder` keeps it beside the newest fifty messages however
+old it is, so the inbox cannot scroll out of existence.
 
 The **inbox** is no entity: `FrontChatThread.inboxMessageIds` is every user
 turn with a door whose outcome is a `FrontDoorProposal` or a

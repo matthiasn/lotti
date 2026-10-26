@@ -8,18 +8,21 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/services/db_notification.dart';
 
 /// Writes the user's words as a text entry: under [linkedId] when given,
-/// on their own otherwise. Returns the entry, or null when nothing was
-/// written.
+/// on their own otherwise. [uuidV5Input] names the entry's id, so writing
+/// the same input twice lands on the same entry. Returns the entry, or
+/// null when nothing was written.
 typedef FrontTextEntryWriter =
     Future<JournalEntity?> Function(
       String text, {
+      required String uuidV5Input,
       String? linkedId,
       String? categoryId,
     });
 
-/// Makes a task titled with the user's words. Returns it, or null when
-/// nothing was created.
-typedef FrontTaskMaker = Future<Task?> Function(String title);
+/// Makes a task titled with the user's words, under the id [uuidV5Input]
+/// names. Returns it, or null when nothing was created.
+typedef FrontTaskMaker =
+    Future<Task?> Function(String title, {required String uuidV5Input});
 
 /// Deletes an entry; true when it existed and is gone.
 typedef FrontEntryDeleter = Future<bool> Function(String entryId);
@@ -42,6 +45,12 @@ class FrontDoorStateException implements Exception {
 /// Every action rewrites the door record's outcome under the same ids, so
 /// the dispatch keeps its pointer to what was written — the audit trail the
 /// plan asks for — and the inbox count follows from the records alone.
+///
+/// Every write is idempotent per door: the entry or task gets a
+/// deterministic id derived from the door (and, for a proposal, its filing
+/// generation), so a tap retried after the write landed but the record did
+/// not — the process died in between — reuses what it wrote instead of
+/// writing it twice.
 class FrontFilingService {
   const FrontFilingService({
     required AgentRepository repository,
@@ -88,6 +97,7 @@ class FrontFilingService {
     final task = await _journalDb.journalEntityById(proposal.ownerId);
     final entry = await _writeTextEntry(
       record.text,
+      uuidV5Input: entryIdInput(doorId, generation: proposal.generation),
       linkedId: proposal.ownerId,
       categoryId: task?.meta.categoryId,
     );
@@ -95,7 +105,11 @@ class FrontFilingService {
     await _rewrite(
       payload,
       record.done(
-        FrontDoorFiled(entryId: entry.meta.id, ownerId: proposal.ownerId),
+        FrontDoorFiled(
+          entryId: entry.meta.id,
+          ownerId: proposal.ownerId,
+          generation: proposal.generation,
+        ),
       ),
     );
   }
@@ -107,16 +121,25 @@ class FrontFilingService {
   }
 
   /// Takes a filed entry back out: the entry is deleted and the door is a
-  /// proposal again, marked as unfiled.
+  /// proposal again, one generation on. A delete that did not happen —
+  /// the entry still there, undeleted — leaves the door filed; an entry
+  /// already gone (deleted from the journal itself) counts as taken out.
   Future<void> unfile(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorFiled>(doorId);
     final filed = record.outcome! as FrontDoorFiled;
     final ownerId = filed.ownerId;
     if (ownerId == null) throw FrontDoorStateException(doorId);
-    await _deleteEntry(filed.entryId);
+    if (!await _deleteEntry(filed.entryId)) {
+      final entry = await _journalDb.journalEntityById(filed.entryId);
+      if (entry != null && entry.meta.deletedAt == null) {
+        throw StateError('The entry was not deleted.');
+      }
+    }
     await _rewrite(
       payload,
-      record.done(FrontDoorProposal(ownerId: ownerId, unfiled: true)),
+      record.done(
+        FrontDoorProposal(ownerId: ownerId, generation: filed.generation + 1),
+      ),
     );
   }
 
@@ -124,7 +147,10 @@ class FrontFilingService {
   /// owned by nothing.
   Future<void> saveAsNote(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
-    final entry = await _writeTextEntry(record.text);
+    final entry = await _writeTextEntry(
+      record.text,
+      uuidV5Input: noteIdInput(doorId),
+    );
     if (entry == null) throw StateError('The note was not written.');
     await _rewrite(
       payload,
@@ -136,7 +162,10 @@ class FrontFilingService {
   /// tap is the approval.
   Future<void> makeTask(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
-    final task = await _makeTask(record.text.trim());
+    final task = await _makeTask(
+      record.text.trim(),
+      uuidV5Input: taskIdInput(doorId),
+    );
     if (task == null) throw StateError('The task was not created.');
     await _rewrite(
       payload,
@@ -175,3 +204,15 @@ class FrontFilingService {
     _notifications.notifyUiOnly({frontAgentId, agentNotification});
   }
 }
+
+/// The deterministic id input of the entry a proposal files under its task:
+/// the door and the filing generation, so a retry reuses the entry and a
+/// re-file after an unfile gets a new one.
+String entryIdInput(String doorId, {required int generation}) =>
+    'front-door:$doorId:entry:$generation';
+
+/// The deterministic id input of the note an inbox item is saved as.
+String noteIdInput(String doorId) => 'front-door:$doorId:note';
+
+/// The deterministic id input of the task an inbox item is made into.
+String taskIdInput(String doorId) => 'front-door:$doorId:task';

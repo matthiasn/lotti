@@ -4,6 +4,8 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -25,8 +27,8 @@ import 'package:lotti/features/front_agent/service/front_routing_index_builder.d
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -141,26 +143,78 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
 );
 
 /// What the user's tap under a door does: the entry, the task or the note,
-/// written through the journal's own creation paths.
+/// written through the persistence logic under the id the door names —
+/// `createDbEntity` never overwrites an existing id, so a tap retried after
+/// an interrupted write finds its entry already there.
 final frontFilingServiceProvider = Provider<FrontFilingService>(
   (ref) => FrontFilingService(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     journalDb: ref.watch(journalDbProvider),
     notifications: ref.watch(updateNotificationsProvider),
-    writeTextEntry: (text, {linkedId, categoryId}) =>
-        JournalRepository.createTextEntry(
-          EntryText(plainText: text),
+    writeTextEntry: (text, {required uuidV5Input, linkedId, categoryId}) =>
+        writeFrontTextEntry(
+          ref.read(persistenceLogicProvider),
+          text,
+          uuidV5Input: uuidV5Input,
           linkedId: linkedId,
           categoryId: categoryId,
-          started: clock.now(),
         ),
-    makeTask: (title) =>
-        createTask(domainLogger: ref.read(domainLoggerProvider), title: title),
+    makeTask: (title, {required uuidV5Input}) => makeFrontTask(
+      ref.read(persistenceLogicProvider),
+      title,
+      uuidV5Input: uuidV5Input,
+    ),
     deleteEntry: ref.watch(journalRepositoryProvider).deleteJournalEntity,
   ),
   name: 'frontFilingServiceProvider',
 );
+
+/// A text entry with [text], linked under [linkedId] when given, created
+/// under the id [uuidV5Input] names. Returns the entity whether the row was
+/// new or already there — the second is the retry case.
+Future<JournalEntity?> writeFrontTextEntry(
+  PersistenceLogic persistence,
+  String text, {
+  required String uuidV5Input,
+  String? linkedId,
+  String? categoryId,
+}) async {
+  final now = clock.now();
+  final entry = JournalEntity.journalEntry(
+    meta: await persistence.createMetadata(
+      dateFrom: now,
+      dateTo: now,
+      categoryId: categoryId,
+      uuidV5Input: uuidV5Input,
+    ),
+    entryText: EntryText(plainText: text),
+  );
+  await persistence.createDbEntity(entry, linkedId: linkedId);
+  return entry;
+}
+
+/// A task titled [title], open, with no category, created under the id
+/// [uuidV5Input] names.
+Future<Task?> makeFrontTask(
+  PersistenceLogic persistence,
+  String title, {
+  required String uuidV5Input,
+}) {
+  final now = clock.now();
+  return persistence.createTaskEntry(
+    data: TaskData(
+      status: taskStatusFromString(''),
+      title: title,
+      statusHistory: [],
+      dateTo: now,
+      dateFrom: now,
+      estimate: Duration.zero,
+    ),
+    entryText: const EntryText(plainText: ''),
+    uuidV5Input: uuidV5Input,
+  );
+}
 
 /// The front agent's contribution to `agentWakeRunnersProvider` — merged in
 /// `app_bootstrap.dart`, never left to the silent task-agent fallback in

@@ -233,7 +233,7 @@ void main() {
           record(
             index: 0,
             text: 'The hinge arrived.',
-            outcome: const FrontDoorProposal(ownerId: 'id-0', unfiled: true),
+            outcome: const FrontDoorProposal(ownerId: 'id-0', generation: 1),
           ),
         ),
       ]);

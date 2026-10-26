@@ -25,9 +25,10 @@ void main() {
   late MockJournalDb journalDb;
   late MockUpdateNotifications notifications;
   late List<AgentDomainEntity> upserts;
-  late List<(String, String?, String?)> written;
-  late List<String> madeTasks;
+  late List<(String, String, String?, String?)> written;
+  late List<(String, String)> madeTasks;
   late List<String> deleted;
+  late bool deleteResult;
   late JournalEntity? Function(String text) entryFor;
   late Task? Function(String title) taskFor;
   late FrontFilingService service;
@@ -105,6 +106,7 @@ void main() {
     written = [];
     madeTasks = [];
     deleted = [];
+    deleteResult = true;
     entryFor = (text) => textEntry('entry-1', text);
     taskFor = (title) => task('task-new', title);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -120,17 +122,18 @@ void main() {
       syncService: syncService,
       journalDb: journalDb,
       notifications: notifications,
-      writeTextEntry: (text, {linkedId, categoryId}) async {
-        written.add((text, linkedId, categoryId));
-        return entryFor(text);
-      },
-      makeTask: (title) async {
-        madeTasks.add(title);
+      writeTextEntry:
+          (text, {required uuidV5Input, linkedId, categoryId}) async {
+            written.add((text, uuidV5Input, linkedId, categoryId));
+            return entryFor(text);
+          },
+      makeTask: (title, {required uuidV5Input}) async {
+        madeTasks.add((title, uuidV5Input));
         return taskFor(title);
       },
       deleteEntry: (id) async {
         deleted.add(id);
-        return true;
+        return deleteResult;
       },
     );
   });
@@ -145,10 +148,13 @@ void main() {
 
       await service.fileUnderTask(doorId);
 
-      expect(written, [('The hinge arrived.', 'garden', 'cat-1')]);
+      expect(written, [
+        ('The hinge arrived.', 'front-door:$doorId:entry:0', 'garden', 'cat-1'),
+      ]);
       final outcome = rewritten().outcome! as FrontDoorFiled;
       expect(outcome.entryId, 'entry-1');
       expect(outcome.ownerId, 'garden');
+      expect(outcome.generation, 0);
       verify(
         () => notifications.notifyUiOnly({frontAgentId, agentNotification}),
       ).called(1);
@@ -159,7 +165,7 @@ void main() {
       () async {
         seed(const FrontDoorProposal(ownerId: 'garden'));
         await service.fileUnderTask(doorId);
-        expect(written.single.$3, isNull);
+        expect(written.single.$4, isNull);
       },
     );
 
@@ -205,15 +211,49 @@ void main() {
   });
 
   group('unfile', () {
-    test('deletes the entry and makes the door a proposal again, marked '
-        'unfiled', () async {
-      seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+    test('deletes the entry and makes the door a proposal again, one '
+        'generation on, so a re-file gets a fresh entry', () async {
+      seed(
+        const FrontDoorFiled(
+          entryId: 'entry-1',
+          ownerId: 'garden',
+          generation: 1,
+        ),
+      );
       await service.unfile(doorId);
       expect(deleted, ['entry-1']);
       final outcome = rewritten().outcome! as FrontDoorProposal;
       expect(outcome.ownerId, 'garden');
       expect(outcome.unfiled, isTrue);
+      expect(outcome.generation, 2);
     });
+
+    test('a re-file after an unfile names the next generation', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden', generation: 2));
+      await service.fileUnderTask(doorId);
+      expect(written.single.$2, 'front-door:$doorId:entry:2');
+      expect((rewritten().outcome! as FrontDoorFiled).generation, 2);
+    });
+
+    test('a delete that did not happen leaves the door filed', () async {
+      seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+      deleteResult = false;
+      when(() => journalDb.journalEntityById('entry-1')).thenAnswer(
+        (_) async => textEntry('entry-1', 'still here'),
+      );
+      await expectLater(service.unfile(doorId), throwsStateError);
+      expect(upserts, isEmpty);
+    });
+
+    test(
+      'an entry already gone from the journal counts as taken out',
+      () async {
+        seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+        deleteResult = false;
+        await service.unfile(doorId);
+        expect(rewritten().outcome, isA<FrontDoorProposal>());
+      },
+    );
 
     test('a note has no owner to go back to and refuses', () async {
       seed(const FrontDoorFiled(entryId: 'entry-1'));
@@ -234,7 +274,9 @@ void main() {
         text: 'Learn accordion.',
       );
       await service.saveAsNote(doorId);
-      expect(written, [('Learn accordion.', null, null)]);
+      expect(written, [
+        ('Learn accordion.', 'front-door:$doorId:note', null, null),
+      ]);
       final outcome = rewritten().outcome! as FrontDoorFiled;
       expect(outcome.entryId, 'entry-1');
       expect(outcome.ownerId, isNull);
@@ -250,7 +292,7 @@ void main() {
           text: '  Buy a hose. ',
         );
         await service.makeTask(doorId);
-        expect(madeTasks, ['Buy a hose.']);
+        expect(madeTasks, [('Buy a hose.', 'front-door:$doorId:task')]);
         expect(
           (rewritten().outcome! as FrontDoorTaskCreated).taskId,
           'task-new',

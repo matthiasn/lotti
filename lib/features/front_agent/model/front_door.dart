@@ -88,17 +88,20 @@ sealed class FrontDoorOutcome {
       case 'proposal':
         final ownerId = map['ownerId'];
         if (ownerId is! String) return null;
+        final generation = map['generation'];
         return FrontDoorProposal(
           ownerId: ownerId,
-          unfiled: map['unfiled'] == true,
+          generation: generation is int ? generation : 0,
         );
       case 'filed':
         final entryId = map['entryId'];
         if (entryId is! String) return null;
         final ownerId = map['ownerId'];
+        final generation = map['generation'];
         return FrontDoorFiled(
           entryId: entryId,
           ownerId: ownerId is String ? ownerId : null,
+          generation: generation is int ? generation : 0,
         );
       case 'declined':
         return const FrontDoorDeclined();
@@ -114,35 +117,51 @@ sealed class FrontDoorOutcome {
 }
 
 /// A statement or instruction under a task, waiting for the user's one tap
-/// before anything is written (decision 1). [unfiled] when it had been
-/// filed and the user took the entry back out.
+/// before anything is written (decision 1).
+///
+/// [generation] counts how often the proposal was filed and taken back out:
+/// it is part of the filed entry's deterministic id, so a tap that is
+/// retried after an interrupted write lands on the entry it already wrote,
+/// while a proposal filed again after an unfile gets a fresh entry rather
+/// than the soft-deleted one.
 class FrontDoorProposal extends FrontDoorOutcome {
-  const FrontDoorProposal({required this.ownerId, this.unfiled = false});
+  const FrontDoorProposal({required this.ownerId, this.generation = 0});
 
   final String ownerId;
-  final bool unfiled;
+  final int generation;
+
+  /// Whether the user had filed this once and took the entry back out.
+  bool get unfiled => generation > 0;
 
   @override
   Map<String, Object?> toJson() => {
     'type': 'proposal',
     'ownerId': ownerId,
-    if (unfiled) 'unfiled': true,
+    if (generation > 0) 'generation': generation,
   };
 }
 
 /// The user's words were written as a text entry: under [ownerId] when it
-/// was filed under a task, on their own when saved as a note.
+/// was filed under a task, on their own when saved as a note. [generation]
+/// is the proposal's at the time of filing, so an unfile can hand the next
+/// proposal the one after it.
 class FrontDoorFiled extends FrontDoorOutcome {
-  const FrontDoorFiled({required this.entryId, this.ownerId});
+  const FrontDoorFiled({
+    required this.entryId,
+    this.ownerId,
+    this.generation = 0,
+  });
 
   final String entryId;
   final String? ownerId;
+  final int generation;
 
   @override
   Map<String, Object?> toJson() => {
     'type': 'filed',
     'entryId': entryId,
     if (ownerId != null) 'ownerId': ownerId,
+    if (generation > 0) 'generation': generation,
   };
 }
 

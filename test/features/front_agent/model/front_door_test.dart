@@ -51,8 +51,8 @@ void main() {
       FrontDoorSkipped(FrontDoorSkipReason.noAgent),
       FrontDoorFailed('StateError'),
       FrontDoorProposal(ownerId: 'garden'),
-      FrontDoorProposal(ownerId: 'garden', unfiled: true),
-      FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'),
+      FrontDoorProposal(ownerId: 'garden', generation: 2),
+      FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden', generation: 1),
       FrontDoorFiled(entryId: 'entry-2'),
       FrontDoorDeclined(),
       FrontDoorInbox(),
@@ -124,6 +124,21 @@ void main() {
     );
     expect(FrontDoorOutcome.fromJson('text'), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'proposal'}), isNull);
+    final proposal =
+        FrontDoorOutcome.fromJson({'type': 'proposal', 'ownerId': 'g'})!
+            as FrontDoorProposal;
+    expect(proposal.generation, 0);
+    expect(proposal.unfiled, isFalse);
+    expect(
+      (FrontDoorOutcome.fromJson({
+                'type': 'proposal',
+                'ownerId': 'g',
+                'generation': 1,
+              })!
+              as FrontDoorProposal)
+          .unfiled,
+      isTrue,
+    );
     expect(FrontDoorOutcome.fromJson({'type': 'filed'}), isNull);
     expect(FrontDoorOutcome.fromJson({'type': 'taskCreated'}), isNull);
     expect(

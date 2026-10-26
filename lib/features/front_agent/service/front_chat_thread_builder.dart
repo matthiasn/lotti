@@ -73,9 +73,22 @@ class FrontChatThreadBuilder {
       }
     }
 
-    final visible = messages.length <= maxMessages
+    // The newest fifty — and every turn with a door still waiting on the
+    // user, however old: the inbox is this thread filtered, so what the
+    // user has not acted on must not scroll out of existence.
+    final awaiting = {
+      for (final entry in doorRecords.entries)
+        if (entry.value.any((d) => frontDoorAwaitsUser(d.$2.outcome)))
+          entry.key,
+    };
+    final window = messages.length <= maxMessages
         ? messages
         : messages.sublist(messages.length - maxMessages);
+    final windowIds = {for (final m in window) m.id};
+    final visible = [
+      for (final m in messages)
+        if (windowIds.contains(m.id) || awaiting.contains(m.id)) m,
+    ];
     final visibleIds = {for (final m in visible) m.id};
 
     final doors = <String, List<FrontDoorEntry>>{};

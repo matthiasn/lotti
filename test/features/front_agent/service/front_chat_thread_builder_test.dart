@@ -204,6 +204,41 @@ void main() {
     expect(thread.doorsByMessageId, isEmpty);
   });
 
+  test('a turn with a door still waiting on the user stays in view however '
+      'old: the inbox must not scroll out of existence', () async {
+    for (var i = 0; i < 60; i++) {
+      userTurn(
+        'u$i'.padLeft(4, '0'),
+        'turn $i',
+        at: DateTime(2026, 10).add(Duration(minutes: i)),
+      );
+    }
+    final oldest = 'u0'.padLeft(4, '0');
+    row(
+      id: 'd:door:0',
+      kind: AgentMessageKind.action,
+      toolName: frontDoorToolName,
+      operationId: oldest,
+      content: FrontDoorRecord(
+        segmentIndex: 0,
+        text: 'turn 0',
+        kind: FrontDestinationKind.task,
+        destinationId: 'garden',
+        status: FrontDoorStatus.done,
+        claimedAt: DateTime.utc(2026, 10),
+        outcome: const FrontDoorProposal(ownerId: 'garden'),
+      ).toJson(),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.messages, hasLength(51));
+    expect(thread.messages.first.text, 'turn 0');
+    expect(thread.messages[1].text, 'turn 10');
+    expect(thread.doorsByMessageId.keys, [oldest]);
+    expect(thread.inboxMessageIds, {oldest});
+  });
+
   group('doors', () {
     final claimedAt = DateTime.utc(2026, 10, 24, 9);
 
