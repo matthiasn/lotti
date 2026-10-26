@@ -19,7 +19,10 @@ import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -49,7 +52,7 @@ import 'package:meta/meta.dart';
 /// match `ROTATION_EVENT_TYPE` in the service's `bundle_rotation_service.py`.
 const String rotationProofEventType = 'com.lotti.sync.provisioning.rotation';
 
-class MatrixService {
+class MatrixService implements SyncService {
   MatrixService({
     required this._gateway,
     required this._loggingService,
@@ -210,6 +213,7 @@ class MatrixService {
 
   /// Optional composition-root hook for protocol state that must advance only
   /// after a sync message has been accepted by Matrix.
+  @override
   Future<void> Function(SyncMessage message)? onSyncMessageSent;
 
   /// Room, device-verification and diagnostics operations, delegated to from
@@ -247,21 +251,27 @@ class MatrixService {
   Client get client => _sessionManager.client;
 
   /// The account this session is logged in as, or null when logged out.
+  @override
   String? get ownUserId => client.userID;
 
   /// This session's device id, or null when logged out. With [ownUserId] it
   /// is the identity the SDK orders a verification glare by.
+  @override
   String? get ownDeviceId => client.deviceID;
 
+  @override
   String? get syncRoomId => _roomManager.currentRoomId;
 
   /// The sync room id on every change, null when cleared — for UI that gates
   /// on whether sync is configured. [syncRoomId] is a plain read and cannot
   /// notify on its own.
+  @override
   Stream<String?> get syncRoomIdChanges => _roomManager.roomIdChanges;
   Room? get syncRoom => _roomManager.currentRoom;
 
+  @override
   final Map<String, int> messageCounts = {};
+  @override
   int sentCount = 0;
 
   final StreamController<MatrixStats> messageCountsController;
@@ -323,6 +333,178 @@ class MatrixService {
     incomingKeyVerificationRunner?.publishState();
   }
 
+  // ------------------------------------------- verification, in plain types
+  //
+  // The UI never holds a runner or an SDK `KeyVerification` (ADR 0142): it
+  // reads [SyncVerificationState] snapshots and acts by ceremony id.
+
+  /// Incoming requests by ceremony id: what [acceptVerification] and
+  /// [handOffOutgoingVerificationTo] act on before this device has answered
+  /// a request, which is before it has a runner.
+  final Map<String, KeyVerification> _incomingRequests =
+      <String, KeyVerification>{};
+
+  /// Called by the request listener for every incoming request.
+  void rememberIncomingRequest(KeyVerification keyVerification) {
+    _incomingRequests[verificationIdOf(keyVerification)] = keyVerification;
+    // Bounded: a handful of requests outlive a session at most.
+    while (_incomingRequests.length > 16) {
+      _incomingRequests.remove(_incomingRequests.keys.first);
+    }
+  }
+
+  // Created once: a getter that mapped the stream afresh would hand every
+  // rebuild of a StreamBuilder a new instance to resubscribe to, and the
+  // controller would replay its state on each of those re-listens.
+  @override
+  late final Stream<SyncVerificationState> outgoingVerifications =
+      keyVerificationStream.map((runner) => runner.toState());
+
+  @override
+  SyncVerificationState? get outgoingVerification =>
+      keyVerificationRunner?.toState();
+
+  @override
+  late final Stream<SyncVerificationState> incomingVerifications =
+      incomingKeyVerificationRunnerStream.map((runner) => runner.toState());
+
+  @override
+  SyncVerificationState? get incomingVerification =>
+      incomingKeyVerificationRunner?.toState();
+
+  @override
+  late final Stream<SyncVerificationState> incomingVerificationRequests =
+      incomingKeyVerificationController.stream.map(_requestState);
+
+  SyncVerificationState _requestState(KeyVerification request) {
+    final lastStep = request.lastStep ?? '';
+    return SyncVerificationState(
+      id: verificationIdOf(request),
+      direction: SyncVerificationDirection.incoming,
+      peerUserId: request.userId,
+      peerDeviceId: request.deviceId,
+      lastStep: lastStep,
+      outcome: keyVerificationOutcome(
+        lastStep: lastStep,
+        keyVerification: request,
+      ),
+    );
+  }
+
+  KeyVerificationRunner? _runnerFor(String id) {
+    for (final runner in [
+      keyVerificationRunner,
+      incomingKeyVerificationRunner,
+    ]) {
+      if (runner != null && runner.id == id) return runner;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> acceptVerification(String id) async {
+    final runner = _runnerFor(id);
+    if (runner != null) return runner.acceptVerification();
+    await _incomingRequests[id]?.acceptVerification();
+  }
+
+  @override
+  Future<void> acceptEmojiVerification(String id) async {
+    await _runnerFor(id)?.acceptEmojiVerification();
+  }
+
+  @override
+  Future<void> cancelVerification(String id) async {
+    final runner = _runnerFor(id);
+    if (runner != null) {
+      await cancelAbandonedVerification(
+        runner,
+        loggingService: _loggingService,
+      );
+      return;
+    }
+    final request = _incomingRequests[id];
+    if (request == null || request.isDone) return;
+    try {
+      await request.cancel();
+    } catch (error, stackTrace) {
+      _loggingService.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: 'verification.cancelRequest',
+      );
+    }
+  }
+
+  /// Hands the open outgoing sheet over to the incoming request: cancels the
+  /// ceremony this device started, wraps the peer's in a runner published on
+  /// the **outgoing** stream — the one `VerificationModal` renders — and
+  /// accepts it, so the sheet the user is looking at carries on with the
+  /// peer's ceremony and the emoji appear in it.
+  ///
+  /// The old runner is detached before the cancel: a cancel fires the SDK's
+  /// `onUpdate`, and a still-attached runner would publish the cancelled
+  /// state and make the modal arm its auto-dismiss mid-ceremony.
+  @override
+  Future<void> handOffOutgoingVerificationTo(String incomingId) async {
+    final incoming =
+        _incomingRequests[incomingId] ??
+        (incomingKeyVerificationRunner?.id == incomingId
+            ? incomingKeyVerificationRunner?.keyVerification
+            : null);
+    if (incoming == null) {
+      throw StateError('no incoming verification $incomingId to hand off to');
+    }
+    final outgoing = keyVerificationRunner;
+    if (outgoing != null) {
+      outgoing.stopTimer();
+      try {
+        await outgoing.keyVerification.cancel();
+      } catch (error, stackTrace) {
+        // The withdrawn ceremony is detached either way; a cancel the
+        // homeserver did not take must not leave the peer's request
+        // unanswered and the open sheet frozen.
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'verification.handOff.cancel',
+        );
+      }
+    }
+    final runner = KeyVerificationRunner(
+      incoming,
+      controller: keyVerificationController,
+      name: 'Outgoing KeyVerificationRunner (handed off)',
+      direction: SyncVerificationDirection.outgoing,
+      domainLogger: _loggingService,
+      onCompleted: (source) => onVerificationCompleted(source: source),
+    );
+    keyVerificationRunner = runner;
+    await runner.acceptVerification();
+  }
+
+  @override
+  Stream<SyncLoginState> get loginStateChanges =>
+      client.onLoginStateChanged.stream.map(
+        (state) => switch (state) {
+          LoginState.loggedIn => SyncLoginState.loggedIn,
+          LoginState.loggedOut => SyncLoginState.loggedOut,
+          LoginState.softLoggedOut => SyncLoginState.softLoggedOut,
+        },
+      );
+
+  @override
+  String? get homeserverHost => client.homeserver?.host;
+
+  @override
+  Stream<MatrixStats> get stats => messageCountsController.stream;
+
+  @override
+  InboundQueue get inboundQueue => _queueCoordinator.queue;
+
+  @override
   Future<void> init() async {
     await _syncEngine.initialize(
       onLogin: listen,
@@ -415,6 +597,7 @@ class MatrixService {
   /// Returns `false` on a retryable failure. Lets
   /// `SyncMessageTooLargeException` through when the payload can never fit
   /// (see [MatrixMessageSender.sendMatrixMessage]).
+  @override
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
@@ -469,7 +652,7 @@ class MatrixService {
       context: MatrixMessageContext(
         syncRoomId: targetRoomId,
         syncRoom: targetRoom,
-        unverifiedDevices: getUnverifiedDevices(),
+        unverifiedDevices: _gateway.unverifiedDevices(),
       ),
       onSent: (String _, SyncMessage _) async {
         incrementSentCountOf(sentType);
@@ -482,12 +665,14 @@ class MatrixService {
     );
   }
 
+  @override
   Future<bool> login({bool waitForLifecycle = true}) =>
       _syncEngine.connectWithLifecycleOption(
         shouldAttemptLogin: true,
         waitForLifecycle: waitForLifecycle,
       );
 
+  @override
   Future<bool> connect() => _syncEngine.connect(shouldAttemptLogin: false);
 
   /// The next connect a failed one scheduled, and the attempt it started.
@@ -525,10 +710,12 @@ class MatrixService {
     );
   }
 
+  @override
   Future<void> logout() async {
     await _syncEngine.logout();
   }
 
+  @override
   Future<void> dispose() async {
     _disposed = true;
     _reconnectTimer?.cancel();
@@ -571,10 +758,12 @@ class MatrixService {
     }
   }
 
+  @override
   Future<MatrixConfig?> loadConfig() => loadMatrixConfig(
     session: _sessionManager,
     storage: _secureStorage,
   );
+  @override
   Future<void> deleteConfig() => deleteMatrixConfig(
     session: _sessionManager,
     storage: _secureStorage,
@@ -587,6 +776,7 @@ class MatrixService {
   /// config fails, attempts to rollback the server-side password. Both the
   /// original persist error and any rollback failure are logged as critical
   /// via `DomainLogger.error`.
+  @override
   Future<void> changePassword({
     required String oldPassword,
     required String newPassword,
@@ -625,6 +815,7 @@ class MatrixService {
     }
   }
 
+  @override
   Future<void> setConfig(MatrixConfig config) => setMatrixConfig(
     config,
     session: _sessionManager,
@@ -635,6 +826,7 @@ class MatrixService {
   // delegators forward to [MatrixServiceOps] (see matrix_service_ops.dart) and
   // form part of MatrixService's mocked public API — keep the signatures here.
 
+  @override
   Future<String?> joinRoom(String roomId) => _ops.joinRoom(roomId);
 
   /// Publishes the proof the paid provisioning service reads before it
@@ -642,6 +834,7 @@ class MatrixService {
   /// as a state event keyed by the bundle id. Plain state, so it carries
   /// nothing secret — the challenge is only meaningful to the server that
   /// issued the bundle.
+  @override
   Future<void> publishRotationProof({
     required String roomId,
     required String bundleId,
@@ -655,11 +848,14 @@ class MatrixService {
 
   /// Creates the account's encrypted sync room and returns its id, for the
   /// first device signing in with its own credentials rather than a bundle.
+  @override
   Future<String> createRoom() => _ops.createRoom();
 
   /// The sync room the signed-in account already belongs to, if any.
+  @override
   Future<String?> findSyncRoom() => _ops.findSyncRoom();
 
+  @override
   Future<void> saveRoom(String roomId) => _ops.saveRoom(roomId);
 
   /// Clears only the locally persisted sync-room pointer.
@@ -667,16 +863,23 @@ class MatrixService {
   /// This does not leave the room on the homeserver. It is intended for flows
   /// that switch credentials and must avoid auto-joining a stale room ID
   /// during reconnect.
+  @override
   Future<void> clearPersistedRoom() => _ops.clearPersistedRoom();
 
+  @override
   bool isLoggedIn() => _ops.isLoggedIn();
 
+  @override
   Future<String?> getRoom() => _ops.getRoom();
 
-  List<DeviceKeys> getUnverifiedDevices() => _ops.getUnverifiedDevices();
+  @override
+  List<SyncDeviceInfo> getUnverifiedDevices() => _ops.getUnverifiedDevices();
 
-  Future<void> verifyDevice(DeviceKeys deviceKeys) =>
-      _ops.verifyDevice(deviceKeys);
+  @override
+  Future<void> verifyDevice({
+    required String userId,
+    required String deviceId,
+  }) => _ops.verifyDevice(userId: userId, deviceId: deviceId);
 
   /// Runs post-verification recovery so sync resumes without app restart.
   ///
@@ -691,9 +894,24 @@ class MatrixService {
   /// entered instead of the stored one — the recovery path after the
   /// homeserver rejected the persisted credential. See
   /// [MatrixServiceOps.deleteDeviceById].
-  Future<void> deleteDeviceById(String deviceId, {String? reauthPassword}) =>
-      _ops.deleteDeviceById(deviceId, reauthPassword: reauthPassword);
+  @override
+  Future<void> deleteDeviceById(
+    String deviceId, {
+    String? reauthPassword,
+  }) async {
+    try {
+      await _ops.deleteDeviceById(deviceId, reauthPassword: reauthPassword);
+    } on MatrixException catch (error) {
+      // The UI knows no SDK type (ADR 0142): a refused credential becomes
+      // the one exception it acts on, everything else passes through.
+      if (error.errcode == 'M_FORBIDDEN') {
+        throw SyncReauthRequiredException('$error');
+      }
+      rethrow;
+    }
+  }
 
+  @override
   Future<List<SyncDeviceInfo>> getSyncDevices() => _ops.getSyncDevices();
 
   Stream<KeyVerification> getIncomingKeyVerificationStream() =>
@@ -702,10 +920,13 @@ class MatrixService {
   Future<void> startKeyVerificationListener() =>
       _ops.startKeyVerificationListener();
 
+  @override
   Future<Map<String, dynamic>> getDiagnosticInfo() => _ops.getDiagnosticInfo();
 
+  @override
   Future<SyncMetrics?> getSyncMetrics() => _ops.getSyncMetrics();
 
+  @override
   Future<void> forceRescan({bool includeCatchUp = true}) =>
       _ops.forceRescan(includeCatchUp: includeCatchUp);
 
@@ -713,8 +934,10 @@ class MatrixService {
   /// abandoned ledger row that is still below the per-row resurrection
   /// hard cap (so backed-off / leased items wake up immediately) and
   /// nudges the bridge in case a remote gap is what's holding the worker.
+  @override
   Future<void> retryNow() => _ops.retryNow();
 
+  @override
   Future<String> getSyncDiagnosticsText() => _ops.getSyncDiagnosticsText();
 
   /// Exposes the pipeline instance for integration tests.

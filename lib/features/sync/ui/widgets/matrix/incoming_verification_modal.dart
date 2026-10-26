@@ -14,17 +14,17 @@ import 'package:lotti/features/sync/state/sync_devices_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_ceremony_stages.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
 
 class IncomingVerificationModal extends ConsumerStatefulWidget {
   const IncomingVerificationModal(
-    this.keyVerification, {
+    this.request, {
     super.key,
   });
 
-  final KeyVerification keyVerification;
+  /// The peer's request as it arrived; the live ceremony is read from the
+  /// service's incoming stream.
+  final SyncVerificationState request;
 
   @override
   ConsumerState<IncomingVerificationModal> createState() =>
@@ -33,14 +33,14 @@ class IncomingVerificationModal extends ConsumerStatefulWidget {
 
 class _IncomingVerificationModalState
     extends ConsumerState<IncomingVerificationModal> {
-  MatrixService get _matrixService => ref.read(matrixServiceProvider);
+  SyncService get _matrixService => ref.read(matrixServiceProvider);
   bool _awaitingOtherDevice = false;
   bool _didScheduleUnverifiedRefresh = false;
   bool _didAutoAcceptVerification = false;
 
-  Future<void> _autoAcceptIncoming(KeyVerificationRunner runner) async {
+  Future<void> _autoAcceptIncoming(SyncVerificationState state) async {
     try {
-      await runner.acceptVerification();
+      await _matrixService.acceptVerification(state.id);
     } catch (_) {
       // Keep the manual "Verify" button available as fallback.
       if (mounted) {
@@ -49,11 +49,11 @@ class _IncomingVerificationModalState
     }
   }
 
-  Future<void> _acceptEmojiVerification(KeyVerificationRunner? runner) async {
-    if (runner == null || _awaitingOtherDevice) return;
+  Future<void> _acceptEmojiVerification(SyncVerificationState? state) async {
+    if (state == null || _awaitingOtherDevice) return;
     setState(() => _awaitingOtherDevice = true);
     try {
-      await runner.acceptEmojiVerification();
+      await _matrixService.acceptEmojiVerification(state.id);
     } catch (_) {
       if (mounted) {
         setState(() => _awaitingOtherDevice = false);
@@ -89,23 +89,34 @@ class _IncomingVerificationModalState
 
     final unverifiedDevices = _matrixService.getUnverifiedDevices();
     final requestingDevice = unverifiedDevices.firstWhereOrNull(
-      (deviceKeys) => deviceKeys.deviceId == widget.keyVerification.deviceId,
+      (device) => device.deviceId == widget.request.peerDeviceId,
     );
 
     final displayName =
-        requestingDevice?.deviceDisplayName ??
-        widget.keyVerification.deviceId ??
+        requestingDevice?.displayName ??
+        widget.request.peerDeviceId ??
         'device name not found';
 
-    return StreamBuilder<KeyVerificationRunner>(
-      stream: _matrixService.incomingKeyVerificationRunnerStream,
+    // The runner stream replays its state only to the first subscriber,
+    // and the add-device page may already be one. Start from what the
+    // service holds for this request, or from the request itself — the
+    // service answers a request by id before it has a runner.
+    // Filtered to this request: the service publishes every incoming
+    // ceremony on one stream, and a newer peer's must not be rendered — or
+    // accepted, or cancelled — by the sheet that was opened for this one.
+    final live = _matrixService.incomingVerification;
+    return StreamBuilder<SyncVerificationState>(
+      initialData: live?.id == widget.request.id ? live : widget.request,
+      stream: _matrixService.incomingVerifications.where(
+        (state) => state.id == widget.request.id,
+      ),
       builder: (context, snapshot) {
-        final runner = snapshot.data;
-        final emojis = runner?.emojis;
+        final state = snapshot.data;
+        final emojis = state?.emojis;
         // Not the SDK's `isDone`: it is equally true for a cancelled ceremony,
         // so a remote cancel used to render the green success shield here —
         // and this modal has no cancellation notice to contradict it.
-        final outcome = runner?.outcome ?? KeyVerificationOutcome.pending;
+        final outcome = state?.outcome ?? KeyVerificationOutcome.pending;
         final isSuccess = outcome == KeyVerificationOutcome.success;
         final isPending = outcome == KeyVerificationOutcome.pending;
 
@@ -116,10 +127,10 @@ class _IncomingVerificationModalState
 
         if (isPending &&
             emojis == null &&
-            runner != null &&
+            state != null &&
             !_didAutoAcceptVerification) {
           _didAutoAcceptVerification = true;
-          unawaited(_autoAcceptIncoming(runner));
+          unawaited(_autoAcceptIncoming(state));
         }
 
         final tokens = context.designTokens;
@@ -139,12 +150,14 @@ class _IncomingVerificationModalState
                 VerificationCeremonyHeader(
                   deviceName: displayName,
                   userId: requestingDevice?.userId,
-                  deviceId: widget.keyVerification.deviceId,
+                  deviceId: widget.request.peerDeviceId,
                 ),
                 SizedBox(height: tokens.spacing.step5),
                 if (isPending && emojis == null)
                   DesignSystemButton(
-                    onPressed: runner?.acceptVerification,
+                    onPressed: state == null
+                        ? null
+                        : () => _matrixService.acceptVerification(state.id),
                     label: context.messages.settingsMatrixVerifyLabel,
                     size: DesignSystemButtonSize.large,
                   ),
@@ -152,9 +165,11 @@ class _IncomingVerificationModalState
                   VerificationEmojiStage(
                     emojis: emojis,
                     awaitingOtherDevice: _awaitingOtherDevice,
-                    onAccept: () => unawaited(_acceptEmojiVerification(runner)),
+                    onAccept: () => unawaited(_acceptEmojiVerification(state)),
                     onCancel: () => unawaited(() async {
-                      await runner?.cancelVerification();
+                      if (state != null) {
+                        await _matrixService.cancelVerification(state.id);
+                      }
                       closeModal();
                     }()),
                   ),
@@ -166,16 +181,12 @@ class _IncomingVerificationModalState
                     confirmKey: const Key(
                       'matrix_incoming_cancelled_confirm',
                     ),
-                    onConfirm: () {
-                      runner?.stopTimer();
-                      pop();
-                    },
+                    onConfirm: pop,
                   ),
                 if (isSuccess)
                   VerificationSuccessStage(
                     onConfirm: () {
                       unawaited(refreshUnverifiedDevices());
-                      runner?.stopTimer();
                       pop();
                     },
                   ),
@@ -209,14 +220,23 @@ class IncomingVerificationWrapper extends ConsumerStatefulWidget {
 
 class _IncomingVerificationWrapperState
     extends ConsumerState<IncomingVerificationWrapper> {
-  StreamSubscription<KeyVerification>? _subscription;
-  StreamSubscription<KeyVerificationRunner>? _ownRunnerSubscription;
+  StreamSubscription<SyncVerificationState>? _subscription;
+  StreamSubscription<SyncVerificationState>? _ownRunnerSubscription;
   ProviderSubscription<bool>? _lockSubscription;
 
   /// The latest request that arrived while another sheet held the lock.
-  /// `MatrixService` keeps one incoming runner — the latest — so an older
+  /// The service keeps one incoming ceremony — the latest — so an older
   /// deferred request would render the wrong ceremony anyway.
-  KeyVerification? _deferred;
+  SyncVerificationState? _deferred;
+
+  /// Whether [deferred] is still live: the service's incoming ceremony when
+  /// that is the same request, else the snapshot as it arrived.
+  bool _stillPending(SyncVerificationState deferred) {
+    final live = ref.read(matrixServiceProvider).incomingVerification;
+    return live != null && live.id == deferred.id
+        ? live.isPending
+        : deferred.isPending;
+  }
 
   @override
   void initState() {
@@ -236,20 +256,18 @@ class _IncomingVerificationWrapperState
         final deferred = _deferred;
         if (deferred == null) return;
         _deferred = null;
-        if (!deferred.isDone) _arrived(deferred);
+        if (_stillPending(deferred)) _arrived(deferred);
       },
     );
     final service = ref.read(matrixServiceProvider);
-    _subscription = service.getIncomingKeyVerificationStream().listen((
-      keyVerification,
-    ) {
-      if (mounted) _arrived(keyVerification);
+    _subscription = service.incomingVerificationRequests.listen((request) {
+      if (mounted) _arrived(request);
     });
-    // A request held back before this device's own runner existed is offered
-    // again once it does, so the device that should yield can.
-    _ownRunnerSubscription = reofferOnOwnRunner(service, () {
+    // A request held back before this device's own ceremony existed is
+    // offered again once it does, so the device that should yield can.
+    _ownRunnerSubscription = reofferOnOwnVerification(service, () {
       final deferred = _deferred;
-      if (!mounted || deferred == null || deferred.isDone) return;
+      if (!mounted || deferred == null || !_stillPending(deferred)) return;
       _deferred = null;
       _arrived(deferred);
     });
@@ -265,22 +283,21 @@ class _IncomingVerificationWrapperState
 
   /// Both arrivals — from the SDK, and back from the deferred slot — start
   /// the one fire-and-forget future this widget owns.
-  void _arrived(KeyVerification keyVerification) =>
-      unawaited(_offer(keyVerification));
+  void _arrived(SyncVerificationState request) => unawaited(_offer(request));
 
-  Future<void> _offer(KeyVerification keyVerification) async {
+  Future<void> _offer(SyncVerificationState request) async {
     if (!mounted) return;
     final lock = ref.read(matrixVerificationModalLockProvider.notifier);
     if (lock.tryAcquire()) {
-      await _show(keyVerification, lock);
+      await _show(request, lock);
       return;
     }
 
     final service = ref.read(matrixServiceProvider);
-    final outgoing = service.keyVerificationRunner;
+    final outgoing = service.outgoingVerification;
     if (outgoing != null &&
         shouldYieldTo(
-          incoming: keyVerification,
+          incoming: request,
           outgoing: outgoing,
           ownUserId: service.ownUserId,
           ownDeviceId: service.ownDeviceId,
@@ -290,53 +307,47 @@ class _IncomingVerificationWrapperState
       // now shows the peer's ceremony instead: that peer is the one shown,
       // and the one "Show the emoji" reopens (`RecordHandedOff`).
       final handled = ref.read(matrixVerificationHandledProvider.notifier);
-      final withdrawn = outgoing.keyVerification;
-      final withdrawnDeviceId = withdrawn.deviceId;
+      final withdrawnDeviceId = outgoing.peerDeviceId;
       if (withdrawnDeviceId != null) {
         handled.release(
           MatrixVerificationHandled.identityOf(
-            userId: withdrawn.userId,
+            userId: outgoing.peerUserId,
             deviceId: withdrawnDeviceId,
           ),
         );
       }
-      final peerDeviceId = keyVerification.deviceId;
+      final peerDeviceId = request.peerDeviceId;
       if (peerDeviceId != null) {
         handled.markShown(
           MatrixVerificationHandled.identityOf(
-            userId: keyVerification.userId,
+            userId: request.peerUserId,
             deviceId: peerDeviceId,
           ),
         );
       }
-      await handOffOutgoingVerification(
-        service: service,
-        incoming: keyVerification,
-        domainLogger: ref.read(domainLoggerProvider),
-      );
+      await service.handOffOutgoingVerificationTo(request.id);
       return;
     }
 
-    _deferred = keyVerification;
+    _deferred = request;
   }
 
   Future<void> _show(
-    KeyVerification keyVerification,
+    SyncVerificationState request,
     MatrixVerificationModalLock lock,
   ) async {
     final service = ref.read(matrixServiceProvider);
-    final logger = ref.read(domainLoggerProvider);
     try {
       await showVerificationModalSheet(
         context: context,
         title: context.messages.syncVerifyModalTitle,
-        child: IncomingVerificationModal(keyVerification),
+        child: IncomingVerificationModal(request),
       );
     } finally {
-      final runner = service.incomingKeyVerificationRunner;
-      if (runner != null &&
-          identical(runner.keyVerification, keyVerification)) {
-        await cancelAbandonedVerification(runner, loggingService: logger);
+      // A finished ceremony is left alone; a live one the user walked away
+      // from is cancelled so the peer's sheet closes too.
+      if (service.incomingVerification?.id == request.id) {
+        await service.cancelVerification(request.id);
       }
       if (mounted) {
         ref

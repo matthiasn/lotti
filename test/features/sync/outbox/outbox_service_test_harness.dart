@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/outbox_service.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -159,20 +159,12 @@ OutboxService buildSequenceLogService({
   );
 }
 
-/// Builds a [MockMatrixService] with the standard client/login-state wiring.
-MockMatrixService stubMatrixService({
-  LoginState loginState = LoginState.loggedOut,
-  Stream<LoginState>? loginStream,
-}) {
+/// Builds a [MockMatrixService] with the standard login-state wiring.
+MockMatrixService stubMatrixService({Stream<SyncLoginState>? loginStream}) {
   final matrixService = MockMatrixService();
-  final client = MockMatrixClient();
-  final cached = MockCachedLoginController();
   when(
-    () => cached.stream,
-  ).thenAnswer((_) => loginStream ?? const Stream<LoginState>.empty());
-  when(() => cached.value).thenReturn(loginState);
-  when(() => client.onLoginStateChanged).thenReturn(cached);
-  when(() => matrixService.client).thenReturn(client);
+    () => matrixService.loginStateChanges,
+  ).thenAnswer((_) => loginStream ?? const Stream<SyncLoginState>.empty());
   return matrixService;
 }
 

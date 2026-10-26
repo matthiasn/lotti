@@ -8,12 +8,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/provenance/crypto/ed25519.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/bundle_attestation.dart';
 import 'package:lotti/features/sync/state/bundle_decode_error.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -373,7 +373,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   /// persisted room pointer before the credentials change so reconnecting
   /// cannot auto-join a room that belongs to the previous account.
   Future<bool> _switchSession(
-    MatrixService matrixService,
+    SyncService matrixService,
     MatrixConfig config,
   ) async {
     if (matrixService.isLoggedIn()) {
@@ -403,7 +403,7 @@ class ProvisioningController extends Notifier<ProvisioningState> {
   }
 
   Future<void> _restorePreviousSession(
-    MatrixService matrixService,
+    SyncService matrixService,
     MatrixConfig? oldConfig,
     String? oldRoomId,
   ) async {

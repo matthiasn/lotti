@@ -76,6 +76,7 @@ import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/sync_queue_counts.dart';
@@ -109,8 +110,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/matrix.dart' hide Profile;
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -479,14 +478,14 @@ Future<void> _pumpAppScreen(
   final effectiveJournalDb = journalDb ?? MockJournalDb();
   final mockMatrix = MockMatrixService();
   when(
-    mockMatrix.getIncomingKeyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    () => mockMatrix.incomingVerificationRequests,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.incomingKeyVerificationRunnerStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.incomingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.keyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.outgoingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
 
   final mockOutboxService = MockOutboxService();
   when(
@@ -508,7 +507,7 @@ Future<void> _pumpAppScreen(
       overrides: withServiceOverrides([
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
-          (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+          (ref) => Stream<SyncLoginState>.value(SyncLoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         journalDbProvider.overrideWithValue(effectiveJournalDb),
@@ -586,14 +585,14 @@ Future<void> _pumpAppScreenCustomProviders(
 
   final mockMatrix = MockMatrixService();
   when(
-    mockMatrix.getIncomingKeyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    () => mockMatrix.incomingVerificationRequests,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.incomingKeyVerificationRunnerStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.incomingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.keyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.outgoingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
 
   final mockOutboxService = MockOutboxService();
   when(
@@ -616,7 +615,7 @@ Future<void> _pumpAppScreenCustomProviders(
       overrides: withServiceOverrides([
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
-          (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+          (ref) => Stream<SyncLoginState>.value(SyncLoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         journalDbProvider.overrideWithValue(mockJournalDb),
@@ -714,14 +713,14 @@ Future<void> _pumpReadyMyBeamerApp(
 }) async {
   final mockMatrix = MockMatrixService();
   when(
-    mockMatrix.getIncomingKeyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    () => mockMatrix.incomingVerificationRequests,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.incomingKeyVerificationRunnerStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.incomingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
   when(
-    () => mockMatrix.keyVerificationStream,
-  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    () => mockMatrix.outgoingVerifications,
+  ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
 
   final mockOutboxService = MockOutboxService();
   when(
@@ -743,7 +742,7 @@ Future<void> _pumpReadyMyBeamerApp(
         ),
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
-          (ref) => Stream.value(LoginState.loggedIn),
+          (ref) => Stream.value(SyncLoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         audioRecorderControllerProvider.overrideWith(
@@ -5470,14 +5469,14 @@ void main() {
 
         final mockMatrix = MockMatrixService();
         when(
-          mockMatrix.getIncomingKeyVerificationStream,
-        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+          () => mockMatrix.incomingVerificationRequests,
+        ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
         when(
-          () => mockMatrix.incomingKeyVerificationRunnerStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+          () => mockMatrix.incomingVerifications,
+        ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
         when(
-          () => mockMatrix.keyVerificationStream,
-        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+          () => mockMatrix.outgoingVerifications,
+        ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
 
         final mockJournalDb = MockJournalDb();
 
@@ -5486,7 +5485,7 @@ void main() {
             overrides: withServiceOverrides([
               matrixServiceProvider.overrideWithValue(mockMatrix),
               loginStateStreamProvider.overrideWith(
-                (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+                (ref) => Stream<SyncLoginState>.value(SyncLoginState.loggedIn),
               ),
               outboxServiceProvider.overrideWithValue(mockOutboxService),
               // Override outboxLoginGateStreamProvider directly to emit an error.

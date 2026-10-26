@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -29,26 +30,24 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late MockMatrixClient mockClient;
-
-  setUpAll(() {
-    registerFallbackValue(FakeDeviceKeys());
-  });
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockClient = MockMatrixClient();
 
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn('@alice:example.com');
+    when(() => mockMatrixService.ownUserId).thenReturn('@alice:example.com');
     when(() => mockMatrixService.syncRoomId).thenReturn('!room123:example.com');
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => mockMatrixService.getSyncDevices()).thenAnswer((_) async => []);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => const Stream.empty());
-    when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.verifyDevice(
+        userId: any(named: 'userId'),
+        deviceId: any(named: 'deviceId'),
+      ),
+    ).thenAnswer((_) async {});
     when(() => mockMatrixService.loadConfig()).thenAnswer(
       (_) async => const MatrixConfig(
         homeServer: 'https://matrix.example.com',
@@ -61,12 +60,19 @@ void main() {
   testWidgets(
     'auto-verification launcher shows modal for unverified devices',
     (tester) async {
-      final mockDevice = MockDeviceKeys();
-      when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
-      when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
-      when(() => mockDevice.userId).thenReturn('@alice:example.com');
+      const mockDevice = SyncDeviceInfo(
+        deviceId: 'OTHERDEVICE',
+        displayName: 'Other Device',
+        userId: '@alice:example.com',
+        isCurrentDevice: false,
+        verified: false,
+        hasKeys: true,
+      );
       when(
-        () => mockMatrixService.verifyDevice(mockDevice),
+        () => mockMatrixService.verifyDevice(
+          userId: '@alice:example.com',
+          deviceId: 'OTHERDEVICE',
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
@@ -300,12 +306,19 @@ void main() {
         isDesktop = false;
         addTearDown(() => isDesktop = wasDesktop);
 
-        final mockDevice = MockDeviceKeys();
-        when(() => mockDevice.deviceDisplayName).thenReturn('Other Device');
-        when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
-        when(() => mockDevice.userId).thenReturn('@alice:example.com');
+        const mockDevice = SyncDeviceInfo(
+          deviceId: 'OTHERDEVICE',
+          displayName: 'Other Device',
+          userId: '@alice:example.com',
+          isCurrentDevice: false,
+          verified: false,
+          hasKeys: true,
+        );
         when(
-          () => mockMatrixService.verifyDevice(mockDevice),
+          () => mockMatrixService.verifyDevice(
+            userId: '@alice:example.com',
+            deviceId: 'OTHERDEVICE',
+          ),
         ).thenAnswer((_) async {});
 
         // build() is called once for the initial load; the finally block's

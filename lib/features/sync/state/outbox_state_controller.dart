@@ -55,7 +55,7 @@ final StreamProvider<int> inboundQueueDepthProvider =
     );
 Stream<int> inboundQueueDepth(Ref ref) {
   final matrixService = ref.watch(matrixServiceProvider);
-  return inboundQueueDepthStream(matrixService.queueCoordinator.queue);
+  return inboundQueueDepthStream(matrixService.inboundQueue);
 }
 
 @visibleForTesting

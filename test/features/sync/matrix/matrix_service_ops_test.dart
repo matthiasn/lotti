@@ -210,10 +210,27 @@ void main() {
   });
 
   group('device operations', () {
-    test('getUnverifiedDevices returns the gateway list', () {
-      final keys = <DeviceKeys>[];
-      when(gateway.unverifiedDevices).thenReturn(keys);
-      expect(buildOps().getUnverifiedDevices(), same(keys));
+    test('getUnverifiedDevices maps the gateway list to plain device rows', () {
+      final keys = MockDeviceKeys();
+      when(() => keys.deviceId).thenReturn('PHONE');
+      when(() => keys.userId).thenReturn('@alice:example.com');
+      when(() => keys.deviceDisplayName).thenReturn('Pixel 7');
+      when(gateway.unverifiedDevices).thenReturn([keys]);
+
+      final devices = buildOps().getUnverifiedDevices();
+
+      expect(devices, hasLength(1));
+      final device = devices.single;
+      expect(device.deviceId, 'PHONE');
+      expect(device.userId, '@alice:example.com');
+      expect(device.displayName, 'Pixel 7');
+      expect(device.hasKeys, isTrue);
+      expect(device.verified, isFalse);
+      expect(device.isCurrentDevice, isFalse);
+      // Unverified keys with no roster row: the SDK knows them, so the
+      // server does too, and they are this account's unless told otherwise.
+      expect(device.onServer, isTrue);
+      expect(device.ownAccount, isTrue);
     });
   });
 
@@ -939,7 +956,7 @@ void main() {
         expect(ghost.verified, isFalse);
         expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, DateTime(2026, 5));
-        expect(ghost.keys, isNotNull);
+        expect(ghost.hasKeys, isTrue);
 
         final oldVerified = devices[2];
         expect(oldVerified.verified, isTrue);
@@ -947,7 +964,7 @@ void main() {
 
         final keyless = devices[3];
         expect(keyless.verified, isFalse);
-        expect(keyless.keys, isNull);
+        expect(keyless.hasKeys, isFalse);
         expect(
           keyless.excludedFromSync,
           isFalse,
@@ -1096,7 +1113,7 @@ void main() {
         final ghost = devices.first;
         expect(ghost.excludedFromSync, isTrue);
         expect(ghost.lastSeen, isNull);
-        expect(ghost.keys, isNotNull);
+        expect(ghost.hasKeys, isTrue);
         expect(ghost.onServer, isFalse);
       },
     );

@@ -73,8 +73,8 @@ SyncLeaseGate buildSyncLeaseGate(Ref ref) {
         .handleError((Object _) {}),
     currentlyOnline: () async =>
         reachesSyncServer(await Connectivity().checkConnectivity()),
-    waitForInboxDrained: (timeout) => matrixService.queueCoordinator.queue
-        .waitForDrainAtMostTo(0, timeout: timeout),
+    waitForInboxDrained: (timeout) =>
+        matrixService.inboundQueue.waitForDrainAtMostTo(0, timeout: timeout),
   );
   ref.onDispose(gate.dispose);
   return gate;

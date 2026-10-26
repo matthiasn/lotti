@@ -2,6 +2,7 @@
 
 import 'package:drift/drift.dart' show Value;
 import 'package:lotti/database/outbox_status.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 
 import 'outbox_service_test_harness.dart';
@@ -525,7 +526,7 @@ void main() {
     });
 
     test(
-      'post-login nudge enqueues and drains after LoginState.loggedIn',
+      'post-login nudge enqueues and drains after SyncLoginState.loggedIn',
       () async {
         when(
           () => journalDb.getConfigFlag(enableMatrixFlag),
@@ -537,14 +538,11 @@ void main() {
         final gate = createGate();
 
         final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        final loginController = StreamController<LoginState>.broadcast();
+        final loginController = StreamController<SyncLoginState>.broadcast();
         addTearDown(loginController.close);
-        when(() => matrixService.client).thenReturn(client);
-        final cached = MockCachedLoginController();
-        when(() => cached.stream).thenAnswer((_) => loginController.stream);
-        when(() => cached.value).thenReturn(LoginState.loggedOut);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        when(
+          () => matrixService.loginStateChanges,
+        ).thenAnswer((_) => loginController.stream);
 
         var loggedIn = false;
         when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
@@ -564,7 +562,7 @@ void main() {
           );
           // Flip to logged in and emit login event
           loggedIn = true;
-          loginController.add(LoginState.loggedIn);
+          loginController.add(SyncLoginState.loggedIn);
           // Advance time to allow scheduled drain, then flush microtasks
           async
             ..elapse(const Duration(milliseconds: 50))
@@ -608,14 +606,11 @@ void main() {
         final gate = createGate();
 
         final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        final loginController = StreamController<LoginState>.broadcast();
+        final loginController = StreamController<SyncLoginState>.broadcast();
         addTearDown(loginController.close);
-        when(() => matrixService.client).thenReturn(client);
-        final cached = MockCachedLoginController();
-        when(() => cached.stream).thenAnswer((_) => loginController.stream);
-        when(() => cached.value).thenReturn(LoginState.loggedOut);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        when(
+          () => matrixService.loginStateChanges,
+        ).thenAnswer((_) => loginController.stream);
 
         var loggedIn = false;
         when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
@@ -647,7 +642,7 @@ void main() {
 
           // Now login completes — post-login nudge should drain
           loggedIn = true;
-          loginController.add(LoginState.loggedIn);
+          loginController.add(SyncLoginState.loggedIn);
           async
             ..elapse(const Duration(milliseconds: 40))
             ..flushMicrotasks();
@@ -990,14 +985,9 @@ void main() {
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
       when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+        () => matrixService.loginStateChanges,
+      ).thenAnswer((_) => const Stream<SyncLoginState>.empty());
 
       // Controlled outbox count stream to avoid extra nudges
       final countController = StreamController<int>.broadcast();
@@ -1067,14 +1057,9 @@ void main() {
       when(gate.waitUntilIdle).thenAnswer((_) => gateReleased.future);
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
       when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+        () => matrixService.loginStateChanges,
+      ).thenAnswer((_) => const Stream<SyncLoginState>.empty());
       when(
         () => processor.processQueue(),
       ).thenAnswer((_) async => OutboxProcessingResult.none);
@@ -1126,14 +1111,9 @@ void main() {
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(false);
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
       when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+        () => matrixService.loginStateChanges,
+      ).thenAnswer((_) => const Stream<SyncLoginState>.empty());
       when(
         () => repository.fetchPending(limit: any(named: 'limit')),
       ).thenAnswer(
@@ -1199,14 +1179,9 @@ void main() {
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
       when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+        () => matrixService.loginStateChanges,
+      ).thenAnswer((_) => const Stream<SyncLoginState>.empty());
       when(
         () => syncDatabase.watchOutboxCount(),
       ).thenAnswer((_) => const Stream<int>.empty());
@@ -1264,14 +1239,9 @@ void main() {
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
       when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+        () => matrixService.loginStateChanges,
+      ).thenAnswer((_) => const Stream<SyncLoginState>.empty());
       when(
         () => syncDatabase.watchOutboxCount(),
       ).thenAnswer((_) => const Stream<int>.empty());

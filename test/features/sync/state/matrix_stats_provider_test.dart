@@ -20,8 +20,8 @@ void main() {
       mockMatrixService = MockMatrixService();
       matrixStatsStreamController = StreamController<MatrixStats>.broadcast();
       when(
-        () => mockMatrixService.messageCountsController,
-      ).thenReturn(matrixStatsStreamController);
+        () => mockMatrixService.stats,
+      ).thenAnswer((_) => matrixStatsStreamController.stream);
     });
 
     tearDown(() async {

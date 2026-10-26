@@ -30,6 +30,7 @@ import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
@@ -46,8 +47,6 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/app_closing_overlay.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -331,14 +330,14 @@ void main() {
     List<Override> shellOverrides({List<Override> extra = const []}) {
       final mockMatrix = MockMatrixService();
       when(
-        mockMatrix.getIncomingKeyVerificationStream,
-      ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+        () => mockMatrix.incomingVerificationRequests,
+      ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
       when(
-        () => mockMatrix.incomingKeyVerificationRunnerStream,
-      ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        () => mockMatrix.incomingVerifications,
+      ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
       when(
-        () => mockMatrix.keyVerificationStream,
-      ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        () => mockMatrix.outgoingVerifications,
+      ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
       final mockOutboxService = MockOutboxService();
       when(
         () => mockOutboxService.notLoggedInGateStream,
@@ -354,7 +353,7 @@ void main() {
         ),
         matrixServiceProvider.overrideWithValue(mockMatrix),
         loginStateStreamProvider.overrideWith(
-          (ref) => Stream.value(LoginState.loggedIn),
+          (ref) => Stream.value(SyncLoginState.loggedIn),
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         audioRecorderControllerProvider.overrideWith(

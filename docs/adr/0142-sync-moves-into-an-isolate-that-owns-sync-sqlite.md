@@ -202,6 +202,18 @@ Each is one mergeable change; the flag stays off until the last.
 - Pausing sync while the app is backgrounded would remove much of the same
   contention, but that changes behaviour and is a separate decision.
 
+## Amendment 2026-10-24 — step 4 in two halves
+
+Step 4 lands as two changes rather than one. First the UI stops seeing the
+SDK: everything above the sync feature — the settings pages, the device and
+verification sheets, the outbox, onboarding and provisioning — talks to sync
+through `SyncService`, in plain types. Device rows, login states and
+verification snapshots cross that seam, and the UI acts on a ceremony by its
+id, never on an SDK object, because every one of those values is about to
+cross a port. Then the receive side moves as step 4 describes. The split
+keeps the flag-off path the only path the first change touches, which is
+what makes the swap reviewable on its own.
+
 ## Related
 
 - [ADR 0046](0046-sync-actor-isolate-removed-and-how-to-rebuild.md) — the

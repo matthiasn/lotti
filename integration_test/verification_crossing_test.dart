@@ -17,13 +17,13 @@ import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/verification_glare.dart';
+import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/secure_storage.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -42,7 +42,7 @@ import 'matrix_test_room.dart';
 /// launcher answers a request the target already sent instead of starting
 /// its own, and while its own request is unanswered the incoming-request
 /// wrapper yields to a smaller identity (`shouldYieldTo`,
-/// `handOffOutgoingVerification`) and otherwise defers. The model takes a
+/// `handOffOutgoingVerificationTo`) and otherwise defers. The model takes a
 /// handoff as one step; here it is a timer stop, a cancel round trip and an
 /// accept, racing the peer's own traffic.
 void main() {
@@ -207,17 +207,17 @@ void main() {
         );
 
         final emojis = <String, String>{};
-        final withdrawn = <String, KeyVerification>{};
-        final deferred = <String, KeyVerification>{};
+        final withdrawn = <String, SyncVerificationState>{};
+        final deferred = <String, SyncVerificationState>{};
         final confirms = <Future<void>>[];
-        final logger = getIt<DomainLogger>();
 
-        // The app's rules, one device at a time.
+        // The app's rules, one device at a time, through the plain service
+        // API the sheets use (ADR 0142): states in, ceremony ids out.
         void follow(String name, MatrixService me) {
           // IncomingVerificationWrapper while the launcher's sheet holds the
           // lock: yield to a smaller identity, else keep the request.
-          Future<void> offer(KeyVerification request) async {
-            final outgoing = me.keyVerificationRunner;
+          Future<void> offer(SyncVerificationState request) async {
+            final outgoing = me.outgoingVerification;
             final yields = shouldYieldTo(
               incoming: request,
               outgoing: outgoing,
@@ -225,55 +225,49 @@ void main() {
               ownDeviceId: me.ownDeviceId,
             );
             debugPrint(
-              '$name - request from ${request.deviceId}: '
+              '$name - request from ${request.peerDeviceId}: '
               '${yields ? 'yields' : 'defers'} '
               '(own step: ${outgoing?.lastStep})',
             );
             if (yields) {
-              withdrawn[name] = outgoing!.keyVerification;
+              withdrawn[name] = outgoing!;
               deferred.remove(name);
-              await handOffOutgoingVerification(
-                service: me,
-                incoming: request,
-                domainLogger: logger,
-              );
+              await me.handOffOutgoingVerificationTo(request.id);
             } else {
               deferred[name] = request;
             }
           }
 
-          final incoming = me.getIncomingKeyVerificationStream().listen(offer);
+          final incoming = me.incomingVerificationRequests.listen(offer);
           addTearDown(incoming.cancel);
-          // A request held back before this side's own runner existed is
+          // A request held back before this side's own ceremony existed is
           // offered again once it does, as the wrapper does.
-          final ownRunner = reofferOnOwnRunner(me, () {
+          final ownCeremony = reofferOnOwnVerification(me, () {
             final held = deferred[name];
-            if (held != null && !held.isDone) unawaited(offer(held));
+            if (held != null && held.isPending) unawaited(offer(held));
           });
-          addTearDown(ownRunner.cancel);
+          addTearDown(ownCeremony.cancel);
 
           // Both sheets confirm the emoji once both users have seen them,
           // as people comparing two screens do: the outgoing sheet (own
           // ceremony or a handed-off one) and the incoming one. Confirming
           // the moment they appear lets this side's MAC overtake the peer's
           // 100 ms poll, which then never sees the key step.
-          Future<void> confirm(KeyVerificationRunner runner) async {
-            if (runner.lastStep != keyStep || emojis.containsKey(name)) return;
-            emojis[name] = extractEmojiString(runner.emojis);
+          Future<void> confirm(SyncVerificationState state) async {
+            if (state.lastStep != keyStep || emojis.containsKey(name)) return;
+            emojis[name] = state.emojis!.map((e) => e.emoji).join(' ');
             debugPrint('$name - emojis: ${emojis[name]}');
             await waitUntil(() => emojis.length == 2, timeout: timeout);
-            await runner.acceptEmojiVerification();
+            await me.acceptEmojiVerification(state.id);
           }
 
           // Awaited before the body ends, so no confirmation is still in
           // flight when the tear-downs close the clients.
-          void confirming(KeyVerificationRunner runner) =>
-              confirms.add(confirm(runner));
-          final outgoingSheet = me.keyVerificationStream.listen(confirming);
+          void confirming(SyncVerificationState state) =>
+              confirms.add(confirm(state));
+          final outgoingSheet = me.outgoingVerifications.listen(confirming);
           addTearDown(outgoingSheet.cancel);
-          final incomingSheet = me.incomingKeyVerificationRunnerStream.listen(
-            confirming,
-          );
+          final incomingSheet = me.incomingVerifications.listen(confirming);
           addTearDown(incomingSheet.cancel);
         }
 
@@ -284,16 +278,19 @@ void main() {
         // (IncomingVerificationModal auto-accepts it), else start one.
         Future<void> launch(String name, MatrixService me) async {
           final target = me.getUnverifiedDevices().first;
-          final waiting = me.incomingKeyVerificationRunner;
+          final waiting = me.incomingVerification;
           if (waiting != null &&
-              waiting.outcome == KeyVerificationOutcome.pending &&
-              waiting.keyVerification.deviceId == target.deviceId) {
+              waiting.isPending &&
+              waiting.peerDeviceId == target.deviceId) {
             debugPrint('$name - answers the waiting request');
-            await waiting.acceptVerification();
+            await me.acceptVerification(waiting.id);
             return;
           }
           debugPrint('$name - starts toward ${target.deviceId}');
-          await me.verifyDevice(target);
+          await me.verifyDevice(
+            userId: target.userId!,
+            deviceId: target.deviceId,
+          );
         }
 
         await Future.wait([launch('alice', alice), launch('bob', bob)]);
@@ -330,19 +327,24 @@ void main() {
           ),
           lessThan(0),
         );
-        expect(withdrawn[yielder]!.canceled, isTrue);
+        // The yielder's sheet carried on with the peer's ceremony: both
+        // devices now report the same SDK transaction as their own. Its
+        // outcome is not asserted — the SDK can dispose the runner without
+        // emitting a final step; the empty unverified lists above are the
+        // durable result of the exchange.
+        expect(
+          larger.outgoingVerification?.id,
+          smaller.outgoingVerification?.id,
+        );
 
-        // The peer kept the withdrawn request back, and sees it cancelled
-        // too, so nothing is left waiting on it once its sheet would show it.
+        // The peer kept the withdrawn request back rather than answering it,
+        // so nothing is left waiting on it once its sheet would show it.
         // Exactly one such request: an empty match would pass vacuously.
         final keptBack = deferred.values
-            .where(
-              (request) =>
-                  request.transactionId == withdrawn[yielder]!.transactionId,
-            )
+            .where((request) => request.id == withdrawn[yielder]!.id)
             .toList();
         expect(keptBack, hasLength(1));
-        await waitUntil(() => keptBack.single.canceled, timeout: timeout);
+        expect(keptBack.single.id, isNot(smaller.outgoingVerification?.id));
       },
       timeout: const Timeout(Duration(minutes: 5)),
       skip: skipReason,

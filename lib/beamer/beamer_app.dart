@@ -70,6 +70,7 @@ import 'package:lotti/features/relationships/ui/pages/relationships_page.dart';
 import 'package:lotti/features/settings/routing/settings_routes.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/sync_queue_counts.dart';
@@ -99,7 +100,6 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_drawer.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 
 part 'beamer_app_chrome_part.dart';
 part 'beamer_app_routes_part.dart';
@@ -485,7 +485,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       })
       ..listen(loginStateStreamProvider, (prev, next) {
         final state = next.asData?.value;
-        if (state == LoginState.loggedIn) {
+        if (state == SyncLoginState.loggedIn) {
           _notLoggedInToastShown = false;
         }
       })

@@ -83,7 +83,6 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -415,10 +414,10 @@ class _ManualMatrixStatsController extends MatrixStatsController {
 class _ManualUnverifiedController extends MatrixUnverifiedController {
   _ManualUnverifiedController(this.devices);
 
-  final List<DeviceKeys> devices;
+  final List<SyncDeviceInfo> devices;
 
   @override
-  Future<List<DeviceKeys>> build() async => devices;
+  Future<List<SyncDeviceInfo>> build() async => devices;
 }
 
 /// Holds the provisioning flow at a fixed point so the onboarding surfaces
@@ -646,31 +645,27 @@ void main() {
 
   late TestGetItMocks mocks;
   late MockMatrixService matrixService;
-  late MockMatrixClient matrixClient;
   late MockSyncDatabase syncDatabase;
   late MockMaintenance maintenance;
   late MockHistoricalSyncService historicalSyncService;
   late MockSyncNodeProfileBroadcaster nodeBroadcaster;
   late MockPersistenceLogic persistenceLogic;
   late MockEntitiesCacheService entitiesCache;
-  late MockDeviceKeys unverifiedDevice;
-  late MockKeyVerificationRunner verificationRunner;
-  late StreamController<KeyVerificationRunner> verificationStream;
+  late SyncDeviceInfo unverifiedDevice;
+  late SyncVerificationState verificationRunner;
+  late StreamController<SyncVerificationState> verificationStream;
   late NavService navService;
 
   setUp(() async {
     mocks = await setUpTestGetIt();
     matrixService = MockMatrixService();
-    matrixClient = MockMatrixClient();
     syncDatabase = MockSyncDatabase();
     maintenance = MockMaintenance();
     historicalSyncService = MockHistoricalSyncService();
     nodeBroadcaster = MockSyncNodeProfileBroadcaster();
     persistenceLogic = MockPersistenceLogic();
     entitiesCache = MockEntitiesCacheService();
-    unverifiedDevice = MockDeviceKeys();
-    verificationRunner = MockKeyVerificationRunner();
-    verificationStream = StreamController<KeyVerificationRunner>.broadcast();
+    verificationStream = StreamController<SyncVerificationState>.broadcast();
     navService = NavService(
       tabDelegates: appTabDelegates,
     );
@@ -693,20 +688,22 @@ void main() {
 
     when(matrixService.isLoggedIn).thenReturn(false);
     when(() => matrixService.syncRoomId).thenReturn(null);
-    when(() => matrixService.client).thenReturn(matrixClient);
-    when(() => matrixClient.userID).thenReturn(null);
+    when(() => matrixService.ownUserId).thenReturn(null);
     when(
-      () => matrixService.keyVerificationStream,
+      () => matrixService.outgoingVerifications,
     ).thenAnswer((_) => verificationStream.stream);
     when(
-      () => matrixService.incomingKeyVerificationRunnerStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
-    when(() => matrixService.keyVerificationRunner).thenReturn(null);
+      () => matrixService.incomingVerifications,
+    ).thenAnswer((_) => const Stream<SyncVerificationState>.empty());
+    when(() => matrixService.outgoingVerification).thenReturn(null);
     when(
-      () => matrixService.incomingKeyVerificationRunner,
+      () => matrixService.incomingVerification,
     ).thenReturn(null);
     when(
-      () => matrixService.verifyDevice(unverifiedDevice),
+      () => matrixService.verifyDevice(
+        userId: any(named: 'userId'),
+        deviceId: any(named: 'deviceId'),
+      ),
     ).thenAnswer((_) async {});
     when(() => matrixService.getUnverifiedDevices()).thenReturn([]);
     when(() => matrixService.getSyncDevices()).thenAnswer((_) async => []);
@@ -770,34 +767,31 @@ void main() {
     when(
       () => persistenceLogic.updateJournalEntity(any(), any()),
     ).thenAnswer((_) async => true);
-    when(() => unverifiedDevice.userId).thenReturn(
-      '@admiral-pebble:project-waddle.test',
+    unverifiedDevice = SyncDeviceInfo(
+      deviceId: 'PEBBLE-PHONE-7F3A',
+      userId: '@admiral-pebble:project-waddle.test',
+      displayName: _t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon'),
+      isCurrentDevice: false,
+      verified: false,
+      hasKeys: true,
     );
-    when(() => unverifiedDevice.deviceDisplayName).thenReturn(
-      _t('Admiral Pebble’s Phone', 'Admiral Pebbles Telefon'),
+    verificationRunner = SyncVerificationState(
+      id: 'pebble-ceremony',
+      direction: SyncVerificationDirection.outgoing,
+      peerUserId: '@admiral-pebble:project-waddle.test',
+      peerDeviceId: 'PEBBLE-PHONE-7F3A',
+      lastStep: 'm.key.verification.key',
+      outcome: KeyVerificationOutcome.pending,
+      emojis: [
+        SyncVerificationEmoji(emoji: '🐧', name: _t('Penguin', 'Pinguin')),
+        SyncVerificationEmoji(emoji: '🐟', name: _t('Fish', 'Fisch')),
+        SyncVerificationEmoji(emoji: '🚀', name: _t('Rocket', 'Rakete')),
+        SyncVerificationEmoji(emoji: '🧊', name: _t('Ice', 'Eis')),
+        SyncVerificationEmoji(emoji: '🌍', name: _t('Earth', 'Erde')),
+        SyncVerificationEmoji(emoji: '🌙', name: _t('Moon', 'Mond')),
+        SyncVerificationEmoji(emoji: '⭐', name: _t('Star', 'Stern')),
+      ],
     );
-    when(() => unverifiedDevice.deviceId).thenReturn('PEBBLE-PHONE-7F3A');
-    when(() => verificationRunner.lastStep).thenReturn(
-      'm.key.verification.key',
-    );
-    when(() => verificationRunner.emojis).thenReturn([
-      FakeKeyVerificationEmoji('🐧', _t('Penguin', 'Pinguin')),
-      FakeKeyVerificationEmoji('🐟', _t('Fish', 'Fisch')),
-      FakeKeyVerificationEmoji('🚀', _t('Rocket', 'Rakete')),
-      FakeKeyVerificationEmoji('🧊', _t('Ice', 'Eis')),
-      FakeKeyVerificationEmoji('🌍', _t('Earth', 'Erde')),
-      FakeKeyVerificationEmoji('🌙', _t('Moon', 'Mond')),
-      FakeKeyVerificationEmoji('⭐', _t('Star', 'Stern')),
-    ]);
-    final keyVerification = MockKeyVerification();
-    when(() => keyVerification.isDone).thenReturn(false);
-    when(() => verificationRunner.keyVerification).thenReturn(keyVerification);
-    when(
-      verificationRunner.cancelVerification,
-    ).thenAnswer((_) async {});
-    when(
-      verificationRunner.acceptEmojiVerification,
-    ).thenAnswer((_) async {});
     when(() => maintenance.clearSyncDb()).thenAnswer((_) async {});
     when(
       () => maintenance.purgeSentOutboxItems(

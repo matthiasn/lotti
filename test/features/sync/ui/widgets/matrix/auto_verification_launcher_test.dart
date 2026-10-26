@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
@@ -14,11 +16,12 @@ import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
+import 'package:matrix/matrix.dart' show EventTypes;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import '../../../sync_verification_fixtures.dart';
 import '../../provisioned/provisioned_status_page_test_helpers.dart';
 
 /// Reads its list on every build so a test can change what is unverified and
@@ -26,10 +29,10 @@ import '../../provisioned/provisioned_status_page_test_helpers.dart';
 class _MutableUnverifiedController extends MatrixUnverifiedController {
   _MutableUnverifiedController(this.source);
 
-  final List<DeviceKeys> Function() source;
+  final List<SyncDeviceInfo> Function() source;
 
   @override
-  Future<List<DeviceKeys>> build() async => source();
+  Future<List<SyncDeviceInfo>> build() async => source();
 }
 
 /// Stands in for a manual or incoming ceremony already owning the lock.
@@ -43,31 +46,43 @@ void main() {
 
   late MockMatrixService mockMatrixService;
 
-  setUpAll(() {
-    registerFallbackValue(FakeDeviceKeys());
-  });
+  SyncDeviceInfo deviceNamed(String name, String id) =>
+      unverifiedPeerDevice(deviceId: id, displayName: name);
 
-  MockDeviceKeys deviceNamed(String name, String id) {
-    final device = MockDeviceKeys();
-    when(() => device.deviceDisplayName).thenReturn(name);
-    when(() => device.deviceId).thenReturn(id);
-    when(() => device.userId).thenReturn('@alice:example.com');
-    when(() => mockMatrixService.verifyDevice(device)).thenAnswer((_) async {});
-    return device;
-  }
+  Future<void> verifyDeviceCall(String deviceId) =>
+      mockMatrixService.verifyDevice(
+        userId: '@alice:example.com',
+        deviceId: deviceId,
+      );
 
   setUp(() {
     mockMatrixService = MockMatrixService();
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => const Stream.empty());
-    when(() => mockMatrixService.verifyDevice(any())).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.incomingVerifications,
+    ).thenAnswer((_) => const Stream.empty());
+    when(() => mockMatrixService.outgoingVerification).thenReturn(null);
+    when(() => mockMatrixService.incomingVerification).thenReturn(null);
+    when(
+      () => mockMatrixService.verifyDevice(
+        userId: any(named: 'userId'),
+        deviceId: any(named: 'deviceId'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.acceptVerification(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockMatrixService.cancelVerification(any()),
+    ).thenAnswer((_) async {});
   });
 
   Future<ProviderContainer> pumpLauncher(
     WidgetTester tester,
-    List<MockDeviceKeys> unverified, {
+    List<SyncDeviceInfo> unverified, {
     List<Override> extraOverrides = const [],
     MatrixUnverifiedController Function()? unverifiedController,
     int launchers = 1,
@@ -113,6 +128,9 @@ void main() {
     await tester.pumpAndSettle();
     return container;
   }
+
+  SyncDeviceInfo shownDevice(WidgetTester tester) =>
+      tester.widget<VerificationModal>(find.byType(VerificationModal)).device;
 
   group('AutoVerificationLauncher device selection', () {
     testWidgets('does not consume devices while another sheet holds the lock', (
@@ -166,17 +184,13 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      DeviceKeys shownDevice() => tester
-          .widget<VerificationModal>(find.byType(VerificationModal))
-          .deviceKeys;
-
       // First traversal takes the head of the list.
-      expect(shownDevice(), same(stale));
+      expect(shownDevice(tester), same(stale));
       await dismiss();
       // Dismissing invalidates the providers, so the next unshown device is
       // offered on the rebuild.
       await tester.pumpAndSettle();
-      expect(shownDevice(), same(fresh));
+      expect(shownDevice(tester), same(fresh));
       await dismiss();
       expect(find.byType(VerificationModal), findsNothing);
 
@@ -186,7 +200,7 @@ void main() {
       // The one the user was actually looking at — not the stale peer at the
       // head of the list, which is what a full reset would have reopened.
       expect(find.byType(VerificationModal), findsOneWidget);
-      expect(shownDevice(), same(fresh));
+      expect(shownDevice(tester), same(fresh));
     });
 
     testWidgets(
@@ -198,7 +212,7 @@ void main() {
         // *unhandled* device is then the newcomer, not the one dismissed.
         final stale = deviceNamed('Stale', 'STALE');
         final fresh = deviceNamed('New phone', 'NEWPHONE');
-        var devices = <DeviceKeys>[fresh];
+        var devices = <SyncDeviceInfo>[fresh];
         final container = await pumpLauncher(
           tester,
           const [],
@@ -206,11 +220,7 @@ void main() {
               _MutableUnverifiedController(() => devices),
         );
 
-        DeviceKeys shownDevice() => tester
-            .widget<VerificationModal>(find.byType(VerificationModal))
-            .deviceKeys;
-
-        expect(shownDevice(), same(fresh));
+        expect(shownDevice(tester), same(fresh));
         await tester.tap(find.byIcon(LottiIcons.close));
         await tester.pumpAndSettle();
 
@@ -230,7 +240,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(VerificationModal), findsOneWidget);
-        expect(shownDevice(), same(fresh));
+        expect(shownDevice(tester), same(fresh));
       },
     );
   });
@@ -271,29 +281,23 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(VerificationModal), findsNothing);
-        verify(() => mockMatrixService.verifyDevice(device)).called(2);
+        verify(() => verifyDeviceCall('NEWPHONE')).called(2);
       },
     );
   });
 
   group('AutoVerificationLauncher and a request the target already sent', () {
-    late MockKeyVerification request;
-    late MockKeyVerificationRunner waiting;
-
-    setUp(() {
-      request = MockKeyVerification();
-      when(() => request.userId).thenReturn('@alice:example.com');
-      when(() => request.isDone).thenReturn(false);
-      waiting = MockKeyVerificationRunner();
-      when(() => waiting.lastStep).thenReturn('m.key.verification.request');
-      when(() => waiting.keyVerification).thenReturn(request);
-      when(
-        () => mockMatrixService.incomingKeyVerificationRunner,
-      ).thenReturn(waiting);
-      when(
-        () => mockMatrixService.incomingKeyVerificationRunnerStream,
-      ).thenAnswer((_) => const Stream.empty());
-    });
+    /// The peer's unanswered request, as the service holds it.
+    SyncVerificationState waitingFrom(
+      String deviceId, {
+      KeyVerificationOutcome outcome = KeyVerificationOutcome.pending,
+    }) => verificationState(
+      id: 'incoming-1',
+      direction: SyncVerificationDirection.incoming,
+      peerDeviceId: deviceId,
+      lastStep: EventTypes.KeyVerificationRequest,
+      outcome: outcome,
+    );
 
     testWidgets('answers it instead of starting a second ceremony', (
       tester,
@@ -301,19 +305,28 @@ void main() {
       // Two devices starting at each other are two SDK transactions, each
       // sheet waiting on the other's request. The peer's pending one is the
       // ceremony to show; the emoji are the same either way.
-      when(() => request.deviceId).thenReturn('NEWPHONE');
+      when(
+        () => mockMatrixService.incomingVerification,
+      ).thenReturn(waitingFrom('NEWPHONE'));
 
       await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
 
       expect(find.byType(IncomingVerificationModal), findsOneWidget);
       expect(find.byType(VerificationModal), findsNothing);
-      verifyNever(() => mockMatrixService.verifyDevice(any()));
+      verifyNever(
+        () => mockMatrixService.verifyDevice(
+          userId: any(named: 'userId'),
+          deviceId: any(named: 'deviceId'),
+        ),
+      );
     });
 
     testWidgets("starts its own when the pending request is another device's", (
       tester,
     ) async {
-      when(() => request.deviceId).thenReturn('SOMEONE_ELSE');
+      when(
+        () => mockMatrixService.incomingVerification,
+      ).thenReturn(waitingFrom('SOMEONE_ELSE'));
 
       await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
 
@@ -324,13 +337,53 @@ void main() {
     testWidgets("starts its own when the target's request was cancelled", (
       tester,
     ) async {
-      when(() => request.deviceId).thenReturn('NEWPHONE');
-      when(() => request.canceled).thenReturn(true);
+      when(() => mockMatrixService.incomingVerification).thenReturn(
+        waitingFrom('NEWPHONE', outcome: KeyVerificationOutcome.cancelled),
+      );
 
       await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
 
       expect(find.byType(VerificationModal), findsOneWidget);
       expect(find.byType(IncomingVerificationModal), findsNothing);
+    });
+
+    testWidgets("leaves a newer peer's ceremony alone when the sheet closes", (
+      tester,
+    ) async {
+      // The service keeps the latest incoming ceremony. One that arrived
+      // from another device while this sheet was open is not its to cancel.
+      var live = waitingFrom('NEWPHONE');
+      when(() => mockMatrixService.incomingVerification).thenAnswer(
+        (_) => live,
+      );
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+      expect(find.byType(IncomingVerificationModal), findsOneWidget);
+      live = verificationState(
+        id: 'incoming-2',
+        direction: SyncVerificationDirection.incoming,
+        peerDeviceId: 'SOMEONE_ELSE',
+        lastStep: EventTypes.KeyVerificationRequest,
+      );
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockMatrixService.cancelVerification(any()));
+    });
+
+    testWidgets('cancels the answered ceremony, not an own one, when the '
+        'sheet closes', (tester) async {
+      when(
+        () => mockMatrixService.incomingVerification,
+      ).thenReturn(waitingFrom('NEWPHONE'));
+
+      await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
+      await tester.tap(find.byIcon(LottiIcons.close));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockMatrixService.cancelVerification('incoming-1'),
+      ).called(1);
     });
   });
 
@@ -342,7 +395,7 @@ void main() {
       // in build() turned the normal end of verification into a provider
       // modification exception — and the all-verified test could not catch it,
       // because an already-empty set makes clear() a no-op.
-      var devices = <DeviceKeys>[deviceNamed('Old laptop', 'OLD')];
+      var devices = <SyncDeviceInfo>[deviceNamed('Old laptop', 'OLD')];
       final container = await pumpLauncher(
         tester,
         const [],
@@ -385,23 +438,11 @@ void main() {
       final container = await pumpLauncher(tester, [first, second]);
 
       expect(find.byType(VerificationModal), findsOneWidget);
-      final modal = tester.widget<VerificationModal>(
-        find.byType(VerificationModal),
-      );
-      expect(modal.deviceKeys.deviceId, 'NEWPHONE');
+      expect(shownDevice(tester).deviceId, 'NEWPHONE');
       expect(container.read(matrixVerificationModalLockProvider), isTrue);
     });
 
     group('when its sheet closes', () {
-      late MockKeyVerificationRunner runner;
-
-      setUp(() {
-        final keyVerification = MockKeyVerification();
-        runner = MockKeyVerificationRunner();
-        when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(() => mockMatrixService.keyVerificationRunner).thenReturn(runner);
-      });
-
       Future<void> showThenDismiss(WidgetTester tester) async {
         await pumpLauncher(tester, [deviceNamed('New phone', 'NEWPHONE')]);
         expect(find.byType(VerificationModal), findsOneWidget);
@@ -410,25 +451,32 @@ void main() {
         expect(find.byType(VerificationModal), findsNothing);
       }
 
-      testWidgets('cancels a ceremony the user walked away from', (
+      testWidgets('cancels the ceremony the user walked away from, by id', (
         tester,
       ) async {
         // Dismissing used to leave the SDK ceremony live: the peer's sheet
         // kept waiting on a device that was gone, with nothing to free its
         // lock (TLC's `EventuallyOffered` with `CancelOnDismiss = FALSE`).
-        when(() => runner.lastStep).thenReturn('m.key.verification.request');
+        // Whether the ceremony is still live is the service's call.
+        when(() => mockMatrixService.outgoingVerification).thenReturn(
+          verificationState(
+            id: 'own-1',
+            peerDeviceId: 'NEWPHONE',
+            lastStep: EventTypes.KeyVerificationRequest,
+          ),
+        );
 
         await showThenDismiss(tester);
 
-        verify(runner.cancelVerification).called(1);
+        verify(() => mockMatrixService.cancelVerification('own-1')).called(1);
       });
 
-      testWidgets('leaves a finished ceremony alone', (tester) async {
-        when(() => runner.lastStep).thenReturn('m.key.verification.done');
-
+      testWidgets('cancels nothing when the service holds no ceremony', (
+        tester,
+      ) async {
         await showThenDismiss(tester);
 
-        verifyNever(runner.cancelVerification);
+        verifyNever(() => mockMatrixService.cancelVerification(any()));
       });
     });
 

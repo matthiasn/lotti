@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/models/sync_login_state.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -14,7 +15,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -26,18 +26,15 @@ void main() {
 
   late TestGetItMocks mocks;
   late MockMatrixService mockMatrixService;
-  late MockMatrixClient mockClient;
   late MockUserActivityService mockUserActivityService;
 
   setUp(() async {
     mocks = await setUpTestGetIt();
     mockMatrixService = MockMatrixService();
-    mockClient = MockMatrixClient();
     mockUserActivityService = MockUserActivityService();
     when(mockMatrixService.isLoggedIn).thenReturn(false);
     when(() => mockMatrixService.syncRoomId).thenReturn(null);
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn(null);
+    when(() => mockMatrixService.ownUserId).thenReturn(null);
     when(() => mockUserActivityService.updateActivity()).thenReturn(null);
     // SliverBoxAdapterPage wires a scroll listener to UserActivityService.
     getIt.registerSingleton<UserActivityService>(mockUserActivityService);
@@ -62,7 +59,7 @@ void main() {
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
     when(
-      () => mockMatrixService.keyVerificationStream,
+      () => mockMatrixService.outgoingVerifications,
     ).thenAnswer((_) => const Stream.empty());
     when(
       () => mocks.journalDb.watchConfigFlag(enableMatrixFlag),
@@ -116,9 +113,9 @@ void main() {
       // broadcast controller during async widget teardown can race the
       // listener under the bundled runner (see test/README.md).
       final loginGate = Completer<void>();
-      Stream<LoginState> loginStates() async* {
+      Stream<SyncLoginState> loginStates() async* {
         await loginGate.future;
-        yield LoginState.loggedIn;
+        yield SyncLoginState.loggedIn;
       }
 
       var configured = false;
@@ -131,7 +128,7 @@ void main() {
         () => mockMatrixService.getSyncDevices(),
       ).thenAnswer((_) async => const <SyncDeviceInfo>[]);
       when(
-        () => mockMatrixService.keyVerificationStream,
+        () => mockMatrixService.outgoingVerifications,
       ).thenAnswer((_) => const Stream.empty());
       when(
         () => mocks.journalDb.watchConfigFlag(enableMatrixFlag),
@@ -194,7 +191,7 @@ void main() {
   group('ProvisionedSyncBody — the desktop Devices panel', () {
     setUp(() {
       // The roster header names the server it talks to.
-      when(() => mockClient.userID).thenReturn('@alice:example.com');
+      when(() => mockMatrixService.ownUserId).thenReturn('@alice:example.com');
       when(mockMatrixService.loadConfig).thenAnswer(
         (_) async => const MatrixConfig(
           homeServer: 'https://matrix.example.com',

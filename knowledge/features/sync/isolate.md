@@ -5,9 +5,21 @@ description: The worker isolate sync is moving into behind use_isolate_sync — 
 resource: ../../../lib/features/sync/isolate
 tags: [sync, isolate, performance, jank, supervision, config-flag]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T18:00:00Z }
+generated: { by: claude-code/fable-5.1, at: 2026-10-24T22:00:00Z }
 stale_after: 2026-12-27
 sources:
+  - id: sync-service
+    resource: ../../../lib/features/sync/sync_service.dart
+    title: SyncService — what the UI asks of sync, in plain types
+    last_modified: 2026-10-24
+  - id: verification-state
+    resource: ../../../lib/features/sync/models/sync_verification.dart
+    title: SyncVerificationState — one ceremony as the UI sees it
+    last_modified: 2026-10-24
+  - id: device-info
+    resource: ../../../lib/features/sync/models/sync_device_info.dart
+    title: SyncDeviceInfo — a session row without its DeviceKeys
+    last_modified: 2026-10-24
   - id: gateway
     resource: ../../../lib/features/sync/queue/inbound_queue_gateway.dart
     title: InboundQueueGateway — how the apply side reaches the queue's owner
@@ -90,9 +102,12 @@ this concept is how the pieces work.
 the worker opens its own connection to `sync.sqlite` and owns the inbound
 queue's leases and acknowledgements, which the UI isolate's inbound worker
 sends it ([the hand-off](#how-the-hand-off-works)); the writes it reports
-reach the UI isolate's Drift streams. Receiving — the Matrix client, admission,
-bridge walks, attachment ingestion — still runs on the UI isolate, so nothing
-measurable has moved yet; that is step 4.
+reach the UI isolate's Drift streams. The UI no longer sees the SDK: every
+page, sheet and controller above the sync feature talks to
+[`SyncService`](#what-the-ui-sees) in plain types (step 4, first half).
+Receiving — the Matrix client, admission, bridge walks, attachment
+ingestion — still runs on the UI isolate, so nothing measurable has moved
+yet; that is the second half of step 4.
 
 # Who will own what
 
@@ -217,6 +232,43 @@ files, stays on the SDK event; it moves with the client.
 The one observable change: a queued entry applies as soon as its turn comes,
 even before the SDK has emitted the room; it used to be retried every two
 seconds until it had.
+
+# What the UI sees
+
+Step 4, first half, in place. Nothing above `lib/features/sync` imports the
+Matrix SDK any more. The pages, the device and verification sheets, the
+outbox, onboarding and provisioning hold a `SyncService`
+(`lib/features/sync/sync_service.dart`), which `MatrixService` implements
+in-process and which the sync isolate will answer once the client moves.
+Everything that crosses the seam is a plain value, because it is about to
+cross a port:
+
+- **Devices** are `SyncDeviceInfo` rows. `hasKeys` replaces the SDK's
+  `DeviceKeys` object: it says whether a verification can be started, which
+  is all the roster ever asked the keys. `verifyDevice` takes the
+  `(userId, deviceId)` pair and resolves the keys on the service side; a
+  keyless session is refused with a `StateError`.
+- **Login** is `SyncLoginState`, mapped one-to-one from the SDK's enum by
+  `loginStateChanges`. The outbox's post-login nudge and the login-state
+  provider read it; neither reaches for the client.
+- **Verification** is `SyncVerificationState`: a snapshot per change, with
+  the ceremony's `id` (the SDK transaction id, or one the service mints),
+  its direction, the peer, the last step, the emoji once they exist and the
+  `KeyVerificationOutcome`. The UI drives a ceremony by id —
+  `acceptVerification`, `acceptEmojiVerification`, `cancelVerification`,
+  `handOffOutgoingVerificationTo` — and the service finds the runner, or
+  the not-yet-answered request it remembers, behind that id. The glare rules
+  in `matrix/verification_glare.dart` compare states, and the hand-off that
+  used to be assembled in the wrapper is one service call.
+- **Failures** the UI acts on are its own types: a refused credential on a
+  device removal is `SyncReauthRequiredException`, mapped from the SDK's
+  `M_FORBIDDEN` inside the service; everything else passes through.
+
+`MatrixService` keeps its SDK-typed surface for the sync feature's own
+internals — the runners, the gateway, the pipeline — which move with the
+client. The tests mirror the split: the UI suites build states and device
+rows from `test/features/sync/sync_verification_fixtures.dart` and never
+import the SDK; the runner and service suites still do.
 
 # What runs regardless of activity
 

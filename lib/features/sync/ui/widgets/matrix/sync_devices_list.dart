@@ -190,10 +190,10 @@ class _SyncDevicesListState extends ConsumerState<SyncDevicesList> {
     // authority — a Matrix ID's domain can differ from the host serving the
     // account — with the account-id domain as the fallback while the client
     // has not resolved one.
-    final client = ref.watch(matrixServiceProvider).client;
-    final userId = client.userID;
+    final service = ref.watch(matrixServiceProvider);
+    final userId = service.ownUserId;
     final serverHost =
-        client.homeserver?.host ??
+        service.homeserverHost ??
         (userId == null || !userId.contains(':')
             ? null
             : userId.split(':').skip(1).join(':'));

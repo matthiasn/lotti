@@ -12,7 +12,6 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import 'outbox_state_controller_test_helpers.dart';
 
 void main() {
   group('inboundQueueDepthProvider — _inboundQueueDepthStream', () {
@@ -181,9 +180,7 @@ void main() {
       'streams the seeded depth — covers the provider entry point',
       () async {
         final mockMatrix = MockMatrixService();
-        final mockCoordinator = MockQueueCoordinator();
-        when(() => mockMatrix.queueCoordinator).thenReturn(mockCoordinator);
-        when(() => mockCoordinator.queue).thenReturn(queue);
+        when(() => mockMatrix.inboundQueue).thenReturn(queue);
 
         final container = ProviderContainer(
           overrides: [matrixServiceProvider.overrideWithValue(mockMatrix)],

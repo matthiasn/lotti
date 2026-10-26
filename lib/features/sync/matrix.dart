@@ -13,3 +13,6 @@ export 'matrix/sync_engine.dart';
 export 'matrix/sync_lifecycle_coordinator.dart';
 export 'matrix/sync_room_manager.dart';
 export 'matrix/verification_glare.dart';
+export 'models/sync_login_state.dart';
+export 'models/sync_verification.dart';
+export 'sync_service.dart';

@@ -5,12 +5,12 @@ import 'package:lotti/features/design_system/components/celebration/celebration_
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_device_pair_motif.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_well.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 
 /// The shared stages of a SAS (emoji) ceremony, rendered identically whether
 /// this device started the verification or is answering one.
@@ -103,7 +103,7 @@ class VerificationEmojiStage extends StatelessWidget {
     super.key,
   });
 
-  final Iterable<KeyVerificationEmoji> emojis;
+  final Iterable<SyncVerificationEmoji> emojis;
 
   /// True once this side confirmed and the ceremony waits on the peer; the
   /// accept button disables and carries the waiting label.
@@ -199,7 +199,7 @@ const double kVerificationDecisionRowMinWidth = 420;
 class VerificationEmojiGrid extends StatelessWidget {
   const VerificationEmojiGrid({required this.emojis, super.key});
 
-  final Iterable<KeyVerificationEmoji> emojis;
+  final Iterable<SyncVerificationEmoji> emojis;
 
   @override
   Widget build(BuildContext context) {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
+import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_handled_provider.dart';
@@ -12,10 +13,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_moda
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
-import 'package:matrix/matrix.dart';
 
 /// Opens the SAS ceremony as soon as an unverified device appears, once per
 /// device, guarded by the app-wide modal lock so two surfaces watching the
@@ -39,18 +37,18 @@ class _AutoVerificationLauncherState
     extends ConsumerState<AutoVerificationLauncher> {
   bool _launchInFlight = false;
 
-  static String _identity(DeviceKeys device) =>
+  static String _identity(SyncDeviceInfo device) =>
       MatrixVerificationHandled.identityOf(
         userId: device.userId,
-        deviceId: device.deviceId ?? '',
+        deviceId: device.deviceId,
       );
 
   /// The device to open: [preferred] while it is still unverified — the one a
   /// relaunch asked for — else the first device **not yet shown**, rather than
   /// simply the first: a stale or legacy unverified peer can sort ahead of the
   /// one actually being paired.
-  static DeviceKeys? _pick(
-    List<DeviceKeys> devices,
+  static SyncDeviceInfo? _pick(
+    List<SyncDeviceInfo> devices,
     MatrixVerificationHandled handled,
     String? preferred,
   ) {
@@ -68,25 +66,20 @@ class _AutoVerificationLauncherState
   /// Starting a ceremony of our own beside it is the glare the SDK does not
   /// resolve — two transactions, each device's sheet waiting on the other —
   /// so the peer's is answered instead. The emoji are the same either way.
-  KeyVerification? _waitingRequestFrom(String targetId) {
-    final runner = ref
-        .read(matrixServiceProvider)
-        .incomingKeyVerificationRunner;
-    if (runner == null || runner.outcome != KeyVerificationOutcome.pending) {
-      return null;
-    }
-    final request = runner.keyVerification;
-    final deviceId = request.deviceId;
+  SyncVerificationState? _waitingRequestFrom(String targetId) {
+    final request = ref.read(matrixServiceProvider).incomingVerification;
+    if (request == null || !request.isPending) return null;
+    final deviceId = request.peerDeviceId;
     if (deviceId == null) return null;
     final sender = MatrixVerificationHandled.identityOf(
-      userId: request.userId,
+      userId: request.peerUserId,
       deviceId: deviceId,
     );
     return sender == targetId ? request : null;
   }
 
   Future<void> _maybeLaunch(
-    List<DeviceKeys> devices, {
+    List<SyncDeviceInfo> devices, {
     String? preferred,
   }) async {
     if (!mounted || _launchInFlight || devices.isEmpty) return;
@@ -107,7 +100,6 @@ class _AutoVerificationLauncherState
     _launchInFlight = true;
     handled.markShown(targetId);
     final service = ref.read(matrixServiceProvider);
-    final logger = ref.read(domainLoggerProvider);
     final waiting = _waitingRequestFrom(targetId);
     try {
       await showVerificationModalSheet(
@@ -119,15 +111,19 @@ class _AutoVerificationLauncherState
       );
     } finally {
       // The ceremony this sheet showed: the peer's request if that is what
-      // was answered, else this device's own — or, after a handoff, the
-      // peer's ceremony the sheet carried on with, which lives on the same
-      // runner slot.
-      await cancelAbandonedVerification(
-        waiting != null
-            ? service.incomingKeyVerificationRunner
-            : service.keyVerificationRunner,
-        loggingService: logger,
-      );
+      // was answered — and only while the service still holds that one,
+      // since it keeps the latest incoming ceremony and a newer peer's is
+      // not this sheet's to cancel — else this device's own, or, after a
+      // handoff, the peer's ceremony the sheet carried on with, which lives
+      // on the same runner slot.
+      final String? shownId;
+      if (waiting != null) {
+        final live = service.incomingVerification;
+        shownId = live?.id == waiting.id ? waiting.id : null;
+      } else {
+        shownId = service.outgoingVerification?.id;
+      }
+      if (shownId != null) await service.cancelVerification(shownId);
       if (mounted) {
         ref
           ..invalidate(matrixUnverifiedControllerProvider)

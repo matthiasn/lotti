@@ -128,15 +128,35 @@ class MatrixServiceOps {
 
   Future<String?> getRoom() => roomManager.loadPersistedRoomId();
 
-  List<DeviceKeys> getUnverifiedDevices() {
-    return gateway.unverifiedDevices();
-  }
+  List<SyncDeviceInfo> getUnverifiedDevices() => [
+    for (final device in gateway.unverifiedDevices())
+      SyncDeviceInfo(
+        deviceId: device.deviceId ?? '',
+        displayName: device.deviceDisplayName,
+        isCurrentDevice: false,
+        verified: false,
+        hasKeys: true,
+        userId: device.userId,
+      ),
+  ];
 
-  Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
-    deviceKeys: deviceKeys,
-    service: service(),
-    loggingService: loggingService,
-  );
+  /// Starts verifying the device [deviceId] of [userId] from the key cache.
+  /// Throws a [StateError] when the cache holds no keys for it: a keyless
+  /// session has nothing to verify.
+  Future<void> verifyDevice({
+    required String userId,
+    required String deviceId,
+  }) async {
+    final deviceKeys = _client.userDeviceKeys[userId]?.deviceKeys[deviceId];
+    if (deviceKeys == null) {
+      throw StateError('no published keys for device $deviceId of $userId');
+    }
+    await verifyMatrixDevice(
+      deviceKeys: deviceKeys,
+      service: service(),
+      loggingService: loggingService,
+    );
+  }
 
   /// Runs post-verification recovery so sync resumes without app restart.
   ///
@@ -456,7 +476,7 @@ class MatrixServiceOps {
             : DateTime.fromMillisecondsSinceEpoch(lastSeenTs),
         isCurrentDevice: isCurrent,
         verified: isCurrent || (keys?.verified ?? false),
-        keys: keys,
+        hasKeys: keys != null,
         userId: userId,
       );
     }).toList();
@@ -479,7 +499,7 @@ class MatrixServiceOps {
           displayName: entry.value.deviceDisplayName,
           isCurrentDevice: false,
           verified: false,
-          keys: entry.value,
+          hasKeys: true,
           onServer: false,
           userId: userId,
         ),
@@ -500,7 +520,7 @@ class MatrixServiceOps {
             displayName: keyEntry.value.deviceDisplayName,
             isCurrentDevice: false,
             verified: false,
-            keys: keyEntry.value,
+            hasKeys: true,
             onServer: false,
             ownAccount: false,
             userId: userEntry.key,

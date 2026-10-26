@@ -61,10 +61,10 @@ void main() {
     when(
       () => mockMatrixService.getSyncDevices(),
     ).thenAnswer((_) async => []);
-    // The header derives the sync server from the account id.
-    final mockClient = MockMatrixClient();
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn('@alice:example.com');
+    // The header derives the sync server from the account id unless the
+    // service knows the host it actually talks to.
+    when(() => mockMatrixService.ownUserId).thenReturn('@alice:example.com');
+    when(() => mockMatrixService.homeserverHost).thenReturn(null);
   });
 
   tearDown(tearDownTestGetIt);
@@ -87,17 +87,14 @@ void main() {
   }
 
   SyncDeviceInfo unverifiedDevice({bool withKeys = true}) {
-    final keys = MockDeviceKeys();
-    when(() => keys.deviceDisplayName).thenReturn('Uninstalled phone');
-    when(() => keys.deviceId).thenReturn('GHOST');
-    when(() => keys.userId).thenReturn('@user:server');
     return SyncDeviceInfo(
       deviceId: 'GHOST',
       displayName: 'Uninstalled phone',
       lastSeen: DateTime(2026, 5, 14),
       isCurrentDevice: false,
       verified: false,
-      keys: withKeys ? keys : null,
+      hasKeys: withKeys,
+      userId: '@user:server',
     );
   }
 
@@ -442,11 +439,6 @@ void main() {
   testWidgets('two users sharing a device id render as distinct cards', (
     tester,
   ) async {
-    final foreignKeys = MockDeviceKeys();
-    when(() => foreignKeys.deviceDisplayName).thenReturn('Peer phone');
-    when(() => foreignKeys.deviceId).thenReturn('SHARED_ID');
-    when(() => foreignKeys.userId).thenReturn('@peer:server');
-
     await pumpList(
       tester,
       controller: () => _FakeSyncDevicesController([
@@ -457,12 +449,12 @@ void main() {
           verified: true,
           userId: '@me:server',
         ),
-        SyncDeviceInfo(
+        const SyncDeviceInfo(
           deviceId: 'SHARED_ID',
           displayName: 'Peer phone',
           isCurrentDevice: false,
           verified: false,
-          keys: foreignKeys,
+          hasKeys: true,
           onServer: false,
           ownAccount: false,
           userId: '@peer:server',
@@ -477,21 +469,16 @@ void main() {
 
   testWidgets('the banner names verification when every blocker is a '
       'legacy foreign device', (tester) async {
-    final foreignKeys = MockDeviceKeys();
-    when(() => foreignKeys.deviceDisplayName).thenReturn('Peer phone');
-    when(() => foreignKeys.deviceId).thenReturn('PEER');
-    when(() => foreignKeys.userId).thenReturn('@peer:server');
-
     await pumpList(
       tester,
       controller: () => _FakeSyncDevicesController([
         currentDevice,
-        SyncDeviceInfo(
+        const SyncDeviceInfo(
           deviceId: 'PEER',
           displayName: 'Peer phone',
           isCurrentDevice: false,
           verified: false,
-          keys: foreignKeys,
+          hasKeys: true,
           onServer: false,
           ownAccount: false,
           userId: '@peer:server',
@@ -509,21 +496,16 @@ void main() {
 
   testWidgets('the banner names deletion when every blocker is an '
       'own-account session the server dropped', (tester) async {
-    final ghostKeys = MockDeviceKeys();
-    when(() => ghostKeys.deviceDisplayName).thenReturn('Cache ghost');
-    when(() => ghostKeys.deviceId).thenReturn('CACHE_ONLY');
-    when(() => ghostKeys.userId).thenReturn('@user:server');
-
     await pumpList(
       tester,
       controller: () => _FakeSyncDevicesController([
         currentDevice,
-        SyncDeviceInfo(
+        const SyncDeviceInfo(
           deviceId: 'CACHE_ONLY',
           displayName: 'Cache ghost',
           isCurrentDevice: false,
           verified: false,
-          keys: ghostKeys,
+          hasKeys: true,
           onServer: false,
           userId: '@user:server',
         ),
@@ -646,12 +628,9 @@ void main() {
   ) async {
     // A Matrix ID's domain can differ from the host actually serving the
     // account; the roster must name the server it talks to.
-    final mockClient = MockMatrixClient();
-    when(() => mockMatrixService.client).thenReturn(mockClient);
-    when(() => mockClient.userID).thenReturn('@alice:example.com');
     when(
-      () => mockClient.homeserver,
-    ).thenReturn(Uri.parse('https://matrix.example.com'));
+      () => mockMatrixService.homeserverHost,
+    ).thenReturn('matrix.example.com');
 
     await pumpList(
       tester,

@@ -623,9 +623,11 @@ reach the wrong device or none at all:
   instead of starting a second ceremony; while this device's own request is
   still unanswered, the wrapper **yields** to an incoming request from a
   smaller identity — the SDK's `start` glare rule, one step earlier — by
-  cancelling its own ceremony, wrapping the peer's in a runner published on
-  the outgoing stream the open `VerificationModal` renders, accepting it, and
-  releasing the withdrawn target from the handled set; and a request that
+  asking the service to hand its ceremony off
+  (`handOffOutgoingVerificationTo`: cancel its own, wrap the peer's in a
+  runner published on the outgoing stream the open `VerificationModal`
+  renders, accept it) and releasing the withdrawn target from the handled
+  set; and a request that
   arrives while the lock is held for any other reason is **held, not
   dropped**, and shown when the lock frees if the peer has not cancelled it.
   The order is what makes the yield terminate: the smallest device in any
@@ -638,8 +640,9 @@ reach the wrong device or none at all:
   crossing request can land while this device has a request out but no
   runner to compare it with. It is held then, and both devices could hold
   each other's request for good — a CI run of the crossing integration test
-  did exactly that. `reofferOnOwnRunner` watches `keyVerificationStream`, and
-  once the device's own runner is stored the wrapper offers its held requests
+  did exactly that. `reofferOnOwnVerification` watches
+  `outgoingVerifications`, and once the device's own ceremony is stored the
+  wrapper offers its held requests
   again, yielding if it should (`ReofferOnRegister` in the model). A yield
   also records the peer as shown, and as the one shown last: the launcher's
   sheet now shows that peer's ceremony, so "Show the emoji" reopens it and the
@@ -647,9 +650,10 @@ reach the wrong device or none at all:
 - **Dismissing a live sheet cancels its ceremony.** A backdrop tap used to
   leave the SDK ceremony running: the peer's sheet waited at the emoji step
   for a confirmation that would never come, holding its lock (TLC's
-  `EventuallyOffered`). The sheet's host — the launcher or the wrapper, which
-  await the sheet — cancels a still-pending runner once it closes
-  (`cancelAbandonedVerification`); a finished one is left alone.
+  `EventuallyOffered`). The sheet's host — the launcher, the wrapper or the
+  device card's Verify button, which await the sheet — asks the service to
+  cancel the ceremony by id once it closes (`cancelVerification`, which
+  runs `cancelAbandonedVerification`); a finished one is left alone.
 - That record lives in `matrixVerificationHandledProvider`, not in the widget's
   `State`, because two launchers can be mounted at once — the settings pane
   embeds the roster while the setup modal is open. Per-widget, the one that
@@ -691,7 +695,9 @@ sets `error` also sets `canceled`, so failure is not separable from
 cancellation; there are two terminal outcomes, not three.
 
 `keyVerificationOutcome` (`matrix/key_verification_runner.dart`) is the single
-place that classifies one, and `KeyVerificationRunner.outcome` exposes it.
+place that classifies one; `KeyVerificationRunner.outcome` exposes it and
+`SyncVerificationState.outcome` carries it to the UI, which never sees
+`isDone`.
 Cancellation is checked first and deliberately wins: a remote cancel sets
 `canceled` without clearing the state that preceded it, and claiming success
 for a ceremony that did not verify is the worse of the two errors. It is a free

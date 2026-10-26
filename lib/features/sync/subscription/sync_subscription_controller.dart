@@ -4,12 +4,12 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_providers.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_store.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 
 /// Where the subscribe flow stands.
 sealed class SyncSubscribeState {
@@ -409,7 +409,7 @@ class RotationConfirmer {
 
   final SyncSubscriptionApi? _api;
   final SyncSubscriptionStore _store;
-  final MatrixService _matrixService;
+  final SyncService _matrixService;
 
   /// Returns whether a pending proof was confirmed by this call.
   Future<bool> confirmPending() async {

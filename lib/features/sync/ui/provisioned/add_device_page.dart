@@ -7,14 +7,14 @@ import 'package:lotti/features/design_system/components/callouts/design_system_i
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
+import 'package:lotti/features/sync/models/sync_verification.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/matrix_service_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/sync_devices_provider.dart';
+import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/ui/clipboard_helper.dart';
 import 'package:lotti/features/sync/ui/provisioned/add_device_join_timeline.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
@@ -371,11 +371,13 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   int _pollFailures = 0;
   bool _pollInFlight = false;
   Timer? _poll;
-  MatrixService? _verificationService;
-  StreamSubscription<KeyVerificationRunner>? _outgoingVerificationSub;
-  StreamSubscription<KeyVerificationRunner>? _incomingVerificationSub;
-  final Set<KeyVerificationRunner> _verificationRunnersPresentAtOpen =
-      Set<KeyVerificationRunner>.identity();
+  SyncService? _verificationService;
+  StreamSubscription<SyncVerificationState>? _outgoingVerificationSub;
+  StreamSubscription<SyncVerificationState>? _incomingVerificationSub;
+
+  /// Ceremonies already running when the sheet opened, by id: none of them
+  /// can be with a device that scanned this code.
+  final Set<String> _verificationsPresentAtOpen = <String>{};
 
   @override
   void initState() {
@@ -456,34 +458,34 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
   /// handover sheet is open. Roster ordering is deliberately not used to pick
   /// a target: two devices can join between polls, and "first new row" has no
   /// relationship to the QR code the user just scanned.
-  void _bindVerificationSignals(MatrixService service) {
+  void _bindVerificationSignals(SyncService service) {
     if (identical(_verificationService, service)) return;
     _verificationService = service;
     unawaited(_outgoingVerificationSub?.cancel());
     unawaited(_incomingVerificationSub?.cancel());
-    final outgoingAtOpen = service.keyVerificationRunner;
+    final outgoingAtOpen = service.outgoingVerification;
     if (outgoingAtOpen != null) {
-      _verificationRunnersPresentAtOpen.add(outgoingAtOpen);
+      _verificationsPresentAtOpen.add(outgoingAtOpen.id);
     }
-    final incomingAtOpen = service.incomingKeyVerificationRunner;
+    final incomingAtOpen = service.incomingVerification;
     if (incomingAtOpen != null) {
-      _verificationRunnersPresentAtOpen.add(incomingAtOpen);
+      _verificationsPresentAtOpen.add(incomingAtOpen.id);
     }
-    _outgoingVerificationSub = service.keyVerificationStream.listen(
+    _outgoingVerificationSub = service.outgoingVerifications.listen(
       _observeVerification,
     );
-    _incomingVerificationSub = service.incomingKeyVerificationRunnerStream
-        .listen(_observeVerification);
+    _incomingVerificationSub = service.incomingVerifications.listen(
+      _observeVerification,
+    );
   }
 
-  void _observeVerification(KeyVerificationRunner runner) {
+  void _observeVerification(SyncVerificationState verification) {
     if (_ready ||
-        _verificationRunnersPresentAtOpen.contains(runner) ||
-        runner.outcome != KeyVerificationOutcome.success) {
+        _verificationsPresentAtOpen.contains(verification.id) ||
+        verification.outcome != KeyVerificationOutcome.success) {
       return;
     }
-    final verification = runner.keyVerification;
-    final deviceId = verification.deviceId;
+    final deviceId = verification.peerDeviceId;
     if (deviceId == null || deviceId.isEmpty) {
       if (!_missingTargetIdentityLogged) {
         _missingTargetIdentityLogged = true;
@@ -496,7 +498,7 @@ class _AddDeviceViewState extends ConsumerState<AddDeviceView> {
       return;
     }
     final target = OnboardingSyncTarget(
-      userId: verification.userId,
+      userId: verification.peerUserId ?? '',
       deviceId: deviceId,
     );
     final identity = _targetIdentity(target);

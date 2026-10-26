@@ -119,6 +119,8 @@ theming and notifications each decide what to enqueue; sync moves it.
 
 ```text
 lib/features/sync/
+├── sync_service.dart # what the rest of the app asks of sync, in plain types
+├── models/      # device rows, login and verification states that cross it
 ├── outbox/      # outbound queue and send loop
 ├── matrix/      # session, rooms, sending, verification
 ├── gateway/     # Matrix SDK wrapper
