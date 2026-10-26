@@ -7,6 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_host_client.dart';
 import 'package:lotti/features/sync/isolate/sync_isolate_protocol.dart';
@@ -599,21 +600,7 @@ void main() {
   );
 
   group('compose', () {
-    test('builds the real stack over the client it is given, from the boot '
-        'config, and takes it down again', () async {
-      final client = MockMatrixClient();
-      final syncStatuses = CachedStreamController<SyncStatusUpdate>();
-      when(() => client.onSyncStatus).thenReturn(syncStatuses);
-      // The streams the service and its managers subscribe to at construction.
-      when(
-        () => client.onLoginStateChanged,
-      ).thenReturn(CachedStreamController<LoginState>());
-      when(
-        () => client.onKeyVerificationRequest,
-      ).thenReturn(CachedStreamController<KeyVerification>());
-      when(client.dispose).thenAnswer((_) async {});
-      final db = SyncDatabase(inMemoryDatabase: true);
-      addTearDown(db.close);
+    MockDomainLogger quietLogger() {
       final logger = MockDomainLogger();
       when(() => logger.enabledDomains).thenReturn({LogDomain.sync});
       when(
@@ -633,6 +620,78 @@ void main() {
           message: any(named: 'message'),
         ),
       ).thenReturn(null);
+      return logger;
+    }
+
+    test('without a client factory it creates the SDK client in the '
+        'documents directory it was given', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'sync_isolate_stack',
+      );
+      addTearDown(() {
+        if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+      });
+      final db = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(db.close);
+
+      final composed = await SyncIsolateStack.compose(
+        config: SyncIsolateConfig(
+          documentsPath: tempDir.path,
+          temporaryPath: tempDir.path,
+          hostMatrixStack: true,
+        ),
+        db: db,
+        host: SyncIsolateHostClient(ReceivePort().sendPort),
+        logger: quietLogger(),
+        emit: (_) {},
+        initCrypto: () async {},
+      );
+
+      // The SDK database went under the worker's documents directory, and
+      // nobody is logged in yet.
+      expect(Directory('${tempDir.path}/matrix').existsSync(), isTrue);
+      expect(composed.service.isLoggedIn(), isFalse);
+      expect(await composed.service.loadConfig(), isNull);
+
+      await composed.dispose();
+    });
+
+    test('the ingestion dominance check is a question to the host, argument '
+        'for argument, answered by its reply', () async {
+      final port = ReceivePort();
+      final host = SyncIsolateHostClient(port.sendPort);
+      const incoming = VectorClock({'h': 2});
+
+      final asked = SyncIsolateStack.localVcDominanceOver(host)(
+        '/agents/a.json',
+        incoming,
+      );
+      final request = (await port.first)! as SyncIsolateHostRequest;
+      final query = request.query as SyncIsolateHostLocalVcDominates;
+      expect(query.relativePath, '/agents/a.json');
+      expect(query.incomingVectorClock, incoming);
+      host.onReply(SyncIsolateHostReply.success(request.requestId, true));
+
+      expect(await asked, isTrue);
+      port.close();
+    });
+
+    test('builds the real stack over the client it is given, from the boot '
+        'config, and takes it down again', () async {
+      final client = MockMatrixClient();
+      final syncStatuses = CachedStreamController<SyncStatusUpdate>();
+      when(() => client.onSyncStatus).thenReturn(syncStatuses);
+      // The streams the service and its managers subscribe to at construction.
+      when(
+        () => client.onLoginStateChanged,
+      ).thenReturn(CachedStreamController<LoginState>());
+      when(
+        () => client.onKeyVerificationRequest,
+      ).thenReturn(CachedStreamController<KeyVerification>());
+      when(client.dispose).thenAnswer((_) async {});
+      final db = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(db.close);
+      final logger = quietLogger();
       const credentials = MatrixConfig(
         homeServer: 'https://hs.example.org',
         user: '@alice:example.org',

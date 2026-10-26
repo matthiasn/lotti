@@ -27,6 +27,7 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart' show Client;
+import 'package:meta/meta.dart';
 
 /// The Matrix stack inside the sync isolate (ADR 0142, step 4b): the same
 /// `MatrixService` the UI isolate ran in-process, composed over the worker's
@@ -170,12 +171,7 @@ class SyncIsolateStack {
     final ingestor = AttachmentIngestor(
       documentsDirectory: documents,
       verboseLogging: false,
-      localVcDominates: (relativePath, incomingVectorClock) => host.ask<bool>(
-        SyncIsolateHostLocalVcDominates(
-          relativePath: relativePath,
-          incomingVectorClock: incomingVectorClock,
-        ),
-      ),
+      localVcDominates: localVcDominanceOver(host),
     );
     // Producer-only: no apply step here, the UI isolate drains the queue.
     final coordinator = QueuePipelineCoordinator(
@@ -222,6 +218,19 @@ class SyncIsolateStack {
       },
     );
   }
+
+  /// Ingestion's "may this download be skipped" question, asked of the UI
+  /// isolate: only it holds the agent records whose clocks decide.
+  @visibleForTesting
+  static LocalVectorClockDominanceCheck localVcDominanceOver(
+    SyncIsolateHostClient host,
+  ) =>
+      (relativePath, incomingVectorClock) => host.ask<bool>(
+        SyncIsolateHostLocalVcDominates(
+          relativePath: relativePath,
+          incomingVectorClock: incomingVectorClock,
+        ),
+      );
 
   final MatrixService service;
   final AttachmentIndex attachmentIndex;

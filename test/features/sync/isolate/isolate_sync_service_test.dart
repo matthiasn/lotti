@@ -584,6 +584,27 @@ void main() {
       );
     });
 
+    test('a too-large payload without an inline body keeps its detail as '
+        'it is', () async {
+      hostThrows(
+        const SyncIsolateFailure(
+          SyncIsolateErrorCode.failed,
+          'SyncIsolateSendMessage: too big',
+          thrown: SyncIsolateThrown.messageTooLarge,
+          detail: 'bytes=9',
+        ),
+      );
+
+      await expectLater(
+        service.sendMatrixMsg(message),
+        throwsA(
+          isA<SyncMessageTooLargeException>()
+              .having((e) => e.detail, 'detail', 'bytes=9')
+              .having((e) => e.inlineBody, 'inlineBody', isFalse),
+        ),
+      );
+    });
+
     test(
       'a refused credential is rethrown as SyncReauthRequiredException',
       () async {

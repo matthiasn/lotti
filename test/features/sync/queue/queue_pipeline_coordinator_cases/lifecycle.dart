@@ -66,6 +66,15 @@ extension _QueueLifecycleCases on _QueueCoordinatorTestSetup {
         verify(bridge.bridgeNow).called(1);
         // No barren bridge recorded: nothing to recover, nothing thrown.
         coordinator.maybeStartGapRecovery();
+        when(queue.resurrectAll).thenAnswer((_) async => 3);
+        expect(await coordinator.retrySkipped(), 3);
+        void walkStarted() {}
+        coordinator.onBridgeStarted = walkStarted;
+        verify(() => bridge.onBridgeStarted = walkStarted).called(1);
+        when(() => bridge.onBridgeStarted).thenReturn(walkStarted);
+        expect(coordinator.onBridgeStarted, same(walkStarted));
+        // Nothing to drain here: the UI isolate drains on its own schedule.
+        await coordinator.drainUntilEmpty();
 
         await coordinator.stop();
         expect(coordinator.isRunning, isFalse);

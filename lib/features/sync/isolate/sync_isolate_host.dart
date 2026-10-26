@@ -316,8 +316,7 @@ class SyncIsolateHost {
         ),
       );
     }
-    final target = worker ?? _worker;
-    target?.commands.send(reply);
+    (worker ?? _worker)?.commands.send(reply);
   }
 
   Future<Object?> _serve(SyncIsolateHostQuery query) {
