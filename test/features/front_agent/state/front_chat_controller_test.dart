@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
@@ -28,12 +30,14 @@ class _CountingBuilder extends FrontChatThreadBuilder {
 void main() {
   late MockFrontAgentService agentService;
   late MockFrontChatService chatService;
+  late MockFrontFilingService filing;
   late _CountingBuilder threadBuilder;
   late ProviderContainer container;
 
   setUp(() {
     agentService = MockFrontAgentService();
     chatService = MockFrontChatService();
+    filing = MockFrontFilingService();
     threadBuilder = _CountingBuilder();
     when(
       () => agentService.getOrCreate(),
@@ -42,6 +46,7 @@ void main() {
       overrides: [
         frontAgentServiceProvider.overrideWithValue(agentService),
         frontChatServiceProvider.overrideWithValue(chatService),
+        frontFilingServiceProvider.overrideWithValue(filing),
         frontChatThreadBuilderProvider.overrideWithValue(threadBuilder),
         frontChatThreadProvider.overrideWith(
           (Ref ref) => ref.watch(frontChatThreadBuilderProvider).build(),
@@ -222,6 +227,74 @@ void main() {
     test('with nothing failed does nothing', () async {
       await controller().retry();
       verifyNever(() => chatService.sendMessage(text: any(named: 'text')));
+    });
+  });
+
+  group('a door action', () {
+    test('runs the filing service, keeps the door busy meanwhile, and '
+        're-projects the thread after', () async {
+      final gate = Completer<void>();
+      when(() => filing.fileUnderTask('d1')).thenAnswer((_) => gate.future);
+      final before = threadBuilder.builds;
+
+      final action = controller().fileUnderTask('d1');
+      expect(state().busyDoorIds, {'d1'});
+      // A second tap while busy is a no-op.
+      await controller().fileUnderTask('d1');
+      gate.complete();
+      await action;
+
+      verify(() => filing.fileUnderTask('d1')).called(1);
+      expect(state().busyDoorIds, isEmpty);
+      expect(state().failedDoorIds, isEmpty);
+      await container.read(frontChatThreadProvider.future);
+      expect(threadBuilder.builds, before + 1);
+    });
+
+    test(
+      'that fails marks the door, until its next action clears it',
+      () async {
+        when(() => filing.decline('d1')).thenThrow(StateError('gone'));
+        await controller().declineFiling('d1');
+        expect(state().failedDoorIds, {'d1'});
+        expect(state().busyDoorIds, isEmpty);
+
+        when(() => filing.decline('d1')).thenAnswer((_) async {});
+        await controller().declineFiling('d1');
+        expect(state().failedDoorIds, isEmpty);
+      },
+    );
+
+    test('every action reaches its service call', () async {
+      when(() => filing.unfile('d')).thenAnswer((_) async {});
+      when(() => filing.makeTask('d')).thenAnswer((_) async {});
+      when(() => filing.saveAsNote('d')).thenAnswer((_) async {});
+      await controller().unfile('d');
+      await controller().makeTask('d');
+      await controller().saveAsNote('d');
+      verifyInOrder([
+        () => filing.unfile('d'),
+        () => filing.makeTask('d'),
+        () => filing.saveAsNote('d'),
+      ]);
+    });
+
+    test("the doors' state survives a send settling either way", () async {
+      when(() => filing.decline('d1')).thenThrow(StateError('gone'));
+      await controller().declineFiling('d1');
+      when(
+        () => chatService.sendMessage(text: 'Hello'),
+      ).thenAnswer((_) async {});
+      controller().updateDraft('Hello');
+      await controller().send();
+      expect(state().failedDoorIds, {'d1'});
+      when(
+        () => chatService.sendMessage(text: 'Again'),
+      ).thenThrow(StateError('x'));
+      controller().updateDraft('Again');
+      await controller().send();
+      expect(state().failedDoorIds, {'d1'});
+      expect(state().failedMessage, 'Again');
     });
   });
 }

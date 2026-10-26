@@ -29,10 +29,6 @@ enum FrontDoorStatus {
 
 /// Why a segment was not walked through a door.
 enum FrontDoorSkipReason {
-  /// Only questions are walked in this slice; a statement or instruction
-  /// waits for the filing slice.
-  statementsLater,
-
   /// The owner has no agent to take the turn (a task without one, a
   /// retired goal or person agent).
   noAgent,
@@ -40,8 +36,8 @@ enum FrontDoorSkipReason {
   /// The owner's inference setup resolves to nothing.
   inferenceUnavailable,
 
-  /// The segment named something new, a note, today's plan, or nothing —
-  /// doors for those come with later slices.
+  /// The segment is about today's plan — the Daily OS door comes with a
+  /// later slice.
   noDoor;
 
   static FrontDoorSkipReason? fromName(Object? name) =>
@@ -89,11 +85,104 @@ sealed class FrontDoorOutcome {
       case 'failed':
         final error = map['errorType'];
         return FrontDoorFailed(error is String ? error : 'unknown');
+      case 'proposal':
+        final ownerId = map['ownerId'];
+        if (ownerId is! String) return null;
+        return FrontDoorProposal(
+          ownerId: ownerId,
+          unfiled: map['unfiled'] == true,
+        );
+      case 'filed':
+        final entryId = map['entryId'];
+        if (entryId is! String) return null;
+        final ownerId = map['ownerId'];
+        return FrontDoorFiled(
+          entryId: entryId,
+          ownerId: ownerId is String ? ownerId : null,
+        );
+      case 'declined':
+        return const FrontDoorDeclined();
+      case 'inbox':
+        return FrontDoorInbox(newKind: FrontNewKind.fromName(map['newKind']));
+      case 'taskCreated':
+        final taskId = map['taskId'];
+        return taskId is String ? FrontDoorTaskCreated(taskId: taskId) : null;
       default:
         return null;
     }
   }
 }
+
+/// A statement or instruction under a task, waiting for the user's one tap
+/// before anything is written (decision 1). [unfiled] when it had been
+/// filed and the user took the entry back out.
+class FrontDoorProposal extends FrontDoorOutcome {
+  const FrontDoorProposal({required this.ownerId, this.unfiled = false});
+
+  final String ownerId;
+  final bool unfiled;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'proposal',
+    'ownerId': ownerId,
+    if (unfiled) 'unfiled': true,
+  };
+}
+
+/// The user's words were written as a text entry: under [ownerId] when it
+/// was filed under a task, on their own when saved as a note.
+class FrontDoorFiled extends FrontDoorOutcome {
+  const FrontDoorFiled({required this.entryId, this.ownerId});
+
+  final String entryId;
+  final String? ownerId;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'filed',
+    'entryId': entryId,
+    if (ownerId != null) 'ownerId': ownerId,
+  };
+}
+
+/// The user said not to file this. Nothing was written.
+class FrontDoorDeclined extends FrontDoorOutcome {
+  const FrontDoorDeclined();
+
+  @override
+  Map<String, Object?> toJson() => const {'type': 'declined'};
+}
+
+/// Nothing owns this yet: the segment waits in the inbox with the chips
+/// that make it a task, start a goal or project, or save it as a note.
+/// [newKind] is what the router thought it would become, if anything.
+class FrontDoorInbox extends FrontDoorOutcome {
+  const FrontDoorInbox({this.newKind});
+
+  final FrontNewKind? newKind;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'inbox',
+    if (newKind != null) 'newKind': newKind!.name,
+  };
+}
+
+/// The user made a task of the segment; its title is the user's words.
+class FrontDoorTaskCreated extends FrontDoorOutcome {
+  const FrontDoorTaskCreated({required this.taskId});
+
+  final String taskId;
+
+  @override
+  Map<String, Object?> toJson() => {'type': 'taskCreated', 'taskId': taskId};
+}
+
+/// Whether the user still has to act on this door: a proposal waiting for
+/// its tap, or an inbox item nobody has taken anywhere.
+bool frontDoorAwaitsUser(FrontDoorOutcome? outcome) =>
+    outcome is FrontDoorProposal || outcome is FrontDoorInbox;
 
 /// The query pipeline answered a task or project question; the text is
 /// shown in the front thread, attributed to its owner.

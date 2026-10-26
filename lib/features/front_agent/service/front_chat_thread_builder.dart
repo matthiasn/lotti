@@ -36,7 +36,7 @@ class FrontChatThreadBuilder {
 
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
-    final doorRecords = <String, List<FrontDoorRecord>>{};
+    final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
@@ -66,9 +66,10 @@ class FrontChatThreadBuilder {
             ? null
             : FrontDoorRecord.fromJson(payload.content);
         if (record == null) continue;
-        doorRecords
-            .putIfAbsent(row.metadata.operationId!, () => [])
-            .add(record);
+        doorRecords.putIfAbsent(row.metadata.operationId!, () => []).add((
+          row.id,
+          record,
+        ));
       }
     }
 
@@ -82,10 +83,11 @@ class FrontChatThreadBuilder {
     for (final entry in doorRecords.entries) {
       if (!visibleIds.contains(entry.key)) continue;
       final records = entry.value
-        ..sort((a, b) => a.segmentIndex.compareTo(b.segmentIndex));
+        ..sort((a, b) => a.$2.segmentIndex.compareTo(b.$2.segmentIndex));
       doors[entry.key] = [
-        for (final record in records)
+        for (final (doorId, record) in records)
           FrontDoorEntry(
+            doorId: doorId,
             record: record,
             specialistReply: await _specialistReply(record, specialists),
           ),

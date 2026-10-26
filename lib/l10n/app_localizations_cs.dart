@@ -6864,6 +6864,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zeptej se na úkol, cíl, projekt nebo člověka. Najde, kdo to ví, a přinese odpověď.';
 
   @override
+  String frontChatInboxChip(int count) {
+    return 'Příchozí $count';
+  }
+
+  @override
+  String get frontChatInboxEmpty => 'Nic na tebe nečeká.';
+
+  @override
   String get frontChatOpen => 'Zeptat se společnice';
 
   @override
@@ -6882,6 +6890,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatYesterday => 'Včera';
 
   @override
+  String get frontDoorActionFailed => 'to se nepovedlo, zkus to znovu';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'Od: $owner';
   }
@@ -6892,9 +6903,23 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get frontDoorDeclined => 'Neuloženo, jak jsi řekl';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Dotaz na $owner selhal.';
   }
+
+  @override
+  String get frontDoorFile => 'Uložit';
+
+  @override
+  String frontDoorFiledUnder(String owner) {
+    return 'Uloženo pod $owner';
+  }
+
+  @override
+  String get frontDoorInbox => 'Tohle zatím nikam nepatří — je to na tobě';
 
   @override
   String get frontDoorIncomplete => 'může být neúplné';
@@ -6920,6 +6945,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorKindTask => 'úkol';
 
   @override
+  String get frontDoorMakeTask => 'Udělat z toho úkol';
+
+  @override
+  String get frontDoorNewProject => 'Nový projekt';
+
+  @override
   String frontDoorNoAgent(String owner) {
     return '$owner zatím nemá agenta, kterého by se dalo zeptat.';
   }
@@ -6928,11 +6959,35 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorNoDoor => 'Zatím to není kam vzít.';
 
   @override
-  String get frontDoorStatementsLater =>
-      'Nezaloženo: zatím odpovídá jen na otázky.';
+  String get frontDoorNotThis => 'Tohle ne';
+
+  @override
+  String frontDoorProposal(String owner) {
+    return 'Uložit pod $owner?';
+  }
+
+  @override
+  String get frontDoorSavedAsNote => 'Uloženo jako poznámka';
+
+  @override
+  String get frontDoorSaveNote => 'Uložit jako poznámku';
+
+  @override
+  String get frontDoorStartGoal => 'Založit cíl';
 
   @override
   String get frontDoorSummaryBased => 'ze souhrnů';
+
+  @override
+  String get frontDoorTaskCreated => 'Vytvořen úkol';
+
+  @override
+  String get frontDoorUnfile => 'Vyjmout';
+
+  @override
+  String frontDoorUnfiled(String owner) {
+    return 'Vyňato z: $owner. Uložit znovu?';
+  }
 
   @override
   String frontDoorWalking(String owner) {

@@ -298,6 +298,10 @@ void main() {
 
       final doors = thread.doorsByMessageId['u1']!;
       expect([for (final d in doors) d.record.segmentIndex], [0, 1, 2]);
+      expect(
+        [for (final d in doors) d.doorId],
+        ['d:door:0', 'd:door:1', 'd:door:2'],
+      );
       expect(doors[0].specialistReply, isNull);
       expect(doors[1].specialistReply, 'Two of three swims done.');
       expect(doors[2].specialistReply, isNull);

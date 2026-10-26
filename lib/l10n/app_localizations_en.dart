@@ -6761,6 +6761,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.';
 
   @override
+  String frontChatInboxChip(int count) {
+    return 'Inbox $count';
+  }
+
+  @override
+  String get frontChatInboxEmpty => 'Nothing is waiting for you.';
+
+  @override
   String get frontChatOpen => 'Ask the companion';
 
   @override
@@ -6779,6 +6787,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatYesterday => 'Yesterday';
 
   @override
+  String get frontDoorActionFailed => 'that did not go through, try again';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'From $owner';
   }
@@ -6789,9 +6800,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get frontDoorDeclined => 'Not filed, as you said';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Asking $owner failed.';
   }
+
+  @override
+  String get frontDoorFile => 'File it';
+
+  @override
+  String frontDoorFiledUnder(String owner) {
+    return 'Filed under $owner';
+  }
+
+  @override
+  String get frontDoorInbox => 'Nothing owns this yet — your call';
 
   @override
   String get frontDoorIncomplete => 'may be incomplete';
@@ -6817,6 +6842,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorKindTask => 'the task';
 
   @override
+  String get frontDoorMakeTask => 'Make it a task';
+
+  @override
+  String get frontDoorNewProject => 'New project';
+
+  @override
   String frontDoorNoAgent(String owner) {
     return '$owner has no agent to ask yet.';
   }
@@ -6825,11 +6856,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorNoDoor => 'Nowhere to take this yet.';
 
   @override
-  String get frontDoorStatementsLater =>
-      'Not filed: for now she only answers questions.';
+  String get frontDoorNotThis => 'Not this';
+
+  @override
+  String frontDoorProposal(String owner) {
+    return 'File this under $owner?';
+  }
+
+  @override
+  String get frontDoorSavedAsNote => 'Saved as a note';
+
+  @override
+  String get frontDoorSaveNote => 'Save as a note';
+
+  @override
+  String get frontDoorStartGoal => 'Start a goal';
 
   @override
   String get frontDoorSummaryBased => 'from summaries';
+
+  @override
+  String get frontDoorTaskCreated => 'Made into a task';
+
+  @override
+  String get frontDoorUnfile => 'Unfile';
+
+  @override
+  String frontDoorUnfiled(String owner) {
+    return 'Taken back out of $owner. File it again?';
+  }
 
   @override
   String frontDoorWalking(String owner) {

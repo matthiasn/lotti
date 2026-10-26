@@ -1,7 +1,9 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -17,12 +19,15 @@ import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -133,6 +138,28 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
     domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'frontDoorWalkerProvider',
+);
+
+/// What the user's tap under a door does: the entry, the task or the note,
+/// written through the journal's own creation paths.
+final frontFilingServiceProvider = Provider<FrontFilingService>(
+  (ref) => FrontFilingService(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    journalDb: ref.watch(journalDbProvider),
+    notifications: ref.watch(updateNotificationsProvider),
+    writeTextEntry: (text, {linkedId, categoryId}) =>
+        JournalRepository.createTextEntry(
+          EntryText(plainText: text),
+          linkedId: linkedId,
+          categoryId: categoryId,
+          started: clock.now(),
+        ),
+    makeTask: (title) =>
+        createTask(domainLogger: ref.read(domainLoggerProvider), title: title),
+    deleteEntry: ref.watch(journalRepositoryProvider).deleteJournalEntity,
+  ),
+  name: 'frontFilingServiceProvider',
 );
 
 /// The front agent's contribution to `agentWakeRunnersProvider` — merged in

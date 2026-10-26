@@ -20,12 +20,14 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -338,6 +340,7 @@ void main() {
             MockProjectAgentService(),
           ),
           goalChatServiceProvider.overrideWithValue(MockGoalChatService()),
+          journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
           relationshipChatServiceProvider.overrideWithValue(
             MockRelationshipChatService(),
           ),
@@ -353,6 +356,7 @@ void main() {
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
       expect(wired.read(frontDoorWalkerProvider), isA<FrontDoorWalker>());
+      expect(wired.read(frontFilingServiceProvider), isA<FrontFilingService>());
     });
   });
 }

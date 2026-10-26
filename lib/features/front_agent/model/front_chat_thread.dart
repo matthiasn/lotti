@@ -35,9 +35,19 @@ class FrontAskOption {
 /// has landed in the agent's thread.
 @immutable
 class FrontDoorEntry {
-  const FrontDoorEntry({required this.record, this.specialistReply});
+  const FrontDoorEntry({
+    required this.doorId,
+    required this.record,
+    this.specialistReply,
+  });
+
+  /// The door record's message id — what an action on the door is keyed to.
+  final String doorId;
 
   final FrontDoorRecord record;
+
+  /// Whether the user still has to act on this door.
+  bool get awaitsUser => frontDoorAwaitsUser(record.outcome);
 
   /// The specialist's reply text, mirrored by the turn it answers; null
   /// while the specialist is still replying, or for any other outcome.
@@ -73,4 +83,18 @@ class FrontChatThread {
   /// in their own threads, so the surface refreshes when one of them
   /// finishes a wake.
   final Set<String> specialistAgentIds;
+
+  /// The user turns with a door still waiting on the user — the inbox is
+  /// the thread filtered to these (decision 7).
+  Set<String> get inboxMessageIds => {
+    for (final entry in doorsByMessageId.entries)
+      if (entry.value.any((door) => door.awaitsUser)) entry.key,
+  };
+
+  /// How many doors wait on the user, across the thread.
+  int get inboxCount => [
+    for (final doors in doorsByMessageId.values)
+      for (final door in doors)
+        if (door.awaitsUser) door,
+  ].length;
 }

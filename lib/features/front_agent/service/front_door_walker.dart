@@ -231,17 +231,26 @@ class FrontDoorWalker {
     required String sourceMessageId,
   }) async {
     final id = segment.destinationId;
+    final question = segment.intent == FrontSegmentIntent.question;
     switch (segment.kind) {
       case FrontDestinationKind.task:
+        if (!question) {
+          // A statement or instruction becomes a text entry under the
+          // task — but only on the user's tap (decision 1): the door
+          // proposes and waits.
+          return FrontDoorProposal(ownerId: id!);
+        }
+        return _askOwner(segment.kind, id!, segment.text, sourceMessageId);
       case FrontDestinationKind.project:
-        if (segment.intent != FrontSegmentIntent.question) {
-          return const FrontDoorSkipped(FrontDoorSkipReason.statementsLater);
+        if (!question) {
+          // No project door yet (decision 5): the router was told to ask
+          // which task; what still arrives here waits in the inbox.
+          return const FrontDoorInbox();
         }
         return _askOwner(segment.kind, id!, segment.text, sourceMessageId);
       case FrontDestinationKind.goal:
-        if (segment.intent != FrontSegmentIntent.question) {
-          return const FrontDoorSkipped(FrontDoorSkipReason.statementsLater);
-        }
+        // A goal takes questions and statements alike as a chat turn; its
+        // own proposals stay gated in its own thread.
         final identity = await _repository.getEntity(id!);
         if (identity is! AgentIdentityEntity ||
             identity.kind != AgentKinds.goalAgent ||
@@ -258,9 +267,6 @@ class FrontDoorWalker {
           specialistMessageId: messageId,
         );
       case FrontDestinationKind.person:
-        if (segment.intent != FrontSegmentIntent.question) {
-          return const FrontDoorSkipped(FrontDoorSkipReason.statementsLater);
-        }
         final agentId = relationshipAgentIdFor(id!);
         if (usableRelationshipAgent(await _repository.getEntity(agentId)) ==
             null) {
@@ -275,10 +281,12 @@ class FrontDoorWalker {
           specialistAgentId: agentId,
           specialistMessageId: messageId,
         );
-      case FrontDestinationKind.day:
       case FrontDestinationKind.newThing:
+        return FrontDoorInbox(newKind: segment.newKind);
       case FrontDestinationKind.journal:
       case FrontDestinationKind.unrouted:
+        return const FrontDoorInbox();
+      case FrontDestinationKind.day:
         return const FrontDoorSkipped(FrontDoorSkipReason.noDoor);
     }
   }

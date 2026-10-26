@@ -7,9 +7,12 @@ import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -21,6 +24,7 @@ abstract final class FrontChatHeaderKeys {
   static const Key subtitle = Key('front-chat-subtitle');
   static const Key figure = Key('front-chat-figure');
   static const Key cost = Key('front-chat-cost');
+  static const Key inbox = Key('front-chat-inbox');
   static const Key internals = Key('front-chat-internals');
   static const Key close = Key('front-chat-close');
 }
@@ -47,6 +51,11 @@ class FrontChatHeader extends ConsumerWidget {
         .value;
     final companionOn =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    // Read through `.value`: a re-projection keeps the last count.
+    final inboxCount =
+        ref.watch(frontChatThreadProvider.select((t) => t.value?.inboxCount)) ??
+        0;
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -71,6 +80,23 @@ class FrontChatHeader extends ConsumerWidget {
                     totals: totals,
                     foregroundColor: tokens.colors.text.mediumEmphasis,
                   );
+            // The inbox chip: how many doors wait on the user, and the
+            // filter to just those turns. Absent while nothing waits and
+            // the filter is off.
+            final inbox = inboxCount == 0 && !inboxOnly
+                ? null
+                : DesignSystemChip(
+                    key: FrontChatHeaderKeys.inbox,
+                    label: messages.frontChatInboxChip(inboxCount),
+                    leadingIcon: LottiIcons.inbox,
+                    size: DesignSystemChipSize.compactPillTouch,
+                    outlined: !inboxOnly,
+                    selected: inboxOnly,
+                    onPressed: ref
+                        .read(frontInboxFilterProvider.notifier)
+                        .toggle,
+                  );
+            final extras = <Widget>[?inbox, ?pill];
             return Row(
               children: [
                 _Figure(companionOn: companionOn),
@@ -98,17 +124,23 @@ class FrontChatHeader extends ConsumerWidget {
                           color: tokens.colors.text.lowEmphasis,
                         ),
                       ),
-                      if (pill != null && !pillInline) ...[
+                      if (extras.isNotEmpty && !pillInline) ...[
                         SizedBox(height: tokens.spacing.step2),
-                        pill,
+                        Wrap(
+                          spacing: tokens.spacing.step2,
+                          runSpacing: tokens.spacing.step2,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: extras,
+                        ),
                       ],
                     ],
                   ),
                 ),
-                if (pill != null && pillInline) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  pill,
-                ],
+                if (pillInline)
+                  for (final extra in extras) ...[
+                    SizedBox(width: tokens.spacing.step2),
+                    extra,
+                  ],
                 SizedBox(width: tokens.spacing.step2),
                 DesignSystemIconAction(
                   key: FrontChatHeaderKeys.internals,

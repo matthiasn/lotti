@@ -8,11 +8,15 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The companion's chat: one continuous thread across days (decision 7),
@@ -59,13 +63,42 @@ class _Body extends ConsumerWidget {
     final controller = ref.read(frontChatControllerProvider.notifier);
     final latestId = thread?.messages.lastOrNull?.id;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // The inbox is the same thread, filtered to the turns with a door still
+    // waiting on the user (decision 7).
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
+    final inboxIds = thread?.inboxMessageIds ?? const <String>{};
+    final shown = inboxOnly
+        ? history.whenData(
+            (messages) => [
+              for (final message in messages)
+                if (inboxIds.contains(message.id)) message,
+            ],
+          )
+        : history;
+    final actions = FrontDoorActions(
+      onFile: controller.fileUnderTask,
+      onDecline: controller.declineFiling,
+      onUnfile: controller.unfile,
+      onMakeTask: controller.makeTask,
+      onSaveNote: controller.saveAsNote,
+      // The wizards are not pre-filled: they open plain, the words stay in
+      // the thread, and the door keeps waiting until a chip that writes
+      // takes it (nothing is written by opening a wizard).
+      onStartGoal: (_) {
+        Navigator.of(context).pop();
+        beamToNamed(goalCreatePath);
+      },
+      onNewProject: (_) => showProjectCreateModal(context: context),
+    );
 
     return AgentChatView(
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
-      conversationId: 'front-chat',
-      history: history,
-      emptyMessage: messages.frontChatEmpty,
+      conversationId: inboxOnly ? 'front-chat-inbox' : 'front-chat',
+      history: shown,
+      emptyMessage: inboxOnly
+          ? messages.frontChatInboxEmpty
+          : messages.frontChatEmpty,
       composerHint: messages.frontChatPlaceholder,
       sendingLabel: messages.frontChatResponding,
       draft: composer.draft,
@@ -81,6 +114,9 @@ class _Body extends ConsumerWidget {
           return FrontDoorCard(
             key: ValueKey('front-doors-${message.id}'),
             doors: doors,
+            actions: actions,
+            busyDoorIds: composer.busyDoorIds,
+            failedDoorIds: composer.failedDoorIds,
           );
         }
         if (message.role != AgentChatRole.agent) return null;

@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
@@ -33,10 +34,12 @@ void main() {
   final now = DateTime(2026, 10, 24, 10);
   late MockFrontChatService chatService;
   late MockFrontAgentService agentService;
+  late MockFrontFilingService filing;
 
   setUp(() {
     chatService = MockFrontChatService();
     agentService = MockFrontAgentService();
+    filing = MockFrontFilingService();
     when(
       () => agentService.getOrCreate(),
     ).thenAnswer((_) async => makeTestIdentity(id: frontAgentId));
@@ -77,6 +80,7 @@ void main() {
             ),
             frontChatServiceProvider.overrideWithValue(chatService),
             frontAgentServiceProvider.overrideWithValue(agentService),
+            frontFilingServiceProvider.overrideWithValue(filing),
             configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
             agentConsumptionTotalsProvider(
               frontAgentId,
@@ -199,7 +203,7 @@ void main() {
           'ask2': [option],
         },
         doorsByMessageId: {
-          'u1': [FrontDoorEntry(record: doorRecord)],
+          'u1': [FrontDoorEntry(doorId: 'd:door:0', record: doorRecord)],
         },
       ),
     );
@@ -300,5 +304,81 @@ void main() {
     await tester.tap(find.byKey(FrontChatHeaderKeys.close));
     expect(closed, 1);
     expect(find.byType(AgentChatView), findsOneWidget);
+  });
+
+  group('the doors', () {
+    FrontChatThread waiting() => FrontChatThread(
+      messages: [
+        message('u1', AgentChatRole.user, 'The hinge arrived.', now),
+        message(
+          'r1',
+          AgentChatRole.agent,
+          'Filed? Your call.',
+          now,
+          runKey: 'run-1',
+        ),
+        message('u2', AgentChatRole.user, 'Fine.', now),
+      ],
+      doorsByMessageId: {
+        'u1': [
+          FrontDoorEntry(
+            doorId: 'd:door:0',
+            record: FrontDoorRecord(
+              segmentIndex: 0,
+              text: 'The hinge arrived.',
+              kind: FrontDestinationKind.task,
+              destinationId: 'garden',
+              ownerTitle: 'Garden',
+              status: FrontDoorStatus.done,
+              claimedAt: now.toUtc(),
+              outcome: const FrontDoorProposal(ownerId: 'garden'),
+            ),
+          ),
+        ],
+      },
+    );
+
+    testWidgets('the one tap under a proposal files through the service', (
+      tester,
+    ) async {
+      when(() => filing.fileUnderTask('d:door:0')).thenAnswer((_) async {});
+      await pumpPane(tester, thread: () async => waiting());
+
+      await tester.tap(find.byKey(const ValueKey('front-door-file-0')));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => filing.fileUnderTask('d:door:0')).called(1);
+    });
+
+    testWidgets('the inbox chip filters the thread to the turns that wait', (
+      tester,
+    ) async {
+      await pumpPane(tester, thread: () async => waiting());
+      expect(find.text('Fine.'), findsOneWidget);
+      expect(
+        tester
+            .widget<DesignSystemChip>(find.byKey(FrontChatHeaderKeys.inbox))
+            .label,
+        'Inbox 1',
+      );
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('The hinge arrived.'), findsWidgets);
+      expect(find.text('Fine.'), findsNothing);
+      expect(find.text('Filed? Your call.'), findsNothing);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
+      await tester.pump();
+      expect(find.text('Fine.'), findsOneWidget);
+    });
+
+    testWidgets('with nothing waiting there is no inbox chip', (tester) async {
+      await pumpPane(tester);
+      expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+    });
   });
 }
