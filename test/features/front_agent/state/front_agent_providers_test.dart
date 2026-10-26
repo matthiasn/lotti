@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -368,6 +369,7 @@ void main() {
     const doorId = 'd:door:0';
     late MockPersistenceLogic persistence;
     late MockJournalRepository journalRepository;
+    late MockJournalDb journalDb;
     late ProviderContainer wired;
 
     FrontDoorRecord record(FrontDoorOutcome outcome) => FrontDoorRecord(
@@ -380,10 +382,19 @@ void main() {
       outcome: outcome,
     );
 
+    Metadata meta(String id, {DateTime? deletedAt}) => Metadata(
+      id: id,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      dateFrom: DateTime(2026),
+      dateTo: DateTime(2026),
+      deletedAt: deletedAt,
+    );
+
     setUp(() {
       persistence = MockPersistenceLogic();
       journalRepository = MockJournalRepository();
-      final journalDb = MockJournalDb();
+      journalDb = MockJournalDb();
       when(
         () => journalDb.journalEntityById(any()),
       ).thenAnswer((_) async => null);
@@ -405,27 +416,14 @@ void main() {
       addTearDown(wired.dispose);
       when(
         () => persistence.createMetadata(
+          id: any(named: 'id'),
           dateFrom: any(named: 'dateFrom'),
           dateTo: any(named: 'dateTo'),
           categoryId: any(named: 'categoryId'),
-          uuidV5Input: any(named: 'uuidV5Input'),
         ),
       ).thenAnswer(
-        (invocation) async => Metadata(
-          id: 'entry-1',
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-          dateFrom: DateTime(2026),
-          dateTo: DateTime(2026),
-          categoryId: invocation.namedArguments[#categoryId] as String?,
-        ),
+        (invocation) async => meta(invocation.namedArguments[#id] as String),
       );
-      when(
-        () => persistence.createDbEntity(
-          any(),
-          linkedId: any(named: 'linkedId'),
-        ),
-      ).thenAnswer((_) async => true);
     });
 
     void seed(FrontDoorOutcome outcome) {
@@ -438,9 +436,31 @@ void main() {
       );
     }
 
+    void writeAnswers({required bool? verdict}) {
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => verdict);
+    }
+
+    FrontDoorFiled filed() =>
+        FrontDoorRecord.fromJson(
+              (verify(
+                        () => wired
+                            .read(agentSyncServiceProvider)
+                            .upsertEntity(captureAny()),
+                      ).captured.single
+                      as AgentMessagePayloadEntity)
+                  .content,
+            )!.outcome!
+            as FrontDoorFiled;
+
     test("filing writes the user's words as a text entry linked to the task, "
         'under the id the door names', () async {
       seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
 
       await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
 
@@ -454,50 +474,86 @@ void main() {
               as JournalEntity;
       expect(entry, isA<JournalEntry>());
       expect(entry.entryText?.plainText, 'The hinge arrived.');
-      // Under the id the door names, so a retry lands on the same entry.
-      verify(
-        () => persistence.createMetadata(
-          dateFrom: any(named: 'dateFrom'),
-          dateTo: any(named: 'dateTo'),
-          categoryId: any(named: 'categoryId'),
-          uuidV5Input: 'front-door:$doorId:entry:0',
-        ),
-      ).called(1);
+      expect(entry.meta.id, frontDoorEntryId(doorId, generation: 0));
+      expect(filed().entryId, frontDoorEntryId(doorId, generation: 0));
     });
 
-    test('making a task goes through the task creation with the words as '
-        'the title, open, under the id the door names', () async {
-      seed(const FrontDoorInbox());
+    test('a write rejected because the entry is already there — the retry '
+        'after an interrupted tap — files that entry', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: false);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta(id),
+          entryText: const EntryText(plainText: 'The hinge arrived.'),
+        ),
+      );
+
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+      expect(filed().entryId, id);
+    });
+
+    test('a rejected write with no live row behind it, or a write that '
+        'failed, stores nothing and leaves the proposal', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      final id = frontDoorEntryId(doorId, generation: 0);
+      writeAnswers(verdict: false);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta(id, deletedAt: DateTime(2026)),
+          entryText: const EntryText(plainText: 'gone'),
+        ),
+      );
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+
+      writeAnswers(verdict: null);
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+      verifyNever(
+        () => wired.read(agentSyncServiceProvider).upsertEntity(any()),
+      );
+    });
+
+    Task task(String id, String title) {
       final status = TaskStatus.open(
         id: 's',
         createdAt: DateTime(2026),
         utcOffset: 0,
       );
+      return JournalEntity.task(
+            meta: meta(id),
+            data: TaskData(
+              status: status,
+              statusHistory: [status],
+              dateFrom: DateTime(2026),
+              dateTo: DateTime(2026),
+              title: title,
+            ),
+          )
+          as Task;
+    }
+
+    test('making a task goes through the task creation with the words as '
+        'the title, open, under the id the door names', () async {
+      seed(const FrontDoorInbox());
       when(
         () => persistence.createTaskEntry(
           data: any(named: 'data'),
           entryText: any(named: 'entryText'),
-          uuidV5Input: any(named: 'uuidV5Input'),
+          id: any(named: 'id'),
         ),
       ).thenAnswer(
-        (invocation) async =>
-            JournalEntity.task(
-                  meta: Metadata(
-                    id: 'task-new',
-                    createdAt: DateTime(2026),
-                    updatedAt: DateTime(2026),
-                    dateFrom: DateTime(2026),
-                    dateTo: DateTime(2026),
-                  ),
-                  data: TaskData(
-                    status: status,
-                    statusHistory: [status],
-                    dateFrom: DateTime(2026),
-                    dateTo: DateTime(2026),
-                    title: (invocation.namedArguments[#data] as TaskData).title,
-                  ),
-                )
-                as Task,
+        (invocation) async => task(
+          invocation.namedArguments[#id] as String,
+          (invocation.namedArguments[#data] as TaskData).title,
+        ),
       );
 
       await wired.read(frontFilingServiceProvider).makeTask(doorId);
@@ -507,12 +563,49 @@ void main() {
                 () => persistence.createTaskEntry(
                   data: captureAny(named: 'data'),
                   entryText: any(named: 'entryText'),
-                  uuidV5Input: 'front-door:$doorId:task',
+                  id: frontDoorTaskId(doorId),
                 ),
               ).captured.single
               as TaskData;
       expect(data.title, 'The hinge arrived.');
       expect(data.status, isA<TaskOpen>());
+    });
+
+    test('a task the creation path refused because it is already there is '
+        'the one recorded; one that is not there is nothing', () async {
+      seed(const FrontDoorInbox());
+      final id = frontDoorTaskId(doorId);
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => journalDb.journalEntityById(id),
+      ).thenAnswer((_) async => task(id, 'The hinge arrived.'));
+
+      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+
+      final outcome =
+          FrontDoorRecord.fromJson(
+                (verify(
+                          () => wired
+                              .read(agentSyncServiceProvider)
+                              .upsertEntity(captureAny()),
+                        ).captured.single
+                        as AgentMessagePayloadEntity)
+                    .content,
+              )!.outcome!
+              as FrontDoorTaskCreated;
+      expect(outcome.taskId, id);
+
+      when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+      await expectLater(
+        wired.read(frontFilingServiceProvider).makeTask(doorId),
+        throwsStateError,
+      );
     });
 
     test('unfiling deletes the entry through the journal repository', () async {

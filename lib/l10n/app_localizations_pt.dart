@@ -6898,7 +6898,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Não arquivado, como disseste';
+  String get frontDoorDeclined => 'Não arquivado';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6954,7 +6954,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontDoorNoDoor => 'Ainda não há para onde levar isto.';
 
   @override
-  String get frontDoorNotThis => 'Isto não';
+  String get frontDoorNotThis => 'Não arquivar';
 
   @override
   String frontDoorProposal(String owner) {

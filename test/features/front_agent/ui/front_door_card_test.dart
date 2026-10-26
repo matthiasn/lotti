@@ -327,7 +327,7 @@ void main() {
           ),
         ),
       ]);
-      expect(statusOf(tester, 0), 'Not filed, as you said');
+      expect(statusOf(tester, 0), 'Not filed');
       expect(statusOf(tester, 1), 'Made into a task');
       expect(find.byType(DesignSystemButton), findsNothing);
       expect(find.byType(DesignSystemChip), findsNothing);

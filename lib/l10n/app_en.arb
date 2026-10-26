@@ -4023,7 +4023,7 @@
       }
     }
   },
-  "frontDoorDeclined": "Not filed, as you said",
+  "frontDoorDeclined": "Not filed",
   "frontDoorFailed": "Asking {owner} failed.",
   "@frontDoorFailed": {
     "placeholders": {
@@ -4067,7 +4067,7 @@
     }
   },
   "frontDoorNoDoor": "Nowhere to take this yet.",
-  "frontDoorNotThis": "Not this",
+  "frontDoorNotThis": "Don't file",
   "frontDoorProposal": "File this under {owner}?",
   "@frontDoorProposal": {
     "placeholders": {

@@ -328,11 +328,14 @@ with the task's `categoryId` and `linkedId`, a task through
 `createTaskEntry` — so a filed entry wakes the task agent through its
 subscription exactly as dictation into the task does, and a made task is a
 task like any other. **Every write is idempotent per door**: the entry or
-task is created under a deterministic id (`entryIdInput`, `noteIdInput`,
-`taskIdInput` — the door id, and for a proposal its filing *generation*),
-and `createDbEntity` never overwrites an existing id, so a tap retried
-after the write landed but the record did not — the process died in
-between — finds its entry already there. Unfile deletes the entry through
+task is created under a deterministic id (`frontDoorEntryId`,
+`frontDoorNoteId`, `frontDoorTaskId` — a UUID v5 of the door id, and for a
+proposal its filing *generation*), and the adapters in
+`front_agent_providers.dart` read the write's own verdict: a rejected write
+(`createDbEntity` never overwrites an existing id) is the retry after an
+interrupted tap and files the row already there, while a failed write, or
+a rejected one with no live row behind it, stores nothing and leaves the
+door waiting. Unfile deletes the entry through
 `JournalRepository.deleteJournalEntity`, refuses when the entry is still
 there undeleted, counts an entry already gone from the journal as taken
 out, and hands the next proposal the generation after the filed one, so a

@@ -6903,7 +6903,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Neuloženo, jak jsi řekl';
+  String get frontDoorDeclined => 'Neuloženo';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6959,7 +6959,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorNoDoor => 'Zatím to není kam vzít.';
 
   @override
-  String get frontDoorNotThis => 'Tohle ne';
+  String get frontDoorNotThis => 'Neukládat';
 
   @override
   String frontDoorProposal(String owner) {

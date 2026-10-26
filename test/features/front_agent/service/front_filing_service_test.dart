@@ -122,13 +122,12 @@ void main() {
       syncService: syncService,
       journalDb: journalDb,
       notifications: notifications,
-      writeTextEntry:
-          (text, {required uuidV5Input, linkedId, categoryId}) async {
-            written.add((text, uuidV5Input, linkedId, categoryId));
-            return entryFor(text);
-          },
-      makeTask: (title, {required uuidV5Input}) async {
-        madeTasks.add((title, uuidV5Input));
+      writeTextEntry: (text, {required id, linkedId, categoryId}) async {
+        written.add((text, id, linkedId, categoryId));
+        return entryFor(text);
+      },
+      makeTask: (title, {required id}) async {
+        madeTasks.add((title, id));
         return taskFor(title);
       },
       deleteEntry: (id) async {
@@ -149,7 +148,12 @@ void main() {
       await service.fileUnderTask(doorId);
 
       expect(written, [
-        ('The hinge arrived.', 'front-door:$doorId:entry:0', 'garden', 'cat-1'),
+        (
+          'The hinge arrived.',
+          frontDoorEntryId(doorId, generation: 0),
+          'garden',
+          'cat-1',
+        ),
       ]);
       final outcome = rewritten().outcome! as FrontDoorFiled;
       expect(outcome.entryId, 'entry-1');
@@ -231,7 +235,11 @@ void main() {
     test('a re-file after an unfile names the next generation', () async {
       seed(const FrontDoorProposal(ownerId: 'garden', generation: 2));
       await service.fileUnderTask(doorId);
-      expect(written.single.$2, 'front-door:$doorId:entry:2');
+      expect(written.single.$2, frontDoorEntryId(doorId, generation: 2));
+      expect(
+        frontDoorEntryId(doorId, generation: 2),
+        isNot(frontDoorEntryId(doorId, generation: 0)),
+      );
       expect((rewritten().outcome! as FrontDoorFiled).generation, 2);
     });
 
@@ -275,7 +283,7 @@ void main() {
       );
       await service.saveAsNote(doorId);
       expect(written, [
-        ('Learn accordion.', 'front-door:$doorId:note', null, null),
+        ('Learn accordion.', frontDoorNoteId(doorId), null, null),
       ]);
       final outcome = rewritten().outcome! as FrontDoorFiled;
       expect(outcome.entryId, 'entry-1');
@@ -292,7 +300,7 @@ void main() {
           text: '  Buy a hose. ',
         );
         await service.makeTask(doorId);
-        expect(madeTasks, [('Buy a hose.', 'front-door:$doorId:task')]);
+        expect(madeTasks, [('Buy a hose.', frontDoorTaskId(doorId))]);
         expect(
           (rewritten().outcome! as FrontDoorTaskCreated).taskId,
           'task-new',

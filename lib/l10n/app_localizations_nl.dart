@@ -6856,7 +6856,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Niet opgeborgen, zoals je zei';
+  String get frontDoorDeclined => 'Niet opgeborgen';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6912,7 +6912,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorNoDoor => 'Hier is nog geen plek voor.';
 
   @override
-  String get frontDoorNotThis => 'Dit niet';
+  String get frontDoorNotThis => 'Niet opbergen';
 
   @override
   String frontDoorProposal(String owner) {
@@ -6932,7 +6932,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorSummaryBased => 'uit samenvattingen';
 
   @override
-  String get frontDoorTaskCreated => 'Een taak van gemaakt';
+  String get frontDoorTaskCreated => 'Omgezet in een taak';
 
   @override
   String get frontDoorUnfile => 'Eruit halen';

@@ -6,23 +6,24 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:uuid/uuid.dart';
 
-/// Writes the user's words as a text entry: under [linkedId] when given,
-/// on their own otherwise. [uuidV5Input] names the entry's id, so writing
-/// the same input twice lands on the same entry. Returns the entry, or
-/// null when nothing was written.
+/// Writes the user's words as a text entry under [id]: linked under
+/// [linkedId] when given, on their own otherwise. Writing the same id twice
+/// lands on the same entry. Returns the entry — the one written, or the one
+/// already there — or null when nothing is stored.
 typedef FrontTextEntryWriter =
     Future<JournalEntity?> Function(
       String text, {
-      required String uuidV5Input,
+      required String id,
       String? linkedId,
       String? categoryId,
     });
 
-/// Makes a task titled with the user's words, under the id [uuidV5Input]
-/// names. Returns it, or null when nothing was created.
+/// Makes a task titled with the user's words under [id]. Returns it — the
+/// one created, or the one already there — or null when nothing is stored.
 typedef FrontTaskMaker =
-    Future<Task?> Function(String title, {required String uuidV5Input});
+    Future<Task?> Function(String title, {required String id});
 
 /// Deletes an entry; true when it existed and is gone.
 typedef FrontEntryDeleter = Future<bool> Function(String entryId);
@@ -97,7 +98,7 @@ class FrontFilingService {
     final task = await _journalDb.journalEntityById(proposal.ownerId);
     final entry = await _writeTextEntry(
       record.text,
-      uuidV5Input: entryIdInput(doorId, generation: proposal.generation),
+      id: frontDoorEntryId(doorId, generation: proposal.generation),
       linkedId: proposal.ownerId,
       categoryId: task?.meta.categoryId,
     );
@@ -149,7 +150,7 @@ class FrontFilingService {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final entry = await _writeTextEntry(
       record.text,
-      uuidV5Input: noteIdInput(doorId),
+      id: frontDoorNoteId(doorId),
     );
     if (entry == null) throw StateError('The note was not written.');
     await _rewrite(
@@ -164,7 +165,7 @@ class FrontFilingService {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
     final task = await _makeTask(
       record.text.trim(),
-      uuidV5Input: taskIdInput(doorId),
+      id: frontDoorTaskId(doorId),
     );
     if (task == null) throw StateError('The task was not created.');
     await _rewrite(
@@ -205,14 +206,17 @@ class FrontFilingService {
   }
 }
 
-/// The deterministic id input of the entry a proposal files under its task:
-/// the door and the filing generation, so a retry reuses the entry and a
-/// re-file after an unfile gets a new one.
-String entryIdInput(String doorId, {required int generation}) =>
-    'front-door:$doorId:entry:$generation';
+/// The id of the entry a proposal files under its task: the door and the
+/// filing generation, so a retry reuses the entry and a re-file after an
+/// unfile gets a new one.
+String frontDoorEntryId(String doorId, {required int generation}) =>
+    _writtenId('$doorId/entry/$generation');
 
-/// The deterministic id input of the note an inbox item is saved as.
-String noteIdInput(String doorId) => 'front-door:$doorId:note';
+/// The id of the note an inbox item is saved as.
+String frontDoorNoteId(String doorId) => _writtenId('$doorId/note');
 
-/// The deterministic id input of the task an inbox item is made into.
-String taskIdInput(String doorId) => 'front-door:$doorId:task';
+/// The id of the task an inbox item is made into.
+String frontDoorTaskId(String doorId) => _writtenId('$doorId/task');
+
+String _writtenId(String path) =>
+    const Uuid().v5(Namespace.url.value, 'lotti://front-door/$path');

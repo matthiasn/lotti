@@ -6837,7 +6837,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Inte sparat, som du sa';
+  String get frontDoorDeclined => 'Inte sparat';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6893,7 +6893,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorNoDoor => 'Det finns ännu ingenstans att ta det här.';
 
   @override
-  String get frontDoorNotThis => 'Inte det här';
+  String get frontDoorNotThis => 'Spara inte';
 
   @override
   String frontDoorProposal(String owner) {

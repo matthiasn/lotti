@@ -11612,7 +11612,7 @@ abstract class AppLocalizations {
   /// No description provided for @frontDoorDeclined.
   ///
   /// In en, this message translates to:
-  /// **'Not filed, as you said'**
+  /// **'Not filed'**
   String get frontDoorDeclined;
 
   /// No description provided for @frontDoorFailed.
@@ -11708,7 +11708,7 @@ abstract class AppLocalizations {
   /// No description provided for @frontDoorNotThis.
   ///
   /// In en, this message translates to:
-  /// **'Not this'**
+  /// **'Don\'t file'**
   String get frontDoorNotThis;
 
   /// No description provided for @frontDoorProposal.

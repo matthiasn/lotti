@@ -6902,7 +6902,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String frontChatInboxChip(int count) {
-    return 'Inbox $count';
+    return 'Primite $count';
   }
 
   @override
@@ -6940,7 +6940,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Neînregistrat, așa cum ați spus';
+  String get frontDoorDeclined => 'Neînregistrat';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6997,7 +6997,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorNoDoor => 'Deocamdată nu există unde să fie dus.';
 
   @override
-  String get frontDoorNotThis => 'Nu aceasta';
+  String get frontDoorNotThis => 'Nu înregistrați';
 
   @override
   String frontDoorProposal(String owner) {

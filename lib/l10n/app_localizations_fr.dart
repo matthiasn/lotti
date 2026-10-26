@@ -6935,7 +6935,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get frontDoorDeclined => 'Pas classé, comme tu l’as dit';
+  String get frontDoorDeclined => 'Non classé';
 
   @override
   String frontDoorFailed(String owner) {
@@ -6992,7 +6992,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorNoDoor => 'Nulle part où porter cela pour l’instant.';
 
   @override
-  String get frontDoorNotThis => 'Pas ça';
+  String get frontDoorNotThis => 'Ne pas classer';
 
   @override
   String frontDoorProposal(String owner) {

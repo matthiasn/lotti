@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -152,57 +153,67 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
     syncService: ref.watch(agentSyncServiceProvider),
     journalDb: ref.watch(journalDbProvider),
     notifications: ref.watch(updateNotificationsProvider),
-    writeTextEntry: (text, {required uuidV5Input, linkedId, categoryId}) =>
+    writeTextEntry: (text, {required id, linkedId, categoryId}) =>
         writeFrontTextEntry(
           ref.read(persistenceLogicProvider),
+          ref.read(journalDbProvider),
           text,
-          uuidV5Input: uuidV5Input,
+          id: id,
           linkedId: linkedId,
           categoryId: categoryId,
         ),
-    makeTask: (title, {required uuidV5Input}) => makeFrontTask(
+    makeTask: (title, {required id}) => makeFrontTask(
       ref.read(persistenceLogicProvider),
+      ref.read(journalDbProvider),
       title,
-      uuidV5Input: uuidV5Input,
+      id: id,
     ),
     deleteEntry: ref.watch(journalRepositoryProvider).deleteJournalEntity,
   ),
   name: 'frontFilingServiceProvider',
 );
 
-/// A text entry with [text], linked under [linkedId] when given, created
-/// under the id [uuidV5Input] names. Returns the entity whether the row was
-/// new or already there — the second is the retry case.
+/// A text entry with [text] under [id], linked under [linkedId] when given.
+///
+/// The write's own verdict decides: `true` is the new entry; `false` means a
+/// row under [id] already exists — the retry case — and that row is
+/// returned when it is there and not deleted; `null`, or a rejected write
+/// with no row behind it, is nothing stored.
 Future<JournalEntity?> writeFrontTextEntry(
   PersistenceLogic persistence,
+  JournalDb journalDb,
   String text, {
-  required String uuidV5Input,
+  required String id,
   String? linkedId,
   String? categoryId,
 }) async {
   final now = clock.now();
   final entry = JournalEntity.journalEntry(
     meta: await persistence.createMetadata(
+      id: id,
       dateFrom: now,
       dateTo: now,
       categoryId: categoryId,
-      uuidV5Input: uuidV5Input,
     ),
     entryText: EntryText(plainText: text),
   );
-  await persistence.createDbEntity(entry, linkedId: linkedId);
-  return entry;
+  final saved = await persistence.createDbEntity(entry, linkedId: linkedId);
+  if (saved ?? false) return entry;
+  return _existing(journalDb, id);
 }
 
-/// A task titled [title], open, with no category, created under the id
-/// [uuidV5Input] names.
+/// A task titled [title], open, with no category, under [id]. The creation
+/// path answers null for a rejected write, which for a deterministic id
+/// means the task is already there — the retry case — so that task is
+/// returned when it is, and null when nothing is stored.
 Future<Task?> makeFrontTask(
   PersistenceLogic persistence,
+  JournalDb journalDb,
   String title, {
-  required String uuidV5Input,
-}) {
+  required String id,
+}) async {
   final now = clock.now();
-  return persistence.createTaskEntry(
+  final task = await persistence.createTaskEntry(
     data: TaskData(
       status: taskStatusFromString(''),
       title: title,
@@ -212,8 +223,17 @@ Future<Task?> makeFrontTask(
       estimate: Duration.zero,
     ),
     entryText: const EntryText(plainText: ''),
-    uuidV5Input: uuidV5Input,
+    id: id,
   );
+  if (task != null) return task;
+  final existing = await _existing(journalDb, id);
+  return existing is Task ? existing : null;
+}
+
+/// The row under [id] when it is there and not deleted.
+Future<JournalEntity?> _existing(JournalDb journalDb, String id) async {
+  final existing = await journalDb.journalEntityById(id);
+  return existing != null && existing.meta.deletedAt == null ? existing : null;
 }
 
 /// The front agent's contribution to `agentWakeRunnersProvider` — merged in
