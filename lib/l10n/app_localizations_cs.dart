@@ -6861,7 +6861,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Zeptej se na úkol, cíl, projekt nebo člověka. Najde, kdo to ví, a přinese odpověď.';
+      'Zeptej se na úkol, cíl, projekt nebo osobu. Správný agent přinese odpověď.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6881,16 +6881,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatResponding => 'Hledá, kdo to ví…';
 
   @override
-  String get frontChatSubtitle => 'Zeptej se na cokoli — ona najde, kdo to ví';
-
-  @override
   String get frontChatTitle => 'Společnice';
 
   @override
   String get frontChatYesterday => 'Včera';
 
   @override
-  String get frontDoorActionFailed => 'to se nepovedlo, zkus to znovu';
+  String get frontDoorActionFailed => 'To se nepovedlo.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6919,7 +6916,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox => 'Tohle zatím nikam nepatří — je to na tobě';
+  String get frontDoorInbox => 'Kam s tím?';
+
+  @override
+  String get frontDoorInboxInstead => 'Kam s tím místo toho?';
 
   @override
   String get frontDoorIncomplete => 'může být neúplné';
@@ -6945,10 +6945,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorKindTask => 'úkol';
 
   @override
+  String get frontDoorLeaveIt => 'Nechat být';
+
+  @override
+  String get frontDoorLeft => 'Ponecháno tady ve vlákně';
+
+  @override
   String get frontDoorMakeTask => 'Udělat z toho úkol';
 
   @override
-  String get frontDoorNewProject => 'Nový projekt';
+  String get frontDoorNewProject => 'Nový projekt…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6959,7 +6965,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorNoDoor => 'Zatím to není kam vzít.';
 
   @override
-  String get frontDoorNotThis => 'Neukládat';
+  String get frontDoorNotThis => 'Někam jinam';
+
+  @override
+  String get frontDoorOpen => 'Otevřít';
 
   @override
   String frontDoorProposal(String owner) {
@@ -6973,7 +6982,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorSaveNote => 'Uložit jako poznámku';
 
   @override
-  String get frontDoorStartGoal => 'Založit cíl';
+  String get frontDoorStartGoal => 'Založit cíl…';
 
   @override
   String get frontDoorSummaryBased => 'ze souhrnů';
@@ -6982,7 +6991,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorTaskCreated => 'Vytvořen úkol';
 
   @override
-  String get frontDoorUnfile => 'Vyjmout';
+  String get frontDoorTryAgain => 'Zkusit znovu';
+
+  @override
+  String get frontDoorUndo => 'Zpět';
 
   @override
   String frontDoorUnfiled(String owner) {

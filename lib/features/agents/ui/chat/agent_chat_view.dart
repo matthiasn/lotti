@@ -235,6 +235,8 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                   attachment: groupAttachment
                                       ? attachment
                                       : null,
+                                  footerTrailing: widget.footerTrailingBuilder
+                                      ?.call(context, message),
                                 ),
                                 if (attachment != null && !groupAttachment) ...[
                                   SizedBox(height: tokens.spacing.step2),

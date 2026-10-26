@@ -6892,7 +6892,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Pose une question sur une tâche, un objectif, un projet ou une personne. Elle trouve qui sait et rapporte la réponse.';
+      'Demande une tâche, un objectif, un projet ou une personne. Le bon agent rapporte la réponse.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6912,17 +6912,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontChatResponding => 'Elle cherche qui sait…';
 
   @override
-  String get frontChatSubtitle =>
-      'Demande ce que tu veux — elle trouve qui sait';
-
-  @override
   String get frontChatTitle => 'Compagne';
 
   @override
   String get frontChatYesterday => 'Hier';
 
   @override
-  String get frontDoorActionFailed => 'ça n’est pas passé, réessaie';
+  String get frontDoorActionFailed => 'Ça n’est pas passé.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6951,8 +6947,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox =>
-      'Rien ne possède ceci pour l’instant — à toi de voir';
+  String get frontDoorInbox => 'Où ranger ça ?';
+
+  @override
+  String get frontDoorInboxInstead => 'Où ranger ça, alors ?';
 
   @override
   String get frontDoorIncomplete => 'peut être incomplet';
@@ -6978,10 +6976,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorKindTask => 'la tâche';
 
   @override
+  String get frontDoorLeaveIt => 'Laisser';
+
+  @override
+  String get frontDoorLeft => 'Laissé ici dans le fil';
+
+  @override
   String get frontDoorMakeTask => 'En faire une tâche';
 
   @override
-  String get frontDoorNewProject => 'Nouveau projet';
+  String get frontDoorNewProject => 'Nouveau projet…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6992,7 +6996,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorNoDoor => 'Nulle part où porter cela pour l’instant.';
 
   @override
-  String get frontDoorNotThis => 'Ne pas classer';
+  String get frontDoorNotThis => 'Ailleurs';
+
+  @override
+  String get frontDoorOpen => 'Ouvrir';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7006,7 +7013,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorSaveNote => 'Enregistrer comme note';
 
   @override
-  String get frontDoorStartGoal => 'Lancer un objectif';
+  String get frontDoorStartGoal => 'Lancer un objectif…';
 
   @override
   String get frontDoorSummaryBased => 'd’après des résumés';
@@ -7015,7 +7022,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get frontDoorTaskCreated => 'Transformé en tâche';
 
   @override
-  String get frontDoorUnfile => 'Retirer';
+  String get frontDoorTryAgain => 'Réessayer';
+
+  @override
+  String get frontDoorUndo => 'Annuler';
 
   @override
   String frontDoorUnfiled(String owner) {

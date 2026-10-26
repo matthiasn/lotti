@@ -64,4 +64,45 @@ void main() {
     expect(FrontChatThread.empty.inboxCount, 0);
     expect(FrontChatThread.empty.inboxMessageIds, isEmpty);
   });
+
+  test("a turn's doors are carried by her reply right after it, else by "
+      'the turn itself, and the inbox names both', () {
+    AgentChatMessage m(String id, AgentChatRole role) => AgentChatMessage(
+      id: id,
+      role: role,
+      text: id,
+      createdAt: DateTime(2026),
+    );
+    final thread = FrontChatThread(
+      messages: [
+        m('u1', AgentChatRole.user),
+        m('r1', AgentChatRole.agent),
+        m('u2', AgentChatRole.user),
+        m('u3', AgentChatRole.user),
+        m('ask3', AgentChatRole.agent),
+        m('u4', AgentChatRole.user),
+      ],
+      doorsByMessageId: {
+        'u1': [door('a', const FrontDoorProposal(ownerId: 't'))],
+        'u2': [door('b', const FrontDoorFiled(entryId: 'e'))],
+        'u3': [door('c', const FrontDoorInbox())],
+        'u4': [door('d', null)],
+      },
+    );
+
+    // Her reply follows: the doors are her answer.
+    expect(thread.carrierOf('u1'), 'r1');
+    expect(thread.doorsCarriedBy('r1')!.single.doorId, 'a');
+    expect(thread.doorsCarriedBy('u1'), isNull);
+    // Another user turn follows, or nothing yet: the turn keeps its doors.
+    expect(thread.carrierOf('u2'), 'u2');
+    expect(thread.doorsCarriedBy('u2')!.single.doorId, 'b');
+    expect(thread.carrierOf('u3'), 'ask3');
+    expect(thread.carrierOf('u4'), 'u4');
+    expect(thread.doorsCarriedBy('u4')!.single.doorId, 'd');
+    expect(thread.carrierOf('unknown'), 'unknown');
+    expect(thread.doorsCarriedBy('ask3')!.single.doorId, 'c');
+    // The inbox filter keeps the words and the carrier together.
+    expect(thread.inboxMessageIds, {'u1', 'r1', 'u3', 'ask3'});
+  });
 }

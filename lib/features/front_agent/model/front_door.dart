@@ -101,15 +101,34 @@ sealed class FrontDoorOutcome {
         return FrontDoorFiled(
           entryId: entryId,
           ownerId: ownerId is String ? ownerId : null,
+          newKind: FrontNewKind.fromName(map['newKind']),
           generation: generation is int ? generation : 0,
         );
       case 'declined':
-        return const FrontDoorDeclined();
+        final ownerId = map['ownerId'];
+        final generation = map['generation'];
+        return FrontDoorDeclined(
+          ownerId: ownerId is String ? ownerId : null,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
       case 'inbox':
-        return FrontDoorInbox(newKind: FrontNewKind.fromName(map['newKind']));
+        final ownerId = map['ownerId'];
+        final generation = map['generation'];
+        return FrontDoorInbox(
+          newKind: FrontNewKind.fromName(map['newKind']),
+          ownerId: ownerId is String ? ownerId : null,
+          generation: generation is int ? generation : 0,
+        );
       case 'taskCreated':
         final taskId = map['taskId'];
-        return taskId is String ? FrontDoorTaskCreated(taskId: taskId) : null;
+        if (taskId is! String) return null;
+        final generation = map['generation'];
+        return FrontDoorTaskCreated(
+          taskId: taskId,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
       default:
         return null;
     }
@@ -143,17 +162,21 @@ class FrontDoorProposal extends FrontDoorOutcome {
 
 /// The user's words were written as a text entry: under [ownerId] when it
 /// was filed under a task, on their own when saved as a note. [generation]
-/// is the proposal's at the time of filing, so an unfile can hand the next
-/// proposal the one after it.
+/// is the proposal's or the inbox item's at the time of writing, so a
+/// take-back can hand the next proposal or inbox item the one after it.
+/// [newKind] is the inbox item's, kept so a take-back leads with the same
+/// chip again.
 class FrontDoorFiled extends FrontDoorOutcome {
   const FrontDoorFiled({
     required this.entryId,
     this.ownerId,
+    this.newKind,
     this.generation = 0,
   });
 
   final String entryId;
   final String? ownerId;
+  final FrontNewKind? newKind;
   final int generation;
 
   @override
@@ -161,41 +184,72 @@ class FrontDoorFiled extends FrontDoorOutcome {
     'type': 'filed',
     'entryId': entryId,
     if (ownerId != null) 'ownerId': ownerId,
+    if (newKind != null) 'newKind': newKind!.name,
     if (generation > 0) 'generation': generation,
   };
 }
 
-/// The user said not to file this. Nothing was written.
+/// The user left this where it is. Nothing was written, and nothing waits.
+/// What it was before is kept — [ownerId] and [generation] of the proposal
+/// it came from, [newKind] of the inbox item — so an undo brings that back.
 class FrontDoorDeclined extends FrontDoorOutcome {
-  const FrontDoorDeclined();
+  const FrontDoorDeclined({this.ownerId, this.newKind, this.generation = 0});
+
+  final String? ownerId;
+  final FrontNewKind? newKind;
+  final int generation;
 
   @override
-  Map<String, Object?> toJson() => const {'type': 'declined'};
+  Map<String, Object?> toJson() => {
+    'type': 'declined',
+    if (ownerId != null) 'ownerId': ownerId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
+  };
 }
 
-/// Nothing owns this yet: the segment waits in the inbox with the chips
-/// that make it a task, start a goal or project, or save it as a note.
-/// [newKind] is what the router thought it would become, if anything.
+/// Nothing owns this yet: the segment waits in the inbox with the ways
+/// that make it a task, start a goal or project, save it as a note, or
+/// leave it. [newKind] is what the router thought it would become, if
+/// anything; [ownerId] the task it was proposed under before the user said
+/// not to file it there, so the item asks where it should go *instead*;
+/// [generation] counts how often the item was written and taken back.
 class FrontDoorInbox extends FrontDoorOutcome {
-  const FrontDoorInbox({this.newKind});
+  const FrontDoorInbox({this.newKind, this.ownerId, this.generation = 0});
 
   final FrontNewKind? newKind;
+  final String? ownerId;
+  final int generation;
 
   @override
   Map<String, Object?> toJson() => {
     'type': 'inbox',
     if (newKind != null) 'newKind': newKind!.name,
+    if (ownerId != null) 'ownerId': ownerId,
+    if (generation > 0) 'generation': generation,
   };
 }
 
 /// The user made a task of the segment; its title is the user's words.
+/// [newKind] and [generation] are the inbox item's, kept for a take-back.
 class FrontDoorTaskCreated extends FrontDoorOutcome {
-  const FrontDoorTaskCreated({required this.taskId});
+  const FrontDoorTaskCreated({
+    required this.taskId,
+    this.newKind,
+    this.generation = 0,
+  });
 
   final String taskId;
+  final FrontNewKind? newKind;
+  final int generation;
 
   @override
-  Map<String, Object?> toJson() => {'type': 'taskCreated', 'taskId': taskId};
+  Map<String, Object?> toJson() => {
+    'type': 'taskCreated',
+    'taskId': taskId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
+  };
 }
 
 /// Whether the user still has to act on this door: a proposal waiting for

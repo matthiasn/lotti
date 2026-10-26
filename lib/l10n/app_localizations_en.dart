@@ -6758,7 +6758,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.';
+      'Ask about a task, a goal, a project or a person. The right agent brings back the answer.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6778,16 +6778,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatResponding => 'Finding who knows…';
 
   @override
-  String get frontChatSubtitle => 'Ask anything — she finds who knows';
-
-  @override
   String get frontChatTitle => 'Companion';
 
   @override
   String get frontChatYesterday => 'Yesterday';
 
   @override
-  String get frontDoorActionFailed => 'that did not go through, try again';
+  String get frontDoorActionFailed => 'That did not go through.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6816,7 +6813,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox => 'Nothing owns this yet — your call';
+  String get frontDoorInbox => 'Where should this go?';
+
+  @override
+  String get frontDoorInboxInstead => 'Where should this go instead?';
 
   @override
   String get frontDoorIncomplete => 'may be incomplete';
@@ -6842,10 +6842,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorKindTask => 'the task';
 
   @override
+  String get frontDoorLeaveIt => 'Leave it';
+
+  @override
+  String get frontDoorLeft => 'Left here in the thread';
+
+  @override
   String get frontDoorMakeTask => 'Make it a task';
 
   @override
-  String get frontDoorNewProject => 'New project';
+  String get frontDoorNewProject => 'New project…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6856,7 +6862,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorNoDoor => 'Nowhere to take this yet.';
 
   @override
-  String get frontDoorNotThis => 'Don\'t file';
+  String get frontDoorNotThis => 'Somewhere else';
+
+  @override
+  String get frontDoorOpen => 'Open';
 
   @override
   String frontDoorProposal(String owner) {
@@ -6870,7 +6879,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorSaveNote => 'Save as a note';
 
   @override
-  String get frontDoorStartGoal => 'Start a goal';
+  String get frontDoorStartGoal => 'Start a goal…';
 
   @override
   String get frontDoorSummaryBased => 'from summaries';
@@ -6879,7 +6888,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorTaskCreated => 'Made into a task';
 
   @override
-  String get frontDoorUnfile => 'Unfile';
+  String get frontDoorTryAgain => 'Try again';
+
+  @override
+  String get frontDoorUndo => 'Undo';
 
   @override
   String frontDoorUnfiled(String owner) {
@@ -17622,6 +17634,24 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String get frontDoorInboxInstead => 'Where should this go instead?';
+
+  @override
+  String get frontDoorLeaveIt => 'Leave it';
+
+  @override
+  String get frontDoorLeft => 'Left here in the thread';
+
+  @override
+  String get frontDoorNewProject => 'New project…';
+
+  @override
+  String get frontDoorNotThis => 'Somewhere else';
+
+  @override
+  String get frontDoorStartGoal => 'Start a goal…';
 
   @override
   String get githubNoSummaryYet => 'Not summarised yet.';

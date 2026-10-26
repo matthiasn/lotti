@@ -6794,7 +6794,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Fråga om en uppgift, ett mål, ett projekt eller en person. Hon hittar den som vet och kommer tillbaka med svaret.';
+      'Fråga om en uppgift, ett mål, ett projekt eller en person. Rätt agent kommer tillbaka med svaret.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6814,17 +6814,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatResponding => 'Letar efter den som vet…';
 
   @override
-  String get frontChatSubtitle =>
-      'Fråga vad som helst — hon hittar den som vet';
-
-  @override
   String get frontChatTitle => 'Följeslagare';
 
   @override
   String get frontChatYesterday => 'Igår';
 
   @override
-  String get frontDoorActionFailed => 'det gick inte igenom, försök igen';
+  String get frontDoorActionFailed => 'Det gick inte igenom.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6853,7 +6849,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox => 'Det här hör inte till något än — du bestämmer';
+  String get frontDoorInbox => 'Vart ska det här?';
+
+  @override
+  String get frontDoorInboxInstead => 'Vart ska det här i stället?';
 
   @override
   String get frontDoorIncomplete => 'kan vara ofullständigt';
@@ -6879,10 +6878,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorKindTask => 'uppgiften';
 
   @override
+  String get frontDoorLeaveIt => 'Låt det vara';
+
+  @override
+  String get frontDoorLeft => 'Lämnat här i tråden';
+
+  @override
   String get frontDoorMakeTask => 'Gör till en uppgift';
 
   @override
-  String get frontDoorNewProject => 'Nytt projekt';
+  String get frontDoorNewProject => 'Nytt projekt…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6893,7 +6898,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorNoDoor => 'Det finns ännu ingenstans att ta det här.';
 
   @override
-  String get frontDoorNotThis => 'Spara inte';
+  String get frontDoorNotThis => 'Någon annanstans';
+
+  @override
+  String get frontDoorOpen => 'Öppna';
 
   @override
   String frontDoorProposal(String owner) {
@@ -6907,7 +6915,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorSaveNote => 'Spara som anteckning';
 
   @override
-  String get frontDoorStartGoal => 'Starta ett mål';
+  String get frontDoorStartGoal => 'Starta ett mål…';
 
   @override
   String get frontDoorSummaryBased => 'från sammanfattningar';
@@ -6916,7 +6924,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontDoorTaskCreated => 'Gjort till en uppgift';
 
   @override
-  String get frontDoorUnfile => 'Ta bort';
+  String get frontDoorTryAgain => 'Försök igen';
+
+  @override
+  String get frontDoorUndo => 'Ångra';
 
   @override
   String frontDoorUnfiled(String owner) {

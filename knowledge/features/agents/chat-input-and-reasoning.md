@@ -31,6 +31,9 @@ reply surface and its reading width, under a transparent Material ancestor for
 interactive disclosures. `composerShape` selects the input shell; pill composers
 use an emphasized upward-arrow Send action. Both options default to the existing
 separate attachment and rounded-field treatment for other hosts.
+`footerTrailingBuilder` lets a host tail a bubble's footer line — after the
+author and the time, on the same line — with a widget of its own, such as the
+front agent's per-turn cost, so a turn's metadata stays one row.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

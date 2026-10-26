@@ -4,6 +4,7 @@ import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 
 @immutable
 class FrontChatComposerState {
@@ -86,6 +87,8 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> sendText(String text) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
+    // A send is a new turn, and the whole thread is where it lands.
+    ref.read(frontInboxFilterProvider.notifier).clear();
     state = state.copyWith(isSending: true);
     try {
       // The identity is created on first use, with the narrow default
@@ -141,13 +144,18 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> fileUnderTask(String doorId) =>
       _doorAction(doorId, (filing) => filing.fileUnderTask(doorId));
 
-  /// Does not file the proposal.
-  Future<void> declineFiling(String doorId) =>
+  /// Says no to what a waiting door offers: a proposal's words go to the
+  /// inbox, an inbox item is left where it is.
+  Future<void> decline(String doorId) =>
       _doorAction(doorId, (filing) => filing.decline(doorId));
 
-  /// Takes a filed entry back out.
-  Future<void> unfile(String doorId) =>
-      _doorAction(doorId, (filing) => filing.unfile(doorId));
+  /// A left door waits again as what it was.
+  Future<void> undoDecline(String doorId) =>
+      _doorAction(doorId, (filing) => filing.undoDecline(doorId));
+
+  /// Takes back what a door wrote: the entry, note or task.
+  Future<void> takeBack(String doorId) =>
+      _doorAction(doorId, (filing) => filing.takeBack(doorId));
 
   /// Makes a task of an inbox item.
   Future<void> makeTask(String doorId) =>

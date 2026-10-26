@@ -207,14 +207,104 @@ void main() {
     });
   });
 
-  test('decline writes nothing and records the refusal', () async {
-    seed(const FrontDoorProposal(ownerId: 'garden'));
-    await service.decline(doorId);
-    expect(written, isEmpty);
-    expect(rewritten().outcome, isA<FrontDoorDeclined>());
+  group('decline', () {
+    test('sends a proposal to the inbox, writing nothing, with the task it '
+        'was proposed under kept on the item', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden', generation: 2));
+      await service.decline(doorId);
+      expect(written, isEmpty);
+      final inbox = rewritten().outcome! as FrontDoorInbox;
+      expect(inbox.ownerId, 'garden');
+      expect(inbox.generation, 2);
+      expect(inbox.newKind, isNull);
+    });
+
+    test('leaves an inbox item where it is, keeping what it was', () async {
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.goal, generation: 1),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.decline(doorId);
+      final left = rewritten().outcome! as FrontDoorDeclined;
+      expect(left.newKind, FrontNewKind.goal);
+      expect(left.generation, 1);
+      expect(left.ownerId, isNull);
+
+      upserts.clear();
+      seed(const FrontDoorInbox(ownerId: 'garden', generation: 2));
+      await service.decline(doorId);
+      final leftProposal = rewritten().outcome! as FrontDoorDeclined;
+      expect(leftProposal.ownerId, 'garden');
+      expect(leftProposal.generation, 2);
+      expect(written, isEmpty);
+    });
+
+    test('a settled door has nothing to say no to', () async {
+      seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+      await expectLater(
+        service.decline(doorId),
+        throwsA(isA<FrontDoorStateException>()),
+      );
+      expect(upserts, isEmpty);
+    });
   });
 
-  group('unfile', () {
+  group('undoDecline', () {
+    test('makes a left proposal the same proposal again, nothing written or '
+        'deleted in between', () async {
+      seed(const FrontDoorDeclined(ownerId: 'garden', generation: 2));
+      await service.undoDecline(doorId);
+      expect(written, isEmpty);
+      expect(deleted, isEmpty);
+      final proposal = rewritten().outcome! as FrontDoorProposal;
+      expect(proposal.ownerId, 'garden');
+      expect(proposal.generation, 2);
+    });
+
+    test('makes a left inbox item an inbox item again, leading with the '
+        'same chip', () async {
+      seed(
+        const FrontDoorDeclined(newKind: FrontNewKind.goal, generation: 1),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.undoDecline(doorId);
+      final inbox = rewritten().outcome! as FrontDoorInbox;
+      expect(inbox.newKind, FrontNewKind.goal);
+      expect(inbox.generation, 1);
+      expect(inbox.ownerId, isNull);
+    });
+
+    test('a refusal recorded before the proposal was kept on it falls back '
+        "on a task door's destination, and on the inbox otherwise", () async {
+      seed(const FrontDoorDeclined());
+      await service.undoDecline(doorId);
+      final proposal = rewritten().outcome! as FrontDoorProposal;
+      expect(proposal.ownerId, 'garden');
+      expect(proposal.generation, 0);
+
+      upserts.clear();
+      seed(
+        const FrontDoorDeclined(),
+        kind: FrontDestinationKind.unrouted,
+        destinationId: null,
+      );
+      await service.undoDecline(doorId);
+      expect(rewritten().outcome, isA<FrontDoorInbox>());
+    });
+
+    test('on a door that is not left, it refuses', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      await expectLater(
+        service.undoDecline(doorId),
+        throwsA(isA<FrontDoorStateException>()),
+      );
+      expect(upserts, isEmpty);
+    });
+  });
+
+  group('takeBack', () {
     test('deletes the entry and makes the door a proposal again, one '
         'generation on, so a re-file gets a fresh entry', () async {
       seed(
@@ -224,7 +314,7 @@ void main() {
           generation: 1,
         ),
       );
-      await service.unfile(doorId);
+      await service.takeBack(doorId);
       expect(deleted, ['entry-1']);
       final outcome = rewritten().outcome! as FrontDoorProposal;
       expect(outcome.ownerId, 'garden');
@@ -249,7 +339,7 @@ void main() {
       when(() => journalDb.journalEntityById('entry-1')).thenAnswer(
         (_) async => textEntry('entry-1', 'still here'),
       );
-      await expectLater(service.unfile(doorId), throwsStateError);
+      await expectLater(service.takeBack(doorId), throwsStateError);
       expect(upserts, isEmpty);
     });
 
@@ -258,15 +348,60 @@ void main() {
       () async {
         seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
         deleteResult = false;
-        await service.unfile(doorId);
+        await service.takeBack(doorId);
         expect(rewritten().outcome, isA<FrontDoorProposal>());
       },
     );
 
-    test('a note has no owner to go back to and refuses', () async {
-      seed(const FrontDoorFiled(entryId: 'entry-1'));
+    test('a note goes back to the inbox, one generation on, leading with '
+        'the same chip', () async {
+      seed(
+        const FrontDoorFiled(entryId: 'entry-1', newKind: FrontNewKind.goal),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.takeBack(doorId);
+      expect(deleted, ['entry-1']);
+      final inbox = rewritten().outcome! as FrontDoorInbox;
+      expect(inbox.newKind, FrontNewKind.goal);
+      expect(inbox.generation, 1);
+    });
+
+    test('a task made of an inbox item is deleted and the item is back in '
+        'the inbox', () async {
+      seed(
+        const FrontDoorTaskCreated(
+          taskId: 'task-new',
+          newKind: FrontNewKind.task,
+          generation: 1,
+        ),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.takeBack(doorId);
+      expect(deleted, ['task-new']);
+      final inbox = rewritten().outcome! as FrontDoorInbox;
+      expect(inbox.newKind, FrontNewKind.task);
+      expect(inbox.generation, 2);
+    });
+
+    test(
+      'a task still there after the delete leaves the door as it was',
+      () async {
+        seed(const FrontDoorTaskCreated(taskId: 'task-new'));
+        deleteResult = false;
+        when(() => journalDb.journalEntityById('task-new')).thenAnswer(
+          (_) async => task('task-new', 'still here'),
+        );
+        await expectLater(service.takeBack(doorId), throwsStateError);
+        expect(upserts, isEmpty);
+      },
+    );
+
+    test('a door that wrote nothing has nothing to take back', () async {
+      seed(const FrontDoorDeclined(ownerId: 'garden'));
       await expectLater(
-        service.unfile(doorId),
+        service.takeBack(doorId),
         throwsA(isA<FrontDoorStateException>()),
       );
       expect(deleted, isEmpty);
@@ -288,6 +423,41 @@ void main() {
       final outcome = rewritten().outcome! as FrontDoorFiled;
       expect(outcome.entryId, 'entry-1');
       expect(outcome.ownerId, isNull);
+      expect(outcome.generation, 0);
+    });
+
+    test('an item taken back writes its next note or task under a fresh '
+        'id, and the receipt keeps the generation and the kind', () async {
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.goal, generation: 1),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.saveAsNote(doorId);
+      expect(written.single.$2, frontDoorNoteId(doorId, generation: 1));
+      expect(
+        frontDoorNoteId(doorId, generation: 1),
+        isNot(frontDoorNoteId(doorId)),
+      );
+      final note = rewritten().outcome! as FrontDoorFiled;
+      expect(note.newKind, FrontNewKind.goal);
+      expect(note.generation, 1);
+
+      upserts.clear();
+      seed(
+        const FrontDoorInbox(newKind: FrontNewKind.task, generation: 2),
+        kind: FrontDestinationKind.newThing,
+        destinationId: null,
+      );
+      await service.makeTask(doorId);
+      expect(madeTasks.single.$2, frontDoorTaskId(doorId, generation: 2));
+      expect(
+        frontDoorTaskId(doorId, generation: 2),
+        isNot(frontDoorTaskId(doorId)),
+      );
+      final made = rewritten().outcome! as FrontDoorTaskCreated;
+      expect(made.newKind, FrontNewKind.task);
+      expect(made.generation, 2);
     });
 
     test(

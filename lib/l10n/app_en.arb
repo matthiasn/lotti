@@ -3990,7 +3990,7 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
-  "frontChatEmpty": "Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.",
+  "frontChatEmpty": "Ask about a task, a goal, a project or a person. The right agent brings back the answer.",
   "frontChatInboxChip": "Inbox {count}",
   "@frontChatInboxChip": {
     "placeholders": {
@@ -4003,10 +4003,9 @@
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
   "frontChatResponding": "Finding who knows…",
-  "frontChatSubtitle": "Ask anything — she finds who knows",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
-  "frontDoorActionFailed": "that did not go through, try again",
+  "frontDoorActionFailed": "That did not go through.",
   "frontDoorAttribution": "From {owner}",
   "@frontDoorAttribution": {
     "placeholders": {
@@ -4041,7 +4040,8 @@
       }
     }
   },
-  "frontDoorInbox": "Nothing owns this yet — your call",
+  "frontDoorInbox": "Where should this go?",
+  "frontDoorInboxInstead": "Where should this go instead?",
   "frontDoorIncomplete": "may be incomplete",
   "frontDoorInferenceUnavailable": "{owner} has no working AI setup.",
   "@frontDoorInferenceUnavailable": {
@@ -4056,8 +4056,10 @@
   "frontDoorKindPerson": "the person",
   "frontDoorKindProject": "the project",
   "frontDoorKindTask": "the task",
+  "frontDoorLeaveIt": "Leave it",
+  "frontDoorLeft": "Left here in the thread",
   "frontDoorMakeTask": "Make it a task",
-  "frontDoorNewProject": "New project",
+  "frontDoorNewProject": "New project…",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",
   "@frontDoorNoAgent": {
     "placeholders": {
@@ -4067,7 +4069,8 @@
     }
   },
   "frontDoorNoDoor": "Nowhere to take this yet.",
-  "frontDoorNotThis": "Don't file",
+  "frontDoorNotThis": "Somewhere else",
+  "frontDoorOpen": "Open",
   "frontDoorProposal": "File this under {owner}?",
   "@frontDoorProposal": {
     "placeholders": {
@@ -4078,10 +4081,11 @@
   },
   "frontDoorSavedAsNote": "Saved as a note",
   "frontDoorSaveNote": "Save as a note",
-  "frontDoorStartGoal": "Start a goal",
+  "frontDoorStartGoal": "Start a goal…",
   "frontDoorSummaryBased": "from summaries",
   "frontDoorTaskCreated": "Made into a task",
-  "frontDoorUnfile": "Unfile",
+  "frontDoorTryAgain": "Try again",
+  "frontDoorUndo": "Undo",
   "frontDoorUnfiled": "Taken back out of {owner}. File it again?",
   "@frontDoorUnfiled": {
     "placeholders": {

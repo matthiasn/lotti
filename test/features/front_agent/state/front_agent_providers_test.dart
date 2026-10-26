@@ -608,16 +608,21 @@ void main() {
       );
     });
 
-    test('unfiling deletes the entry through the journal repository', () async {
-      seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
-      when(
-        () => journalRepository.deleteJournalEntity('entry-1'),
-      ).thenAnswer((_) async => true);
+    test(
+      'taking back deletes the entry through the journal repository',
+      () async {
+        seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+        when(
+          () => journalRepository.deleteJournalEntity('entry-1'),
+        ).thenAnswer((_) async => true);
 
-      await wired.read(frontFilingServiceProvider).unfile(doorId);
+        await wired.read(frontFilingServiceProvider).takeBack(doorId);
 
-      verify(() => journalRepository.deleteJournalEntity('entry-1')).called(1);
-    });
+        verify(
+          () => journalRepository.deleteJournalEntity('entry-1'),
+        ).called(1);
+      },
+    );
   });
 }
 

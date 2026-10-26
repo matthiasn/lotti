@@ -8,6 +8,7 @@ import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dar
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -80,14 +81,22 @@ void main() {
 
   group('send', () {
     test('creates the identity on first use, sends the trimmed draft, '
-        'refreshes the thread and clears the composer', () async {
+        'refreshes the thread, clears the composer and leaves the inbox '
+        'filter', () async {
       when(
         () => chatService.sendMessage(text: 'Hello'),
       ).thenAnswer((_) async {});
       controller().updateDraft('  Hello ');
       final before = threadBuilder.builds;
+      // Kept alive across the send: the filter is auto-disposed otherwise.
+      final filter = container.listen(frontInboxFilterProvider, (_, _) {});
+      addTearDown(filter.close);
+      container.read(frontInboxFilterProvider.notifier).toggle();
+      expect(container.read(frontInboxFilterProvider), isTrue);
 
       await controller().send();
+
+      expect(container.read(frontInboxFilterProvider), isFalse);
 
       verifyInOrder([
         () => agentService.getOrCreate(),
@@ -255,25 +264,28 @@ void main() {
       'that fails marks the door, until its next action clears it',
       () async {
         when(() => filing.decline('d1')).thenThrow(StateError('gone'));
-        await controller().declineFiling('d1');
+        await controller().decline('d1');
         expect(state().failedDoorIds, {'d1'});
         expect(state().busyDoorIds, isEmpty);
 
         when(() => filing.decline('d1')).thenAnswer((_) async {});
-        await controller().declineFiling('d1');
+        await controller().decline('d1');
         expect(state().failedDoorIds, isEmpty);
       },
     );
 
     test('every action reaches its service call', () async {
-      when(() => filing.unfile('d')).thenAnswer((_) async {});
+      when(() => filing.undoDecline('d')).thenAnswer((_) async {});
+      when(() => filing.takeBack('d')).thenAnswer((_) async {});
       when(() => filing.makeTask('d')).thenAnswer((_) async {});
       when(() => filing.saveAsNote('d')).thenAnswer((_) async {});
-      await controller().unfile('d');
+      await controller().undoDecline('d');
+      await controller().takeBack('d');
       await controller().makeTask('d');
       await controller().saveAsNote('d');
       verifyInOrder([
-        () => filing.unfile('d'),
+        () => filing.undoDecline('d'),
+        () => filing.takeBack('d'),
         () => filing.makeTask('d'),
         () => filing.saveAsNote('d'),
       ]);
@@ -281,7 +293,7 @@ void main() {
 
     test("the doors' state survives a send settling either way", () async {
       when(() => filing.decline('d1')).thenThrow(StateError('gone'));
-      await controller().declineFiling('d1');
+      await controller().decline('d1');
       when(
         () => chatService.sendMessage(text: 'Hello'),
       ).thenAnswer((_) async {});

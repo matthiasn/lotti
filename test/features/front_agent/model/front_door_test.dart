@@ -54,10 +54,20 @@ void main() {
       FrontDoorProposal(ownerId: 'garden', generation: 2),
       FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden', generation: 1),
       FrontDoorFiled(entryId: 'entry-2'),
+      FrontDoorFiled(entryId: 'entry-3', newKind: FrontNewKind.goal),
       FrontDoorDeclined(),
+      FrontDoorDeclined(ownerId: 'garden', generation: 2),
+      FrontDoorDeclined(newKind: FrontNewKind.goal, generation: 1),
       FrontDoorInbox(),
       FrontDoorInbox(newKind: FrontNewKind.goal),
+      FrontDoorInbox(newKind: FrontNewKind.project, generation: 1),
+      FrontDoorInbox(ownerId: 'garden', generation: 2),
       FrontDoorTaskCreated(taskId: 'task-1'),
+      FrontDoorTaskCreated(
+        taskId: 'task-2',
+        newKind: FrontNewKind.task,
+        generation: 3,
+      ),
     ];
     for (final outcome in outcomes) {
       final back = FrontDoorRecord.fromJson(record(outcome: outcome).toJson());

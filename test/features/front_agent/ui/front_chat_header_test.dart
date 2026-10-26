@@ -6,9 +6,6 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
-import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -23,13 +20,11 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../widget_test_utils.dart';
-import '../../ai_consumption/test_utils.dart';
 
 void main() {
   Future<void> pumpHeader(
     WidgetTester tester, {
     VoidCallback? onClose,
-    ConsumptionTotals? totals,
     bool companion = false,
     double width = 400,
     FrontChatThread thread = FrontChatThread.empty,
@@ -60,34 +55,31 @@ void main() {
           frontChatThreadProvider.overrideWith(
             (ref) async => threadOf?.call() ?? thread,
           ),
-          agentConsumptionTotalsProvider(frontAgentId).overrideWith(
-            (ref) => totals == null
-                ? const Stream<ConsumptionTotals>.empty()
-                : Stream.value(totals),
-          ),
         ],
       ),
     );
     // Her face animates, so no settle: a few frames let the flag and the
-    // totals streams deliver.
+    // thread land.
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
   }
 
-  testWidgets('names her, says what she does, and offers close and the '
-      'internals', (tester) async {
+  testWidgets('names her in one row and offers close and the internals', (
+    tester,
+  ) async {
     var closed = 0;
     await pumpHeader(tester, onClose: () => closed++);
 
-    expect(
-      tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).data,
-      'Companion',
-    );
-    expect(
-      tester.widget<Text>(find.byKey(FrontChatHeaderKeys.subtitle)).data,
-      'Ask anything — she finds who knows',
-    );
+    final title = tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title));
+    expect(title.data, 'Companion');
+    // One row: the figure, the name and the actions share a line.
+    final figure = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
+    final titleRect = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
+    final close = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
+    expect(titleRect.top, lessThan(figure.bottom));
+    expect(titleRect.left, greaterThan(figure.right));
+    expect(close.top, lessThan(figure.bottom));
     expect(find.byKey(FrontChatHeaderKeys.internals), findsOneWidget);
     expect(find.byTooltip('Agent internals'), findsOneWidget);
 
@@ -110,57 +102,6 @@ void main() {
     );
     expect(panel.agentId, frontAgentId);
     expect(panel.agentName, 'Companion');
-  });
-
-  testWidgets('shows no cost before the totals are known', (tester) async {
-    await pumpHeader(tester);
-    expect(find.byKey(FrontChatHeaderKeys.cost), findsNothing);
-  });
-
-  testWidgets('shows what the thread has cost once the totals are known', (
-    tester,
-  ) async {
-    await pumpHeader(
-      tester,
-      totals: makeConsumptionTotals(
-        callCount: 3,
-        totalTokens: 2000,
-        credits: 0.42,
-        energyKwh: 0.012,
-        carbonGCo2: 3.4,
-      ),
-    );
-    final pill = tester.widget<ConsumptionSummaryPill>(
-      find.byKey(FrontChatHeaderKeys.cost),
-    );
-    expect(pill.totals.credits, 0.42);
-    expect(pill.totals.totalTokens, 2000);
-    // In the sheet's width the pill sits under the subtitle, so what she
-    // does is never squeezed into an ellipsis.
-    expect(
-      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.cost)).dy,
-      greaterThanOrEqualTo(
-        tester.getBottomLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dy,
-      ),
-    );
-    expect(
-      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.cost)).dx,
-      tester.getTopLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dx,
-    );
-  });
-
-  testWidgets('with room for a word beside it the pill rides the title line', (
-    tester,
-  ) async {
-    await pumpHeader(
-      tester,
-      width: 720,
-      totals: makeConsumptionTotals(callCount: 1, totalTokens: 10),
-    );
-    final cost = tester.getRect(find.byKey(FrontChatHeaderKeys.cost));
-    final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
-    expect(cost.left, greaterThan(title.right));
-    expect(cost.top, lessThan(title.bottom));
   });
 
   testWidgets('wears the spark tile when the companion is off', (
@@ -215,20 +156,16 @@ void main() {
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
     });
 
-    testWidgets('counts the doors that wait and toggles the inbox filter', (
-      tester,
-    ) async {
+    testWidgets('counts the doors that wait, rides the title row, and '
+        'toggles the inbox filter', (tester) async {
       await pumpHeader(tester, thread: waiting(2));
       final chip = find.byKey(FrontChatHeaderKeys.inbox);
       expect(tester.widget<DesignSystemChip>(chip).label, 'Inbox 2');
       expect(tester.widget<DesignSystemChip>(chip).selected, isFalse);
-      // Under the subtitle in the sheet's width, like the cost pill.
-      expect(
-        tester.getTopLeft(chip).dy,
-        greaterThanOrEqualTo(
-          tester.getBottomLeft(find.byKey(FrontChatHeaderKeys.subtitle)).dy,
-        ),
-      );
+      final chipRect = tester.getRect(chip);
+      final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
+      expect(chipRect.left, greaterThan(title.right));
+      expect(chipRect.top, lessThan(title.bottom));
 
       await tester.tap(chip);
       await tester.pump();

@@ -20,7 +20,8 @@ gave it, never reworded. A statement under a task is a **proposal**: one tap
 files the user's words verbatim as an entry under the task, and only the
 tap writes. What nothing owns waits in the **inbox** — the same thread,
 filtered — with chips that make it a task, start a goal or project, or save
-it as a note.
+it as a note, or leave it. Whatever a tap wrote can be opened or undone,
+and a proposal she got wrong goes to the inbox rather than being retyped.
 
 ## What it owns
 

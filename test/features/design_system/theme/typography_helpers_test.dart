@@ -188,4 +188,28 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('bodyLabelStyle', () {
+    test('keeps the body size and ink, and changes only the weight', () {
+      for (final tokens in const [dsTokensLight, dsTokensDark]) {
+        final body = tokens.typography.styles.body.bodyMedium;
+        final style = bodyLabelStyle(tokens);
+        expect(style.fontSize, body.fontSize);
+        expect(style.fontFamily, body.fontFamily);
+        expect(style.fontWeight, tokens.typography.weight.semiBold);
+        expect(style.fontWeight, isNot(body.fontWeight));
+        expect(style.color, tokens.colors.text.highEmphasis);
+        expect(
+          bodyLabelStyle(tokens, color: tokens.colors.text.lowEmphasis).color,
+          tokens.colors.text.lowEmphasis,
+        );
+        final small = bodyLabelStyle(tokens, small: true);
+        expect(
+          small.fontSize,
+          tokens.typography.styles.body.bodySmall.fontSize,
+        );
+        expect(small.fontWeight, tokens.typography.weight.semiBold);
+      }
+    });
+  });
 }

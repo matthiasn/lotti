@@ -6869,7 +6869,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Pregunta por una tarea, un objetivo, un proyecto o una persona. Ella encuentra a quien lo sabe y trae la respuesta.';
+      'Pregunta por una tarea, un objetivo, un proyecto o una persona. El agente adecuado te trae la respuesta.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6889,17 +6889,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontChatResponding => 'Buscando a quien lo sabe…';
 
   @override
-  String get frontChatSubtitle =>
-      'Pregunta lo que sea — ella encuentra a quien lo sabe';
-
-  @override
   String get frontChatTitle => 'Compañera';
 
   @override
   String get frontChatYesterday => 'Ayer';
 
   @override
-  String get frontDoorActionFailed => 'eso no salió, inténtalo de nuevo';
+  String get frontDoorActionFailed => 'Eso no se completó.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6928,7 +6924,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox => 'Esto aún no pertenece a nada — tú decides';
+  String get frontDoorInbox => '¿Dónde va esto?';
+
+  @override
+  String get frontDoorInboxInstead => '¿Dónde va esto entonces?';
 
   @override
   String get frontDoorIncomplete => 'puede estar incompleto';
@@ -6954,10 +6953,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorKindTask => 'la tarea';
 
   @override
+  String get frontDoorLeaveIt => 'Dejarlo';
+
+  @override
+  String get frontDoorLeft => 'Se queda aquí en el hilo';
+
+  @override
   String get frontDoorMakeTask => 'Convertir en tarea';
 
   @override
-  String get frontDoorNewProject => 'Nuevo proyecto';
+  String get frontDoorNewProject => 'Nuevo proyecto…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6968,7 +6973,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorNoDoor => 'Todavía no hay adónde llevar esto.';
 
   @override
-  String get frontDoorNotThis => 'No archivar';
+  String get frontDoorNotThis => 'A otro sitio';
+
+  @override
+  String get frontDoorOpen => 'Abrir';
 
   @override
   String frontDoorProposal(String owner) {
@@ -6982,7 +6990,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorSaveNote => 'Guardar como nota';
 
   @override
-  String get frontDoorStartGoal => 'Empezar un objetivo';
+  String get frontDoorStartGoal => 'Empezar un objetivo…';
 
   @override
   String get frontDoorSummaryBased => 'de resúmenes';
@@ -6991,7 +6999,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorTaskCreated => 'Convertido en tarea';
 
   @override
-  String get frontDoorUnfile => 'Sacar';
+  String get frontDoorTryAgain => 'Reintentar';
+
+  @override
+  String get frontDoorUndo => 'Deshacer';
 
   @override
   String frontDoorUnfiled(String owner) {

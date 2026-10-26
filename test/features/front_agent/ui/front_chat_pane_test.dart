@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
@@ -128,8 +130,8 @@ void main() {
     expect(find.byType(FrontChatHeader), findsOneWidget);
     expect(
       find.text(
-        'Ask about a task, a goal, a project or a person. She finds who '
-        'knows and brings back the answer.',
+        'Ask about a task, a goal, a project or a person. The right agent '
+        'brings back the answer.',
       ),
       findsOneWidget,
     );
@@ -219,15 +221,17 @@ void main() {
     );
 
     // Three days, three dividers: the date, yesterday, today.
+    // The day dividers carry a label; the hairlines inside her bubble do not.
     final dividers = tester
         .widgetList<DesignSystemDivider>(find.byType(DesignSystemDivider))
         .map((d) => d.label)
+        .nonNulls
         .toList();
     expect(dividers, ['Tuesday, October 20, 2026', 'Yesterday', 'Today']);
     expect(find.byKey(const ValueKey('goal-chat-divider-u0')), findsOneWidget);
     expect(find.byKey(const ValueKey('goal-chat-divider-ask0')), findsNothing);
 
-    expect(find.byKey(const ValueKey('front-doors-u1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('front-doors-reply1')), findsOneWidget);
     expect(find.byType(FrontDoorCard), findsOneWidget);
     expect(find.text('The seam walk is next.'), findsOneWidget);
 
@@ -235,19 +239,22 @@ void main() {
     expect(find.byKey(const ValueKey('front-options-ask0')), findsNothing);
     expect(find.byType(FrontAskOptionsRow), findsOneWidget);
 
-    // Her turns carry what they cost, under the chips when there are any;
-    // a wake that recorded no call shows nothing.
+    // Her turns carry what they cost as the tail of the bubble's footer
+    // line, after her name and the time; a wake that recorded no call shows
+    // nothing.
     expect(find.byType(FrontTurnCostLine), findsNWidgets(2));
-    expect(find.byKey(const ValueKey('front-turn-cost-run-2')), findsOneWidget);
+    final cost = find.byKey(const ValueKey('front-turn-cost-run-2'));
+    expect(cost, findsOneWidget);
     expect(find.byKey(const ValueKey('front-turn-cost-run-1')), findsNothing);
-    expect(
-      tester.getTopLeft(find.byKey(const ValueKey('front-turn-cost-run-2'))).dy,
-      greaterThan(
-        tester
-            .getBottomLeft(find.byKey(const ValueKey('front-options-ask2')))
-            .dy,
-      ),
+    expect(tester.widget<Text>(cost).data, startsWith(' · '));
+    final bubble = find.byKey(const ValueKey('goal-chat-message-ask2'));
+    final footer = find.descendant(
+      of: bubble,
+      matching: find.textContaining('Companion · '),
     );
+    expect(footer, findsOneWidget);
+    expect(tester.getCenter(cost).dy, tester.getCenter(footer).dy);
+    expect(tester.getTopLeft(cost).dx, tester.getTopRight(footer).dx);
   });
 
   testWidgets('a chip answers in its own words through the composer', (
@@ -379,7 +386,8 @@ void main() {
 
       expect(find.text('The hinge arrived.'), findsWidgets);
       expect(find.text('Fine.'), findsNothing);
-      expect(find.text('Filed? Your call.'), findsNothing);
+      // Her reply carries the doors, so it stays with the words.
+      expect(find.text('Filed? Your call.'), findsOneWidget);
 
       await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
       await tester.pump();
@@ -389,6 +397,133 @@ void main() {
     testWidgets('with nothing waiting there is no inbox chip', (tester) async {
       await pumpPane(tester);
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+    });
+
+    testWidgets('a send leaves the inbox filter, so the new turn lands in '
+        'the whole thread', (tester) async {
+      when(
+        () => chatService.sendMessage(text: 'Hello'),
+      ).thenAnswer((_) async {});
+      await pumpPane(tester, thread: () async => waiting());
+      await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Fine.'), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump();
+      await tester.tap(find.byIcon(LottiIcons.send));
+      await tester.pump();
+      await tester.pump();
+
+      verify(() => chatService.sendMessage(text: 'Hello')).called(1);
+      expect(find.text('Fine.'), findsOneWidget);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byKey(FrontChatHeaderKeys.inbox)),
+      );
+      expect(container.read(frontInboxFilterProvider), isFalse);
+    });
+
+    testWidgets('a question that carries doors shows them above its chips, '
+        'all inside her bubble', (tester) async {
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Garden? And swim?', now),
+            message(
+              'ask1',
+              AgentChatRole.agent,
+              'Which swim goal?',
+              now.add(const Duration(minutes: 1)),
+            ),
+          ],
+          optionsByMessageId: const {
+            'ask1': [
+              FrontAskOption(
+                kind: FrontDestinationKind.goal,
+                id: 'goal-a',
+                label: 'Swim 2 km',
+              ),
+            ],
+          },
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: FrontDoorRecord(
+                  segmentIndex: 0,
+                  text: 'Garden?',
+                  kind: FrontDestinationKind.task,
+                  destinationId: 'garden',
+                  ownerTitle: 'Garden',
+                  status: FrontDoorStatus.done,
+                  claimedAt: now.toUtc(),
+                  outcome: const FrontDoorAnswer(
+                    text: 'Weeded.',
+                    summaryBased: false,
+                    incomplete: false,
+                  ),
+                ),
+              ),
+            ],
+          },
+        ),
+      );
+
+      final bubble = find.byKey(const ValueKey('goal-chat-message-ask1'));
+      final doors = find.byKey(const ValueKey('front-doors-ask1'));
+      final chips = find.byKey(const ValueKey('front-options-ask1'));
+      expect(find.descendant(of: bubble, matching: doors), findsOneWidget);
+      expect(find.descendant(of: bubble, matching: chips), findsOneWidget);
+      expect(
+        tester.getTopLeft(chips).dy,
+        greaterThan(tester.getBottomLeft(doors).dy),
+      );
+      expect(find.byKey(const ValueKey('front-doors-u1')), findsNothing);
+    });
+
+    testWidgets('open on a settled door leaves the sheet and goes to what '
+        'it wrote', (tester) async {
+      final paths = <String>[];
+      beamToNamedOverride = paths.add;
+      addTearDown(() => beamToNamedOverride = null);
+      FrontDoorRecord settled(int index, FrontDoorOutcome outcome) =>
+          FrontDoorRecord(
+            segmentIndex: index,
+            text: 'segment $index',
+            kind: FrontDestinationKind.unrouted,
+            status: FrontDoorStatus.done,
+            claimedAt: now.toUtc(),
+            outcome: outcome,
+          );
+      await pumpPane(
+        tester,
+        thread: () async => FrontChatThread(
+          messages: [
+            message('u1', AgentChatRole.user, 'Two things.', now),
+          ],
+          doorsByMessageId: {
+            'u1': [
+              FrontDoorEntry(
+                doorId: 'd:door:0',
+                record: settled(0, const FrontDoorFiled(entryId: 'e-1')),
+              ),
+              FrontDoorEntry(
+                doorId: 'd:door:1',
+                record: settled(1, const FrontDoorTaskCreated(taskId: 't-1')),
+              ),
+            ],
+          },
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('front-door-open-0')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
+      await tester.pump();
+
+      expect(paths, ['/journal/e-1', '/tasks/t-1']);
     });
   });
 

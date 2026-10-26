@@ -84,11 +84,34 @@ class FrontChatThread {
   /// finishes a wake.
   final Set<String> specialistAgentIds;
 
-  /// The user turns with a door still waiting on the user — the inbox is
-  /// the thread filtered to these (decision 7).
+  /// The message that carries a user turn's doors on the surface: her
+  /// reply right after it, when there is one — the doors are her answer,
+  /// part by part, under her own line — else the user turn itself, while
+  /// she is still walking them or when no reply followed.
+  String carrierOf(String userMessageId) {
+    final index = messages.indexWhere((m) => m.id == userMessageId);
+    if (index < 0 || index + 1 >= messages.length) return userMessageId;
+    final next = messages[index + 1];
+    return next.role == AgentChatRole.agent ? next.id : userMessageId;
+  }
+
+  /// The doors [messageId] carries on the surface, if any.
+  List<FrontDoorEntry>? doorsCarriedBy(String messageId) {
+    for (final entry in doorsByMessageId.entries) {
+      if (carrierOf(entry.key) == messageId) return entry.value;
+    }
+    return null;
+  }
+
+  /// The turns with a door still waiting on the user, and the replies that
+  /// carry those doors — the inbox is the thread filtered to these
+  /// (decision 7).
   Set<String> get inboxMessageIds => {
     for (final entry in doorsByMessageId.entries)
-      if (entry.value.any((door) => door.awaitsUser)) entry.key,
+      if (entry.value.any((door) => door.awaitsUser)) ...{
+        entry.key,
+        carrierOf(entry.key),
+      },
   };
 
   /// How many doors wait on the user, across the thread.

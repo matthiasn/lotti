@@ -14,4 +14,7 @@ class FrontInboxFilter extends Notifier<bool> {
   bool build() => false;
 
   void toggle() => state = !state;
+
+  /// Off: a send is a new turn, and the whole thread is where it lands.
+  void clear() => state = false;
 }

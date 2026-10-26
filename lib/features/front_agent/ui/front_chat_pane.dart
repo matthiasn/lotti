@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
@@ -77,10 +78,22 @@ class _Body extends ConsumerWidget {
         : history;
     final actions = FrontDoorActions(
       onFile: controller.fileUnderTask,
-      onDecline: controller.declineFiling,
-      onUnfile: controller.unfile,
+      onDecline: controller.decline,
+      onUndoDecline: controller.undoDecline,
+      onTakeBack: controller.takeBack,
       onMakeTask: controller.makeTask,
       onSaveNote: controller.saveAsNote,
+      // What a door wrote lives on its own page: leave the sheet, then go.
+      onOpen: (door) {
+        final path = switch (door.record.outcome) {
+          FrontDoorFiled(:final entryId) => '/journal/$entryId',
+          FrontDoorTaskCreated(:final taskId) => '/tasks/$taskId',
+          _ => null,
+        };
+        if (path == null) return;
+        Navigator.of(context).maybePop();
+        beamToNamed(path);
+      },
       // The wizards are not pre-filled: they open plain, the words stay in
       // the thread, and the door keeps waiting until a chip that writes
       // takes it (nothing is written by opening a wizard).
@@ -107,44 +120,56 @@ class _Body extends ConsumerWidget {
       hasFailedTurn: composer.failedMessage != null,
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
+      groupAttachmentsWithReply: true,
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;
-        final doors = thread.doorsByMessageId[message.id];
-        if (doors != null && doors.isNotEmpty) {
-          return FrontDoorCard(
-            key: ValueKey('front-doors-${message.id}'),
-            doors: doors,
-            actions: actions,
-            busyDoorIds: composer.busyDoorIds,
-            failedDoorIds: composer.failedDoorIds,
-          );
-        }
-        if (message.role != AgentChatRole.agent) return null;
+        final isHers = message.role == AgentChatRole.agent;
+        // The doors ride her reply, inside her bubble under her own line;
+        // until she has replied they hang off the user's bubble.
+        final doors = thread.doorsCarriedBy(message.id);
+        final card = doors == null || doors.isEmpty
+            ? null
+            : FrontDoorCard(
+                key: ValueKey('front-doors-${message.id}'),
+                doors: doors,
+                actions: actions,
+                busyDoorIds: composer.busyDoorIds,
+                failedDoorIds: composer.failedDoorIds,
+                embedded: isHers,
+              );
         // Chips only under her latest question: an older one has been
         // answered, or walked away from, and its options would send a reply
         // to a question nobody is asking any more.
-        final options = thread.optionsByMessageId[message.id];
-        final runKey = message.runKey;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (options != null &&
-                options.isNotEmpty &&
-                message.id == latestId) ...[
-              FrontAskOptionsRow(
+        final options = isHers && message.id == latestId
+            ? thread.optionsByMessageId[message.id]
+            : null;
+        final chips = options == null || options.isEmpty
+            ? null
+            : FrontAskOptionsRow(
                 key: ValueKey('front-options-${message.id}'),
                 options: options,
                 enabled: !composer.isSending,
                 onChosen: (option) => controller.sendText(option.label),
-              ),
-              SizedBox(height: context.designTokens.spacing.step1),
+              );
+        if (card != null && chips != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              card,
+              SizedBox(height: context.designTokens.spacing.step3),
+              chips,
             ],
-            // What her turn cost: the routing calls of the wake that wrote
-            // this row.
-            if (runKey != null) FrontTurnCostLine(runKey: runKey),
-          ],
-        );
+          );
+        }
+        return card ?? chips;
+      },
+      // What her turn cost — the routing calls of the wake that wrote the
+      // row — tails the bubble's footer line.
+      footerTrailingBuilder: (context, message) {
+        final runKey = message.runKey;
+        if (message.role != AgentChatRole.agent || runKey == null) return null;
+        return FrontTurnCostLine(runKey: runKey);
       },
       dividerBuilder: (context, message, previous) {
         if (previous != null &&

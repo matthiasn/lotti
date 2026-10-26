@@ -4,6 +4,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
@@ -115,47 +116,108 @@ class FrontFilingService {
     );
   }
 
-  /// The user said not to file the proposal. Nothing is written.
+  /// The user said no to what a waiting door offers. Nothing is written.
+  /// A proposal is not refused outright: the words go to the inbox, where
+  /// they can still be made something, or left — a wrong guess costs one
+  /// more tap, not a retype. An inbox item left where it is settles, and
+  /// what it was is kept on the record so [undoDecline] can bring it back.
   Future<void> decline(String doorId) async {
-    final (record, payload) = await _waiting<FrontDoorProposal>(doorId);
-    await _rewrite(payload, record.done(const FrontDoorDeclined()));
+    final (record, payload) = await _waiting<FrontDoorOutcome>(doorId);
+    final next = switch (record.outcome) {
+      FrontDoorProposal(:final ownerId, :final generation) => FrontDoorInbox(
+        ownerId: ownerId,
+        generation: generation,
+      ),
+      FrontDoorInbox(:final ownerId, :final newKind, :final generation) =>
+        FrontDoorDeclined(
+          ownerId: ownerId,
+          newKind: newKind,
+          generation: generation,
+        ),
+      _ => throw FrontDoorStateException(doorId),
+    };
+    await _rewrite(payload, record.done(next));
   }
 
-  /// Takes a filed entry back out: the entry is deleted and the door is a
-  /// proposal again, one generation on. A delete that did not happen —
-  /// the entry still there, undeleted — leaves the door filed; an entry
-  /// already gone (deleted from the journal itself) counts as taken out.
-  Future<void> unfile(String doorId) async {
-    final (record, payload) = await _waiting<FrontDoorFiled>(doorId);
-    final filed = record.outcome! as FrontDoorFiled;
-    final ownerId = filed.ownerId;
-    if (ownerId == null) throw FrontDoorStateException(doorId);
-    if (!await _deleteEntry(filed.entryId)) {
-      final entry = await _journalDb.journalEntityById(filed.entryId);
-      if (entry != null && entry.meta.deletedAt == null) {
-        throw StateError('The entry was not deleted.');
-      }
-    }
+  /// A left item waits again as what it was — the proposal, when it came
+  /// from one, else the inbox item — the same generation: nothing was
+  /// written in between. A record from before the proposal was kept on the
+  /// refusal falls back on the door's destination.
+  Future<void> undoDecline(String doorId) async {
+    final (record, payload) = await _waiting<FrontDoorDeclined>(doorId);
+    final declined = record.outcome! as FrontDoorDeclined;
+    final ownerId =
+        declined.ownerId ??
+        (record.kind == FrontDestinationKind.task
+            ? record.destinationId
+            : null);
     await _rewrite(
       payload,
       record.done(
-        FrontDoorProposal(ownerId: ownerId, generation: filed.generation + 1),
+        ownerId != null
+            ? FrontDoorProposal(
+                ownerId: ownerId,
+                generation: declined.generation,
+              )
+            : FrontDoorInbox(
+                newKind: declined.newKind,
+                generation: declined.generation,
+              ),
       ),
     );
+  }
+
+  /// Takes back what a door wrote: the entry or task is deleted and the
+  /// door waits again, one generation on — a filed entry's door is a
+  /// proposal again, a note's or a task's is an inbox item again, leading
+  /// with the same chip. A delete that did not happen — the thing still
+  /// there, undeleted — leaves the door as it was; one already gone
+  /// (deleted from the journal itself) counts as taken back.
+  Future<void> takeBack(String doorId) async {
+    final (record, payload) = await _waiting<FrontDoorOutcome>(doorId);
+    final FrontDoorOutcome waiting;
+    switch (record.outcome) {
+      case FrontDoorFiled(:final entryId, :final ownerId?, :final generation):
+        await _takeOut(entryId);
+        waiting = FrontDoorProposal(
+          ownerId: ownerId,
+          generation: generation + 1,
+        );
+      case FrontDoorFiled(:final entryId, :final newKind, :final generation):
+        await _takeOut(entryId);
+        waiting = FrontDoorInbox(newKind: newKind, generation: generation + 1);
+      case FrontDoorTaskCreated(
+        :final taskId,
+        :final newKind,
+        :final generation,
+      ):
+        await _takeOut(taskId);
+        waiting = FrontDoorInbox(newKind: newKind, generation: generation + 1);
+      case _:
+        throw FrontDoorStateException(doorId);
+    }
+    await _rewrite(payload, record.done(waiting));
   }
 
   /// Saves an inbox segment as a note: a text entry with the user's words,
   /// owned by nothing.
   Future<void> saveAsNote(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
+    final inbox = record.outcome! as FrontDoorInbox;
     final entry = await _writeTextEntry(
       record.text,
-      id: frontDoorNoteId(doorId),
+      id: frontDoorNoteId(doorId, generation: inbox.generation),
     );
     if (entry == null) throw StateError('The note was not written.');
     await _rewrite(
       payload,
-      record.done(FrontDoorFiled(entryId: entry.meta.id)),
+      record.done(
+        FrontDoorFiled(
+          entryId: entry.meta.id,
+          newKind: inbox.newKind,
+          generation: inbox.generation,
+        ),
+      ),
     );
   }
 
@@ -163,15 +225,31 @@ class FrontFilingService {
   /// tap is the approval.
   Future<void> makeTask(String doorId) async {
     final (record, payload) = await _waiting<FrontDoorInbox>(doorId);
+    final inbox = record.outcome! as FrontDoorInbox;
     final task = await _makeTask(
       record.text.trim(),
-      id: frontDoorTaskId(doorId),
+      id: frontDoorTaskId(doorId, generation: inbox.generation),
     );
     if (task == null) throw StateError('The task was not created.');
     await _rewrite(
       payload,
-      record.done(FrontDoorTaskCreated(taskId: task.meta.id)),
+      record.done(
+        FrontDoorTaskCreated(
+          taskId: task.meta.id,
+          newKind: inbox.newKind,
+          generation: inbox.generation,
+        ),
+      ),
     );
+  }
+
+  /// Deletes what a door wrote, or verifies it is gone already.
+  Future<void> _takeOut(String id) async {
+    if (await _deleteEntry(id)) return;
+    final entity = await _journalDb.journalEntityById(id);
+    if (entity != null && entity.meta.deletedAt == null) {
+      throw StateError('The entry was not deleted.');
+    }
   }
 
   /// The door's record and payload, when its outcome is a [T]; throws
@@ -207,16 +285,20 @@ class FrontFilingService {
 }
 
 /// The id of the entry a proposal files under its task: the door and the
-/// filing generation, so a retry reuses the entry and a re-file after an
-/// unfile gets a new one.
+/// filing generation, so a retry reuses the entry and a re-file after a
+/// take-back gets a new one.
 String frontDoorEntryId(String doorId, {required int generation}) =>
     _writtenId('$doorId/entry/$generation');
 
-/// The id of the note an inbox item is saved as.
-String frontDoorNoteId(String doorId) => _writtenId('$doorId/note');
+/// The id of the note an inbox item is saved as; the first generation keeps
+/// the id notes were saved under before generations were counted.
+String frontDoorNoteId(String doorId, {int generation = 0}) =>
+    _writtenId(generation == 0 ? '$doorId/note' : '$doorId/note/$generation');
 
-/// The id of the task an inbox item is made into.
-String frontDoorTaskId(String doorId) => _writtenId('$doorId/task');
+/// The id of the task an inbox item is made into; the first generation
+/// keeps the id tasks were made under before generations were counted.
+String frontDoorTaskId(String doorId, {int generation = 0}) =>
+    _writtenId(generation == 0 ? '$doorId/task' : '$doorId/task/$generation');
 
 String _writtenId(String path) =>
     const Uuid().v5(Namespace.url.value, 'lotti://front-door/$path');

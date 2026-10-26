@@ -41,6 +41,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.scrollOnReplies = true,
     this.conversationId,
     this.groupAttachmentsWithReply = false,
+    this.footerTrailingBuilder,
     this.composerShape = DesignSystemTextInputShape.rounded,
     this.replyTextStyle,
     this.onLinkTap,
@@ -57,6 +58,12 @@ class AgentChatView extends ConsumerStatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onRetry;
   final AgentChatMessageAttachmentBuilder? attachmentBuilder;
+
+  /// Builds what a bubble's footer line carries after the author and the
+  /// time — a per-turn cost, say — on the same line, so a turn's metadata
+  /// is one row. Null, or a builder returning null, leaves the footer as it
+  /// is.
+  final AgentChatMessageAttachmentBuilder? footerTrailingBuilder;
 
   /// Rendered above a message, between it and the one before — the front
   /// thread's day dividers. Null renders nothing between messages.
@@ -588,6 +595,7 @@ class _MessageBubble extends StatelessWidget {
     required this.agentName,
     required this.measuredHeights,
     this.attachment,
+    this.footerTrailing,
     this.replyTextStyle,
     this.onLinkTap,
     super.key,
@@ -596,6 +604,9 @@ class _MessageBubble extends StatelessWidget {
   final AgentChatMessage message;
   final String agentName;
   final Widget? attachment;
+
+  /// What follows the author and the time on the footer line.
+  final Widget? footerTrailing;
   final TextStyle? replyTextStyle;
   final void Function(String url, String title)? onLinkTap;
 
@@ -677,11 +688,16 @@ class _MessageBubble extends StatelessWidget {
                   ],
                   SizedBox(height: tokens.spacing.step1),
                   ExcludeSemantics(
-                    child: Text(
-                      context.messages.goalChatMessageFooter(author, time),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          context.messages.goalChatMessageFooter(author, time),
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(color: tokens.colors.text.lowEmphasis),
+                        ),
+                        ?footerTrailing,
+                      ],
                     ),
                   ),
                 ],

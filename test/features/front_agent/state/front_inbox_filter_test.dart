@@ -15,6 +15,12 @@ void main() {
       expect(container.read(frontInboxFilterProvider), isTrue);
       container.read(frontInboxFilterProvider.notifier).toggle();
       expect(container.read(frontInboxFilterProvider), isFalse);
+      // Clearing is off, whether it was on or already off.
+      container.read(frontInboxFilterProvider.notifier).clear();
+      expect(container.read(frontInboxFilterProvider), isFalse);
+      container.read(frontInboxFilterProvider.notifier).toggle();
+      container.read(frontInboxFilterProvider.notifier).clear();
+      expect(container.read(frontInboxFilterProvider), isFalse);
       container.read(frontInboxFilterProvider.notifier).toggle();
 
       // The sheet closed: the filter is not remembered into the next opening.

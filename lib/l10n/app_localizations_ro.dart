@@ -6898,7 +6898,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană. Ea găsește cine știe și aduce răspunsul.';
+      'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană. Agentul potrivit aduce răspunsul.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -6918,16 +6918,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatResponding => 'Caută cine știe…';
 
   @override
-  String get frontChatSubtitle => 'Întrebați orice — ea găsește cine știe';
-
-  @override
   String get frontChatTitle => 'Însoțitoare';
 
   @override
   String get frontChatYesterday => 'Ieri';
 
   @override
-  String get frontDoorActionFailed => 'nu a reușit, încercați din nou';
+  String get frontDoorActionFailed => 'Nu a reușit.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6956,8 +6953,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get frontDoorInbox =>
-      'Aceasta nu aparține încă nimănui — dumneavoastră decideți';
+  String get frontDoorInbox => 'Unde ar trebui să ajungă?';
+
+  @override
+  String get frontDoorInboxInstead => 'Unde ar trebui să ajungă, atunci?';
 
   @override
   String get frontDoorIncomplete => 'poate fi incomplet';
@@ -6983,10 +6982,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorKindTask => 'sarcina';
 
   @override
+  String get frontDoorLeaveIt => 'Lăsați-l';
+
+  @override
+  String get frontDoorLeft => 'Lăsat aici, în conversație';
+
+  @override
   String get frontDoorMakeTask => 'Transformați în sarcină';
 
   @override
-  String get frontDoorNewProject => 'Proiect nou';
+  String get frontDoorNewProject => 'Proiect nou…';
 
   @override
   String frontDoorNoAgent(String owner) {
@@ -6997,7 +7002,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorNoDoor => 'Deocamdată nu există unde să fie dus.';
 
   @override
-  String get frontDoorNotThis => 'Nu înregistrați';
+  String get frontDoorNotThis => 'Altundeva';
+
+  @override
+  String get frontDoorOpen => 'Deschideți';
 
   @override
   String frontDoorProposal(String owner) {
@@ -7011,7 +7019,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorSaveNote => 'Salvați ca notiță';
 
   @override
-  String get frontDoorStartGoal => 'Începeți un obiectiv';
+  String get frontDoorStartGoal => 'Începeți un obiectiv…';
 
   @override
   String get frontDoorSummaryBased => 'din rezumate';
@@ -7020,7 +7028,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorTaskCreated => 'Transformat în sarcină';
 
   @override
-  String get frontDoorUnfile => 'Scoateți';
+  String get frontDoorTryAgain => 'Încercați din nou';
+
+  @override
+  String get frontDoorUndo => 'Anulați';
 
   @override
   String frontDoorUnfiled(String owner) {

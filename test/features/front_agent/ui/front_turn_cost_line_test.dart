@@ -51,7 +51,7 @@ void main() {
     final context = tester.element(line);
     expect(
       tester.widget<Text>(line).data,
-      consumptionSummaryLabel(context, totals),
+      ' · ${consumptionSummaryLabel(context, totals)}',
     );
     expect(
       tester.widget<Tooltip>(find.byType(Tooltip)).message,
