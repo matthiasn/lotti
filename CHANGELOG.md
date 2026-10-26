@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.63]
+
+### Added
+
+- **Ask the companion anything, in one place — she finds who knows.** Behind
+  the new *Companion chat* switch in Advanced settings, a chat opens over
+  whatever you are looking at: from a row above Settings in the desktop
+  sidebar, a button beside the menu on a phone, or Cmd/Ctrl+L. Ask about a
+  task, a goal, a project or a person and she works out which part of what
+  you said belongs to whom, asks the agent that knows, and shows you each
+  answer under the name of the agent that gave it — never reworded. When
+  she cannot tell which thing you mean, she asks, with the candidates as
+  chips you can tap. One continuous thread with day dividers, and each of
+  her turns shows what it cost. Statements and filing come in a later
+  update: for now she only answers questions.
+
+### Fixed
+
+- **The Call, Message and Email buttons on a person's page blinked after
+  every check-in.** Each write a check-in makes — the check-in itself, its
+  recording, the transcript landing, the summary, the agent's briefing —
+  reloads the page, and the row of buttons under the name took each reload
+  for a change of contact details: it emptied itself, asked the device again
+  which numbers it can dial, and filled back in a moment later, so the page
+  kept flickering after the rest of it had learned to stay put. The buttons
+  now stay through a reload and are only re-checked when the person's
+  contact details actually change.
+- **A transcript opened with Show more on a person's timeline folded itself
+  again.** Scrolling far down the history and back rebuilt the row folded,
+  and the history shifted under the reader as it came back shorter. An
+  opened row now stays open, at its full height, however far you scroll
+  away and back.
+
 ## [1.1.62]
 
 ### Added
