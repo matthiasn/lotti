@@ -1900,7 +1900,7 @@
   "configFlagResendAttachments": "Sendte vedhæftede filer igen",
   "configFlagResendAttachmentsDescription": "Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.",
   "configFlagUseIsolateSync": "Synkroniseringsproces i baggrunden",
-  "configFlagUseIsolateSyncDescription": "Eksperimentel: starter synkroniseringens baggrundsproces, når appen åbner. Den synkroniserer ikke noget endnu – sådan tester du, at den kører på din enhed. Træder i kraft efter en genstart.",
+  "configFlagUseIsolateSyncDescription": "Eksperimentel: kører synkroniseringen – Matrix-klienten, indhentning, download af vedhæftninger og afsendelse – i en baggrundsproces i stedet for i brugerfladen, som kun anvender det, der kommer ind. Træder i kraft efter en genstart.",
   "conflictApplyButton": "Ansøg",
   "conflictApplyFailedTitle": "Kunne ikke anvende opløsning",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag siden} other{{count} dage siden}}",

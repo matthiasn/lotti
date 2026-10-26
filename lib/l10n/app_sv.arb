@@ -1900,7 +1900,7 @@
   "configFlagResendAttachments": "Skicka bilagor på nytt",
   "configFlagResendAttachmentsDescription": "Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.",
   "configFlagUseIsolateSync": "Synkroniseringsprocess i bakgrunden",
-  "configFlagUseIsolateSyncDescription": "Experimentell: startar synkroniseringens bakgrundsprocess när appen öppnas. Den synkroniserar inget ännu – så testar du att den körs på din enhet. Gäller efter en omstart.",
+  "configFlagUseIsolateSyncDescription": "Experimentell: kör synkroniseringen – Matrix-klienten, ikappkörningen, bilagenedladdningar och sändning – i en bakgrundsprocess i stället för i gränssnittet, som bara tillämpar det som kommer in. Gäller efter en omstart.",
   "conflictApplyButton": "Ansök",
   "conflictApplyFailedTitle": "Kunde inte applicera upplösning",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag sedan} other{{count} dagar sedan}}",

@@ -4043,7 +4043,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimenteel: start bij het openen van de app het achtergrondproces van de synchronisatie. Het synchroniseert nog niets; zo test je of het op je apparaat draait. Werkt na een herstart.';
+      'Experimenteel: voert de synchronisatie – de Matrix-client, het inhalen, het downloaden van bijlagen en het verzenden – uit in een achtergrondproces in plaats van in de interface, die alleen nog toepast wat binnenkomt. Werkt na een herstart.';
 
   @override
   String get conflictApplyButton => 'Toepassen';

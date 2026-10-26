@@ -4088,7 +4088,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimental: pornește la deschiderea aplicației procesul de sincronizare în fundal. Încă nu sincronizează nimic; astfel puteți verifica dacă rulează pe dispozitivul dumneavoastră. Intră în vigoare după o repornire.';
+      'Experimental: rulează sincronizarea – clientul Matrix, recuperarea, descărcarea atașamentelor și trimiterea – într-un proces în fundal, nu în interfață, care doar aplică ce sosește. Intră în vigoare după o repornire.';
 
   @override
   String get conflictApplyButton => 'Aplicați';

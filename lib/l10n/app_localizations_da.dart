@@ -4020,7 +4020,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Eksperimentel: starter synkroniseringens baggrundsproces, når appen åbner. Den synkroniserer ikke noget endnu – sådan tester du, at den kører på din enhed. Træder i kraft efter en genstart.';
+      'Eksperimentel: kører synkroniseringen – Matrix-klienten, indhentning, download af vedhæftninger og afsendelse – i en baggrundsproces i stedet for i brugerfladen, som kun anvender det, der kommer ind. Træder i kraft efter en genstart.';
 
   @override
   String get conflictApplyButton => 'Ansøg';

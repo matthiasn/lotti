@@ -4054,7 +4054,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimentell: startet beim Öffnen der App den Hintergrundprozess der Synchronisierung. Er synchronisiert noch nichts – so testest du, ob er auf deinem Gerät läuft. Wirkt nach einem Neustart.';
+      'Experimentell: führt die Synchronisierung – Matrix-Client, Aufholen, Anhang-Downloads und Senden – in einem Hintergrundprozess aus statt in der Oberfläche, die nur noch übernimmt, was ankommt. Wirkt nach einem Neustart.';
 
   @override
   String get conflictApplyButton => 'Übernehmen';

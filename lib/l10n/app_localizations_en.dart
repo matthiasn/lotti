@@ -4005,7 +4005,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagUseIsolateSyncDescription =>
-      'Experimental: starts sync\'s background worker when the app opens. It does no syncing yet — this tests that it runs on your device. Takes effect after a restart.';
+      'Experimental: runs sync — the Matrix client, catch-up, attachment downloads and sending — in a background worker instead of on the interface, which only applies what arrives. Takes effect after a restart.';
 
   @override
   String get conflictApplyButton => 'Apply';
