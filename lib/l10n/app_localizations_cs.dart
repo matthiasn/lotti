@@ -6861,7 +6861,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Zeptej se na úkol, cíl, projekt nebo osobu. Správný agent přinese odpověď.';
+      'Zeptej se na úkol, cíl, projekt nebo osobu, nebo řekni, co se stalo. Odpoví správný agent a nic se neuloží, dokud neťukneš.';
 
   @override
   String frontChatInboxChip(int count) {

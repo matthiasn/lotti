@@ -2827,7 +2827,7 @@
   "fileMenuNewTask": "Tarea",
   "fileMenuTitle": "Archivo",
   "filterSelectionNoMatches": "Sin coincidencias",
-  "frontChatEmpty": "Pregunta por una tarea, un objetivo, un proyecto o una persona. El agente adecuado te trae la respuesta.",
+  "frontChatEmpty": "Pregunta por una tarea, un objetivo, un proyecto o una persona, o cuenta lo que pasó. Responde el agente adecuado, y nada se archiva hasta que toques.",
   "frontChatInboxChip": "Bandeja {count}",
   "frontChatInboxEmpty": "Nada espera por ti.",
   "frontChatOpen": "Preguntar a la compañera",

@@ -6892,7 +6892,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Demande une tâche, un objectif, un projet ou une personne. Le bon agent rapporte la réponse.';
+      'Demande une tâche, un objectif, un projet ou une personne, ou raconte ce qui s’est passé. Le bon agent répond, et rien n’est rangé tant que tu ne touches pas.';
 
   @override
   String frontChatInboxChip(int count) {

@@ -3171,7 +3171,7 @@
   "fileMenuNewTask": "Taak",
   "fileMenuTitle": "Bestand",
   "filterSelectionNoMatches": "Geen overeenkomsten",
-  "frontChatEmpty": "Vraag naar een taak, een doel, een project of een persoon. De juiste agent brengt het antwoord.",
+  "frontChatEmpty": "Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.",
   "frontChatInboxChip": "Inbox {count}",
   "frontChatInboxEmpty": "Er wacht niets op je.",
   "frontChatOpen": "Vraag het de metgezel",

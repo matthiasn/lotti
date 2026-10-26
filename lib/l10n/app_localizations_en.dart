@@ -6758,7 +6758,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Ask about a task, a goal, a project or a person. The right agent brings back the answer.';
+      'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
 
   @override
   String frontChatInboxChip(int count) {
@@ -17634,6 +17634,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String get frontChatEmpty =>
+      'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
 
   @override
   String get frontDoorInboxInstead => 'Where should this go instead?';

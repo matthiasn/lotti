@@ -3171,7 +3171,7 @@
   "fileMenuNewTask": "Tarefa",
   "fileMenuTitle": "Arquivo",
   "filterSelectionNoMatches": "Nenhuma correspondência",
-  "frontChatEmpty": "Pergunta por uma tarefa, um objetivo, um projeto ou uma pessoa. O agente certo traz a resposta.",
+  "frontChatEmpty": "Pergunta por uma tarefa, um objetivo, um projeto ou uma pessoa, ou conta o que aconteceu. Responde o agente certo, e nada é arquivado até tocares.",
   "frontChatInboxChip": "Caixa de entrada {count}",
   "frontChatInboxEmpty": "Nada espera por ti.",
   "frontChatOpen": "Perguntar à companheira",

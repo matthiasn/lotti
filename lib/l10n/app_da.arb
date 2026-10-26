@@ -3172,7 +3172,7 @@
   "fileMenuNewTask": "Opgave",
   "fileMenuTitle": "Fil",
   "filterSelectionNoMatches": "Ingen kampe",
-  "frontChatEmpty": "Spørg om en opgave, et mål, et projekt eller en person. Den rette agent kommer tilbage med svaret.",
+  "frontChatEmpty": "Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.",
   "frontChatInboxChip": "Indbakke {count}",
   "frontChatInboxEmpty": "Intet venter på dig.",
   "frontChatOpen": "Spørg ledsageren",

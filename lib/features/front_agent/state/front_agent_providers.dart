@@ -179,6 +179,11 @@ final frontFilingServiceProvider = Provider<FrontFilingService>(
 /// row under [id] already exists — the retry case — and that row is
 /// returned when it is there and not deleted; `null`, or a rejected write
 /// with no row behind it, is nothing stored.
+///
+/// Under a task, the entry counts only once its link is live: the task
+/// agent reads its entries through the link, so an entry without one is not
+/// filed. A missing link — the link write refused or lost after the entry
+/// landed — is written once more; still missing, nothing is filed.
 Future<JournalEntity?> writeFrontTextEntry(
   PersistenceLogic persistence,
   JournalDb journalDb,
@@ -198,9 +203,19 @@ Future<JournalEntity?> writeFrontTextEntry(
     entryText: EntryText(plainText: text),
   );
   final saved = await persistence.createDbEntity(entry, linkedId: linkedId);
-  if (saved ?? false) return entry;
-  return _existing(journalDb, id);
+  final written = (saved ?? false) ? entry : await _existing(journalDb, id);
+  if (written == null || linkedId == null) return written;
+  if (await _linked(journalDb, linkedId, id)) return written;
+  await persistence.createLink(fromId: linkedId, toId: id);
+  return await _linked(journalDb, linkedId, id) ? written : null;
 }
+
+/// Whether a live link runs from [fromId] to [toId].
+Future<bool> _linked(JournalDb journalDb, String fromId, String toId) async =>
+    (await journalDb.linksBetween(
+      fromId,
+      toId,
+    )).any((link) => link.deletedAt == null);
 
 /// A task titled [title], open, with no category, under [id]. The creation
 /// path answers null for a rejected write, which for a deterministic id

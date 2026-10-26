@@ -6814,7 +6814,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Vraag naar een taak, een doel, een project of een persoon. De juiste agent brengt het antwoord.';
+      'Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.';
 
   @override
   String frontChatInboxChip(int count) {

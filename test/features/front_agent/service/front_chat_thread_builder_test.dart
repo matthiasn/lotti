@@ -232,11 +232,61 @@ void main() {
 
     final thread = await builder.build();
 
-    expect(thread.messages, hasLength(51));
+    // The next turn stays beside it, so the surface knows no reply followed
+    // and the doors stay on their own turn.
+    expect(thread.messages, hasLength(52));
     expect(thread.messages.first.text, 'turn 0');
-    expect(thread.messages[1].text, 'turn 10');
+    expect(thread.messages[1].text, 'turn 1');
+    expect(thread.messages[2].text, 'turn 10');
     expect(thread.doorsByMessageId.keys, [oldest]);
+    expect(thread.carrierOf(oldest), oldest);
     expect(thread.inboxMessageIds, {oldest});
+  });
+
+  test('a waiting turn beyond the window keeps its own reply, which carries '
+      'its doors, never the next reply the window shows', () async {
+    for (var i = 0; i < 30; i++) {
+      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+      final turn = 'u$i'.padLeft(4, '0');
+      userTurn(turn, 'turn $i', at: at);
+      row(
+        id: 'r$i'.padLeft(4, '0'),
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turn,
+        content: {'text': 'reply $i'},
+        createdAt: at.add(const Duration(minutes: 1)),
+      );
+    }
+    final oldest = 'u0'.padLeft(4, '0');
+    row(
+      id: 'd:door:0',
+      kind: AgentMessageKind.action,
+      toolName: frontDoorToolName,
+      operationId: oldest,
+      content: FrontDoorRecord(
+        segmentIndex: 0,
+        text: 'turn 0',
+        kind: FrontDestinationKind.task,
+        destinationId: 'garden',
+        status: FrontDoorStatus.done,
+        claimedAt: DateTime.utc(2026, 10),
+        outcome: const FrontDoorProposal(ownerId: 'garden'),
+      ).toJson(),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.messages.take(3).map((m) => m.text), [
+      'turn 0',
+      'reply 0',
+      'turn 5',
+    ]);
+    final reply = thread.messages[1].id;
+    expect(thread.carrierOf(oldest), reply);
+    expect(thread.doorsCarriedBy(reply), hasLength(1));
+    expect(thread.doorsCarriedBy(thread.messages[3].id), isNull);
+    expect(thread.inboxMessageIds, {oldest, reply});
   });
 
   group('doors', () {

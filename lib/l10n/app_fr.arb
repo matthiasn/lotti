@@ -2827,7 +2827,7 @@
   "fileMenuNewTask": "Tâche",
   "fileMenuTitle": "Fichier",
   "filterSelectionNoMatches": "Aucun résultat",
-  "frontChatEmpty": "Demande une tâche, un objectif, un projet ou une personne. Le bon agent rapporte la réponse.",
+  "frontChatEmpty": "Demande une tâche, un objectif, un projet ou une personne, ou raconte ce qui s’est passé. Le bon agent répond, et rien n’est rangé tant que tu ne touches pas.",
   "frontChatInboxChip": "Boîte de réception {count}",
   "frontChatInboxEmpty": "Rien ne t’attend.",
   "frontChatOpen": "Demander à la compagne",

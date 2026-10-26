@@ -6830,7 +6830,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person. Der passende Agent bringt die Antwort.';
+      'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person, oder erzähl, was passiert ist. Der passende Agent antwortet, und abgelegt wird erst, wenn du tippst.';
 
   @override
   String frontChatInboxChip(int count) {

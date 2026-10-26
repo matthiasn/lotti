@@ -84,10 +84,18 @@ class FrontChatThreadBuilder {
     final window = messages.length <= maxMessages
         ? messages
         : messages.sublist(messages.length - maxMessages);
+    // A waiting turn keeps the message right after it too: her reply, which
+    // carries the turn's doors on the surface — or the next user turn, which
+    // tells the surface no reply followed. Without it the doors would ride
+    // whichever unrelated reply the window happened to show next.
+    final kept = {...awaiting};
+    for (var i = 0; i + 1 < messages.length; i++) {
+      if (awaiting.contains(messages[i].id)) kept.add(messages[i + 1].id);
+    }
     final windowIds = {for (final m in window) m.id};
     final visible = [
       for (final m in messages)
-        if (windowIds.contains(m.id) || awaiting.contains(m.id)) m,
+        if (windowIds.contains(m.id) || kept.contains(m.id)) m,
     ];
     final visibleIds = {for (final m in visible) m.id};
 

@@ -3990,7 +3990,7 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
-  "frontChatEmpty": "Ask about a task, a goal, a project or a person. The right agent brings back the answer.",
+  "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatInboxChip": "Inbox {count}",
   "@frontChatInboxChip": {
     "placeholders": {

@@ -130,8 +130,9 @@ void main() {
     expect(find.byType(FrontChatHeader), findsOneWidget);
     expect(
       find.text(
-        'Ask about a task, a goal, a project or a person. The right agent '
-        'brings back the answer.',
+        'Ask about a task, a goal, a project or a person, or tell what '
+        'happened. The right agent answers, and nothing is filed until you '
+        'tap.',
       ),
       findsOneWidget,
     );

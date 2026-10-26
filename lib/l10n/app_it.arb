@@ -3172,7 +3172,7 @@
   "fileMenuNewTask": "Compiti",
   "fileMenuTitle": "Menu File",
   "filterSelectionNoMatches": "Nessuna corrispondenza",
-  "frontChatEmpty": "Chiedi di un’attività, un obiettivo, un progetto o una persona. L’agente giusto ti porta la risposta.",
+  "frontChatEmpty": "Chiedi di un’attività, un obiettivo, un progetto o una persona, o racconta cosa è successo. Risponde l’agente giusto, e nulla viene archiviato finché non tocchi.",
   "frontChatInboxChip": "In arrivo {count}",
   "frontChatInboxEmpty": "Niente ti aspetta.",
   "frontChatOpen": "Chiedi alla compagna",

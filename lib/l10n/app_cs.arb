@@ -2834,7 +2834,7 @@
   "fileMenuNewTask": "Úkol",
   "fileMenuTitle": "Soubor",
   "filterSelectionNoMatches": "Žádné shody",
-  "frontChatEmpty": "Zeptej se na úkol, cíl, projekt nebo osobu. Správný agent přinese odpověď.",
+  "frontChatEmpty": "Zeptej se na úkol, cíl, projekt nebo osobu, nebo řekni, co se stalo. Odpoví správný agent a nic se neuloží, dokud neťukneš.",
   "frontChatInboxChip": "Příchozí {count}",
   "frontChatInboxEmpty": "Nic na tebe nečeká.",
   "frontChatOpen": "Zeptat se společnice",

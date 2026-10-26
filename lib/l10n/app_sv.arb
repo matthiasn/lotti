@@ -3172,7 +3172,7 @@
   "fileMenuNewTask": "Uppgift",
   "fileMenuTitle": "Fil",
   "filterSelectionNoMatches": "Inga matcher",
-  "frontChatEmpty": "Fråga om en uppgift, ett mål, ett projekt eller en person. Rätt agent kommer tillbaka med svaret.",
+  "frontChatEmpty": "Fråga om en uppgift, ett mål, ett projekt eller en person, eller berätta vad som hänt. Rätt agent svarar, och inget arkiveras förrän du trycker.",
   "frontChatInboxChip": "Inkorg {count}",
   "frontChatInboxEmpty": "Inget väntar på dig.",
   "frontChatOpen": "Fråga följeslagaren",

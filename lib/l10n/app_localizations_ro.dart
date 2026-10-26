@@ -6898,7 +6898,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană. Agentul potrivit aduce răspunsul.';
+      'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană, sau spuneți ce s-a întâmplat. Răspunde agentul potrivit și nimic nu se arhivează până nu atingeți.';
 
   @override
   String frontChatInboxChip(int count) {

@@ -6869,7 +6869,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Chiedi di un’attività, un obiettivo, un progetto o una persona. L’agente giusto ti porta la risposta.';
+      'Chiedi di un’attività, un obiettivo, un progetto o una persona, o racconta cosa è successo. Risponde l’agente giusto, e nulla viene archiviato finché non tocchi.';
 
   @override
   String frontChatInboxChip(int count) {

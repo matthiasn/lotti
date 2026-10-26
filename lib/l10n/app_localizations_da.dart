@@ -6785,7 +6785,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Spørg om en opgave, et mål, et projekt eller en person. Den rette agent kommer tilbage med svaret.';
+      'Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.';
 
   @override
   String frontChatInboxChip(int count) {

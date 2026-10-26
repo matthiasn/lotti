@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -382,6 +383,17 @@ void main() {
       outcome: outcome,
     );
 
+    EntryLink link(String fromId, String toId, {DateTime? deletedAt}) =>
+        EntryLink.basic(
+          id: 'link-$fromId-$toId',
+          fromId: fromId,
+          toId: toId,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+          deletedAt: deletedAt,
+        );
+
     Metadata meta(String id, {DateTime? deletedAt}) => Metadata(
       id: id,
       createdAt: DateTime(2026),
@@ -398,6 +410,15 @@ void main() {
       when(
         () => journalDb.journalEntityById(any()),
       ).thenAnswer((_) async => null);
+      // The link the write made is live unless a test says otherwise.
+      when(() => journalDb.linksBetween(any(), any())).thenAnswer(
+        (invocation) async => [
+          link(
+            invocation.positionalArguments[0] as String,
+            invocation.positionalArguments[1] as String,
+          ),
+        ],
+      );
       final syncService = MockAgentSyncService();
       when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
       final notifications = MockUpdateNotifications();
@@ -493,6 +514,52 @@ void main() {
       await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
 
       expect(filed().entryId, id);
+    });
+
+    test('an entry whose task link did not land gets it written once more, '
+        'and files when it is live', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      var repaired = false;
+      when(() => journalDb.linksBetween('garden', id)).thenAnswer(
+        (_) async => [
+          if (repaired)
+            link('garden', id)
+          else
+            link('garden', id, deletedAt: DateTime(2026)),
+        ],
+      );
+      when(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).thenAnswer((_) async => repaired = true);
+
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+      verify(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).called(1);
+      expect(filed().entryId, id);
+    });
+
+    test('an entry whose task link stays missing is not filed', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      when(
+        () => journalDb.linksBetween('garden', id),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).thenAnswer((_) async => false);
+
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+      verifyNever(
+        () => wired.read(agentSyncServiceProvider).upsertEntity(any()),
+      );
     });
 
     test('a rejected write with no live row behind it, or a write that '

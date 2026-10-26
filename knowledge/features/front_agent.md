@@ -341,7 +341,10 @@ in `front_agent_providers.dart` read the write's own verdict: a rejected
 write (`createDbEntity` never overwrites an existing id) is the retry after
 an interrupted tap and files the row already there, while a failed write,
 or a rejected one with no live row behind it, stores nothing and leaves the
-door waiting. **Take back** (`takeBack`) deletes what the door wrote — the
+door waiting. Under a task the entry counts only once its link is live —
+the task agent reads its entries through the link — so the writer checks
+`JournalDb.linksBetween` after the write, writes a missing link once more,
+and stores nothing when it is still missing. **Take back** (`takeBack`) deletes what the door wrote — the
 filed entry, the note or the task — through
 `JournalRepository.deleteJournalEntity`, refuses when the thing is still
 there undeleted, counts one already gone from the journal as taken back,
@@ -365,7 +368,10 @@ until a chip that writes takes it.
 
 A turn with a door still waiting on the user never leaves the projection:
 `FrontChatThreadBuilder` keeps it beside the newest fifty messages however
-old it is, so the inbox cannot scroll out of existence.
+old it is, so the inbox cannot scroll out of existence — and keeps the
+message right after it too, her reply that carries its doors (or the next
+user turn, which says no reply followed), so the doors never ride an
+unrelated reply the window happens to show next.
 
 The **inbox** is no entity: `FrontChatThread.inboxMessageIds` is every user
 turn with a door whose outcome is a `FrontDoorProposal` or a

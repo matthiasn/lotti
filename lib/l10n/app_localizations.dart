@@ -11540,7 +11540,7 @@ abstract class AppLocalizations {
   /// No description provided for @frontChatEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Ask about a task, a goal, a project or a person. The right agent brings back the answer.'**
+  /// **'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.'**
   String get frontChatEmpty;
 
   /// No description provided for @frontChatInboxChip.
