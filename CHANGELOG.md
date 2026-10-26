@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.64]
+
+### Changed
+
+- **The "Background sync worker" flag now runs sync off the interface.** With
+  the experimental flag on (Config Flags, Advanced group), the Matrix client,
+  decryption, catch-up walks, attachment downloads and sending all run in a
+  separate worker, and the interface only applies what arrives — sync work no
+  longer runs on the thread that draws the screen. Login, rooms, the device
+  list and emoji verification work as before, through the same screens. The
+  flag is off by default, and with it off nothing changes; toggling it takes
+  effect after a restart.
+
 ## [1.1.63]
 
 ### Added
