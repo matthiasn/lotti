@@ -3509,7 +3509,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Nefixat (fără declanșare automată)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (acest dispozitiv)",
   "inferenceProfileReadAloud": "Citire cu voce tare",
-  "inferenceProfileReadAloudHint": "Niciunul — nu se citește nimic cu voce tare",
+  "inferenceProfileReadAloudHint": "Fără selecție, se folosește vocea de pe dispozitiv",
   "inferenceProfileSaveButton": "Salvați",
   "inferenceProfileSelectModel": "Selectați un model…",
   "inferenceProfileSelectProfile": "Selectați un profil…",

@@ -9156,7 +9156,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileReadAloud => 'Vorlesen';
 
   @override
-  String get inferenceProfileReadAloudHint => 'Keins – nichts wird vorgelesen';
+  String get inferenceProfileReadAloudHint =>
+      'Ohne Auswahl wird die Stimme auf dem Gerät verwendet';
 
   @override
   String get inferenceProfileSaveButton => 'Speichern';

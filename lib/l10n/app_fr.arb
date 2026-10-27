@@ -3509,7 +3509,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Non épinglé (pas de déclenchement auto)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (cet appareil)",
   "inferenceProfileReadAloud": "Lecture à voix haute",
-  "inferenceProfileReadAloudHint": "Aucun – rien n’est lu à voix haute",
+  "inferenceProfileReadAloudHint": "Sans choix, la voix de l’appareil est utilisée",
   "inferenceProfileSaveButton": "Enregistrer",
   "inferenceProfileSelectModel": "Choisis un modèle…",
   "inferenceProfileSelectProfile": "Choisis un profil…",

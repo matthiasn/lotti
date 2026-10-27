@@ -9063,7 +9063,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfileReadAloud => 'Read aloud';
 
   @override
-  String get inferenceProfileReadAloudHint => 'None — nothing is read aloud';
+  String get inferenceProfileReadAloudHint =>
+      'Uses the on-device voice when unset';
 
   @override
   String get inferenceProfileSaveButton => 'Save';

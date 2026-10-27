@@ -298,8 +298,8 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             ),
             SizedBox(height: tokens.spacing.step4),
 
-            // Read aloud (optional): the voice for summaries and answers —
-            // a cloud voice, or the on-device model when picked here.
+            // Read aloud (optional): the cloud voice for summaries and
+            // answers; unset keeps the on-device voice.
             ModelSlotField(
               label: messages.inferenceProfileReadAloud,
               hintText: messages.inferenceProfileReadAloudHint,

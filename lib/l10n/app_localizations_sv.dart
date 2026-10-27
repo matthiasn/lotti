@@ -9105,7 +9105,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inferenceProfileReadAloud => 'Läs upp';
 
   @override
-  String get inferenceProfileReadAloudHint => 'Ingen – inget läses upp';
+  String get inferenceProfileReadAloudHint =>
+      'Använder rösten på enheten när inget är valt';
 
   @override
   String get inferenceProfileSaveButton => 'Spara';

@@ -3509,7 +3509,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Nicht verknüpft (kein Auto-Trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (dieses Gerät)",
   "inferenceProfileReadAloud": "Vorlesen",
-  "inferenceProfileReadAloudHint": "Keins – nichts wird vorgelesen",
+  "inferenceProfileReadAloudHint": "Ohne Auswahl wird die Stimme auf dem Gerät verwendet",
   "inferenceProfileSaveButton": "Speichern",
   "inferenceProfileSelectModel": "Modell auswählen…",
   "inferenceProfileSelectProfile": "Profil auswählen…",

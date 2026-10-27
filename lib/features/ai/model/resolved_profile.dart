@@ -131,8 +131,8 @@ class ResolvedProfile {
 
   /// Provider-native model id and configured route for speech synthesis.
   /// Unset when the profile names no speech model, or names one that no
-  /// longer resolves: nothing is read aloud then, and no other engine is
-  /// substituted.
+  /// longer resolves; read-aloud then uses the on-device voice, which sends
+  /// nothing anywhere.
   final String? speechModelId;
   final AiConfigInferenceProvider? speechProvider;
   final AiConfigModel? speechModel;

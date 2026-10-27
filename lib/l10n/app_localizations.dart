@@ -15228,10 +15228,10 @@ abstract class AppLocalizations {
   /// **'Read aloud'**
   String get inferenceProfileReadAloud;
 
-  /// Placeholder of the read-aloud slot when no voice model is chosen
+  /// Placeholder of the read-aloud slot when no cloud voice is chosen
   ///
   /// In en, this message translates to:
-  /// **'None — nothing is read aloud'**
+  /// **'Uses the on-device voice when unset'**
   String get inferenceProfileReadAloudHint;
 
   /// No description provided for @inferenceProfileSaveButton.

@@ -3950,7 +3950,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Inte fastnade (ingen auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (denna apparat)",
   "inferenceProfileReadAloud": "Läs upp",
-  "inferenceProfileReadAloudHint": "Ingen – inget läses upp",
+  "inferenceProfileReadAloudHint": "Använder rösten på enheten när inget är valt",
   "inferenceProfileSaveButton": "Spara",
   "inferenceProfileSelectModel": "Välj en modell...",
   "inferenceProfileSelectProfile": "Välj en profil...",

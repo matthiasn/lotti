@@ -9118,7 +9118,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get inferenceProfileReadAloudHint =>
-      'Geen – er wordt niets voorgelezen';
+      'Gebruikt de stem op het apparaat als er niets is gekozen';
 
   @override
   String get inferenceProfileSaveButton => 'Opslaan';

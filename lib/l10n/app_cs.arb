@@ -3516,7 +3516,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Nepřipnuto (bez automatického spuštění)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (toto zařízení)",
   "inferenceProfileReadAloud": "Předčítání",
-  "inferenceProfileReadAloudHint": "Žádný — nic se nepředčítá",
+  "inferenceProfileReadAloudHint": "Bez výběru se použije hlas v zařízení",
   "inferenceProfileSaveButton": "Uložit",
   "inferenceProfileSelectModel": "Vyber model…",
   "inferenceProfileSelectProfile": "Vyber profil…",

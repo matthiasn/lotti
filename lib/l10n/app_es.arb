@@ -3509,7 +3509,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Sin fijar (sin auto-disparador)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (este dispositivo)",
   "inferenceProfileReadAloud": "Leer en voz alta",
-  "inferenceProfileReadAloudHint": "Ninguno: no se lee nada en voz alta",
+  "inferenceProfileReadAloudHint": "Sin selección, se usa la voz del dispositivo",
   "inferenceProfileSaveButton": "Guardar",
   "inferenceProfileSelectModel": "Elige un modelo…",
   "inferenceProfileSelectProfile": "Elige un perfil…",

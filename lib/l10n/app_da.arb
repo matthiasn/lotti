@@ -3950,7 +3950,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Ikke fastlåst (ingen auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (denne enhed)",
   "inferenceProfileReadAloud": "Læs højt",
-  "inferenceProfileReadAloudHint": "Ingen – intet læses højt",
+  "inferenceProfileReadAloudHint": "Bruger stemmen på enheden, når intet er valgt",
   "inferenceProfileSaveButton": "Gem",
   "inferenceProfileSelectModel": "Vælg en model...",
   "inferenceProfileSelectProfile": "Vælg en profil...",

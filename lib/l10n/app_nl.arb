@@ -3949,7 +3949,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Niet gepind (geen autotrigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (dit apparaat)",
   "inferenceProfileReadAloud": "Voorlezen",
-  "inferenceProfileReadAloudHint": "Geen – er wordt niets voorgelezen",
+  "inferenceProfileReadAloudHint": "Gebruikt de stem op het apparaat als er niets is gekozen",
   "inferenceProfileSaveButton": "Opslaan",
   "inferenceProfileSelectModel": "Kies een model...",
   "inferenceProfileSelectProfile": "Kies een profiel...",

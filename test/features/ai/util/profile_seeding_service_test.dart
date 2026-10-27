@@ -346,7 +346,7 @@ void main() {
       final mistral = profiles.singleWhere((p) => p.id == profileMistralEuId);
       expect(mistral.speechModelId, mistralVoxtralTtsModelId);
       expect(mistral.transcriptionModelId, 'voxtral-mini-latest');
-      // On-device speech is never seeded: it has to be picked.
+      // Everywhere else read-aloud stays on the on-device voice.
       expect(
         profiles
             .where((p) => p.id != profileMistralEuId)

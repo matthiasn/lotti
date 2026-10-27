@@ -9200,7 +9200,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get inferenceProfileReadAloudHint =>
-      'Nessuno: niente viene letto ad alta voce';
+      'Se non impostato, usa la voce sul dispositivo';
 
   @override
   String get inferenceProfileSaveButton => 'Salva';

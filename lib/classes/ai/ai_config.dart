@@ -187,10 +187,9 @@ sealed class AiConfig with _$AiConfig {
     /// When unset, the step runs on the thinking model.
     String? audioPostProcessingModelId,
 
-    /// Optional model config id for speech synthesis: the model that reads
-    /// summaries and answers aloud — a cloud voice such as Voxtral TTS, or
-    /// the on-device Supertonic model when the user picks it here. When
-    /// unset, nothing in the profile's scope is read aloud.
+    /// Optional model config id for speech synthesis: the cloud voice, such
+    /// as Voxtral TTS, that reads summaries and answers aloud. When unset,
+    /// read-aloud uses the on-device voice.
     String? speechModelId,
 
     /// Model config id for image generation.

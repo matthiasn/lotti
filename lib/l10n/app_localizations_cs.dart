@@ -9192,7 +9192,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileReadAloud => 'Předčítání';
 
   @override
-  String get inferenceProfileReadAloudHint => 'Žádný — nic se nepředčítá';
+  String get inferenceProfileReadAloudHint =>
+      'Bez výběru se použije hlas v zařízení';
 
   @override
   String get inferenceProfileSaveButton => 'Uložit';

@@ -9090,7 +9090,8 @@ class AppLocalizationsDa extends AppLocalizations {
   String get inferenceProfileReadAloud => 'Læs højt';
 
   @override
-  String get inferenceProfileReadAloudHint => 'Ingen – intet læses højt';
+  String get inferenceProfileReadAloudHint =>
+      'Bruger stemmen på enheden, når intet er valgt';
 
   @override
   String get inferenceProfileSaveButton => 'Gem';

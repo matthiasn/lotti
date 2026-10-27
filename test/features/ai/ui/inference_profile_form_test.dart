@@ -272,7 +272,7 @@ void main() {
             expect(
               find.descendant(
                 of: _pickerField('Read aloud'),
-                matching: find.text('None — nothing is read aloud'),
+                matching: find.text('Uses the on-device voice when unset'),
               ),
               findsOneWidget,
             );

@@ -5831,9 +5831,9 @@
   "@inferenceProfileReadAloud": {
     "description": "Label of the inference profile slot that picks the voice model used to read summaries and answers aloud"
   },
-  "inferenceProfileReadAloudHint": "None — nothing is read aloud",
+  "inferenceProfileReadAloudHint": "Uses the on-device voice when unset",
   "@inferenceProfileReadAloudHint": {
-    "description": "Placeholder of the read-aloud slot when no voice model is chosen"
+    "description": "Placeholder of the read-aloud slot when no cloud voice is chosen"
   },
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Choose a model…",

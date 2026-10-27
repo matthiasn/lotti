@@ -3949,7 +3949,7 @@
   "inferenceProfilePinnedHostNoneLabel": "Não fixado (sem acionamento automático)",
   "inferenceProfilePinnedHostThisDeviceSuffix": "(este dispositivo)",
   "inferenceProfileReadAloud": "Ler em voz alta",
-  "inferenceProfileReadAloudHint": "Nenhum — nada é lido em voz alta",
+  "inferenceProfileReadAloudHint": "Sem seleção, usa a voz do dispositivo",
   "inferenceProfileSaveButton": "Salvar",
   "inferenceProfileSelectModel": "Escolha um modelo…",
   "inferenceProfileSelectProfile": "Escolha um perfil…",
