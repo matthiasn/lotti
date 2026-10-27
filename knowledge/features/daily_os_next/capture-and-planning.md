@@ -5,21 +5,21 @@ description: The Capture/Reconcile/Draft/Refine tools, batch-first durable voice
 resource: ../../../lib/features/daily_os_next/agents/service
 tags: [daily-os, capture, planning, transcription, tools]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T15:38:00+02:00 }
-stale_after: 2026-10-27
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: services
     resource: ../../../lib/features/daily_os_next/agents/service
     title: Capture and plan services
-    last_modified: 2026-07-31
+    last_modified: 2026-10-24
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Day-agent prompt builder
-    last_modified: 2026-07-31
+    last_modified: 2026-10-06
   - id: workflow
     resource: ../../../lib/features/daily_os_next/agents/workflow
     title: Day-agent workflow and terminal-tool strategy
-    last_modified: 2026-07-31
+    last_modified: 2026-10-19
   - id: processing-runtime
     resource: ../../../lib/features/daily_os_next/services/day_processing_runtime.dart
     title: Durable processing runtime
@@ -27,7 +27,7 @@ sources:
   - id: state
     resource: ../../../lib/features/daily_os_next/state
     title: Controllers and runtime wiring
-    last_modified: 2026-07-25
+    last_modified: 2026-10-19
   - id: adr-0031
     resource: ../../../docs/adr/0031-batch-first-day-audio-capture.md
     title: ADR 0031 — Batch-first day audio capture
@@ -45,7 +45,7 @@ through the workflow handler:
 | Recall | `search_memory` |
 | Knowledge | `propose_knowledge` |
 | Capture / Reconcile | `submit_capture`, `parse_capture_to_items`, `match_to_corpus`, `link_capture_phrase_to_task`, `break_capture_link`, `surface_pending_decisions`, `apply_triage`, `create_task_from_phrase` |
-| Planning | draft and refine tools |
+| Planning | draft and refine tools, plus `summarize_recent_patterns` |
 | Week context | `write_day_summary` |
 | Coordination | `issue_day_directive` (coordinator only), `raise_day_status` |
 
@@ -112,10 +112,10 @@ a late tool batch from mutating after the outbox has started a retry.
 
 Durable scheduling has a matching no-lost-signal invariant. When an outbox
 change arrives while `DayProcessingRuntime` is already draining, the runtime
-must distinguish its own claim/status writes from genuinely new work. It pauses
-the outbox subscription during the mutation phase, resumes it before the
-due-work query, and lets that query schedule anything that arrived while
-paused. A later change sets `_followUpNudgeRequested`, ensuring one immediate
+must distinguish its own claim/status writes from genuinely new work. It
+cancels the outbox subscription during the mutation phase, re-subscribes before
+the due-work query, and lets that query schedule anything that arrived while
+unsubscribed. A later change sets `_followUpNudgeRequested`, ensuring one immediate
 follow-up after `_nudgeFuture` clears. This avoids both a lost capture and the
 redundant drain chain that would result from treating every processor status
 write as a new enqueue.
@@ -124,8 +124,9 @@ write as a new enqueue.
 stateDiagram-v2
     [*] --> Idle
     Idle --> Draining: nudge sets _nudgeFuture
-    Draining --> Draining: owned outbox writes while listener paused
-    Draining --> Inspecting: drain returns, listener resumes
+    Draining --> Draining: owned outbox writes while unsubscribed
+    Draining --> Inspecting: drain returns, listener re-subscribed
+    Draining --> Idle: drain throws — retry after failureRetryDelay (30 s)
     Inspecting --> FollowUpRequested: external change sets _followUpNudgeRequested
     Inspecting --> Idle: query schedules due work or finds none
     FollowUpRequested --> Draining: active future clears, immediate nudge
@@ -268,7 +269,7 @@ are deliberately distinct, because collapsing any two misleads:
 | `<planning_window>` | Meaning |
 |---|---|
 | `{"earliestStart": …, "latestEnd": …, "availableMinutes": …}` | today, still plannable — start here, stop by there, and this is how much is left |
-| `{"closed": true}` | today, no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
+| `{"closed": true}` | a past target day, or today with no usable slot left (no five-minute window before midnight, or no working minutes left) — add no block; a fresh draft may persist an empty terminal artifact |
 | `+ {"capacityMinutes": …, "scheduledMinutes": …}` | added on a refine wake — judge your *net* change against these, alongside whichever row above applies |
 | `{"latestEnd": …, "availableMinutes": …}` | neither `earliestStart` nor `closed` — the day has not begun, so no part of it is past |
 
@@ -286,10 +287,12 @@ draft overrunning it.
 Reading `closed` as `{}` would let a wake at 23:58 plan freely from this
 morning, and the guard would reject every block of it.
 
-The day boundary is computed with calendar arithmetic (`DateTime(y, m, d + 1)`),
-not by adding 24 hours: on a DST transition day the latter lands on 01:00 or
-23:00 and would either advertise into tomorrow or close the window an hour
-early.
+`advertisedPlanningStart` computes the day boundary with calendar arithmetic
+(`DateTime(y, m, d + 1)`), not by adding 24 hours: on a DST transition day the
+latter lands on 01:00 or 23:00 and would either advertise into tomorrow or
+close the window an hour early. The write-path checks in `parsePlannedBlock`
+and `parseEnergyBand` still add a fixed `Duration(days: 1)` to the day start,
+so on a DST day the guard's boundary and the advertised one differ by an hour.
 
 **The agent cannot create a `committed` block.** `committed` asserts that *the
 user approved this block*, and exactly two things may say that: the user
@@ -393,9 +396,10 @@ the model can actually use. Malformed working hours leave it unstated rather
 than guessed, since they are free-text config nothing else parses.
 
 A **refine** wake gets `capacityMinutes` and `scheduledMinutes` *in addition to*
-the temporal fields, not instead of them — `proposePlanDiff` enforces the same
-past-start guard, so a diff still needs the floor and the clock-bounded
-remainder. A diff edits an
+the temporal fields, not instead of them — `proposePlanDiff` enforces a
+past-start guard of its own against the live clock (not the pre-inference
+snapshot `draft_day_plan` shares), so a diff still needs the floor and the
+clock-bounded remainder. A diff edits an
 existing plan, so what matters is the *net* change — dropping a 180-minute block
 to add another is net zero, and judging the addition against the unused
 remainder alone would report a conflict that does not exist. Occupancy is
@@ -496,15 +500,23 @@ commit order**:
 2. Enqueue and claim the durable transcription job.
 3. Run foreground batch transcription through that job's state machine.
 
+`CapturePhase` is `idle`, `listening`, `transcribing`, `captured` and `error`;
+a recording that was saved but could not be transcribed is the `error` phase
+carrying `CaptureError.recordingSavedPendingTranscription`, and it is terminal
+for the capture session — the processing outbox owns the retry.
+
 ```mermaid
 stateDiagram-v2
-  [*] --> Listening
-  Listening --> Error: permission denied / recorder start fails
+  [*] --> Idle
+  Idle --> Listening: toggle
+  Idle --> Error: permission denied / recorder start fails (before listening)
   Listening --> Transcribing: stop
+  Listening --> Error: noAudioRecorded (stop with nothing recorded)
   Transcribing --> Error: journal persist rejected (audioPersistFailed)
-  Transcribing --> SavedPendingTranscription: transcription fails after commit
+  Transcribing --> Error: recordingSavedPendingTranscription — enqueue/claim fails, transcription fails after commit, or the transcript attach is rejected
   Transcribing --> Captured: transcript attached, job succeeded
-  SavedPendingTranscription --> Captured: background retry / reviewed text
+  Captured --> Idle: reset
+  Error --> Listening: toggle
 ```
 
 A transcription or network failure **keeps the saved recording** and hands

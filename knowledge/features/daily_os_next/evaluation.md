@@ -5,21 +5,21 @@ description: Measuring model behavior, full-workflow prompt and token cost, and 
 resource: ../../../test/features/daily_os_next/eval
 tags: [daily-os, evaluation, benchmark, testing]
 status: stable
-generated: { by: codex/5, at: 2026-07-29T14:43:00Z }
-stale_after: 2026-10-27
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
-    last_modified: 2026-08-05
+    last_modified: 2026-10-04
   - id: integration
     resource: ../../../test/features/daily_os_next/integration
     title: Full durable multi-agent integration fixtures
-    last_modified: 2026-07-29
+    last_modified: 2026-10-06
   - id: benchmark
     resource: ../../../test/features/daily_os_next/benchmark
     title: Storage and full-workflow aged-corpus benchmarks
-    last_modified: 2026-07-29
+    last_modified: 2026-10-04
 ---
 
 # Two lanes, and the distinction matters
@@ -45,7 +45,7 @@ always legal, and inspecting it alone measures the guards rather than the model.
 
 | Scored on | Constraints |
 |-----------|-------------|
-| Objective structure in the persisted plan | overlap, capacity as written, estimated-capacity failures and passes that do not need partial-prose credit, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
+| Objective structure in the persisted plan | overlap, capacity as written, within configured working hours, estimated-capacity failures and passes that do not need partial-prose credit, estimate fidelity, decided tasks placed, required work placed, expected omissions honoured, blocker ordering, fabricated task ids, fabricated calendar blocks, fabricated history, invented work, task-work typing, duplicate ids |
 | Weak semantic evidence in plan prose and accepted status/diff calls | estimated-capacity passes that depend on audited partial prose, conflict surfaced, blocker-bypass justification, directive honoured — visible per constraint, but excluded from ranking |
 | The rejection count | whether the model complied with hard guards — including configured working hours — without being corrected |
 
@@ -486,8 +486,8 @@ builders live in `eval_constraints_test_helpers.dart`, which has no `main()`.
   behind an excluded heuristic pass.
 - **Fabrication is judged against what the model was shown.** The task corpus
   renders only inside the capture context, so a wake without a capture sees only
-  its decided tasks — which do carry `status` and `blockedBy`, but not
-  `estimateMinutes`, `due` or `priority`. `EvalFixtureInputs.corpus` stays ground
+  its decided tasks — which do carry `status`, `blockedBy` and
+  `estimateMinutes`, but not `due` or `priority`. `EvalFixtureInputs.corpus` stays ground
   truth — the scorer must still know what is blocked — while `visibleTaskIds`
   bounds what the model could legitimately name.
 
@@ -559,10 +559,11 @@ tool log, and a failing cell is recorded while the matrix continues.
 
 ## Scenarios and variants
 
-Each scenario encodes a tension the planner must resolve: a crowded day; a
-mid-afternoon start with a task too long to fit; four decided tasks that cannot
-all happen; a two-hop blocker chain; and that same chain with the capture removed
-so only the one hop ADR 0043 resolves reaches the model.
+Each scenario encodes a tension the planner must resolve — eight in
+`evalScenarios`: restraint; a crowded day; a mid-afternoon start with a task too
+long to fit; four decided tasks that cannot all happen; a two-hop blocker chain;
+that same chain with the capture removed so only the one hop ADR 0043 resolves
+reaches the model; a stale decided task; and a binding directive.
 
 That last pair is the instrument justifying itself. With the corpus hidden, every
 sample of every model failed `blockerBeforeBlocked` while the twin passed every
@@ -637,7 +638,7 @@ misleads in exactly the direction the flags exist to prevent:
 
 | Flag | True when | Sole carrier of |
 |------|-----------|-----------------|
-| `corpusRowShown` | the corpus rendered, i.e. the wake had a capture | `estimateMinutes`, `due`, `priority` |
+| `corpusRowShown` | the corpus rendered, i.e. the wake had a capture | `due`, `priority` (`estimateMinutes` also rides on decided tasks) |
 | `statusShown` | the corpus rendered, **or** the task is decided, **or** it appears as a visible task's blocker | — |
 | `blockersShown` | the corpus rendered **or** the task is decided | — |
 | `taskIdReferenceable` | the model could name the id at all | — |
@@ -822,8 +823,12 @@ machine-specific, **the slope is the point**):
 | `planEditor.pendingDiffs` | 80 | 56 | 53 |
 | `planWriter.lookback` | 666 | 445 | 262 |
 
-Corpus sizes: 360 / 2,184 / 4,380 agent entities and 90 / 546 / 1,095 processing
-jobs. **Every metric is flat or lower at twelve months than at one**, across a 12×
+The table was measured on the pre-#3717 corpus of 12 entities per day (360 /
+2,184 / 4,380); since 2026-08-02 the corpus seeds 20 per day — plan, three
+captures, six status events, four observations as message plus payload, two
+change sets — plus one digest-watermark milestone, so 601 / 3,641 / 7,301
+entities, with 90 / 546 / 1,095 processing jobs either way. Absolute numbers
+need a re-run; the slope argument stands. **Every metric is flat or lower at twelve months than at one**, across a 12×
 increase in stored history — the property the partial indexes and day-scoped
 subtypes were built for. (Values drifting *down* with size is measurement noise
 and cache warming, not a real speedup.)

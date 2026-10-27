@@ -5,17 +5,17 @@ description: The day-planning runtime — one coordinator plus per-day agents, a
 resource: ../../../lib/features/daily_os_next
 tags: [daily-os, planning, day-agent, calendar]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T18:00:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: src
     resource: ../../../lib/features/daily_os_next
     title: Daily OS Next source
-    last_modified: 2026-08-02
+    last_modified: 2026-10-24
   - id: day-plan
     resource: ../../../lib/classes/day_plan.dart
     title: Shared day-plan aggregate
-    last_modified: 2026-07-25
+    last_modified: 2026-09-16
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
@@ -23,7 +23,7 @@ sources:
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
-    last_modified: 2026-07-24
+    last_modified: 2026-08-02
 ---
 
 Daily OS Next is **the** Daily OS surface: `CalendarRoot` — the `/calendar` tab
@@ -34,8 +34,9 @@ The surface is an opt-in rollout behind the historical
 `enable_daily_os_page` config row. The row seeds `false` when absent, while
 `insertFlagIfNotExists` preserves a stored `true` from an earlier rollout.
 `NavService` omits the `/calendar` destination while it is off; enabling it in
-*Settings → Advanced → Config flags* adds the destination and its global
-navigation command reactively. Onboarding eligibility watches that same flag,
+*Settings → Sections* (the surface toggles moved off the Config Flags page in
+#4397; `ConfigFlagPlacement.sectionFlags` lists them) adds the destination and
+its global navigation command reactively. Onboarding eligibility watches that same flag,
 so an already-running app re-evaluates the walkthrough immediately when the
 surface is enabled.
 
@@ -50,8 +51,10 @@ UI controllers.
 ```text
 lib/features/daily_os_next/
 ├── agents/     # day-agent workflow, services, domain, prompt building
-├── database/   # day_processing.sqlite — the device-local outbox
-├── logic/      # pure predicates (day-plan availability, recorded time)
+├── database/   # the outbox's row type; day_processing.sqlite itself is
+│               # lib/database/day_processing_db.dart
+├── logic/      # day-agent interface + RealDayAgent (service writes), plan,
+│               # briefing and shutdown models, pure predicates
 ├── services/   # processing jobs, outbox repository, job executor
 ├── state/      # Riverpod providers, selected date, runtime wiring
 ├── ui/         # Day page, planning modal, timeline, editors
@@ -91,16 +94,17 @@ the same provider.
 **The root surface is identical on every no-plan day.** `DayPage` mounts in
 *empty mode* with a synthetic `DraftPlan.emptyForDay`, so recorded sessions and
 events stay visible on the Day timeline — the default projection, plan or not —
-without creating a plan first. Empty mode renders an honest
-"No plan yet" stat strip, swaps the Refine/Commit footer for a single "Speak a
-check-in" CTA, and hides the delete-plan menu entry.
+without creating a plan first. Empty mode says so honestly — the header
+briefing reads "There's no plan for this day yet…" and the Agenda view's
+capacity strip reads "No plan yet" — swaps the with-plan footer (Refine, Commit,
+Shutdown and the quick refinements) for a single "Speak a check-in" CTA, and
+hides the delete-plan menu entry.
 
 Background agent or sync updates reload **stale-while-revalidate**: the root
 keeps rendering the last Day surface while the provider re-fetches, and only
 shows a loading shell on the initial route load. The same contract applies inside
-the modal's Reconcile and Drafting steps, Shutdown, and the captures panel — if
-an `AsyncValue` still has a previous value, that value is rendered rather than a
-spinner.
+the modal's Reconcile and Drafting steps and Shutdown — if an `AsyncValue`
+still has a previous value, that value is rendered rather than a spinner.
 
 # Concepts
 
@@ -134,11 +138,13 @@ instance override. `updateDefaultInferenceProfile` updates an existing planner
 never replaces a user-owned profile or direct model override. Clearing the
 override copies the current template profile back as a new snapshot.
 
-The settings page lists every configured compatible route and maintains **no
+The settings page lists every configured inference **profile** (the route
+label it shows is derived from the profile's thinking model) and maintains **no
 provider denylist** — the selected endpoint determines the privacy boundary.
-Daily OS *sends* its assembled planning context to that provider. Loopback and
-embedded endpoints are described as on-device; every other endpoint is described
-as remote with its provider and host. The Day surface links to these settings
+Daily OS *sends* its assembled planning context to that provider. The
+on-device/remote description is decided by host alone: `localhost`, `::1` or
+127/8 is on-device, every other endpoint is described as remote with its
+provider and host (`state/daily_os_inference_providers.dart`). The Day surface links to these settings
 from its overflow menu, blocks a new check-in when no route resolves, and shows a
 non-blocking preferred-name prompt when inference is ready but personalization is
 missing.
@@ -164,15 +170,23 @@ Availability is strictly opt-in via the category editor's "Day planning" switch
 (`CategoryDefinition.isAvailableForDayPlan`). Pure predicates in
 `logic/day_plan_availability.dart` define the universe:
 
-- `filterDayPlanCategories` (active, non-deleted, flag on) feeds the processing
-  filter button's category list, layered **under** the session-scoped exclusion
-  preference. Exclusions are scoped to the day-plan universe: confirming the
-  picker rebuilds the exclusion set from currently flagged categories, so
-  exclusions of since-unflagged categories are dropped.
+- `isCategoryAvailableForDayPlan` is the per-category predicate;
+  `filterDayPlanCategories` (active, non-deleted, flag on) is the universe.
+- The universe feeds the processing filter button's category list, layered
+  **under** the session-scoped exclusion preference. Exclusions are scoped to
+  the day-plan universe: confirming the picker rebuilds the exclusion set from
+  currently flagged categories, so exclusions of since-unflagged categories are
+  dropped.
+- The same universe supplies the block editor's category options (`DayPage`),
+  and `DayAgentPlanEditor` rejects a block category change to a category that
+  is not available for day planning.
+
 **Category constraints are not yet wired into the planner identity.**
 `AgentIdentity.allowedCategoryIds` treats an **empty** set as allow-all, so
 passing the strict — possibly empty — opt-in set would invert the semantics.
-Wiring the agent layer needs an explicit "constrained" marker first. The per-wake
-prompt derives its `touchedScopes` from attention claims and the baseline plan's
-categories instead.
+Wiring the agent layer needs an explicit "constrained" marker first (the
+planner is still created with an empty `allowedCategoryIds`). The per-wake
+prompt derives its `touchedScopes` instead — from attention claims, the baseline
+plan's categories, standing agreements, decided tasks' categories and project
+scopes (`_touchedScopes` in `agents/workflow/day_agent_context_builder.dart`).
 

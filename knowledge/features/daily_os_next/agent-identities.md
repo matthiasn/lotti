@@ -5,17 +5,17 @@ description: One durable coordinator plus one agent per day, the day-forward cut
 resource: ../../../lib/features/daily_os_next/agents
 tags: [daily-os, agents, identity, adr-0022, adr-0032]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-02T00:30:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: identity
     resource: ../../../lib/classes/day_agent_identity.dart
     title: perDayAgentId, isPerDayAgentId, dayIdOfPerDayAgent
-    last_modified: 2026-08-06
+    last_modified: 2026-08-07
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Day-agent services and workflow
-    last_modified: 2026-08-02
+    last_modified: 2026-10-24
   - id: adr-0022
     resource: ../../../docs/adr/0022-long-lived-daily-os-planner.md
     title: ADR 0022 — Long-lived Daily OS planner
@@ -23,7 +23,7 @@ sources:
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
-    last_modified: 2026-07-24
+    last_modified: 2026-08-02
 ---
 
 # Two roles, one kind
@@ -55,11 +55,15 @@ devices that independently create it converge through last-write-wins instead of
 diverging into two identities. It is idempotent.
 
 The planner pins **no** `activeDayId` slot and writes **no** per-day `agent_day`
-link. A wake's day is carried explicitly by its trigger tokens —
-`planning_day:<dayId>`, plus the mode tokens `drafting:` / `refine:` /
-`capture_submitted:` — and a `day:<dayId>` workspace key on the queued `WakeJob`.
-`DayAgentWorkflow` resolves the day strictly from that context and **fails the
-wake when no day can be resolved**; there is no slot fallback.
+link. A wake's day is carried explicitly by its trigger tokens:
+`resolvePlannerWakeDay` reads `planning_day:<dayId>` and the day-carrying mode
+tokens `drafting:` / `refine:` / `digest:`, and a capture-only wake
+(`capture_submitted:<captureId>` names a capture, not a day) falls back to the
+capture's own `dayId`. The `day:<dayId>` workspace key on the queued `WakeJob`
+is a queue partition only — `DayAgentWorkflow.execute` never reads it.
+`DayAgentWorkflow` resolves the day strictly from those tokens and **fails the
+wake when no day can be resolved, or when they disagree**; there is no slot
+fallback.
 
 This is what ADR 0022 established: a day the planner owns is an explicit
 **workspace, not a separate mind**. (The `kind` string stays `day_agent` for
@@ -112,9 +116,14 @@ forever and owns every pre-cutover day.
 ## UI keying
 
 `dayAgentIsRunningProvider(date)` is true while **either** the per-day agent for
-that date **or** the coordinator is running — covering post-cutover and
-pre-cutover days with one provider. Reconcile's running indicator, the
-drafting/refine action-bar shader, and `capturesForDateProvider` all key off it.
+that date **or** the coordinator is running *in that day's workspace*
+(`agentIsRunningInWorkspaceProvider` keyed on `dayAgentWorkspaceKey(dayId)`, so
+a coordinator wake for another day does not count) — covering post-cutover and
+pre-cutover days with one provider. Reconcile's running indicator and step bar,
+`ReconcileController` and `dayAgentPersonaStateProvider` key off it. The
+Drafting and Refine action-bar shaders key off their own phases
+(`DraftingPhase.drafting`, `RefinePhase.thinking`), and `capturesForDateProvider`
+watches `agentUpdateStreamProvider` rather than this provider.
 
 `capturesForDateProvider` unions captures from the resolved owner *and* the
 coordinator, deduped by id, so an offline peer syncing in a pre-cutover capture
@@ -129,10 +138,11 @@ device *after* the planner exists, or be stranded by an interrupted first pass.
 After the first successful pass the active-`day_agent` query is empty and it
 returns immediately.
 
-For each other active `day_agent` identity:
+For each other active `day_agent` identity that is a bare pre-ADR-0022
+`dayplan-…` id (ADR 0032's per-day agents are excluded by `isPerDayAgentId`):
 
-1. Archive it — lifecycle → dormant, `scheduledWakeAt` cleared so it is never
-   re-woken or restored.
+1. Archive it — in one transaction per agent, `scheduledWakeAt` is cleared so
+   it is never re-woken or restored, then the lifecycle flips to dormant.
 2. Re-parent its recent (≤14-day) `dayPlan` / `capture` / `parsedItem` /
    `changeSet` entities to the planner id via normal synced upserts, so
    pre-flip plans stay visible.
@@ -159,14 +169,20 @@ instead of scanning.
 A capture carrying no explicit `dayId` — synced from a peer old enough to predate
 it — derives one from `capturedAt` in local time, the same rule `captureDayId`
 applies on read, so legacy rows land on the right day rather than needing a
-Dart-side fallback scan. **Schema v17 backfills existing rows through that same
-Dart projection**, not a SQL `json_extract` update, because a backfilled value
-that disagreed with the writer would silently drop rows out of their day.
+Dart-side fallback scan; the repository materializes that fallback before
+storage (`agent_db_conversions.dart`). **Schema v17 backfills existing rows
+through that same Dart projection**, not a SQL `json_extract` update, because a
+backfilled value that disagreed with the writer would silently drop rows out of
+their day. Schema v18 (`persistLegacyCaptureDayIds`) then writes the derived day
+into the serialized `dayId` itself, treating the stored subtype as the
+authority — re-deriving from `capturedAt` after a timezone change could
+disagree with it.
 
 # Implementation status
 
 The `DayDirectiveEntity`/`DayStatusEvent` protocol is live, and so is
-**dormancy for closed days**: a per-day agent is retired one day after its own,
-described in [coordination protocol](coordination-protocol.md). ADR 0032's
+**dormancy for closed days**: a per-day agent stays active through the
+following day (`dayAgentHandoverDays` = 1) and is retired from the day after
+that, described in [coordination protocol](coordination-protocol.md). ADR 0032's
 Amendments section carries the full list of where implementation diverged from
 the original text.
