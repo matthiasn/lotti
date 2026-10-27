@@ -98,8 +98,7 @@ void main() {
     when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
       (_) async => {ttsCloudVoicesKey: '{"de": "v-de-1", "en": 7}'},
     );
-    final container = makeContainer();
-    container.read(ttsSettingsControllerProvider);
+    final container = makeContainer()..read(ttsSettingsControllerProvider);
     await pumpEventQueue();
     expect(
       container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
@@ -112,8 +111,7 @@ void main() {
       when(
         () => mocks.settingsDb.itemsByKeys(any()),
       ).thenAnswer((_) async => {ttsCloudVoicesKey: stored});
-      final container = makeContainer();
-      container.read(ttsSettingsControllerProvider);
+      final container = makeContainer()..read(ttsSettingsControllerProvider);
       await pumpEventQueue();
       expect(
         container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,

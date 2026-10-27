@@ -26,7 +26,7 @@ void main() {
     provider: provider,
     model: testAiModel(
       id: 'voice-row',
-      providerModelId: 'voxtral-mini-tts-3-0',
+      providerModelId: 'voxtral-mini-tts-2603',
     ),
     languageCode: 'de',
   );
@@ -89,7 +89,7 @@ void main() {
         voiceId: 'v-de-f',
         baseUrl: provider.baseUrl,
         apiKey: 'key',
-        model: 'voxtral-mini-tts-3-0',
+        model: 'voxtral-mini-tts-2603',
       ),
     ).called(1);
   });

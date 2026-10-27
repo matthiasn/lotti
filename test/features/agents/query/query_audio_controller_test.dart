@@ -8,10 +8,12 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_audio_controller.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
@@ -32,6 +34,7 @@ import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../../tts/test_utils.dart';
+import '../test_data/ai_config_factories.dart';
 import '../ui/evolution/widgets/evolution_recorder_test_utils.dart';
 import 'query_audio_test_bench.dart';
 
@@ -90,6 +93,67 @@ void main() {
       expect(bench.speechPlayer.playCount, 1);
     },
   );
+
+  ResolvedProfile cloudProfile() {
+    final mistral = bench.profile!.thinkingProvider;
+    return ResolvedProfile(
+      thinkingModelId: 'thinking',
+      thinkingProvider: mistral,
+      speechModelId: 'voxtral-mini-tts-3-0',
+      speechProvider: mistral,
+      speechModel: testAiModel(
+        id: 'voice-row',
+        providerModelId: 'voxtral-mini-tts-3-0',
+      ),
+    );
+  }
+
+  test("a cloud voice reads the answer in the task's language", () async {
+    bench.profile = cloudProfile();
+    final task = bench.entries['task']! as Task;
+    bench.entries['task'] = task.copyWith(
+      data: task.data.copyWith(languageCode: 'de'),
+    );
+    bench.history.add(bench.snapshot());
+    await pumpEventQueue();
+
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
+
+    final call = bench.cloud.calls.single;
+    expect(call.text, 'Keep the feeder latch.');
+    expect(call.route.model.providerModelId, 'voxtral-mini-tts-3-0');
+    expect(call.route.languageCode, 'de');
+    expect(bench.engine.calls, isEmpty);
+  });
+
+  test('outside a task language the app language picks the voice', () async {
+    bench.profile = cloudProfile();
+    final task = bench.entries['task']! as Task;
+    bench.entries['task'] = task.copyWith(
+      data: task.data.copyWith(languageCode: null),
+    );
+    bench.history.add(bench.snapshot());
+    await pumpEventQueue();
+
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'fr',
+      answerId: 'answer',
+    );
+
+    expect(bench.cloud.calls.single.route.languageCode, 'fr');
+  });
+
+  test('a cloud voice is never prepared ahead of a play', () async {
+    bench.profile = cloudProfile();
+    enablePreparation();
+    await pumpEventQueue();
+
+    expect(bench.engine.calls, isEmpty);
+    expect(bench.cloud.calls, isEmpty);
+  });
 
   test(
     'only a newly published answer triggers preparation, never a question',

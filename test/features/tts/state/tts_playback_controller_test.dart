@@ -24,27 +24,6 @@ import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 import '../test_utils.dart';
 
-/// Records cloud synthesis and answers with [output], or throws [error].
-class _FakeCloudSynthesizer implements CloudSpeechSynthesizer {
-  _FakeCloudSynthesizer({this.output, this.error});
-
-  final File? output;
-  final Object? error;
-  final calls =
-      <({TtsCloudRoute route, String text, Map<String, String> voices})>[];
-
-  @override
-  Future<File> synthesizeToFile({
-    required TtsCloudRoute route,
-    required String text,
-    required Map<String, String> voiceByLanguage,
-  }) async {
-    calls.add((route: route, text: text, voices: voiceByLanguage));
-    if (error != null) throw error!;
-    return output!;
-  }
-}
-
 void main() {
   setUp(() async {
     await setUpTestGetIt();
@@ -56,12 +35,12 @@ void main() {
     FakeTtsEngine? engine,
     FakeTtsAudioPlayer? player,
     FakeTtsModelRepository? repo,
-    _FakeCloudSynthesizer? cloud,
+    FakeCloudSpeechSynthesizer? cloud,
   }) {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
         cloudSpeechSynthesizerProvider.overrideWithValue(
-          cloud ?? _FakeCloudSynthesizer(),
+          cloud ?? FakeCloudSpeechSynthesizer(),
         ),
         ttsEngineProvider.overrideWithValue(engine ?? FakeTtsEngine()),
         ttsAudioPlayerProvider.overrideWithValue(
@@ -104,7 +83,7 @@ void main() {
   test('a cloud route speaks through the cloud voice on a device without '
       'the on-device engine, and never downloads the model', () async {
     final file = preparedFile();
-    final cloud = _FakeCloudSynthesizer(output: file);
+    final cloud = FakeCloudSpeechSynthesizer(output: file);
     final engine = FakeTtsEngine(supported: false);
     final repo = FakeTtsModelRepository(installed: false);
     final player = FakeTtsAudioPlayer();
@@ -139,7 +118,7 @@ void main() {
 
   test('a failed cloud synthesis ends in an error for its source, without '
       'playback', () async {
-    final cloud = _FakeCloudSynthesizer(
+    final cloud = FakeCloudSpeechSynthesizer(
       error: const VoxtralTtsException(
         VoxtralTtsFailure.noVoice,
         'No voice for language de',
@@ -161,7 +140,7 @@ void main() {
   });
 
   test('preparation never calls a cloud voice', () async {
-    final cloud = _FakeCloudSynthesizer(output: preparedFile());
+    final cloud = FakeCloudSpeechSynthesizer(output: preparedFile());
     final engine = FakeTtsEngine();
     final h = harness(engine: engine, cloud: cloud);
 

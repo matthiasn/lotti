@@ -200,11 +200,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
             ChatRecorderStatus.recording ||
         data.hasError ||
         data.value == null ||
-        !_visible(data.value!) ||
-        // A cloud voice is only ever called on an explicit play.
-        TtsCloudRoute.namesCloudVoice(
-          ref.read(queryProfileProvider(key.home)).value,
-        )) {
+        !_visible(data.value!)) {
       _discardPreparation();
       return;
     }
@@ -244,6 +240,13 @@ class QueryAudioController extends Notifier<QueryAudioState> {
                 !ref.read(ttsSettingsControllerProvider).autoPrepareChatAudio ||
                 ref.read(configFlagProvider(enableAiSummaryTtsFlag)).value !=
                     true) {
+              return false;
+            }
+            // A cloud voice is only ever called on an explicit play, so a
+            // chat whose profile names one prepares nothing on the device.
+            if (TtsCloudRoute.namesCloudVoice(
+              await ref.read(queryProfileProvider(key.home).future),
+            )) {
               return false;
             }
             final current = await _authorize(run);
