@@ -1,17 +1,44 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
+import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
+import '../../../tts/test_utils.dart';
+import '../../test_data/ai_config_factories.dart';
 import '../../test_data/entity_factories.dart';
 import '../../test_data/template_factories.dart';
 import 'test_bench.dart';
+
+/// Records the route of each cloud synthesis and fails it, so the card's
+/// routing is observable without audio.
+class _RecordingCloud implements CloudSpeechSynthesizer {
+  final routes = <TtsCloudRoute>[];
+
+  @override
+  Future<File> synthesizeToFile({
+    required TtsCloudRoute route,
+    required String text,
+    required Map<String, String> voiceByLanguage,
+  }) async {
+    routes.add(route);
+    throw StateError('not under test');
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -135,6 +162,65 @@ void main() {
       expect(container.read(queryPaneOpenProvider(scope)), isFalse);
       await tester.tap(chat);
       expect(container.read(queryPaneOpenProvider(scope)), isTrue);
+    });
+
+    testWidgets("a profile's cloud voice reads aloud where the on-device "
+        "engine cannot, in the task's language", (tester) async {
+      final mistral = testInferenceProvider(
+        id: 'mistral',
+        inferenceProviderType: InferenceProviderType.mistral,
+      );
+      final voice = testAiModel(
+        id: 'voice-row',
+        providerModelId: 'voxtral-mini-tts-3-0',
+      );
+      final cloud = _RecordingCloud();
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        ttsEngine: FakeTtsEngine(supported: false),
+        report: makeTestReport(tldr: 'Zwei offen.'),
+        resolvedSetup: ResolvedAgentSetup(
+          status: AgentSetupResolutionStatus.resolved,
+          profile: ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: mistral,
+            speechModelId: voice.providerModelId,
+            speechProvider: mistral,
+            speechModel: voice,
+          ),
+        ),
+        extraOverrides: [
+          cloudSpeechSynthesizerProvider.overrideWithValue(cloud),
+          skillEntityProvider(AgentTestBench.taskId).overrideWithValue(
+            testTask.copyWith(
+              data: testTask.data.copyWith(languageCode: 'de-AT'),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TtsPlayButton));
+      await tester.pump();
+
+      expect(cloud.routes.single.model, voice);
+      expect(cloud.routes.single.provider, mistral);
+      expect(cloud.routes.single.languageCode, 'de');
+    });
+
+    testWidgets('without a cloud voice, a device lacking the on-device '
+        'engine shows no read-aloud control', (tester) async {
+      await tester.pumpWidget(
+        AgentTestBench(
+          enableSummaryTts: true,
+          ttsEngine: FakeTtsEngine(supported: false),
+          report: makeTestReport(tldr: 'Two open.'),
+        ).build(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TtsPlayButton), findsNothing);
     });
 
     testWidgets('without read-aloud, the Chat disc holds the trailing edge '

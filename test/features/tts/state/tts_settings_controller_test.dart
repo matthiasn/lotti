@@ -94,6 +94,86 @@ void main() {
     ).called(1);
   });
 
+  test('loads per-language cloud voices, skipping malformed entries', () async {
+    when(() => mocks.settingsDb.itemsByKeys(any())).thenAnswer(
+      (_) async => {ttsCloudVoicesKey: '{"de": "v-de-1", "en": 7}'},
+    );
+    final container = makeContainer();
+    container.read(ttsSettingsControllerProvider);
+    await pumpEventQueue();
+    expect(
+      container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+      {'de': 'v-de-1'},
+    );
+  });
+
+  for (final stored in ['not json', '["de"]']) {
+    test('an unreadable cloud-voice entry ($stored) reads as none', () async {
+      when(
+        () => mocks.settingsDb.itemsByKeys(any()),
+      ).thenAnswer((_) async => {ttsCloudVoicesKey: stored});
+      final container = makeContainer();
+      container.read(ttsSettingsControllerProvider);
+      await pumpEventQueue();
+      expect(
+        container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+        isEmpty,
+      );
+    });
+  }
+
+  test('setCloudVoice chooses and clears per language, persisting the last '
+      'choice', () async {
+    final container = makeContainer();
+    final controller = container.read(ttsSettingsControllerProvider.notifier)
+      ..setCloudVoice('de', 'v-de-2')
+      ..setCloudVoice('en', 'v-en-1');
+    expect(
+      container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+      {'de': 'v-de-2', 'en': 'v-en-1'},
+    );
+    controller.setCloudVoice('de', null);
+    expect(
+      container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+      {'en': 'v-en-1'},
+    );
+    await pumpEventQueue();
+    verifyInOrder([
+      () => mocks.settingsDb.saveSettingsItem(
+        ttsCloudVoicesKey,
+        '{"de":"v-de-2"}',
+      ),
+      () => mocks.settingsDb.saveSettingsItem(
+        ttsCloudVoicesKey,
+        '{"de":"v-de-2","en":"v-en-1"}',
+      ),
+      () => mocks.settingsDb.saveSettingsItem(
+        ttsCloudVoicesKey,
+        '{"en":"v-en-1"}',
+      ),
+    ]);
+  });
+
+  test('a failed cloud-voice save keeps the choice and later saves', () async {
+    var calls = 0;
+    when(
+      () => mocks.settingsDb.saveSettingsItem(ttsCloudVoicesKey, any()),
+    ).thenAnswer((_) async {
+      if (calls++ == 0) throw StateError('storage closed');
+      return 1;
+    });
+    final container = makeContainer();
+    container.read(ttsSettingsControllerProvider.notifier)
+      ..setCloudVoice('de', 'v-de-1')
+      ..setCloudVoice('de', 'v-de-2');
+    await pumpEventQueue();
+    expect(
+      container.read(ttsSettingsControllerProvider).cloudVoiceByLanguage,
+      {'de': 'v-de-2'},
+    );
+    expect(calls, 2);
+  });
+
   test('setVoice updates state and persists', () {
     final container = makeContainer();
     container.read(ttsSettingsControllerProvider.notifier).setVoice('F4');

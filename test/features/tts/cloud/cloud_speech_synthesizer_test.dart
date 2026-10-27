@@ -1,0 +1,148 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
+import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
+import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../agents/test_data/ai_config_factories.dart';
+
+class _MockService extends Mock implements VoxtralTtsService {}
+
+class _MockCatalogs extends Mock implements VoxtralVoiceCatalogRepository {}
+
+void main() {
+  final provider = testInferenceProvider(
+    id: 'mistral',
+    apiKey: 'key',
+    inferenceProviderType: InferenceProviderType.mistral,
+  );
+  final route = TtsCloudRoute(
+    provider: provider,
+    model: testAiModel(
+      id: 'voice-row',
+      providerModelId: 'voxtral-mini-tts-3-0',
+    ),
+    languageCode: 'de',
+  );
+  final catalog = VoxtralVoiceCatalog(
+    fetchedAt: DateTime.utc(2026, 10, 27),
+    voices: const [
+      VoxtralVoice(
+        id: 'v-de-f',
+        name: 'Heidi',
+        gender: 'female',
+        languages: ['de'],
+        type: VoxtralVoiceType.preset,
+      ),
+      VoxtralVoice(id: 'v-de-m', name: 'Klaus', languages: ['de']),
+    ],
+  );
+  final audio = Uint8List.fromList([82, 73, 70, 70]);
+
+  late _MockService service;
+  late _MockCatalogs catalogs;
+  late Directory temp;
+  late CloudSpeechSynthesizer synthesizer;
+
+  setUp(() {
+    service = _MockService();
+    catalogs = _MockCatalogs();
+    temp = Directory.systemTemp.createTempSync('cloud_speech_test');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    synthesizer = CloudSpeechSynthesizer(
+      service: service,
+      catalogs: catalogs,
+      tempDirectory: () async => temp,
+    );
+    when(() => catalogs.catalogFor(provider)).thenAnswer((_) async => catalog);
+    when(
+      () => service.synthesize(
+        text: any(named: 'text'),
+        voiceId: any(named: 'voiceId'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    ).thenAnswer((_) async => audio);
+  });
+
+  test("speaks with the language's default voice and the route's model, "
+      'into a temporary WAV', () async {
+    final file = await synthesizer.synthesizeToFile(
+      route: route,
+      text: 'Grüß dich',
+      voiceByLanguage: const {},
+    );
+
+    expect(file.parent.path, temp.path);
+    expect(file.path, endsWith('.wav'));
+    expect(file.readAsBytesSync(), audio);
+    verify(
+      () => service.synthesize(
+        text: 'Grüß dich',
+        voiceId: 'v-de-f',
+        baseUrl: provider.baseUrl,
+        apiKey: 'key',
+        model: 'voxtral-mini-tts-3-0',
+      ),
+    ).called(1);
+  });
+
+  test("the user's voice for the language wins", () async {
+    final first = await synthesizer.synthesizeToFile(
+      route: route,
+      text: 'Hallo',
+      voiceByLanguage: const {'de': 'v-de-m', 'en': 'v-en'},
+    );
+    final second = await synthesizer.synthesizeToFile(
+      route: route,
+      text: 'Hallo',
+      voiceByLanguage: const {'de': 'v-de-m'},
+    );
+
+    expect(first.path, isNot(second.path));
+    verify(
+      () => service.synthesize(
+        text: 'Hallo',
+        voiceId: 'v-de-m',
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    ).called(2);
+  });
+
+  test('a language without a voice fails before any text is sent', () async {
+    await expectLater(
+      synthesizer.synthesizeToFile(
+        route: TtsCloudRoute(
+          provider: provider,
+          model: route.model,
+          languageCode: 'fr',
+        ),
+        text: 'Bonjour',
+        voiceByLanguage: const {},
+      ),
+      throwsA(
+        isA<VoxtralTtsException>()
+            .having((e) => e.failure, 'failure', VoxtralTtsFailure.noVoice)
+            .having((e) => e.isRetryable, 'retryable', isFalse),
+      ),
+    );
+    verifyNever(
+      () => service.synthesize(
+        text: any(named: 'text'),
+        voiceId: any(named: 'voiceId'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    );
+  });
+}

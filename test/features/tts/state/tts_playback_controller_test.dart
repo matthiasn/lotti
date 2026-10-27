@@ -3,6 +3,10 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -17,7 +21,29 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../agents/test_data/ai_config_factories.dart';
 import '../test_utils.dart';
+
+/// Records cloud synthesis and answers with [output], or throws [error].
+class _FakeCloudSynthesizer implements CloudSpeechSynthesizer {
+  _FakeCloudSynthesizer({this.output, this.error});
+
+  final File? output;
+  final Object? error;
+  final calls =
+      <({TtsCloudRoute route, String text, Map<String, String> voices})>[];
+
+  @override
+  Future<File> synthesizeToFile({
+    required TtsCloudRoute route,
+    required String text,
+    required Map<String, String> voiceByLanguage,
+  }) async {
+    calls.add((route: route, text: text, voices: voiceByLanguage));
+    if (error != null) throw error!;
+    return output!;
+  }
+}
 
 void main() {
   setUp(() async {
@@ -30,9 +56,13 @@ void main() {
     FakeTtsEngine? engine,
     FakeTtsAudioPlayer? player,
     FakeTtsModelRepository? repo,
+    _FakeCloudSynthesizer? cloud,
   }) {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
+        cloudSpeechSynthesizerProvider.overrideWithValue(
+          cloud ?? _FakeCloudSynthesizer(),
+        ),
         ttsEngineProvider.overrideWithValue(engine ?? FakeTtsEngine()),
         ttsAudioPlayerProvider.overrideWithValue(
           player ?? FakeTtsAudioPlayer(),
@@ -61,6 +91,90 @@ void main() {
     when(file.delete).thenAnswer((_) async => file);
     return file;
   }
+
+  final cloudRoute = TtsCloudRoute(
+    provider: testInferenceProvider(
+      id: 'mistral',
+      inferenceProviderType: InferenceProviderType.mistral,
+    ),
+    model: testAiModel(id: 'voice', providerModelId: 'voxtral-mini-tts-3-0'),
+    languageCode: 'de',
+  );
+
+  test('a cloud route speaks through the cloud voice on a device without '
+      'the on-device engine, and never downloads the model', () async {
+    final file = preparedFile();
+    final cloud = _FakeCloudSynthesizer(output: file);
+    final engine = FakeTtsEngine(supported: false);
+    final repo = FakeTtsModelRepository(installed: false);
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(engine: engine, player: player, repo: repo, cloud: cloud);
+    final controller = controllerOf(h.container);
+    h.container
+        .read(ttsSettingsControllerProvider.notifier)
+        .setCloudVoice('de', 'v-de-2');
+    var asked = false;
+
+    await controller.speak(
+      sourceId: 'task-1',
+      text: 'Zwei offen.',
+      cloudRoute: cloudRoute,
+      confirmModelDownload: (_) async => asked = true,
+    );
+
+    expect(cloud.calls.single.route, cloudRoute);
+    expect(cloud.calls.single.text, 'Zwei offen.');
+    expect(cloud.calls.single.voices, {'de': 'v-de-2'});
+    expect(engine.calls, isEmpty);
+    expect(repo.ensureCount, 0);
+    expect(asked, isFalse);
+    expect(player.playCount, 1);
+    final playing = h.container.read(ttsPlaybackControllerProvider);
+    expect(playing.status, TtsPlaybackStatus.playing);
+    expect(playing.clip?.path, '/tmp/tts_clip.wav');
+    await controller.stop();
+    verify(file.delete).called(1);
+  });
+
+  test('a failed cloud synthesis ends in an error for its source, without '
+      'playback', () async {
+    final cloud = _FakeCloudSynthesizer(
+      error: const VoxtralTtsException(
+        VoxtralTtsFailure.noVoice,
+        'No voice for language de',
+      ),
+    );
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(player: player, cloud: cloud);
+
+    await controllerOf(
+      h.container,
+    ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+    final state = h.container.read(ttsPlaybackControllerProvider);
+    expect(state.status, TtsPlaybackStatus.error);
+    expect(state.sourceId, 'task-1');
+    expect(state.errorMessage, contains('noVoice'));
+    expect(player.playCount, 0);
+  });
+
+  test('preparation never calls a cloud voice', () async {
+    final cloud = _FakeCloudSynthesizer(output: preparedFile());
+    final engine = FakeTtsEngine();
+    final h = harness(engine: engine, cloud: cloud);
+
+    await controllerOf(h.container).prepare(
+      sourceId: 'chat',
+      text: 'Answer',
+      canPrepare: () async => true,
+      cloudRoute: cloudRoute,
+    );
+
+    expect(cloud.calls, isEmpty);
+    expect(engine.calls, isEmpty);
+  });
 
   for (final pending in [false, true]) {
     test(
