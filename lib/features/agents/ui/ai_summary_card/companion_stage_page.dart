@@ -9,6 +9,7 @@ import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -29,6 +30,7 @@ Future<void> openCompanionStage(
   required String spokenText,
   CompanionMood mood = CompanionMood.calm,
   GestureName? holding,
+  TtsCloudRoute? cloudRoute,
 }) {
   return Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
@@ -38,6 +40,7 @@ Future<void> openCompanionStage(
         spokenText: spokenText,
         mood: mood,
         holding: holding,
+        cloudRoute: cloudRoute,
       ),
     ),
   );
@@ -62,8 +65,12 @@ class CompanionStagePage extends ConsumerWidget {
     required this.spokenText,
     this.mood = CompanionMood.calm,
     this.holding,
+    this.cloudRoute,
     super.key,
   });
+
+  /// The host's cloud voice, or `null` for the on-device voice.
+  final TtsCloudRoute? cloudRoute;
 
   final String sourceId;
   final String spokenText;
@@ -80,7 +87,7 @@ class CompanionStagePage extends ConsumerWidget {
         spokenText.isNotEmpty &&
         (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
             false) &&
-        ref.watch(ttsEngineProvider).isSupported;
+        (cloudRoute != null || ref.watch(ttsEngineProvider).isSupported);
     return Theme(
       data: DesignSystemTheme.dark(),
       child: Builder(
@@ -144,6 +151,7 @@ class CompanionStagePage extends ConsumerWidget {
                               SummaryReadAloudButton(
                                 sourceId: sourceId,
                                 text: spokenText,
+                                cloudRoute: cloudRoute,
                               ),
                           ],
                         ),

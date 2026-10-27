@@ -33,6 +33,9 @@ enum VoxtralTtsFailure {
 
   /// A 200 whose body is not what the API documents.
   invalidResponse,
+
+  /// The catalog has no voice for the text's language, so nothing was sent.
+  noVoice,
 }
 
 class VoxtralTtsException implements Exception {
@@ -61,7 +64,8 @@ class VoxtralTtsException implements Exception {
     VoxtralTtsFailure.server => true,
     VoxtralTtsFailure.unauthorized ||
     VoxtralTtsFailure.rejected ||
-    VoxtralTtsFailure.invalidResponse => false,
+    VoxtralTtsFailure.invalidResponse ||
+    VoxtralTtsFailure.noVoice => false,
   };
 
   @override

@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_data/ai_config_factories.dart';
 
 /// The app-wide playback state, set by the test, recording what the button
 /// asks of the voice.
@@ -14,6 +17,7 @@ class _Playback extends TtsPlaybackController {
 
   final TtsPlaybackState initial;
   final spoken = <({String sourceId, String text})>[];
+  final routes = <TtsCloudRoute?>[];
   TtsModelDownloadConsent? confirmModelDownload;
   int stops = 0;
 
@@ -27,8 +31,10 @@ class _Playback extends TtsPlaybackController {
     String language = 'en',
     Future<bool> Function()? canPlay,
     TtsModelDownloadConsent? confirmModelDownload,
+    TtsCloudRoute? cloudRoute,
   }) async {
     spoken.add((sourceId: sourceId, text: text));
+    routes.add(cloudRoute);
     this.confirmModelDownload = confirmModelDownload;
   }
 
@@ -41,11 +47,16 @@ void main() {
 
   Future<TtsPlayButton> pump(
     WidgetTester tester,
-    TtsPlaybackState state,
-  ) async {
+    TtsPlaybackState state, {
+    TtsCloudRoute? cloudRoute,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        const SummaryReadAloudButton(sourceId: 'task-1', text: 'Two left.'),
+        SummaryReadAloudButton(
+          sourceId: 'task-1',
+          text: 'Two left.',
+          cloudRoute: cloudRoute,
+        ),
         overrides: [
           ttsPlaybackControllerProvider.overrideWith(
             () => playback = _Playback(state),
@@ -65,6 +76,26 @@ void main() {
     expect(button.progress, isNull);
     button.onPlay();
     expect(playback.spoken, [(sourceId: 'task-1', text: 'Two left.')]);
+    // No route from the host: the on-device voice.
+    expect(playback.routes, [null]);
+  });
+
+  testWidgets("it speaks with its host's cloud voice", (tester) async {
+    final route = TtsCloudRoute(
+      provider: testInferenceProvider(
+        id: 'mistral',
+        inferenceProviderType: InferenceProviderType.mistral,
+      ),
+      model: testAiModel(id: 'voice', providerModelId: 'voxtral-mini-tts-3-0'),
+      languageCode: 'de',
+    );
+    final button = await pump(
+      tester,
+      const TtsPlaybackState(),
+      cloudRoute: route,
+    );
+    button.onPlay();
+    expect(playback.routes, [route]);
   });
 
   testWidgets('a play asks before the voice model downloads, showing its '

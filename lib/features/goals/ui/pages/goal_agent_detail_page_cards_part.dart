@@ -434,11 +434,17 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
               (text) => text.isNotEmpty,
               orElse: () => '',
             );
+    // Goals carry no language of their own: the app's language picks the
+    // voice of the goal agent's read-aloud model.
+    final cloudRoute = TtsCloudRoute.fromProfile(
+      ref.watch(goalAgentResolvedSetupProvider(widget.agentId)).value?.profile,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
     final canReadAloud =
         spokenText.isNotEmpty &&
         (ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ??
             false) &&
-        ref.watch(ttsEngineProvider).isSupported;
+        (cloudRoute != null || ref.watch(ttsEngineProvider).isSupported);
     final companionEnabled =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
     final pose = goalCompanionPose(
@@ -497,6 +503,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
             spokenText: spokenText,
             mood: pose.mood,
             holding: pose.gesture,
+            cloudRoute: cloudRoute,
           ),
           // The same header as the task agent section: the badge (or her),
           // the shared card title, the persona underneath, tap → internals.
@@ -516,6 +523,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
                       SummaryReadAloudButton(
                         sourceId: sourceId,
                         text: spokenText,
+                        cloudRoute: cloudRoute,
                       ),
                     ],
                   )

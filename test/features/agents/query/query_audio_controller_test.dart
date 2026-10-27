@@ -82,7 +82,10 @@ void main() {
       bench.history.add(bench.snapshot());
       await pumpEventQueue();
       expect(bench.engine.calls, hasLength(1));
-      await controller.speakAnswer(answerId: 'answer');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       expect(bench.engine.calls, hasLength(1));
       expect(bench.speechPlayer.playCount, 1);
     },
@@ -133,7 +136,10 @@ void main() {
   test('stopping speech does not restart automatic preparation', () async {
     enablePreparation();
     await pumpEventQueue();
-    await controller.speakAnswer(answerId: 'answer');
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
     expect(bench.engine.calls, hasLength(1));
     await controller.stop();
     await pumpEventQueue();
@@ -147,7 +153,10 @@ void main() {
     () async {
       enablePreparation();
       await pumpEventQueue();
-      await controller.speakAnswer(answerId: 'answer');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       bench
         ..addEvent(
           'question-next',
@@ -183,7 +192,10 @@ void main() {
     );
     enablePreparation();
     await started.future;
-    final speaking = controller.speakAnswer(answerId: 'answer');
+    final speaking = controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
     await pumpEventQueue();
     expect(bench.speechPlayer.playCount, 0);
     pending.complete(File('/tmp/absent-prepared-query.wav'));
@@ -666,7 +678,10 @@ void main() {
   test(
     'read aloud uses the saved answer and the local speech engine',
     () async {
-      await controller.speakAnswer(answerId: 'answer');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       expect(bench.engine.calls.single.text, 'Keep the feeder latch.');
       expect(bench.speechPlayer.playCount, 1);
       expect(bench.requests, 0);
@@ -691,7 +706,10 @@ void main() {
         .read(audioPlayerControllerProvider)
         .copyWith(status: AudioPlayerStatus.playing);
 
-    await controller.speakAnswer(answerId: 'answer');
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
 
     verify(bench.player.pause).called(1);
     expect(
@@ -731,7 +749,10 @@ void main() {
   });
 
   test('disabling local speech stops an answer already playing', () async {
-    await controller.speakAnswer(answerId: 'answer');
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
     final stoppedBefore = bench.speechPlayer.stopCount;
     bench.ttsEnabled.add(false);
     await container.pump();
@@ -775,7 +796,7 @@ void main() {
         evidence: bench.evidence,
         generate: true,
       );
-      await actions.speakAnswer(answerId: 'answer');
+      await actions.speakAnswer(fallbackLanguageCode: 'en', answerId: 'answer');
       expect(recording.read(provider).status, QueryAudioStatus.idle);
       expect(bench.requests, 0);
       expect(bench.engine.calls, isEmpty);
@@ -816,7 +837,10 @@ void main() {
       when(
         () => bench.store.load(any()),
       ).thenAnswer((_) async => throw StateError('store offline'));
-      await controller.speakAnswer(answerId: 'answer');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       expect(container.read(provider).status, QueryAudioStatus.failed);
       expect(container.read(provider).actionId, 'answer');
       expect(bench.engine.calls, isEmpty);
@@ -840,7 +864,10 @@ void main() {
 
   test('synthesis failure becomes a recoverable query audio error', () async {
     bench.engine = FakeTtsEngine(throwOnSynthesize: true);
-    await controller.speakAnswer(answerId: 'answer');
+    await controller.speakAnswer(
+      fallbackLanguageCode: 'en',
+      answerId: 'answer',
+    );
     expect(container.read(provider).status, QueryAudioStatus.failed);
     expect(bench.speechPlayer.playCount, 0);
   });
@@ -904,10 +931,16 @@ void main() {
   test(
     'a disabled speech flag or unknown answer cannot trigger synthesis',
     () async {
-      await controller.speakAnswer(answerId: 'question');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'question',
+      );
       bench.ttsEnabled.add(false);
       await container.pump();
-      await controller.speakAnswer(answerId: 'answer');
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       expect(bench.engine.calls, isEmpty);
       expect(bench.speechPlayer.playCount, 0);
     },
@@ -926,7 +959,10 @@ void main() {
         ..showPrivate = true;
       bench.privacy.add(true);
       await container.pump();
-      final speaking = controller.speakAnswer(answerId: 'answer');
+      final speaking = controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
       await started.future;
       bench.showPrivate = false;
       bench.privacy.add(false);

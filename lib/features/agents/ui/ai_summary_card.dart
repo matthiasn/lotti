@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -27,12 +28,14 @@ import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart'
 import 'package:lotti/features/agents/ui/query/query_ask_button.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
+import 'package:lotti/features/ai/state/skill_entity_provider.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_collapse.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/ui/playback_failure_toast.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -521,14 +524,28 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         : widget.identity.displayName;
     final ttsEnabled =
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
-    final ttsEngineSupported = ref.watch(ttsEngineProvider).isSupported;
+    // The agent's profile picks the voice: its read-aloud model, in the
+    // task's language, or the on-device voice when it names none.
+    final task = ref.watch(skillEntityProvider(widget.taskId));
+    final cloudRoute = TtsCloudRoute.fromProfile(
+      ref.watch(agentResolvedSetupProvider(agentId)).value?.profile,
+      languageCode:
+          (task is Task ? task.data.languageCode : null) ??
+          Localizations.localeOf(context).languageCode,
+    );
+    final ttsEngineSupported =
+        cloudRoute != null || ref.watch(ttsEngineProvider).isSupported;
     // Read aloud exactly what the body shows: the TL;DR when collapsed, the
     // TL;DR followed by the full report once expanded.
     final spokenText = _expanded && additionalReport != null
         ? '$tldr\n\n$additionalReport'
         : tldr;
     final playbackControl = ttsEnabled && tldr.isNotEmpty && ttsEngineSupported
-        ? SummaryReadAloudButton(sourceId: widget.taskId, text: spokenText)
+        ? SummaryReadAloudButton(
+            sourceId: widget.taskId,
+            text: spokenText,
+            cloudRoute: cloudRoute,
+          )
         : null;
     // The companion is the face of the read-aloud control, so she comes and
     // goes with it, and speaks the same utterance: this task's, in the words
@@ -729,6 +746,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             context,
             sourceId: widget.taskId,
             spokenText: spokenText,
+            cloudRoute: cloudRoute,
           ),
           header: (slot) => TldrHeader(
             agentName: subtitle,
