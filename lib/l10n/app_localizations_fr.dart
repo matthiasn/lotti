@@ -15834,7 +15834,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Choisis la voix qui lit les résumés à voix haute';
+      'La voix de l’appareil, pour les profils sans voix dans le cloud';
 
   @override
   String get speechSettingsVoiceLabel => 'Voix';

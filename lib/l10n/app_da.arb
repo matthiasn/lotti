@@ -6557,7 +6557,7 @@
   "speechSettingsRecommendedBadge": "Anbefalet",
   "speechSettingsSpeedDescription": "Hvor hurtigt resuméer læses",
   "speechSettingsSpeedLabel": "Læsehastighed",
-  "speechSettingsVoiceDescription": "Vælg stemmen, der læser resuméer højt",
+  "speechSettingsVoiceDescription": "Stemmen på enheden til profiler uden cloud-stemme",
   "speechSettingsVoiceLabel": "Stemme",
   "speechVoiceGenderFemale": "Kvinde",
   "speechVoiceGenderMale": "Mand",

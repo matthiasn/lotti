@@ -15872,7 +15872,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Alegeți vocea care citește rezumatele cu voce tare';
+      'Vocea de pe dispozitiv, pentru profilurile fără voce în cloud';
 
   @override
   String get speechSettingsVoiceLabel => 'Voce';

@@ -15773,7 +15773,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Scegli la voce che legge i riassunti aloud';
+      'La voce sul dispositivo, per i profili senza voce cloud';
 
   @override
   String get speechSettingsVoiceLabel => 'Voce';

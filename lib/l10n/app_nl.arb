@@ -6556,7 +6556,7 @@
   "speechSettingsRecommendedBadge": "Aanbevolen",
   "speechSettingsSpeedDescription": "Hoe snel samenvattingen worden gelezen",
   "speechSettingsSpeedLabel": "Leessnelheid",
-  "speechSettingsVoiceDescription": "Kies de stem die samenvattingen voorleest",
+  "speechSettingsVoiceDescription": "De stem op het apparaat, voor profielen zonder cloudstem",
   "speechSettingsVoiceLabel": "Stem",
   "speechVoiceGenderFemale": "Vrouwen",
   "speechVoiceGenderMale": "Man",

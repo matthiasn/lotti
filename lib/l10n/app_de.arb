@@ -5900,7 +5900,7 @@
   "speechSettingsRecommendedBadge": "Empfohlen",
   "speechSettingsSpeedDescription": "Wie schnell Zusammenfassungen vorgelesen werden",
   "speechSettingsSpeedLabel": "Lesegeschwindigkeit",
-  "speechSettingsVoiceDescription": "Wähle die Stimme, die Zusammenfassungen vorliest",
+  "speechSettingsVoiceDescription": "Die Stimme auf dem Gerät, für Profile ohne Cloud-Stimme",
   "speechSettingsVoiceLabel": "Stimme",
   "speechVoiceGenderFemale": "Weiblich",
   "speechVoiceGenderMale": "Männlich",

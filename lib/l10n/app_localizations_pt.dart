@@ -15724,7 +15724,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Escolha a voz que lê resumos em voz alta';
+      'A voz do dispositivo, para perfis sem voz na nuvem';
 
   @override
   String get speechSettingsVoiceLabel => 'Voz';

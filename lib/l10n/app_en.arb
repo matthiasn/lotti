@@ -9610,7 +9610,10 @@
   "speechSettingsRecommendedBadge": "Recommended",
   "speechSettingsSpeedDescription": "How fast summaries are read",
   "speechSettingsSpeedLabel": "Reading speed",
-  "speechSettingsVoiceDescription": "Choose the voice that reads summaries aloud",
+  "speechSettingsVoiceDescription": "The on-device voice, for profiles without a cloud voice",
+  "@speechSettingsVoiceDescription": {
+    "description": "Description of the on-device voice section in Speech settings"
+  },
   "speechSettingsVoiceLabel": "Voice",
   "speechVoiceGenderFemale": "Female",
   "speechVoiceGenderMale": "Male",

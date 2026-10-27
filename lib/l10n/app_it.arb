@@ -6557,7 +6557,7 @@
   "speechSettingsRecommendedBadge": "Consigliato",
   "speechSettingsSpeedDescription": "Quanto velocemente si leggono i riassunti",
   "speechSettingsSpeedLabel": "Velocità di lettura",
-  "speechSettingsVoiceDescription": "Scegli la voce che legge i riassunti aloud",
+  "speechSettingsVoiceDescription": "La voce sul dispositivo, per i profili senza voce cloud",
   "speechSettingsVoiceLabel": "Voce",
   "speechVoiceGenderFemale": "Femmina",
   "speechVoiceGenderMale": "Maschio",

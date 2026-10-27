@@ -15579,7 +15579,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Vælg stemmen, der læser resuméer højt';
+      'Stemmen på enheden til profiler uden cloud-stemme';
 
   @override
   String get speechSettingsVoiceLabel => 'Stemme';

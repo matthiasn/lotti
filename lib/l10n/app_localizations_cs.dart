@@ -15777,7 +15777,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Vyber hlas, který předčítá shrnutí';
+      'Hlas v zařízení pro profily bez cloudového hlasu';
 
   @override
   String get speechSettingsVoiceLabel => 'Hlas';

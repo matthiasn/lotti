@@ -5900,7 +5900,7 @@
   "speechSettingsRecommendedBadge": "Recomandat",
   "speechSettingsSpeedDescription": "Cât de repede sunt citite rezumatele",
   "speechSettingsSpeedLabel": "Viteza de citire",
-  "speechSettingsVoiceDescription": "Alegeți vocea care citește rezumatele cu voce tare",
+  "speechSettingsVoiceDescription": "Vocea de pe dispozitiv, pentru profilurile fără voce în cloud",
   "speechSettingsVoiceLabel": "Voce",
   "speechVoiceGenderFemale": "Feminină",
   "speechVoiceGenderMale": "Masculină",

@@ -25823,10 +25823,10 @@ abstract class AppLocalizations {
   /// **'Reading speed'**
   String get speechSettingsSpeedLabel;
 
-  /// No description provided for @speechSettingsVoiceDescription.
+  /// Description of the on-device voice section in Speech settings
   ///
   /// In en, this message translates to:
-  /// **'Choose the voice that reads summaries aloud'**
+  /// **'The on-device voice, for profiles without a cloud voice'**
   String get speechSettingsVoiceDescription;
 
   /// No description provided for @speechSettingsVoiceLabel.

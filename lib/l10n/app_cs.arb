@@ -5907,7 +5907,7 @@
   "speechSettingsRecommendedBadge": "Doporučeno",
   "speechSettingsSpeedDescription": "Jak rychle se shrnutí předčítají",
   "speechSettingsSpeedLabel": "Rychlost čtení",
-  "speechSettingsVoiceDescription": "Vyber hlas, který předčítá shrnutí",
+  "speechSettingsVoiceDescription": "Hlas v zařízení pro profily bez cloudového hlasu",
   "speechSettingsVoiceLabel": "Hlas",
   "speechVoiceGenderFemale": "Ženský",
   "speechVoiceGenderMale": "Mužský",

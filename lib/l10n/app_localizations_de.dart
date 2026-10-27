@@ -15686,7 +15686,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Wähle die Stimme, die Zusammenfassungen vorliest';
+      'Die Stimme auf dem Gerät, für Profile ohne Cloud-Stimme';
 
   @override
   String get speechSettingsVoiceLabel => 'Stimme';

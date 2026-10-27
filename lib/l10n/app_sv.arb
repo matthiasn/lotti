@@ -6557,7 +6557,7 @@
   "speechSettingsRecommendedBadge": "Rekommenderas",
   "speechSettingsSpeedDescription": "Hur snabbt sammanfattningar läses",
   "speechSettingsSpeedLabel": "Läshastighet",
-  "speechSettingsVoiceDescription": "Välj rösten som läser sammanfattningar högt",
+  "speechSettingsVoiceDescription": "Rösten på enheten, för profiler utan molnröst",
   "speechSettingsVoiceLabel": "Röst",
   "speechVoiceGenderFemale": "Kvinna",
   "speechVoiceGenderMale": "Manlig",

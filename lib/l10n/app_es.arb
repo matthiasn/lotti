@@ -5900,7 +5900,7 @@
   "speechSettingsRecommendedBadge": "Recomendado",
   "speechSettingsSpeedDescription": "Con qué rapidez se leen los resúmenes",
   "speechSettingsSpeedLabel": "Velocidad de lectura",
-  "speechSettingsVoiceDescription": "Elige la voz que lee los resúmenes en voz alta",
+  "speechSettingsVoiceDescription": "La voz del dispositivo, para perfiles sin voz en la nube",
   "speechSettingsVoiceLabel": "Voz",
   "speechVoiceGenderFemale": "Femenina",
   "speechVoiceGenderMale": "Masculina",

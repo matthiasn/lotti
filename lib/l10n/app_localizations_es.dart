@@ -15770,7 +15770,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Elige la voz que lee los resúmenes en voz alta';
+      'La voz del dispositivo, para perfiles sin voz en la nube';
 
   @override
   String get speechSettingsVoiceLabel => 'Voz';

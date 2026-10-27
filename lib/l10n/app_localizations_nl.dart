@@ -15626,7 +15626,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Kies de stem die samenvattingen voorleest';
+      'De stem op het apparaat, voor profielen zonder cloudstem';
 
   @override
   String get speechSettingsVoiceLabel => 'Stem';

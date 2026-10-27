@@ -15595,7 +15595,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Välj rösten som läser sammanfattningar högt';
+      'Rösten på enheten, för profiler utan molnröst';
 
   @override
   String get speechSettingsVoiceLabel => 'Röst';
