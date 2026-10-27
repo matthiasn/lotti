@@ -15466,7 +15466,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.';
+      'Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

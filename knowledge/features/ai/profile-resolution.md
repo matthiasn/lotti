@@ -191,9 +191,10 @@ selection, as it did for Chat.
 
 # Choosing a read-aloud model
 
-The editor's optional **Read aloud** slot picks the cloud voice that reads
-summaries, goal reports and query answers aloud. It offers models whose output
-is audio — today Voxtral TTS on Mistral. Unset, read-aloud keeps the on-device
+The editor's optional **Read aloud** slot picks the cloud speech model that
+reads summaries, goal reports and query answers aloud. It offers models whose
+output is audio — today Voxtral TTS on Mistral. The voice is not chosen here:
+the speech feature resolves it per language from that provider's catalog. Unset, read-aloud keeps the on-device
 voice; there is no other fallback, and the on-device voice is never something
 the slot has to name. Which surface resolves which profile, and how a voice is
 chosen per language, is in [text-to-speech](../tts.md#which-voice-speaks).

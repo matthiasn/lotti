@@ -6549,7 +6549,7 @@
   "speechSettingsCloudVoicesDescription": "Profiler med en uppläsningsmodell talar med de här rösterna. Varje språk använder ditt val, eller sin första kvinnoröst.",
   "speechSettingsCloudVoicesLabel": "Molnröster",
   "speechSettingsCloudVoicesLoading": "Läser in röster",
-  "speechSettingsCloudVoicesNone": "Uppläsning använder rösten på enheten. Välj en molnröst i fältet Läs upp i en inferensprofil.",
+  "speechSettingsCloudVoicesNone": "Uppläsning använder rösten på enheten. Välj en uppläsningsmodell i en inferensprofil för att använda en molnröst.",
   "speechSettingsCloudVoicesUnavailable": "Rösterna kunde inte läsas in. Kontrollera anslutningen och leverantörens API-nyckel.",
   "speechSettingsModelDescription": "Talmodell på enheten",
   "speechSettingsModelDownloadSize": "{size} · hämtas en gång, första gången du låter läsa upp",

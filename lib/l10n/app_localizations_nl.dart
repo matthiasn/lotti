@@ -15597,7 +15597,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Voorlezen gebruikt de stem op het apparaat. Kies voor een cloudstem er een in het veld Voorlezen van een inferentieprofiel.';
+      'Voorlezen gebruikt de stem op het apparaat. Kies een voorleesmodel in een inferentieprofiel om een cloudstem te gebruiken.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

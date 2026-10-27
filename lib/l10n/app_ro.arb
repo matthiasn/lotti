@@ -5892,7 +5892,7 @@
   "speechSettingsCloudVoicesDescription": "Profilurile cu un model de citire cu voce tare vorbesc cu aceste voci. Fiecare limbă folosește alegerea dumneavoastră sau prima sa voce feminină.",
   "speechSettingsCloudVoicesLabel": "Voci în cloud",
   "speechSettingsCloudVoicesLoading": "Se încarcă vocile",
-  "speechSettingsCloudVoicesNone": "Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți una în câmpul Citire cu voce tare al unui profil de inferență.",
+  "speechSettingsCloudVoicesNone": "Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți un model de citire cu voce tare într-un profil de inferență.",
   "speechSettingsCloudVoicesUnavailable": "Vocile nu au putut fi încărcate. Verificați conexiunea și cheia API a furnizorului.",
   "speechSettingsModelDescription": "Model de voce pe dispozitiv",
   "speechSettingsModelDownloadSize": "{size} · se descarcă o singură dată, la prima citire cu voce tare",

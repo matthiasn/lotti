@@ -15843,7 +15843,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți una în câmpul Citire cu voce tare al unui profil de inferență.';
+      'Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți un model de citire cu voce tare într-un profil de inferență.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

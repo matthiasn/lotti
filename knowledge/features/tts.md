@@ -119,7 +119,8 @@ lower time to first audio. Speed stays a playback rate, as for the on-device
 voice.
 
 **Catalog classification.** Voxtral ships transcription and TTS models under
-one prefix. `isSpeechSynthesisModelId` (a dash-separated `tts` segment) marks
+one prefix. `isSpeechSynthesisModelId` (a `tts` segment, separated by `-`, `_`, `.`,
+`/` or `:`) marks
 the TTS ones text in / audio out in the live Mistral catalog and keeps them off
 the transcription route — see [provider routing](ai/provider-routing.md).
 

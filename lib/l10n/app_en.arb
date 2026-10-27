@@ -9589,7 +9589,7 @@
   "@speechSettingsCloudVoicesLoading": {
     "description": "Screen-reader label of the spinner while the cloud voice catalog loads"
   },
-  "speechSettingsCloudVoicesNone": "Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.",
+  "speechSettingsCloudVoicesNone": "Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.",
   "@speechSettingsCloudVoicesNone": {
     "description": "Description of the cloud voices section when no profile names a cloud read-aloud model"
   },

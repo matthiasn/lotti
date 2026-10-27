@@ -81,7 +81,8 @@ Speech synthesis is not routed here. A profile's read-aloud model reaches
 Mistral's `/v1/audio/speech` through the text-to-speech feature's own client —
 see [text-to-speech](../tts.md#cloud-voices). The catalog side is shared:
 Voxtral ships transcription and TTS models under one prefix, and
-`isSpeechSynthesisModelId` (a dash-separated `tts` segment) maps the TTS rows
+`isSpeechSynthesisModelId` (a `tts` segment, separated by `-`, `_`, `.`, `/`
+or `:`) maps the TTS rows
 of the live Mistral catalog to text in / audio out — checked before the
 `voxtral` transcription heuristic and the `audio` capability flag — and
 excludes them from `MistralTranscriptionRepository.isMistralTranscriptionModel`,

@@ -98,7 +98,7 @@ void main() {
 
     expect(find.text('Cloud voices'), findsOneWidget);
     expect(
-      find.textContaining('an inference profile’s Read aloud slot'),
+      find.textContaining('choose a read-aloud model in an inference profile'),
       findsOneWidget,
     );
     expect(find.byType(TtsPlayButton), findsNothing);

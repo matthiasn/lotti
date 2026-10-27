@@ -6549,7 +6549,7 @@
   "speechSettingsCloudVoicesDescription": "Profiler med en oplæsningsmodel taler med disse stemmer. Hvert sprog bruger dit valg eller sin første kvindestemme.",
   "speechSettingsCloudVoicesLabel": "Cloud-stemmer",
   "speechSettingsCloudVoicesLoading": "Indlæser stemmer",
-  "speechSettingsCloudVoicesNone": "Oplæsning bruger stemmen på enheden. Vælg en cloud-stemme i feltet Læs højt i en inferensprofil.",
+  "speechSettingsCloudVoicesNone": "Oplæsning bruger stemmen på enheden. Vælg en oplæsningsmodel i en inferensprofil for at bruge en cloud-stemme.",
   "speechSettingsCloudVoicesUnavailable": "Stemmerne kunne ikke indlæses. Tjek forbindelsen og udbyderens API-nøgle.",
   "speechSettingsModelDescription": "On-device talemodel",
   "speechSettingsModelDownloadSize": "{size} · hentes én gang, første gang du får læst op",

@@ -15566,7 +15566,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Uppläsning använder rösten på enheten. Välj en molnröst i fältet Läs upp i en inferensprofil.';
+      'Uppläsning använder rösten på enheten. Välj en uppläsningsmodell i en inferensprofil för att använda en molnröst.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

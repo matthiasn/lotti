@@ -6549,7 +6549,7 @@
   "speechSettingsCloudVoicesDescription": "I profili con un modello di lettura ad alta voce parlano con queste voci. Ogni lingua usa la tua scelta, o la sua prima voce femminile.",
   "speechSettingsCloudVoicesLabel": "Voci cloud",
   "speechSettingsCloudVoicesLoading": "Caricamento delle voci",
-  "speechSettingsCloudVoicesNone": "La lettura ad alta voce usa la voce sul dispositivo. Per una voce cloud, sceglila nel campo Lettura ad alta voce di un profilo di inferenza.",
+  "speechSettingsCloudVoicesNone": "La lettura ad alta voce usa la voce sul dispositivo. Per una voce cloud, scegli un modello di lettura ad alta voce in un profilo di inferenza.",
   "speechSettingsCloudVoicesUnavailable": "Impossibile caricare le voci. Controlla la connessione e la chiave API del provider.",
   "speechSettingsModelDescription": "Modello vocale on-device",
   "speechSettingsModelDownloadSize": "{size} · si scarica una volta, la prima volta che usi la lettura ad alta voce",

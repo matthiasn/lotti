@@ -6548,7 +6548,7 @@
   "speechSettingsCloudVoicesDescription": "Profielen met een voorleesmodel spreken met deze stemmen. Elke taal gebruikt jouw keuze, of de eerste vrouwenstem.",
   "speechSettingsCloudVoicesLabel": "Cloudstemmen",
   "speechSettingsCloudVoicesLoading": "Stemmen laden",
-  "speechSettingsCloudVoicesNone": "Voorlezen gebruikt de stem op het apparaat. Kies voor een cloudstem er een in het veld Voorlezen van een inferentieprofiel.",
+  "speechSettingsCloudVoicesNone": "Voorlezen gebruikt de stem op het apparaat. Kies een voorleesmodel in een inferentieprofiel om een cloudstem te gebruiken.",
   "speechSettingsCloudVoicesUnavailable": "De stemmen konden niet worden geladen. Controleer de verbinding en de API-sleutel van de provider.",
   "speechSettingsModelDescription": "Speechmodel voor het apparaat",
   "speechSettingsModelDownloadSize": "{size} · wordt één keer gedownload, als je voor het eerst laat voorlezen",

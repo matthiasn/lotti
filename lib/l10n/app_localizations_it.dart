@@ -15744,7 +15744,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'La lettura ad alta voce usa la voce sul dispositivo. Per una voce cloud, sceglila nel campo Lettura ad alta voce di un profilo di inferenza.';
+      'La lettura ad alta voce usa la voce sul dispositivo. Per una voce cloud, scegli un modello di lettura ad alta voce in un profilo di inferenza.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

@@ -15657,7 +15657,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Vorlesen nutzt die Stimme auf dem Gerät. Für eine Cloud-Stimme wähle sie im Feld Vorlesen eines Inferenzprofils.';
+      'Vorlesen nutzt die Stimme auf dem Gerät. Für eine Cloud-Stimme wähle ein Vorlese-Modell in einem Inferenzprofil.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>
@@ -15686,7 +15686,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Die Stimme auf dem Gerät, für Profile ohne Cloud-Stimme';
+      'Die Stimme auf dem Gerät für Profile ohne Cloud-Stimme';
 
   @override
   String get speechSettingsVoiceLabel => 'Stimme';

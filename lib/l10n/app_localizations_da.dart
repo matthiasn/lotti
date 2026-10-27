@@ -15551,7 +15551,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Oplæsning bruger stemmen på enheden. Vælg en cloud-stemme i feltet Læs højt i en inferensprofil.';
+      'Oplæsning bruger stemmen på enheden. Vælg en oplæsningsmodel i en inferensprofil for at bruge en cloud-stemme.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>

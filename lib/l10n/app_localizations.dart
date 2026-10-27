@@ -25778,7 +25778,7 @@ abstract class AppLocalizations {
   /// Description of the cloud voices section when no profile names a cloud read-aloud model
   ///
   /// In en, this message translates to:
-  /// **'Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.'**
+  /// **'Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.'**
   String get speechSettingsCloudVoicesNone;
 
   /// Shown when the cloud voice catalog could not be loaded and none is cached

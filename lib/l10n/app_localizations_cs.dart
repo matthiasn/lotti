@@ -15748,7 +15748,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesNone =>
-      'Předčítání používá hlas v zařízení. Pro cloudový hlas ho vyber v poli Předčítání v profilu inference.';
+      'Předčítání používá hlas v zařízení. Pro cloudový hlas vyber model pro předčítání v profilu inference.';
 
   @override
   String get speechSettingsCloudVoicesUnavailable =>
