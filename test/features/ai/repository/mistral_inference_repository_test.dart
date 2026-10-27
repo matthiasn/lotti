@@ -290,6 +290,27 @@ void main() {
           expect(model.outputModalities, [Modality.text]);
         });
 
+        test('treats Voxtral TTS ids as text-to-speech, even with an audio '
+            'flag and chat disabled', () async {
+          final model = await mapSingle({
+            'id': 'voxtral-mini-tts-2607',
+            'capabilities': {'completion_chat': false, 'audio': true},
+          });
+
+          // Speaks rather than listens, and stays installable although chat
+          // is off: the read-aloud slot needs it.
+          expect(model.inputModalities, [Modality.text]);
+          expect(model.outputModalities, [Modality.audio]);
+        });
+
+        test('keeps the curated Voxtral TTS 3 row verbatim', () async {
+          final model = await mapSingle({'id': 'voxtral-mini-tts-3-0'});
+
+          expect(model.name, 'Voxtral TTS 3');
+          expect(model.inputModalities, [Modality.text]);
+          expect(model.outputModalities, [Modality.audio]);
+        });
+
         test('honours an explicit audio capability flag', () async {
           final model = await mapSingle({
             'id': 'some-speech-model',

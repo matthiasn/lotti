@@ -60,6 +60,10 @@ void main() {
           'voxtral-small-2507': true,
           'voxtral-mini-latest': true,
           'voxtral-mini-2507': true,
+          // Voxtral TTS shares the prefix but speaks; it must never be sent
+          // to /audio/transcriptions.
+          'voxtral-mini-tts-3-0': false,
+          'voxtral-mini-tts-latest': false,
           'mistral-small-2501': false,
           'magistral-medium-2509': false,
           '': false,
@@ -75,7 +79,9 @@ void main() {
         }
       });
 
-      // Property: the predicate is exactly a `voxtral-` prefix check.
+      // Property: without a `tts` segment the predicate is exactly a
+      // `voxtral-` prefix check (letters and digits never form a segment
+      // boundary, so only the whole suffix `tts` is a speech id).
       glados.Glados(
         glados.any.letterOrDigits,
         glados.ExploreConfig(numRuns: 120),
@@ -84,7 +90,7 @@ void main() {
           MistralTranscriptionRepository.isMistralTranscriptionModel(
             'voxtral-$suffix',
           ),
-          isTrue,
+          suffix.toLowerCase() != 'tts',
           reason: 'voxtral-$suffix',
         );
         expect(

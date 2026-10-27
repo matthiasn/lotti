@@ -31,6 +31,11 @@ const meliousProfileSeedGeneration1 = 1;
 /// Generation 2: GLM 5.2 thinking, Kimi K3 high-end *and* vision, Whisper
 /// Large v3 transcription, Flux 2 Klein 9B image generation.
 const meliousProfileSeedGeneration2 = 2;
+
+/// The Mistral profile's read-aloud model. Seeded on new profiles only:
+/// an existing profile gets it when the user picks it, so no synced profile
+/// is rewritten behind anyone's back.
+const mistralVoxtralTtsModelId = 'voxtral-mini-tts-3-0';
 const _logTag = 'ProfileSeedingService';
 const _localPowerName = 'Local Power (oMLX)';
 const _legacyLocalPowerName = 'Local Power (Ollama)';

@@ -751,6 +751,19 @@ const List<KnownModel> mistralModels = [
         'Frontier-class multimodal reasoning model with 128k context. '
         'Supports function calling, vision, and document AI.',
   ),
+  // Voxtral TTS 3 — speaks text through /v1/audio/speech; the read-aloud
+  // slot's model. Mistral documents no `-latest` alias for it, so the
+  // release id is pinned.
+  KnownModel(
+    providerModelId: 'voxtral-mini-tts-3-0',
+    name: 'Voxtral TTS 3',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.audio],
+    isReasoningModel: false,
+    description:
+        'Multilingual text-to-speech with preset and custom voices. Reads '
+        'summaries and answers aloud.',
+  ),
   // Transcribe 2 alias — uses /v1/audio/transcriptions with diarization
   // and speech dictionary context bias.
   KnownModel(

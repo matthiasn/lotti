@@ -7,6 +7,7 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/speech_synthesis_model_id.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
@@ -263,7 +264,8 @@ class MistralInferenceRepository {
     if (!chatExplicitlyDisabled) return true;
     return known.inputModalities.contains(Modality.image) ||
         known.inputModalities.contains(Modality.audio) ||
-        known.outputModalities.contains(Modality.image);
+        known.outputModalities.contains(Modality.image) ||
+        known.outputModalities.contains(Modality.audio);
   }
 
   void _applyCapabilityModalities({
@@ -272,6 +274,14 @@ class MistralInferenceRepository {
     required List<Modality> inputModalities,
     required List<Modality> outputModalities,
   }) {
+    // Voxtral TTS takes text in and speaks it. Checked first: it shares the
+    // `voxtral` name with transcription and may carry an `audio` capability.
+    if (isSpeechSynthesisModelId(providerModelId)) {
+      ModelCatalogMapping.addUniqueModality(inputModalities, Modality.text);
+      ModelCatalogMapping.addUniqueModality(outputModalities, Modality.audio);
+      return;
+    }
+
     // Voxtral / transcription models take audio in and emit text; they never
     // behave like chat or vision models.
     if (_looksLikeTranscriptionModel(providerModelId) ||

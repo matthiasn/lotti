@@ -138,6 +138,7 @@ AiConfigInferenceProfile _withRepairedDanglingDefaultSlots(
       profile.imageGenerationModelId,
       template.imageGenerationModelId,
     ),
+    speechModelId: heal(profile.speechModelId, template.speechModelId),
   );
 }
 
@@ -610,6 +611,7 @@ bool _isRemovableOrphanedSeed(
     profile.imageRecognitionModelId,
     profile.transcriptionModelId,
     profile.imageGenerationModelId,
+    profile.speechModelId,
   ];
   return !slots.any(
     (slot) => slot != null && usableModelSlotValues.contains(slot),
@@ -654,6 +656,11 @@ AiConfigInferenceProfile _withResolvedModelConfigIds(
     ),
     imageGenerationModelId: _resolveOptionalModelSlot(
       profile.imageGenerationModelId,
+      models,
+      preferredProviderIds: preferredProviderIds,
+    ),
+    speechModelId: _resolveOptionalModelSlot(
+      profile.speechModelId,
       models,
       preferredProviderIds: preferredProviderIds,
     ),
