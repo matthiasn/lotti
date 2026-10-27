@@ -226,6 +226,73 @@ void main() {
       );
     }
 
+    for (final clear in [false, true]) {
+      testWidgets(
+        'read-aloud model can be ${clear ? 'cleared' : 'selected'} from '
+        'audio-output models only',
+        (tester) async {
+          final thinking = testAiModel(
+            id: 'thinking-row',
+          ).copyWith(name: 'Agent reasoning');
+          final voice = testAiModel(id: 'voice-row').copyWith(
+            name: 'Voxtral voice',
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.audio],
+          );
+          final listener = testAiModel(id: 'listener-row').copyWith(
+            name: 'Voxtral listener',
+            inputModalities: [Modality.audio],
+            outputModalities: [Modality.text],
+          );
+          final profile = testInferenceProfile(
+            thinkingModelId: thinking.id,
+          ).copyWith(speechModelId: clear ? voice.id : null);
+          await tester.pumpWidget(
+            buildSubject(
+              existingProfile: profile,
+              models: [thinking, voice, listener],
+            ),
+          );
+          await tester.pumpAndSettle();
+          final save = find.widgetWithIcon(DesignSystemButton, LottiIcons.save);
+          await tester.scrollUntilVisible(
+            find.text('Read aloud'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          if (clear) {
+            await tester.tap(
+              find.descendant(
+                of: _pickerField('Read aloud'),
+                matching: find.byIcon(LottiIcons.close),
+              ),
+            );
+          } else {
+            expect(
+              find.descendant(
+                of: _pickerField('Read aloud'),
+                matching: find.text('Uses the on-device voice when unset'),
+              ),
+              findsOneWidget,
+            );
+            await tester.tap(_pickerTapTarget('Read aloud'));
+            await tester.pumpAndSettle();
+            // A transcription model takes audio in; it cannot speak.
+            expect(find.text('Voxtral listener'), findsNothing);
+            await tester.tap(find.text('Voxtral voice'));
+          }
+          await tester.pumpAndSettle();
+          expect(tester.widget<DesignSystemButton>(save).onPressed, isNotNull);
+          await tester.tap(save);
+          await tester.pumpAndSettle();
+          final saved = fakeProfileController.savedProfiles.single;
+          expect(saved.thinkingModelId, thinking.id);
+          expect(saved.speechModelId, clear ? isNull : voice.id);
+        },
+      );
+    }
+
     testWidgets('shows create title when no existing profile', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();

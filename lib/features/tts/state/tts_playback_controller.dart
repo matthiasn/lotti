@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -39,6 +41,9 @@ class _PreparedSpeech {
 /// Orchestrates a single TTS utterance — ensure model → synthesize → play —
 /// and exposes the [TtsPlaybackState] that the AI-card header's play button
 /// binds to.
+///
+/// An utterance with a [TtsCloudRoute] is synthesized by that cloud voice
+/// instead of the on-device model; everything after synthesis is shared.
 ///
 /// App-wide (keepAlive) so playback survives header rebuilds and only one
 /// utterance plays at a time. [TtsPlaybackState.sourceId] tracks which content
@@ -84,14 +89,17 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   /// native results, and all synthesis shares the same serialized queue.
   ///
   /// Never downloads: with the model not installed it does nothing, because
-  /// the model may only arrive through a download the user agreed to.
+  /// the model may only arrive through a download the user agreed to. Never
+  /// calls a cloud voice either: with a [cloudRoute] it does nothing, so text
+  /// leaves the device only when the user presses play.
   Future<void> prepare({
     required String sourceId,
     required String text,
     required Future<bool> Function() canPrepare,
     String language = kDefaultTtsLanguage,
+    TtsCloudRoute? cloudRoute,
   }) async {
-    if (!ref.mounted || state.isBusy) return;
+    if (!ref.mounted || state.isBusy || cloudRoute != null) return;
     final settings = ref.read(ttsSettingsControllerProvider);
     final key = (
       sourceId: sourceId,
@@ -159,18 +167,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   /// When the model is not installed yet, [confirmModelDownload] is asked
   /// first; without it, or when the user declines, nothing downloads and the
   /// utterance ends quietly.
+  ///
+  /// With a [cloudRoute] the text is spoken by that cloud voice, which needs
+  /// neither the on-device model nor platform support for it.
   Future<void> speak({
     required String sourceId,
     required String text,
     String language = kDefaultTtsLanguage,
     Future<bool> Function()? canPlay,
     TtsModelDownloadConsent? confirmModelDownload,
+    TtsCloudRoute? cloudRoute,
   }) async {
     if (state.isBusy) return;
     final generation = ++_generation;
 
     final engine = ref.read(ttsEngineProvider);
-    if (!engine.isSupported) {
+    if (cloudRoute == null && !engine.isSupported) {
       state = state.copyWith(
         status: TtsPlaybackStatus.error,
         sourceId: sourceId,
@@ -187,7 +199,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
           sourceId: sourceId,
           text: text,
           voice: settings.voiceId,
-          model: settings.modelId,
+          model: cloudRoute?.cacheKey ?? settings.modelId,
           language: language,
         );
     if (!matches) discardPrepared();
@@ -211,6 +223,24 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         file = prepared.file;
         prepared.file = null;
         _prepared = null;
+      }
+      if (file == null && cloudRoute != null) {
+        // Checked again right before the text is uploaded: a stop, or the
+        // caller withdrawing permission, while the voice catalog loads must
+        // keep the text on the device.
+        file = await ref
+            .read(cloudSpeechSynthesizerProvider)
+            .synthesizeToFile(
+              route: cloudRoute,
+              text: text,
+              voiceByLanguage: settings.cloudVoiceByLanguage,
+              canSend: () async =>
+                  current() && (canPlay == null || await canPlay()),
+            );
+        if (file == null) {
+          if (current()) _onPlaybackEnded();
+          return;
+        }
       }
       if (file == null) {
         final modelDir = await _ensureModel(

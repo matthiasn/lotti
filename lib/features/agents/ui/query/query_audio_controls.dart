@@ -53,6 +53,9 @@ class QueryAnswerSpeechButton extends ConsumerWidget {
               ? controller.stop
               : () => controller.speakAnswer(
                   answerId: answerId,
+                  fallbackLanguageCode: Localizations.localeOf(
+                    context,
+                  ).languageCode,
                   confirmModelDownload: (model) =>
                       confirmTtsModelDownload(context, model),
                 ),

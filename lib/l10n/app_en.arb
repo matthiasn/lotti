@@ -5827,6 +5827,14 @@
   "inferenceProfilePinnedHostNoneHelper": "Synced audio entries are not auto-transcribed when no device is pinned.",
   "inferenceProfilePinnedHostNoneLabel": "Not pinned (no auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (this device)",
+  "inferenceProfileReadAloud": "Read aloud",
+  "@inferenceProfileReadAloud": {
+    "description": "Label of the inference profile slot that picks the voice model used to read summaries and answers aloud"
+  },
+  "inferenceProfileReadAloudHint": "Uses the on-device voice when unset",
+  "@inferenceProfileReadAloudHint": {
+    "description": "Placeholder of the read-aloud slot when no cloud voice is chosen"
+  },
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Choose a model…",
   "inferenceProfileSelectProfile": "Choose a profile…",
@@ -9556,6 +9564,39 @@
   "speechSettingsAutoPrepareChatAudio": "Prepare chat audio automatically",
   "speechSettingsChatAudioDescription": "Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.",
   "speechSettingsChatAudioLabel": "Chat audio",
+  "speechSettingsCloudVoiceDefault": "Default · {name}",
+  "@speechSettingsCloudVoiceDefault": {
+    "description": "Dropdown entry for a language's default cloud voice, naming the voice that will speak",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speechSettingsCloudVoiceSample": "Hello! This is how I sound reading your summaries aloud.",
+  "@speechSettingsCloudVoiceSample": {
+    "description": "Sample sentence a cloud voice speaks when tested in Speech settings; spoken in each language's own catalog"
+  },
+  "speechSettingsCloudVoicesDescription": "Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.",
+  "@speechSettingsCloudVoicesDescription": {
+    "description": "Description of the cloud voices section when a profile reads aloud with a cloud voice"
+  },
+  "speechSettingsCloudVoicesLabel": "Cloud voices",
+  "@speechSettingsCloudVoicesLabel": {
+    "description": "Title of the Speech settings section listing the cloud voices per language"
+  },
+  "speechSettingsCloudVoicesLoading": "Loading voices",
+  "@speechSettingsCloudVoicesLoading": {
+    "description": "Screen-reader label of the spinner while the cloud voice catalog loads"
+  },
+  "speechSettingsCloudVoicesNone": "Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.",
+  "@speechSettingsCloudVoicesNone": {
+    "description": "Description of the cloud voices section when no profile names a cloud read-aloud model"
+  },
+  "speechSettingsCloudVoicesUnavailable": "The voices could not be loaded. Check the connection and the provider’s API key.",
+  "@speechSettingsCloudVoicesUnavailable": {
+    "description": "Shown when the cloud voice catalog could not be loaded and none is cached"
+  },
   "speechSettingsModelDescription": "On-device speech model",
   "speechSettingsModelDownloadSize": "{size} · downloads once, when you first read aloud",
   "@speechSettingsModelDownloadSize": {
@@ -9569,7 +9610,10 @@
   "speechSettingsRecommendedBadge": "Recommended",
   "speechSettingsSpeedDescription": "How fast summaries are read",
   "speechSettingsSpeedLabel": "Reading speed",
-  "speechSettingsVoiceDescription": "Choose the voice that reads summaries aloud",
+  "speechSettingsVoiceDescription": "The on-device voice, for profiles without a cloud voice",
+  "@speechSettingsVoiceDescription": {
+    "description": "Description of the on-device voice section in Speech settings"
+  },
   "speechSettingsVoiceLabel": "Voice",
   "speechVoiceGenderFemale": "Female",
   "speechVoiceGenderMale": "Male",

@@ -9114,6 +9114,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dit apparaat)';
 
   @override
+  String get inferenceProfileReadAloud => 'Voorlezen';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Gebruikt de stem op het apparaat als er niets is gekozen';
+
+  @override
   String get inferenceProfileSaveButton => 'Opslaan';
 
   @override
@@ -15570,6 +15577,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chataudio';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standaard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hoi! Zo klink ik als ik je samenvattingen voorlees.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profielen met een voorleesmodel spreken met deze stemmen. Elke taal gebruikt jouw keuze, of de eerste vrouwenstem.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloudstemmen';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Stemmen laden';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Voorlezen gebruikt de stem op het apparaat. Kies een voorleesmodel in een inferentieprofiel om een cloudstem te gebruiken.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'De stemmen konden niet worden geladen. Controleer de verbinding en de API-sleutel van de provider.';
+
+  @override
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';
 
   @override
@@ -15592,7 +15626,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Kies de stem die samenvattingen voorleest';
+      'De stem op het apparaat, voor profielen zonder cloudstem';
 
   @override
   String get speechSettingsVoiceLabel => 'Stem';

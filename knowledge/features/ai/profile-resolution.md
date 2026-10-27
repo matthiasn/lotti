@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Profile resolution, pinning and locality
-description: Which profile drives a run, the optional Chat and audio post-processing slots, how model slots survive sync duplicates, and the fail-closed check that keeps synced audio off cloud providers.
+description: Which profile drives a run, the optional Chat, audio post-processing and read-aloud slots, how model slots survive sync duplicates, and the fail-closed check that keeps synced audio off cloud providers.
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
 stale_after: 2026-12-26
 sources:
   - id: device-default
@@ -188,6 +188,29 @@ no default for it.
 An older client drops the field when it saves the profile, since it does not
 know it: editing a profile on a device that predates the slot clears the
 selection, as it did for Chat.
+
+# Choosing a read-aloud model
+
+The editor's optional **Read aloud** slot picks the cloud speech model that
+reads summaries, goal reports and query answers aloud. It offers models whose
+output is audio — today Voxtral TTS on Mistral. The voice is not chosen here:
+the speech feature resolves it per language from that provider's catalog. Unset, read-aloud keeps the on-device
+voice; there is no other fallback, and the on-device voice is never something
+the slot has to name. Which surface resolves which profile, and how a voice is
+chosen per language, is in [text-to-speech](../tts.md#which-voice-speaks).
+
+`speechModelId` stores a model row id and syncs with the profile. It never
+borrows the thinking route: unset or unresolvable, `ResolvedProfile.speech*`
+stays null. It participates in provider usage, the profile cards and
+demo-copy reference pruning. It is deliberately **not** part of
+`profileIsLocal`: speech synthesis receives text the user asked to hear, never
+the synced audio that check guards, so a cloud voice does not stop a local
+transcription profile from auto-running. Nor does it take part in pinning,
+since nothing is spoken automatically.
+
+Seeding names it on the Mistral (EU) profile only (`voxtral-mini-tts-3-0`),
+and only when that profile is created; an existing profile is never
+rewritten to add it.
 
 # Model slots and sync hygiene
 

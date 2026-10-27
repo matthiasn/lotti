@@ -9213,6 +9213,13 @@ class AppLocalizationsEs extends AppLocalizations {
       ' (este dispositivo)';
 
   @override
+  String get inferenceProfileReadAloud => 'Leer en voz alta';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Sin selección, se usa la voz del dispositivo';
+
+  @override
   String get inferenceProfileSaveButton => 'Guardar';
 
   @override
@@ -15713,6 +15720,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Audio del chat';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Predeterminada · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      '¡Hola! Así sueno cuando te leo tus resúmenes en voz alta.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Los perfiles con un modelo de lectura en voz alta hablan con estas voces. Cada idioma usa la que elijas, o su primera voz femenina.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Voces en la nube';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Cargando voces';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'La lectura en voz alta usa la voz del dispositivo. Para usar una voz en la nube, elige un modelo de lectura en voz alta en un perfil de inferencia.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'No se pudieron cargar las voces. Revisa la conexión y la clave API del proveedor.';
+
+  @override
   String get speechSettingsModelDescription =>
       'Modelo de voz en el dispositivo';
 
@@ -15736,7 +15770,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Elige la voz que lee los resúmenes en voz alta';
+      'La voz del dispositivo, para perfiles sin voz en la nube';
 
   @override
   String get speechSettingsVoiceLabel => 'Voz';

@@ -220,6 +220,17 @@ void main() {
       expect(matches.map((p) => p.id), ['post-only']);
     });
 
+    test('counts a provider used only by the speech slot', () {
+      final speechOnly = profile(
+        id: 'speech-only',
+      ).copyWith(speechModelId: 'model-1');
+      final matches = profilesUsingProviderModels(
+        profiles: [speechOnly],
+        providerModels: [providerModel],
+      );
+      expect(matches.map((p) => p.id), ['speech-only']);
+    });
+
     test('returns every profile touching the provider, not just one', () {
       final first = profile(id: 'profile-1', thinking: 'model-1');
       final second = profile(id: 'profile-2', transcription: 'model-1');

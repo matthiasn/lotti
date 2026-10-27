@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/query/query_journal_crawler.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
+import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -154,6 +155,9 @@ class QueryAudioTestBench extends QueryTestBench {
   final speechPlayer = FakeTtsAudioPlayer();
   FakeTtsEngine engine = FakeTtsEngine();
 
+  /// The cloud voice; it records routes and fails, so no audio plays.
+  final cloud = FakeCloudSpeechSynthesizer();
+
   /// The voice model store; installed unless a test says otherwise.
   final ttsModels = FakeTtsModelRepository();
   final events = <AgentQueryChatEventEntity>[];
@@ -234,6 +238,7 @@ class QueryAudioTestBench extends QueryTestBench {
     ttsEngineProvider.overrideWith((ref) => engine),
     ttsModelRepositoryProvider.overrideWithValue(ttsModels),
     ttsAudioPlayerProvider.overrideWithValue(speechPlayer),
+    cloudSpeechSynthesizerProvider.overrideWithValue(cloud),
   ];
 
   http.Client createTimingClient() => MockClient((_) async {

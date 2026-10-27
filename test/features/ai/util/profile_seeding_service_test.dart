@@ -331,6 +331,32 @@ void main() {
       },
     );
 
+    test('Mistral (EU) profile reads aloud with Voxtral TTS 3; other '
+        'profiles name no read-aloud model', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(invocation.positionalArguments.first as AiConfig);
+      });
+
+      await service.seedDefaults();
+
+      final profiles = capturedConfigs.whereType<AiConfigInferenceProfile>();
+      final mistral = profiles.singleWhere((p) => p.id == profileMistralEuId);
+      expect(mistral.speechModelId, mistralVoxtralTtsModelId);
+      expect(mistral.transcriptionModelId, 'voxtral-mini-latest');
+      // Everywhere else read-aloud stays on the on-device voice.
+      expect(
+        profiles
+            .where((p) => p.id != profileMistralEuId)
+            .map(
+              (p) => p.speechModelId,
+            ),
+        everyElement(isNull),
+      );
+    });
+
     test('local power profile has correct configuration', () async {
       final capturedConfigs = <AiConfig>[];
       when(

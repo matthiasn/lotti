@@ -9189,6 +9189,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
 
   @override
+  String get inferenceProfileReadAloud => 'Předčítání';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Bez výběru se použije hlas v zařízení';
+
+  @override
   String get inferenceProfileSaveButton => 'Uložit';
 
   @override
@@ -15721,6 +15728,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Zvuk chatu';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Výchozí · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Ahoj! Takhle zním, když ti předčítám shrnutí.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profily s modelem pro předčítání mluví těmito hlasy. Každý jazyk použije tvůj výběr, nebo svůj první ženský hlas.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloudové hlasy';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Načítání hlasů';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Předčítání používá hlas v zařízení. Pro cloudový hlas vyber model pro předčítání v profilu inference.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Hlasy se nepodařilo načíst. Zkontroluj připojení a klíč API poskytovatele.';
+
+  @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';
 
   @override
@@ -15743,7 +15777,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Vyber hlas, který předčítá shrnutí';
+      'Hlas v zařízení pro profily bez cloudového hlasu';
 
   @override
   String get speechSettingsVoiceLabel => 'Hlas';

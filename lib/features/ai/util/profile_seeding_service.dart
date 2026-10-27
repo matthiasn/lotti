@@ -385,6 +385,7 @@ class ProfileSeedingService {
       thinkingModelId: 'mistral-medium-latest',
       imageRecognitionModelId: 'mistral-medium-latest',
       transcriptionModelId: 'voxtral-mini-latest',
+      speechModelId: mistralVoxtralTtsModelId,
       skillAssignments: _mistralSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),

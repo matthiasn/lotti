@@ -9231,6 +9231,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (cet appareil)';
 
   @override
+  String get inferenceProfileReadAloud => 'Lecture à voix haute';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Sans choix, la voix de l’appareil est utilisée';
+
+  @override
   String get inferenceProfileSaveButton => 'Enregistrer';
 
   @override
@@ -15778,6 +15785,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Audio du chat';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Par défaut · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Salut ! Voici ma voix quand je te lis tes résumés.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Les profils dotés d’un modèle de lecture à voix haute parlent avec ces voix. Chaque langue utilise ton choix, ou sa première voix féminine.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Voix dans le cloud';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Chargement des voix';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'La lecture à voix haute utilise la voix de l’appareil. Pour utiliser une voix dans le cloud, choisis un modèle de lecture à voix haute dans un profil d’inférence.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Impossible de charger les voix. Vérifie la connexion et la clé API du fournisseur.';
+
+  @override
   String get speechSettingsModelDescription => 'Modèle vocal sur l\'appareil';
 
   @override
@@ -15800,7 +15834,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Choisis la voix qui lit les résumés à voix haute';
+      'La voix de l’appareil, pour les profils sans voix dans le cloud';
 
   @override
   String get speechSettingsVoiceLabel => 'Voix';

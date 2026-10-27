@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/classes/audio_transcript_timing.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/speech_synthesis_model_id.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -36,9 +37,10 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// `CloudInferenceRepository` also gates on `InferenceProviderType.mistral`
   /// and checks chat-capable models first. This broad fallback therefore keeps
   /// transcription-only and future Voxtral variants on the dedicated endpoint
-  /// without affecting local Voxtral providers.
+  /// without affecting local Voxtral providers. Voxtral TTS shares the prefix
+  /// but speaks rather than listens, so it is excluded.
   static bool isMistralTranscriptionModel(String model) {
-    return model.startsWith('voxtral-');
+    return model.startsWith('voxtral-') && !isSpeechSynthesisModelId(model);
   }
 
   /// Transcribes audio using Mistral's transcription API with diarization.

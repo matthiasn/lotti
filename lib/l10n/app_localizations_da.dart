@@ -9087,6 +9087,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (denne enhed)';
 
   @override
+  String get inferenceProfileReadAloud => 'Læs højt';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Bruger stemmen på enheden, når intet er valgt';
+
+  @override
   String get inferenceProfileSaveButton => 'Gem';
 
   @override
@@ -15524,6 +15531,33 @@ class AppLocalizationsDa extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chatlyd';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hej! Sådan lyder jeg, når jeg læser dine resuméer højt.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiler med en oplæsningsmodel taler med disse stemmer. Hvert sprog bruger dit valg eller sin første kvindestemme.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloud-stemmer';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Indlæser stemmer';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Oplæsning bruger stemmen på enheden. Vælg en oplæsningsmodel i en inferensprofil for at bruge en cloud-stemme.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Stemmerne kunne ikke indlæses. Tjek forbindelsen og udbyderens API-nøgle.';
+
+  @override
   String get speechSettingsModelDescription => 'On-device talemodel';
 
   @override
@@ -15545,7 +15579,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Vælg stemmen, der læser resuméer højt';
+      'Stemmen på enheden til profiler uden cloud-stemme';
 
   @override
   String get speechSettingsVoiceLabel => 'Stemme';

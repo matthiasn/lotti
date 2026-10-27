@@ -5,7 +5,7 @@ description: The routing table behind CloudInferenceRepository, per-provider cat
 resource: ../../../lib/features/ai/repository/cloud_inference_repository.dart
 tags: [ai, providers, routing, audio, gemini, reasoning, thinking]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-10-04T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
 stale_after: 2026-12-19
 sources:
   - id: ollama-client
@@ -76,6 +76,18 @@ streaming while keeping an impact collector for buffered fallback.
 | `generateWithAudio()` | embedded sherpa, Whisper, Voxtral, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` |
 | `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; reasoning effort omitted from Mistral |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported — throws for every other provider type |
+
+Speech synthesis is not routed here. A profile's read-aloud model reaches
+Mistral's `/v1/audio/speech` through the text-to-speech feature's own client —
+see [text-to-speech](../tts.md#cloud-voices). The catalog side is shared:
+Voxtral ships transcription and TTS models under one prefix, and
+`isSpeechSynthesisModelId` (a `tts` segment, separated by `-`, `_`, `.`, `/`
+or `:`) maps the TTS rows
+of the live Mistral catalog to text in / audio out — checked before the
+`voxtral` transcription heuristic and the `audio` capability flag — and
+excludes them from `MistralTranscriptionRepository.isMistralTranscriptionModel`,
+so they are offered in the Read aloud slot and never sent to
+`/audio/transcriptions`.
 
 **This routing is implemented in code, not inferred.** A provider type not
 branched explicitly for an operation falls through to the compatibility client or

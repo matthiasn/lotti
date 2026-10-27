@@ -9102,6 +9102,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (denna apparat)';
 
   @override
+  String get inferenceProfileReadAloud => 'Läs upp';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Använder rösten på enheten när inget är valt';
+
+  @override
   String get inferenceProfileSaveButton => 'Spara';
 
   @override
@@ -15539,6 +15546,33 @@ class AppLocalizationsSv extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chattljud';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hej! Så här låter jag när jag läser upp dina sammanfattningar.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiler med en uppläsningsmodell talar med de här rösterna. Varje språk använder ditt val, eller sin första kvinnoröst.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Molnröster';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Läser in röster';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Uppläsning använder rösten på enheten. Välj en uppläsningsmodell i en inferensprofil för att använda en molnröst.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Rösterna kunde inte läsas in. Kontrollera anslutningen och leverantörens API-nyckel.';
+
+  @override
   String get speechSettingsModelDescription => 'Talmodell på enheten';
 
   @override
@@ -15561,7 +15595,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Välj rösten som läser sammanfattningar högt';
+      'Rösten på enheten, för profiler utan molnröst';
 
   @override
   String get speechSettingsVoiceLabel => 'Röst';

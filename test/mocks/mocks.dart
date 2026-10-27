@@ -227,6 +227,8 @@ import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
+import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
 import 'package:lotti/features/tts/engine/supertonic_tts_session.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -858,6 +860,11 @@ class MockVectorClockService extends Mock implements VectorClockService {
 }
 
 class MockSettingsDb extends Mock implements SettingsDb {}
+
+class MockVoxtralTtsService extends Mock implements VoxtralTtsService {}
+
+class MockVoxtralVoiceCatalogRepository extends Mock
+    implements VoxtralVoiceCatalogRepository {}
 
 class MockSyncNodeProfileRepository extends Mock
     implements SyncNodeProfileRepository {}

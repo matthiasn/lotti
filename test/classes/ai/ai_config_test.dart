@@ -32,6 +32,32 @@ void main() {
     );
   });
 
+  test('speech model survives sync JSON, can be cleared, and is absent from '
+      'profiles written before it existed', () {
+    final profile =
+        AiConfig.inferenceProfile(
+              id: 'profile-speech',
+              name: 'Reads aloud',
+              createdAt: DateTime.utc(2026),
+              thinkingModelId: 'agent-row',
+              speechModelId: 'speech-row',
+            )
+            as AiConfigInferenceProfile;
+    AiConfigInferenceProfile roundTrip(Map<String, dynamic> json) =>
+        AiConfig.fromJson(jsonDecode(jsonEncode(json)) as Map<String, dynamic>)
+            as AiConfigInferenceProfile;
+    final restored = roundTrip(profile.toJson());
+    expect(restored.speechModelId, 'speech-row');
+    expect(
+      roundTrip(restored.copyWith(speechModelId: null).toJson()).speechModelId,
+      isNull,
+    );
+    expect(
+      roundTrip(profile.toJson()..remove('speechModelId')).speechModelId,
+      isNull,
+    );
+  });
+
   test('audio post-processing model survives sync JSON, can be cleared, and '
       'is absent from profiles written before it existed', () {
     final profile =

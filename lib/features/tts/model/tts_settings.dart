@@ -7,6 +7,7 @@ const String ttsVoiceIdKey = 'TTS_VOICE_ID';
 const String ttsModelIdKey = 'TTS_MODEL_ID';
 const String ttsSpeedKey = 'TTS_SPEED';
 const String ttsAutoPrepareChatAudioKey = 'TTS_AUTO_PREPARE_CHAT_AUDIO';
+const String ttsCloudVoicesKey = 'TTS_CLOUD_VOICES';
 
 /// Playback speed bounds and default, matching the recordings audio player's
 /// range so the two players feel consistent.
@@ -34,6 +35,7 @@ class TtsSettings {
     this.modelId = kDefaultTtsModelId,
     this.speed = kDefaultTtsSpeed,
     this.autoPrepareChatAudio = false,
+    this.cloudVoiceByLanguage = const <String, String>{},
   });
 
   /// Selected Supertonic voice id (e.g. `F1`).
@@ -49,6 +51,10 @@ class TtsSettings {
   /// Opt-in preparation of published chat replies; never starts playback.
   final bool autoPrepareChatAudio;
 
+  /// The cloud voice chosen per language, keyed by primary language subtag
+  /// (`de`). A language without an entry speaks with its default voice.
+  final Map<String, String> cloudVoiceByLanguage;
+
   /// Clamps an arbitrary speed into the supported range.
   static double clampSpeed(double value) =>
       value.clamp(kMinTtsSpeed, kMaxTtsSpeed);
@@ -58,9 +64,11 @@ class TtsSettings {
     String? modelId,
     double? speed,
     bool? autoPrepareChatAudio,
+    Map<String, String>? cloudVoiceByLanguage,
   }) {
     return TtsSettings(
       autoPrepareChatAudio: autoPrepareChatAudio ?? this.autoPrepareChatAudio,
+      cloudVoiceByLanguage: cloudVoiceByLanguage ?? this.cloudVoiceByLanguage,
       voiceId: voiceId ?? this.voiceId,
       modelId: modelId ?? this.modelId,
       speed: speed == null ? this.speed : clampSpeed(speed),
@@ -73,14 +81,23 @@ class TtsSettings {
       other.voiceId == voiceId &&
       other.modelId == modelId &&
       other.speed == speed &&
-      other.autoPrepareChatAudio == autoPrepareChatAudio;
+      other.autoPrepareChatAudio == autoPrepareChatAudio &&
+      mapEquals(other.cloudVoiceByLanguage, cloudVoiceByLanguage);
 
   @override
-  int get hashCode =>
-      Object.hash(voiceId, modelId, speed, autoPrepareChatAudio);
+  int get hashCode => Object.hash(
+    voiceId,
+    modelId,
+    speed,
+    autoPrepareChatAudio,
+    Object.hashAllUnordered(
+      cloudVoiceByLanguage.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
+  );
 
   @override
   String toString() =>
       'TtsSettings(voiceId: $voiceId, modelId: $modelId, speed: $speed, '
-      'autoPrepareChatAudio: $autoPrepareChatAudio)';
+      'autoPrepareChatAudio: $autoPrepareChatAudio, '
+      'cloudVoiceByLanguage: $cloudVoiceByLanguage)';
 }

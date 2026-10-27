@@ -9060,6 +9060,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (this device)';
 
   @override
+  String get inferenceProfileReadAloud => 'Read aloud';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Uses the on-device voice when unset';
+
+  @override
   String get inferenceProfileSaveButton => 'Save';
 
   @override
@@ -15439,6 +15446,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chat audio';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Default · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hello! This is how I sound reading your summaries aloud.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloud voices';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Loading voices';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'The voices could not be loaded. Check the connection and the provider’s API key.';
+
+  @override
   String get speechSettingsModelDescription => 'On-device speech model';
 
   @override
@@ -15460,7 +15494,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Choose the voice that reads summaries aloud';
+      'The on-device voice, for profiles without a cloud voice';
 
   @override
   String get speechSettingsVoiceLabel => 'Voice';

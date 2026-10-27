@@ -231,6 +231,7 @@ extension _AiSettingsTabBuilders on _AiSettingsPageState {
       profile.transcriptionModelId,
       profile.audioPostProcessingModelId,
       profile.imageGenerationModelId,
+      profile.speechModelId,
     ];
     for (final candidate in candidates) {
       if (candidate == null) continue;

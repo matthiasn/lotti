@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/ui/speech_settings_body.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_cloud_voices_section.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_model_selector.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_speed_selector.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_voice_selector.dart';
@@ -27,6 +28,13 @@ void main() {
     expect(find.text('Voice'), findsOneWidget);
     expect(find.text('Model'), findsOneWidget);
     expect(find.text('Reading speed'), findsOneWidget);
+    // Cloud voices sit above the on-device voice; with no profile naming one
+    // the section says where a cloud voice comes from.
+    expect(find.byType(TtsCloudVoicesSection), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Cloud voices')).dy,
+      lessThan(tester.getTopLeft(find.text('Voice')).dy),
+    );
 
     expect(find.byType(TtsVoiceSelector), findsOneWidget);
     expect(find.byType(TtsModelSelector), findsOneWidget);

@@ -46,6 +46,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   String? _transcriptionModelId;
   String? _audioPostProcessingModelId;
   String? _imageGenerationModelId;
+  String? _speechModelId;
   bool _desktopOnly = false;
   String? _pinnedHostId;
   late List<SkillAssignment> _skillAssignments;
@@ -73,6 +74,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
           _transcriptionModelId != null ||
           _audioPostProcessingModelId != null ||
           _imageGenerationModelId != null ||
+          _speechModelId != null ||
           _desktopOnly ||
           _pinnedHostId != null ||
           _skillAssignments.any((a) => a.automate);
@@ -86,6 +88,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         _transcriptionModelId != p.transcriptionModelId ||
         _audioPostProcessingModelId != p.audioPostProcessingModelId ||
         _imageGenerationModelId != p.imageGenerationModelId ||
+        _speechModelId != p.speechModelId ||
         _desktopOnly != p.desktopOnly ||
         _pinnedHostId != p.pinnedHostId ||
         !listEquals(_skillAssignments, p.skillAssignments);
@@ -104,6 +107,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _transcriptionModelId = p?.transcriptionModelId;
     _audioPostProcessingModelId = p?.audioPostProcessingModelId;
     _imageGenerationModelId = p?.imageGenerationModelId;
+    _speechModelId = p?.speechModelId;
     _pinnedHostId = p?.pinnedHostId;
     _desktopOnly = p?.desktopOnly ?? false;
     _skillAssignments = List.of(p?.skillAssignments ?? []);
@@ -291,6 +295,17 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               filter: (m) => m.outputModalities.contains(Modality.image),
               onModelSelected: (id) =>
                   setState(() => _imageGenerationModelId = id),
+            ),
+            SizedBox(height: tokens.spacing.step4),
+
+            // Read aloud (optional): the cloud voice for summaries and
+            // answers; unset keeps the on-device voice.
+            ModelSlotField(
+              label: messages.inferenceProfileReadAloud,
+              hintText: messages.inferenceProfileReadAloudHint,
+              modelId: _speechModelId,
+              filter: (m) => m.outputModalities.contains(Modality.audio),
+              onModelSelected: (id) => setState(() => _speechModelId = id),
             ),
             const SizedBox(height: 24),
 
@@ -495,6 +510,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         _imageGenerationModelId,
         models,
       );
+      final speechModelId = _normalizeModelSlotId(_speechModelId, models);
       // An ambiguous legacy id normalizes to null; the thinking slot is
       // required, so force an explicit re-selection instead of persisting
       // an arbitrary or unresolved value.
@@ -519,6 +535,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 transcriptionModelId: transcriptionModelId,
                 audioPostProcessingModelId: audioPostProcessingModelId,
                 imageGenerationModelId: imageGenerationModelId,
+                speechModelId: speechModelId,
                 desktopOnly: _desktopOnly,
                 skillAssignments: _sanitizedSkillAssignments(
                   transcriptionModelId: transcriptionModelId,

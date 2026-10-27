@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
+import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/features/tts/state/tts_settings_controller.dart';
@@ -239,6 +240,13 @@ class QueryAudioController extends Notifier<QueryAudioState> {
                 !ref.read(ttsSettingsControllerProvider).autoPrepareChatAudio ||
                 ref.read(configFlagProvider(enableAiSummaryTtsFlag)).value !=
                     true) {
+              return false;
+            }
+            // A cloud voice is only ever called on an explicit play, so a
+            // chat whose profile names one prepares nothing on the device.
+            if (TtsCloudRoute.namesCloudVoice(
+              await ref.read(queryProfileProvider(key.home).future),
+            )) {
               return false;
             }
             final current = await _authorize(run);
@@ -470,8 +478,13 @@ class QueryAudioController extends Notifier<QueryAudioState> {
 
   /// Reads the answer [answerId] aloud. [confirmModelDownload] is asked
   /// before the voice model downloads; see [TtsPlaybackController.speak].
+  ///
+  /// The chat's profile picks the voice: its read-aloud model in the scope
+  /// task's language — [fallbackLanguageCode], the app's, outside a task —
+  /// or the on-device voice when it names none.
   Future<void> speakAnswer({
     required String answerId,
+    required String fallbackLanguageCode,
     TtsModelDownloadConsent? confirmModelDownload,
   }) async {
     final run = await _start(answerId);
@@ -487,12 +500,20 @@ class QueryAudioController extends Notifier<QueryAudioState> {
       if (row?.data case final QueryChatAnswer answer) {
         await _pauseRecording();
         await _tts!.stop();
-        await _authorize(run);
+        final authorized = await _authorize(run);
+        final home = authorized.access.entries[key.home.scope.id];
+        final cloudRoute = TtsCloudRoute.fromProfile(
+          await ref.read(queryProfileProvider(key.home).future),
+          languageCode:
+              (home is Task ? home.data.languageCode : null) ??
+              fallbackLanguageCode,
+        );
         run.check();
         _ttsSourceId = _answerSourceId(answerId);
         await _tts!.speak(
           sourceId: _ttsSourceId!,
           text: answer.text,
+          cloudRoute: cloudRoute,
           confirmModelDownload: confirmModelDownload,
           canPlay: () async {
             try {
