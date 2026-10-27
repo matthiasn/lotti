@@ -200,6 +200,48 @@ void main() {
       },
     );
 
+    test('the speech route survives a thinking replacement and counts for '
+        'equality', () {
+      final speech = testAiModel(
+        id: 'speech-row',
+        providerModelId: 'voxtral-mini-tts-3-0',
+      );
+      final override = testAiModel(id: 'override-row');
+      ResolvedProfile withSpeech({
+        String? modelId = 'voxtral-mini-tts-3-0',
+        AiConfigInferenceProvider? provider,
+        AiConfigModel? model,
+      }) => ResolvedProfile(
+        thinkingModelId: 'thinking',
+        thinkingProvider: provider1,
+        speechModelId: modelId,
+        speechProvider: provider ?? provider2,
+        speechModel: model ?? speech,
+      );
+
+      final replaced = withSpeech().withThinkingRoute(
+        model: override,
+        provider: provider1,
+      );
+      expect(replaced.speechModelId, 'voxtral-mini-tts-3-0');
+      expect(replaced.speechProvider, provider2);
+      expect(replaced.speechModel, speech);
+
+      expect(withSpeech(), withSpeech());
+      expect(withSpeech().hashCode, withSpeech().hashCode);
+      final variants = <ResolvedProfile>{
+        withSpeech(),
+        withSpeech(modelId: 'other'),
+        withSpeech(provider: provider1),
+        withSpeech(model: override),
+        ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider1,
+        ),
+      };
+      expect(variants, hasLength(5));
+    });
+
     test('equal instances are equal', () {
       final a = ResolvedProfile(
         thinkingModelId: 'model-a',

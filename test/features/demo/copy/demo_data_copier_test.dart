@@ -873,6 +873,7 @@ void main() {
       String? imageRecognitionModelId,
       String? chatModelId,
       String? audioPostProcessingModelId,
+      String? speechModelId,
     }) => AiConfig.inferenceProfile(
       id: id,
       name: 'Profile $id',
@@ -881,6 +882,7 @@ void main() {
       imageRecognitionModelId: imageRecognitionModelId,
       chatModelId: chatModelId,
       audioPostProcessingModelId: audioPostProcessingModelId,
+      speechModelId: speechModelId,
       skillAssignments: [
         for (final skillId in skillIds)
           SkillAssignment(skillId: skillId, automate: true),
@@ -918,6 +920,7 @@ void main() {
           imageRecognitionModelId: 'fixture-model',
           chatModelId: 'fixture-model',
           audioPostProcessingModelId: 'fixture-model',
+          speechModelId: 'fixture-model',
         ),
         // User profile whose REQUIRED thinking slot is a fictional model:
         // it would arrive fundamentally broken, so it must stay behind
@@ -979,6 +982,7 @@ void main() {
           .single;
       expect(carriedProfile.chatModelId, isNull);
       expect(carriedProfile.audioPostProcessingModelId, isNull);
+      expect(carriedProfile.speechModelId, isNull);
       expect(
         carriedProfile.imageRecognitionModelId,
         isNull,

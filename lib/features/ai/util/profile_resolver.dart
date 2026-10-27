@@ -354,6 +354,15 @@ class ProfileResolver {
           )
         : null;
 
+    final speechSlot = config.speechModelId == null
+        ? null
+        : await resolveInferenceProviderForProfileSlot(
+            modelId: config.speechModelId!,
+            aiConfigRepository: _aiConfigRepository,
+            domainLogger: _domainLogger,
+            logTag: _logTag,
+          );
+
     return ResolvedProfile(
       thinkingModelId: thinkingSlot.model.providerModelId,
       thinkingProvider: thinkingSlot.provider,
@@ -381,6 +390,9 @@ class ProfileResolver {
       imageGenerationModelId: imageGenerationSlot?.model.providerModelId,
       imageGenerationProvider: imageGenerationSlot?.provider,
       imageGenerationModel: imageGenerationSlot?.model,
+      speechModelId: speechSlot?.model.providerModelId,
+      speechProvider: speechSlot?.provider,
+      speechModel: speechSlot?.model,
       skillAssignments: config.skillAssignments,
     );
   }

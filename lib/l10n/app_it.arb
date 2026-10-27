@@ -3949,6 +3949,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Le voci audio sincronizzate non sono auto-trascritte quando nessun dispositivo è pinned.",
   "inferenceProfilePinnedHostNoneLabel": "Non spillato (non auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": "(questo dispositivo)",
+  "inferenceProfileReadAloud": "Lettura ad alta voce",
+  "inferenceProfileReadAloudHint": "Nessuno: niente viene letto ad alta voce",
   "inferenceProfileSaveButton": "Salva",
   "inferenceProfileSelectModel": "Scegli un modello...",
   "inferenceProfileSelectProfile": "Scegli un profilo...",

@@ -3949,6 +3949,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Synkroniserede lydposter transskriberes ikke automatisk, når ingen enhed er fastgjort.",
   "inferenceProfilePinnedHostNoneLabel": "Ikke fastlåst (ingen auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (denne enhed)",
+  "inferenceProfileReadAloud": "Læs højt",
+  "inferenceProfileReadAloudHint": "Ingen – intet læses højt",
   "inferenceProfileSaveButton": "Gem",
   "inferenceProfileSelectModel": "Vælg en model...",
   "inferenceProfileSelectProfile": "Vælg en profil...",

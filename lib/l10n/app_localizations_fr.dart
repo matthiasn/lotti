@@ -9231,6 +9231,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (cet appareil)';
 
   @override
+  String get inferenceProfileReadAloud => 'Lecture à voix haute';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Aucun – rien n’est lu à voix haute';
+
+  @override
   String get inferenceProfileSaveButton => 'Enregistrer';
 
   @override

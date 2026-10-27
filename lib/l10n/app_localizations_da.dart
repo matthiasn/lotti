@@ -9087,6 +9087,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (denne enhed)';
 
   @override
+  String get inferenceProfileReadAloud => 'Læs højt';
+
+  @override
+  String get inferenceProfileReadAloudHint => 'Ingen – intet læses højt';
+
+  @override
   String get inferenceProfileSaveButton => 'Gem';
 
   @override

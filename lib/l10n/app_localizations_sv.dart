@@ -9102,6 +9102,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (denna apparat)';
 
   @override
+  String get inferenceProfileReadAloud => 'Läs upp';
+
+  @override
+  String get inferenceProfileReadAloudHint => 'Ingen – inget läses upp';
+
+  @override
   String get inferenceProfileSaveButton => 'Spara';
 
   @override

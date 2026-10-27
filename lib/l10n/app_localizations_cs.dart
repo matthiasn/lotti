@@ -9189,6 +9189,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
 
   @override
+  String get inferenceProfileReadAloud => 'Předčítání';
+
+  @override
+  String get inferenceProfileReadAloudHint => 'Žádný — nic se nepředčítá';
+
+  @override
   String get inferenceProfileSaveButton => 'Uložit';
 
   @override

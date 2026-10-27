@@ -3508,6 +3508,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Synchronisierte Audio-Einträge werden nicht automatisch transkribiert, wenn kein Gerät verknüpft ist.",
   "inferenceProfilePinnedHostNoneLabel": "Nicht verknüpft (kein Auto-Trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (dieses Gerät)",
+  "inferenceProfileReadAloud": "Vorlesen",
+  "inferenceProfileReadAloudHint": "Keins – nichts wird vorgelesen",
   "inferenceProfileSaveButton": "Speichern",
   "inferenceProfileSelectModel": "Modell auswählen…",
   "inferenceProfileSelectProfile": "Profil auswählen…",

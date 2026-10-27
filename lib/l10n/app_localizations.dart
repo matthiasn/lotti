@@ -15222,6 +15222,18 @@ abstract class AppLocalizations {
   /// **' (this device)'**
   String get inferenceProfilePinnedHostThisDeviceSuffix;
 
+  /// Label of the inference profile slot that picks the voice model used to read summaries and answers aloud
+  ///
+  /// In en, this message translates to:
+  /// **'Read aloud'**
+  String get inferenceProfileReadAloud;
+
+  /// Placeholder of the read-aloud slot when no voice model is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'None — nothing is read aloud'**
+  String get inferenceProfileReadAloudHint;
+
   /// No description provided for @inferenceProfileSaveButton.
   ///
   /// In en, this message translates to:

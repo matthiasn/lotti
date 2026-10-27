@@ -3948,6 +3948,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Gesynchroniseerde audio-items worden niet automatisch getranscribeerd wanneer geen apparaat is gepind.",
   "inferenceProfilePinnedHostNoneLabel": "Niet gepind (geen autotrigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (dit apparaat)",
+  "inferenceProfileReadAloud": "Voorlezen",
+  "inferenceProfileReadAloudHint": "Geen – er wordt niets voorgelezen",
   "inferenceProfileSaveButton": "Opslaan",
   "inferenceProfileSelectModel": "Kies een model...",
   "inferenceProfileSelectProfile": "Kies een profiel...",

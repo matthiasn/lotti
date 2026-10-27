@@ -9257,6 +9257,13 @@ class AppLocalizationsRo extends AppLocalizations {
       ' (acest dispozitiv)';
 
   @override
+  String get inferenceProfileReadAloud => 'Citire cu voce tare';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Niciunul — nu se citește nimic cu voce tare';
+
+  @override
   String get inferenceProfileSaveButton => 'Salvați';
 
   @override

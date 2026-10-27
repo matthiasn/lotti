@@ -102,6 +102,11 @@ class AiProfileCard extends StatelessWidget {
         label: messages.aiCapabilityChipImageGeneration,
         modelId: profile.imageGenerationModelId,
       ),
+      _ProfileSlot(
+        icon: LottiIcons.volume,
+        label: messages.inferenceProfileReadAloud,
+        modelId: profile.speechModelId,
+      ),
     ];
 
     final description = profile.description;

@@ -3515,6 +3515,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Synchronizované zvukové záznamy se nebudou automaticky přepisovat, dokud nebude připnuté nějaké zařízení.",
   "inferenceProfilePinnedHostNoneLabel": "Nepřipnuto (bez automatického spuštění)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (toto zařízení)",
+  "inferenceProfileReadAloud": "Předčítání",
+  "inferenceProfileReadAloudHint": "Žádný — nic se nepředčítá",
   "inferenceProfileSaveButton": "Uložit",
   "inferenceProfileSelectModel": "Vyber model…",
   "inferenceProfileSelectProfile": "Vyber profil…",

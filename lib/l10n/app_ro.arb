@@ -3508,6 +3508,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Intrările audio sincronizate nu sunt transcrise automat când niciun dispozitiv nu este fixat.",
   "inferenceProfilePinnedHostNoneLabel": "Nefixat (fără declanșare automată)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (acest dispozitiv)",
+  "inferenceProfileReadAloud": "Citire cu voce tare",
+  "inferenceProfileReadAloudHint": "Niciunul — nu se citește nimic cu voce tare",
   "inferenceProfileSaveButton": "Salvați",
   "inferenceProfileSelectModel": "Selectați un model…",
   "inferenceProfileSelectProfile": "Selectați un profil…",

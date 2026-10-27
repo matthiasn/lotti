@@ -99,11 +99,45 @@ void main() {
   });
 
   group('VoxtralVoiceCatalog.resolve', () {
-    test('picks the first voice for the language in catalog order', () {
+    test('picks the language voice, a female preset before a custom', () {
       expect(_catalog().resolve(languageCode: 'de'), _heidi);
       expect(
         _catalog(const [_emma, _klaus, _heidi]).resolve(languageCode: 'de'),
+        _heidi,
+      );
+      expect(
+        _catalog(const [_emma, _klaus]).resolve(languageCode: 'de'),
         _klaus,
+      );
+    });
+
+    test('defaults to the first female preset over earlier voices', () {
+      const maleFirst = VoxtralVoice(
+        id: 'v-de-m',
+        name: 'Male',
+        gender: 'male',
+        languages: ['de'],
+        type: VoxtralVoiceType.preset,
+      );
+      const femaleCustom = VoxtralVoice(
+        id: 'v-de-fc',
+        name: 'Clone',
+        gender: 'Female',
+        languages: ['de'],
+        type: VoxtralVoiceType.custom,
+      );
+      expect(
+        _catalog(const [
+          maleFirst,
+          femaleCustom,
+          _heidi,
+        ]).resolve(languageCode: 'de-AT'),
+        _heidi,
+      );
+      // No female preset: the language's first voice of any kind.
+      expect(
+        _catalog(const [maleFirst, femaleCustom]).resolve(languageCode: 'de'),
+        maleFirst,
       );
     });
 

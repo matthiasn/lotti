@@ -171,6 +171,7 @@ AiConfigInferenceProfile _profile({
   String? imageRecognitionModelId,
   String? transcriptionModelId,
   String? imageGenerationModelId,
+  String? speechModelId,
 }) {
   return AiConfig.inferenceProfile(
         id: id,
@@ -183,6 +184,7 @@ AiConfigInferenceProfile _profile({
         imageRecognitionModelId: imageRecognitionModelId,
         transcriptionModelId: transcriptionModelId,
         imageGenerationModelId: imageGenerationModelId,
+        speechModelId: speechModelId,
       )
       as AiConfigInferenceProfile;
 }
@@ -327,6 +329,28 @@ void main() {
       expect(
         await profileIsLocal(
           _profile(audioPostProcessingModelId: 'local-post-model'),
+          repo,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'a cloud speech slot keeps a profile local — it speaks text, never '
+    'receives the synced audio this check guards',
+    () async {
+      stubModelWithProvider(
+        providerModelId: 'thinking-model',
+        providerType: InferenceProviderType.ollama,
+      );
+      stubModelWithProvider(
+        providerModelId: 'voxtral-mini-tts-3-0',
+        providerType: InferenceProviderType.mistral,
+      );
+      expect(
+        await profileIsLocal(
+          _profile(speechModelId: 'voxtral-mini-tts-3-0'),
           repo,
         ),
         isTrue,

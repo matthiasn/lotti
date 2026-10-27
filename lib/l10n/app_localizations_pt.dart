@@ -9174,6 +9174,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => '(este dispositivo)';
 
   @override
+  String get inferenceProfileReadAloud => 'Ler em voz alta';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Nenhum — nada é lido em voz alta';
+
+  @override
   String get inferenceProfileSaveButton => 'Salvar';
 
   @override

@@ -36,6 +36,9 @@ class ResolvedProfile {
     this.imageGenerationModelId,
     this.imageGenerationProvider,
     this.imageGenerationModel,
+    this.speechModelId,
+    this.speechProvider,
+    this.speechModel,
     this.skillAssignments = const [],
   });
 
@@ -126,6 +129,14 @@ class ResolvedProfile {
   /// The configured model row used for image generation, when set.
   final AiConfigModel? imageGenerationModel;
 
+  /// Provider-native model id and configured route for speech synthesis.
+  /// Unset when the profile names no speech model, or names one that no
+  /// longer resolves: nothing is read aloud then, and no other engine is
+  /// substituted.
+  final String? speechModelId;
+  final AiConfigInferenceProvider? speechProvider;
+  final AiConfigModel? speechModel;
+
   /// Skill assignments from the profile, for downstream automation lookup.
   final List<SkillAssignment> skillAssignments;
 
@@ -174,6 +185,9 @@ class ResolvedProfile {
       imageGenerationModelId: imageGenerationModelId,
       imageGenerationProvider: imageGenerationProvider,
       imageGenerationModel: imageGenerationModel,
+      speechModelId: speechModelId,
+      speechProvider: speechProvider,
+      speechModel: speechModel,
       skillAssignments: skillAssignments,
     );
   }
@@ -210,6 +224,9 @@ class ResolvedProfile {
           imageGenerationModelId == other.imageGenerationModelId &&
           imageGenerationProvider == other.imageGenerationProvider &&
           imageGenerationModel == other.imageGenerationModel &&
+          speechModelId == other.speechModelId &&
+          speechProvider == other.speechProvider &&
+          speechModel == other.speechModel &&
           _listEquals.equals(skillAssignments, other.skillAssignments);
 
   @override
@@ -238,6 +255,9 @@ class ResolvedProfile {
     imageGenerationModelId,
     imageGenerationProvider,
     imageGenerationModel,
+    speechModelId,
+    speechProvider,
+    speechModel,
     _listEquals.hash(skillAssignments),
   ]);
 }

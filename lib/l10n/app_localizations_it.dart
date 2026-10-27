@@ -9196,6 +9196,13 @@ class AppLocalizationsIt extends AppLocalizations {
       '(questo dispositivo)';
 
   @override
+  String get inferenceProfileReadAloud => 'Lettura ad alta voce';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Nessuno: niente viene letto ad alta voce';
+
+  @override
   String get inferenceProfileSaveButton => 'Salva';
 
   @override

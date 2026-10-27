@@ -102,14 +102,18 @@ void main() {
     });
 
     testWidgets('shows all configured model slots', (tester) async {
-      final profile = testInferenceProfile(
-        id: 'p1',
-        name: 'Multi Slot Profile',
-        thinkingModelId: 'thinking-model',
-        imageRecognitionModelId: 'vision-model',
-        transcriptionModelId: 'audio-model',
-        imageGenerationModelId: 'image-gen-model',
-      ).copyWith(audioPostProcessingModelId: 'post-model');
+      final profile =
+          testInferenceProfile(
+            id: 'p1',
+            name: 'Multi Slot Profile',
+            thinkingModelId: 'thinking-model',
+            imageRecognitionModelId: 'vision-model',
+            transcriptionModelId: 'audio-model',
+            imageGenerationModelId: 'image-gen-model',
+          ).copyWith(
+            audioPostProcessingModelId: 'post-model',
+            speechModelId: 'speech-model',
+          );
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -128,6 +132,8 @@ void main() {
       expect(find.text('post-model'), findsOneWidget);
       expect(find.text('Image Generation'), findsOneWidget);
       expect(find.text('image-gen-model'), findsOneWidget);
+      expect(find.text('Read aloud'), findsOneWidget);
+      expect(find.text('speech-model'), findsOneWidget);
     });
 
     testWidgets('hides optional slots when not configured', (tester) async {

@@ -9060,6 +9060,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (this device)';
 
   @override
+  String get inferenceProfileReadAloud => 'Read aloud';
+
+  @override
+  String get inferenceProfileReadAloudHint => 'None — nothing is read aloud';
+
+  @override
   String get inferenceProfileSaveButton => 'Save';
 
   @override

@@ -96,7 +96,8 @@ List<AiConfigInferenceProfile> profilesUsingProviderModels({
             slotIds.contains(profile.imageRecognitionModelId) ||
             slotIds.contains(profile.transcriptionModelId) ||
             slotIds.contains(profile.audioPostProcessingModelId) ||
-            slotIds.contains(profile.imageGenerationModelId),
+            slotIds.contains(profile.imageGenerationModelId) ||
+            slotIds.contains(profile.speechModelId),
       )
       .toList(growable: false);
 }

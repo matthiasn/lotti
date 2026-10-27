@@ -38,6 +38,8 @@ Future<bool> profileIsLocal(
       profile.imageRecognitionModelId!,
     if (profile.transcriptionModelId != null) profile.transcriptionModelId!,
     if (profile.imageGenerationModelId != null) profile.imageGenerationModelId!,
+    // speechModelId is deliberately absent: speech synthesis receives text
+    // the user chose to hear, never the synced audio this check guards.
   };
 
   if (referencedModelIds.isEmpty) return true;

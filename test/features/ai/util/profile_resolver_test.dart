@@ -194,6 +194,59 @@ void main() {
     );
   }
 
+  for (final slotState in [
+    'unset',
+    'available',
+    'missing-model',
+    'missing-provider',
+  ]) {
+    test('speech slot $slotState resolves on its own route and never borrows '
+        'the thinking model', () async {
+      final thinking = testAiModel(
+        id: 'thinking-row',
+        providerModelId: 'thinking-native',
+        inferenceProviderId: 'thinking-provider',
+      );
+      final speech = testAiModel(
+        id: 'speech-row',
+        providerModelId: 'voxtral-mini-tts-3-0',
+        inferenceProviderId: 'speech-provider',
+      );
+      final profile = testInferenceProfile(
+        id: 'profile',
+        thinkingModelId: thinking.id,
+      ).copyWith(speechModelId: slotState == 'unset' ? null : speech.id);
+      final configs = <String, AiConfig>{
+        profile.id: profile,
+        thinking.id: thinking,
+        if (slotState != 'missing-model') speech.id: speech,
+        'thinking-provider': testInferenceProvider(id: 'thinking-provider'),
+        if (slotState != 'missing-provider')
+          'speech-provider': testInferenceProvider(id: 'speech-provider'),
+      };
+      when(
+        () => mockAiConfig.getConfigById(any()),
+      ).thenAnswer((call) async => configs[call.positionalArguments.first]);
+      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
+        (_) async => configs.values.whereType<AiConfigModel>().toList(),
+      );
+
+      final resolved = (await resolver.resolveByProfileId('profile'))!;
+
+      if (slotState == 'available') {
+        expect(resolved.speechModelId, 'voxtral-mini-tts-3-0');
+        expect(resolved.speechModel, speech);
+        expect(resolved.speechProvider?.id, 'speech-provider');
+      } else {
+        expect(resolved.speechModelId, isNull);
+        expect(resolved.speechModel, isNull);
+        expect(resolved.speechProvider, isNull);
+      }
+      // The profile itself still resolves: speech is optional.
+      expect(resolved.thinkingModelId, 'thinking-native');
+    });
+  }
+
   group('ProfileResolver', () {
     test(
       'standalone agents use Settings default and preserve explicit routes',

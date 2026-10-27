@@ -94,6 +94,11 @@ class ProfileCard extends StatelessWidget {
                   label: context.messages.inferenceProfileImageGeneration,
                   modelId: profile.imageGenerationModelId!,
                 ),
+              if (profile.speechModelId != null)
+                ProfileSlotRow(
+                  label: context.messages.inferenceProfileReadAloud,
+                  modelId: profile.speechModelId!,
+                ),
             ],
           ),
         ),

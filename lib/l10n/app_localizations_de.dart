@@ -9153,6 +9153,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dieses Gerät)';
 
   @override
+  String get inferenceProfileReadAloud => 'Vorlesen';
+
+  @override
+  String get inferenceProfileReadAloudHint => 'Keins – nichts wird vorgelesen';
+
+  @override
   String get inferenceProfileSaveButton => 'Speichern';
 
   @override

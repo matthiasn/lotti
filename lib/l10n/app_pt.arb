@@ -3948,6 +3948,8 @@
   "inferenceProfilePinnedHostNoneHelper": "As entradas de áudio sincronizadas não são transcritas automaticamente quando nenhum dispositivo está fixado.",
   "inferenceProfilePinnedHostNoneLabel": "Não fixado (sem acionamento automático)",
   "inferenceProfilePinnedHostThisDeviceSuffix": "(este dispositivo)",
+  "inferenceProfileReadAloud": "Ler em voz alta",
+  "inferenceProfileReadAloudHint": "Nenhum — nada é lido em voz alta",
   "inferenceProfileSaveButton": "Salvar",
   "inferenceProfileSelectModel": "Escolha um modelo…",
   "inferenceProfileSelectProfile": "Escolha um perfil…",

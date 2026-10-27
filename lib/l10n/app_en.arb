@@ -5827,6 +5827,14 @@
   "inferenceProfilePinnedHostNoneHelper": "Synced audio entries are not auto-transcribed when no device is pinned.",
   "inferenceProfilePinnedHostNoneLabel": "Not pinned (no auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (this device)",
+  "inferenceProfileReadAloud": "Read aloud",
+  "@inferenceProfileReadAloud": {
+    "description": "Label of the inference profile slot that picks the voice model used to read summaries and answers aloud"
+  },
+  "inferenceProfileReadAloudHint": "None — nothing is read aloud",
+  "@inferenceProfileReadAloudHint": {
+    "description": "Placeholder of the read-aloud slot when no voice model is chosen"
+  },
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Choose a model…",
   "inferenceProfileSelectProfile": "Choose a profile…",

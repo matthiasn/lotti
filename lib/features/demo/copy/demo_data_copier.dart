@@ -408,6 +408,7 @@ class DemoDataCopier {
       transcriptionModelId: keep(profile.transcriptionModelId),
       audioPostProcessingModelId: keep(profile.audioPostProcessingModelId),
       imageGenerationModelId: keep(profile.imageGenerationModelId),
+      speechModelId: keep(profile.speechModelId),
       skillAssignments: [
         for (final assignment in profile.skillAssignments)
           if (!seededAiIds.contains(assignment.skillId)) assignment,
@@ -678,6 +679,7 @@ class DemoDataCopier {
         transcriptionModelId: keep(config.transcriptionModelId),
         audioPostProcessingModelId: keep(config.audioPostProcessingModelId),
         imageGenerationModelId: keep(config.imageGenerationModelId),
+        speechModelId: keep(config.speechModelId),
         skillAssignments: [
           for (final assignment in config.skillAssignments)
             if (skillUsable.contains(assignment.skillId)) assignment,

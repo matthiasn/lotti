@@ -9114,6 +9114,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dit apparaat)';
 
   @override
+  String get inferenceProfileReadAloud => 'Voorlezen';
+
+  @override
+  String get inferenceProfileReadAloudHint =>
+      'Geen – er wordt niets voorgelezen';
+
+  @override
   String get inferenceProfileSaveButton => 'Opslaan';
 
   @override

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
 /// Whether a voice is one of Mistral's presets or one the account created.
@@ -182,10 +183,11 @@ class VoxtralVoiceCatalog {
   ///
   /// [preferredVoiceId] — the user's choice for this language — wins whenever
   /// the catalog still has it, even if the catalog does not list the language
-  /// for it: the user picked it deliberately. Otherwise the first voice
-  /// advertised for the language. `null` when neither exists, so the caller
-  /// can fall back to another engine instead of speaking German text with an
-  /// English voice.
+  /// for it: the user picked it deliberately. Otherwise the language's
+  /// default: its first female preset, then its first voice of any kind. The
+  /// API has no automatic voice per language, so this default is ours.
+  /// `null` when the language has no voice, so nothing is read rather than
+  /// German text in an English voice.
   VoxtralVoice? resolve({
     required String languageCode,
     String? preferredVoiceId,
@@ -194,11 +196,14 @@ class VoxtralVoiceCatalog {
       final preferred = byId(preferredVoiceId);
       if (preferred != null) return preferred;
     }
-    for (final voice in voices) {
-      if (voice.speaks(languageCode)) return voice;
-    }
-    return null;
+    final candidates = forLanguage(languageCode);
+    return candidates.firstWhereOrNull(_isFemalePreset) ??
+        candidates.firstOrNull;
   }
+
+  static bool _isFemalePreset(VoxtralVoice voice) =>
+      voice.type == VoxtralVoiceType.preset &&
+      voice.gender?.trim().toLowerCase() == 'female';
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'fetchedAt': fetchedAt.toIso8601String(),

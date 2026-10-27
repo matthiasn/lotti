@@ -172,6 +172,7 @@ void main() {
                   ).copyWith(
                     chatModelId: 'chat-id',
                     audioPostProcessingModelId: 'post-id',
+                    speechModelId: 'voice-id',
                   ),
               isInUse: false,
               providerTypeFor: () => InferenceProviderType.anthropic,
@@ -179,6 +180,7 @@ void main() {
                 'reasoning-id' => 'Reasoning Model',
                 'chat-id' => 'Chat Model',
                 'post-id' => 'Editing Model',
+                'voice-id' => 'Voice Model',
                 _ => 'Vision Model',
               },
               onTap: () {},
@@ -190,6 +192,8 @@ void main() {
         expect(find.text('Chat Model'), findsOneWidget);
         expect(find.text('Audio post-processing'), findsOneWidget);
         expect(find.text('Editing Model'), findsOneWidget);
+        expect(find.text('Read aloud'), findsOneWidget);
+        expect(find.text('Voice Model'), findsOneWidget);
         expect(find.text('Thinking'), findsOneWidget);
         expect(find.text('Reasoning Model'), findsOneWidget);
         expect(find.text('Image recognition'), findsOneWidget);

@@ -3949,6 +3949,8 @@
   "inferenceProfilePinnedHostNoneHelper": "Synkroniserade ljudposter transkriberas inte automatiskt när ingen enhet är fastnålad.",
   "inferenceProfilePinnedHostNoneLabel": "Inte fastnade (ingen auto-trigger)",
   "inferenceProfilePinnedHostThisDeviceSuffix": " (denna apparat)",
+  "inferenceProfileReadAloud": "Läs upp",
+  "inferenceProfileReadAloudHint": "Ingen – inget läses upp",
   "inferenceProfileSaveButton": "Spara",
   "inferenceProfileSelectModel": "Välj en modell...",
   "inferenceProfileSelectProfile": "Välj en profil...",
