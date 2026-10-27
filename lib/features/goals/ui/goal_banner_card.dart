@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -19,18 +20,21 @@ import 'package:material_ui/material_ui.dart';
 /// pressable-looking element that is actually pressable. Personality comes
 /// from type, colour and motion only (ADR 0058).
 ///
-/// Snooze is the prominent banner action and reveals contextual 1/3/6/8-hour
-/// choices; "dismiss for today" lives last in that sheet. The star appears
-/// only while this run's one rating is due, in a fixed-width slot so the
-/// layout never jumps when it goes.
+/// Snooze and the rating star are the header's quiet secondary voice
+/// ([NudgeBannerQuietActions]): Snooze reveals contextual 1/3/6/8-hour
+/// choices with "dismiss for today" last in that sheet, and the star appears
+/// only while this run's one rating is due, in a slot the group always holds
+/// so the header never reflows when it goes.
 class GoalBannerCard extends ConsumerWidget {
   const GoalBannerCard({required this.entry, this.onCtaPressed, super.key});
 
   final NudgeBannerEntry entry;
 
-  /// Overrides the CTA pill's default navigate-to-detail behavior. The goal
-  /// detail page passes an anchor-scroll to the evidence it hosts — a CTA on
-  /// the page it points at must never be a self-navigation no-op.
+  /// Overrides where the card goes — the CTA pill and the body tap alike,
+  /// one doorway with one verb. The goal detail page passes the verb the
+  /// CTA names (log today, open the check-in composer, or scroll to the
+  /// evidence it hosts), because a card on the page it points at must never
+  /// be a self-navigation no-op.
   final VoidCallback? onCtaPressed;
 
   @override
@@ -67,7 +71,9 @@ class GoalBannerCard extends ConsumerWidget {
         child: DsQuietInk(
           borderRadius: radius,
           focusRing: true,
-          onTap: () => beamToNamed(entry.tapRoute),
+          // One doorway, one verb: the body goes where the pill goes, so
+          // on the goal's own page it anchors rather than self-navigates.
+          onTap: onCtaPressed ?? () => beamToNamed(entry.tapRoute),
           builder: (context, highlighted) => DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: radius,
@@ -75,6 +81,11 @@ class GoalBannerCard extends ConsumerWidget {
             ),
             child: Padding(
               key: const ValueKey('goal-banner-content-padding'),
+              // One interval everywhere. The 48dp header row carries step3
+              // of slack around its glyphs, the headline a line's leading,
+              // the pill its floor's slack: a step2 top inset, a step1 gap
+              // and step4 before the pill all render as the same measure as
+              // the bottom cardPadding, once that slack is counted.
               padding: EdgeInsets.fromLTRB(
                 tokens.spacing.cardPadding,
                 tokens.spacing.step2,
@@ -106,36 +117,17 @@ class GoalBannerCard extends ConsumerWidget {
                               ),
                         ),
                       ),
-                      // Fixed-width slots: the star only exists while a
-                      // rating is due, but its SLOT always does — the
-                      // header never reflows when the star goes.
-                      SizedBox(
-                        width: TapTargets.minimum,
-                        height: TapTargets.minimum,
-                        child: ratingDue
-                            ? IconButton(
-                                onPressed: () => showNudgeBannerRatingSheet(
-                                  context,
-                                  ref,
-                                  entry,
-                                ),
-                                tooltip:
-                                    context.messages.nudgeBannerRateTooltip,
-                                icon: Icon(
-                                  LottiIcons.star,
-                                  size: tokens.spacing.step5,
-                                  color: tokens.colors.text.lowEmphasis,
-                                ),
-                              )
-                            : null,
-                      ),
-                      DesignSystemButton(
-                        key: const ValueKey('goal-banner-snooze'),
-                        label: context.messages.nudgeBannerSnoozeLabel,
-                        leadingIcon: LottiIcons.snooze,
-                        size: DesignSystemButtonSize.dense,
-                        tapTargetSize: MaterialTapTargetSize.padded,
-                        onPressed: () => showNudgeBannerSnoozeSheet(
+                      SizedBox(width: tokens.spacing.step2),
+                      NudgeBannerQuietActions(
+                        ratingDue: ratingDue,
+                        compact: !isDesktopLayout(context),
+                        snoozeKey: const ValueKey('goal-banner-snooze'),
+                        onRate: () => showNudgeBannerRatingSheet(
+                          context,
+                          ref,
+                          entry,
+                        ),
+                        onSnooze: () => showNudgeBannerSnoozeSheet(
                           context,
                           ref,
                           entry,
@@ -143,19 +135,22 @@ class GoalBannerCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: tokens.spacing.step2),
+                  SizedBox(height: tokens.spacing.step1),
                   // Generated copy is never localised and wraps freely —
                   // the layout must hold long German compounds without
                   // collision (handover stress test).
                   NudgeBannerAnimatedText(
                     text: brief.headline,
                     animation: brief.animation,
-                    // One step below bodyLarge, weight carrying the
-                    // emphasis: the page title stays the only large voice
-                    // in the first screenful.
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    // Whole, like the dock: one truncation policy for the
+                    // same model copy on both surfaces.
+                    maxLines: null,
+                    // The subtitle tier: a step below the page title,
+                    // weight carrying the emphasis, so the title stays the
+                    // only large voice in the first screenful. The dock
+                    // sets its headline in the same style.
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                       color: tokens.colors.text.highEmphasis,
-                      fontWeight: tokens.typography.weight.semiBold,
                     ),
                   ),
                   if (brief.tagline != null) ...[
@@ -170,7 +165,7 @@ class GoalBannerCard extends ConsumerWidget {
                     ),
                   ],
                   if (brief.cta != null) ...[
-                    SizedBox(height: tokens.spacing.step3),
+                    SizedBox(height: tokens.spacing.step4),
                     NudgeBannerCtaPill(
                       label: brief.cta!,
                       style: style,

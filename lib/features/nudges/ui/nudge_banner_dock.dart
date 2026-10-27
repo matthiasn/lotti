@@ -1,6 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -9,6 +9,7 @@ import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -113,7 +114,9 @@ class NudgeBannerDock extends ConsumerStatefulWidget {
     super.key,
   });
 
-  /// Phone layout: complete animated headline and compact snooze control.
+  /// Phone layout: the goal banner card's grammar at phone width — identity
+  /// and the quiet actions on the caption row, the headline beneath, the CTA
+  /// pill flush left under it.
   final bool compact;
 
   /// The navigation surface this mount lives on; the dock filters its
@@ -406,7 +409,9 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
       colors: tokens.colors,
       brightness: Theme.of(context).brightness,
     );
-    final radius = BorderRadius.circular(tokens.radii.m);
+    // The card's radius: the strip and the card are one banner at two
+    // widths, and share one frame.
+    final radius = BorderRadius.circular(tokens.radii.l);
     final multi = entries.length > 1;
 
     final tenant = SizedBox(
@@ -446,80 +451,124 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Tenure progress hairline: the rotation made visible.
-                    // Only meaningful with someone waiting in the queue. A
-                    // CustomPaint (repaint-only) rather than a
-                    // FractionallySizedBox — a per-tick relayout inside the
-                    // collapse AnimatedSwitcher's SizeTransition would
-                    // re-dirty it mid-layout.
-                    SizedBox(
-                      height: tokens.spacing.step1,
-                      width: double.infinity,
-                      child: multi
-                          ? CustomPaint(
-                              painter: _TenurePainter(
-                                progress: _tenure,
-                                color: style.accent,
-                              ),
-                            )
-                          : null,
-                    ),
-                    AnimatedSwitcher(
-                      duration: reduceMotion
-                          ? Duration.zero
-                          : MotionDurations.medium1,
-                      switchInCurve: MotionCurves.emphasizedDecelerate,
-                      switchOutCurve: MotionCurves.standard,
-                      transitionBuilder: (child, animation) => reduceMotion
-                          // Crossfade under reduced motion; slide-up is
-                          // the standard transition between tenants.
-                          ? FadeTransition(opacity: animation, child: child)
-                          : FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.25),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            ),
-                      child: tenant,
-                    ),
-                    if (multi)
-                      Padding(
-                        padding: EdgeInsets.only(bottom: tokens.spacing.step2),
-                        // Decorative — the tenant's own content carries the
-                        // semantics; dots would only add noise for readers.
-                        child: ExcludeSemantics(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              for (final entry in entries) ...[
-                                Container(
-                                  width: tokens.spacing.step2,
-                                  height: tokens.spacing.step2,
-                                  margin: EdgeInsets.symmetric(
-                                    horizontal: tokens.spacing.step1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: entry.nudge.id == current.nudge.id
-                                        ? style.accent
-                                        : tokens.colors.background.level03,
+                    Stack(
+                      children: [
+                        AnimatedSwitcher(
+                          duration: reduceMotion
+                              ? Duration.zero
+                              : MotionDurations.medium1,
+                          switchInCurve: MotionCurves.emphasizedDecelerate,
+                          switchOutCurve: MotionCurves.standard,
+                          transitionBuilder: (child, animation) => reduceMotion
+                              // Crossfade under reduced motion; slide-up
+                              // is the standard transition between
+                              // tenants.
+                              ? FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                )
+                              : FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.25),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
                                   ),
                                 ),
-                              ],
-                            ],
-                          ),
+                          child: tenant,
                         ),
-                      ),
+                        // Tenure progress hairline: the rotation made
+                        // visible, only with someone waiting in the queue.
+                        // It overlays the tenant's top edge and the dots its
+                        // bottom inset, so a second tenant arriving never
+                        // changes the dock's height or pushes the page. A
+                        // CustomPaint (repaint-only) rather than a
+                        // FractionallySizedBox — a per-tick relayout inside
+                        // the collapse AnimatedSwitcher's SizeTransition
+                        // would re-dirty it mid-layout. A true hairline, at
+                        // rest strength: the rotation is chrome, the current
+                        // dot below already marks progress at linework, and
+                        // the strip's entry corner must not be its most
+                        // saturated accent.
+                        if (multi)
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: BorderWidths.hairline,
+                            child: CustomPaint(
+                              painter: _TenurePainter(
+                                progress: _tenure,
+                                color: style.accent.withValues(
+                                  alpha: SurfaceAlphas.muted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Decorative — the tenant's content carries the
+                        // semantics; dots would only add noise for readers.
+                        if (multi)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: tokens.spacing.step1,
+                            child: ExcludeSemantics(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  for (final entry in entries)
+                                    _TenureDot(
+                                      current:
+                                          entry.nudge.id == current.nudge.id,
+                                      accent: style.accent,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One pagination dot. The current tenant is a filled disc, the queued ones
+/// rings — position is carried by shape as well as strength, so it survives
+/// the light theme's pale tint and a reader who does not resolve alpha. Both
+/// stay below the CTA's full accent: the disc at linework, the rings at rest.
+class _TenureDot extends StatelessWidget {
+  const _TenureDot({required this.current, required this.accent});
+
+  final bool current;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    // Large enough for a hairline ring to read as hollow at 1×.
+    return Container(
+      width: tokens.spacing.step3,
+      height: tokens.spacing.step3,
+      margin: EdgeInsets.symmetric(horizontal: tokens.spacing.step1),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: current
+            ? accent.withValues(alpha: SurfaceAlphas.linework)
+            : null,
+        border: current
+            ? null
+            : Border.all(
+                color: accent.withValues(alpha: SurfaceAlphas.muted),
+              ),
       ),
     );
   }
@@ -550,7 +599,17 @@ class _TenurePainter extends CustomPainter {
   bool shouldRepaint(_TenurePainter oldDelegate) => oldDelegate.color != color;
 }
 
-/// One tenant's condensed row: complete animated headline · actions · X.
+/// One tenant of the dock.
+///
+/// Wide: identity · copy · CTA · quiet actions on one line, the copy taking
+/// whatever the intrinsic controls leave. Compact: the goal banner card's
+/// grammar at phone width — identity and the quiet actions share the
+/// caption row, the headline runs full width beneath, and the CTA sits flush
+/// left under it — so the phone strip is the card, not a third layout.
+///
+/// The body is a quiet doorway to the conversation (`DsQuietInk`, as on the
+/// card): Material's hover overlay washed the whole strip like one enormous
+/// button, while the CTA pill is the element that advertises pressability.
 class _DockTenant extends ConsumerWidget {
   const _DockTenant({
     required this.entry,
@@ -571,6 +630,111 @@ class _DockTenant extends ConsumerWidget {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
     final ratingDue = NudgeInteractions.ratingDue(entry.nudge);
+    void open() => openNudgeBanner(context, ref, entry);
+
+    // The same identity language as the full banner card: the persona chip
+    // and the subject's name, so the voice in the dock is never anonymous —
+    // a nudge only makes sense as SOME subject's nudge. Excluded from
+    // semantics: the enclosing node already announces the subject via the
+    // per-kind semantic label, and merging these in would read the name
+    // (and monogram) twice before the headline.
+    final chip = ExcludeSemantics(
+      child: NudgeBannerPersonaChip.forStyle(
+        monogram: NudgeBannerPersonaChip.monogramFor(entry.subjectTitle),
+        style: style,
+      ),
+    );
+    final caption = ExcludeSemantics(
+      child: Text(
+        entry.subjectTitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+      ),
+    );
+    // The card's headline tier, so the two renderings speak with one voice.
+    final headline = NudgeBannerAnimatedText(
+      text: brief.headline,
+      animation: brief.animation,
+      maxLines: null,
+      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+        color: tokens.colors.text.highEmphasis,
+      ),
+    );
+    // CTA copy is contractually 2–4 words. Kept intrinsic so it cannot
+    // claim a flex share and arbitrarily cap the banner copy.
+    final cta = brief.cta == null
+        ? null
+        : NudgeBannerCtaPill(label: brief.cta!, style: style, onTap: open);
+    final actions = NudgeBannerQuietActions(
+      ratingDue: ratingDue,
+      compact: compact,
+      snoozeKey: const ValueKey('nudge-banner-dock-snooze'),
+      onRate: onRate,
+      onSnooze: onSnooze,
+    );
+
+    final Widget body;
+    if (compact) {
+      // One interval everywhere (the card's rhythm). The 48dp action row
+      // carries step3 of slack around its glyphs, the headline a line's
+      // leading, the pill its floor's slack: a step2 top inset, a step1 gap
+      // and step4 before the pill all render as the same measure as the
+      // bottom cardPadding, once that slack is counted.
+      body = Padding(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spacing.cardPadding,
+          tokens.spacing.step2,
+          tokens.spacing.cardPadding,
+          tokens.spacing.cardPadding,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                chip,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(child: caption),
+                actions,
+              ],
+            ),
+            SizedBox(height: tokens.spacing.step1),
+            headline,
+            if (cta != null) ...[SizedBox(height: tokens.spacing.step4), cta],
+          ],
+        ),
+      );
+    } else {
+      body = Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.cardPadding,
+          vertical: tokens.spacing.step3,
+        ),
+        child: Row(
+          children: [
+            chip,
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              key: const ValueKey('nudge-banner-copy-region'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [caption, headline],
+              ),
+            ),
+            // Clearly wider than the quiet pair's own rhythm (Snooze pulls
+            // its label outward by its inset, which widens the pair's gap),
+            // so the row reads as one action plus two quiet controls, not
+            // three peers.
+            if (cta != null) ...[SizedBox(width: tokens.spacing.step4), cta],
+            SizedBox(width: tokens.spacing.step6),
+            actions,
+          ],
+        ),
+      );
+    }
 
     return NudgeBannerExposureTracker(
       nudgeId: entry.nudge.id,
@@ -585,101 +749,17 @@ class _DockTenant extends ConsumerWidget {
               entry.subjectTitle,
             ),
         },
-        child: InkWell(
+        child: DsQuietInk(
           key: const ValueKey('nudge-banner-dock-tenant'),
-          onTap: () => openNudgeBanner(context, ref, entry),
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: tokens.spacing.cardPadding,
-              top: tokens.spacing.step3,
-              right: tokens.spacing.step2,
-              bottom: tokens.spacing.step3,
-            ),
-            child: Row(
-              children: [
-                // The same identity language as the full banner card: the
-                // persona chip and the subject's name, so the voice in the
-                // dock is never anonymous — a nudge only makes sense as SOME
-                // subject's nudge. Excluded from semantics: the enclosing
-                // node already announces the subject via the per-kind
-                // semantic label, and merging these in would read the name
-                // (and monogram) twice before the headline.
-                ExcludeSemantics(
-                  child: NudgeBannerPersonaChip.forStyle(
-                    monogram: NudgeBannerPersonaChip.monogramFor(
-                      entry.subjectTitle,
-                    ),
-                    style: style,
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  key: const ValueKey('nudge-banner-copy-region'),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ExcludeSemantics(
-                        child: Text(
-                          entry.subjectTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ),
-                      NudgeBannerAnimatedText(
-                        text: brief.headline,
-                        animation: brief.animation,
-                        maxLines: null,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!compact && brief.cta != null) ...[
-                  SizedBox(width: tokens.spacing.step3),
-                  // CTA copy is contractually 2–4 words. Keep it intrinsic so
-                  // it cannot claim a flex share and arbitrarily cap the banner
-                  // copy at half the dock.
-                  NudgeBannerCtaPill(
-                    label: brief.cta!,
-                    style: style,
-                    onTap: () => openNudgeBanner(context, ref, entry),
-                  ),
-                ],
-                if (!compact)
-                  SizedBox(
-                    width: TapTargets.minimum,
-                    height: TapTargets.minimum,
-                    child: ratingDue
-                        ? IconButton(
-                            onPressed: onRate,
-                            tooltip: context.messages.nudgeBannerRateTooltip,
-                            icon: Icon(
-                              LottiIcons.star,
-                              size: tokens.spacing.step5,
-                              color: tokens.colors.text.lowEmphasis,
-                            ),
-                          )
-                        : null,
-                  ),
-                DesignSystemButton(
-                  key: const ValueKey('nudge-banner-dock-snooze'),
-                  label: compact ? '' : context.messages.nudgeBannerSnoozeLabel,
-                  semanticsLabel: context.messages.nudgeBannerSnoozeLabel,
-                  leadingIcon: LottiIcons.snooze,
-                  size: DesignSystemButtonSize.dense,
-                  tapTargetSize: MaterialTapTargetSize.padded,
-                  onPressed: onSnooze,
-                ),
-              ],
-            ),
-          ),
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          focusRing: true,
+          onTap: open,
+          // Touch pauses the rotation while held; a hold that ends must not
+          // then count as the tap that opens (or, for a relationship
+          // reminder, pauses) the banner. Owning the long press makes the
+          // release a no-op.
+          onLongPress: () {},
+          builder: (context, highlighted) => body,
         ),
       ),
     );

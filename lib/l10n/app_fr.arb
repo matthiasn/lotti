@@ -4155,6 +4155,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Masquer pour aujourd’hui",
+  "nudgeBannerRateLabel": "Noter",
   "nudgeBannerRateTooltip": "Noter cette bannière",
   "nudgeBannerRatingSkip": "Passer",
   "nudgeBannerRatingTitle": "Tu as trouvé cette bannière comment ?",

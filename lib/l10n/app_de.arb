@@ -4155,6 +4155,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Für heute ausblenden",
+  "nudgeBannerRateLabel": "Bewerten",
   "nudgeBannerRateTooltip": "Dieses Banner bewerten",
   "nudgeBannerRatingSkip": "Überspringen",
   "nudgeBannerRatingTitle": "Wie fandest du dieses Banner?",

@@ -11033,6 +11033,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Masquer pour aujourd’hui';
 
   @override
+  String get nudgeBannerRateLabel => 'Noter';
+
+  @override
   String get nudgeBannerRateTooltip => 'Noter cette bannière';
 
   @override

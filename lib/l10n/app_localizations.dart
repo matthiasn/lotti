@@ -18205,6 +18205,12 @@ abstract class AppLocalizations {
   /// **'Dismiss for today'**
   String get nudgeBannerDismissForDay;
 
+  /// Caption-tier label beside the star glyph on a banner's quiet rating button; the tooltip nudgeBannerRateTooltip explains it on hover.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get nudgeBannerRateLabel;
+
   /// No description provided for @nudgeBannerRateTooltip.
   ///
   /// In en, this message translates to:

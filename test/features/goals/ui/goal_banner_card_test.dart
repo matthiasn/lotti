@@ -7,6 +7,7 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -95,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the primary Snooze action reveals contextual durations', (
+  testWidgets('the quiet Snooze action reveals contextual durations', (
     tester,
   ) async {
     await pumpCard(tester);
@@ -244,7 +245,13 @@ void main() {
         ),
       ],
     );
-    expect(findMaterialTooltip('Rate this banner'), findsNothing);
+    expect(
+      findMaterialTooltip('Rate this banner').hitTestable(),
+      findsNothing,
+      reason:
+          'Rate keeps its footprint while hidden, but is neither visible '
+          'nor reachable',
+    );
     expect(find.text('Snooze'), findsOneWidget);
   });
 
@@ -285,8 +292,14 @@ void main() {
 
     await tester.tap(find.text('Lace up now'));
     await tester.pumpAndSettle();
-
     expect(anchored, 1);
+    expect(navigated, isEmpty);
+
+    // The body is the same doorway: one verb per page, never a
+    // self-navigation beside an anchoring pill.
+    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.pumpAndSettle();
+    expect(anchored, 2);
     expect(navigated, isEmpty);
   });
 
@@ -320,7 +333,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(findMaterialTooltip('Rate this banner'), findsNothing);
+    expect(
+      findMaterialTooltip('Rate this banner').hitTestable(),
+      findsNothing,
+      reason:
+          'Rate keeps its footprint while hidden, but is neither visible '
+          'nor reachable',
+    );
     expect(
       tester.getTopLeft(find.text('Snooze')),
       snoozeBefore,
@@ -378,5 +397,56 @@ void main() {
       ink.overlayColor?.resolve({WidgetState.hovered}),
       Colors.transparent,
     );
+  });
+
+  testWidgets('the header renders its star and Snooze through the shared '
+      'quiet group', (tester) async {
+    await pumpCard(tester);
+    final group = tester.widget<NudgeBannerQuietActions>(
+      find.byType(NudgeBannerQuietActions),
+    );
+    expect(group.ratingDue, isTrue);
+    expect(find.byType(IconButton), findsNothing);
+  });
+
+  testWidgets('at 3× text scale the header row holds the chip, the title '
+      'and the quiet pair as glyphs without overflowing', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(360, 800),
+            textScaler: TextScaler.linear(3),
+          ),
+          child: Scaffold(
+            // A list, as the goal detail page hosts it.
+            body: ListView(
+              children: [
+                GoalBannerCard(
+                  entry: (
+                    nudge: nudge(),
+                    subjectTitle: 'Move more',
+                    kind: NudgeBannerKind.goal,
+                    tapRoute: '/goals/details/goal-1',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Rate'), findsNothing);
+    expect(find.text('Snooze'), findsNothing);
+    expect(findMaterialTooltip('Rate this banner'), findsOneWidget);
+    expect(findMaterialTooltip('Snooze'), findsOneWidget);
+    expect(find.text('Lace up now'), findsOneWidget);
   });
 }

@@ -4660,6 +4660,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Voor vandaag verbergen",
+  "nudgeBannerRateLabel": "Beoordelen",
   "nudgeBannerRateTooltip": "Beoordeel deze banner",
   "nudgeBannerRatingSkip": "Overslaan",
   "nudgeBannerRatingTitle": "Wat vond je van deze banner?",

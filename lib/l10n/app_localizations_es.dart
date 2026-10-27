@@ -10996,6 +10996,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Ocultar por hoy';
 
   @override
+  String get nudgeBannerRateLabel => 'Valorar';
+
+  @override
   String get nudgeBannerRateTooltip => 'Valorar este banner';
 
   @override

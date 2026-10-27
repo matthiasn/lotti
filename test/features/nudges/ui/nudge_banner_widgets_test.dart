@@ -61,15 +61,59 @@ void main() {
     var tapped = false;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        NudgeBannerCtaPill(
-          label: 'Log a walk',
-          style: style,
-          onTap: () => tapped = true,
+        Align(
+          alignment: Alignment.topLeft,
+          child: NudgeBannerCtaPill(
+            label: 'Log a walk',
+            style: style,
+            onTap: () => tapped = true,
+          ),
         ),
       ),
     );
     expect(find.text('Log a walk'), findsOneWidget);
     await tester.tap(find.text('Log a walk'));
     expect(tapped, isTrue);
+    final slot = tester.getRect(find.byType(NudgeBannerCtaPill));
+    expect(
+      slot.height,
+      TapTargets.minimum,
+      reason: 'the pill stands on the same 48dp floor as the quiet pair',
+    );
+    // The painted pill is shorter than its floor; the slack above it is
+    // still the button.
+    final painted = tester.getRect(find.byType(Ink));
+    expect(painted.height, lessThan(slot.height));
+    tapped = false;
+    await tester.tapAt(Offset(slot.center.dx, slot.top + 1));
+    expect(tapped, isTrue, reason: 'a tap in the floor above the pill');
+    tapped = false;
+    await tester.tapAt(painted.center);
+    expect(tapped, isTrue, reason: 'a tap on the pill itself, exactly once');
+  });
+
+  testWidgets('the CTA pill is edged in the full-strength accent over its '
+      'control wash — the one undiluted accent on the banner, so the primary '
+      'reads at a glance and keeps figure-ground on the light theme', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        NudgeBannerCtaPill(label: 'Log a walk', style: style, onTap: () {}),
+      ),
+    );
+    final ink = tester.widget<Ink>(
+      find.ancestor(
+        of: find.text('Log a walk'),
+        matching: find.byType(Ink),
+      ),
+    );
+    final decoration = ink.decoration! as BoxDecoration;
+    expect(decoration.color, style.controlFill);
+    expect(decoration.border, Border.all(color: style.accent));
+    expect(
+      decoration.borderRadius,
+      BorderRadius.circular(tokens.radii.badgesPills),
+    );
   });
 }

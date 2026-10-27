@@ -11053,6 +11053,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Ascundeți pentru azi';
 
   @override
+  String get nudgeBannerRateLabel => 'Evaluați';
+
+  @override
   String get nudgeBannerRateTooltip => 'Evaluați acest banner';
 
   @override

@@ -4661,6 +4661,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Dölj resten av dagen",
+  "nudgeBannerRateLabel": "Betygsätt",
   "nudgeBannerRateTooltip": "Betygsätt den här bannern",
   "nudgeBannerRatingSkip": "Hoppa över",
   "nudgeBannerRatingTitle": "Vad tyckte du om den här bannern?",

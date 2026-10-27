@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -427,7 +429,7 @@ void main() {
             w is Container &&
             w.decoration is BoxDecoration &&
             (w.decoration! as BoxDecoration).shape == BoxShape.circle &&
-            w.constraints?.maxWidth == 4.0,
+            w.constraints?.maxWidth == 8.0,
       ),
       findsNothing,
     );
@@ -540,7 +542,7 @@ void main() {
       tester
           .getSize(find.byKey(const ValueKey('nudge-banner-copy-region')))
           .width,
-      greaterThan(frameRect.width * 0.4),
+      greaterThan(frameRect.width * 0.35),
       reason:
           'a short CTA must not reserve half the dock from the copy — the '
           'persona chip and its gap are the only other fixed claims',
@@ -1038,7 +1040,8 @@ void main() {
     );
   });
 
-  testWidgets('the compact dock shows no star and keeps its snooze action', (
+  testWidgets('the compact dock keeps the star while a rating is due and '
+      'its labelled Snooze, both on the caption row above the headline', (
     tester,
   ) async {
     await pumpDock(
@@ -1046,11 +1049,20 @@ void main() {
       [entry(id: 'a', headline: 'First voice')],
       compact: true,
     );
-    expect(findMaterialTooltip('Rate this banner'), findsNothing);
-    expect(
+    final star = tester.getRect(findMaterialTooltip('Rate this banner'));
+    final snooze = tester.getRect(
       find.byKey(const ValueKey('nudge-banner-dock-snooze')),
-      findsOneWidget,
     );
+    expect(
+      find.text('Snooze'),
+      findsOneWidget,
+      reason: 'a lone glyph reads as a state; the phone gets the label too',
+    );
+    final caption = tester.getRect(find.text('Move more'));
+    final headline = tester.getRect(find.text('First voice'));
+    expect(star.center.dy, closeTo(caption.center.dy, 1));
+    expect(snooze.center.dy, closeTo(caption.center.dy, 1));
+    expect(headline.top, greaterThanOrEqualTo(star.bottom));
   });
 
   testWidgets('reduced motion: rotation still advances (only transitions '
@@ -1081,5 +1093,182 @@ void main() {
     await tester.pump(nudgeBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
+  });
+  testWidgets('the compact dock keeps the way forward: the CTA pill sits '
+      'under the headline, left-aligned with it, and opens the banner', (
+    tester,
+  ) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(
+      tester,
+      [entry(id: 'a', headline: 'First voice', cta: 'Log a walk')],
+      compact: true,
+    );
+    final headline = tester.getRect(find.text('First voice'));
+    final pill = tester.getRect(find.byType(NudgeBannerCtaPill));
+    expect(pill.top, greaterThan(headline.bottom));
+    expect(pill.left, headline.left);
+    await tester.tap(find.text('Log a walk'));
+    await tester.pump();
+    expect(navigated, ['/goals/details/goal-a']);
+  });
+
+  testWidgets('a lone tenant paints no tenure hairline, so the frame is '
+      'symmetric; a queue paints one', (tester) async {
+    Finder hairline() => find.descendant(
+      of: find.byKey(const ValueKey('nudge-banner-dock-frame')),
+      matching: find.byType(CustomPaint),
+    );
+    await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
+    expect(hairline(), findsNothing);
+    final lone = tester.getRect(
+      find.byKey(const ValueKey('nudge-banner-dock-tenant')),
+    );
+    final frame = tester.getRect(
+      find.byKey(const ValueKey('nudge-banner-dock-frame')),
+    );
+    expect(lone.top - frame.top, frame.bottom - lone.bottom);
+
+    notifier(tester).entries = [
+      entry(id: 'a', headline: 'Only voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ];
+    await tester.pump();
+    await tester.pump();
+    expect(hairline(), findsOneWidget);
+  });
+
+  testWidgets('the current dot is a filled disc at linework and queued dots '
+      'are rings at rest — position by shape as well as strength, one hue '
+      'family below the CTA', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    final dots = tester
+        .widgetList<Container>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).shape == BoxShape.circle &&
+                w.constraints?.maxWidth == 8.0,
+          ),
+        )
+        .map((w) => w.decoration! as BoxDecoration)
+        .toList();
+    expect(dots, hasLength(2));
+    final current = dots.first;
+    final queued = dots.last;
+    expect(current.border, isNull);
+    expect(current.color!.a, closeTo(SurfaceAlphas.linework, 0.01));
+    expect(queued.color, isNull, reason: 'a ring, not a fainter disc');
+    final ring = (queued.border! as Border).top;
+    expect(ring.width, BorderWidths.hairline);
+    expect(ring.color.a, closeTo(SurfaceAlphas.muted, 0.01));
+    expect(
+      (ring.color.r, ring.color.g, ring.color.b),
+      (current.color!.r, current.color!.g, current.color!.b),
+      reason: 'the ring is the same hue as the disc, only quieter',
+    );
+  });
+
+  testWidgets("a second tenant arriving does not change the dock's height "
+      "— the dots overlay the tenant's own inset", (tester) async {
+    await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
+    final frame = find.byKey(const ValueKey('nudge-banner-dock-frame'));
+    final lone = tester.getSize(frame).height;
+    notifier(tester).entries = [
+      entry(id: 'a', headline: 'Only voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ];
+    await tester.pump();
+    await tester.pump();
+    // Hairline and dots both overlay the tenant: no growth at all.
+    expect(tester.getSize(frame).height, lone);
+  });
+
+  testWidgets('the wide dock renders its star and Snooze through the shared '
+      'quiet group, with the CTA pill as the only filled control', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
+    ]);
+    final group = tester.widget<NudgeBannerQuietActions>(
+      find.byType(NudgeBannerQuietActions),
+    );
+    expect(group.ratingDue, isTrue);
+    expect(find.byType(IconButton), findsNothing);
+    expect(find.text('Rate'), findsOneWidget);
+    final pill = tester.getRect(find.byType(NudgeBannerCtaPill));
+    final star = tester.getRect(findMaterialTooltip('Rate this banner'));
+    final snooze = tester.getRect(
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
+    );
+    expect(pill.center.dy, closeTo(star.center.dy, 1));
+    expect(star.center.dy, closeTo(snooze.center.dy, 1));
+    expect(pill.right, lessThan(star.left));
+    expect(star.right, lessThanOrEqualTo(snooze.left));
+  });
+
+  testWidgets('at 3× text scale the compact caption row holds the chip, '
+      'the title and the quiet pair as glyphs without overflowing', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    _TestEntries.initial = [
+      entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
+    ];
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const MediaQuery(
+          data: MediaQueryData(
+            size: Size(360, 800),
+            textScaler: TextScaler.linear(3),
+          ),
+          child: Scaffold(
+            body: Column(
+              children: [
+                NudgeBannerDock(
+                  compact: true,
+                  surface: NudgeBannerSurface.tasks,
+                ),
+              ],
+            ),
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.takeException(), isNull);
+    expect(find.text('Rate'), findsNothing);
+    expect(find.text('Snooze'), findsNothing);
+    expect(findMaterialTooltip('Rate this banner'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('nudge-banner-dock-snooze')),
+      findsOneWidget,
+    );
+    expect(find.text('Log a walk'), findsOneWidget);
+  });
+
+  testWidgets('a long press on the dock body pauses without opening: the '
+      'release after a hold is not the tap that navigates', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
+    await tester.longPress(find.text('First voice'));
+    await tester.pump();
+    expect(navigated, isEmpty);
+    await tester.tap(find.text('First voice'));
+    await tester.pump();
+    expect(navigated, ['/goals/details/goal-a']);
   });
 }
