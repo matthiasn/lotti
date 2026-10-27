@@ -4,9 +4,10 @@ import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
 import 'package:lotti/features/tts/state/cloud_voice_settings_providers.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 import '../../agents/test_data/ai_config_factories.dart';
 
@@ -18,8 +19,6 @@ class _ConfigsByType extends AiConfigByTypeController {
   @override
   Stream<List<AiConfig>> build() => Stream.value(configs);
 }
-
-class _MockCatalogs extends Mock implements VoxtralVoiceCatalogRepository {}
 
 void main() {
   final mistral = testInferenceProvider(
@@ -93,7 +92,7 @@ void main() {
   });
 
   test('the catalog provider reads through the device cache', () async {
-    final catalogs = _MockCatalogs();
+    final catalogs = MockVoxtralVoiceCatalogRepository();
     final catalog = VoxtralVoiceCatalog(
       voices: const [],
       fetchedAt: DateTime.utc(2026, 10, 27),

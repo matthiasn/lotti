@@ -152,31 +152,40 @@ class FakeTtsModelRepository implements TtsModelRepository {
   }
 }
 
-/// One cloud synthesis request: the route, the text and the per-language
-/// voice choices it was given.
+/// One cloud synthesis request: the route, the text, the per-language voice
+/// choices it was given, and whether its `canSend` check let it upload.
 typedef CloudSynthesisCall = ({
   TtsCloudRoute route,
   String text,
   Map<String, String> voices,
+  bool sent,
 });
 
 /// Records every cloud synthesis and answers with [output], or throws
 /// [error] — a [StateError] when neither is given, so a test that only
 /// observes routing never reaches playback.
 class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
-  FakeCloudSpeechSynthesizer({this.output, this.error});
+  FakeCloudSpeechSynthesizer({this.output, this.error, this.catalogLoaded});
 
   final File? output;
   final Exception? error;
+
+  /// Awaited before `canSend` is asked, standing in for a voice catalog that
+  /// is still loading over the network.
+  final Future<void>? catalogLoaded;
   final List<CloudSynthesisCall> calls = <CloudSynthesisCall>[];
 
   @override
-  Future<File> synthesizeToFile({
+  Future<File?> synthesizeToFile({
     required TtsCloudRoute route,
     required String text,
     required Map<String, String> voiceByLanguage,
+    required Future<bool> Function() canSend,
   }) async {
-    calls.add((route: route, text: text, voices: voiceByLanguage));
+    await catalogLoaded;
+    final sent = await canSend();
+    calls.add((route: route, text: text, voices: voiceByLanguage, sent: sent));
+    if (!sent) return null;
     if (error case final error?) throw error;
     return output ?? (throw StateError('no cloud output configured'));
   }

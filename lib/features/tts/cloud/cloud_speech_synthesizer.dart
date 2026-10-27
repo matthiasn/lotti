@@ -26,12 +26,18 @@ class CloudSpeechSynthesizer {
   /// route's language, or that language's default voice. The caller owns,
   /// and deletes, the returned file.
   ///
+  /// [canSend] is asked once the voice is known, immediately before the text
+  /// is uploaded: resolving the catalog may wait on the network, and an
+  /// utterance stopped — or content hidden — in the meantime must not be
+  /// sent. A `false` answer returns `null` without any request.
+  ///
   /// Throws [VoxtralTtsException] — [VoxtralTtsFailure.noVoice] when the
   /// language has no voice, before any text leaves the device.
-  Future<File> synthesizeToFile({
+  Future<File?> synthesizeToFile({
     required TtsCloudRoute route,
     required String text,
     required Map<String, String> voiceByLanguage,
+    required Future<bool> Function() canSend,
   }) async {
     final catalog = await _catalogs.catalogFor(route.provider);
     final voice = catalog.resolve(
@@ -44,6 +50,7 @@ class CloudSpeechSynthesizer {
         'No voice for language ${route.languageCode}',
       );
     }
+    if (!await canSend()) return null;
     final bytes = await _service.synthesize(
       text: text,
       voiceId: voice.id,

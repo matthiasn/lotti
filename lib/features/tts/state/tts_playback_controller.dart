@@ -225,13 +225,22 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         _prepared = null;
       }
       if (file == null && cloudRoute != null) {
+        // Checked again right before the text is uploaded: a stop, or the
+        // caller withdrawing permission, while the voice catalog loads must
+        // keep the text on the device.
         file = await ref
             .read(cloudSpeechSynthesizerProvider)
             .synthesizeToFile(
               route: cloudRoute,
               text: text,
               voiceByLanguage: settings.cloudVoiceByLanguage,
+              canSend: () async =>
+                  current() && (canPlay == null || await canPlay()),
             );
+        if (file == null) {
+          if (current()) _onPlaybackEnded();
+          return;
+        }
       }
       if (file == null) {
         final modelDir = await _ensureModel(

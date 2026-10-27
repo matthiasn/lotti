@@ -8,16 +8,12 @@ import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
-import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
-
-class _MockService extends Mock implements VoxtralTtsService {}
-
-class _MockCatalogs extends Mock implements VoxtralVoiceCatalogRepository {}
 
 void main() {
   final provider = testInferenceProvider(
@@ -47,15 +43,16 @@ void main() {
     ],
   );
   final audio = Uint8List.fromList([82, 73, 70, 70]);
+  Future<bool> allow() async => true;
 
-  late _MockService service;
-  late _MockCatalogs catalogs;
+  late MockVoxtralTtsService service;
+  late MockVoxtralVoiceCatalogRepository catalogs;
   late Directory temp;
   late CloudSpeechSynthesizer synthesizer;
 
   setUp(() {
-    service = _MockService();
-    catalogs = _MockCatalogs();
+    service = MockVoxtralTtsService();
+    catalogs = MockVoxtralVoiceCatalogRepository();
     temp = Directory.systemTemp.createTempSync('cloud_speech_test');
     addTearDown(() => temp.deleteSync(recursive: true));
     synthesizer = CloudSpeechSynthesizer(
@@ -81,9 +78,10 @@ void main() {
       route: route,
       text: 'Grüß dich',
       voiceByLanguage: const {},
+      canSend: allow,
     );
 
-    expect(file.parent.path, temp.path);
+    expect(file!.parent.path, temp.path);
     expect(file.path, endsWith('.wav'));
     expect(file.readAsBytesSync(), audio);
     verify(
@@ -102,14 +100,16 @@ void main() {
       route: route,
       text: 'Hallo',
       voiceByLanguage: const {'de': 'v-de-m', 'en': 'v-en'},
+      canSend: allow,
     );
     final second = await synthesizer.synthesizeToFile(
       route: route,
       text: 'Hallo',
       voiceByLanguage: const {'de': 'v-de-m'},
+      canSend: allow,
     );
 
-    expect(first.path, isNot(second.path));
+    expect(first!.path, isNot(second!.path));
     verify(
       () => service.synthesize(
         text: 'Hallo',
@@ -119,6 +119,34 @@ void main() {
         model: any(named: 'model'),
       ),
     ).called(2);
+  });
+
+  test('withdrawn permission after the catalog loads sends nothing', () async {
+    final loaded = <String>[];
+    final file = await synthesizer.synthesizeToFile(
+      route: route,
+      text: 'Privat',
+      voiceByLanguage: const {},
+      canSend: () async {
+        // Asked only once the catalog — the slow, networked step — is in.
+        verify(() => catalogs.catalogFor(provider)).called(1);
+        loaded.add('checked');
+        return false;
+      },
+    );
+
+    expect(file, isNull);
+    expect(loaded, ['checked']);
+    verifyNever(
+      () => service.synthesize(
+        text: any(named: 'text'),
+        voiceId: any(named: 'voiceId'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    );
+    expect(temp.listSync(), isEmpty);
   });
 
   test('a language without a voice fails before any text is sent', () async {
@@ -131,6 +159,7 @@ void main() {
         ),
         text: 'Bonjour',
         voiceByLanguage: const {},
+        canSend: allow,
       ),
       throwsA(
         isA<VoxtralTtsException>()

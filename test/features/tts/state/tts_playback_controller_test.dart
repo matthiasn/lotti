@@ -139,6 +139,57 @@ void main() {
     expect(player.playCount, 0);
   });
 
+  test('a stop while the voice catalog loads keeps the text on the '
+      'device', () async {
+    final loaded = Completer<void>();
+    final cloud = FakeCloudSpeechSynthesizer(
+      output: preparedFile(),
+      catalogLoaded: loaded.future,
+    );
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(player: player, cloud: cloud);
+    final controller = controllerOf(h.container);
+
+    final speaking = controller.speak(
+      sourceId: 'chat',
+      text: 'Private answer',
+      cloudRoute: cloudRoute,
+    );
+    await pumpEventQueue();
+    await controller.stop();
+    loaded.complete();
+    await speaking;
+
+    expect(cloud.calls.single.sent, isFalse);
+    expect(player.playCount, 0);
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).status,
+      TtsPlaybackStatus.stopped,
+    );
+  });
+
+  test('a caller that withdraws permission before upload ends the '
+      'utterance quietly, without sending', () async {
+    final cloud = FakeCloudSpeechSynthesizer(output: preparedFile());
+    final player = FakeTtsAudioPlayer();
+    addTearDown(player.dispose);
+    final h = harness(player: player, cloud: cloud);
+
+    await controllerOf(h.container).speak(
+      sourceId: 'chat',
+      text: 'Now hidden',
+      cloudRoute: cloudRoute,
+      canPlay: () async => false,
+    );
+
+    expect(cloud.calls.single.sent, isFalse);
+    expect(player.playCount, 0);
+    final state = h.container.read(ttsPlaybackControllerProvider);
+    expect(state.status, TtsPlaybackStatus.stopped);
+    expect(state.sourceId, isNull);
+  });
+
   test('preparation never calls a cloud voice', () async {
     final cloud = FakeCloudSpeechSynthesizer(output: preparedFile());
     final engine = FakeTtsEngine();

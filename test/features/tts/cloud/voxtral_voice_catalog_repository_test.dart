@@ -8,10 +8,8 @@ import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
 import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../mocks/mocks.dart' show MockSettingsDb;
+import '../../../mocks/mocks.dart' show MockSettingsDb, MockVoxtralTtsService;
 import '../../agents/test_data/ai_config_factories.dart';
-
-class _MockService extends Mock implements VoxtralTtsService {}
 
 void main() {
   final now = DateTime.utc(2026, 10, 27, 12);
@@ -25,14 +23,14 @@ void main() {
   const emma = VoxtralVoice(id: 'v-en', name: 'Emma', languages: ['en']);
 
   late MockSettingsDb db;
-  late _MockService service;
+  late MockVoxtralTtsService service;
   late VoxtralVoiceCatalogRepository repository;
 
   String encoded(VoxtralVoiceCatalog catalog) => jsonEncode(catalog.toJson());
 
   setUp(() {
     db = MockSettingsDb();
-    service = _MockService();
+    service = MockVoxtralTtsService();
     repository = VoxtralVoiceCatalogRepository(
       settingsDb: db,
       service: service,
