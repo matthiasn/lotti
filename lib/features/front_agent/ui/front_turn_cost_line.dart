@@ -5,10 +5,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// What one of her turns cost, as a quiet caption under it: the routing
-/// calls of that wake — never the owners' answers, which are theirs and
-/// show on their own agents (decision 8 made her model cheap; this is where
-/// the user sees that it was).
+/// What one of her turns cost, as the tail of the bubble's footer line —
+/// `Companion · 8:30 AM · 9.8K tokens`: the routing calls of that wake,
+/// never the owners' answers, which are theirs and show on their own agents
+/// (decision 8 made her model cheap; this is where the user sees that it
+/// was).
 ///
 /// Nothing is shown until the totals are known, and nothing when the wake
 /// recorded no call — a turn answered from the cache of a failed run, or a
@@ -33,7 +34,7 @@ class FrontTurnCostLine extends ConsumerWidget {
     return Tooltip(
       message: consumptionSummaryTooltip(context, totals),
       child: Text(
-        consumptionSummaryLabel(context, totals),
+        ' · ${consumptionSummaryLabel(context, totals)}',
         key: ValueKey('front-turn-cost-$runKey'),
         style: tokens.typography.styles.others.caption.copyWith(
           color: tokens.colors.text.lowEmphasis,

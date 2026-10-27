@@ -1,7 +1,12 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -17,12 +22,15 @@ import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_owner_titles.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_model_resolution.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -134,6 +142,114 @@ final frontDoorWalkerProvider = Provider<FrontDoorWalker>(
   ),
   name: 'frontDoorWalkerProvider',
 );
+
+/// What the user's tap under a door does: the entry, the task or the note,
+/// written through the persistence logic under the id the door names —
+/// `createDbEntity` never overwrites an existing id, so a tap retried after
+/// an interrupted write finds its entry already there.
+final frontFilingServiceProvider = Provider<FrontFilingService>(
+  (ref) => FrontFilingService(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    journalDb: ref.watch(journalDbProvider),
+    notifications: ref.watch(updateNotificationsProvider),
+    writeTextEntry: (text, {required id, linkedId, categoryId}) =>
+        writeFrontTextEntry(
+          ref.read(persistenceLogicProvider),
+          ref.read(journalDbProvider),
+          text,
+          id: id,
+          linkedId: linkedId,
+          categoryId: categoryId,
+        ),
+    makeTask: (title, {required id}) => makeFrontTask(
+      ref.read(persistenceLogicProvider),
+      ref.read(journalDbProvider),
+      title,
+      id: id,
+    ),
+    deleteEntry: ref.watch(journalRepositoryProvider).deleteJournalEntity,
+  ),
+  name: 'frontFilingServiceProvider',
+);
+
+/// A text entry with [text] under [id], linked under [linkedId] when given.
+///
+/// The write's own verdict decides: `true` is the new entry; `false` means a
+/// row under [id] already exists — the retry case — and that row is
+/// returned when it is there and not deleted; `null`, or a rejected write
+/// with no row behind it, is nothing stored.
+///
+/// Under a task, the entry counts only once its link is live: the task
+/// agent reads its entries through the link, so an entry without one is not
+/// filed. A missing link — the link write refused or lost after the entry
+/// landed — is written once more; still missing, nothing is filed.
+Future<JournalEntity?> writeFrontTextEntry(
+  PersistenceLogic persistence,
+  JournalDb journalDb,
+  String text, {
+  required String id,
+  String? linkedId,
+  String? categoryId,
+}) async {
+  final now = clock.now();
+  final entry = JournalEntity.journalEntry(
+    meta: await persistence.createMetadata(
+      id: id,
+      dateFrom: now,
+      dateTo: now,
+      categoryId: categoryId,
+    ),
+    entryText: EntryText(plainText: text),
+  );
+  final saved = await persistence.createDbEntity(entry, linkedId: linkedId);
+  final written = (saved ?? false) ? entry : await _existing(journalDb, id);
+  if (written == null || linkedId == null) return written;
+  if (await _linked(journalDb, linkedId, id)) return written;
+  await persistence.createLink(fromId: linkedId, toId: id);
+  return await _linked(journalDb, linkedId, id) ? written : null;
+}
+
+/// Whether a live link runs from [fromId] to [toId].
+Future<bool> _linked(JournalDb journalDb, String fromId, String toId) async =>
+    (await journalDb.linksBetween(
+      fromId,
+      toId,
+    )).any((link) => link.deletedAt == null);
+
+/// A task titled [title], open, with no category, under [id]. The creation
+/// path answers null for a rejected write, which for a deterministic id
+/// means the task is already there — the retry case — so that task is
+/// returned when it is, and null when nothing is stored.
+Future<Task?> makeFrontTask(
+  PersistenceLogic persistence,
+  JournalDb journalDb,
+  String title, {
+  required String id,
+}) async {
+  final now = clock.now();
+  final task = await persistence.createTaskEntry(
+    data: TaskData(
+      status: taskStatusFromString(''),
+      title: title,
+      statusHistory: [],
+      dateTo: now,
+      dateFrom: now,
+      estimate: Duration.zero,
+    ),
+    entryText: const EntryText(plainText: ''),
+    id: id,
+  );
+  if (task != null) return task;
+  final existing = await _existing(journalDb, id);
+  return existing is Task ? existing : null;
+}
+
+/// The row under [id] when it is there and not deleted.
+Future<JournalEntity?> _existing(JournalDb journalDb, String id) async {
+  final existing = await journalDb.journalEntityById(id);
+  return existing != null && existing.meta.deletedAt == null ? existing : null;
+}
 
 /// The front agent's contribution to `agentWakeRunnersProvider` — merged in
 /// `app_bootstrap.dart`, never left to the silent task-agent fallback in

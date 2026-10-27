@@ -36,7 +36,7 @@ class FrontChatThreadBuilder {
 
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
-    final doorRecords = <String, List<FrontDoorRecord>>{};
+    final doorRecords = <String, List<(String, FrontDoorRecord)>>{};
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
@@ -66,15 +66,37 @@ class FrontChatThreadBuilder {
             ? null
             : FrontDoorRecord.fromJson(payload.content);
         if (record == null) continue;
-        doorRecords
-            .putIfAbsent(row.metadata.operationId!, () => [])
-            .add(record);
+        doorRecords.putIfAbsent(row.metadata.operationId!, () => []).add((
+          row.id,
+          record,
+        ));
       }
     }
 
-    final visible = messages.length <= maxMessages
+    // The newest fifty — and every turn with a door still waiting on the
+    // user, however old: the inbox is this thread filtered, so what the
+    // user has not acted on must not scroll out of existence.
+    final awaiting = {
+      for (final entry in doorRecords.entries)
+        if (entry.value.any((d) => frontDoorAwaitsUser(d.$2.outcome)))
+          entry.key,
+    };
+    final window = messages.length <= maxMessages
         ? messages
         : messages.sublist(messages.length - maxMessages);
+    // A waiting turn keeps the message right after it too: her reply, which
+    // carries the turn's doors on the surface — or the next user turn, which
+    // tells the surface no reply followed. Without it the doors would ride
+    // whichever unrelated reply the window happened to show next.
+    final kept = {...awaiting};
+    for (var i = 0; i + 1 < messages.length; i++) {
+      if (awaiting.contains(messages[i].id)) kept.add(messages[i + 1].id);
+    }
+    final windowIds = {for (final m in window) m.id};
+    final visible = [
+      for (final m in messages)
+        if (windowIds.contains(m.id) || kept.contains(m.id)) m,
+    ];
     final visibleIds = {for (final m in visible) m.id};
 
     final doors = <String, List<FrontDoorEntry>>{};
@@ -82,10 +104,11 @@ class FrontChatThreadBuilder {
     for (final entry in doorRecords.entries) {
       if (!visibleIds.contains(entry.key)) continue;
       final records = entry.value
-        ..sort((a, b) => a.segmentIndex.compareTo(b.segmentIndex));
+        ..sort((a, b) => a.$2.segmentIndex.compareTo(b.$2.segmentIndex));
       doors[entry.key] = [
-        for (final record in records)
+        for (final (doorId, record) in records)
           FrontDoorEntry(
+            doorId: doorId,
             record: record,
             specialistReply: await _specialistReply(record, specialists),
           ),

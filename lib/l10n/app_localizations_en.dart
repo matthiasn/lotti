@@ -6758,7 +6758,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.';
+      'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
+
+  @override
+  String frontChatInboxChip(int count) {
+    return 'Inbox $count';
+  }
+
+  @override
+  String get frontChatInboxEmpty => 'Nothing is waiting for you.';
 
   @override
   String get frontChatOpen => 'Ask the companion';
@@ -6770,13 +6778,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatResponding => 'Finding who knows…';
 
   @override
-  String get frontChatSubtitle => 'Ask anything — she finds who knows';
-
-  @override
   String get frontChatTitle => 'Companion';
 
   @override
   String get frontChatYesterday => 'Yesterday';
+
+  @override
+  String get frontDoorActionFailed => 'That did not go through.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6789,9 +6797,26 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get frontDoorDeclined => 'Not filed';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Asking $owner failed.';
   }
+
+  @override
+  String get frontDoorFile => 'File it';
+
+  @override
+  String frontDoorFiledUnder(String owner) {
+    return 'Filed under $owner';
+  }
+
+  @override
+  String get frontDoorInbox => 'Where should this go?';
+
+  @override
+  String get frontDoorInboxInstead => 'Where should this go instead?';
 
   @override
   String get frontDoorIncomplete => 'may be incomplete';
@@ -6817,6 +6842,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorKindTask => 'the task';
 
   @override
+  String get frontDoorLeaveIt => 'Leave it';
+
+  @override
+  String get frontDoorLeft => 'Left here in the thread';
+
+  @override
+  String get frontDoorMakeTask => 'Make it a task';
+
+  @override
+  String get frontDoorNewProject => 'New project…';
+
+  @override
   String frontDoorNoAgent(String owner) {
     return '$owner has no agent to ask yet.';
   }
@@ -6825,11 +6862,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontDoorNoDoor => 'Nowhere to take this yet.';
 
   @override
-  String get frontDoorStatementsLater =>
-      'Not filed: for now she only answers questions.';
+  String get frontDoorNotThis => 'Somewhere else';
+
+  @override
+  String get frontDoorOpen => 'Open';
+
+  @override
+  String frontDoorProposal(String owner) {
+    return 'File this under $owner?';
+  }
+
+  @override
+  String get frontDoorSavedAsNote => 'Saved as a note';
+
+  @override
+  String get frontDoorSaveNote => 'Save as a note';
+
+  @override
+  String get frontDoorStartGoal => 'Start a goal…';
 
   @override
   String get frontDoorSummaryBased => 'from summaries';
+
+  @override
+  String get frontDoorTaskCreated => 'Made into a task';
+
+  @override
+  String get frontDoorTryAgain => 'Try again';
+
+  @override
+  String get frontDoorUndo => 'Undo';
+
+  @override
+  String frontDoorUnfiled(String owner) {
+    return 'Taken back out of $owner. File it again?';
+  }
 
   @override
   String frontDoorWalking(String owner) {
@@ -17567,6 +17634,28 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String get frontChatEmpty =>
+      'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
+
+  @override
+  String get frontDoorInboxInstead => 'Where should this go instead?';
+
+  @override
+  String get frontDoorLeaveIt => 'Leave it';
+
+  @override
+  String get frontDoorLeft => 'Left here in the thread';
+
+  @override
+  String get frontDoorNewProject => 'New project…';
+
+  @override
+  String get frontDoorNotThis => 'Somewhere else';
+
+  @override
+  String get frontDoorStartGoal => 'Start a goal…';
 
   @override
   String get githubNoSummaryYet => 'Not summarised yet.';

@@ -204,6 +204,91 @@ void main() {
     expect(thread.doorsByMessageId, isEmpty);
   });
 
+  test('a turn with a door still waiting on the user stays in view however '
+      'old: the inbox must not scroll out of existence', () async {
+    for (var i = 0; i < 60; i++) {
+      userTurn(
+        'u$i'.padLeft(4, '0'),
+        'turn $i',
+        at: DateTime(2026, 10).add(Duration(minutes: i)),
+      );
+    }
+    final oldest = 'u0'.padLeft(4, '0');
+    row(
+      id: 'd:door:0',
+      kind: AgentMessageKind.action,
+      toolName: frontDoorToolName,
+      operationId: oldest,
+      content: FrontDoorRecord(
+        segmentIndex: 0,
+        text: 'turn 0',
+        kind: FrontDestinationKind.task,
+        destinationId: 'garden',
+        status: FrontDoorStatus.done,
+        claimedAt: DateTime.utc(2026, 10),
+        outcome: const FrontDoorProposal(ownerId: 'garden'),
+      ).toJson(),
+    );
+
+    final thread = await builder.build();
+
+    // The next turn stays beside it, so the surface knows no reply followed
+    // and the doors stay on their own turn.
+    expect(thread.messages, hasLength(52));
+    expect(thread.messages.first.text, 'turn 0');
+    expect(thread.messages[1].text, 'turn 1');
+    expect(thread.messages[2].text, 'turn 10');
+    expect(thread.doorsByMessageId.keys, [oldest]);
+    expect(thread.carrierOf(oldest), oldest);
+    expect(thread.inboxMessageIds, {oldest});
+  });
+
+  test('a waiting turn beyond the window keeps its own reply, which carries '
+      'its doors, never the next reply the window shows', () async {
+    for (var i = 0; i < 30; i++) {
+      final at = DateTime(2026, 10).add(Duration(minutes: 2 * i));
+      final turn = 'u$i'.padLeft(4, '0');
+      userTurn(turn, 'turn $i', at: at);
+      row(
+        id: 'r$i'.padLeft(4, '0'),
+        kind: AgentMessageKind.action,
+        toolName: FrontAgentToolNames.replyToUser,
+        operationId: turn,
+        content: {'text': 'reply $i'},
+        createdAt: at.add(const Duration(minutes: 1)),
+      );
+    }
+    final oldest = 'u0'.padLeft(4, '0');
+    row(
+      id: 'd:door:0',
+      kind: AgentMessageKind.action,
+      toolName: frontDoorToolName,
+      operationId: oldest,
+      content: FrontDoorRecord(
+        segmentIndex: 0,
+        text: 'turn 0',
+        kind: FrontDestinationKind.task,
+        destinationId: 'garden',
+        status: FrontDoorStatus.done,
+        claimedAt: DateTime.utc(2026, 10),
+        outcome: const FrontDoorProposal(ownerId: 'garden'),
+      ).toJson(),
+    );
+
+    final thread = await builder.build();
+
+    expect(thread.messages.take(3).map((m) => m.text), [
+      'turn 0',
+      'reply 0',
+      'turn 5',
+    ]);
+    final reply = thread.messages[1].id;
+    expect(thread.carrierOf(oldest), reply);
+    expect(thread.doorsCarriedBy(reply), hasLength(1));
+    expect(thread.doorsCarriedBy(thread.messages[3].id), isNull);
+    expect(thread.inboxMessageIds, {oldest, reply});
+  });
+
   group('doors', () {
     final claimedAt = DateTime.utc(2026, 10, 24, 9);
 
@@ -298,6 +383,10 @@ void main() {
 
       final doors = thread.doorsByMessageId['u1']!;
       expect([for (final d in doors) d.record.segmentIndex], [0, 1, 2]);
+      expect(
+        [for (final d in doors) d.doorId],
+        ['d:door:0', 'd:door:1', 'd:door:2'],
+      );
       expect(doors[0].specialistReply, isNull);
       expect(doors[1].specialistReply, 'Two of three swims done.');
       expect(doors[2].specialistReply, isNull);

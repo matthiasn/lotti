@@ -11540,8 +11540,20 @@ abstract class AppLocalizations {
   /// No description provided for @frontChatEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.'**
+  /// **'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.'**
   String get frontChatEmpty;
+
+  /// No description provided for @frontChatInboxChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox {count}'**
+  String frontChatInboxChip(int count);
+
+  /// No description provided for @frontChatInboxEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting for you.'**
+  String get frontChatInboxEmpty;
 
   /// No description provided for @frontChatOpen.
   ///
@@ -11561,12 +11573,6 @@ abstract class AppLocalizations {
   /// **'Finding who knows…'**
   String get frontChatResponding;
 
-  /// No description provided for @frontChatSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask anything — she finds who knows'**
-  String get frontChatSubtitle;
-
   /// No description provided for @frontChatTitle.
   ///
   /// In en, this message translates to:
@@ -11578,6 +11584,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Yesterday'**
   String get frontChatYesterday;
+
+  /// No description provided for @frontDoorActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not go through.'**
+  String get frontDoorActionFailed;
 
   /// No description provided for @frontDoorAttribution.
   ///
@@ -11591,11 +11603,41 @@ abstract class AppLocalizations {
   /// **'{owner} is still replying…'**
   String frontDoorAwaitingReply(String owner);
 
+  /// No description provided for @frontDoorDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Not filed'**
+  String get frontDoorDeclined;
+
   /// No description provided for @frontDoorFailed.
   ///
   /// In en, this message translates to:
   /// **'Asking {owner} failed.'**
   String frontDoorFailed(String owner);
+
+  /// No description provided for @frontDoorFile.
+  ///
+  /// In en, this message translates to:
+  /// **'File it'**
+  String get frontDoorFile;
+
+  /// No description provided for @frontDoorFiledUnder.
+  ///
+  /// In en, this message translates to:
+  /// **'Filed under {owner}'**
+  String frontDoorFiledUnder(String owner);
+
+  /// No description provided for @frontDoorInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should this go?'**
+  String get frontDoorInbox;
+
+  /// No description provided for @frontDoorInboxInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should this go instead?'**
+  String get frontDoorInboxInstead;
 
   /// No description provided for @frontDoorIncomplete.
   ///
@@ -11639,6 +11681,30 @@ abstract class AppLocalizations {
   /// **'the task'**
   String get frontDoorKindTask;
 
+  /// No description provided for @frontDoorLeaveIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave it'**
+  String get frontDoorLeaveIt;
+
+  /// No description provided for @frontDoorLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Left here in the thread'**
+  String get frontDoorLeft;
+
+  /// No description provided for @frontDoorMakeTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it a task'**
+  String get frontDoorMakeTask;
+
+  /// No description provided for @frontDoorNewProject.
+  ///
+  /// In en, this message translates to:
+  /// **'New project…'**
+  String get frontDoorNewProject;
+
   /// No description provided for @frontDoorNoAgent.
   ///
   /// In en, this message translates to:
@@ -11651,17 +11717,71 @@ abstract class AppLocalizations {
   /// **'Nowhere to take this yet.'**
   String get frontDoorNoDoor;
 
-  /// No description provided for @frontDoorStatementsLater.
+  /// No description provided for @frontDoorNotThis.
   ///
   /// In en, this message translates to:
-  /// **'Not filed: for now she only answers questions.'**
-  String get frontDoorStatementsLater;
+  /// **'Somewhere else'**
+  String get frontDoorNotThis;
+
+  /// No description provided for @frontDoorOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get frontDoorOpen;
+
+  /// No description provided for @frontDoorProposal.
+  ///
+  /// In en, this message translates to:
+  /// **'File this under {owner}?'**
+  String frontDoorProposal(String owner);
+
+  /// No description provided for @frontDoorSavedAsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as a note'**
+  String get frontDoorSavedAsNote;
+
+  /// No description provided for @frontDoorSaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as a note'**
+  String get frontDoorSaveNote;
+
+  /// No description provided for @frontDoorStartGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a goal…'**
+  String get frontDoorStartGoal;
 
   /// No description provided for @frontDoorSummaryBased.
   ///
   /// In en, this message translates to:
   /// **'from summaries'**
   String get frontDoorSummaryBased;
+
+  /// No description provided for @frontDoorTaskCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Made into a task'**
+  String get frontDoorTaskCreated;
+
+  /// No description provided for @frontDoorTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get frontDoorTryAgain;
+
+  /// No description provided for @frontDoorUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get frontDoorUndo;
+
+  /// No description provided for @frontDoorUnfiled.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken back out of {owner}. File it again?'**
+  String frontDoorUnfiled(String owner);
 
   /// No description provided for @frontDoorWalking.
   ///

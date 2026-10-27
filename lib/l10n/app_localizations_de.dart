@@ -6830,7 +6830,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person. Sie findet, wer es weiß, und bringt die Antwort mit.';
+      'Frag nach einer Aufgabe, einem Ziel, einem Projekt oder einer Person, oder erzähl, was passiert ist. Der passende Agent antwortet, und abgelegt wird erst, wenn du tippst.';
+
+  @override
+  String frontChatInboxChip(int count) {
+    return 'Eingang $count';
+  }
+
+  @override
+  String get frontChatInboxEmpty => 'Hier wartet nichts auf dich.';
 
   @override
   String get frontChatOpen => 'Begleiterin fragen';
@@ -6842,13 +6850,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontChatResponding => 'Sucht, wer es weiß…';
 
   @override
-  String get frontChatSubtitle => 'Frag irgendwas — sie findet, wer es weiß';
-
-  @override
   String get frontChatTitle => 'Begleiterin';
 
   @override
   String get frontChatYesterday => 'Gestern';
+
+  @override
+  String get frontDoorActionFailed => 'Das hat nicht geklappt.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6861,9 +6869,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get frontDoorDeclined => 'Nicht abgelegt';
+
+  @override
   String frontDoorFailed(String owner) {
     return '$owner zu fragen ist fehlgeschlagen.';
   }
+
+  @override
+  String get frontDoorFile => 'Ablegen';
+
+  @override
+  String frontDoorFiledUnder(String owner) {
+    return 'Abgelegt unter $owner';
+  }
+
+  @override
+  String get frontDoorInbox => 'Wohin damit?';
+
+  @override
+  String get frontDoorInboxInstead => 'Wohin stattdessen?';
 
   @override
   String get frontDoorIncomplete => 'womöglich unvollständig';
@@ -6889,6 +6914,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontDoorKindTask => 'die Aufgabe';
 
   @override
+  String get frontDoorLeaveIt => 'So lassen';
+
+  @override
+  String get frontDoorLeft => 'Hier im Verlauf gelassen';
+
+  @override
+  String get frontDoorMakeTask => 'Zur Aufgabe machen';
+
+  @override
+  String get frontDoorNewProject => 'Neues Projekt…';
+
+  @override
   String frontDoorNoAgent(String owner) {
     return '$owner hat noch keinen Agenten, den man fragen könnte.';
   }
@@ -6897,11 +6934,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get frontDoorNoDoor => 'Dafür gibt es noch keinen Ort.';
 
   @override
-  String get frontDoorStatementsLater =>
-      'Nicht abgelegt: vorerst beantwortet sie nur Fragen.';
+  String get frontDoorNotThis => 'Woandershin';
+
+  @override
+  String get frontDoorOpen => 'Öffnen';
+
+  @override
+  String frontDoorProposal(String owner) {
+    return 'Unter $owner ablegen?';
+  }
+
+  @override
+  String get frontDoorSavedAsNote => 'Als Notiz gespeichert';
+
+  @override
+  String get frontDoorSaveNote => 'Als Notiz speichern';
+
+  @override
+  String get frontDoorStartGoal => 'Ziel starten…';
 
   @override
   String get frontDoorSummaryBased => 'aus Zusammenfassungen';
+
+  @override
+  String get frontDoorTaskCreated => 'Zur Aufgabe gemacht';
+
+  @override
+  String get frontDoorTryAgain => 'Noch einmal';
+
+  @override
+  String get frontDoorUndo => 'Rückgängig';
+
+  @override
+  String frontDoorUnfiled(String owner) {
+    return 'Aus $owner herausgenommen. Noch einmal ablegen?';
+  }
 
   @override
   String frontDoorWalking(String owner) {

@@ -6,13 +6,18 @@ import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
+import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The companion's chat: one continuous thread across days (decision 7),
@@ -59,13 +64,55 @@ class _Body extends ConsumerWidget {
     final controller = ref.read(frontChatControllerProvider.notifier);
     final latestId = thread?.messages.lastOrNull?.id;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    // The inbox is the same thread, filtered to the turns with a door still
+    // waiting on the user (decision 7).
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
+    final inboxIds = thread?.inboxMessageIds ?? const <String>{};
+    final shown = inboxOnly
+        ? history.whenData(
+            (messages) => [
+              for (final message in messages)
+                if (inboxIds.contains(message.id)) message,
+            ],
+          )
+        : history;
+    final actions = FrontDoorActions(
+      onFile: controller.fileUnderTask,
+      onDecline: controller.decline,
+      onUndoDecline: controller.undoDecline,
+      onTakeBack: controller.takeBack,
+      onMakeTask: controller.makeTask,
+      onSaveNote: controller.saveAsNote,
+      // What a door wrote lives on its own page: leave the sheet, then go.
+      onOpen: (door) {
+        final path = switch (door.record.outcome) {
+          FrontDoorFiled(:final entryId) => '/journal/$entryId',
+          FrontDoorTaskCreated(:final taskId) => '/tasks/$taskId',
+          _ => null,
+        };
+        if (path == null) return;
+        Navigator.of(context).maybePop();
+        beamToNamed(path);
+      },
+      // The wizards are not pre-filled: they open plain, the words stay in
+      // the thread, and the door keeps waiting until a chip that writes
+      // takes it (nothing is written by opening a wizard).
+      onStartGoal: (_) {
+        // Leave the sheet, then go: the wizard is a page, not a modal.
+        Navigator.of(context).maybePop();
+        beamToNamed(goalCreatePath);
+      },
+      onNewProject: (_) => showProjectCreateModal(context: context),
+    );
 
     return AgentChatView(
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
-      conversationId: 'front-chat',
-      history: history,
-      emptyMessage: messages.frontChatEmpty,
+      conversationId: inboxOnly ? 'front-chat-inbox' : 'front-chat',
+      history: shown,
+      emptyMessage: inboxOnly
+          ? messages.frontChatInboxEmpty
+          : messages.frontChatEmpty,
       composerHint: messages.frontChatPlaceholder,
       sendingLabel: messages.frontChatResponding,
       draft: composer.draft,
@@ -76,38 +123,51 @@ class _Body extends ConsumerWidget {
       onRetry: controller.retry,
       attachmentBuilder: (context, message) {
         if (thread == null) return null;
-        final doors = thread.doorsByMessageId[message.id];
-        if (doors != null && doors.isNotEmpty) {
-          return FrontDoorCard(
-            key: ValueKey('front-doors-${message.id}'),
-            doors: doors,
-          );
-        }
-        if (message.role != AgentChatRole.agent) return null;
+        final isHers = message.role == AgentChatRole.agent;
+        // The doors ride her reply, as the stack of cards under her bubble;
+        // until she has replied they sit under the user's.
+        final doors = thread.doorsCarriedBy(message.id);
+        final card = doors == null || doors.isEmpty
+            ? null
+            : FrontDoorCard(
+                key: ValueKey('front-doors-${message.id}'),
+                doors: doors,
+                actions: actions,
+                busyDoorIds: composer.busyDoorIds,
+                failedDoorIds: composer.failedDoorIds,
+              );
         // Chips only under her latest question: an older one has been
         // answered, or walked away from, and its options would send a reply
         // to a question nobody is asking any more.
-        final options = thread.optionsByMessageId[message.id];
-        final runKey = message.runKey;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (options != null &&
-                options.isNotEmpty &&
-                message.id == latestId) ...[
-              FrontAskOptionsRow(
+        final options = isHers && message.id == latestId
+            ? thread.optionsByMessageId[message.id]
+            : null;
+        final chips = options == null || options.isEmpty
+            ? null
+            : FrontAskOptionsRow(
                 key: ValueKey('front-options-${message.id}'),
                 options: options,
                 enabled: !composer.isSending,
                 onChosen: (option) => controller.sendText(option.label),
-              ),
-              SizedBox(height: context.designTokens.spacing.step1),
+              );
+        if (card != null && chips != null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              card,
+              SizedBox(height: context.designTokens.spacing.step2),
+              chips,
             ],
-            // What her turn cost: the routing calls of the wake that wrote
-            // this row.
-            if (runKey != null) FrontTurnCostLine(runKey: runKey),
-          ],
-        );
+          );
+        }
+        return card ?? chips;
+      },
+      // What her turn cost — the routing calls of the wake that wrote the
+      // row — tails the bubble's footer line.
+      footerTrailingBuilder: (context, message) {
+        final runKey = message.runKey;
+        if (message.role != AgentChatRole.agent || runKey == null) return null;
+        return FrontTurnCostLine(runKey: runKey);
       },
       dividerBuilder: (context, message, previous) {
         if (previous != null &&

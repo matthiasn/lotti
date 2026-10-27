@@ -6,6 +6,10 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/front_chat_tokens.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -17,15 +21,19 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_dispatch.dart';
+import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_door_walker.dart';
+import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_workflow.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
+import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -338,6 +346,7 @@ void main() {
             MockProjectAgentService(),
           ),
           goalChatServiceProvider.overrideWithValue(MockGoalChatService()),
+          journalRepositoryProvider.overrideWithValue(MockJournalRepository()),
           relationshipChatServiceProvider.overrideWithValue(
             MockRelationshipChatService(),
           ),
@@ -353,7 +362,334 @@ void main() {
       expect(wired.read(frontAgentServiceProvider), isA<FrontAgentService>());
       expect(wired.read(frontChatServiceProvider), isA<FrontChatService>());
       expect(wired.read(frontDoorWalkerProvider), isA<FrontDoorWalker>());
+      expect(wired.read(frontFilingServiceProvider), isA<FrontFilingService>());
     });
+  });
+
+  group("the filing service's adapters", () {
+    const doorId = 'd:door:0';
+    late MockPersistenceLogic persistence;
+    late MockJournalRepository journalRepository;
+    late MockJournalDb journalDb;
+    late ProviderContainer wired;
+
+    FrontDoorRecord record(FrontDoorOutcome outcome) => FrontDoorRecord(
+      segmentIndex: 0,
+      text: 'The hinge arrived.',
+      kind: FrontDestinationKind.task,
+      destinationId: 'garden',
+      status: FrontDoorStatus.done,
+      claimedAt: DateTime.utc(2026, 10, 26),
+      outcome: outcome,
+    );
+
+    EntryLink link(String fromId, String toId, {DateTime? deletedAt}) =>
+        EntryLink.basic(
+          id: 'link-$fromId-$toId',
+          fromId: fromId,
+          toId: toId,
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+          deletedAt: deletedAt,
+        );
+
+    Metadata meta(String id, {DateTime? deletedAt}) => Metadata(
+      id: id,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      dateFrom: DateTime(2026),
+      dateTo: DateTime(2026),
+      deletedAt: deletedAt,
+    );
+
+    setUp(() {
+      persistence = MockPersistenceLogic();
+      journalRepository = MockJournalRepository();
+      journalDb = MockJournalDb();
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      // The link the write made is live unless a test says otherwise.
+      when(() => journalDb.linksBetween(any(), any())).thenAnswer(
+        (invocation) async => [
+          link(
+            invocation.positionalArguments[0] as String,
+            invocation.positionalArguments[1] as String,
+          ),
+        ],
+      );
+      final syncService = MockAgentSyncService();
+      when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+      final notifications = MockUpdateNotifications();
+      when(() => notifications.notifyUiOnly(any())).thenReturn(null);
+      wired = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(repository),
+          agentSyncServiceProvider.overrideWithValue(syncService),
+          journalDbProvider.overrideWithValue(journalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          journalRepositoryProvider.overrideWithValue(journalRepository),
+          persistenceLogicProvider.overrideWithValue(persistence),
+        ],
+      );
+      addTearDown(wired.dispose);
+      when(
+        () => persistence.createMetadata(
+          id: any(named: 'id'),
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer(
+        (invocation) async => meta(invocation.namedArguments[#id] as String),
+      );
+    });
+
+    void seed(FrontDoorOutcome outcome) {
+      when(() => repository.getEntity('$doorId:payload')).thenAnswer(
+        (_) async => makeTestMessagePayload(
+          id: '$doorId:payload',
+          agentId: frontAgentId,
+          content: record(outcome).toJson(),
+        ),
+      );
+    }
+
+    void writeAnswers({required bool? verdict}) {
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => verdict);
+    }
+
+    FrontDoorFiled filed() =>
+        FrontDoorRecord.fromJson(
+              (verify(
+                        () => wired
+                            .read(agentSyncServiceProvider)
+                            .upsertEntity(captureAny()),
+                      ).captured.single
+                      as AgentMessagePayloadEntity)
+                  .content,
+            )!.outcome!
+            as FrontDoorFiled;
+
+    test("filing writes the user's words as a text entry linked to the task, "
+        'under the id the door names', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
+
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+      final entry =
+          verify(
+                () => persistence.createDbEntity(
+                  captureAny(),
+                  linkedId: 'garden',
+                ),
+              ).captured.single
+              as JournalEntity;
+      expect(entry, isA<JournalEntry>());
+      expect(entry.entryText?.plainText, 'The hinge arrived.');
+      expect(entry.meta.id, frontDoorEntryId(doorId, generation: 0));
+      expect(filed().entryId, frontDoorEntryId(doorId, generation: 0));
+    });
+
+    test('a write rejected because the entry is already there — the retry '
+        'after an interrupted tap — files that entry', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: false);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta(id),
+          entryText: const EntryText(plainText: 'The hinge arrived.'),
+        ),
+      );
+
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+      expect(filed().entryId, id);
+    });
+
+    test('an entry whose task link did not land gets it written once more, '
+        'and files when it is live', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      var repaired = false;
+      when(() => journalDb.linksBetween('garden', id)).thenAnswer(
+        (_) async => [
+          if (repaired)
+            link('garden', id)
+          else
+            link('garden', id, deletedAt: DateTime(2026)),
+        ],
+      );
+      when(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).thenAnswer((_) async => repaired = true);
+
+      await wired.read(frontFilingServiceProvider).fileUnderTask(doorId);
+
+      verify(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).called(1);
+      expect(filed().entryId, id);
+    });
+
+    test('an entry whose task link stays missing is not filed', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      writeAnswers(verdict: true);
+      final id = frontDoorEntryId(doorId, generation: 0);
+      when(
+        () => journalDb.linksBetween('garden', id),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => persistence.createLink(fromId: 'garden', toId: id),
+      ).thenAnswer((_) async => false);
+
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+      verifyNever(
+        () => wired.read(agentSyncServiceProvider).upsertEntity(any()),
+      );
+    });
+
+    test('a rejected write with no live row behind it, or a write that '
+        'failed, stores nothing and leaves the proposal', () async {
+      seed(const FrontDoorProposal(ownerId: 'garden'));
+      final id = frontDoorEntryId(doorId, generation: 0);
+      writeAnswers(verdict: false);
+      when(() => journalDb.journalEntityById(id)).thenAnswer(
+        (_) async => JournalEntity.journalEntry(
+          meta: meta(id, deletedAt: DateTime(2026)),
+          entryText: const EntryText(plainText: 'gone'),
+        ),
+      );
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+
+      writeAnswers(verdict: null);
+      await expectLater(
+        wired.read(frontFilingServiceProvider).fileUnderTask(doorId),
+        throwsStateError,
+      );
+      verifyNever(
+        () => wired.read(agentSyncServiceProvider).upsertEntity(any()),
+      );
+    });
+
+    Task task(String id, String title) {
+      final status = TaskStatus.open(
+        id: 's',
+        createdAt: DateTime(2026),
+        utcOffset: 0,
+      );
+      return JournalEntity.task(
+            meta: meta(id),
+            data: TaskData(
+              status: status,
+              statusHistory: [status],
+              dateFrom: DateTime(2026),
+              dateTo: DateTime(2026),
+              title: title,
+            ),
+          )
+          as Task;
+    }
+
+    test('making a task goes through the task creation with the words as '
+        'the title, open, under the id the door names', () async {
+      seed(const FrontDoorInbox());
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer(
+        (invocation) async => task(
+          invocation.namedArguments[#id] as String,
+          (invocation.namedArguments[#data] as TaskData).title,
+        ),
+      );
+
+      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+
+      final data =
+          verify(
+                () => persistence.createTaskEntry(
+                  data: captureAny(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  id: frontDoorTaskId(doorId),
+                ),
+              ).captured.single
+              as TaskData;
+      expect(data.title, 'The hinge arrived.');
+      expect(data.status, isA<TaskOpen>());
+    });
+
+    test('a task the creation path refused because it is already there is '
+        'the one recorded; one that is not there is nothing', () async {
+      seed(const FrontDoorInbox());
+      final id = frontDoorTaskId(doorId);
+      when(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => journalDb.journalEntityById(id),
+      ).thenAnswer((_) async => task(id, 'The hinge arrived.'));
+
+      await wired.read(frontFilingServiceProvider).makeTask(doorId);
+
+      final outcome =
+          FrontDoorRecord.fromJson(
+                (verify(
+                          () => wired
+                              .read(agentSyncServiceProvider)
+                              .upsertEntity(captureAny()),
+                        ).captured.single
+                        as AgentMessagePayloadEntity)
+                    .content,
+              )!.outcome!
+              as FrontDoorTaskCreated;
+      expect(outcome.taskId, id);
+
+      when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+      await expectLater(
+        wired.read(frontFilingServiceProvider).makeTask(doorId),
+        throwsStateError,
+      );
+    });
+
+    test(
+      'taking back deletes the entry through the journal repository',
+      () async {
+        seed(const FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden'));
+        when(
+          () => journalRepository.deleteJournalEntity('entry-1'),
+        ).thenAnswer((_) async => true);
+
+        await wired.read(frontFilingServiceProvider).takeBack(doorId);
+
+        verify(
+          () => journalRepository.deleteJournalEntity('entry-1'),
+        ).called(1);
+      },
+    );
   });
 }
 

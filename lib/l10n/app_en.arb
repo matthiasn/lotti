@@ -3990,13 +3990,22 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
-  "frontChatEmpty": "Ask about a task, a goal, a project or a person. She finds who knows and brings back the answer.",
+  "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
+  "frontChatInboxChip": "Inbox {count}",
+  "@frontChatInboxChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatInboxEmpty": "Nothing is waiting for you.",
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
   "frontChatResponding": "Finding who knows…",
-  "frontChatSubtitle": "Ask anything — she finds who knows",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
+  "frontDoorActionFailed": "That did not go through.",
   "frontDoorAttribution": "From {owner}",
   "@frontDoorAttribution": {
     "placeholders": {
@@ -4013,6 +4022,7 @@
       }
     }
   },
+  "frontDoorDeclined": "Not filed",
   "frontDoorFailed": "Asking {owner} failed.",
   "@frontDoorFailed": {
     "placeholders": {
@@ -4021,6 +4031,17 @@
       }
     }
   },
+  "frontDoorFile": "File it",
+  "frontDoorFiledUnder": "Filed under {owner}",
+  "@frontDoorFiledUnder": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorInbox": "Where should this go?",
+  "frontDoorInboxInstead": "Where should this go instead?",
   "frontDoorIncomplete": "may be incomplete",
   "frontDoorInferenceUnavailable": "{owner} has no working AI setup.",
   "@frontDoorInferenceUnavailable": {
@@ -4035,6 +4056,10 @@
   "frontDoorKindPerson": "the person",
   "frontDoorKindProject": "the project",
   "frontDoorKindTask": "the task",
+  "frontDoorLeaveIt": "Leave it",
+  "frontDoorLeft": "Left here in the thread",
+  "frontDoorMakeTask": "Make it a task",
+  "frontDoorNewProject": "New project…",
   "frontDoorNoAgent": "{owner} has no agent to ask yet.",
   "@frontDoorNoAgent": {
     "placeholders": {
@@ -4044,8 +4069,31 @@
     }
   },
   "frontDoorNoDoor": "Nowhere to take this yet.",
-  "frontDoorStatementsLater": "Not filed: for now she only answers questions.",
+  "frontDoorNotThis": "Somewhere else",
+  "frontDoorOpen": "Open",
+  "frontDoorProposal": "File this under {owner}?",
+  "@frontDoorProposal": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "frontDoorSavedAsNote": "Saved as a note",
+  "frontDoorSaveNote": "Save as a note",
+  "frontDoorStartGoal": "Start a goal…",
   "frontDoorSummaryBased": "from summaries",
+  "frontDoorTaskCreated": "Made into a task",
+  "frontDoorTryAgain": "Try again",
+  "frontDoorUndo": "Undo",
+  "frontDoorUnfiled": "Taken back out of {owner}. File it again?",
+  "@frontDoorUnfiled": {
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
   "frontDoorWalking": "Asking {owner}…",
   "@frontDoorWalking": {
     "placeholders": {

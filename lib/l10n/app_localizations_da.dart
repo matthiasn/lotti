@@ -6785,7 +6785,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatEmpty =>
-      'Spørg om en opgave, et mål, et projekt eller en person. Hun finder den, der ved det, og kommer tilbage med svaret.';
+      'Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.';
+
+  @override
+  String frontChatInboxChip(int count) {
+    return 'Indbakke $count';
+  }
+
+  @override
+  String get frontChatInboxEmpty => 'Intet venter på dig.';
 
   @override
   String get frontChatOpen => 'Spørg ledsageren';
@@ -6797,14 +6805,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatResponding => 'Finder den, der ved det…';
 
   @override
-  String get frontChatSubtitle =>
-      'Spørg om hvad som helst — hun finder den, der ved det';
-
-  @override
   String get frontChatTitle => 'Ledsager';
 
   @override
   String get frontChatYesterday => 'I går';
+
+  @override
+  String get frontDoorActionFailed => 'Det gik ikke igennem.';
 
   @override
   String frontDoorAttribution(String owner) {
@@ -6817,9 +6824,26 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get frontDoorDeclined => 'Ikke gemt';
+
+  @override
   String frontDoorFailed(String owner) {
     return 'Det lykkedes ikke at spørge $owner.';
   }
+
+  @override
+  String get frontDoorFile => 'Gem';
+
+  @override
+  String frontDoorFiledUnder(String owner) {
+    return 'Gemt under $owner';
+  }
+
+  @override
+  String get frontDoorInbox => 'Hvor skal det hen?';
+
+  @override
+  String get frontDoorInboxInstead => 'Hvor skal det hen i stedet?';
 
   @override
   String get frontDoorIncomplete => 'kan være ufuldstændigt';
@@ -6845,6 +6869,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorKindTask => 'opgaven';
 
   @override
+  String get frontDoorLeaveIt => 'Lad det være';
+
+  @override
+  String get frontDoorLeft => 'Efterladt her i tråden';
+
+  @override
+  String get frontDoorMakeTask => 'Lav det til en opgave';
+
+  @override
+  String get frontDoorNewProject => 'Nyt projekt…';
+
+  @override
   String frontDoorNoAgent(String owner) {
     return '$owner har endnu ingen agent at spørge.';
   }
@@ -6853,11 +6889,41 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorNoDoor => 'Der er endnu ikke noget sted at tage det hen.';
 
   @override
-  String get frontDoorStatementsLater =>
-      'Ikke oprettet som post: indtil videre svarer hun kun på spørgsmål.';
+  String get frontDoorNotThis => 'Et andet sted';
+
+  @override
+  String get frontDoorOpen => 'Åbn';
+
+  @override
+  String frontDoorProposal(String owner) {
+    return 'Gem under $owner?';
+  }
+
+  @override
+  String get frontDoorSavedAsNote => 'Gemt som note';
+
+  @override
+  String get frontDoorSaveNote => 'Gem som note';
+
+  @override
+  String get frontDoorStartGoal => 'Start et mål…';
 
   @override
   String get frontDoorSummaryBased => 'fra resuméer';
+
+  @override
+  String get frontDoorTaskCreated => 'Lavet til en opgave';
+
+  @override
+  String get frontDoorTryAgain => 'Prøv igen';
+
+  @override
+  String get frontDoorUndo => 'Fortryd';
+
+  @override
+  String frontDoorUnfiled(String owner) {
+    return 'Taget ud af $owner. Gem igen?';
+  }
 
   @override
   String frontDoorWalking(String owner) {

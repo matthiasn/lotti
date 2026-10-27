@@ -96,6 +96,12 @@ endif()
 set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
 # Match sherpa_onnx 1.13.4's runtime when flutter_onnxruntime needs headers.
 set(ONNXRUNTIME_VERSION "1.27.0" CACHE STRING "Shared speech runtime" FORCE)
+# CMake 4 refuses a project that asks for a policy version below 3.5, and
+# the lame sources bundled by flutter_lame still ask for 3.0. This floor is
+# what the plugins' own cmake_minimum_required reads, so the build no
+# longer depends on which CMake the host happens to carry (the hosted
+# runner pool mixes 3.x and 4.x images).
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 include(flutter/generated_plugins.cmake)
 
 # Flutter copies plugin files rather than installing their targets. Avoid

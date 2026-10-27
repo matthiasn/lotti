@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,21 +18,18 @@ import 'package:material_ui/material_ui.dart';
 @visibleForTesting
 abstract final class FrontChatHeaderKeys {
   static const Key title = Key('front-chat-title');
-  static const Key subtitle = Key('front-chat-subtitle');
   static const Key figure = Key('front-chat-figure');
-  static const Key cost = Key('front-chat-cost');
+  static const Key inbox = Key('front-chat-inbox');
   static const Key internals = Key('front-chat-internals');
   static const Key close = Key('front-chat-close');
 }
 
-/// The front chat's identity band: her face when the companion is switched
-/// on, a spark tile when it is not; her name and what she does; what the
-/// thread has cost so far; the way into her internals; and the sheet's
-/// close.
-///
-/// The cost pill is the whole thread's — every routing turn she ran — the
-/// attribution every agent's internals carry (decision 8 made the routing
-/// model hers and cheap; this is where the user checks).
+/// The front chat's identity band, one row: her face when the companion is
+/// switched on, a spark tile when it is not; her name; the inbox chip while
+/// something waits on the user; the way into her internals, where what the
+/// thread has cost is accounted (decision 8 made the routing model hers and
+/// cheap); and the sheet's close. What she does is said by the empty
+/// thread's invitation and the composer's hint, not repeated up here.
 class FrontChatHeader extends ConsumerWidget {
   const FrontChatHeader({required this.onClose, super.key});
 
@@ -42,11 +39,26 @@ class FrontChatHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final totals = ref
-        .watch(agentConsumptionTotalsProvider(frontAgentId))
-        .value;
     final companionOn =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    // Read through `.value`: a re-projection keeps the last count.
+    final inboxCount =
+        ref.watch(frontChatThreadProvider.select((t) => t.value?.inboxCount)) ??
+        0;
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
+    // How many doors wait on the user, and the filter to just those turns.
+    // Absent while nothing waits and the filter is off.
+    final inbox = inboxCount == 0 && !inboxOnly
+        ? null
+        : DesignSystemChip(
+            key: FrontChatHeaderKeys.inbox,
+            label: messages.frontChatInboxChip(inboxCount),
+            leadingIcon: LottiIcons.inbox,
+            size: DesignSystemChipSize.compactPillTouch,
+            outlined: !inboxOnly,
+            selected: inboxOnly,
+            onPressed: ref.read(frontInboxFilterProvider.notifier).toggle,
+          );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -56,79 +68,49 @@ class FrontChatHeader extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step4),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // The pill rides the title line where there is room for a word
-            // beside it — the same fold every page header uses — and drops
-            // under the subtitle in the sheet, whose width would otherwise
-            // squeeze what she does into an ellipsis.
-            final pillInline = constraints.maxWidth >= kPageHeaderFoldWidth;
-            final pill = totals == null
-                ? null
-                : ConsumptionSummaryPill(
-                    key: FrontChatHeaderKeys.cost,
-                    totals: totals,
-                    foregroundColor: tokens.colors.text.mediumEmphasis,
-                  );
-            return Row(
-              children: [
-                _Figure(companionOn: companionOn),
-                SizedBox(width: tokens.spacing.step3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        messages.frontChatTitle,
-                        key: FrontChatHeaderKeys.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(color: tokens.colors.text.highEmphasis),
-                      ),
-                      SizedBox(height: tokens.spacing.step1),
-                      Text(
-                        messages.frontChatSubtitle,
-                        key: FrontChatHeaderKeys.subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                      if (pill != null && !pillInline) ...[
-                        SizedBox(height: tokens.spacing.step2),
-                        pill,
-                      ],
-                    ],
-                  ),
+        // The side gutter the bubbles below keep, so the title and the
+        // thread share a left edge.
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step3,
+        ),
+        child: Row(
+          children: [
+            _Figure(companionOn: companionOn),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Text(
+                messages.frontChatTitle,
+                key: FrontChatHeaderKeys.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
-                if (pill != null && pillInline) ...[
-                  SizedBox(width: tokens.spacing.step2),
-                  pill,
-                ],
-                SizedBox(width: tokens.spacing.step2),
-                DesignSystemIconAction(
-                  key: FrontChatHeaderKeys.internals,
-                  tooltip: messages.aiInternalsTitle,
-                  onPressed: () => AgentInternalsPanel.show(
-                    context: context,
-                    agentId: frontAgentId,
-                    agentName: messages.frontChatTitle,
-                  ),
-                  icon: LottiIcons.reasoning,
-                ),
-                DesignSystemIconAction(
-                  key: FrontChatHeaderKeys.close,
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: onClose,
-                  icon: LottiIcons.close,
-                ),
-              ],
-            );
-          },
+              ),
+            ),
+            if (inbox != null) ...[
+              SizedBox(width: tokens.spacing.step2),
+              inbox,
+            ],
+            SizedBox(width: tokens.spacing.step2),
+            DesignSystemIconAction(
+              key: FrontChatHeaderKeys.internals,
+              tooltip: messages.aiInternalsTitle,
+              onPressed: () => AgentInternalsPanel.show(
+                context: context,
+                agentId: frontAgentId,
+                agentName: messages.frontChatTitle,
+              ),
+              icon: LottiIcons.reasoning,
+            ),
+            DesignSystemIconAction(
+              key: FrontChatHeaderKeys.close,
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              onPressed: onClose,
+              icon: LottiIcons.close,
+            ),
+          ],
         ),
       ),
     );

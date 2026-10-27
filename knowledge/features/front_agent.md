@@ -1,12 +1,12 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how an unanswered turn is recovered on any device, and what the chat surface renders.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, and what the chat surface renders.
 resource: ../../lib/features/front_agent
-tags: [agents, front-agent, routing, dispatch, doors, companion, chat]
+tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T18:00:00Z }
-stale_after: 2027-04-24
+generated: { by: claude-code/fable-5.1, at: 2026-10-26T12:00:00Z }
+stale_after: 2027-04-26
 sources:
   - id: workflow
     resource: ../../lib/features/front_agent/workflow/front_agent_workflow.dart
@@ -60,6 +60,14 @@ sources:
     resource: ../../lib/features/front_agent/service/front_door_walker.dart
     title: FrontDoorWalker — one door per segment, claimed, never awaited
     last_modified: 2026-10-24
+  - id: filing
+    resource: ../../lib/features/front_agent/service/front_filing_service.dart
+    title: FrontFilingService — what the tap under a door writes
+    last_modified: 2026-10-26
+  - id: inbox-filter
+    resource: ../../lib/features/front_agent/state/front_inbox_filter.dart
+    title: The inbox is the thread filtered
+    last_modified: 2026-10-26
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
     title: FrontChatThreadBuilder — the thread with doors, options and mirrored replies
@@ -93,10 +101,11 @@ record and answers for nobody: it reads a bounded index of what exists and
 decides where each part of what the user said belongs. Its one artifact is a
 **dispatch**. After the dispatch, the **door walker** takes each segment to
 its owner and the **chat surface** shows what came back, under the owner's
-name. Slice 1 (this concept) answers questions only: no task, project, goal,
-person or entry is created or changed; the only writes are the front
-thread's own, in `agent.sqlite`. The product decisions behind it are in the
-plan, not here.
+name. A statement is never filed by the agent: it becomes a **proposal**
+under the user's turn, and only the user's tap writes — the user's own
+words, verbatim (decision 1). What nothing owns waits in the **inbox**,
+which is the same thread filtered (decision 7). The product decisions
+behind it are in the plan, not here.
 
 # One turn
 
@@ -277,9 +286,11 @@ walker died. Outcomes:
 | Segment | Door | Outcome |
 |---------|------|---------|
 | `task` / `project` question with an active agent | the owner's query pipeline, headless: `QueryAnswerBuilder.build` over an in-memory `QueryChatHistory` whose one event is the segment, chat id the source message id | `FrontDoorAnswer(text, summaryBased, incomplete, ownerIds)` — the answer is the record's, attributed to the owner, never reworded |
-| `goal` / `person` question with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
-| a statement or instruction | none in this slice | `FrontDoorSkipped(statementsLater)` |
-| `day`, `new`, `journal`, `unrouted` | none yet | `FrontDoorSkipped(noDoor)` |
+| `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
+| `task` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
+| `project` statement | none (decision 5: no project door) | `FrontDoorInbox()` |
+| `new`, `journal`, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
+| `day` | none yet (slice 4) | `FrontDoorSkipped(noDoor)` |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
 | owner without a usable inference setup | — | `FrontDoorSkipped(inferenceUnavailable)` |
 | a door that throws | — | `FrontDoorFailed(errorType)` — the type, never the text |
@@ -288,6 +299,85 @@ The walker never awaits a specialist's wake: the goal and person chat
 services' `sendMessage` awaits its own completion and at concurrency 1 that
 would deadlock inside the front wake, so the walker uses their
 `appendMessage` / `enqueueMessage` split and the reply arrives later.
+
+# The tap: filing and the inbox
+
+`FrontFilingService` is the one place the front agent's surface changes the
+record, and every action is the user's tap under a door. Each action reads
+the door's payload, requires the outcome it applies to (else
+`FrontDoorStateException` — the door was acted on elsewhere, or twice), and
+rewrites the record **under the same ids** with the new outcome, so the
+dispatch keeps its pointer to what was written and the inbox count follows
+from the records alone. The sync service pings nobody, so the service pings
+the front agent itself (`notifyUiOnly`), which re-projects the thread.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Proposal: task statement walked
+  Proposal --> Filed: File it — text entry, linked to the task, in its category
+  Proposal --> Inbox: Somewhere else — the words go to the inbox, the task kept on the item
+  Filed --> Proposal: Undo — entry deleted, next generation
+  [*] --> Inbox: new / journal / unrouted / project statement walked
+  Inbox --> SavedNote: Save as a note — text entry, owned by nothing
+  Inbox --> TaskCreated: Make it a task — titled with the words
+  Inbox --> Left: Leave it — nothing written, nothing waits
+  Left --> Proposal: Undo — when it came from a proposal
+  Left --> Inbox: Undo — otherwise, same guess, same generation
+  SavedNote --> Inbox: Undo — note deleted, next generation, same guess
+  TaskCreated --> Inbox: Undo — task deleted, next generation, same guess
+  Inbox --> Inbox: Start a goal… / New project… — the wizard opens, nothing written
+```
+
+The entry a tap writes goes through the persistence logic — a text entry
+with the task's `categoryId` and `linkedId`, a task through
+`createTaskEntry` — so a filed entry wakes the task agent through its
+subscription exactly as dictation into the task does, and a made task is a
+task like any other. **Every write is idempotent per door**: the entry or
+task is created under a deterministic id (`frontDoorEntryId`,
+`frontDoorNoteId`, `frontDoorTaskId` — a UUID v5 of the door id and the
+door's *generation*, how often it was written and taken back; generation
+zero keeps the ids from before generations were counted), and the adapters
+in `front_agent_providers.dart` read the write's own verdict: a rejected
+write (`createDbEntity` never overwrites an existing id) is the retry after
+an interrupted tap and files the row already there, while a failed write,
+or a rejected one with no live row behind it, stores nothing and leaves the
+door waiting. Under a task the entry counts only once its link is live —
+the task agent reads its entries through the link — so the writer checks
+`JournalDb.linksBetween` after the write, writes a missing link once more,
+and stores nothing when it is still missing. **Take back** (`takeBack`) deletes what the door wrote — the
+filed entry, the note or the task — through
+`JournalRepository.deleteJournalEntity`, refuses when the thing is still
+there undeleted, counts one already gone from the journal as taken back,
+and puts the door back where it waited, one generation on: a filed entry's
+door is a proposal again, a note's or a task's an inbox item again leading
+with the same chip (the receipt kept the inbox item's `newKind`), so a
+re-file or a re-save gets a fresh row rather than the soft-deleted one.
+**Somewhere else** and **Leave it** are one action (`decline`): a proposal's
+words go to the inbox, the task they were proposed under kept on the item
+(`FrontDoorInbox.ownerId`, which turns its line into *Where should this go
+instead?*), so a wrong guess costs one more tap, not a retype; an inbox
+item left where it is settles (`FrontDoorDeclined`, which keeps the
+proposal's owner and generation or the item's guess), nothing written and
+nothing waiting. **Undo** (`undoDecline`) makes a left door what it was —
+the proposal, when it came from one, else the inbox item; a refusal from
+before that was kept falls back on a task door's destination — with
+nothing written in between.
+The goal and project wizards take no prefill today: their chips open them
+as they are, the words stay in the thread, and the door keeps waiting
+until a chip that writes takes it.
+
+A turn with a door still waiting on the user never leaves the projection:
+`FrontChatThreadBuilder` keeps it beside the newest fifty messages however
+old it is, so the inbox cannot scroll out of existence — and keeps the
+message right after it too, her reply that carries its doors (or the next
+user turn, which says no reply followed), so the doors never ride an
+unrelated reply the window happens to show next.
+
+The **inbox** is no entity: `FrontChatThread.inboxMessageIds` is every user
+turn with a door whose outcome is a `FrontDoorProposal` or a
+`FrontDoorInbox` (`frontDoorAwaitsUser`), `inboxCount` the doors, and
+`frontInboxFilterProvider` the switch the header's chip toggles — an
+auto-disposed notifier, so the filter is off every time the sheet opens.
 
 # The chat surface
 
@@ -307,13 +397,46 @@ on first use) and invalidates the thread when the awaited turn completes; a
 failed turn keeps its durable id so the retry re-wakes the same turn.
 
 `FrontChatPane` is the thread on `AgentChatView` with day dividers
-(`dividerBuilder`), the door card under a routed turn, the option chips
-under her **latest** question only (an older question's chips would answer a
-question nobody is asking), and a per-turn cost caption read by the reply
-row's run key (`agentRunConsumptionTotalsProvider`, consumption schema v5's
-`idx_consumption_agent_run`). Her header shows her face when
-`enable_companion` is on, the thread's lifetime cost pill, and the way into
-her internals. `showFrontChatSheet` opens it on the root navigator in the
+(`dividerBuilder`), the door cards under a routed turn, the option chips
+under her **latest** question only (an older question's chips would answer
+a question nobody is asking), and a per-turn cost that tails her bubble's
+footer line — `Companion · 8:30 AM · 9.8K tokens`, one meta row — through
+the chat view's `footerTrailingBuilder`, read by the reply row's run key
+(`agentRunConsumptionTotalsProvider`, consumption schema v5's
+`idx_consumption_agent_run`). A send clears the inbox filter: the new turn
+lands in the whole thread.
+
+A turn is the user's bubble, her reply, and under her reply the **door
+cards** (`FrontDoorCard`) — her answer, part by part. The doors are keyed
+by the user turn in the thread but *carried* by her reply right after it
+(`FrontChatThread.carrierOf` / `doorsCarriedBy`), so the cards sit under
+her bubble; until she has replied, or when no reply followed, they sit
+under the user's. One card per segment on one surface, hairlines between,
+and every card the same shape: a compact tinted tile with the kind's glyph
+(task, goal, project, person, day, inbox; the done glyph in the success
+ink once something was written, the warning in the error ink when the
+door failed), the user's words in full in body type — or, for an answer,
+the owner's text — one status caption (the proposal's question naming the
+task, *Where should this go?* or *… go instead?* after a proposal was sent
+there, *Filed under …*, *Made into a task*, an answer's attribution and
+caveats, a door still being walked, a reason it went nowhere), at most one
+filled action, and an overflow menu (`DesignSystemContextMenuButton`)
+holding every other way out. The filled action is always a tap that
+writes — *File it*, *Make it a task* — or, on a settled card, a secondary
+*Open*; the overflow holds *Somewhere else* on a proposal, *Start a goal…*
+/ *New project…* (the ellipsis says a wizard opens), *Save as a note* and
+*Leave it* on an inbox item with the router's guess first, and *Undo* on
+anything settled. A busy card's action shows it loading; a failed one's
+status says so in the error ink and the tap reads *Try again*
+(`FrontChatComposerState.busyDoorIds` / `failedDoorIds`). *Open* leaves
+the sheet for the entry's or the task's page. The inbox filter keeps a
+waiting turn's words and the reply that carries its cards together.
+
+Her header is one row: her face when `enable_companion` is on, her name,
+the inbox chip with its count, and the way into her internals, where the
+thread's cost is accounted — no subtitle and no cost pill; what she does is
+said by the empty thread's invitation and the composer's hint.
+`showFrontChatSheet` opens it on the root navigator in the
 agent-chat side sheet — a bottom sheet below the page breakpoint — from the
 desktop rail's utility row above Settings, the phone launcher's utility
 button beside the menu, or the `openFrontChat` keyboard command
@@ -339,7 +462,11 @@ without one.
   concurrency 1 that would deadlock. The walker runs inside the front wake
   but only appends and enqueues; the reply is mirrored when it lands.
 - A door record is written twice under one id — the claim, then the
-  outcome. Anything counting rows per door must count by id.
+  outcome — and again on every tap. Anything counting rows per door must
+  count by id.
+- A proposal is still a *pending* turn for recovery purposes only until its
+  door record is `done`; the walker marks it done with the proposal as its
+  outcome, so waiting for the user's tap never re-arms a recovery wake.
 - Her per-turn cost is the routing calls of her wake only. The owners'
   answers cost on the owners' agents, where their internals show them.
 - The index must stay byte-stable: do not add a field that changes between

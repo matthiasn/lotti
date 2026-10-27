@@ -498,15 +498,124 @@ void main() {
     });
   });
 
-  test('statements wait for the filing slice; new, journal, day and unrouted '
-      'segments have no door yet', () async {
+  group('statements and instructions', () {
+    test('under a task become a proposal that waits for the user, nothing '
+        'written', () async {
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.task,
+          id: 'garden',
+          intent: FrontSegmentIntent.instruction,
+        ),
+      ]);
+      taskAgents['garden'] = makeTestIdentity(
+        id: 'agent-garden',
+        agentId: 'agent-garden',
+      );
+
+      await walker.walk(messageId);
+
+      final outcome = doors()[0]!.outcome! as FrontDoorProposal;
+      expect(outcome.ownerId, 'garden');
+      expect(outcome.unfiled, isFalse);
+      expect(factoryCalls, isEmpty);
+      verify(
+        () => titles.titleFor(FrontDestinationKind.task, 'garden'),
+      ).called(1);
+    });
+
+    test('under a project wait in the inbox: no project door yet', () async {
+      seedDispatch([
+        segment(
+          start: 30,
+          end: 39,
+          kind: FrontDestinationKind.project,
+          id: 'reloc',
+          intent: FrontSegmentIntent.statement,
+        ),
+      ]);
+      projectAgents['reloc'] = makeTestIdentity(id: 'pa', agentId: 'pa');
+
+      await walker.walk(messageId);
+
+      final outcome = doors()[0]!.outcome! as FrontDoorInbox;
+      expect(outcome.newKind, isNull);
+      expect(factoryCalls, isEmpty);
+    });
+
+    test(
+      'to a goal or a person are their chat turns, like questions',
+      () async {
+        seedDispatch([
+          segment(
+            start: 19,
+            end: 24,
+            kind: FrontDestinationKind.goal,
+            id: 'goal-swim',
+            intent: FrontSegmentIntent.statement,
+          ),
+          segment(
+            start: 25,
+            end: 29,
+            kind: FrontDestinationKind.person,
+            id: 'pip',
+            intent: FrontSegmentIntent.instruction,
+          ),
+        ]);
+        when(() => repository.getEntity('goal-swim')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'goal-swim',
+            agentId: 'goal-swim',
+            kind: AgentKinds.goalAgent,
+          ),
+        );
+        when(
+          () => repository.getEntity(relationshipAgentIdFor('pip')),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: relationshipAgentIdFor('pip'),
+            agentId: relationshipAgentIdFor('pip'),
+            kind: AgentKinds.relationshipAgent,
+          ),
+        );
+        when(
+          () => goalChat.appendMessage(agentId: 'goal-swim', text: 'Swim?'),
+        ).thenAnswer((_) async => 'gm-1');
+        when(
+          () =>
+              goalChat.enqueueMessage(agentId: 'goal-swim', messageId: 'gm-1'),
+        ).thenReturn('run-g');
+        when(
+          () => personChat.appendMessage(
+            agentId: relationshipAgentIdFor('pip'),
+            text: 'Pip?',
+          ),
+        ).thenAnswer((_) async => 'pm-1');
+        when(
+          () => personChat.enqueueMessage(
+            agentId: relationshipAgentIdFor('pip'),
+            messageId: 'pm-1',
+          ),
+        ).thenReturn('run-p');
+
+        await walker.walk(messageId);
+
+        expect(doors()[0]!.outcome, isA<FrontDoorChatTurn>());
+        expect(doors()[1]!.outcome, isA<FrontDoorChatTurn>());
+      },
+    );
+  });
+
+  test('new, journal and unrouted segments wait in the inbox — a new thing '
+      "with what it would become; today's plan has no door yet", () async {
     seedDispatch([
       segment(
         start: 30,
         end: 39,
-        kind: FrontDestinationKind.task,
-        id: 'garden',
-        intent: FrontSegmentIntent.instruction,
+        kind: FrontDestinationKind.journal,
+        intent: FrontSegmentIntent.statement,
       ),
       segment(
         start: 40,
@@ -519,19 +628,30 @@ void main() {
 
     await walker.walk(messageId);
 
-    expect(
-      (doors()[0]!.outcome! as FrontDoorSkipped).reason,
-      FrontDoorSkipReason.statementsLater,
-    );
+    expect((doors()[0]!.outcome! as FrontDoorInbox).newKind, isNull);
+    expect((doors()[1]!.outcome! as FrontDoorInbox).newKind, FrontNewKind.goal);
+    // Only owners get a title looked up.
+    verifyNever(() => titles.titleFor(FrontDestinationKind.newThing, any()));
+    verifyNever(() => titles.titleFor(FrontDestinationKind.journal, any()));
+
+    seedDispatch([
+      segment(start: 0, end: 18, kind: FrontDestinationKind.unrouted),
+      segment(
+        start: 19,
+        end: 24,
+        kind: FrontDestinationKind.day,
+        intent: FrontSegmentIntent.instruction,
+      ),
+    ]);
+    upserts.clear();
+
+    await walker.walk(messageId);
+
+    expect(doors()[0]!.outcome, isA<FrontDoorInbox>());
     expect(
       (doors()[1]!.outcome! as FrontDoorSkipped).reason,
       FrontDoorSkipReason.noDoor,
     );
-    // Only owners get a title looked up.
-    verify(
-      () => titles.titleFor(FrontDestinationKind.task, 'garden'),
-    ).called(1);
-    verifyNever(() => titles.titleFor(FrontDestinationKind.newThing, any()));
   });
 
   group('claims', () {

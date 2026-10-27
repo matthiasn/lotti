@@ -29,10 +29,6 @@ enum FrontDoorStatus {
 
 /// Why a segment was not walked through a door.
 enum FrontDoorSkipReason {
-  /// Only questions are walked in this slice; a statement or instruction
-  /// waits for the filing slice.
-  statementsLater,
-
   /// The owner has no agent to take the turn (a task without one, a
   /// retired goal or person agent).
   noAgent,
@@ -40,8 +36,8 @@ enum FrontDoorSkipReason {
   /// The owner's inference setup resolves to nothing.
   inferenceUnavailable,
 
-  /// The segment named something new, a note, today's plan, or nothing —
-  /// doors for those come with later slices.
+  /// The segment is about today's plan — the Daily OS door comes with a
+  /// later slice.
   noDoor;
 
   static FrontDoorSkipReason? fromName(Object? name) =>
@@ -89,11 +85,177 @@ sealed class FrontDoorOutcome {
       case 'failed':
         final error = map['errorType'];
         return FrontDoorFailed(error is String ? error : 'unknown');
+      case 'proposal':
+        final ownerId = map['ownerId'];
+        if (ownerId is! String) return null;
+        final generation = map['generation'];
+        return FrontDoorProposal(
+          ownerId: ownerId,
+          generation: generation is int ? generation : 0,
+        );
+      case 'filed':
+        final entryId = map['entryId'];
+        if (entryId is! String) return null;
+        final ownerId = map['ownerId'];
+        final generation = map['generation'];
+        return FrontDoorFiled(
+          entryId: entryId,
+          ownerId: ownerId is String ? ownerId : null,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
+      case 'declined':
+        final ownerId = map['ownerId'];
+        final generation = map['generation'];
+        return FrontDoorDeclined(
+          ownerId: ownerId is String ? ownerId : null,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
+      case 'inbox':
+        final ownerId = map['ownerId'];
+        final generation = map['generation'];
+        return FrontDoorInbox(
+          newKind: FrontNewKind.fromName(map['newKind']),
+          ownerId: ownerId is String ? ownerId : null,
+          generation: generation is int ? generation : 0,
+        );
+      case 'taskCreated':
+        final taskId = map['taskId'];
+        if (taskId is! String) return null;
+        final generation = map['generation'];
+        return FrontDoorTaskCreated(
+          taskId: taskId,
+          newKind: FrontNewKind.fromName(map['newKind']),
+          generation: generation is int ? generation : 0,
+        );
       default:
         return null;
     }
   }
 }
+
+/// A statement or instruction under a task, waiting for the user's one tap
+/// before anything is written (decision 1).
+///
+/// [generation] counts how often the proposal was filed and taken back out:
+/// it is part of the filed entry's deterministic id, so a tap that is
+/// retried after an interrupted write lands on the entry it already wrote,
+/// while a proposal filed again after an unfile gets a fresh entry rather
+/// than the soft-deleted one.
+class FrontDoorProposal extends FrontDoorOutcome {
+  const FrontDoorProposal({required this.ownerId, this.generation = 0});
+
+  final String ownerId;
+  final int generation;
+
+  /// Whether the user had filed this once and took the entry back out.
+  bool get unfiled => generation > 0;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'proposal',
+    'ownerId': ownerId,
+    if (generation > 0) 'generation': generation,
+  };
+}
+
+/// The user's words were written as a text entry: under [ownerId] when it
+/// was filed under a task, on their own when saved as a note. [generation]
+/// is the proposal's or the inbox item's at the time of writing, so a
+/// take-back can hand the next proposal or inbox item the one after it.
+/// [newKind] is the inbox item's, kept so a take-back leads with the same
+/// chip again.
+class FrontDoorFiled extends FrontDoorOutcome {
+  const FrontDoorFiled({
+    required this.entryId,
+    this.ownerId,
+    this.newKind,
+    this.generation = 0,
+  });
+
+  final String entryId;
+  final String? ownerId;
+  final FrontNewKind? newKind;
+  final int generation;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'filed',
+    'entryId': entryId,
+    if (ownerId != null) 'ownerId': ownerId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
+  };
+}
+
+/// The user left this where it is. Nothing was written, and nothing waits.
+/// What it was before is kept — [ownerId] and [generation] of the proposal
+/// it came from, [newKind] of the inbox item — so an undo brings that back.
+class FrontDoorDeclined extends FrontDoorOutcome {
+  const FrontDoorDeclined({this.ownerId, this.newKind, this.generation = 0});
+
+  final String? ownerId;
+  final FrontNewKind? newKind;
+  final int generation;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'declined',
+    if (ownerId != null) 'ownerId': ownerId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
+  };
+}
+
+/// Nothing owns this yet: the segment waits in the inbox with the ways
+/// that make it a task, start a goal or project, save it as a note, or
+/// leave it. [newKind] is what the router thought it would become, if
+/// anything; [ownerId] the task it was proposed under before the user said
+/// not to file it there, so the item asks where it should go *instead*;
+/// [generation] counts how often the item was written and taken back.
+class FrontDoorInbox extends FrontDoorOutcome {
+  const FrontDoorInbox({this.newKind, this.ownerId, this.generation = 0});
+
+  final FrontNewKind? newKind;
+  final String? ownerId;
+  final int generation;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'inbox',
+    if (newKind != null) 'newKind': newKind!.name,
+    if (ownerId != null) 'ownerId': ownerId,
+    if (generation > 0) 'generation': generation,
+  };
+}
+
+/// The user made a task of the segment; its title is the user's words.
+/// [newKind] and [generation] are the inbox item's, kept for a take-back.
+class FrontDoorTaskCreated extends FrontDoorOutcome {
+  const FrontDoorTaskCreated({
+    required this.taskId,
+    this.newKind,
+    this.generation = 0,
+  });
+
+  final String taskId;
+  final FrontNewKind? newKind;
+  final int generation;
+
+  @override
+  Map<String, Object?> toJson() => {
+    'type': 'taskCreated',
+    'taskId': taskId,
+    if (newKind != null) 'newKind': newKind!.name,
+    if (generation > 0) 'generation': generation,
+  };
+}
+
+/// Whether the user still has to act on this door: a proposal waiting for
+/// its tap, or an inbox item nobody has taken anywhere.
+bool frontDoorAwaitsUser(FrontDoorOutcome? outcome) =>
+    outcome is FrontDoorProposal || outcome is FrontDoorInbox;
 
 /// The query pipeline answered a task or project question; the text is
 /// shown in the front thread, attributed to its owner.

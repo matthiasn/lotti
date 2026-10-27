@@ -48,8 +48,26 @@ void main() {
         specialistAgentId: 'goal-a',
         specialistMessageId: 'm-1',
       ),
-      FrontDoorSkipped(FrontDoorSkipReason.statementsLater),
+      FrontDoorSkipped(FrontDoorSkipReason.noAgent),
       FrontDoorFailed('StateError'),
+      FrontDoorProposal(ownerId: 'garden'),
+      FrontDoorProposal(ownerId: 'garden', generation: 2),
+      FrontDoorFiled(entryId: 'entry-1', ownerId: 'garden', generation: 1),
+      FrontDoorFiled(entryId: 'entry-2'),
+      FrontDoorFiled(entryId: 'entry-3', newKind: FrontNewKind.goal),
+      FrontDoorDeclined(),
+      FrontDoorDeclined(ownerId: 'garden', generation: 2),
+      FrontDoorDeclined(newKind: FrontNewKind.goal, generation: 1),
+      FrontDoorInbox(),
+      FrontDoorInbox(newKind: FrontNewKind.goal),
+      FrontDoorInbox(newKind: FrontNewKind.project, generation: 1),
+      FrontDoorInbox(ownerId: 'garden', generation: 2),
+      FrontDoorTaskCreated(taskId: 'task-1'),
+      FrontDoorTaskCreated(
+        taskId: 'task-2',
+        newKind: FrontNewKind.task,
+        generation: 3,
+      ),
     ];
     for (final outcome in outcomes) {
       final back = FrontDoorRecord.fromJson(record(outcome: outcome).toJson());
@@ -115,5 +133,47 @@ void main() {
       'unknown',
     );
     expect(FrontDoorOutcome.fromJson('text'), isNull);
+    expect(FrontDoorOutcome.fromJson({'type': 'proposal'}), isNull);
+    final proposal =
+        FrontDoorOutcome.fromJson({'type': 'proposal', 'ownerId': 'g'})!
+            as FrontDoorProposal;
+    expect(proposal.generation, 0);
+    expect(proposal.unfiled, isFalse);
+    expect(
+      (FrontDoorOutcome.fromJson({
+                'type': 'proposal',
+                'ownerId': 'g',
+                'generation': 1,
+              })!
+              as FrontDoorProposal)
+          .unfiled,
+      isTrue,
+    );
+    expect(FrontDoorOutcome.fromJson({'type': 'filed'}), isNull);
+    expect(FrontDoorOutcome.fromJson({'type': 'taskCreated'}), isNull);
+    expect(
+      (FrontDoorOutcome.fromJson({'type': 'inbox', 'newKind': 'hologram'})!
+              as FrontDoorInbox)
+          .newKind,
+      isNull,
+    );
+  });
+
+  test('a proposal and an inbox item wait on the user; everything else does '
+      'not', () {
+    expect(frontDoorAwaitsUser(const FrontDoorProposal(ownerId: 'g')), isTrue);
+    expect(frontDoorAwaitsUser(const FrontDoorInbox()), isTrue);
+    for (final settled in const <FrontDoorOutcome?>[
+      null,
+      FrontDoorFiled(entryId: 'e'),
+      FrontDoorDeclined(),
+      FrontDoorTaskCreated(taskId: 't'),
+      FrontDoorSkipped(FrontDoorSkipReason.noDoor),
+      FrontDoorFailed('x'),
+      FrontDoorChatTurn(specialistAgentId: 'a', specialistMessageId: 'm'),
+      FrontDoorAnswer(text: 't', summaryBased: false, incomplete: false),
+    ]) {
+      expect(frontDoorAwaitsUser(settled), isFalse, reason: '$settled');
+    }
   });
 }
