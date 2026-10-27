@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
@@ -10,6 +11,8 @@ import 'package:lotti/features/tts/cloud/voxtral_voice_catalog.dart';
 import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/service_overrides.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_data/ai_config_factories.dart';
 
 class _MockService extends Mock implements VoxtralTtsService {}
@@ -144,5 +147,23 @@ void main() {
         model: any(named: 'model'),
       ),
     );
+  });
+
+  group('providers', () {
+    setUp(() async {
+      await setUpTestGetIt();
+    });
+    tearDown(tearDownTestGetIt);
+
+    test('the synthesizer and the catalog cache share one Voxtral client', () {
+      final container = ProviderContainer(overrides: getItServiceOverrides());
+      addTearDown(container.dispose);
+
+      final service = container.read(voxtralTtsServiceProvider);
+      expect(container.read(cloudSpeechSynthesizerProvider), isNotNull);
+      expect(container.read(voxtralVoiceCatalogRepositoryProvider), isNotNull);
+      // Reading again yields the same client: no second HTTP pool.
+      expect(container.read(voxtralTtsServiceProvider), same(service));
+    });
   });
 }
