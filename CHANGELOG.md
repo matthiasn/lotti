@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.65]
+
+### Added
+
+- **Tell the companion something, and one tap files it.** Say what happened
+  on a task and she proposes to file your words, verbatim, as an entry
+  under that task; nothing is written until you tap, and whatever a tap
+  wrote can be opened or undone. Anything she cannot place, or that you
+  did not want filed there, waits in a new inbox in her chat, counted in
+  the header, with one tap to make it a task, start a goal or project,
+  save it as a note, or leave it. Goal and person statements go straight
+  to their agents. Part of the experimental *Companion chat* in Advanced
+  settings.
+
+### Changed
+
+- **The banner's buttons now look like they belong together.** The dock
+  strip and the goal banner card showed three mismatched controls side by
+  side: a muted pill for the agent's suggestion, a bare star, and a bright
+  Snooze button in a different shape and size that out-shouted the action
+  it sat next to. The suggestion is now the one filled button, while Snooze
+  and a now-labelled Rate button share one quiet style, one icon size and
+  one tap target, with even spacing between them — in light and dark themes
+  and at large text sizes.
+- **Phones see the suggestion too.** The compact banner strip used to show
+  only an unlabelled snooze glyph, so the one visible button was the one
+  that made the banner go away. The strip now reads like the goal banner
+  card: name and quiet controls on the first line, the headline beneath, and
+  the suggestion button under it. A lone banner no longer reserves an empty
+  progress line along its top edge, the rotation dots stay visible in the
+  light theme, and the suggestion button keeps its place when a banner's
+  rating star comes and goes.
+
 ## [1.1.64]
 
 ### Changed
