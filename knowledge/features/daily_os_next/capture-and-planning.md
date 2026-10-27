@@ -511,7 +511,7 @@ stateDiagram-v2
   Idle --> Listening: toggle
   Idle --> Error: permission denied / recorder start fails (before listening)
   Listening --> Transcribing: stop
-  Transcribing --> Error: noAudioRecorded
+  Listening --> Error: noAudioRecorded (stop with nothing recorded)
   Transcribing --> Error: journal persist rejected (audioPersistFailed)
   Transcribing --> Error: recordingSavedPendingTranscription — enqueue/claim fails, transcription fails after commit, or the transcript attach is rejected
   Transcribing --> Captured: transcript attached, job succeeded
