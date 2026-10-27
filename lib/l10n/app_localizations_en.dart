@@ -15446,6 +15446,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chat audio';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Default · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hello! This is how I sound reading your summaries aloud.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloud voices';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Loading voices';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'The voices could not be loaded. Check the connection and the provider’s API key.';
+
+  @override
   String get speechSettingsModelDescription => 'On-device speech model';
 
   @override

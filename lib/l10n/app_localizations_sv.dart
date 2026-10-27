@@ -15546,6 +15546,33 @@ class AppLocalizationsSv extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chattljud';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hej! Så här låter jag när jag läser upp dina sammanfattningar.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiler med en uppläsningsmodell talar med de här rösterna. Varje språk använder ditt val, eller sin första kvinnoröst.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Molnröster';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Läser in röster';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Uppläsning använder rösten på enheten. Välj en molnröst i fältet Läs upp i en inferensprofil.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Rösterna kunde inte läsas in. Kontrollera anslutningen och leverantörens API-nyckel.';
+
+  @override
   String get speechSettingsModelDescription => 'Talmodell på enheten';
 
   @override

@@ -15531,6 +15531,33 @@ class AppLocalizationsDa extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chatlyd';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hej! Sådan lyder jeg, når jeg læser dine resuméer højt.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profiler med en oplæsningsmodel taler med disse stemmer. Hvert sprog bruger dit valg eller sin første kvindestemme.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloud-stemmer';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Indlæser stemmer';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Oplæsning bruger stemmen på enheden. Vælg en cloud-stemme i feltet Læs højt i en inferensprofil.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Stemmerne kunne ikke indlæses. Tjek forbindelsen og udbyderens API-nøgle.';
+
+  @override
   String get speechSettingsModelDescription => 'On-device talemodel';
 
   @override

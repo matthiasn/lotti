@@ -15577,6 +15577,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chataudio';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standaard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hoi! Zo klink ik als ik je samenvattingen voorlees.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profielen met een voorleesmodel spreken met deze stemmen. Elke taal gebruikt jouw keuze, of de eerste vrouwenstem.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloudstemmen';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Stemmen laden';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Voorlezen gebruikt de stem op het apparaat. Kies voor een cloudstem er een in het veld Voorlezen van een inferentieprofiel.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'De stemmen konden niet worden geladen. Controleer de verbinding en de API-sleutel van de provider.';
+
+  @override
   String get speechSettingsModelDescription => 'Speechmodel voor het apparaat';
 
   @override

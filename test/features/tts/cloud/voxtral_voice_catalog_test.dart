@@ -173,6 +173,17 @@ void main() {
     });
   });
 
+  test('languageCodes lists each language once, by code, sorted', () {
+    expect(_catalog().languageCodes, ['de', 'en']);
+    const mixed = VoxtralVoice(
+      id: 'mixed',
+      name: 'Mixed',
+      languages: ['pt-BR', 'Portuguese', ' ', 'Dutch', 'xx'],
+    );
+    expect(_catalog(const [mixed]).languageCodes, ['nl', 'pt', 'xx']);
+    expect(_catalog(const []).languageCodes, isEmpty);
+  });
+
   group('VoxtralVoiceCatalog cache', () {
     test('round-trips through JSON', () {
       final restored = VoxtralVoiceCatalog.fromJson(_catalog().toJson());

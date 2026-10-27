@@ -9564,6 +9564,39 @@
   "speechSettingsAutoPrepareChatAudio": "Prepare chat audio automatically",
   "speechSettingsChatAudioDescription": "Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.",
   "speechSettingsChatAudioLabel": "Chat audio",
+  "speechSettingsCloudVoiceDefault": "Default · {name}",
+  "@speechSettingsCloudVoiceDefault": {
+    "description": "Dropdown entry for a language's default cloud voice, naming the voice that will speak",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speechSettingsCloudVoiceSample": "Hello! This is how I sound reading your summaries aloud.",
+  "@speechSettingsCloudVoiceSample": {
+    "description": "Sample sentence a cloud voice speaks when tested in Speech settings; spoken in each language's own catalog"
+  },
+  "speechSettingsCloudVoicesDescription": "Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.",
+  "@speechSettingsCloudVoicesDescription": {
+    "description": "Description of the cloud voices section when a profile reads aloud with a cloud voice"
+  },
+  "speechSettingsCloudVoicesLabel": "Cloud voices",
+  "@speechSettingsCloudVoicesLabel": {
+    "description": "Title of the Speech settings section listing the cloud voices per language"
+  },
+  "speechSettingsCloudVoicesLoading": "Loading voices",
+  "@speechSettingsCloudVoicesLoading": {
+    "description": "Screen-reader label of the spinner while the cloud voice catalog loads"
+  },
+  "speechSettingsCloudVoicesNone": "Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.",
+  "@speechSettingsCloudVoicesNone": {
+    "description": "Description of the cloud voices section when no profile names a cloud read-aloud model"
+  },
+  "speechSettingsCloudVoicesUnavailable": "The voices could not be loaded. Check the connection and the provider’s API key.",
+  "@speechSettingsCloudVoicesUnavailable": {
+    "description": "Shown when the cloud voice catalog could not be loaded and none is cached"
+  },
   "speechSettingsModelDescription": "On-device speech model",
   "speechSettingsModelDownloadSize": "{size} · downloads once, when you first read aloud",
   "@speechSettingsModelDownloadSize": {

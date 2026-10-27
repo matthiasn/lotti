@@ -25745,6 +25745,48 @@ abstract class AppLocalizations {
   /// **'Chat audio'**
   String get speechSettingsChatAudioLabel;
 
+  /// Dropdown entry for a language's default cloud voice, naming the voice that will speak
+  ///
+  /// In en, this message translates to:
+  /// **'Default · {name}'**
+  String speechSettingsCloudVoiceDefault(String name);
+
+  /// Sample sentence a cloud voice speaks when tested in Speech settings; spoken in each language's own catalog
+  ///
+  /// In en, this message translates to:
+  /// **'Hello! This is how I sound reading your summaries aloud.'**
+  String get speechSettingsCloudVoiceSample;
+
+  /// Description of the cloud voices section when a profile reads aloud with a cloud voice
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.'**
+  String get speechSettingsCloudVoicesDescription;
+
+  /// Title of the Speech settings section listing the cloud voices per language
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud voices'**
+  String get speechSettingsCloudVoicesLabel;
+
+  /// Screen-reader label of the spinner while the cloud voice catalog loads
+  ///
+  /// In en, this message translates to:
+  /// **'Loading voices'**
+  String get speechSettingsCloudVoicesLoading;
+
+  /// Description of the cloud voices section when no profile names a cloud read-aloud model
+  ///
+  /// In en, this message translates to:
+  /// **'Read-aloud uses the on-device voice. To use a cloud voice, pick one in an inference profile’s Read aloud slot.'**
+  String get speechSettingsCloudVoicesNone;
+
+  /// Shown when the cloud voice catalog could not be loaded and none is cached
+  ///
+  /// In en, this message translates to:
+  /// **'The voices could not be loaded. Check the connection and the provider’s API key.'**
+  String get speechSettingsCloudVoicesUnavailable;
+
   /// No description provided for @speechSettingsModelDescription.
   ///
   /// In en, this message translates to:

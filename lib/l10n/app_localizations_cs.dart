@@ -15728,6 +15728,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Zvuk chatu';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Výchozí · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Ahoj! Takhle zním, když ti předčítám shrnutí.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profily s modelem pro předčítání mluví těmito hlasy. Každý jazyk použije tvůj výběr, nebo svůj první ženský hlas.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloudové hlasy';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Načítání hlasů';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Předčítání používá hlas v zařízení. Pro cloudový hlas ho vyber v poli Předčítání v profilu inference.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Hlasy se nepodařilo načíst. Zkontroluj připojení a klíč API poskytovatele.';
+
+  @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';
 
   @override

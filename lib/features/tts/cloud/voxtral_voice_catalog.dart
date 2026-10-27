@@ -175,6 +175,26 @@ class VoxtralVoiceCatalog {
     return null;
   }
 
+  /// The languages the catalog has voices for, as sorted primary subtags. A
+  /// language the API spells out (`German`) is reported by its code (`de`),
+  /// so one language never appears twice.
+  List<String> get languageCodes {
+    final codes = <String>{
+      for (final voice in voices)
+        for (final entry in voice.languages) ?_languageCodeOf(entry),
+    };
+    return codes.toList()..sort();
+  }
+
+  static String? _languageCodeOf(String entry) {
+    final normalized = entry.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    for (final MapEntry(:key, :value) in _languageNames.entries) {
+      if (value == normalized) return key;
+    }
+    return primaryLanguageSubtag(normalized);
+  }
+
   /// Every voice advertised for [languageCode], in catalog order.
   List<VoxtralVoice> forLanguage(String languageCode) =>
       voices.where((voice) => voice.speaks(languageCode)).toList();

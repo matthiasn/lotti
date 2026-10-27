@@ -15637,6 +15637,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chat-Audio';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Standard · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Hallo! So klinge ich, wenn ich dir deine Zusammenfassungen vorlese.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profile mit einem Vorlese-Modell sprechen mit diesen Stimmen. Jede Sprache nutzt deine Wahl oder ihre erste Frauenstimme.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Cloud-Stimmen';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Stimmen werden geladen';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Vorlesen nutzt die Stimme auf dem Gerät. Für eine Cloud-Stimme wähle sie im Feld Vorlesen eines Inferenzprofils.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Die Stimmen konnten nicht geladen werden. Prüfe die Verbindung und den API-Schlüssel des Anbieters.';
+
+  @override
   String get speechSettingsModelDescription => 'Lokales Sprachmodell';
 
   @override

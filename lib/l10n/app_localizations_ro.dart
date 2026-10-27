@@ -15823,6 +15823,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Audio pentru chat';
 
   @override
+  String speechSettingsCloudVoiceDefault(String name) {
+    return 'Implicită · $name';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceSample =>
+      'Bună ziua! Așa sun când vă citesc rezumatele cu voce tare.';
+
+  @override
+  String get speechSettingsCloudVoicesDescription =>
+      'Profilurile cu un model de citire cu voce tare vorbesc cu aceste voci. Fiecare limbă folosește alegerea dumneavoastră sau prima sa voce feminină.';
+
+  @override
+  String get speechSettingsCloudVoicesLabel => 'Voci în cloud';
+
+  @override
+  String get speechSettingsCloudVoicesLoading => 'Se încarcă vocile';
+
+  @override
+  String get speechSettingsCloudVoicesNone =>
+      'Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți una în câmpul Citire cu voce tare al unui profil de inferență.';
+
+  @override
+  String get speechSettingsCloudVoicesUnavailable =>
+      'Vocile nu au putut fi încărcate. Verificați conexiunea și cheia API a furnizorului.';
+
+  @override
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';
 
   @override
