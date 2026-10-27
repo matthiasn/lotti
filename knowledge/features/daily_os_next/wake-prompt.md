@@ -5,29 +5,29 @@ description: Tagged plaintext sections ordered stable-to-volatile for prefix cac
 resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
 tags: [daily-os, prompt, context, prefix-cache, memory]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T21:00:00Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: system-prompt
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Mode-specific system prompt and tool gating
-    last_modified: 2026-07-29
+    last_modified: 2026-10-06
   - id: inference-boundaries
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart
     title: Per-mode inference deadlines and output ceilings
-    last_modified: 2026-09-12
+    last_modified: 2026-10-18
   - id: sections
     resource: ../../../lib/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart
     title: Prompt section tags
-    last_modified: 2026-07-24
+    last_modified: 2026-10-03
   - id: week-context
     resource: ../../../lib/features/daily_os_next/agents/domain/week_context.dart
     title: Week-context renderer
-    last_modified: 2026-07-25
+    last_modified: 2026-10-04
   - id: memory-links
     resource: ../../../lib/features/agents/memory/memory_links.dart
     title: Author-time memory links
-    last_modified: 2026-06-09
+    last_modified: 2026-10-18
   - id: adr-0028
     resource: ../../../docs/adr/0028-tagged-plaintext-payload-and-day-summaries.md
     title: ADR 0028 — Tagged plaintext payload and day summaries
@@ -50,12 +50,14 @@ Mode-specific behavioral prose follows the same boundary:
 |---|---|
 | Capture submitted | Capture matching rules, the dense-capture example, and the terminal `parse_capture_to_items` rule |
 | Drafting | Planning and drafting rules, the overcommit example, and the terminal `draft_day_plan` rule |
-| Refine | Planning and refine rules; no capture or full-draft contract |
-| Coordinator digest | Digest, week-context, and memory rules; no capture or plan-mutation contract |
-| General planning | Planning plus the configured week/memory capabilities |
+| Refine | Planning and refine rules (and, with a dependency resolver, the blocked-work rules, as on every planning wake); no capture or full-draft contract |
+| Coordinator digest | Digest, week-context, memory rules and the planning defaults; no capture or plan-mutation contract |
+| General planning | Planning plus the configured week/memory capabilities, and the blocked-work rules with a resolver |
 
-Capture and drafting intentionally omit memory prose and planning defaults when
-those tools or values cannot affect their single terminal artifact. This is
+Capture omits memory prose and planning defaults, and drafting omits memory
+prose (no memory tool is enabled on it) but keeps the planning defaults — the
+gate is `isPlanningWake || isDigestWake` — when those tools or values cannot
+affect the single terminal artifact. This is
 both a correctness boundary and a latency boundary: an instruction-dense draft
 wake no longer spends turns on capture parsing, reconcile, pattern summaries,
 or memory work that its schema does not expose.
@@ -117,8 +119,9 @@ better than newline-escaped run-on strings.
 
 | Shape | Sections | Why |
 |-------|----------|-----|
-| **Prose** | `day_log`, `knowledge_index`, `knowledge_statements`, `recent_days`, `week_ahead`, scalars | Readability for local models |
-| **JSON inside the tag** | `attention_planning`, `capture`, `drafting`, `refine`, `recent_observations`, `trigger_tokens` | Data-shaped and tool-facing — the model copies ids verbatim into tool calls |
+| **Prose** | `day_log`, `knowledge_index`, `knowledge_statements`, scalars | Readability for local models |
+| **Pre-rendered prose** | `recent_days`, `week_ahead` | Rendered by the week-context renderer, which sanitizes its own interpolations; `addPreRendered` does not run the shared sanitizer again |
+| **JSON inside the tag** | `attention_planning`, `capture`, `day_directive`, `day_entries`, `digest`, `drafting`, `planning_window`, `recent_weeks`, `refine`, `recent_observations`, `trigger_tokens` | Data-shaped and tool-facing — the model copies ids verbatim into tool calls |
 
 **Every interpolation runs through a shared sanitizer** that neutralizes forged
 tag boundaries — including the JSON-kept sections, since `jsonEncode` does not
@@ -159,7 +162,8 @@ flowchart TD
 
   subgraph Tail["Volatile tail"]
     direction TB
-    D1["trigger_tokens<br/>sorted, so set order never churns"] --> D2["current_local_time"]
+    D1["trigger_tokens<br/>sorted, so set order never churns"] --> D1b["planning_window"]
+    D1b --> D2["current_local_time"]
   end
 
   A6 --> B1 --> C1
@@ -190,7 +194,7 @@ time, later than this value by however long the model thought, so the
 a later wake can recover a completed offline check-in immediately — capped at the
 newest 32 of however many the day holds, with the omitted count rendered explicitly
 rather than silently (see [day entries](#day-entries)). It closes the byte-stable
-prefix — five sections precede it, twelve follow — so a heavy capture day must not
+prefix — five sections precede it, thirteen follow — so a heavy capture day must not
 be allowed to inflate it. Anything that grows this section pushes the whole
 per-wake band out of cache.
 
@@ -279,11 +283,13 @@ drafted plans, because `draft_day_plan` is terminal and the writer's
 Measured on `glm-5.3-flash`, a blank `dayId` was the single commonest rejection
 in a day-planning run.
 
-The fill is scoped to the plan tools, which are the ones that take a `dayId`.
-Capture, knowledge and week-context schemas declare `additionalProperties: false`
-and no `dayId`, so adding the field there would make their calls invalid.
+The fill is scoped to the plan tools. The other schemas declare
+`additionalProperties: false`; most take no `dayId` at all, and the two that do
+(`write_day_summary`, `surface_pending_decisions`) require the model to supply
+it — the handler fills a blank only for plan tools.
 
-Text is whitespace-normalized and capped at 500 characters at the write path.
+Text is whitespace-normalized; over 500 characters it is rejected with an error
+at the write path (the renderer separately truncates to 500 when displaying).
 Concurrent versions resolve **earliest-createdAt wins** — the most
 contemporaneous testimony is canonical.
 
@@ -298,8 +304,8 @@ still-planned items, 10 deadline lines — each truncation renders a determinist
 overflow marker.
 
 Week context builds **only** on wakes whose day came from day-carrying tokens
-(planning-day / drafting / refine / scheduled). Capture-submitted wakes skip the
-8-day journal + links + claims load.
+(planning-day / drafting / refine / digest / scheduled). Capture-submitted wakes
+skip the 8-day journal + links + claims load.
 
 # Recall
 

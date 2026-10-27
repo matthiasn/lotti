@@ -5,25 +5,25 @@ description: How typed `blocks` links reach the planner through three carriers a
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [daily-os, dependencies, planning, adr-0043]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T12:00:41Z }
-stale_after: 2026-10-26
+generated: { by: claude-code/fable-5.1, at: 2026-10-27T01:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: resolver
     resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
     title: TaskDependencyResolver
-    last_modified: 2026-09-27
+    last_modified: 2026-10-04
   - id: prompt-builder
     resource: ../../../lib/features/daily_os_next/agents/workflow/day_agent_prompt_builder.dart
     title: Prompt gates
-    last_modified: 2026-07-26
+    last_modified: 2026-10-06
   - id: decided-task-ref
     resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart
     title: DecidedTaskRef — status + blockedBy projection
-    last_modified: 2026-07-26
+    last_modified: 2026-10-04
   - id: plan-editor
     resource: ../../../lib/features/daily_os_next/agents/service/day_agent_plan_editor.dart
     title: hydrateDecidedTasks — batched blocker resolution
-    last_modified: 2026-07-26
+    last_modified: 2026-10-04
   - id: adr-0042
     resource: ../../../docs/adr/0042-typed-task-relationship-links.md
     title: ADR 0042 — Typed task relationship links
@@ -52,9 +52,11 @@ flowchart LR
 
 `TaskDependencyResolver` answers "which of these task ids are blocked, and by
 what" in **two bounded batch queries** — one type-scoped `blocks`-link fetch, one
-batch status load for the distinct blocker ids. Never per-task fan-out, always one
-call against the whole id set, mirroring the batch-read discipline used by the
-week-context service.
+batch status load for the distinct blocker ids — plus, for the cycle flag
+(ADR 0106), `findBlockersInCycle`, which walks outward one entity load and one
+link fetch per hop until no new task is reached. Never per-task fan-out, always
+one call against the whole id set, mirroring the batch-read discipline used by
+the week-context service.
 
 It is **independent of, and not shared code with**, the task feature's own
 `TaskBlockersController` (single-task, UI-facing, autoDispose-Riverpod-backed).
@@ -65,17 +67,20 @@ The resolver is stateless, plain Dart, and batch-shaped for a corpus of up to
 
 | Case | Corpus (model-facing) | Task detail header (human-facing) |
 |------|----------------------|-----------------------------------|
-| Blocker resolves to a real, open task | Serializes with title, status and **its own `categoryId`** | Tappable chip |
-| Blocker link whose target cannot be loaded (a sync gap) | `{"taskId": "<id>"}` with no `title`/`status`/`categoryId` — **still a non-empty `blockedBy` entry** | A bare untappable "Blocked" pill |
+| Blocker resolves to a task that still holds (not deleted, `DONE` or `REJECTED` — `blockerReleases` is false) | Serializes with title, status and **its own `categoryId`** | Tappable chip |
+| Blocker link whose target cannot be loaded (a sync gap), or whose target lies outside the caller's `allowedCategoryIds` | `{"taskId": "<id>"}` with no `title`/`status`/`categoryId`, the `cycle` flag kept — **still a non-empty `blockedBy` entry** | A bare untappable "Blocker not synced yet" pill ("Blocked in a cycle" only when the cycle's blockers are also unresolved) |
 | Blocker the task blocks in turn (a cycle two devices closed, ADR 0106) | The blocker gains `"cycle": true` | "Blocked in a cycle" |
 
 The blocker's own `categoryId` is carried because the rule tells the model to
 schedule that blocker, and `draft_day_plan` requires a `categoryId` on every
 block. On a capture-less wake the nested blocker object is the model's *only*
-description of it — there is no corpus row to read a category from — so without
-it a blocker in a different category than the task it blocks gets guessed wrong.
-The write path validates the block's `taskId` and its `categoryId`
-independently, so a wrong guess persists rather than being rejected.
+description of it — there is no corpus row to read a category from. A block
+that names a `taskId` is now filed under that task's category regardless of
+what the model wrote (`categoryForPlannedBlock` in the plan parser, and the
+same rule in the plan diff), so the carried category matters for blocks the
+model places *without* a `taskId`; the rationale comment in
+`task_dependency_resolver.dart` still describes the older independent
+validation.
 
 The corpus keeps the entry so "still blocked" is never silently downgraded to
 "ready" just because the blocker has not synced yet. A bare id is a usable token
@@ -87,11 +92,11 @@ for a model; for a human it is not.
 into **three** carriers of the blocked-work data, so that every wake carrying the
 rules below also carries data they can apply to:
 
-| Carrier | Assembled in | Covers |
+| Carrier | Assembled in (`agents/workflow/day_agent_planning_context.dart`) | Covers |
 |---------|--------------|--------|
-| `DayAgentCorpusService.buildTaskCorpusSnapshot` | capture-context | corpus rows — wakes with a capture only (the corpus lives inside `<capture>`) |
-| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | drafting-context | tasks the user approved for placement, on **every** drafting wake |
-| `resolvePlannedTaskStates` → `drafting.baselinePlan.blocks[]` | drafting-context | tasks an **earlier draft** already scheduled |
+| `DayAgentCorpusService.buildTaskCorpusSnapshot` | `_captureContext` | corpus rows — wakes with a capture only (the corpus lives inside `<capture>`) |
+| `DayAgentPlanService.hydrateDecidedTasks` → `DecidedTaskRef` | `_draftingContext` | tasks the user approved for placement, on **every** drafting wake (the ref also carries `estimateMinutes`, resolver or not) |
+| `resolvePlannedTaskStates` → `drafting.baselinePlan.blocks[]` | `_baselineTaskStates` | tasks an **earlier draft** already scheduled |
 
 That one field drives the annotation on all three paths and the prompt gates below, so
 they **can never drift out of sync** — there is no separate "is this feature on"
@@ -131,8 +136,9 @@ exist only for tasks that are actually blocked, so an ordinary re-draft of
 unblocked work adds nothing.
 
 **Everything is omitted rather than emitted empty**, on all three carriers: no
-`status` and no `blockedBy` when the resolver is null, no `blockedBy` key on an
-unblocked task or block. The same field gates the rules below, so a wake without
+`blockedBy` when the resolver is null, no `blockedBy` key on an unblocked task
+or block; `DecidedTaskRef` and baseline blocks also drop `status` without a
+resolver, while a corpus row always carries its `status`. The same field gates the rules below, so a wake without
 a resolver gets no rule *and* no annotation, and its prompt stays byte-identical
 to pre-ADR-0043. An empty array would spend prompt bytes to say nothing and break
 the prefix cache for it.
@@ -142,8 +148,9 @@ field, both rendering the empty string when it is null — so a wake with no
 resolver produces a **byte-identical** prompt to pre-ADR-0043, preserving the
 prefix cache:
 
-- **Blocked-work rules**, appended after the Refine rules for any drafting or
-  refine wake. A task is "blocked for planning" when *this wake shows it* with
+- **Blocked-work rules**, appended after the Refine rules for any planning
+  wake (`isPlanningWake`: everything that is neither a capture nor a digest
+  wake — drafting, refine, general and scheduled planning). A task is "blocked for planning" when *this wake shows it* with
   `"status": "BLOCKED"` (self-declared, ADR 0042 §4) **or** a non-empty
   `blockedBy` (computed) — wherever that appears: a corpus row, a
   `drafting.decidedTasks` entry, or a `drafting.baselinePlan` block. The rule
@@ -166,8 +173,9 @@ prefix cache:
   to place neither on the strength of the other and to say in a `reason` that
   they block each other, so the user can close one or remove a link
   ([relationships](../tasks/relationships.md#cycles-guarded-on-one-device-reported-across-devices)).
-- **A digest-rule bullet**, appended to the digest rules on coordinator wakes
-  only, and only when `directiveService` is also configured: a directive
+- **A digest-rule bullet**, appended to the digest rules on coordinator digest
+  wakes only (`directiveService` still gates the `<digest>` data, not this
+  rule): a directive
   commitment on blocked-for-planning work should target the blocker instead, or
   name the blocker in an attention note so the per-day agent inherits the
   dependency context from the directive itself.
