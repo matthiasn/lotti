@@ -1,32 +1,127 @@
 ---
 type: Feature Module
 title: Text-to-speech
-description: On-device Supertonic speech for task summaries and query answers, with cancellable preparation and temporary audio cleanup.
+description: Speech for task summaries, goal reports and query answers — the on-device Supertonic voice, or the cloud voice a profile's read-aloud slot names — with cancellable preparation and temporary audio cleanup.
 resource: ../../lib/features/tts
-tags: [tts, onnx, on-device, ios, macos]
+tags: [tts, onnx, on-device, cloud, voxtral, ios, macos]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-11T01:00:00Z }
-stale_after: 2027-03-08
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
+stale_after: 2027-04-26
 sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-10-19
+    last_modified: 2026-10-28
+  - id: cloud-route
+    resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
+    title: The cloud route a profile's read-aloud slot names
+    last_modified: 2026-10-28
+  - id: voxtral-service
+    resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
+    title: Voxtral speech and voice-catalog client
+    last_modified: 2026-10-28
+  - id: voice-catalog
+    resource: ../../lib/features/tts/cloud/voxtral_voice_catalog.dart
+    title: Voice catalog and per-language voice resolution
+    last_modified: 2026-10-28
 ---
 
-On-device text-to-speech that reads a task's AI **TL;DR** or a saved query
-answer aloud. It runs the
-Supertonic 3 ONNX model (~99M params, 44.1 kHz 16-bit WAV) locally via
-`flutter_onnxruntime` and plays the result through the app's existing `media_kit`
-stack.
+Text-to-speech that reads a task's AI **TL;DR**, a goal report or a saved
+query answer aloud. By default it runs the Supertonic 3 ONNX model (~99M
+params, 44.1 kHz 16-bit WAV) locally via `flutter_onnxruntime`; when the
+profile that resolved for the surface names a read-aloud model, that cloud
+voice speaks instead (see [which voice speaks](#which-voice-speaks)). Either
+way the result plays through the app's existing `media_kit` stack.
 
-**Synthesis never leaves the device — but the model has to arrive first.** The
+**On-device synthesis never leaves the device — but the model has to arrive
+first.** The
 weights are not bundled. `TtsModelRepository` checks the model directory for the
 six files the model's `TtsModelOption.files` lists (four `.onnx` graphs plus
 `tts.json` and `unicode_indexer.json`) and downloads whichever are missing from
 `https://huggingface.co/<repo>/resolve/<revision>/onnx/<file>`. So the first
 synthesis on a fresh install needs the network; every one after it does not, and
-no text or audio is ever sent anywhere.
+no text or audio is sent anywhere.
+
+# Which voice speaks
+
+An inference profile has an optional **Read aloud** slot
+(`AiConfigInferenceProfile.speechModelId`, resolved into
+`ResolvedProfile.speechProvider` / `speechModel` — see
+[profile resolution](ai/profile-resolution.md)). A surface resolves the
+profile it already uses and hands `TtsCloudRoute.fromProfile` the result
+together with the text's language:
+
+| Surface | Profile | Language |
+|---|---|---|
+| Task summary card and its companion stage | the task agent's resolved setup | the task's `languageCode`, else the app's |
+| Goal report | the goal agent's resolved setup | the app's |
+| Query answer | `queryProfileProvider` for the chat | the scope task's `languageCode`, else the app's |
+| Day briefing, onboarding companion | none | — |
+
+`fromProfile` returns a route only for a provider with a speech client here —
+Mistral (Voxtral TTS) today; another provider joins by adding its case. Every
+other outcome, including an empty slot or one that no longer resolves, is the
+on-device voice. The on-device voice is never replaced silently by a cloud one,
+and a cloud voice never falls back to sending the text somewhere else.
+
+```mermaid
+flowchart TD
+  Surface["Read-aloud surface"] --> Profile{"Resolved profile names a read-aloud model?"}
+  Profile -->|no, or it did not resolve| Local["On-device Supertonic voice"]
+  Profile -->|yes| Client{"Provider has a speech client?"}
+  Client -->|no| Local
+  Client -->|Mistral| Cloud["TtsCloudRoute: Voxtral TTS in the text's language"]
+  Cloud --> Voice{"Voice for the language?"}
+  Voice -->|user's choice, else first female preset, else any| Speak["POST /v1/audio/speech → temporary WAV"]
+  Voice -->|none| NoVoice["error: noVoice — nothing sent"]
+  Local --> Play["Shared playback, cancellation and cleanup"]
+  Speak --> Play
+```
+
+A cloud route needs neither the on-device model nor platform support for it,
+so a surface shows its control when **either** the on-device engine is
+supported **or** a cloud route exists.
+
+# Cloud voices
+
+`VoxtralTtsService` is the client: `synthesize` posts `model`, `input`,
+`voice_id` and `response_format: wav` to the provider's `audio/speech` and
+decodes the base64 `audio_data`; `fetchVoices` pages `audio/voices` with
+`type=all`. The provider's base URL and API key come from its inference
+provider config on every call. Failures are typed (`VoxtralTtsFailure`:
+network, timeout, unauthorized, rate limited with `Retry-After`, rejected,
+server, invalid response, no voice) with `isRetryable`. Its logs carry text
+lengths, voice and model ids and byte counts — never the text, the key or a
+response body. It refuses redirects, which would carry the bearer token to
+another host, and plain HTTP anywhere but loopback.
+
+`CloudSpeechSynthesizer` turns a route and a text into the same temporary WAV
+the on-device engine writes, so everything after synthesis — playback,
+`canPlay`, stop, deletion — is the path described below.
+
+**Voices.** `VoxtralVoiceCatalogRepository` caches each provider's catalog in
+`SettingsDb` (`TTS_VOXTRAL_VOICES_<providerId>`), device-locally like the
+provider's credentials. A cached catalog younger than a day answers without a
+request; an older one is refreshed and kept if the refresh fails, so voices
+still resolve offline. `VoxtralVoiceCatalog.resolve` picks the voice for a
+language: the user's choice for that language while the catalog still has it
+(`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
+first female preset, else its first voice. The API has no voice-per-language
+default of its own. A language with no voice fails with `noVoice` before any
+text is sent, rather than reading German in an English voice. Speech settings
+list each catalog language with that choice and a test that speaks
+`speechSettingsCloudVoiceSample` from that language's own ARB catalog.
+
+**Model and speed.** There is one hosted TTS family and no quality or speed
+parameter to tune; the curated model is `voxtral-mini-tts-3-0` (Mistral
+documents no `-latest` alias for it). WAV keeps the uncompressed format's
+lower time to first audio. Speed stays a playback rate, as for the on-device
+voice.
+
+**Catalog classification.** Voxtral ships transcription and TTS models under
+one prefix. `isSpeechSynthesisModelId` (a dash-separated `tts` segment) marks
+the TTS ones text in / audio out in the live Mistral catalog and keeps them off
+the transcription route — see [provider routing](ai/provider-routing.md).
 
 # The download is always asked for
 
@@ -94,6 +189,9 @@ Speech settings also expose **Prepare chat audio automatically**, off by default
 `TTS_AUTO_PREPARE_CHAT_AUDIO`; the existing TTS feature flag still applies.
 It enables synthesis, never autoplay, and never downloads: until the user has
 agreed to the model download on an explicit play, preparation does nothing.
+It never calls a cloud voice either: with a cloud route, `prepare` returns at
+once, and query chat's `canPrepare` declines when the chat's profile names one,
+so answer text reaches a provider only on an explicit play.
 
 `prepare` keeps at most one disposable result outside playback state, sharing
 `_preparation` with explicit speech so the ONNX session is never used concurrently.

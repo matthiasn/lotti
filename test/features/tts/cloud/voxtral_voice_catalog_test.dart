@@ -231,5 +231,5 @@ void main() {
     } else {
       expect(voice.id == preferred || voice.speaks(language), isTrue);
     }
-  });
+  }, tags: 'glados');
 }

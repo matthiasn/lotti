@@ -33,5 +33,6 @@ void main() {
         '$before$after'.toLowerCase() == 'tts',
       );
     },
+    tags: 'glados',
   );
 }

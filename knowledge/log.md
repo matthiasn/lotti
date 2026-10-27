@@ -1,5 +1,15 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-28
+* **Update**: [Text-to-speech](features/tts.md) — which voice speaks: a
+  profile's read-aloud model as a cloud voice (Voxtral TTS), else the
+  on-device voice; the voice catalog cache, per-language voices, and why cloud
+  voices are never prepared;
+  [Profile resolution](features/ai/profile-resolution.md) — the Read aloud
+  slot, and why it stays out of `profileIsLocal`;
+  [Provider routing](features/ai/provider-routing.md) — Voxtral TTS kept off
+  the transcription route.
+
 ## 2026-10-23
 * **New**: [Front agent](features/front_agent.md) — the one agent the user
   talks to in one place: the turn path, the routing index, the dispatch
