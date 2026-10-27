@@ -38,15 +38,25 @@ class TtsCloudVoicesSection extends ConsumerWidget {
           ? messages.speechSettingsCloudVoicesNone
           : messages.speechSettingsCloudVoicesDescription,
       children: [
+        // Keyed by identity, not position: a provider added or removed must
+        // not hand one provider's rows to another.
         for (final service in services)
-          _ServiceVoices(service: service, showName: services.length > 1),
+          _ServiceVoices(
+            key: ValueKey(service.provider.id),
+            service: service,
+            showName: services.length > 1,
+          ),
       ],
     );
   }
 }
 
 class _ServiceVoices extends ConsumerWidget {
-  const _ServiceVoices({required this.service, required this.showName});
+  const _ServiceVoices({
+    required this.service,
+    required this.showName,
+    super.key,
+  });
 
   final CloudVoiceService service;
   final bool showName;
@@ -104,8 +114,11 @@ class _LanguageRows extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: tokens.spacing.step3,
       children: [
+        // Keyed by language: a refreshed catalog that adds or drops one must
+        // not move an open voice picker to a neighbouring language.
         for (final language in catalog.languageCodes)
           _LanguageRow(
+            key: ValueKey(language),
             service: service,
             catalog: catalog,
             language: language,
@@ -122,6 +135,7 @@ class _LanguageRow extends ConsumerWidget {
     required this.catalog,
     required this.language,
     required this.chosenVoiceId,
+    super.key,
   });
 
   final CloudVoiceService service;

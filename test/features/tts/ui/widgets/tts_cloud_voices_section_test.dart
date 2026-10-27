@@ -150,6 +150,35 @@ void main() {
     );
   });
 
+  testWidgets('an open voice picker stays with its language when a '
+      'refreshed catalog adds one above it', (tester) async {
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(800, 1400);
+    addTearDown(tester.view.reset);
+    var current = catalog;
+    await pump(tester, services: services, loadCatalog: () => current);
+
+    await tester.tap(find.text('Default · Heidi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Klaus'), findsOneWidget);
+
+    current = VoxtralVoiceCatalog(
+      fetchedAt: catalog.fetchedAt,
+      voices: [
+        const VoxtralVoice(id: 'v-cs', name: 'Petra', languages: ['cs']),
+        ...catalog.voices,
+      ],
+    );
+    container.invalidate(voxtralVoiceCatalogProvider);
+    await tester.pumpAndSettle();
+
+    // Czech now leads, closed; the German picker is still the open one.
+    expect(find.text('Default · Petra'), findsOneWidget);
+    expect(find.text('Petra'), findsNothing);
+    expect(find.text('Klaus'), findsOneWidget);
+  });
+
   testWidgets("the test speaks the language's own sample on that "
       'provider', (tester) async {
     await pump(tester, services: services);
