@@ -17647,6 +17647,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gérer les filtres de tâches';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Épingler $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Épinglés seulement';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Aucun filtre épinglé pour l’instant. Désactive « Épinglés seulement » et épingle les filtres que tu veux garder sous la main.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Vues';
 
   @override
@@ -17657,6 +17669,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Fais glisser les filtres pour les ordonner. Les cinq premiers apparaissent dans la barre latérale.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Fais glisser les filtres pour les ordonner. Les filtres épinglés apparaissent dans la barre latérale.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel =>
@@ -17730,6 +17746,11 @@ class AppLocalizationsFr extends AppLocalizations {
       one: '1 tâche',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Désépingler $name';
   }
 
   @override

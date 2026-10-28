@@ -7296,6 +7296,16 @@
   "tasksSavedFiltersFilterNameLabel": "Filternamn",
   "tasksSavedFiltersGroupSemantics": "Uppgiftsfilter",
   "tasksSavedFiltersManageTooltip": "Hantera uppgiftsfilter",
+  "tasksSavedFiltersPinNamed": "Fäst {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Endast fästa",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Inga fästa filter än. Stäng av ”Endast fästa” och fäst de filter du vill ha i sikte.",
   "tasksSavedFiltersRailButton": "Vyer",
   "tasksSavedFiltersRenameNamed": "Byt namn på {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7306,6 +7316,7 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Dra för att ställa in ordningen. De fem första filtren finns i sidofältet.",
+  "tasksSavedFiltersReorderHelperPinned": "Dra för att ställa in ordningen. Fästa filter finns i sidofältet.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Spara som ny...",
   "tasksSavedFiltersSaveAsNewDescription": "Låt det befintliga filtret vara oförändrat och skapa ett separat.",
   "tasksSavedFiltersSaveAsNewTitle": "Spara som ett nytt filter",
@@ -7334,6 +7345,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Lossa {name}",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

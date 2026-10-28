@@ -7296,6 +7296,16 @@
   "tasksSavedFiltersFilterNameLabel": "Nome del filtro",
   "tasksSavedFiltersGroupSemantics": "Filtri di attività",
   "tasksSavedFiltersManageTooltip": "Gestire i filtri delle attività",
+  "tasksSavedFiltersPinNamed": "Fissa {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Solo fissati",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Non hai ancora filtri fissati. Disattiva «Solo fissati» e fissa i filtri che vuoi tenere in vista.",
   "tasksSavedFiltersRailButton": "Viste",
   "tasksSavedFiltersRenameNamed": "Rinomina {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7306,6 +7316,7 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Trascina per impostare l'ordine. I primi cinque filtri appaiono nella barra laterale.",
+  "tasksSavedFiltersReorderHelperPinned": "Trascina per impostare l'ordine. I filtri fissati appaiono nella barra laterale.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Salva come nuovo...",
   "tasksSavedFiltersSaveAsNewDescription": "Mantenere il filtro esistente invariato e creare uno separato.",
   "tasksSavedFiltersSaveAsNewTitle": "Salvare come nuovo filtro",
@@ -7334,6 +7345,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Togli {name} dai fissati",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

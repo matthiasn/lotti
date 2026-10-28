@@ -30,9 +30,16 @@ abstract final class SidebarSavedTaskFiltersKeys {
 ///
 /// The first five saved filters are visible by default in their persisted,
 /// user-controlled order. More expands every remaining filter in place and
-/// Show fewer restores the compact state. There is deliberately no pinning
-/// model or upper limit: the sidebar itself scrolls, so users decide how much
-/// vertical space their expanded filter list consumes.
+/// Show fewer restores the compact state. There is no upper limit: the
+/// sidebar itself scrolls, so users decide how much vertical space their
+/// expanded filter list consumes.
+///
+/// With the list's pinned-only switch on (set in the saved-filters sheet)
+/// the section shows the pinned filters only, and all of them: pinning is
+/// the user choosing what stays in view, so a five-row cap and a More
+/// disclosure on top of it would second-guess that choice. The section
+/// still renders, All tasks and Manage included, when nothing is pinned —
+/// it collapses only when there are no saved filters at all.
 ///
 /// Rows span the full width of the Tasks row above them rather than sitting
 /// indented beneath it: the sidebar is narrow, and every pixel of inset is
@@ -72,6 +79,9 @@ class _SidebarSavedTaskFiltersState
     if (saved.isEmpty) {
       return const SizedBox.shrink(key: SidebarSavedTaskFiltersKeys.root);
     }
+    final shown = ref.watch(shownSavedTaskFiltersProvider);
+    final pinnedOnly =
+        ref.watch(savedTaskFiltersPinnedOnlyProvider).value ?? false;
 
     final activeId = ref.watch(currentSavedTaskFilterIdProvider);
     final hasUnsaved = ref.watch(tasksFilterHasUnsavedClausesProvider);
@@ -79,10 +89,10 @@ class _SidebarSavedTaskFiltersState
     final urgencies = ref.watch(savedTaskFilterDueUrgenciesProvider).value;
     final total = ref.watch(allTasksTotalCountProvider).value;
     final allSelected = activeId == null && !hasUnsaved;
-    final visible = _showAll
-        ? saved
-        : saved.take(SidebarSavedTaskFilters.initialVisibleFilterCount);
-    final hiddenCount = saved.length - visible.length;
+    final visible = _showAll || pinnedOnly
+        ? shown
+        : shown.take(SidebarSavedTaskFilters.initialVisibleFilterCount);
+    final hiddenCount = shown.length - visible.length;
 
     return Semantics(
       key: SidebarSavedTaskFiltersKeys.root,
@@ -134,7 +144,8 @@ class _SidebarSavedTaskFiltersState
               onTap: () => setState(() => _showAll = true),
             )
           else if (_showAll &&
-              saved.length > SidebarSavedTaskFilters.initialVisibleFilterCount)
+              !pinnedOnly &&
+              shown.length > SidebarSavedTaskFilters.initialVisibleFilterCount)
             _DisclosureRow(
               key: SidebarSavedTaskFiltersKeys.showLess,
               label: messages.tasksSavedFiltersShowLess,

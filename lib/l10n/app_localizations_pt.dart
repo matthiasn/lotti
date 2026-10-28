@@ -17524,6 +17524,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gerenciar filtros de tarefas';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Afixar $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Só afixados';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Ainda não tens filtros afixados. Desliga «Só afixados» e afixa os filtros que queres manter à vista.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Vistas';
 
   @override
@@ -17534,6 +17546,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Arraste para definir a ordem. Os primeiros cinco filtros aparecem na barra lateral.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Arrasta para definir a ordem. Os filtros afixados aparecem na barra lateral.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Salvar como novo…';
@@ -17605,6 +17621,11 @@ class AppLocalizationsPt extends AppLocalizations {
       one: '1 tarefa',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Desafixar $name';
   }
 
   @override

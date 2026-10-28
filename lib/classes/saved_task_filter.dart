@@ -16,6 +16,10 @@ part 'saved_task_filter.g.dart';
 /// filter shape only), so a synced timestamp never changes which pill reads
 /// as active.
 ///
+/// [pinned] marks a filter the user wants kept in view: with the list's
+/// pinned-only mode on, the sidebar and the saved-filters sheet show pinned
+/// filters only. It is part of the definition, so it syncs like a rename;
+/// payloads from builds that predate it decode as unpinned.
 @Freezed(toJson: true, fromJson: true)
 abstract class SavedTaskFilter with _$SavedTaskFilter {
   @JsonSerializable(explicitToJson: true)
@@ -25,6 +29,7 @@ abstract class SavedTaskFilter with _$SavedTaskFilter {
     required TasksFilter filter,
     DateTime? createdAt,
     DateTime? updatedAt,
+    @Default(false) bool pinned,
   }) = _SavedTaskFilter;
 
   factory SavedTaskFilter.fromJson(Map<String, dynamic> json) =>

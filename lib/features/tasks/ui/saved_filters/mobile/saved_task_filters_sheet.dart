@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_c
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet_bar.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
@@ -25,6 +25,7 @@ abstract final class SavedTaskFiltersSheetKeys {
   static const Key editToggle = Key('saved-filters-sheet-edit-toggle');
   static const Key allRow = Key('saved-filters-sheet-all-row');
   static const Key createRow = Key('saved-filters-sheet-create-row');
+  static const Key pinnedEmpty = Key('saved-filters-sheet-pinned-empty');
   static Key row(String id) => Key('saved-filters-sheet-row-$id');
   static Key dragHandle(String id) =>
       Key('saved-filters-sheet-drag-handle-$id');
@@ -34,16 +35,32 @@ abstract final class SavedTaskFiltersSheetKeys {
 
 /// Opens the saved-filters sheet as a Wolt bottom sheet (mobile) / dialog
 /// (desktop) — the complete switcher + manager described in the plan.
+///
+/// A sliver page, so the sheet's rows live in the modal's own scroll view:
+/// one scroll for the whole sheet, never a list scrolling inside it.
 Future<void> showSavedTaskFiltersSheet(BuildContext context) {
-  return ModalUtils.showSinglePageModal<void>(
+  return ModalUtils.showMultiPageModal<void>(
     context: context,
-    title: context.messages.tasksSavedFiltersSheetTitle,
-    builder: (_) => const SavedTaskFiltersSheet(),
+    pageListBuilder: (modalContext) => [
+      ModalUtils.sliverModalSheetPage(
+        context: modalContext,
+        title: modalContext.messages.tasksSavedFiltersSheetTitle,
+        slivers: const [SavedTaskFiltersSheet()],
+      ),
+    ],
   );
 }
 
-/// The vertical, single-select switcher + manager body. Pumpable directly in
-/// tests; hosted inside [showSavedTaskFiltersSheet] in the app.
+/// The vertical, single-select switcher + manager body, as one sliver.
+///
+/// [SavedTaskFiltersSheetBar] pins to the top of the scroll view; All tasks,
+/// the saved filters and the create row scroll beneath it. Pumpable directly
+/// in tests inside a `CustomScrollView`; hosted inside
+/// [showSavedTaskFiltersSheet] in the app.
+///
+/// With the list's pinned-only switch on, the rows are the pinned filters
+/// only — in Edit mode too, where a drag reorders them among themselves —
+/// and an empty pinned set says how to fill it.
 class SavedTaskFiltersSheet extends ConsumerStatefulWidget {
   const SavedTaskFiltersSheet({super.key});
 
@@ -60,7 +77,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
   void initState() {
     super.initState();
     // Pre-scroll the active row into view once laid out (best-effort: the
-    // enclosing modal owns the scroll view).
+    // enclosing modal owns the scroll view the sheet's slivers live in).
     SchedulerBinding.instance.addPostFrameCallback((_) {
       final ctx = _activeRowKey.currentContext;
       // Only scroll when an enclosing Scrollable exists (the hosting modal owns
@@ -132,14 +149,18 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     if (created != null && mounted) await Navigator.of(context).maybePop();
   }
 
+  /// Moves the row at [oldIndex] of the [shown] rows to [newIndex], its
+  /// final position. Indices are into the shown rows, which may be the
+  /// pinned subset; the controller places the move by id, so the unpinned
+  /// filters keep their places in the full list.
   void _reorder(
-    List<SavedTaskFilter> saved,
+    List<SavedTaskFilter> shown,
     int oldIndex,
     int newIndex,
   ) {
     if (newIndex == oldIndex) return;
-    final dragId = saved[oldIndex].id;
-    final targetId = saved[newIndex].id;
+    final dragId = shown[oldIndex].id;
+    final targetId = shown[newIndex].id;
     unawaited(
       ref
           .read(savedTaskFiltersControllerProvider.notifier)
@@ -147,14 +168,21 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     );
   }
 
+  Future<void> _togglePin(SavedTaskFilter saved) =>
+      ref.read(savedTaskFiltersControllerProvider.notifier).togglePin(saved.id);
+
+  Future<void> _setPinnedOnly({required bool pinnedOnly}) => ref
+      .read(savedTaskFiltersPinnedOnlyProvider.notifier)
+      .set(pinnedOnly: pinnedOnly);
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    final saved =
-        ref.watch(savedTaskFiltersControllerProvider).value ??
-        const <SavedTaskFilter>[];
+    final shown = ref.watch(shownSavedTaskFiltersProvider);
+    final pinnedOnly =
+        ref.watch(savedTaskFiltersPinnedOnlyProvider).value ?? false;
     final activeId = ref.watch(currentSavedTaskFilterIdProvider);
     final hasUnsaved = ref.watch(tasksFilterHasUnsavedClausesProvider);
     // Stale-while-revalidate: keep the last-known counts during a refresh so
@@ -163,126 +191,143 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     final total = ref.watch(allTasksTotalCountProvider).value;
 
     final allSelected = activeId == null && !hasUnsaved;
-    final editRowHeight = tokens.spacing.step8 + tokens.spacing.step3;
-    final savedListViewportHeight = math.min(
-      editRowHeight * saved.length,
-      tokens.spacing.step13 * 2,
+    final pagePadding = EdgeInsetsDirectional.only(
+      start: tokens.spacing.step5,
+      end: tokens.spacing.step5,
+      bottom: tokens.spacing.step8,
     );
-    final editList = ReorderableListView.builder(
-      primary: false,
-      padding: EdgeInsets.zero,
-      itemExtent: editRowHeight,
-      buildDefaultDragHandles: false,
-      itemCount: saved.length,
-      onReorderItem: (oldIndex, newIndex) =>
-          _reorder(saved, oldIndex, newIndex),
-      proxyDecorator: (child, index, animation) => Material(
-        type: MaterialType.transparency,
-        child: child,
-      ),
-      itemBuilder: (context, index) {
-        final f = saved[index];
-        return KeyedSubtree(
-          key: ValueKey('saved-filter-sheet-item-${f.id}'),
-          child: _SavedFilterRow(
+
+    final Widget rows;
+    if (_editing) {
+      rows = SliverReorderableList(
+        itemCount: shown.length,
+        onReorderItem: (oldIndex, newIndex) =>
+            _reorder(shown, oldIndex, newIndex),
+        proxyDecorator: (child, index, animation) => Material(
+          type: MaterialType.transparency,
+          child: child,
+        ),
+        itemBuilder: (context, index) {
+          final f = shown[index];
+          return KeyedSubtree(
+            key: ValueKey('saved-filter-sheet-item-${f.id}'),
+            child: _SavedFilterRow(
+              key: SavedTaskFiltersSheetKeys.row(f.id),
+              rowKey: f.id == activeId ? _activeRowKey : null,
+              filter: f,
+              selected: f.id == activeId,
+              count: counts?[f.id],
+              editing: true,
+              reorderIndex: index,
+              onRename: () => _rename(f),
+              onDelete: () => _delete(f),
+            ),
+          );
+        },
+      );
+    } else {
+      rows = SliverList.builder(
+        itemCount: shown.length,
+        itemBuilder: (context, index) {
+          final f = shown[index];
+          return _SavedFilterRow(
             key: SavedTaskFiltersSheetKeys.row(f.id),
             rowKey: f.id == activeId ? _activeRowKey : null,
             filter: f,
             selected: f.id == activeId,
             count: counts?[f.id],
-            editing: true,
-            reorderIndex: index,
-            onRename: () => _rename(f),
-            onDelete: () => _delete(f),
-          ),
-        );
-      },
-    );
-    final savedList = ListView.builder(
-      primary: false,
-      padding: EdgeInsets.zero,
-      itemExtent: editRowHeight,
-      itemCount: saved.length,
-      itemBuilder: (context, index) {
-        final f = saved[index];
-        return _SavedFilterRow(
-          key: SavedTaskFiltersSheetKeys.row(f.id),
-          rowKey: f.id == activeId ? _activeRowKey : null,
-          filter: f,
-          selected: f.id == activeId,
-          count: counts?[f.id],
-          editing: false,
-          onTap: () => _applySaved(f),
-        );
-      },
-    );
+            editing: false,
+            onTap: () => _applySaved(f),
+            onTogglePin: () => _togglePin(f),
+          );
+        },
+      );
+    }
 
-    return KeyedSubtree(
-      key: ValueKey(_editing),
-      child: Column(
-        key: SavedTaskFiltersSheetKeys.root,
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              key: SavedTaskFiltersSheetKeys.editToggle,
-              // Teal foreground (not the default purple TextButton theme) so the
-              // sheet carries exactly one tappable accent.
-              style: TextButton.styleFrom(
-                foregroundColor: tokens.colors.interactive.enabled,
-              ),
-              onPressed: () => setState(() => _editing = !_editing),
-              child: Text(
-                _editing
-                    ? messages.tasksSavedFiltersDone
-                    : messages.tasksSavedFiltersEdit,
-              ),
-            ),
-          ),
-          _AllTasksRow(
-            key: SavedTaskFiltersSheetKeys.allRow,
-            rowKey: allSelected ? _activeRowKey : null,
-            selected: allSelected,
-            total: total,
+    return SliverMainAxisGroup(
+      key: SavedTaskFiltersSheetKeys.root,
+      slivers: [
+        PinnedHeaderSliver(
+          child: SavedTaskFiltersSheetBar(
+            pinnedOnly: pinnedOnly,
+            onPinnedOnlyChanged: (value) => _setPinnedOnly(pinnedOnly: value),
             editing: _editing,
-            onTap: _applyAll,
+            onEditToggled: () => setState(() => _editing = !_editing),
+            editToggleKey: SavedTaskFiltersSheetKeys.editToggle,
           ),
-          if (_editing) ...[
-            Padding(
-              padding: EdgeInsetsDirectional.fromSTEB(
-                tokens.spacing.step3,
-                tokens.spacing.step2,
-                tokens.spacing.step3,
-                tokens.spacing.step3,
-              ),
-              child: Text(
-                messages.tasksSavedFiltersReorderHelper,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+        ),
+        SliverPadding(
+          padding: pagePadding.copyWith(top: tokens.spacing.step3),
+          sliver: SliverMainAxisGroup(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _AllTasksRow(
+                  key: SavedTaskFiltersSheetKeys.allRow,
+                  rowKey: allSelected ? _activeRowKey : null,
+                  selected: allSelected,
+                  total: total,
+                  editing: _editing,
+                  onTap: _applyAll,
                 ),
               ),
-            ),
-            if (saved.isNotEmpty)
-              SizedBox(
-                height: savedListViewportHeight,
-                child: editList,
+              if (_editing && shown.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _HelperText(
+                    pinnedOnly
+                        ? messages.tasksSavedFiltersReorderHelperPinned
+                        : messages.tasksSavedFiltersReorderHelper,
+                  ),
+                ),
+              if (pinnedOnly && shown.isEmpty)
+                SliverToBoxAdapter(
+                  child: _HelperText(
+                    messages.tasksSavedFiltersPinnedOnlyEmpty,
+                    key: SavedTaskFiltersSheetKeys.pinnedEmpty,
+                  ),
+                ),
+              rows,
+              SliverToBoxAdapter(
+                child: Divider(
+                  height: tokens.spacing.step6,
+                  color: tokens.colors.decorative.level01,
+                ),
               ),
-          ] else if (saved.isNotEmpty)
-            SizedBox(
-              height: savedListViewportHeight,
-              child: savedList,
-            ),
-          Divider(
-            height: tokens.spacing.step6,
-            color: tokens.colors.decorative.level01,
+              SliverToBoxAdapter(
+                child: _CreateRow(
+                  key: SavedTaskFiltersSheetKeys.createRow,
+                  onTap: _create,
+                ),
+              ),
+            ],
           ),
-          _CreateRow(
-            key: SavedTaskFiltersSheetKeys.createRow,
-            onTap: _create,
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+/// A quiet caption between All tasks and the saved rows: the reorder hint
+/// in Edit mode, or how to fill an empty pinned-only list.
+class _HelperText extends StatelessWidget {
+  const _HelperText(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(
+        tokens.spacing.step3,
+        tokens.spacing.step2,
+        tokens.spacing.step3,
+        tokens.spacing.step3,
+      ),
+      child: Text(
+        text,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
       ),
     );
   }
@@ -347,55 +392,82 @@ class _SelectionIndicator extends StatelessWidget {
 /// the rail's visual vocabulary, instead of leaning on the teal radio alone
 /// next to a teal category dot. The tint sits behind a transparent [Material]
 /// so the tap ripple still draws on top, clipped to the row's `radii.m`.
+///
+/// [trailing] sits inside the tint but outside the row's tap target and its
+/// merged semantics, so a control placed there (the pin toggle) is its own
+/// button to a screen reader and its own hit target to a finger.
 class _SheetRowScaffold extends StatelessWidget {
   const _SheetRowScaffold({
     required this.selected,
     required this.semanticsLabel,
     required this.onTap,
     required this.children,
+    this.trailing,
   });
 
   final bool selected;
   final String semanticsLabel;
   final VoidCallback onTap;
   final List<Widget> children;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final minTarget = tokens.spacing.step8 + tokens.spacing.step3;
     final radius = BorderRadius.circular(tokens.radii.m);
-    return Semantics(
+    final row = Semantics(
       inMutuallyExclusiveGroup: true,
       selected: selected,
       label: semanticsLabel,
       onTap: onTap,
       child: ExcludeSemantics(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: selected ? tokens.colors.surface.selected : null,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: radius,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: radius,
-              onTap: onTap,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: minTarget),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step3,
-                    vertical: tokens.spacing.step2,
-                  ),
-                  child: Row(children: children),
+            hoverColor: tokens.colors.surface.hover,
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minTarget),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
                 ),
+                child: Row(children: children),
               ),
             ),
           ),
         ),
       ),
     );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: selected ? tokens.colors.surface.selected : null,
+        borderRadius: radius,
+      ),
+      child: trailing == null
+          ? row
+          : Row(
+              children: [
+                Expanded(child: row),
+                trailing!,
+              ],
+            ),
+    );
+  }
+}
+
+/// The empty slot a row without a pin keeps where the pin would be, so its
+/// count lines up with the counts of the rows that have one.
+class _PinSlot extends StatelessWidget {
+  const _PinSlot();
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return SizedBox(width: spacing.step8 + spacing.step3);
   }
 }
 
@@ -428,6 +500,9 @@ class _AllTasksRow extends StatelessWidget {
             ? name
             : '$name, ${messages.tasksSavedFiltersTaskCount(total!)}',
         onTap: onTap,
+        // All tasks is not a saved filter and cannot be pinned; outside Edit
+        // mode it keeps the pin's slot so its count sits in the column.
+        trailing: editing ? null : const _PinSlot(),
         children: [
           _SelectionIndicator(selected: selected, editing: editing),
           SizedBox(width: tokens.spacing.step3),
@@ -464,6 +539,7 @@ class _SavedFilterRow extends StatelessWidget {
     required this.count,
     required this.editing,
     this.onTap,
+    this.onTogglePin,
     this.onRename,
     this.onDelete,
     this.reorderIndex,
@@ -476,6 +552,10 @@ class _SavedFilterRow extends StatelessWidget {
   final int? count;
   final bool editing;
   final VoidCallback? onTap;
+
+  /// Flips [filter]'s pin. Outside Edit mode only: Edit rows spend their
+  /// width on the drag handle and the Rename / Delete pair.
+  final VoidCallback? onTogglePin;
   final VoidCallback? onRename;
   final VoidCallback? onDelete;
   final int? reorderIndex;
@@ -589,6 +669,12 @@ class _SavedFilterRow extends StatelessWidget {
         selected: selected,
         semanticsLabel: semanticsLabel,
         onTap: onTap!,
+        trailing: SavedTaskFilterPinToggle(
+          filterId: filter.id,
+          filterName: filter.name,
+          pinned: filter.pinned,
+          onToggle: onTogglePin!,
+        ),
         children: [
           _SelectionIndicator(selected: selected),
           SizedBox(width: tokens.spacing.step3),

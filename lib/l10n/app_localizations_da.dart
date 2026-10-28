@@ -17366,6 +17366,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Administrer opgavefiltre';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Fastgør $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Kun fastgjorte';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Ingen fastgjorte filtre endnu. Slå „Kun fastgjorte“ fra, og fastgør de filtre, du vil have for øje.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Visninger';
 
   @override
@@ -17376,6 +17388,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Træk for at sætte rækkefølgen. De første fem filtre vises i sidebaren.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Træk for at sætte rækkefølgen. Fastgjorte filtre vises i sidebaren.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Gem som ny...';
@@ -17447,6 +17463,11 @@ class AppLocalizationsDa extends AppLocalizations {
       one: '1 opgave',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Frigør $name';
   }
 
   @override

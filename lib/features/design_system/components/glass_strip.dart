@@ -3,10 +3,17 @@ import 'dart:ui' as ui;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Edge-to-edge "glass" strip used by sticky bottom bars (e.g. the task
-/// details action bar). Renders three layers:
+/// Which edge of a scroll area a [DesignSystemGlassStrip] is docked to.
 ///
-/// 1. a hairline divider on top (decorative/01 @ 12% alpha),
+/// The hairline goes on the strip's inner edge — the one content scrolls
+/// in from — so a bottom bar draws it above itself and a top bar below.
+enum DesignSystemGlassStripDock { bottom, top }
+
+/// Edge-to-edge "glass" strip used by sticky bars (e.g. the task details
+/// action bar at the bottom, the saved-filters sheet's bar at the top).
+/// Renders three layers:
+///
+/// 1. a hairline divider on the inner edge (decorative/01 @ 12% alpha),
 /// 2. a [BackdropFilter] that blurs whatever the page paints behind the
 ///    strip (host parents must keep that content visible — usually via
 ///    `Scaffold.extendBody: true`), and
@@ -19,10 +26,14 @@ import 'package:material_ui/material_ui.dart';
 class DesignSystemGlassStrip extends StatelessWidget {
   const DesignSystemGlassStrip({
     required this.child,
+    this.dock = DesignSystemGlassStripDock.bottom,
     super.key,
   });
 
   final Widget child;
+
+  /// The edge the strip is docked to; decides where its hairline goes.
+  final DesignSystemGlassStripDock dock;
 
   /// Backdrop blur strength. Sits at the top of the codebase's existing
   /// glass-surface range (10–20) since this surface is wider and farther
@@ -55,14 +66,16 @@ class DesignSystemGlassStrip extends StatelessWidget {
     final tokens = context.designTokens;
     final scrimColors = overlayColors(tokens);
 
+    final hairline = Container(
+      height: 1,
+      color: tokens.colors.decorative.level01.withValues(alpha: 0.12),
+    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          height: 1,
-          color: tokens.colors.decorative.level01.withValues(alpha: 0.12),
-        ),
+        if (dock == DesignSystemGlassStripDock.bottom) hairline,
         ClipRect(
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(
@@ -81,6 +94,7 @@ class DesignSystemGlassStrip extends StatelessWidget {
             ),
           ),
         ),
+        if (dock == DesignSystemGlassStripDock.top) hairline,
       ],
     );
   }

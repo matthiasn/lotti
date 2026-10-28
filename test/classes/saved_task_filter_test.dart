@@ -87,4 +87,28 @@ void main() {
       expect(restored.filter.selectedTaskStatuses, {'IN_PROGRESS'});
     });
   });
+
+  group('SavedTaskFilter.pinned', () {
+    test('a payload from before pinning decodes as unpinned', () {
+      final legacy = const SavedTaskFilter(
+        id: 'sv-old',
+        name: 'Old',
+        filter: TasksFilter(),
+      ).toJson()..remove('pinned');
+
+      expect(SavedTaskFilter.fromJson(legacy).pinned, isFalse);
+    });
+
+    test('round-trips through fromJson/toJson', () {
+      const pinned = SavedTaskFilter(
+        id: 'sv-pin',
+        name: 'Pinned',
+        filter: TasksFilter(),
+        pinned: true,
+      );
+
+      expect(pinned.toJson()['pinned'], isTrue);
+      expect(SavedTaskFilter.fromJson(pinned.toJson()), pinned);
+    });
+  });
 }

@@ -7295,6 +7295,16 @@
   "tasksSavedFiltersFilterNameLabel": "Nome do filtro",
   "tasksSavedFiltersGroupSemantics": "Filtros de tarefas",
   "tasksSavedFiltersManageTooltip": "Gerenciar filtros de tarefas",
+  "tasksSavedFiltersPinNamed": "Afixar {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Só afixados",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Ainda não tens filtros afixados. Desliga «Só afixados» e afixa os filtros que queres manter à vista.",
   "tasksSavedFiltersRailButton": "Vistas",
   "tasksSavedFiltersRenameNamed": "Renomear {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7305,6 +7315,7 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Arraste para definir a ordem. Os primeiros cinco filtros aparecem na barra lateral.",
+  "tasksSavedFiltersReorderHelperPinned": "Arrasta para definir a ordem. Os filtros afixados aparecem na barra lateral.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Salvar como novo…",
   "tasksSavedFiltersSaveAsNewDescription": "Mantenha o filtro existente inalterado e crie um separado.",
   "tasksSavedFiltersSaveAsNewTitle": "Salvar como um novo filtro",
@@ -7333,6 +7344,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Desafixar {name}",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

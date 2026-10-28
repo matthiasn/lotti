@@ -420,4 +420,51 @@ void main() {
       });
     });
   });
+
+  group('pinned only', () {
+    test('is off when nothing is stored', () {
+      fakeAsync((async) {
+        bool? result;
+        sut.loadPinnedOnly().then((v) => result = v);
+        async.flushMicrotasks();
+
+        expect(result, isFalse);
+      });
+    });
+
+    for (final pinnedOnly in [true, false]) {
+      test('round-trips $pinnedOnly under its own key', () {
+        fakeAsync((async) {
+          sut.savePinnedOnly(pinnedOnly: pinnedOnly);
+          async.flushMicrotasks();
+          final written =
+              verify(
+                    () => mockSettingsDb.saveSettingsItem(
+                      SavedTaskFiltersPersistence.pinnedOnlyKey,
+                      captureAny(),
+                    ),
+                  ).captured.single
+                  as String;
+
+          when(
+            () => mockSettingsDb.itemByKey(
+              SavedTaskFiltersPersistence.pinnedOnlyKey,
+            ),
+          ).thenAnswer((_) async => written);
+          bool? result;
+          sut.loadPinnedOnly().then((v) => result = v);
+          async.flushMicrotasks();
+
+          expect(result, pinnedOnly);
+          // The list itself is untouched.
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              SavedTaskFiltersPersistence.storageKey,
+              any(),
+            ),
+          );
+        });
+      });
+    }
+  });
 }

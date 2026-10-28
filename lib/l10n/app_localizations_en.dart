@@ -17270,6 +17270,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Manage task filters';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Pin $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Pinned only';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'No pinned filters yet. Turn off Pinned only and pin the filters you want to keep in view.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Views';
 
   @override
@@ -17280,6 +17292,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Drag to set the order. The first five filters appear in the sidebar.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Drag to set the order. Pinned filters appear in the sidebar.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Save as new…';
@@ -17350,6 +17366,11 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 task',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Unpin $name';
   }
 
   @override

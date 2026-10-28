@@ -17427,6 +17427,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Taakfilters beheren';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return '$name vastzetten';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Alleen vastgezet';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Nog geen vastgezette filters. Zet „Alleen vastgezet” uit en zet de filters vast die je in beeld wilt houden.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Weergaven';
 
   @override
@@ -17437,6 +17449,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Sleep om de volgorde in te stellen. De eerste vijf filters verschijnen in de zijbalk.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Sleep om de volgorde in te stellen. Vastgezette filters verschijnen in de zijbalk.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Opslaan als nieuw...';
@@ -17508,6 +17524,11 @@ class AppLocalizationsNl extends AppLocalizations {
       one: '1 taak',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return '$name losmaken';
   }
 
   @override

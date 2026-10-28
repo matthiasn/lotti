@@ -11,7 +11,7 @@ sources:
   - id: saved-filters
     resource: ../../../lib/features/tasks/state/saved_filters
     title: Saved-filter model, persistence, controller
-    last_modified: 2026-09-26
+    last_modified: 2026-10-28
   - id: ui
     resource: ../../../lib/features/tasks/ui/saved_filters
     title: Saved-filter surfaces
@@ -191,15 +191,19 @@ chips remain visible only for an ad-hoc `Custom` filter.
 
 ## The model
 
-- **`SavedTaskFilter`** (`{id, name, filter: TasksFilter}`) is a Freezed
+- **`SavedTaskFilter`** (`{id, name, filter: TasksFilter, pinned}`) is a Freezed
   JSON-serializable model. **The ephemeral `match` (search text) field is
   deliberately not part of the saved payload** — it stays on live page state and
-  is preserved across activations.
+  is preserved across activations. **`pinned` is part of the definition**, so it
+  syncs like a rename; a payload from a build that predates it decodes as
+  unpinned.
 - **`SavedTaskFiltersPersistence`** writes the ordered list as a single JSON blob
   to `SettingsDb` under `SAVED_TASK_FILTERS`. **Position in the list is the sort
-  order.**
+  order.** The pinned-only switch sits beside it under
+  `SAVED_TASK_FILTERS_PINNED_ONLY`.
 - **`savedTaskFiltersControllerProvider`** (`keepAlive: true` async notifier)
-  exposes `create`, `rename`, `updateFilter`, `delete`, `reorder`; each mutation
+  exposes `create`, `rename`, `updateFilter`, `togglePin`, `delete`, `reorder`;
+  each mutation
   persists through `SavedTaskFiltersRepository`, which also syncs every
   definition to the other devices (see
   [the message model](../sync/message-model.md#saved-task-filters-per-item-not-sequence-tracked)).
@@ -208,6 +212,15 @@ chips remain visible only for an ad-hoc `Custom` filter.
   repository only the ids, which it applies to what is stored — order is
   per-device, and a reorder must never overwrite a filter the controller has
   not loaded yet.
+- **`savedTaskFiltersPinnedOnlyProvider`** holds the **per-device** pinned-only
+  switch. Like the order it is a view of the list, not part of any definition:
+  `SavedTaskFiltersRepository.savePinnedOnly` persists it and notifies
+  `SAVED_TASK_FILTERS_CHANGED` but never enqueues a sync message, so a phone can
+  keep to its pinned few while a desktop shows everything.
+- **`shownSavedTaskFiltersProvider`** is the one place the switch is applied: the
+  stored list, or its pinned members in stored order. The sidebar and the sheet
+  both read it. Until the switch has loaded it reads as off, so a list never
+  starts out emptier than it ends up.
 - **`SavedTaskFilterActivator`** applies a filter to the live controller via
   `applyBatchFilterUpdate`, and `clearToDefault()` resets every clause while
   **preserving the search query**.
@@ -293,18 +306,25 @@ Failures remain inline on the current page for retry.
 ```mermaid
 flowchart LR
   State[SavedTaskFiltersController<br/>ordered saved filters]
+  PinnedOnly[SavedTaskFiltersPinnedOnlyController<br/>per-device switch]
+  Shown[shownSavedTaskFiltersProvider<br/>all, or pinned only]
   Counts[Live count providers]
-  Desktop[SidebarSavedTaskFilters<br/>first five + expandable remainder]
+  Desktop[SidebarSavedTaskFilters<br/>first five + expandable remainder,<br/>or every pinned filter]
   Mobile[SavedTaskFilterRail<br/>compact MRU quick jumps]
-  Sheet[SavedTaskFiltersSheet<br/>switch + create + rename + reorder + delete]
+  Sheet[SavedTaskFiltersSheet<br/>switch + pin + create + rename + reorder + delete]
 
-  State --> Desktop
+  State --> Shown
+  PinnedOnly --> Shown
+  Shown --> Desktop
+  Shown --> Sheet
   Counts --> Desktop
   State --> Mobile
   Counts --> Mobile
   Desktop -->|Manage| Sheet
   Mobile -->|open Filters| Sheet
   Sheet -->|reorder defines sidebar order| State
+  Sheet -->|pin toggle| State
+  Sheet -->|Pinned only switch| PinnedOnly
 ```
 
 - **`SidebarSavedTaskFilters`** renders `All tasks` plus the first five saved
@@ -312,10 +332,15 @@ flowchart LR
   view holds urgent work, a 12px `SavedFilterDueMarker` disc beside it (red:
   something overdue; orange: something due today) whose meaning is also appended
   to the row's semantics label. *More* expands the
-  remainder in place. **There is no pin property, expansion cap, or second
-  priority model.** The enclosing navigation column scrolls, so an expanded
-  collection can use as much vertical space as the user chooses while Settings,
-  activity and sync stay pinned.
+  remainder in place. **With pinned only on, it shows every pinned filter and
+  nothing else — no five-row cap and no More**, because pinning is already the
+  user choosing what stays in view; with nothing pinned it still shows `All
+  tasks` and Manage, so the way back is in reach. The enclosing navigation
+  column scrolls, so an expanded collection can use as much vertical space as
+  the user chooses while Settings, activity and sync stay pinned. **The
+  sidebar's scroll region takes its horizontal gutter inside the scroll view**,
+  so its `DesignSystemScrollbar` runs down the sidebar's own edge in the gutter
+  instead of painting over the rows' trailing counts.
 - Labels and counts use the caption token. Counts retain **tabular figures**, show
   `0` at low emphasis, cap at `999+`, and read stale `AsyncValue.value` during
   background refresh instead of flashing a placeholder. Category colours are a
@@ -327,11 +352,25 @@ flowchart LR
   the sidebar rows. Large text keeps the current anchor and
   reset in one horizontally scrollable run. **Mobile MRU state is in-memory and
   per-device** — it does not alter desktop order.
-- **`SavedTaskFiltersSheet`** is the complete switcher and manager. Normal rows
-  are single-select ≥48dp targets with live counts and **multi-channel selection**
-  (selected surface, radio, bold name). Edit mode replaces selection controls with
-  a ≥48dp drag handle plus rename/delete while retaining a small active-status
-  dot. **Deleting the active filter resets the live query to `All`.**
+- **`SavedTaskFiltersSheet`** is the complete switcher and manager, built as
+  **one sliver group in the modal's own scroll view** (a sliver Wolt page), so
+  the sheet has a single scroll — never a list scrolling inside it. A
+  `SavedTaskFiltersSheetBar` pins to its top on the app's standard glass
+  (`DesignSystemGlassStrip` docked to the top, hairline below): the
+  *Pinned only* `DesignSystemToggle` on the leading edge and Edit / Done as a
+  tertiary `DesignSystemButton` on the trailing one. Normal rows are
+  single-select ≥48dp targets with live counts and **multi-channel selection**
+  (selected surface, radio, bold name), and end in a ≥48dp
+  `SavedTaskFilterPinToggle` — filled accent pin when pinned, outline when not,
+  swapped through a short scale-and-fade — which flips `pinned` at once with no
+  confirmation and is its own button to a screen reader, outside the row's
+  merged semantics. `All tasks` keeps an empty pin slot so its count stays in
+  the column. Edit mode replaces selection controls with a ≥48dp drag handle
+  plus rename/delete (and drops the pin) while retaining a small active-status
+  dot. With pinned only on, both modes list the pinned filters only; a drag
+  among them is placed by id, so unpinned filters keep their places, and an
+  empty pinned set says how to fill it. **Deleting the active filter resets the
+  live query to `All`.**
 
 The redesigned browse page preserves the existing non-filter behaviour:
 pull-to-refresh, the full-text versus vector search toggle, the create-task FAB

@@ -10,6 +10,7 @@ import 'package:lotti/logic/repositories/saved_task_filters_persistence.dart';
 import 'package:lotti/logic/repositories/saved_task_filters_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import 'saved_filter_test_helpers.dart';
 
@@ -28,10 +29,11 @@ const _filterC = TasksFilter(
 
 void main() {
   late TestGetItMocks mocks;
+  late MockOutboxService outbox;
 
   setUp(() async {
     mocks = await setUpTestGetIt();
-    registerSavedTaskFilterSyncDeps(mocks);
+    outbox = registerSavedTaskFilterSyncDeps(mocks);
   });
 
   tearDown(tearDownTestGetIt);
@@ -480,6 +482,192 @@ void main() {
       container.dispose();
 
       expect(updates.hasListener, isFalse);
+    });
+  });
+
+  group('togglePin', () {
+    test('pins, stamps and syncs the filter, leaving the rest alone', () async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+        SavedTaskFilter(id: 'sv-2', name: 'B', filter: _filterB),
+      ]);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      final stamp = DateTime.utc(2026, 10, 28, 9);
+      container.read(savedTaskFiltersControllerProvider.notifier).now = () =>
+          stamp;
+
+      await container
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .togglePin('sv-1');
+
+      final list = container.read(savedTaskFiltersControllerProvider).value!;
+      expect(list.map((f) => f.pinned), [true, false]);
+      expect(list.first.updatedAt, stamp);
+      // The pinned revision is what is stored — the row the ledger owes.
+      final saved =
+          verify(
+                () => mocks.settingsDb.saveSettingsItem(
+                  SavedTaskFiltersPersistence.storageKey,
+                  captureAny(),
+                ),
+              ).captured.last
+              as String;
+      final stored = (jsonDecode(saved) as List<dynamic>)
+          .map((e) => SavedTaskFilter.fromJson(e as Map<String, dynamic>))
+          .toList();
+      expect(stored.first, list.first);
+      expect(stored.last.pinned, isFalse);
+    });
+
+    test('a second toggle unpins', () async {
+      stubPersisted(const [
+        SavedTaskFilter(
+          id: 'sv-1',
+          name: 'A',
+          filter: _filterA,
+          pinned: true,
+        ),
+      ]);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+
+      await container
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .togglePin('sv-1');
+
+      expect(
+        container.read(savedTaskFiltersControllerProvider).value!.single.pinned,
+        isFalse,
+      );
+    });
+
+    test('is a no-op when id is unknown', () async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'Keep', filter: _filterA),
+      ]);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      clearInteractions(mocks.settingsDb);
+
+      await container
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .togglePin('missing');
+
+      verifyNever(() => mocks.settingsDb.saveSettingsItem(any(), any()));
+    });
+  });
+
+  group('pinned only', () {
+    void stubPinnedOnly(String? raw) => when(
+      () => mocks.settingsDb.itemByKey(
+        SavedTaskFiltersPersistence.pinnedOnlyKey,
+      ),
+    ).thenAnswer((_) async => raw);
+
+    test('is off on a device that never set it', () async {
+      stubPinnedOnly(null);
+      final container = makeContainer();
+
+      expect(
+        await container.read(savedTaskFiltersPinnedOnlyProvider.future),
+        isFalse,
+      );
+    });
+
+    test('loads the stored switch', () async {
+      stubPinnedOnly('true');
+      final container = makeContainer();
+
+      expect(
+        await container.read(savedTaskFiltersPinnedOnlyProvider.future),
+        isTrue,
+      );
+    });
+
+    test(
+      'set shows the change at once, persists it, and never syncs',
+      () async {
+        stubPinnedOnly(null);
+        final container = makeContainer();
+        await container.read(savedTaskFiltersPinnedOnlyProvider.future);
+
+        final write = container
+            .read(savedTaskFiltersPinnedOnlyProvider.notifier)
+            .set(pinnedOnly: true);
+        expect(
+          container.read(savedTaskFiltersPinnedOnlyProvider).value,
+          isTrue,
+        );
+        await write;
+
+        verify(
+          () => mocks.settingsDb.saveSettingsItem(
+            SavedTaskFiltersPersistence.pinnedOnlyKey,
+            'true',
+          ),
+        ).called(1);
+        verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+      },
+    );
+
+    test('follows a flip made elsewhere on the saved-filter channel', () async {
+      final updates = StreamController<Set<String>>.broadcast();
+      addTearDown(updates.close);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updates.stream);
+      stubPinnedOnly(null);
+      final container = makeContainer();
+      await container.read(savedTaskFiltersPinnedOnlyProvider.future);
+
+      stubPinnedOnly('true');
+      updates.add({'some-entry-id'});
+      await pumpEventQueue();
+      expect(container.read(savedTaskFiltersPinnedOnlyProvider).value, isFalse);
+
+      updates.add({savedTaskFiltersNotification});
+      await pumpEventQueue();
+      expect(container.read(savedTaskFiltersPinnedOnlyProvider).value, isTrue);
+    });
+  });
+
+  group('shownSavedTaskFiltersProvider', () {
+    const pinned = SavedTaskFilter(
+      id: 'p',
+      name: 'Pinned',
+      filter: _filterB,
+      pinned: true,
+    );
+    const loose = SavedTaskFilter(id: 'l', name: 'Loose', filter: _filterA);
+    const pinned2 = SavedTaskFilter(
+      id: 'p2',
+      name: 'Pinned 2',
+      filter: _filterC,
+      pinned: true,
+    );
+
+    Future<List<String>> shownIds({required bool pinnedOnly}) async {
+      stubPersisted(const [pinned, loose, pinned2]);
+      when(
+        () => mocks.settingsDb.itemByKey(
+          SavedTaskFiltersPersistence.pinnedOnlyKey,
+        ),
+      ).thenAnswer((_) async => '$pinnedOnly');
+      final container = makeContainer();
+      await container.read(savedTaskFiltersControllerProvider.future);
+      await container.read(savedTaskFiltersPinnedOnlyProvider.future);
+      return [
+        for (final f in container.read(shownSavedTaskFiltersProvider)) f.id,
+      ];
+    }
+
+    test('is every filter, in stored order, with pinned only off', () async {
+      expect(await shownIds(pinnedOnly: false), ['p', 'l', 'p2']);
+    });
+
+    test('is the pinned filters, in stored order, with it on', () async {
+      expect(await shownIds(pinnedOnly: true), ['p', 'p2']);
     });
   });
 }

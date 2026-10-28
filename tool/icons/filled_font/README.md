@@ -46,12 +46,15 @@ Only glyphs whose outline is a **single closed silhouette** work this way:
 | `star`, `bookmark`, `heart`, `circle`, `folder`, `moon` | one closed path; fills cleanly |
 | `pause`, `play` | not toggles: the recorder's pause and resume, solid beside its filled Stop square so the transport row speaks one glyph style. `pause` is Lucide's two bars filled, `play` its rounded triangle. |
 | `square` | not a toggle: the timer's stop control. Outlined it read as an empty checkbox on the red pill. (`circle` doubles as the timer's full-size record mark for continue.) |
-| `flag` | needed a correction — see below |
+| `flag`, `pin` | needed a correction — see below |
 
 `flag`'s outline draws its pole as an open run (`M4 22V4…`), and filling the
 path closes that run into the banner, so the pole disappeared and the two
 states no longer shared a silhouette. The source here re-adds the pole as a
-solid `<rect>` matching the outline's 2px stroke and rounded cap.
+solid `<rect>` matching the outline's 2px stroke and rounded cap. `pin` is the
+same case: its needle (`M12 17v5`) is an open run below the closed head, so
+its source draws the needle as a 2px `<rect>` from the head's base to the
+outline's rounded end.
 
 Excluded on purpose:
 

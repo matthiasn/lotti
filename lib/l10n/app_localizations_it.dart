@@ -17579,6 +17579,18 @@ class AppLocalizationsIt extends AppLocalizations {
       'Gestire i filtri delle attività';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Fissa $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Solo fissati';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Non hai ancora filtri fissati. Disattiva «Solo fissati» e fissa i filtri che vuoi tenere in vista.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Viste';
 
   @override
@@ -17589,6 +17601,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Trascina per impostare l\'ordine. I primi cinque filtri appaiono nella barra laterale.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Trascina per impostare l\'ordine. I filtri fissati appaiono nella barra laterale.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Salva come nuovo...';
@@ -17659,6 +17675,11 @@ class AppLocalizationsIt extends AppLocalizations {
       one: '1 attività',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Togli $name dai fissati';
   }
 
   @override

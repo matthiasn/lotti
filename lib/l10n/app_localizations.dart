@@ -28841,6 +28841,24 @@ abstract class AppLocalizations {
   /// **'Manage task filters'**
   String get tasksSavedFiltersManageTooltip;
 
+  /// No description provided for @tasksSavedFiltersPinNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin {name}'**
+  String tasksSavedFiltersPinNamed(String name);
+
+  /// No description provided for @tasksSavedFiltersPinnedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned only'**
+  String get tasksSavedFiltersPinnedOnly;
+
+  /// No description provided for @tasksSavedFiltersPinnedOnlyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No pinned filters yet. Turn off Pinned only and pin the filters you want to keep in view.'**
+  String get tasksSavedFiltersPinnedOnlyEmpty;
+
   /// No description provided for @tasksSavedFiltersRailButton.
   ///
   /// In en, this message translates to:
@@ -28858,6 +28876,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to set the order. The first five filters appear in the sidebar.'**
   String get tasksSavedFiltersReorderHelper;
+
+  /// No description provided for @tasksSavedFiltersReorderHelperPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to set the order. Pinned filters appear in the sidebar.'**
+  String get tasksSavedFiltersReorderHelperPinned;
 
   /// No description provided for @tasksSavedFiltersSaveAsNewButtonLabel.
   ///
@@ -28960,6 +28984,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
   String tasksSavedFiltersTaskCount(int count);
+
+  /// No description provided for @tasksSavedFiltersUnpinNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin {name}'**
+  String tasksSavedFiltersUnpinNamed(String name);
 
   /// No description provided for @tasksSavedFiltersUpdateButtonLabel.
   ///

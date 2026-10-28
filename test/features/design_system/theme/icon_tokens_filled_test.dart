@@ -25,6 +25,7 @@ void main() {
     'heart': LottiIconsFilled.heart,
     'moon': LottiIconsFilled.moon,
     'pause': LottiIconsFilled.pause,
+    'pin': LottiIconsFilled.pin,
     'play': LottiIconsFilled.play,
     'square': LottiIconsFilled.square,
     'star': LottiIconsFilled.star,
