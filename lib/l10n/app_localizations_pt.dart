@@ -17525,15 +17525,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String tasksSavedFiltersPinNamed(String name) {
-    return 'Afixar $name';
+    return 'Fixar $name';
   }
 
   @override
-  String get tasksSavedFiltersPinnedOnly => 'Só afixados';
+  String get tasksSavedFiltersPinnedOnly => 'Só fixados';
 
   @override
   String get tasksSavedFiltersPinnedOnlyEmpty =>
-      'Ainda não tens filtros afixados. Desliga «Só afixados» e afixa os filtros que queres manter à vista.';
+      'Ainda não tens filtros fixados. Desliga «Só fixados» e fixa os filtros que queres manter à vista.';
 
   @override
   String get tasksSavedFiltersRailButton => 'Vistas';
@@ -17549,7 +17549,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersReorderHelperPinned =>
-      'Arrasta para definir a ordem. Os filtros afixados aparecem na barra lateral.';
+      'Arrasta para definir a ordem. Os filtros fixados aparecem na barra lateral.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Salvar como novo…';

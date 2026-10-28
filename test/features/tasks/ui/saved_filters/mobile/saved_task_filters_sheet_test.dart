@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
@@ -73,6 +73,10 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   Future<void> togglePin(String id) async {
     togglePinCalls.add(id);
   }
+
+  /// Stands in for a change landing in the list — a pin flipped here or by
+  /// sync.
+  void replaceWith(List<SavedTaskFilter> next) => state = AsyncData(next);
 }
 
 class _StubPinnedOnly extends SavedTaskFiltersPinnedOnlyController {
@@ -658,8 +662,8 @@ void main() {
   );
 
   testWidgets(
-    "Save current filter is the sticky glass footer's one large, full-width "
-    'primary action',
+    "Save current filter is the sticky glass bar's one large primary action, "
+    'at its own width on the trailing edge',
     (tester) async {
       await _pumpSheet(tester);
 
@@ -668,15 +672,27 @@ void main() {
       );
       expect(button.variant, DesignSystemButtonVariant.primary);
       expect(button.size, DesignSystemButtonSize.large);
-      expect(button.fullWidth, isTrue);
       expect(button.leadingIcon, LottiIcons.add);
       expect(button.label, 'Save current filter…');
-      expect(
+      final bar = tester.widget<DesignSystemModalActionBar>(
         find.ancestor(
           of: find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
-          matching: find.byType(DesignSystemGlassActionFooter),
+          matching: find.byType(DesignSystemModalActionBar),
         ),
-        findsOneWidget,
+      );
+      expect(bar.glass, isTrue);
+      expect(bar.layout, DesignSystemModalActionBarLayout.compactPrimary);
+
+      // Not stretched: it ends on the bar's trailing padding and leaves
+      // most of the width free.
+      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
+      final buttonRect = tester.getRect(
+        find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
+      );
+      expect(buttonRect.width, lessThan(barRect.width / 2));
+      expect(
+        barRect.right - buttonRect.right,
+        dsTokensLight.spacing.step5,
       );
       // It is the footer, not a row of the list.
       expect(
@@ -713,7 +729,7 @@ void main() {
     final lastRow = tester.getRect(
       find.byKey(SavedTaskFiltersSheetKeys.row('filter-19')),
     );
-    final footer = tester.getRect(find.byType(DesignSystemGlassActionFooter));
+    final footer = tester.getRect(find.byType(DesignSystemModalActionBar));
     expect(lastRow.bottom, lessThanOrEqualTo(footer.top));
   });
 
@@ -1017,6 +1033,46 @@ void main() {
         // Shown index 1 is p2 and index 0 is p1, whatever sits between them
         // in the full list.
         expect(bench.saved.reorderCalls, [('p2', 'p1')]);
+      },
+    );
+
+    // Browse mode only: `SliverReorderableList` keys its items by index
+    // itself, so the Edit list rebuilds on a shift whatever we pass it.
+    testWidgets(
+      'unpinning a row keeps the rows below it alive rather than rebuilding '
+      'them by index',
+      (tester) async {
+        const pinned3 = SavedTaskFilter(
+          id: 'p3',
+          name: 'Pinned three',
+          filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+          pinned: true,
+        );
+        final bench = await _pumpSheet(
+          tester,
+          seed: const [pinned, pinned2, pinned3],
+          pinnedOnly: true,
+        );
+        Element rowElement(String id) =>
+            tester.element(find.byKey(SavedTaskFiltersSheetKeys.row(id)));
+        final before = {
+          for (final id in ['p2', 'p3']) id: rowElement(id),
+        };
+
+        bench.saved.replaceWith([
+          pinned.copyWith(pinned: false),
+          pinned2,
+          pinned3,
+        ]);
+        await tester.pump();
+
+        expect(
+          find.byKey(SavedTaskFiltersSheetKeys.row('p1')),
+          findsNothing,
+        );
+        for (final id in ['p2', 'p3']) {
+          expect(identical(rowElement(id), before[id]), isTrue, reason: id);
+        }
       },
     );
 

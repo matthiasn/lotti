@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -57,7 +58,13 @@ Future<void> showSavedTaskFiltersSheet(BuildContext context) {
 }
 
 /// The sheet's sticky footer: *Save current filter…* as the page's one
-/// primary action, on [DesignSystemGlassActionFooter].
+/// primary action, on the app's standard glass [DesignSystemModalActionBar].
+///
+/// The compact layout keeps the button at its own width on the trailing
+/// edge: saving is an occasional action beside a list the user mostly picks
+/// from, so it should not span the sheet like a form's confirm. The padding
+/// matches [DesignSystemGlassActionFooter], whose reserved height the rows
+/// keep clear.
 ///
 /// Closes the sheet only when a filter was actually saved — a cancelled or
 /// blank name leaves the user on the list.
@@ -66,8 +73,15 @@ class SavedTaskFiltersSaveFooter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DesignSystemGlassActionFooter(
-      child: DesignSystemButton(
+    final spacing = context.designTokens.spacing;
+    return DesignSystemModalActionBar(
+      glass: true,
+      layout: DesignSystemModalActionBarLayout.compactPrimary,
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing.step5,
+        vertical: spacing.step4,
+      ),
+      primary: DesignSystemButton(
         key: SavedTaskFiltersSheetKeys.saveCurrent,
         label: context.messages.tasksSavedFiltersSaveCurrentAs,
         leadingIcon: LottiIcons.add,
@@ -195,6 +209,8 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     );
   }
 
+  static Key _editItemKey(String id) => ValueKey('saved-filter-sheet-item-$id');
+
   Future<void> _togglePin(SavedTaskFilter saved) =>
       ref.read(savedTaskFiltersControllerProvider.notifier).togglePin(saved.id);
 
@@ -225,10 +241,26 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
       bottom: DesignSystemGlassActionFooter.reservedHeightFor(context),
     );
 
+    // Rows are keyed by filter id, and these maps let each builder find a
+    // row again after the shown list shifts — an unpin in pinned-only mode
+    // drops a row — instead of matching by index and rebuilding every row
+    // below the gap. The reorderable list gets one too, but there it cannot
+    // save the rows: `SliverReorderableList` wraps each item in a global key
+    // that includes its index, so a shift rebuilds what follows whatever the
+    // callback says. Edit rows carry no pin, so only a delete shifts them.
+    final rowIndex = {
+      for (final (index, f) in shown.indexed)
+        SavedTaskFiltersSheetKeys.row(f.id): index,
+    };
+    final editItemIndex = {
+      for (final (index, f) in shown.indexed) _editItemKey(f.id): index,
+    };
+
     final Widget rows;
     if (_editing) {
       rows = SliverReorderableList(
         itemCount: shown.length,
+        findChildIndexCallback: (key) => editItemIndex[key],
         onReorderItem: (oldIndex, newIndex) =>
             _reorder(shown, oldIndex, newIndex),
         proxyDecorator: (child, index, animation) => Material(
@@ -238,7 +270,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
         itemBuilder: (context, index) {
           final f = shown[index];
           return KeyedSubtree(
-            key: ValueKey('saved-filter-sheet-item-${f.id}'),
+            key: _editItemKey(f.id),
             child: _SavedFilterRow(
               key: SavedTaskFiltersSheetKeys.row(f.id),
               rowKey: f.id == activeId ? _activeRowKey : null,
@@ -256,6 +288,7 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     } else {
       rows = SliverList.builder(
         itemCount: shown.length,
+        findChildIndexCallback: (key) => rowIndex[key],
         itemBuilder: (context, index) {
           final f = shown[index];
           return _SavedFilterRow(
