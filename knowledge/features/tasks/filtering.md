@@ -111,17 +111,18 @@ tasks, and tapping it again lifts the clause.
 
 Due-ness is **day-granular in local time** and **open work only**: a task due
 at 09:00 today is due today at 18:00, and a done or rejected task is never
-overdue. One read decides it everywhere — `JournalDb.getOpenTaskIdsForDueFilter`
+overdue. One read decides it everywhere — `JournalDb.getOpenTaskIdsByDueWindow`
 splits the coalesced, index-pinned open-tasks-due superset (the one
-`getTasksDueOn` uses) at local midnight, so Due today is `[start, end]` of
-today and Overdue ends one microsecond before it. **The two windows are
+`getTasksDueOn` uses) at local midnight into both windows at once, so Due today
+is `[start, end]` of today and Overdue ends one microsecond before it;
+`getOpenTaskIdsForDueFilter` picks one window of it for the list. **The two windows are
 disjoint**; an overdue task never appears in, or counts toward, Due today.
 
 ```mermaid
 flowchart LR
-  Ids["getOpenTaskIdsForDueFilter<br/>(small id set)"]
+  Ids["getOpenTaskIdsByDueWindow<br/>(both small id sets, one read)"]
   Ids --> Runner["JournalQueryRunner<br/>∩ full-text ids → ids restriction"]
-  Ids --> Repo["SavedTaskFilterCountRepository<br/>id-list path ∩ due set"]
+  Ids --> Repo["SavedTaskFilterCountRepository<br/>one id list per filter ∩ both windows"]
   Runner --> List["task list rows"]
   Repo --> ViewCounts["taskDueViewCountsProvider<br/>(strip numbers)"]
   Repo --> Urgency["savedTaskFilterDueUrgenciesProvider<br/>(saved-view markers)"]
@@ -235,7 +236,7 @@ recompute. **The initial computation is never debounced.**
 `allTasksTotalCountProvider`, `currentTasksFilterCountProvider`,
 `taskDueViewCountsProvider` and `savedTaskFilterDueUrgenciesProvider` share the
 same repository and the one debounce helper, `invalidateOnTaskNotifications`.
-`currentTasksFilterCountProvider` The latter additionally **expands an empty status
+`currentTasksFilterCountProvider` additionally **expands an empty status
 selection to every status** before counting, mirroring how the live list treats
 "no status filter" as "all statuses", so the Custom pill's number agrees with the
 list; `taskDueViewCountsProvider` does the same.
@@ -243,13 +244,21 @@ list; `taskDueViewCountsProvider` does the same.
 A clause the journal table cannot see — project, agent, or due — moves the count
 from `COUNT(*)` to the id-list path intersected in Dart, mirroring the list's
 post-filter loop. A due window with no open tasks short-circuits to `0` without
-the id fetch, the common case for urgency probes.
+the id fetch.
 
-`SavedTaskFilterCountRepository.dueUrgency` answers the saved-view marker:
-**overdue if anything the filter matches is overdue, else due today, else
+The due-date reads run on every task change, so they are batched rather than
+asked view by view:
+
+| Call | Serves | Queries |
+|------|--------|---------|
+| `dueViewCounts(filter)` | both smart-view pills | 1 due-window read + 1 id list |
+| `dueUrgencies(filters)` | every saved-view marker | 1 due-window read + 1 id list per filter, plus one shared agent-link read when any filter has an agent clause |
+
+Each filter's id list is fetched **once** and checked against both windows,
+and nothing is fetched at all when nothing open is due by tonight. A marker
+reads **overdue if anything the filter matches is overdue, else due today, else
 normal**, honouring the filter's own due clause (a saved Due today view is never
-marked overdue) and probing the second window only when the first finds
-nothing.
+marked overdue).
 
 ## The save flow
 

@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_view_counts.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
@@ -38,12 +39,18 @@ class _FakeRepo implements SavedTaskFilterCountRepository {
   }
 
   @override
-  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
-      DueDateUrgency.normal;
+  Future<List<DueDateUrgency>> dueUrgencies(List<TasksFilter> filters) async =>
+      List.filled(filters.length, DueDateUrgency.normal);
+
+  @override
+  Future<TaskDueViewCounts> dueViewCounts(
+    TasksFilter filter, {
+    Set<String>? restrictToIds,
+  }) async => TaskDueViewCounts.zero;
 }
 
-/// Answers [dueUrgency] from [byStatus] (keyed by the filter's first status)
-/// and counts each call, so a test can see when the provider recomputed.
+/// Answers [dueUrgencies] from [byStatus] (keyed by the filter's first status)
+/// and counts each batch, so a test can see when the provider recomputed.
 class _UrgencyRepo implements SavedTaskFilterCountRepository {
   _UrgencyRepo(this.byStatus);
 
@@ -55,10 +62,19 @@ class _UrgencyRepo implements SavedTaskFilterCountRepository {
       0;
 
   @override
-  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async {
+  Future<List<DueDateUrgency>> dueUrgencies(List<TasksFilter> filters) async {
     urgencyCalls++;
-    return byStatus[filter.selectedTaskStatuses.first] ?? DueDateUrgency.normal;
+    return [
+      for (final filter in filters)
+        byStatus[filter.selectedTaskStatuses.first] ?? DueDateUrgency.normal,
+    ];
   }
+
+  @override
+  Future<TaskDueViewCounts> dueViewCounts(
+    TasksFilter filter, {
+    Set<String>? restrictToIds,
+  }) async => TaskDueViewCounts.zero;
 }
 
 class _StubController extends SavedTaskFiltersController {
@@ -83,8 +99,14 @@ class _CapturingRepo implements SavedTaskFilterCountRepository {
   }
 
   @override
-  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
-      DueDateUrgency.normal;
+  Future<List<DueDateUrgency>> dueUrgencies(List<TasksFilter> filters) async =>
+      List.filled(filters.length, DueDateUrgency.normal);
+
+  @override
+  Future<TaskDueViewCounts> dueViewCounts(
+    TasksFilter filter, {
+    Set<String>? restrictToIds,
+  }) async => TaskDueViewCounts.zero;
 }
 
 const _filter = SavedTaskFilter(

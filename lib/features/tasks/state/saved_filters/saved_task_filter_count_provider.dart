@@ -127,9 +127,9 @@ Future<Map<String, DueDateUrgency>> savedTaskFilterDueUrgencies(
   invalidateOnTaskNotifications(ref);
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
-  final urgencies = await Future.wait(
-    saved.map((filter) => repo.dueUrgency(filter.filter)),
-  );
+  final urgencies = await repo.dueUrgencies([
+    for (final filter in saved) filter.filter,
+  ]);
 
   return {
     for (var i = 0; i < saved.length; i++) saved[i].id: urgencies[i],

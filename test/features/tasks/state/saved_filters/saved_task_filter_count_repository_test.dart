@@ -284,6 +284,23 @@ void main() {
       when(
         () => db.getOpenTaskIdsForDueFilter(TaskDueFilter.dueToday, now: now),
       ).thenAnswer((_) async => dueToday);
+      when(
+        () => db.getOpenTaskIdsByDueWindow(now: now),
+      ).thenAnswer((_) async => (overdue: overdue, dueToday: dueToday));
+    }
+
+    void verifyIdListFetches(int times) {
+      Future<List<String>> idList() => db.getFilteredTaskIds(
+        taskStatuses: any(named: 'taskStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        labelIds: any(named: 'labelIds'),
+        priorities: any(named: 'priorities'),
+      );
+      if (times == 0) {
+        verifyNever(idList);
+      } else {
+        verify(idList).called(times);
+      }
     }
 
     void stubMatchingIds(List<String> ids) {
@@ -395,15 +412,15 @@ void main() {
       );
     });
 
-    group('dueUrgency', () {
+    group('dueUrgencies', () {
+      Future<List<DueDateUrgency>> urgencies(List<TasksFilter> filters) =>
+          atNow(() => sut.dueUrgencies(filters));
+
       test('overdue outranks due today', () async {
         stubDue(overdue: {'late'}, dueToday: {'today'});
         stubMatchingIds(const ['late', 'today']);
 
-        expect(
-          await atNow(() => sut.dueUrgency(open)),
-          DueDateUrgency.overdue,
-        );
+        expect(await urgencies([open]), [DueDateUrgency.overdue]);
       });
 
       test('reads due today when nothing it matches is overdue', () async {
@@ -411,37 +428,27 @@ void main() {
         stubDue(overdue: {'elsewhere'}, dueToday: {'today'});
         stubMatchingIds(const ['today']);
 
-        expect(
-          await atNow(() => sut.dueUrgency(open)),
-          DueDateUrgency.dueToday,
-        );
+        expect(await urgencies([open]), [DueDateUrgency.dueToday]);
       });
 
       test('reads normal when nothing it matches is due', () async {
         stubDue(overdue: {'elsewhere'}, dueToday: {'elsewhere-too'});
         stubMatchingIds(const ['undated']);
 
-        expect(
-          await atNow(() => sut.dueUrgency(open)),
-          DueDateUrgency.normal,
-        );
+        expect(await urgencies([open]), [DueDateUrgency.normal]);
       });
 
-      test('a saved Due today view is never marked overdue', () async {
+      test("honours each filter's own due clause", () async {
         stubDue(overdue: {'late'}, dueToday: {'today'});
         stubMatchingIds(const ['late', 'today']);
 
-        final urgency = await atNow(
-          () =>
-              sut.dueUrgency(open.copyWith(dueFilter: TaskDueFilter.dueToday)),
-        );
-
-        expect(urgency, DueDateUrgency.dueToday);
-        verifyNever(
-          () => db.getOpenTaskIdsForDueFilter(
-            TaskDueFilter.overdue,
-            now: any(named: 'now'),
-          ),
+        expect(
+          await urgencies([
+            // A saved Due today view cannot contain an overdue task.
+            open.copyWith(dueFilter: TaskDueFilter.dueToday),
+            open.copyWith(dueFilter: TaskDueFilter.overdue),
+          ]),
+          [DueDateUrgency.dueToday, DueDateUrgency.overdue],
         );
       });
 
@@ -449,17 +456,130 @@ void main() {
         stubDue(dueToday: {'today'});
         stubMatchingIds(const ['today']);
 
-        final urgency = await atNow(
-          () => sut.dueUrgency(open.copyWith(dueFilter: TaskDueFilter.overdue)),
+        expect(
+          await urgencies([open.copyWith(dueFilter: TaskDueFilter.overdue)]),
+          [DueDateUrgency.normal],
+        );
+        // Its only window is empty: no id list is worth fetching.
+        verifyIdListFetches(0);
+      });
+
+      test('N filters cost one window read and one id list each', () async {
+        stubDue(overdue: {'late'}, dueToday: {'today'});
+        stubMatchingIds(const ['today', 'undated']);
+
+        final result = await urgencies([open, open, open]);
+
+        expect(result, List.filled(3, DueDateUrgency.dueToday));
+        verify(() => db.getOpenTaskIdsByDueWindow(now: now)).called(1);
+        // Not 2 per filter: both windows are checked against one list.
+        verifyIdListFetches(3);
+        for (final window in [TaskDueFilter.overdue, TaskDueFilter.dueToday]) {
+          verifyNever(
+            () => db.getOpenTaskIdsForDueFilter(window, now: any(named: 'now')),
+          );
+        }
+      });
+
+      test('nothing due by tonight costs one read and no id lists', () async {
+        stubDue();
+
+        expect(
+          await urgencies([open, open]),
+          List.filled(2, DueDateUrgency.normal),
+        );
+        verifyIdListFetches(0);
+      });
+
+      test('the agent-link set is read once for the whole batch', () async {
+        stubDue(overdue: {'t1'});
+        stubMatchingIds(const ['t1', 't2']);
+        when(
+          () => agentRepo.getTaskIdsWithAgentLink(),
+        ).thenAnswer((_) async => {'t1'});
+        const withAgent = TasksFilter(
+          selectedTaskStatuses: {'OPEN'},
+          agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+        );
+        const withoutAgent = TasksFilter(
+          selectedTaskStatuses: {'OPEN'},
+          agentAssignmentFilter: AgentAssignmentFilter.noAgent,
         );
 
-        expect(urgency, DueDateUrgency.normal);
-        verifyNever(
-          () => db.getOpenTaskIdsForDueFilter(
-            TaskDueFilter.dueToday,
-            now: any(named: 'now'),
+        expect(await urgencies([withAgent, withoutAgent, withAgent]), [
+          DueDateUrgency.overdue,
+          DueDateUrgency.normal,
+          DueDateUrgency.overdue,
+        ]);
+        verify(() => agentRepo.getTaskIdsWithAgentLink()).called(1);
+      });
+
+      test('a filter with no statuses matches nothing', () async {
+        stubDue(overdue: {'late'});
+        stubMatchingIds(const ['late']);
+
+        expect(await urgencies([const TasksFilter()]), [
+          DueDateUrgency.normal,
+        ]);
+        verifyIdListFetches(0);
+      });
+
+      test('no filters, no reads', () async {
+        expect(await urgencies(const []), isEmpty);
+        verifyNever(() => db.getOpenTaskIdsByDueWindow(now: any(named: 'now')));
+      });
+    });
+
+    group('dueViewCounts', () {
+      test('counts both views from one window read and one id list', () async {
+        stubDue(overdue: {'late-a', 'late-b'}, dueToday: {'today'});
+        stubMatchingIds(const ['late-a', 'today', 'undated']);
+
+        final counts = await atNow(() => sut.dueViewCounts(open));
+
+        expect((counts.overdue, counts.dueToday), (1, 1));
+        verify(() => db.getOpenTaskIdsByDueWindow(now: now)).called(1);
+        verifyIdListFetches(1);
+      });
+
+      test("ignores the filter's own due clause", () async {
+        stubDue(overdue: {'late'}, dueToday: {'today'});
+        stubMatchingIds(const ['late', 'today']);
+
+        final counts = await atNow(
+          () => sut.dueViewCounts(
+            open.copyWith(dueFilter: TaskDueFilter.overdue),
           ),
         );
+
+        expect((counts.overdue, counts.dueToday), (1, 1));
+      });
+
+      test('a search restriction narrows both views', () async {
+        stubDue(overdue: {'late-a', 'late-b'}, dueToday: {'today'});
+        stubMatchingIds(const ['late-a', 'late-b', 'today']);
+
+        final counts = await atNow(
+          () => sut.dueViewCounts(open, restrictToIds: {'late-b'}),
+        );
+
+        expect((counts.overdue, counts.dueToday), (1, 0));
+      });
+
+      test('short-circuits to zero without an id list', () async {
+        stubDue();
+        expect((await atNow(() => sut.dueViewCounts(open))).overdue, 0);
+        expect(
+          (await atNow(
+            () => sut.dueViewCounts(open, restrictToIds: const {}),
+          )).dueToday,
+          0,
+        );
+        expect(
+          (await atNow(() => sut.dueViewCounts(const TasksFilter()))).overdue,
+          0,
+        );
+        verifyIdListFetches(0);
       });
     });
   });

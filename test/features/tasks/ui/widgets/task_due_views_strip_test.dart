@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_view_counts.dart';
 import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,7 +54,7 @@ void main() {
   ) async {
     await _pumpStrip(
       tester,
-      counts: const TaskDueViewCounts(overdue: 0, dueToday: 0),
+      counts: TaskDueViewCounts.zero,
     );
 
     expect(_view(TaskDueFilter.overdue), findsNothing);
@@ -170,7 +171,7 @@ void main() {
   ) async {
     await _pumpStrip(
       tester,
-      counts: const TaskDueViewCounts(overdue: 0, dueToday: 0),
+      counts: TaskDueViewCounts.zero,
       active: TaskDueFilter.overdue,
     );
 

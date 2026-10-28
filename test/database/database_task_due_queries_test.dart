@@ -133,6 +133,26 @@ void main() {
         expect(results[0], isNot(contains('overdue-last-minute')));
       });
 
+      test('both windows come from one read and agree with the single '
+          'window lookups', () async {
+        await seed();
+
+        final windows = await db!.getOpenTaskIdsByDueWindow(now: now);
+
+        expect(windows.overdue, {'overdue-long-ago', 'overdue-last-minute'});
+        expect(windows.dueToday, {
+          'today-first-minute',
+          'today-later-than-now',
+        });
+        expect(
+          windows.dueToday,
+          await db!.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.dueToday,
+            now: now,
+          ),
+        );
+      });
+
       test('all has no due window and is rejected', () {
         expect(
           () => db!.getOpenTaskIdsForDueFilter(TaskDueFilter.all, now: now),
