@@ -172,49 +172,50 @@ void main() {
   });
 
   group('UnifiedAiToggleField', () {
-    testWidgets('renders with AI-specific styling', (
-      WidgetTester tester,
-    ) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light().copyWith(
-            extensions: const [dsTokensLight],
-          ),
-          home: Scaffold(
-            body: UnifiedAiToggleField(
-              label: 'AI Feature',
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
+    testWidgets(
+      "uses the settings selector's surface, and its frame does not change "
+      'with the value',
+      (WidgetTester tester) async {
+        Future<BoxDecoration> frame({required bool value}) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              theme: ThemeData.light().copyWith(
+                extensions: const [dsTokensLight],
+              ),
+              home: Scaffold(
+                body: UnifiedAiToggleField(
+                  label: 'AI Feature',
+                  value: value,
+                  onChanged: (_) {},
+                ),
+              ),
             ),
-          ),
-        ),
-      );
+          );
+          final container = tester.widget<Container>(
+            find
+                .descendant(
+                  of: find.byType(UnifiedAiToggleField),
+                  matching: find.byType(Container),
+                )
+                .first,
+          );
+          return container.decoration! as BoxDecoration;
+        }
 
-      expect(find.text('AI Feature'), findsOneWidget);
-      expect(find.byType(UnifiedToggle), findsOneWidget);
+        final off = await frame(value: false);
+        expect(off.color, dsTokensLight.colors.background.level01);
+        expect(off.borderRadius, BorderRadius.circular(dsTokensLight.radii.m));
+        expect(
+          tester.widget<UnifiedToggle>(find.byType(UnifiedToggle)).variant,
+          UnifiedToggleVariant.normal,
+        );
 
-      // Verify it uses normal variant
-      final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
-      expect(toggle.variant, UnifiedToggleVariant.normal);
-
-      // AI-specific container chrome: gradient backdrop and rounded corners.
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(UnifiedAiToggleField),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.gradient, isA<LinearGradient>());
-      expect(decoration.borderRadius, BorderRadius.circular(12));
-    });
+        final on = await frame(value: true);
+        expect(on.border, off.border);
+        expect(on.color, off.color);
+      },
+    );
 
     testWidgets('reflects the initial value on the inner toggle', (
       WidgetTester tester,

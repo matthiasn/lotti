@@ -290,30 +290,6 @@ class _InferenceModelEditPageState
                   ),
                 ),
               ],
-              if (ownerProvider?.inferenceProviderType ==
-                      InferenceProviderType.mistral &&
-                  isMistralAdjustableReasoningModelId(
-                    formState.providerModelId.value,
-                  )) ...[
-                SizedBox(height: tokens.spacing.step4),
-                UnifiedAiToggleField(
-                  label: messages.modelEditMistralThinkingLabel,
-                  description: messages.modelEditMistralThinkingDescription,
-                  value: switch (formState.geminiThinkingMode) {
-                    GeminiThinkingMode.minimal ||
-                    GeminiThinkingMode.low => false,
-                    GeminiThinkingMode.medium ||
-                    GeminiThinkingMode.high => true,
-                  },
-                  onChanged: (thinks) =>
-                      formController.geminiThinkingModeChanged(
-                        thinks
-                            ? GeminiThinkingMode.high
-                            : GeminiThinkingMode.low,
-                      ),
-                  icon: LottiIcons.reasoning,
-                ),
-              ],
             ],
           ),
         ),
@@ -353,7 +329,31 @@ class _InferenceModelEditPageState
                 onChanged: formController.isReasoningModelChanged,
                 icon: LottiIcons.reasoning,
               ),
-              SizedBox(height: tokens.spacing.step3),
+              if (ownerProvider?.inferenceProviderType ==
+                      InferenceProviderType.mistral &&
+                  isMistralAdjustableReasoningModelId(
+                    formState.providerModelId.value,
+                  )) ...[
+                SizedBox(height: tokens.spacing.step4),
+                UnifiedAiToggleField(
+                  label: messages.modelEditMistralThinkingLabel,
+                  description: messages.modelEditMistralThinkingDescription,
+                  value: switch (formState.geminiThinkingMode) {
+                    GeminiThinkingMode.minimal ||
+                    GeminiThinkingMode.low => false,
+                    GeminiThinkingMode.medium ||
+                    GeminiThinkingMode.high => true,
+                  },
+                  onChanged: (thinks) =>
+                      formController.geminiThinkingModeChanged(
+                        thinks
+                            ? GeminiThinkingMode.high
+                            : GeminiThinkingMode.low,
+                      ),
+                  icon: LottiIcons.reasoning,
+                ),
+              ],
+              SizedBox(height: tokens.spacing.step4),
               UnifiedAiToggleField(
                 label: messages.modelEditFunctionCallingLabel,
                 description: messages.modelEditFunctionCallingDescription,
