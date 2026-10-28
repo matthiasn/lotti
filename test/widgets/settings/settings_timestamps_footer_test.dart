@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
@@ -11,19 +12,36 @@ void main() {
   final created = DateTime(2024, 3, 15, 14, 30);
   final updated = DateTime(2025, 11, 2, 9, 5);
 
+  /// Pumps the footer under an app in [appLocale] (English by default) on a
+  /// phone whose clock is set to 24 hours when [use24Hour] is true.
   Future<void> pumpFooter(
     WidgetTester tester, {
     required DateTime? createdAt,
     required DateTime? updatedAt,
+    bool use24Hour = false,
+    Locale? appLocale,
   }) async {
     await tester.pumpWidget(
       WidgetTestBench(
-        child: SettingsTimestampsFooter(
-          createdAt: createdAt,
-          updatedAt: updatedAt,
+        locale: appLocale,
+        child: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(alwaysUse24HourFormat: use24Hour),
+            child: SettingsTimestampsFooter(
+              createdAt: createdAt,
+              updatedAt: updatedAt,
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  void onDevice(WidgetTester tester, Locale locale) {
+    tester.platformDispatcher.localeTestValue = locale;
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
   }
 
   testWidgets('shows both timestamps in the device convention, created first', (
@@ -44,6 +62,52 @@ void main() {
       tester.getTopLeft(updatedLine).dx,
       tester.getTopLeft(createdLine).dx,
     );
+  });
+
+  testWidgets('a 24-hour phone gets a 24-hour clock in an English app', (
+    tester,
+  ) async {
+    onDevice(tester, const Locale('en', 'US'));
+    await pumpFooter(
+      tester,
+      createdAt: created,
+      updatedAt: updated,
+      use24Hour: true,
+    );
+
+    expect(find.text('Created 3/15/2024 14:30'), findsOneWidget);
+    expect(find.text('Last modified 11/2/2025 09:05'), findsOneWidget);
+  });
+
+  testWidgets('an English app on a German phone writes German dates', (
+    tester,
+  ) async {
+    await initializeDateFormatting('de_DE');
+    onDevice(tester, const Locale('de', 'DE'));
+    await pumpFooter(
+      tester,
+      createdAt: created,
+      updatedAt: updated,
+      use24Hour: true,
+    );
+
+    expect(find.text('Created 15.3.2024 14:30'), findsOneWidget);
+    expect(find.text('Last modified 2.11.2025 09:05'), findsOneWidget);
+  });
+
+  testWidgets('a German app on a German phone reads German throughout, '
+      '24-hour even without the device flag', (tester) async {
+    await initializeDateFormatting('de_DE');
+    onDevice(tester, const Locale('de', 'DE'));
+    await pumpFooter(
+      tester,
+      createdAt: created,
+      updatedAt: updated,
+      appLocale: const Locale('de'),
+    );
+
+    expect(find.text('Erstellt am 15.3.2024 14:30'), findsOneWidget);
+    expect(find.text('Zuletzt geändert am 2.11.2025 09:05'), findsOneWidget);
   });
 
   testWidgets('styles both lines as low-emphasis captions', (tester) async {
