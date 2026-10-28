@@ -191,6 +191,30 @@ void main() {
     expect(find.text('2 more saved filters'), findsOneWidget);
   });
 
+  testWidgets('rows span the full width the sidebar gives them', (
+    tester,
+  ) async {
+    await _pumpSidebar(tester);
+
+    final hostWidth =
+        dsTokensLight.spacing.step13 + dsTokensLight.spacing.step10;
+    Rect cardOf(Key key) => tester.getRect(
+      find.descendant(of: find.byKey(key), matching: find.byType(InkWell)),
+    );
+
+    // Each row's card starts at the sidebar's edge, so a highlighted one lines
+    // up with the Tasks row above it instead of sitting indented beneath it.
+    for (final key in [
+      SidebarSavedTaskFiltersKeys.allTasks,
+      for (final filter in _saved.take(5))
+        SidebarSavedTaskFiltersKeys.filter(filter.id),
+    ]) {
+      final card = cardOf(key);
+      expect(card.left, 0, reason: '$key');
+      expect(card.width, hostWidth, reason: '$key');
+    }
+  });
+
   testWidgets('a category-scoped filter announces its category first', (
     tester,
   ) async {

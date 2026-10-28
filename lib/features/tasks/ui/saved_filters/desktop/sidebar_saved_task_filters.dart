@@ -34,6 +34,11 @@ abstract final class SidebarSavedTaskFiltersKeys {
 /// model or upper limit: the sidebar itself scrolls, so users decide how much
 /// vertical space their expanded filter list consumes.
 ///
+/// Rows span the full width of the Tasks row above them rather than sitting
+/// indented beneath it: the sidebar is narrow, and every pixel of inset is
+/// one a filter name loses to an ellipsis. The section header, the leading
+/// glyphs and the smaller type carry the hierarchy instead.
+///
 /// The same list rides the mobile drawer's Tasks row, which passes
 /// [onApplied] to close itself once a choice has landed.
 class SidebarSavedTaskFilters extends ConsumerStatefulWidget {
@@ -79,68 +84,64 @@ class _SidebarSavedTaskFiltersState
         : saved.take(SidebarSavedTaskFilters.initialVisibleFilterCount);
     final hiddenCount = saved.length - visible.length;
 
-    return Padding(
+    return Semantics(
       key: SidebarSavedTaskFiltersKeys.root,
-      padding: EdgeInsetsDirectional.only(start: tokens.spacing.step5),
-      child: Semantics(
-        container: true,
-        label: messages.tasksSavedFiltersGroupSemantics,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SectionHeader(
-              onManage: () => showSavedTaskFiltersSheet(context),
+      container: true,
+      label: messages.tasksSavedFiltersGroupSemantics,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionHeader(
+            onManage: () => showSavedTaskFiltersSheet(context),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          _FilterRow(
+            key: SidebarSavedTaskFiltersKeys.allTasks,
+            label: messages.tasksSavedFiltersAllTasks,
+            semanticsLabel: _semanticsLabel(
+              messages.tasksSavedFiltersAllTasks,
+              total,
             ),
-            SizedBox(height: tokens.spacing.step1),
+            count: total,
+            selected: allSelected,
+            leading: const _AllTasksIcon(),
+            onTap: () => unawaited(_applyAll()),
+          ),
+          for (final filter in visible)
             _FilterRow(
-              key: SidebarSavedTaskFiltersKeys.allTasks,
-              label: messages.tasksSavedFiltersAllTasks,
+              key: SidebarSavedTaskFiltersKeys.filter(filter.id),
+              label: filter.name,
               semanticsLabel: _semanticsLabel(
-                messages.tasksSavedFiltersAllTasks,
-                total,
-              ),
-              count: total,
-              selected: allSelected,
-              leading: const _AllTasksIcon(),
-              onTap: () => unawaited(_applyAll()),
-            ),
-            for (final filter in visible)
-              _FilterRow(
-                key: SidebarSavedTaskFiltersKeys.filter(filter.id),
-                label: filter.name,
-                semanticsLabel: _semanticsLabel(
-                  filter.name,
-                  counts?[filter.id],
-                  categoryName: savedFilterCategoryName(filter),
-                  urgency: urgencies?[filter.id],
-                ),
-                count: counts?[filter.id],
+                filter.name,
+                counts?[filter.id],
+                categoryName: savedFilterCategoryName(filter),
                 urgency: urgencies?[filter.id],
-                selected: filter.id == activeId,
-                leading: _CategoryMarker(
-                  color: savedFilterCategoryColor(filter),
-                ),
-                onTap: () => unawaited(_applySaved(filter)),
               ),
-            if (hiddenCount > 0)
-              _DisclosureRow(
-                key: SidebarSavedTaskFiltersKeys.showMore,
-                label: messages.tasksSavedFiltersShowMore(hiddenCount),
-                icon: LottiIcons.expand,
-                onTap: () => setState(() => _showAll = true),
-              )
-            else if (_showAll &&
-                saved.length >
-                    SidebarSavedTaskFilters.initialVisibleFilterCount)
-              _DisclosureRow(
-                key: SidebarSavedTaskFiltersKeys.showLess,
-                label: messages.tasksSavedFiltersShowLess,
-                icon: LottiIcons.collapse,
-                onTap: () => setState(() => _showAll = false),
+              count: counts?[filter.id],
+              urgency: urgencies?[filter.id],
+              selected: filter.id == activeId,
+              leading: _CategoryMarker(
+                color: savedFilterCategoryColor(filter),
               ),
-          ],
-        ),
+              onTap: () => unawaited(_applySaved(filter)),
+            ),
+          if (hiddenCount > 0)
+            _DisclosureRow(
+              key: SidebarSavedTaskFiltersKeys.showMore,
+              label: messages.tasksSavedFiltersShowMore(hiddenCount),
+              icon: LottiIcons.expand,
+              onTap: () => setState(() => _showAll = true),
+            )
+          else if (_showAll &&
+              saved.length > SidebarSavedTaskFilters.initialVisibleFilterCount)
+            _DisclosureRow(
+              key: SidebarSavedTaskFiltersKeys.showLess,
+              label: messages.tasksSavedFiltersShowLess,
+              icon: LottiIcons.collapse,
+              onTap: () => setState(() => _showAll = false),
+            ),
+        ],
       ),
     );
   }
