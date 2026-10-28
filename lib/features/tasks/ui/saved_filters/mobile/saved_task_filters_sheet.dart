@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
@@ -24,7 +26,7 @@ abstract final class SavedTaskFiltersSheetKeys {
   static const Key root = Key('saved-filters-sheet');
   static const Key editToggle = Key('saved-filters-sheet-edit-toggle');
   static const Key allRow = Key('saved-filters-sheet-all-row');
-  static const Key createRow = Key('saved-filters-sheet-create-row');
+  static const Key saveCurrent = Key('saved-filters-sheet-save-current');
   static const Key pinnedEmpty = Key('saved-filters-sheet-pinned-empty');
   static Key row(String id) => Key('saved-filters-sheet-row-$id');
   static Key dragHandle(String id) =>
@@ -37,7 +39,9 @@ abstract final class SavedTaskFiltersSheetKeys {
 /// (desktop) — the complete switcher + manager described in the plan.
 ///
 /// A sliver page, so the sheet's rows live in the modal's own scroll view:
-/// one scroll for the whole sheet, never a list scrolling inside it.
+/// one scroll for the whole sheet, never a list scrolling inside it. Saving
+/// the current filter is the page's sticky action, on the glass footer every
+/// modal's primary action uses.
 Future<void> showSavedTaskFiltersSheet(BuildContext context) {
   return ModalUtils.showMultiPageModal<void>(
     context: context,
@@ -45,10 +49,41 @@ Future<void> showSavedTaskFiltersSheet(BuildContext context) {
       ModalUtils.sliverModalSheetPage(
         context: modalContext,
         title: modalContext.messages.tasksSavedFiltersSheetTitle,
+        stickyActionBar: const SavedTaskFiltersSaveFooter(),
         slivers: const [SavedTaskFiltersSheet()],
       ),
     ],
   );
+}
+
+/// The sheet's sticky footer: *Save current filter…* as the page's one
+/// primary action, on [DesignSystemGlassActionFooter].
+///
+/// Closes the sheet only when a filter was actually saved — a cancelled or
+/// blank name leaves the user on the list.
+class SavedTaskFiltersSaveFooter extends ConsumerWidget {
+  const SavedTaskFiltersSaveFooter({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return DesignSystemGlassActionFooter(
+      child: DesignSystemButton(
+        key: SavedTaskFiltersSheetKeys.saveCurrent,
+        label: context.messages.tasksSavedFiltersSaveCurrentAs,
+        leadingIcon: LottiIcons.add,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: () => _save(context, ref),
+      ),
+    );
+  }
+
+  Future<void> _save(BuildContext context, WidgetRef ref) async {
+    final created = await promptSaveCurrentTaskFilter(context, ref);
+    if (created != null && context.mounted) {
+      await Navigator.of(context).maybePop();
+    }
+  }
 }
 
 /// The vertical, single-select switcher + manager body, as one sliver.
@@ -141,14 +176,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     if (mounted) showSavedTaskFilterDeletedToast(context);
   }
 
-  Future<void> _create() async {
-    if (!mounted) return;
-    // Only close the sheet when a filter was actually saved — a cancelled or
-    // blank name returns null and should leave the user on the list.
-    final created = await promptSaveCurrentTaskFilter(context, ref);
-    if (created != null && mounted) await Navigator.of(context).maybePop();
-  }
-
   /// Moves the row at [oldIndex] of the [shown] rows to [newIndex], its
   /// final position. Indices are into the shown rows, which may be the
   /// pinned subset; the controller places the move by id, so the unpinned
@@ -191,10 +218,11 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     final total = ref.watch(allTasksTotalCountProvider).value;
 
     final allSelected = activeId == null && !hasUnsaved;
+    // The last row must scroll clear of the sticky save footer.
     final pagePadding = EdgeInsetsDirectional.only(
       start: tokens.spacing.step5,
       end: tokens.spacing.step5,
-      bottom: tokens.spacing.step8,
+      bottom: DesignSystemGlassActionFooter.reservedHeightFor(context),
     );
 
     final Widget rows;
@@ -286,18 +314,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
                   ),
                 ),
               rows,
-              SliverToBoxAdapter(
-                child: Divider(
-                  height: tokens.spacing.step6,
-                  color: tokens.colors.decorative.level01,
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _CreateRow(
-                  key: SavedTaskFiltersSheetKeys.createRow,
-                  onTap: _create,
-                ),
-              ),
             ],
           ),
         ),
@@ -796,42 +812,6 @@ class _EditAction extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _CreateRow extends StatelessWidget {
-  const _CreateRow({required this.onTap, super.key});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    return _SheetRowScaffold(
-      selected: false,
-      semanticsLabel: messages.tasksSavedFiltersSaveCurrentAs,
-      onTap: onTap,
-      children: [
-        Icon(
-          LottiIcons.add,
-          size: tokens.spacing.step5,
-          color: tokens.colors.interactive.enabled,
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            messages.tasksSavedFiltersSaveCurrentAs,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.interactive.enabled,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

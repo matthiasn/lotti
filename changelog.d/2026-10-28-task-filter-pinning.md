@@ -10,4 +10,5 @@
   down the sidebar's own edge, clear of numbers like 999+.
 - **Task filters scroll once.** The sheet's list used to scroll inside the
   scrolling sheet; it is now one scroll, with Pinned only and Edit kept in reach
-  on a glass bar at the top.
+  on a glass bar at the top and Save current filter on the sticky footer every
+  other sheet uses for its main action.

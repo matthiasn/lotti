@@ -358,7 +358,12 @@ flowchart LR
   `SavedTaskFiltersSheetBar` pins to its top on the app's standard glass
   (`DesignSystemGlassStrip` docked to the top, hairline below): the
   *Pinned only* `DesignSystemToggle` on the leading edge and Edit / Done as a
-  tertiary `DesignSystemButton` on the trailing one. Normal rows are
+  tertiary `DesignSystemButton` on the trailing one. *Save current filter…* is
+  the page's sticky action (`SavedTaskFiltersSaveFooter`): a large full-width
+  primary `DesignSystemButton` on `DesignSystemGlassActionFooter`, the footer
+  every modal's primary action uses, with the rows reserving
+  `reservedHeightFor` at the bottom so the last one scrolls clear of it. It
+  closes the sheet only when a filter was actually saved. Normal rows are
   single-select ≥48dp targets with live counts and **multi-channel selection**
   (selected surface, radio, bold name), and end in a ≥48dp
   `SavedTaskFilterPinToggle` — filled accent pin when pinned, outline when not,

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
@@ -110,6 +111,7 @@ _pumpSheet(
     makeTestableWidgetNoScroll(
       const Scaffold(
         body: CustomScrollView(slivers: [SavedTaskFiltersSheet()]),
+        bottomNavigationBar: SavedTaskFiltersSaveFooter(),
       ),
       overrides: [
         savedTaskFiltersPinnedOnlyProvider.overrideWith(() => pinnedOnlyStub),
@@ -655,6 +657,66 @@ void main() {
     },
   );
 
+  testWidgets(
+    "Save current filter is the sticky glass footer's one large, full-width "
+    'primary action',
+    (tester) async {
+      await _pumpSheet(tester);
+
+      final button = tester.widget<DesignSystemButton>(
+        find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
+      );
+      expect(button.variant, DesignSystemButtonVariant.primary);
+      expect(button.size, DesignSystemButtonSize.large);
+      expect(button.fullWidth, isTrue);
+      expect(button.leadingIcon, LottiIcons.add);
+      expect(button.label, 'Save current filter…');
+      expect(
+        find.ancestor(
+          of: find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
+          matching: find.byType(DesignSystemGlassActionFooter),
+        ),
+        findsOneWidget,
+      );
+      // It is the footer, not a row of the list.
+      expect(
+        find.descendant(
+          of: find.byType(SavedTaskFiltersSheet),
+          matching: find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('the last row scrolls clear of the sticky footer', (
+    tester,
+  ) async {
+    await _pumpSheet(
+      tester,
+      seed: List.generate(
+        20,
+        (index) => SavedTaskFilter(
+          id: 'filter-$index',
+          name: 'Filter $index',
+          filter: const TasksFilter(),
+        ),
+      ),
+    );
+
+    await tester.drag(
+      find.byKey(SavedTaskFiltersSheetKeys.row('filter-3')),
+      const Offset(0, -5000),
+    );
+    await tester.pump();
+
+    final lastRow = tester.getRect(
+      find.byKey(SavedTaskFiltersSheetKeys.row('filter-19')),
+    );
+    final footer = tester.getRect(find.byType(DesignSystemGlassActionFooter));
+    expect(lastRow.bottom, lessThanOrEqualTo(footer.top));
+  });
+
   testWidgets('Save current filter as… creates from the live filter', (
     tester,
   ) async {
@@ -663,7 +725,7 @@ void main() {
       pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
     );
 
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -756,6 +818,7 @@ void main() {
         MaterialPageRoute<void>(
           builder: (_) => const Scaffold(
             body: CustomScrollView(slivers: [SavedTaskFiltersSheet()]),
+            bottomNavigationBar: SavedTaskFiltersSaveFooter(),
           ),
         ),
       );
@@ -764,7 +827,7 @@ void main() {
       expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
 
       // Cancel the name modal → nothing is created and the sheet stays open.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.tapAt(const Offset(10, 10));
@@ -774,7 +837,7 @@ void main() {
       expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
 
       // Save a name → the filter is created and the sheet closes.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       await tester.enterText(
