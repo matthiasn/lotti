@@ -7296,6 +7296,16 @@
   "tasksSavedFiltersFilterNameLabel": "Filternavn",
   "tasksSavedFiltersGroupSemantics": "Opgavefiltre",
   "tasksSavedFiltersManageTooltip": "Administrer opgavefiltre",
+  "tasksSavedFiltersPinNamed": "Fastgør {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Kun fastgjorte",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Ingen fastgjorte filtre endnu. Slå „Kun fastgjorte“ fra, og fastgør de filtre, du vil have for øje.",
   "tasksSavedFiltersRailButton": "Visninger",
   "tasksSavedFiltersRenameNamed": "Omdøb {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7306,13 +7316,13 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Træk for at sætte rækkefølgen. De første fem filtre vises i sidebaren.",
+  "tasksSavedFiltersReorderHelperPinned": "Træk for at sætte rækkefølgen. Fastgjorte filtre vises i sidebaren.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Gem som ny...",
   "tasksSavedFiltersSaveAsNewDescription": "Behold det eksisterende filter uændret og lav et separat.",
   "tasksSavedFiltersSaveAsNewTitle": "Gem som et nyt filter",
   "tasksSavedFiltersSaveButtonLabel": "Gem filter...",
   "tasksSavedFiltersSaveChoiceIntro": "Vælg om du vil opdatere det gemte filter eller oprette et separat.",
   "tasksSavedFiltersSaveChoiceTitle": "Gem filter",
-  "tasksSavedFiltersSaveCurrentAs": "Gem strømfilteret...",
   "tasksSavedFiltersSaveError": "Kunne ikke gemme dette filter. Prøv igen.",
   "tasksSavedFiltersSavePageHelper": "Giv dette filter et kort navn. Du kan omarrangere det senere i Task-filtrene.",
   "tasksSavedFiltersSavePopupCancel": "Annuller",
@@ -7334,6 +7344,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Frigør {name}",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

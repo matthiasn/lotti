@@ -17573,6 +17573,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Spravovat filtry úkolů';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Připnout $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Jen připnuté';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Zatím nemáš žádné připnuté filtry. Vypni „Jen připnuté“ a připni filtry, které chceš mít na očích.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Pohledy';
 
   @override
@@ -17583,6 +17595,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Přetažením nastavíš pořadí. Prvních pět filtrů se zobrazí v postranním panelu.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Přetažením nastavíš pořadí. Připnuté filtry se zobrazí v postranním panelu.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Uložit jako nový…';
@@ -17603,9 +17619,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSaveChoiceTitle => 'Uložit filtr';
-
-  @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr…';
 
   @override
   String get tasksSavedFiltersSaveError =>
@@ -17656,6 +17669,11 @@ class AppLocalizationsCs extends AppLocalizations {
       one: '1 úkol',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Odepnout $name';
   }
 
   @override

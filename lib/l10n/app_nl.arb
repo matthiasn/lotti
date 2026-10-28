@@ -7295,6 +7295,16 @@
   "tasksSavedFiltersFilterNameLabel": "Filternaam",
   "tasksSavedFiltersGroupSemantics": "Taakfilters",
   "tasksSavedFiltersManageTooltip": "Taakfilters beheren",
+  "tasksSavedFiltersPinNamed": "{name} vastzetten",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Alleen vastgezet",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Nog geen vastgezette filters. Zet „Alleen vastgezet” uit en zet de filters vast die je in beeld wilt houden.",
   "tasksSavedFiltersRailButton": "Weergaven",
   "tasksSavedFiltersRenameNamed": "Hernoemen {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7305,13 +7315,13 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Sleep om de volgorde in te stellen. De eerste vijf filters verschijnen in de zijbalk.",
+  "tasksSavedFiltersReorderHelperPinned": "Sleep om de volgorde in te stellen. Vastgezette filters verschijnen in de zijbalk.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Opslaan als nieuw...",
   "tasksSavedFiltersSaveAsNewDescription": "Houd het bestaande filter ongewijzigd en maak een aparte filter aan.",
   "tasksSavedFiltersSaveAsNewTitle": "Opslaan als nieuw filter",
   "tasksSavedFiltersSaveButtonLabel": "Filter opslaan...",
   "tasksSavedFiltersSaveChoiceIntro": "Kies of het opgeslagen filter moet worden bijgewerkt of een aparte filter moet worden aangemaakt.",
   "tasksSavedFiltersSaveChoiceTitle": "Filter opslaan",
-  "tasksSavedFiltersSaveCurrentAs": "Huidige filter opslaan...",
   "tasksSavedFiltersSaveError": "Kon dit filter niet opslaan. Probeer het opnieuw.",
   "tasksSavedFiltersSavePageHelper": "Geef dit filter een korte naam. U kunt het later herschikken in taakfilters.",
   "tasksSavedFiltersSavePopupCancel": "Annuleren",
@@ -7333,6 +7343,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "{name} losmaken",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

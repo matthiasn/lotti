@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -1103,11 +1104,20 @@ void main() {
       );
 
       // The content is padded by the fade's extent, so the last row can be
-      // scrolled clear of it instead of stopping half dissolved.
+      // scrolled clear of it instead of stopping half dissolved — on top of
+      // the gutter the region keeps inside its scroll view.
       final scroll = tester.widget<SingleChildScrollView>(
         find.byType(SingleChildScrollView),
       );
-      expect(scroll.padding, EdgeInsets.only(bottom: tokens.spacing.step7));
+      expect(
+        scroll.padding,
+        EdgeInsets.fromLTRB(
+          tokens.spacing.step5,
+          0,
+          tokens.spacing.step5,
+          tokens.spacing.step7,
+        ),
+      );
     });
 
     testWidgets('without a section below the destinations the region is a '
@@ -1124,14 +1134,56 @@ void main() {
       );
       await tester.pump();
 
+      final tokens = tester
+          .element(find.byType(DesktopNavigationSidebar))
+          .designTokens;
       expect(find.byType(ShaderMask), findsNothing);
       expect(
         tester
             .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
             .padding,
-        isNull,
+        EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       );
     });
+
+    testWidgets(
+      'the scrollbar runs down the sidebar edge, in the gutter, clear of the '
+      "rows' trailing content",
+      (tester) async {
+        const rowKey = Key('trailing-row');
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              belowDestinations: const SizedBox(
+                key: rowKey,
+                width: double.infinity,
+                height: 1200,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final tokens = tester
+            .element(find.byType(DesktopNavigationSidebar))
+            .designTokens;
+        final sidebar = tester.getRect(find.byType(DesktopNavigationSidebar));
+        final scrollbar = tester.getRect(find.byType(DesignSystemScrollbar));
+        final row = tester.getRect(find.byKey(rowKey));
+
+        // The scrollbar spans the whole rail, so its thumb paints at the
+        // sidebar's own edge…
+        expect(scrollbar.left, sidebar.left);
+        expect(scrollbar.right, sidebar.right);
+        // …while the rows stop a gutter short of it, which is where a count
+        // sits — so the thumb cannot cover one.
+        expect(sidebar.right - row.right, tokens.spacing.step5);
+        expect(row.left - sidebar.left, tokens.spacing.step5);
+      },
+    );
 
     testWidgets('a scroll region shorter than its own fade still paints', (
       tester,

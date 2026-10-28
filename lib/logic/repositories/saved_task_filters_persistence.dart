@@ -24,6 +24,9 @@ class SavedTaskFiltersPersistence {
   /// Storage key of the [SavedTaskFilterSyncLedger].
   static const ledgerKey = 'SAVED_TASK_FILTERS_SYNC_LEDGER';
 
+  /// Storage key of the per-device pinned-only switch.
+  static const pinnedOnlyKey = 'SAVED_TASK_FILTERS_PINNED_ONLY';
+
   final SettingsDb _settingsDb;
   final DomainLogger _domainLogger;
 
@@ -104,6 +107,15 @@ class SavedTaskFiltersPersistence {
   Future<void> saveLedger(SavedTaskFilterSyncLedger ledger) async {
     await _settingsDb.saveSettingsItem(ledgerKey, jsonEncode(ledger.toJson()));
   }
+
+  /// Whether the list shows pinned filters only. False when nothing is
+  /// stored, so a device that never touched the switch shows every filter.
+  Future<bool> loadPinnedOnly() async =>
+      await _settingsDb.itemByKey(pinnedOnlyKey) == 'true';
+
+  /// Persists the pinned-only switch.
+  Future<void> savePinnedOnly({required bool pinnedOnly}) =>
+      _settingsDb.saveSettingsItem(pinnedOnlyKey, '$pinnedOnly');
 
   String _encode(List<SavedTaskFilter> filters) {
     return jsonEncode(filters.map((f) => f.toJson()).toList(growable: false));

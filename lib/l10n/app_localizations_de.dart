@@ -17491,6 +17491,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Aufgabenfilter verwalten';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return '$name anheften';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Nur angeheftete';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Noch keine angehefteten Filter. Schalte „Nur angeheftete“ aus und hefte die Filter an, die du im Blick behalten willst.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Ansichten';
 
   @override
@@ -17501,6 +17513,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Zieh die Filter in die gewünschte Reihenfolge. Die ersten fünf erscheinen in der Seitenleiste.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Zieh die Filter in die gewünschte Reihenfolge. Angeheftete erscheinen in der Seitenleiste.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel =>
@@ -17522,10 +17538,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSaveChoiceTitle => 'Filter speichern';
-
-  @override
-  String get tasksSavedFiltersSaveCurrentAs =>
-      'Aktuellen Filter speichern als…';
 
   @override
   String get tasksSavedFiltersSaveError =>
@@ -17573,6 +17585,11 @@ class AppLocalizationsDe extends AppLocalizations {
       one: '1 Aufgabe',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return '$name lösen';
   }
 
   @override

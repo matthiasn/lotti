@@ -53,8 +53,9 @@ project, and relationships to other tasks.
   (`state/task_list_density_controller.dart`) and is deliberately not part of
   the task filters, so applying a saved view never flips it.
 - **Saves the filters that matter.** Frequently used queries become named views
-  with live counts, pinned in the desktop sidebar or reachable from the mobile
-  rail's Views button.
+  with live counts, listed under Tasks in the sidebar or reachable from the
+  mobile rail's Views button. Pin the views you live in and switch the list to
+  *Pinned only* to keep the sidebar to just those.
 - **Discusses a task beside its details.** Ask opens a resizable chat companion
   on wide layouts and an expandable sheet on phones. Closing it restores the
   task workspace while keeping the chat draft.

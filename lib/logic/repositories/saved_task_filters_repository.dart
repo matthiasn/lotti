@@ -45,7 +45,8 @@ final savedTaskFiltersRepositoryProvider = Provider<SavedTaskFiltersRepository>(
 /// [SavedTaskFiltersPersistence]); every mutation is a read-modify-write
 /// serialized by an in-class async lock, so concurrent local edits and inbound
 /// sync applies never clobber each other's slices of the list. Derived task
-/// counts are computed per-device and are never synced.
+/// counts are computed per-device and are never synced, and so is the
+/// pinned-only switch ([savePinnedOnly]).
 class SavedTaskFiltersRepository {
   SavedTaskFiltersRepository(
     this._persistence,
@@ -234,6 +235,19 @@ class SavedTaskFiltersRepository {
       ]);
       _updateNotifications.notify({savedTaskFiltersNotification});
     });
+  }
+
+  /// Whether the saved-filter list shows pinned filters only.
+  Future<bool> loadPinnedOnly() => _persistence.loadPinnedOnly();
+
+  /// Persists the pinned-only switch, without enqueuing a sync message.
+  ///
+  /// Like the order, it is a per-device view of the list: a phone can keep
+  /// to its pinned few while a desktop shows everything. Which filters are
+  /// pinned is part of each definition and does sync.
+  Future<void> savePinnedOnly({required bool pinnedOnly}) async {
+    await _persistence.savePinnedOnly(pinnedOnly: pinnedOnly);
+    _updateNotifications.notify({savedTaskFiltersNotification});
   }
 
   /// Sends every row the ledger still owes: the stored revision of each owed

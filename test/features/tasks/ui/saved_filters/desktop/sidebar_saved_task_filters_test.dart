@@ -51,6 +51,15 @@ class _StubSavedController extends SavedTaskFiltersController {
   Future<List<SavedTaskFilter>> build() async => seed;
 }
 
+class _StubPinnedOnly extends SavedTaskFiltersPinnedOnlyController {
+  _StubPinnedOnly({required this.pinnedOnly});
+
+  final bool pinnedOnly;
+
+  @override
+  Future<bool> build() async => pinnedOnly;
+}
+
 /// Holds every batch filter update open until [release], so a test can act
 /// while a tapped filter is still landing.
 class _GatedJournalPageController extends FakeJournalPageController {
@@ -99,6 +108,7 @@ Future<FakeJournalPageController> _pumpSidebar(
   FakeJournalPageController? pageController,
   ValueListenable<bool>? showSidebar,
   Map<String, DueDateUrgency> urgencies = const {},
+  bool pinnedOnly = false,
 }) async {
   final page = pageController ?? FakeJournalPageController(pageState);
   final sidebar = SidebarSavedTaskFilters(onApplied: onApplied);
@@ -123,6 +133,9 @@ Future<FakeJournalPageController> _pumpSidebar(
         journalPageControllerProvider(true).overrideWith(() => page),
         savedTaskFiltersControllerProvider.overrideWith(
           () => _StubSavedController(saved),
+        ),
+        savedTaskFiltersPinnedOnlyProvider.overrideWith(
+          () => _StubPinnedOnly(pinnedOnly: pinnedOnly),
         ),
         savedTaskFilterCountsProvider.overrideWith(
           (ref) async => const {
@@ -475,5 +488,82 @@ void main() {
       findsOneWidget,
     );
     handle.dispose();
+  });
+
+  group('pinned only', () {
+    // Pins on the first, a middle and the last filters, with more than five
+    // filters overall, so a cap would hide one of them.
+    final pinnedSaved = [
+      for (final (i, f) in _saved.indexed)
+        f.copyWith(pinned: i == 0 || i == 3 || i == _saved.length - 1),
+    ];
+
+    testWidgets('shows every pinned filter, in order, and nothing else', (
+      tester,
+    ) async {
+      await _pumpSidebar(tester, saved: pinnedSaved, pinnedOnly: true);
+
+      for (final f in pinnedSaved) {
+        expect(
+          find.byKey(SidebarSavedTaskFiltersKeys.filter(f.id)),
+          f.pinned ? findsOneWidget : findsNothing,
+          reason: f.id,
+        );
+      }
+      final tops = [
+        for (final id in ['alpha', 'delta', 'golf'])
+          tester
+              .getTopLeft(find.byKey(SidebarSavedTaskFiltersKeys.filter(id)))
+              .dy,
+      ];
+      expect(tops, orderedEquals([...tops]..sort()));
+    });
+
+    testWidgets('has no five-row cap, so no More and no Show fewer', (
+      tester,
+    ) async {
+      final allPinned = [for (final f in _saved) f.copyWith(pinned: true)];
+      await _pumpSidebar(tester, saved: allPinned, pinnedOnly: true);
+
+      expect(
+        find.byKey(SidebarSavedTaskFiltersKeys.filter('golf')),
+        findsOneWidget,
+      );
+      expect(find.byKey(SidebarSavedTaskFiltersKeys.showMore), findsNothing);
+      expect(find.byKey(SidebarSavedTaskFiltersKeys.showLess), findsNothing);
+    });
+
+    testWidgets(
+      'keeps All tasks and Manage when nothing is pinned, so the way back '
+      'is in reach',
+      (tester) async {
+        await _pumpSidebar(tester, pinnedOnly: true);
+
+        expect(
+          find.byKey(SidebarSavedTaskFiltersKeys.allTasks),
+          findsOneWidget,
+        );
+        expect(find.byKey(SidebarSavedTaskFiltersKeys.manage), findsOneWidget);
+        for (final f in _saved) {
+          expect(
+            find.byKey(SidebarSavedTaskFiltersKeys.filter(f.id)),
+            findsNothing,
+          );
+        }
+      },
+    );
+
+    testWidgets('pins are ignored while pinned only is off', (tester) async {
+      await _pumpSidebar(tester, saved: pinnedSaved);
+
+      // The usual first five, pinned or not, and More for the rest.
+      for (final f in pinnedSaved.take(5)) {
+        expect(
+          find.byKey(SidebarSavedTaskFiltersKeys.filter(f.id)),
+          findsOneWidget,
+        );
+      }
+      expect(find.byKey(SidebarSavedTaskFiltersKeys.showMore), findsOneWidget);
+    });
   });
 }

@@ -24,9 +24,9 @@ abstract final class SaveCurrentTaskFilterKeys {
   static const Key saveButton = Key('save-current-filter-save-button');
 }
 
-/// The single create verb shared by the rail "+ Save" chip and the sheet's
-/// "Save current filter as…" row: snapshot the live tasks filter, prompt for a
-/// name, then persist a new [SavedTaskFilter] and promote it in the MRU order.
+/// The rail "+ Save" chip's create verb: snapshot the live tasks filter,
+/// prompt for a name, then persist a new [SavedTaskFilter] and promote it in
+/// the MRU order.
 ///
 /// Returns the created filter, or null when the user dismissed the name modal
 /// (or entered only whitespace). The live filter is captured *before* the modal
@@ -72,9 +72,8 @@ Future<SavedTaskFilter?> promptSaveCurrentTaskFilter(
 }
 
 /// Shows the shared name-entry modal and returns the committed text (or null
-/// on cancel/dismiss). Reuses the existing "Name this filter" copy so the rail,
-/// sheet "Save current filter as…", and the in-sheet Rename all speak with one
-/// voice. [initialValue] pre-fills the field (used by Rename).
+/// on cancel/dismiss). Reuses the existing "Name this filter" copy so the
+/// rail's Save and the sheet's Rename speak with one voice. [initialValue] pre-fills the field (used by Rename).
 Future<String?> promptTaskFilterName(
   BuildContext context, {
   String initialValue = '',

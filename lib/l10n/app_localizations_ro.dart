@@ -17689,6 +17689,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gestionați filtrele de sarcini';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Fixați $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Doar fixate';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Nu aveți încă filtre fixate. Dezactivați „Doar fixate” și fixați filtrele pe care doriți să le aveți la vedere.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Vizualizări';
 
   @override
@@ -17699,6 +17711,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Trageți pentru a stabili ordinea. Primele cinci filtre apar în bara laterală.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Trageți pentru a stabili ordinea. Filtrele fixate apar în bara laterală.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Salvați ca filtru nou…';
@@ -17719,9 +17735,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSaveChoiceTitle => 'Salvați filtrul';
-
-  @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Salvați filtrul curent ca…';
 
   @override
   String get tasksSavedFiltersSaveError =>
@@ -17771,6 +17784,11 @@ class AppLocalizationsRo extends AppLocalizations {
       one: '1 sarcină',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Anulați fixarea $name';
   }
 
   @override

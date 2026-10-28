@@ -7296,6 +7296,16 @@
   "tasksSavedFiltersFilterNameLabel": "Nome del filtro",
   "tasksSavedFiltersGroupSemantics": "Filtri di attività",
   "tasksSavedFiltersManageTooltip": "Gestire i filtri delle attività",
+  "tasksSavedFiltersPinNamed": "Fissa {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Solo fissati",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Non hai ancora filtri fissati. Disattiva «Solo fissati» e fissa i filtri che vuoi tenere in vista.",
   "tasksSavedFiltersRailButton": "Viste",
   "tasksSavedFiltersRenameNamed": "Rinomina {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7306,13 +7316,13 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Trascina per impostare l'ordine. I primi cinque filtri appaiono nella barra laterale.",
+  "tasksSavedFiltersReorderHelperPinned": "Trascina per impostare l'ordine. I filtri fissati appaiono nella barra laterale.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Salva come nuovo...",
   "tasksSavedFiltersSaveAsNewDescription": "Mantenere il filtro esistente invariato e creare uno separato.",
   "tasksSavedFiltersSaveAsNewTitle": "Salvare come nuovo filtro",
   "tasksSavedFiltersSaveButtonLabel": "Salvare il filtro...",
   "tasksSavedFiltersSaveChoiceIntro": "Scegliere se aggiornare il filtro salvato o creare uno separato.",
   "tasksSavedFiltersSaveChoiceTitle": "Salvare il filtro",
-  "tasksSavedFiltersSaveCurrentAs": "Salvare il filtro corrente...",
   "tasksSavedFiltersSaveError": "Non ho potuto salvare questo filtro.",
   "tasksSavedFiltersSavePageHelper": "Dare a questo filtro un nome breve. È possibile riordinarlo in seguito nei filtri Task.",
   "tasksSavedFiltersSavePopupCancel": "Annullamento",
@@ -7334,6 +7344,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Togli {name} dai fissati",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },

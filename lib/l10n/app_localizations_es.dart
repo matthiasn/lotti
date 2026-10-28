@@ -17582,6 +17582,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Gestionar filtros de tareas';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Fijar $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Solo fijados';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Aún no tienes filtros fijados. Desactiva «Solo fijados» y fija los filtros que quieras tener a la vista.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Vistas';
 
   @override
@@ -17592,6 +17604,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Arrastra para ordenar. Los primeros cinco filtros aparecen en la barra lateral.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Arrastra para ordenar. Los filtros fijados aparecen en la barra lateral.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Guardar como nuevo…';
@@ -17612,9 +17628,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSaveChoiceTitle => 'Guardar filtro';
-
-  @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Guardar el filtro actual…';
 
   @override
   String get tasksSavedFiltersSaveError =>
@@ -17663,6 +17676,11 @@ class AppLocalizationsEs extends AppLocalizations {
       one: '1 tarea',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Desfijar $name';
   }
 
   @override

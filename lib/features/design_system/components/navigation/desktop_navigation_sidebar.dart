@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_anchor.dart';
+import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -214,8 +215,10 @@ class DesktopNavigationSidebar extends StatelessWidget {
     final effectiveWidth = collapsed ? collapsedWidth : width;
 
     // Horizontal gutters live on the *children*, not on this container, so a
-    // slot can opt out of them. Only [footerBand] does: everything else is a
-    // row in a column of rows and shares one rail.
+    // slot can opt out of them. [footerBand] does, and the scroll region
+    // takes its gutter inside the scroll view rather than around it: the
+    // scrollbar then rides the sidebar's own edge, clear of the counts at
+    // the rows' trailing end, instead of painting over them.
     final gutter = EdgeInsets.symmetric(horizontal: tokens.spacing.step5);
 
     return Container(
@@ -236,14 +239,14 @@ class DesktopNavigationSidebar extends StatelessWidget {
             : CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Padding(
-              padding: gutter,
-              child: Column(
-                crossAxisAlignment: collapsed
-                    ? CrossAxisAlignment.center
-                    : CrossAxisAlignment.start,
-                children: [
-                  _SidebarLogoRow(
+            child: Column(
+              crossAxisAlignment: collapsed
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: gutter,
+                  child: _SidebarLogoRow(
                     collapsed: collapsed,
                     showToggle: showToggle,
                     onToggle: onToggleCollapsed,
@@ -251,86 +254,101 @@ class DesktopNavigationSidebar extends StatelessWidget {
                     menuHeader: logoMenuHeader,
                     menuSemanticsLabel: logoMenuSemanticsLabel,
                   ),
-                  const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 24),
 
-                  // Navigation destinations (scrollable for short windows)
-                  Expanded(
-                    child: _ScrollRegion(
-                      // An open-ended section below the destinations makes
-                      // scrolling the normal case rather than the short-
-                      // window exception, so the region says where it ends:
-                      // its last rows fade out instead of butting against
-                      // the pinned Settings row as if they were one list.
-                      fadesOut: !collapsed && belowDestinations != null,
-                      child: Column(
-                        crossAxisAlignment: collapsed
-                            ? CrossAxisAlignment.center
-                            : CrossAxisAlignment.start,
-                        children: [
-                          for (var i = 0; i < destinations.length; i++) ...[
-                            _DesktopSidebarNavItem(
-                              destination: destinations[i],
-                              active: i == activeIndex && !isSettingsActive,
-                              collapsed: collapsed,
-                              onTap: () => onDestinationSelected(i),
+                // Navigation destinations (scrollable for short windows)
+                Expanded(
+                  child: _ScrollRegion(
+                    gutter: gutter,
+                    // An open-ended section below the destinations makes
+                    // scrolling the normal case rather than the short-
+                    // window exception, so the region says where it ends:
+                    // its last rows fade out instead of butting against
+                    // the pinned Settings row as if they were one list.
+                    fadesOut: !collapsed && belowDestinations != null,
+                    child: Column(
+                      crossAxisAlignment: collapsed
+                          ? CrossAxisAlignment.center
+                          : CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < destinations.length; i++) ...[
+                          _DesktopSidebarNavItem(
+                            destination: destinations[i],
+                            active: i == activeIndex && !isSettingsActive,
+                            collapsed: collapsed,
+                            onTap: () => onDestinationSelected(i),
+                          ),
+                          // Render the destination's expanded subtree only when
+                          // the destination is active and the sidebar is not
+                          // collapsed — keeps icon-only mode visually stable.
+                          if (!collapsed &&
+                              i == activeIndex &&
+                              !isSettingsActive &&
+                              destinations[i].expandedChildBuilder != null) ...[
+                            SizedBox(height: tokens.spacing.step3),
+                            destinations[i].expandedChildBuilder!(),
+                          ],
+                          if (i < destinations.length - 1)
+                            SizedBox(
+                              height: destinationGap ?? tokens.spacing.step4,
                             ),
-                            // Render the destination's expanded subtree only when
-                            // the destination is active and the sidebar is not
-                            // collapsed — keeps icon-only mode visually stable.
-                            if (!collapsed &&
-                                i == activeIndex &&
-                                !isSettingsActive &&
-                                destinations[i].expandedChildBuilder !=
-                                    null) ...[
-                              SizedBox(height: tokens.spacing.step3),
-                              destinations[i].expandedChildBuilder!(),
-                            ],
-                            if (i < destinations.length - 1)
-                              SizedBox(
-                                height: destinationGap ?? tokens.spacing.step4,
-                              ),
-                          ],
-                          if (!collapsed && belowDestinations != null) ...[
-                            SizedBox(height: tokens.spacing.step6),
-                            belowDestinations!,
-                          ],
                         ],
-                      ),
+                        if (!collapsed && belowDestinations != null) ...[
+                          SizedBox(height: tokens.spacing.step6),
+                          belowDestinations!,
+                        ],
+                      ],
                     ),
                   ),
+                ),
 
-                  // Optional transient-activity slot. Hidden in collapsed mode because
-                  // the compact metrics do not fit the icon-only rail.
-                  if (!collapsed && aboveSettings != null) ...[
-                    SizedBox(height: tokens.spacing.step5),
-                    aboveSettings!,
-                    SizedBox(height: tokens.spacing.step5),
-                  ],
+                // Below the scroll region: the transient-activity slot,
+                // the utility row and Settings, pinned on the same gutter.
+                Padding(
+                  padding: gutter,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: collapsed
+                        ? CrossAxisAlignment.center
+                        : CrossAxisAlignment.start,
+                    children: [
+                      // Optional transient-activity slot. Hidden in collapsed
+                      // mode because the compact metrics do not fit the
+                      // icon-only rail.
+                      if (!collapsed && aboveSettings != null) ...[
+                        SizedBox(height: tokens.spacing.step5),
+                        aboveSettings!,
+                        SizedBox(height: tokens.spacing.step5),
+                      ],
 
-                  if (utilityDestination != null) ...[
-                    _DesktopSidebarNavItem(
-                      destination: utilityDestination!,
-                      active: false,
-                      collapsed: collapsed,
-                      onTap: onUtilitySelected,
-                    ),
-                    if (settingsDestination != null)
-                      SizedBox(height: tokens.spacing.step4),
-                  ],
+                      if (utilityDestination != null) ...[
+                        _DesktopSidebarNavItem(
+                          destination: utilityDestination!,
+                          active: false,
+                          collapsed: collapsed,
+                          onTap: onUtilitySelected,
+                        ),
+                        if (settingsDestination != null)
+                          SizedBox(height: tokens.spacing.step4),
+                      ],
 
-                  // Settings at the bottom — a step clear of a fading scroll
-                  // region, so the pinned row reads as apart from the list.
-                  if (!collapsed && belowDestinations != null)
-                    SizedBox(height: tokens.spacing.step3),
-                  if (settingsDestination != null)
-                    _DesktopSidebarNavItem(
-                      destination: settingsDestination!,
-                      active: isSettingsActive,
-                      collapsed: collapsed,
-                      onTap: onSettingsSelected,
-                    ),
-                ],
-              ),
+                      // Settings at the bottom — a step clear of a fading
+                      // scroll region, so the pinned row reads as apart from
+                      // the list.
+                      if (!collapsed && belowDestinations != null)
+                        SizedBox(height: tokens.spacing.step3),
+                      if (settingsDestination != null)
+                        _DesktopSidebarNavItem(
+                          destination: settingsDestination!,
+                          active: isSettingsActive,
+                          collapsed: collapsed,
+                          onTap: onSettingsSelected,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -351,43 +369,82 @@ class DesktopNavigationSidebar extends StatelessWidget {
 /// The sidebar's scrolling region: the destinations and whatever follows
 /// them.
 ///
+/// The region spans the whole rail and takes [gutter] as padding *inside*
+/// the scroll view, so its [DesignSystemScrollbar] runs down the sidebar's
+/// own edge, in the gutter, rather than over the trailing counts of the
+/// rows it scrolls. The scrollbar wraps the fade mask rather than sitting
+/// under it, so the thumb stays solid when it reaches the bottom.
+///
 /// With [fadesOut] the last `spacing.step7` of the viewport fades to nothing
 /// and the content gains the same extent of bottom padding, so the final row
 /// can always be scrolled clear of the fade rather than being stuck half
 /// dissolved at the end of the list.
-class _ScrollRegion extends StatelessWidget {
-  const _ScrollRegion({required this.fadesOut, required this.child});
+class _ScrollRegion extends StatefulWidget {
+  const _ScrollRegion({
+    required this.gutter,
+    required this.fadesOut,
+    required this.child,
+  });
 
+  final EdgeInsets gutter;
   final bool fadesOut;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    if (!fadesOut) return SingleChildScrollView(child: child);
+  State<_ScrollRegion> createState() => _ScrollRegionState();
+}
 
+class _ScrollRegionState extends State<_ScrollRegion> {
+  // The scrollbar sits outside the fade mask, so it cannot find the scroll
+  // view through the notification it would otherwise listen to alone.
+  final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final fadeExtent = context.designTokens.spacing.step7;
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      // A mask's colours are coverage, not paint: opaque keeps the content,
-      // transparent drops it. A viewport shorter than the fade is all fade.
-      shaderCallback: (bounds) {
-        final solidUntil = bounds.height <= fadeExtent
-            ? 0.0
-            : (bounds.height - fadeExtent) / bounds.height;
-        return LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: const [
-            Color(0xFFFFFFFF),
-            Color(0xFFFFFFFF),
-            Color(0x00FFFFFF),
-          ],
-          stops: [0, solidUntil, 1],
-        ).createShader(bounds);
-      },
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(bottom: fadeExtent),
-        child: child,
+    final scrollView = SingleChildScrollView(
+      controller: _controller,
+      padding: widget.fadesOut
+          ? widget.gutter.copyWith(bottom: fadeExtent)
+          : widget.gutter,
+      child: widget.child,
+    );
+
+    return SizedBox(
+      width: double.infinity,
+      child: DesignSystemScrollbar(
+        controller: _controller,
+        size: DesignSystemScrollbarSize.small,
+        child: !widget.fadesOut
+            ? scrollView
+            : ShaderMask(
+                blendMode: BlendMode.dstIn,
+                // A mask's colours are coverage, not paint: opaque keeps the
+                // content, transparent drops it. A viewport shorter than the
+                // fade is all fade.
+                shaderCallback: (bounds) {
+                  final solidUntil = bounds.height <= fadeExtent
+                      ? 0.0
+                      : (bounds.height - fadeExtent) / bounds.height;
+                  return LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: const [
+                      Color(0xFFFFFFFF),
+                      Color(0xFFFFFFFF),
+                      Color(0x00FFFFFF),
+                    ],
+                    stops: [0, solidUntil, 1],
+                  ).createShader(bounds);
+                },
+                child: scrollView,
+              ),
       ),
     );
   }

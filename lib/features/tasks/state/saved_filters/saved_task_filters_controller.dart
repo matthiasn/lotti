@@ -99,6 +99,26 @@ class SavedTaskFiltersController extends AsyncNotifier<List<SavedTaskFilter>> {
     await _repository.upsert(updated);
   }
 
+  /// Flips whether the saved filter with [id] is pinned. No-op when missing.
+  ///
+  /// Applied to the list at once, before the write lands, so the pin glyph
+  /// answers the tap in the same frame. Pinning is part of the definition,
+  /// so it is stamped and synced like a rename.
+  Future<void> togglePin(String id) async {
+    final current = await future;
+    final idx = current.indexWhere((SavedTaskFilter f) => f.id == id);
+    if (idx < 0) return;
+
+    final updated = current[idx].copyWith(
+      pinned: !current[idx].pinned,
+      updatedAt: now(),
+    );
+    final next = [...current];
+    next[idx] = updated;
+    state = AsyncData(next);
+    await _repository.upsert(updated);
+  }
+
   /// Removes the saved filter with [id]. No-op when missing.
   Future<void> delete(String id) async {
     final current = await future;
@@ -139,3 +159,64 @@ final savedTaskFiltersControllerProvider =
       SavedTaskFiltersController.new,
       name: 'savedTaskFiltersControllerProvider',
     );
+
+/// Per-device switch: whether the saved-filter list shows pinned filters only.
+///
+/// Persisted through [SavedTaskFiltersRepository.savePinnedOnly] and never
+/// synced. Reloads on the repository's change notification, so a second
+/// surface showing the list follows a flip made in another.
+class SavedTaskFiltersPinnedOnlyController extends AsyncNotifier<bool> {
+  late final SavedTaskFiltersRepository _repository;
+
+  @override
+  Future<bool> build() async {
+    _repository = ref.read(savedTaskFiltersRepositoryProvider);
+    final subscription = ref
+        .read(updateNotificationsProvider)
+        .updateStream
+        .where((ids) => ids.contains(savedTaskFiltersNotification))
+        .listen((_) => _reload());
+    ref.onDispose(subscription.cancel);
+    return _repository.loadPinnedOnly();
+  }
+
+  Future<void> _reload() async {
+    final next = await _repository.loadPinnedOnly();
+    if (!ref.mounted) return;
+    if (state.value != next) state = AsyncData(next);
+  }
+
+  /// Sets the switch, showing the change before the write lands.
+  Future<void> set({required bool pinnedOnly}) async {
+    state = AsyncData(pinnedOnly);
+    await _repository.savePinnedOnly(pinnedOnly: pinnedOnly);
+  }
+}
+
+/// Provider exposing the [SavedTaskFiltersPinnedOnlyController].
+final savedTaskFiltersPinnedOnlyProvider =
+    AsyncNotifierProvider<SavedTaskFiltersPinnedOnlyController, bool>(
+      SavedTaskFiltersPinnedOnlyController.new,
+      name: 'savedTaskFiltersPinnedOnlyProvider',
+    );
+
+/// The saved filters a list should show, in their stored order: every one,
+/// or only the pinned ones while pinned-only is on.
+///
+/// Pinned-only reads as off until it has loaded, so a list never starts out
+/// emptier than it ends up.
+final shownSavedTaskFiltersProvider = Provider<List<SavedTaskFilter>>(
+  (ref) {
+    final saved =
+        ref.watch(savedTaskFiltersControllerProvider).value ??
+        const <SavedTaskFilter>[];
+    final pinnedOnly =
+        ref.watch(savedTaskFiltersPinnedOnlyProvider).value ?? false;
+    if (!pinnedOnly) return saved;
+    return [
+      for (final filter in saved)
+        if (filter.pinned) filter,
+    ];
+  },
+  name: 'shownSavedTaskFiltersProvider',
+);

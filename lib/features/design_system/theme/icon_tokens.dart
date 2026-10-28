@@ -288,6 +288,9 @@ abstract final class LottiIcons {
   /// Saved for later.
   static const IconData bookmark = LucideIcons.bookmark;
 
+  /// Pinned: kept in view in a list that can show only what is pinned.
+  static const IconData pin = LucideIcons.pin;
+
   /// A completed milestone worth marking.
   static const IconData celebrate = LucideIcons.partyPopper;
 

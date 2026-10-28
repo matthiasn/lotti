@@ -25,9 +25,10 @@
 /// is an inner stroke. Those toggles carry their state in colour, which their
 /// components already do.
 ///
-/// `flag` is the one glyph that needed a correction rather than a straight
-/// fill: its pole is an open run that the fill swallows, so the source SVG
-/// re-adds it as a solid bar. Both states therefore share one silhouette.
+/// `flag` and `pin` needed a correction rather than a straight fill: the
+/// flag's pole and the pin's needle are open runs that the fill swallows, so
+/// their source SVGs re-add them as solid bars. Both states of each therefore
+/// share one silhouette.
 library;
 
 import 'package:flutter/widgets.dart';
@@ -61,12 +62,15 @@ abstract final class LottiIconsFilled {
   /// solid as its Stop square.
   static const IconData pause = IconData(0xea07, fontFamily: _family);
 
+  /// Filled counterpart of `LottiIcons.pin` — pinned, kept in view.
+  static const IconData pin = IconData(0xea08, fontFamily: _family);
+
   /// Filled counterpart of `LottiIcons.play` — the recorder's resume.
-  static const IconData play = IconData(0xea08, fontFamily: _family);
+  static const IconData play = IconData(0xea09, fontFamily: _family);
 
   /// Filled counterpart of `LottiIcons.stop` — stop the running timer.
-  static const IconData square = IconData(0xea09, fontFamily: _family);
+  static const IconData square = IconData(0xea0a, fontFamily: _family);
 
   /// Filled counterpart of `LottiIcons.star` — starred.
-  static const IconData star = IconData(0xea0a, fontFamily: _family);
+  static const IconData star = IconData(0xea0b, fontFamily: _family);
 }

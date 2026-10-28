@@ -17385,6 +17385,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersManageTooltip => 'Hantera uppgiftsfilter';
 
   @override
+  String tasksSavedFiltersPinNamed(String name) {
+    return 'Fäst $name';
+  }
+
+  @override
+  String get tasksSavedFiltersPinnedOnly => 'Endast fästa';
+
+  @override
+  String get tasksSavedFiltersPinnedOnlyEmpty =>
+      'Inga fästa filter än. Stäng av ”Endast fästa” och fäst de filter du vill ha i sikte.';
+
+  @override
   String get tasksSavedFiltersRailButton => 'Vyer';
 
   @override
@@ -17395,6 +17407,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get tasksSavedFiltersReorderHelper =>
       'Dra för att ställa in ordningen. De fem första filtren finns i sidofältet.';
+
+  @override
+  String get tasksSavedFiltersReorderHelperPinned =>
+      'Dra för att ställa in ordningen. Fästa filter finns i sidofältet.';
 
   @override
   String get tasksSavedFiltersSaveAsNewButtonLabel => 'Spara som ny...';
@@ -17415,9 +17431,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get tasksSavedFiltersSaveChoiceTitle => 'Spara filter';
-
-  @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Spara strömfilter...';
 
   @override
   String get tasksSavedFiltersSaveError =>
@@ -17466,6 +17479,11 @@ class AppLocalizationsSv extends AppLocalizations {
       one: '1 uppgift',
     );
     return '$_temp0';
+  }
+
+  @override
+  String tasksSavedFiltersUnpinNamed(String name) {
+    return 'Lossa $name';
   }
 
   @override

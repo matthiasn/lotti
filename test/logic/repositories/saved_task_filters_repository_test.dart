@@ -579,6 +579,37 @@ void main() {
     });
   });
 
+  group('pinning', () {
+    test('a pin travels with the definition to the other device', () async {
+      await desktop.run((r) => r.upsert(_filter(id: 'sv-1')));
+      await bench.deliver(desktop, mobile);
+      final pinned = _filter(
+        id: 'sv-1',
+        updatedAt: _t0.add(const Duration(minutes: 1)),
+      ).copyWith(pinned: true);
+
+      await desktop.run((r) => r.upsert(pinned));
+      await bench.deliver(desktop, mobile);
+
+      expect((await mobile.stored()).single.pinned, isTrue);
+    });
+
+    test('pinned only persists and notifies, but never syncs', () async {
+      await mobile.run((r) => r.upsert(_filter(id: 'sv-1')));
+      final sentBefore = mobile.sent.length;
+
+      await mobile.run((r) => r.savePinnedOnly(pinnedOnly: true));
+
+      expect(await mobile.run((r) => r.loadPinnedOnly()), isTrue);
+      expect(await desktop.run((r) => r.loadPinnedOnly()), isFalse);
+      expect(mobile.sent, hasLength(sentBefore));
+      expect(mobile.owed, isEmpty);
+      verify(
+        () => mocks.updateNotifications.notify({savedTaskFiltersNotification}),
+      ).called(1);
+    });
+  });
+
   group('convergence', () {
     test('equal stamps settle on the same revision on both devices', () async {
       await desktop.run((r) => r.upsert(_filter(id: 'sv-1', name: 'Desk')));

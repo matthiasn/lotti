@@ -17,6 +17,7 @@ _SavedTaskFilter _$SavedTaskFilterFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updatedAt'] == null
           ? null
           : DateTime.parse(json['updatedAt'] as String),
+      pinned: json['pinned'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$SavedTaskFilterToJson(_SavedTaskFilter instance) =>
@@ -26,4 +27,5 @@ Map<String, dynamic> _$SavedTaskFilterToJson(_SavedTaskFilter instance) =>
       'filter': instance.filter.toJson(),
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
+      'pinned': instance.pinned,
     };

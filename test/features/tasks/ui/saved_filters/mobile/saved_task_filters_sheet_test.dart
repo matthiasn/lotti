@@ -1,12 +1,16 @@
+import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -34,8 +38,8 @@ class _RecordingSavedController extends SavedTaskFiltersController {
 
   final List<(String id, String name)> renameCalls = [];
   final List<String> deleteCalls = [];
-  final List<String> createCalls = [];
   final List<(String dragId, String targetId)> reorderCalls = [];
+  final List<String> togglePinCalls = [];
 
   @override
   Future<List<SavedTaskFilter>> build() async => _seed;
@@ -48,35 +52,68 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   @override
   Future<void> delete(String id) async {
     deleteCalls.add(id);
-  }
-
-  @override
-  Future<SavedTaskFilter> create({
-    required String name,
-    required TasksFilter filter,
-  }) async {
-    createCalls.add(name);
-    return SavedTaskFilter(id: 'new', name: name, filter: filter);
+    // Gone from the list, as the real controller does at once — a swiped-away
+    // row must not come back on the next build.
+    state = AsyncData([
+      for (final f in state.value ?? const <SavedTaskFilter>[])
+        if (f.id != id) f,
+    ]);
   }
 
   @override
   Future<void> reorder(String dragId, String targetId) async {
     reorderCalls.add((dragId, targetId));
   }
+
+  @override
+  Future<void> togglePin(String id) async {
+    togglePinCalls.add(id);
+  }
+
+  /// Stands in for a change landing in the list — a pin flipped here or by
+  /// sync.
+  void replaceWith(List<SavedTaskFilter> next) => state = AsyncData(next);
 }
 
-Future<({FakeJournalPageController fake, _RecordingSavedController saved})>
+class _StubPinnedOnly extends SavedTaskFiltersPinnedOnlyController {
+  _StubPinnedOnly({required this.initial});
+  final bool initial;
+
+  final List<bool> setCalls = [];
+
+  @override
+  Future<bool> build() async => initial;
+
+  @override
+  Future<void> set({required bool pinnedOnly}) async {
+    setCalls.add(pinnedOnly);
+    state = AsyncData(pinnedOnly);
+  }
+}
+
+Future<
+  ({
+    FakeJournalPageController fake,
+    _RecordingSavedController saved,
+    _StubPinnedOnly pinnedOnly,
+  })
+>
 _pumpSheet(
   WidgetTester tester, {
   JournalPageState pageState = const JournalPageState(),
   List<SavedTaskFilter> seed = const [_f1, _f2],
+  bool pinnedOnly = false,
 }) async {
   final fake = FakeJournalPageController(pageState);
   final saved = _RecordingSavedController(seed);
+  final pinnedOnlyStub = _StubPinnedOnly(initial: pinnedOnly);
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
-      const Scaffold(body: SavedTaskFiltersSheet()),
+      const Scaffold(
+        body: CustomScrollView(slivers: [SavedTaskFiltersSheet()]),
+      ),
       overrides: [
+        savedTaskFiltersPinnedOnlyProvider.overrideWith(() => pinnedOnlyStub),
         journalPageControllerProvider(true).overrideWith(() => fake),
         savedTaskFiltersControllerProvider.overrideWith(() => saved),
         savedTaskFilterCountsProvider.overrideWith(
@@ -88,7 +125,25 @@ _pumpSheet(
   );
   await tester.pump();
   await tester.pump();
-  return (fake: fake, saved: saved);
+  return (fake: fake, saved: saved, pinnedOnly: pinnedOnlyStub);
+}
+
+/// Swipes a browse row past its action threshold and lets a confirmation,
+/// if one opens, finish its entrance.
+Future<void> swipe(
+  WidgetTester tester,
+  String id, {
+  required bool left,
+}) async {
+  await tester.drag(
+    find.byKey(SavedTaskFiltersSheetKeys.row(id)),
+    Offset(left ? -500 : 500, 0),
+  );
+  await tester.pump();
+  // The row slides out first; only then is the confirmation asked for, and
+  // it animates in on its own clock.
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 void main() {
@@ -188,23 +243,34 @@ void main() {
     expect(bench.fake.setSelectedTaskStatusesCalls.single, <String>{});
   });
 
-  testWidgets('Edit toggle uses the teal interactive accent, not purple', (
-    tester,
-  ) async {
-    await _pumpSheet(tester);
+  testWidgets(
+    'Edit toggle is a tertiary design-system button on the glass bar, '
+    'labelled Edit and then Done',
+    (tester) async {
+      await _pumpSheet(tester);
 
-    final button = tester.widget<TextButton>(
-      find.byKey(SavedTaskFiltersSheetKeys.editToggle),
-    );
-    expect(
-      button.style?.foregroundColor?.resolve(const <WidgetState>{}),
-      dsTokensLight.colors.interactive.enabled,
-    );
-  });
+      DesignSystemButton button() => tester.widget<DesignSystemButton>(
+        find.byKey(SavedTaskFiltersSheetKeys.editToggle),
+      );
+      expect(button().variant, DesignSystemButtonVariant.tertiary);
+      expect(button().label, 'Edit');
+      expect(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetBarKeys.bar),
+          matching: find.byKey(SavedTaskFiltersSheetKeys.editToggle),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+      await tester.pump();
+      expect(button().label, 'Done');
+    },
+  );
 
   testWidgets(
-    'Edit-mode Rename/Delete: >=48dp targets, generous separation, inset from '
-    'the row edge, with clear icon weight',
+    'Edit-mode Rename is a >=48dp target with clear icon weight, and there '
+    'is no trash button',
     (tester) async {
       await _pumpSheet(tester);
 
@@ -214,40 +280,19 @@ void main() {
       final renameRect = tester.getRect(
         find.byKey(SavedTaskFiltersSheetKeys.rename('f1')),
       );
-      final deleteRect = tester.getRect(
-        find.byKey(SavedTaskFiltersSheetKeys.delete('f1')),
+      expect(renameRect.width, greaterThanOrEqualTo(48));
+      expect(renameRect.height, greaterThanOrEqualTo(48));
+      // The glyph carries the larger (step6) icon weight — bigger than the
+      // step5 radio.
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.rename('f1')),
+          matching: find.byType(Icon),
+        ),
       );
-      final rowRect = tester.getRect(
-        find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
-      );
-
-      for (final r in [renameRect, deleteRect]) {
-        expect(r.width, greaterThanOrEqualTo(48));
-        expect(r.height, greaterThanOrEqualTo(48));
-      }
-      // Generous (>= step5) gap between the two targets so the destructive
-      // Delete is clearly separated from Rename and can't be mis-tapped.
-      expect(
-        deleteRect.left - renameRect.right,
-        greaterThanOrEqualTo(dsTokensLight.spacing.step5),
-      );
-      // Delete is inset from the row's right edge (trailing gap + row padding),
-      // so the destructive control isn't the smallest / edge-most element.
-      expect(
-        rowRect.right - deleteRect.right,
-        greaterThanOrEqualTo(dsTokensLight.spacing.step4),
-      );
-      // Both glyphs carry the larger (step6) icon weight — bigger than the
-      // step5 radio — for clear parity between the two controls.
-      for (final key in [
-        SavedTaskFiltersSheetKeys.rename('f1'),
-        SavedTaskFiltersSheetKeys.delete('f1'),
-      ]) {
-        final icon = tester.widget<Icon>(
-          find.descendant(of: find.byKey(key), matching: find.byType(Icon)),
-        );
-        expect(icon.size, dsTokensLight.spacing.step6);
-      }
+      expect(icon.size, dsTokensLight.spacing.step6);
+      // Deleting is a swipe outside Edit mode, never a button.
+      expect(find.byIcon(LottiIcons.delete), findsNothing);
     },
   );
 
@@ -421,7 +466,7 @@ void main() {
     },
   );
 
-  testWidgets('Edit toggle reveals and hides per-row Rename / Delete', (
+  testWidgets('Edit toggle reveals and hides per-row Rename', (
     tester,
   ) async {
     await _pumpSheet(tester);
@@ -431,7 +476,6 @@ void main() {
     await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
     await tester.pump();
     expect(find.byKey(SavedTaskFiltersSheetKeys.rename('f1')), findsOneWidget);
-    expect(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')), findsOneWidget);
 
     await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
     await tester.pump();
@@ -461,8 +505,8 @@ void main() {
         expect(tester.getSize(handle).height, greaterThanOrEqualTo(48));
       }
 
-      final list = tester.widget<ReorderableListView>(
-        find.byType(ReorderableListView),
+      final list = tester.widget<SliverReorderableList>(
+        find.byType(SliverReorderableList),
       );
       final proxy = list.proxyDecorator!(
         const Text('Drag preview'),
@@ -485,38 +529,53 @@ void main() {
     },
   );
 
-  testWidgets('Edit mode keeps long saved-filter lists scrollable', (
-    tester,
-  ) async {
-    final saved = List.generate(
-      20,
-      (index) => SavedTaskFilter(
-        id: 'filter-$index',
-        name: 'Filter $index',
-        filter: const TasksFilter(),
-      ),
+  for (final editing in [false, true]) {
+    testWidgets(
+      'a long list scrolls in the one scroll view, under the pinned bar '
+      '(editing: $editing)',
+      (tester) async {
+        final saved = List.generate(
+          20,
+          (index) => SavedTaskFilter(
+            id: 'filter-$index',
+            name: 'Filter $index',
+            filter: const TasksFilter(),
+          ),
+        );
+        await _pumpSheet(tester, seed: saved);
+        if (editing) {
+          await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+          await tester.pump();
+        }
+
+        // One Scrollable for the whole sheet: the rows are slivers of the
+        // host's scroll view, never a list scrolling inside it.
+        expect(find.byType(Scrollable), findsOneWidget);
+        final barTop = tester
+            .getTopLeft(find.byKey(SavedTaskFiltersSheetBarKeys.bar))
+            .dy;
+
+        await tester.drag(
+          find.byKey(SavedTaskFiltersSheetKeys.row('filter-3')),
+          const Offset(0, -300),
+        );
+        await tester.pump();
+
+        expect(
+          tester
+              .state<ScrollableState>(find.byType(Scrollable))
+              .position
+              .pixels,
+          greaterThan(0),
+        );
+        // The bar stayed where it was while the rows moved under it.
+        expect(
+          tester.getTopLeft(find.byKey(SavedTaskFiltersSheetBarKeys.bar)).dy,
+          barTop,
+        );
+      },
     );
-    await _pumpSheet(tester, seed: saved);
-
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
-    await tester.pump();
-
-    final listFinder = find.byType(ReorderableListView);
-    final list = tester.widget<ReorderableListView>(listFinder);
-    expect(list.physics, isNot(isA<NeverScrollableScrollPhysics>()));
-
-    final scrollableFinder = find.descendant(
-      of: listFinder,
-      matching: find.byType(Scrollable),
-    );
-    await tester.drag(listFinder, const Offset(0, -300));
-    await tester.pump();
-
-    expect(
-      tester.state<ScrollableState>(scrollableFinder).position.pixels,
-      greaterThan(0),
-    );
-  });
+  }
 
   testWidgets('Rename opens the name modal and renames via the controller', (
     tester,
@@ -542,14 +601,12 @@ void main() {
     expect(bench.saved.renameCalls.single, ('f1', 'Doing now'));
   });
 
-  testWidgets('Delete asks for confirmation, then deletes', (tester) async {
+  testWidgets('a swipe left asks for confirmation, then deletes', (
+    tester,
+  ) async {
     final bench = await _pumpSheet(tester);
 
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
-    await tester.pump();
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await swipe(tester, 'f1', left: true);
 
     // Confirmation modal — the primary action renders the confirm label verbatim.
     await tester.tap(find.text('Delete'));
@@ -557,9 +614,77 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(bench.saved.deleteCalls.single, 'f1');
+    expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsNothing);
     // f1 is not the active filter here (default page state), so the live
     // filter is left untouched — no fallback reset.
     expect(bench.fake.applyBatchFilterUpdateCalled, 0);
+  });
+
+  testWidgets('cancelling the confirmation keeps the row', (tester) async {
+    final bench = await _pumpSheet(tester);
+
+    await swipe(tester, 'f1', left: true);
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(bench.saved.deleteCalls, isEmpty);
+    expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsOneWidget);
+  });
+
+  testWidgets('a swipe right flips the pin and the row snaps back', (
+    tester,
+  ) async {
+    final bench = await _pumpSheet(tester);
+    final restingLeft = tester
+        .getTopLeft(find.byKey(SavedTaskFiltersSheetKeys.row('f1')))
+        .dx;
+
+    await swipe(tester, 'f1', left: false);
+
+    expect(bench.saved.togglePinCalls, ['f1']);
+    // Not dismissed, and not applied either.
+    expect(bench.saved.deleteCalls, isEmpty);
+    expect(bench.fake.applyBatchFilterUpdateCalled, 0);
+    expect(
+      tester.getTopLeft(find.byKey(SavedTaskFiltersSheetKeys.row('f1'))).dx,
+      restingLeft,
+    );
+  });
+
+  testWidgets("a screen reader deletes through the row's Delete action", (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final bench = await _pumpSheet(tester);
+
+    final node = tester.getSemantics(
+      find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+    );
+    final action = node.getSemanticsData().customSemanticsActionIds!.single;
+    node.owner!.performAction(
+      node.id,
+      SemanticsAction.customAction,
+      action,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(bench.saved.deleteCalls.single, 'f1');
+    handle.dispose();
+  });
+
+  testWidgets('Edit rows do not swipe: dragging is for reordering there', (
+    tester,
+  ) async {
+    await _pumpSheet(tester);
+    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+    await tester.pump();
+
+    expect(find.byType(Dismissible), findsNothing);
   });
 
   testWidgets(
@@ -575,11 +700,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
-      await tester.pump();
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await swipe(tester, 'f1', left: true);
 
       await tester.tap(find.text('Delete'));
       await tester.pump();
@@ -592,30 +713,6 @@ void main() {
       expect(bench.fake.setSelectedTaskStatusesCalls.single, <String>{});
     },
   );
-
-  testWidgets('Save current filter as… creates from the live filter', (
-    tester,
-  ) async {
-    final bench = await _pumpSheet(
-      tester,
-      pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
-    );
-
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    await tester.enterText(
-      nameTextField(),
-      'My filter',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(bench.saved.createCalls.single, 'My filter');
-  });
 
   testWidgets(
     'a filter with a category renders a colored dot and names it in semantics',
@@ -655,78 +752,237 @@ void main() {
 
       // The category is also spoken in the row's accessibility label so the
       // information is never colour-only.
-      final semantics = tester.getSemantics(
-        find.byKey(SavedTaskFiltersSheetKeys.row('fc')),
-      );
-      expect(semantics.label, contains('Work'));
+      expect(find.bySemanticsLabel('Work, Work items'), findsOneWidget);
     },
   );
 
-  testWidgets(
-    'create closes the sheet only when a filter is saved, not on cancel',
-    (tester) async {
-      // The sheet is presented as a real route so its post-create
-      // `Navigator.maybePop()` has something to close — the default harness
-      // renders it as the root route where a pop is a no-op.
-      final fake = FakeJournalPageController(
-        const JournalPageState(selectedTaskStatuses: {'OPEN'}),
-      );
-      final saved = _RecordingSavedController(const [_f1, _f2]);
-      final navKey = GlobalKey<NavigatorState>();
+  group('pinning', () {
+    const pinned = SavedTaskFilter(
+      id: 'p1',
+      name: 'Pinned one',
+      filter: TasksFilter(selectedTaskStatuses: {'OPEN'}),
+      pinned: true,
+    );
+    const pinned2 = SavedTaskFilter(
+      id: 'p2',
+      name: 'Pinned two',
+      filter: TasksFilter(selectedTaskStatuses: {'DONE'}),
+      pinned: true,
+    );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: SizedBox.shrink()),
-          navigatorKey: navKey,
-          overrides: [
-            journalPageControllerProvider(true).overrideWith(() => fake),
-            savedTaskFiltersControllerProvider.overrideWith(() => saved),
-            savedTaskFilterCountsProvider.overrideWith(
-              (ref) async => const {'f1': 12, 'f2': 7},
-            ),
-            allTasksTotalCountProvider.overrideWith((ref) async => 124),
-          ],
+    Icon pinIcon(WidgetTester tester, String id) => tester.widget<Icon>(
+      find.descendant(
+        of: find.byKey(SavedTaskFiltersSheetBarKeys.pin(id)),
+        matching: find.byType(Icon),
+      ),
+    );
+
+    testWidgets(
+      'each row carries its pin state, and a tap flips it without selecting '
+      'the row',
+      (tester) async {
+        final bench = await _pumpSheet(tester, seed: const [_f1, pinned]);
+
+        expect(pinIcon(tester, 'f1').icon, LottiIcons.pin);
+        expect(pinIcon(tester, 'p1').icon, LottiIconsFilled.pin);
+
+        await tester.tap(find.byKey(SavedTaskFiltersSheetBarKeys.pin('f1')));
+        await tester.pump();
+
+        expect(bench.saved.togglePinCalls, ['f1']);
+        // The pin is its own target: the row's apply did not fire.
+        expect(bench.fake.applyBatchFilterUpdateCalled, 0);
+      },
+    );
+
+    testWidgets('the pin is its own button to a screen reader', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await _pumpSheet(tester, seed: const [_f1, pinned]);
+
+      expect(
+        tester.getSemantics(find.byKey(SavedTaskFiltersSheetBarKeys.pin('f1'))),
+        matchesSemantics(
+          label: 'Pin In Progress',
+          isButton: true,
+          hasToggledState: true,
+          hasTapAction: true,
         ),
       );
-      await tester.pump();
-
-      navKey.currentState!.push(
-        MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(body: SavedTaskFiltersSheet()),
+      expect(
+        tester.getSemantics(find.byKey(SavedTaskFiltersSheetBarKeys.pin('p1'))),
+        matchesSemantics(
+          label: 'Unpin Pinned one',
+          isButton: true,
+          hasToggledState: true,
+          isToggled: true,
+          hasTapAction: true,
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
+      handle.dispose();
+    });
 
-      // Cancel the name modal → nothing is created and the sheet stays open.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+    testWidgets('Edit rows trade the pin for their Rename / Delete pair', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, seed: const [_f1, pinned]);
+      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(saved.createCalls, isEmpty);
-      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
 
-      // Save a name → the filter is created and the sheet closes.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.createRow));
+      expect(find.byType(SavedTaskFilterPinToggle), findsNothing);
+    });
+
+    testWidgets(
+      'All tasks keeps the pin slot, so its count lines up with the rows',
+      (tester) async {
+        await _pumpSheet(tester, seed: const [_f1, pinned]);
+
+        final allCount = tester.getRect(
+          find.descendant(
+            of: find.byKey(SavedTaskFiltersSheetKeys.allRow),
+            matching: find.text('124'),
+          ),
+        );
+        final rowCount = tester.getRect(
+          find.descendant(
+            of: find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+            matching: find.text('12'),
+          ),
+        );
+        expect(allCount.right, rowCount.right);
+      },
+    );
+
+    testWidgets('the pinned-only switch writes through the controller', (
+      tester,
+    ) async {
+      final bench = await _pumpSheet(tester, seed: const [_f1, pinned]);
+
+      await tester.tap(find.byKey(SavedTaskFiltersSheetBarKeys.pinnedOnly));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.enterText(
-        nameTextField(),
-        'My filter',
+
+      expect(bench.pinnedOnly.setCalls, [true]);
+      // The list follows the switch at once.
+      expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsNothing);
+      expect(find.byKey(SavedTaskFiltersSheetKeys.row('p1')), findsOneWidget);
+    });
+
+    testWidgets('pinned only shows the pinned rows, in Edit mode too', (
+      tester,
+    ) async {
+      await _pumpSheet(
+        tester,
+        seed: const [_f1, pinned, _f2, pinned2],
+        pinnedOnly: true,
       );
-      await tester.pump();
-      await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
-      await tester.pump();
-      // Two transitions run back-to-back: the name modal closes, then
-      // `_create` pops the sheet route — pump enough for both to finish.
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pump(const Duration(milliseconds: 400));
 
-      expect(saved.createCalls, ['My filter']);
-      expect(find.byType(SavedTaskFiltersSheet), findsNothing);
-    },
-  );
+      for (final editing in [false, true]) {
+        expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsNothing);
+        expect(find.byKey(SavedTaskFiltersSheetKeys.row('f2')), findsNothing);
+        expect(find.byKey(SavedTaskFiltersSheetKeys.row('p1')), findsOneWidget);
+        expect(find.byKey(SavedTaskFiltersSheetKeys.row('p2')), findsOneWidget);
+        // All tasks is not a saved filter and is never hidden.
+        expect(find.byKey(SavedTaskFiltersSheetKeys.allRow), findsOneWidget);
+        if (!editing) {
+          await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+          await tester.pump();
+        }
+      }
+      expect(
+        find.text(
+          'Drag to set the order. Pinned filters appear in the sidebar.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'a drag among the pinned rows places the move by id in the full list',
+      (tester) async {
+        final bench = await _pumpSheet(
+          tester,
+          seed: const [pinned, _f1, _f2, pinned2],
+          pinnedOnly: true,
+        );
+        await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+        await tester.pump();
+
+        tester
+            .widget<SliverReorderableList>(find.byType(SliverReorderableList))
+            .onReorderItem!(1, 0);
+        await tester.pump();
+
+        // Shown index 1 is p2 and index 0 is p1, whatever sits between them
+        // in the full list.
+        expect(bench.saved.reorderCalls, [('p2', 'p1')]);
+      },
+    );
+
+    // Browse mode only: `SliverReorderableList` keys its items by index
+    // itself, so the Edit list rebuilds on a shift whatever we pass it.
+    testWidgets(
+      'unpinning a row keeps the rows below it alive rather than rebuilding '
+      'them by index',
+      (tester) async {
+        const pinned3 = SavedTaskFilter(
+          id: 'p3',
+          name: 'Pinned three',
+          filter: TasksFilter(selectedTaskStatuses: {'BLOCKED'}),
+          pinned: true,
+        );
+        final bench = await _pumpSheet(
+          tester,
+          seed: const [pinned, pinned2, pinned3],
+          pinnedOnly: true,
+        );
+        Element rowElement(String id) =>
+            tester.element(find.byKey(SavedTaskFiltersSheetKeys.row(id)));
+        final before = {
+          for (final id in ['p2', 'p3']) id: rowElement(id),
+        };
+
+        bench.saved.replaceWith([
+          pinned.copyWith(pinned: false),
+          pinned2,
+          pinned3,
+        ]);
+        await tester.pump();
+
+        expect(
+          find.byKey(SavedTaskFiltersSheetKeys.row('p1')),
+          findsNothing,
+        );
+        for (final id in ['p2', 'p3']) {
+          expect(identical(rowElement(id), before[id]), isTrue, reason: id);
+        }
+      },
+    );
+
+    testWidgets('an empty pinned-only list says how to fill it', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, pinnedOnly: true);
+
+      expect(
+        find.byKey(SavedTaskFiltersSheetKeys.pinnedEmpty),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'No pinned filters yet. Turn off Pinned only and pin the filters '
+          'you want to keep in view.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a list with pinned rows shows no empty hint', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, seed: const [pinned], pinnedOnly: true);
+
+      expect(find.byKey(SavedTaskFiltersSheetKeys.pinnedEmpty), findsNothing);
+    });
+  });
 }

@@ -7295,6 +7295,16 @@
   "tasksSavedFiltersFilterNameLabel": "Nome do filtro",
   "tasksSavedFiltersGroupSemantics": "Filtros de tarefas",
   "tasksSavedFiltersManageTooltip": "Gerenciar filtros de tarefas",
+  "tasksSavedFiltersPinNamed": "Fixar {name}",
+  "@tasksSavedFiltersPinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFiltersPinnedOnly": "Só fixados",
+  "tasksSavedFiltersPinnedOnlyEmpty": "Ainda não tens filtros fixados. Desliga «Só fixados» e fixa os filtros que queres manter à vista.",
   "tasksSavedFiltersRailButton": "Vistas",
   "tasksSavedFiltersRenameNamed": "Renomear {name}",
   "@tasksSavedFiltersRenameNamed": {
@@ -7305,13 +7315,13 @@
     }
   },
   "tasksSavedFiltersReorderHelper": "Arraste para definir a ordem. Os primeiros cinco filtros aparecem na barra lateral.",
+  "tasksSavedFiltersReorderHelperPinned": "Arrasta para definir a ordem. Os filtros fixados aparecem na barra lateral.",
   "tasksSavedFiltersSaveAsNewButtonLabel": "Salvar como novo…",
   "tasksSavedFiltersSaveAsNewDescription": "Mantenha o filtro existente inalterado e crie um separado.",
   "tasksSavedFiltersSaveAsNewTitle": "Salvar como um novo filtro",
   "tasksSavedFiltersSaveButtonLabel": "Salvar filtro…",
   "tasksSavedFiltersSaveChoiceIntro": "Escolha se deseja atualizar o filtro salvo ou criar um separado.",
   "tasksSavedFiltersSaveChoiceTitle": "Salvar filtro",
-  "tasksSavedFiltersSaveCurrentAs": "Salvar filtro atual…",
   "tasksSavedFiltersSaveError": "Não foi possível salvar este filtro. Tente novamente.",
   "tasksSavedFiltersSavePageHelper": "Dê um nome curto a este filtro. Você pode reordená-lo posteriormente em Filtros de tarefas.",
   "tasksSavedFiltersSavePopupCancel": "Cancelar",
@@ -7333,6 +7343,14 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersUnpinNamed": "Desafixar {name}",
+  "@tasksSavedFiltersUnpinNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   },
