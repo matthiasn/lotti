@@ -175,10 +175,9 @@ stateDiagram-v2
 `TimeService` session**. The persistent sidebar shows one compact timer metric on
 a wrapping line beneath the Activity heading, shared with recording and agent
 activity; selecting it expands `SidebarTimerSection` in place. The summary has
-no fill of its own; expanded, a thin outline groups the heading and its detail
-cards, and the compact metric
-line steps aside, because each card already shows its own elapsed time — no
-value is ever shown twice.
+no fill or frame of its own. Expanded, the heading sits just above its detail
+cards and the compact metric line steps aside, because each card already shows
+its own elapsed time — no value is ever shown twice.
 
 ```mermaid
 stateDiagram-v2
