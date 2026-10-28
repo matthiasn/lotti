@@ -1544,6 +1544,120 @@ void main() {
       );
     });
 
+    group('agentRunningThreadIdProvider', () {
+      test(
+        "follows the running wake's thread, and clears when it ends",
+        () async {
+          final runner = WakeRunner();
+          addTearDown(runner.dispose);
+          await runner.tryAcquire(kTestAgentId, runKey: 'run-1');
+
+          final container = ProviderContainer(
+            overrides: withServiceOverrides([
+              wakeRunnerProvider.overrideWithValue(runner),
+            ]),
+          );
+          addTearDown(container.dispose);
+          final sub = container.listen(
+            agentRunningThreadIdProvider(kTestAgentId),
+            (_, _) {},
+          );
+          addTearDown(sub.close);
+          String? read() =>
+              container.read(agentRunningThreadIdProvider(kTestAgentId)).value;
+
+          await pumpEventQueue();
+          expect(read(), 'run-1');
+
+          runner.release(kTestAgentId);
+          await pumpEventQueue();
+          expect(read(), isNull);
+
+          // Another agent starting does not name a thread for this one.
+          await runner.tryAcquire('other-agent', runKey: 'run-x');
+          await pumpEventQueue();
+          expect(read(), isNull);
+
+          await runner.tryAcquire(kTestAgentId, runKey: 'run-2');
+          await pumpEventQueue();
+          expect(read(), 'run-2');
+        },
+      );
+    });
+
+    group('wakeRunStatusForThreadProvider', () {
+      test(
+        'reads the persisted status again when the run stops, so an aborted '
+        'thread reads as aborted once the runner lets go',
+        () async {
+          final runner = WakeRunner();
+          addTearDown(runner.dispose);
+          await runner.tryAcquire(kTestAgentId, runKey: 'thread-abc');
+          var status = WakeRunStatus.running.name;
+          when(
+            () =>
+                mockRepository.getWakeRunByThreadId(kTestAgentId, 'thread-abc'),
+          ).thenAnswer(
+            (_) async =>
+                makeTestWakeRun(threadId: 'thread-abc', status: status),
+          );
+
+          final container = ProviderContainer(
+            overrides: withServiceOverrides([
+              wakeRunnerProvider.overrideWithValue(runner),
+              agentRepositoryProvider.overrideWithValue(mockRepository),
+            ]),
+          );
+          addTearDown(container.dispose);
+          final provider = wakeRunStatusForThreadProvider((
+            kTestAgentId,
+            'thread-abc',
+          ));
+          final sub = container.listen(provider, (_, _) {});
+          addTearDown(sub.close);
+
+          await pumpEventQueue();
+          expect(container.read(provider).value, WakeRunStatus.running);
+
+          // The drain records the abort, then releases the lock.
+          status = WakeRunStatus.aborted.name;
+          runner.release(kTestAgentId);
+          await pumpEventQueue();
+          expect(container.read(provider).value, WakeRunStatus.aborted);
+        },
+      );
+
+      test(
+        'is null without a row on this device or for an unknown status',
+        () async {
+          when(
+            () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'missing'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'odd'),
+          ).thenAnswer(
+            (_) async => makeTestWakeRun(threadId: 'odd'),
+          );
+
+          final container = createContainer();
+
+          expect(
+            await container.read(
+              wakeRunStatusForThreadProvider((kTestAgentId, 'missing')).future,
+            ),
+            isNull,
+          );
+          // The factory's default status, `pending`, is no WakeRunStatus.
+          expect(
+            await container.read(
+              wakeRunStatusForThreadProvider((kTestAgentId, 'odd')).future,
+            ),
+            isNull,
+          );
+        },
+      );
+    });
+
     group('agentUpdateStreamProvider', () {
       test(
         'emits when UpdateNotifications fires with matching agent ID',

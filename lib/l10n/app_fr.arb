@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Réanalyser",
   "agentControlsResumeButton": "Reprendre",
   "agentConversationEmpty": "Pas encore de conversations.",
+  "agentConversationLiveBanner": "L’agent travaille encore sur cette conversation. Si tu l’arrêtes, tout ce qui a été écrit jusqu’ici est conservé.",
+  "agentConversationStopped": "Arrêtée",
   "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} appels d'outils · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -423,6 +425,9 @@
   "agentStateRevision": "Révision",
   "agentStateSleepingUntil": "En sommeil jusqu'à",
   "agentStateWakeCount": "Nombre de réveils",
+  "agentStopWake": "Arrêter",
+  "agentStopWakeStopping": "Arrêt en cours…",
+  "agentStopWakeTooltip": "Arrête l’inférence en cours",
   "agentSuggestionTimeEntryUpdateCurrent": "Actuel",
   "agentSuggestionTimeEntryUpdateNoChange": "(inchangé)",
   "agentSuggestionTimeEntryUpdateProposed": "Proposé",

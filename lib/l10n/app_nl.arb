@@ -89,6 +89,8 @@
   "agentControlsReanalyzeButton": "Heranalyseren",
   "agentControlsResumeButton": "Hervatten",
   "agentConversationEmpty": "Nog geen gesprekken.",
+  "agentConversationLiveBanner": "De agent werkt nog aan dit gesprek. Als je stopt, blijft alles bewaard wat tot nu toe is geschreven.",
+  "agentConversationStopped": "Gestopt",
   "agentConversationThreadSummary": "{messageCount} berichten, {toolCallCount} tool calls · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -436,6 +438,9 @@
   "agentStateRevision": "Herziening",
   "agentStateSleepingUntil": "Slapen tot",
   "agentStateWakeCount": "Wakker worden",
+  "agentStopWake": "Stoppen",
+  "agentStopWakeStopping": "Bezig met stoppen…",
+  "agentStopWakeTooltip": "Stop de lopende inferentie",
   "agentSuggestionTimeEntryUpdateCurrent": "Lopend",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

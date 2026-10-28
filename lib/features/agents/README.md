@@ -56,7 +56,9 @@ applied until the user confirms it.
   directly inside the conversation. Nothing is applied before acceptance.
 - **Shows its work.** An internals panel exposes the agent's reports,
   conversations, observations, token usage and activity, so its behaviour is
-  inspectable rather than opaque.
+  inspectable rather than opaque. While the agent runs, the panel, its page
+  and the live conversation each offer *Stop*, which ends a hung or unwanted
+  run at once and keeps what it has written so far.
 
 ## What it owns
 

@@ -89,6 +89,8 @@
   "agentControlsReanalyzeButton": "Reanalisar",
   "agentControlsResumeButton": "Currículo",
   "agentConversationEmpty": "Nenhuma conversa ainda.",
+  "agentConversationLiveBanner": "O agente ainda está a trabalhar nesta conversa. Se parares, fica guardado tudo o que já foi escrito.",
+  "agentConversationStopped": "Parada",
   "agentConversationThreadSummary": "{messageCount} mensagens, {toolCallCount} chamadas de ferramenta · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -436,6 +438,9 @@
   "agentStateRevision": "Revisão",
   "agentStateSleepingUntil": "Dormindo até",
   "agentStateWakeCount": "Contagem de despertares",
+  "agentStopWake": "Parar",
+  "agentStopWakeStopping": "A parar…",
+  "agentStopWakeTooltip": "Para a inferência em curso",
   "agentSuggestionTimeEntryUpdateCurrent": "Atual",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

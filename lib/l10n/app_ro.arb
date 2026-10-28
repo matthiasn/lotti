@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Reanalizează",
   "agentControlsResumeButton": "Reia",
   "agentConversationEmpty": "Nicio conversație încă.",
+  "agentConversationLiveBanner": "Agentul încă lucrează la această conversație. Dacă o opriți, se păstrează tot ce s-a scris până acum.",
+  "agentConversationStopped": "Oprită",
   "agentConversationThreadSummary": "{messageCount} mesaje, {toolCallCount} apeluri de instrumente · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -423,6 +425,9 @@
   "agentStateRevision": "Revizie",
   "agentStateSleepingUntil": "Doarme până la",
   "agentStateWakeCount": "Număr de treziri",
+  "agentStopWake": "Oprire",
+  "agentStopWakeStopping": "Se oprește…",
+  "agentStopWakeTooltip": "Opriți inferența în curs",
   "agentSuggestionTimeEntryUpdateCurrent": "Curent",
   "agentSuggestionTimeEntryUpdateNoChange": "(neschimbat)",
   "agentSuggestionTimeEntryUpdateProposed": "Propus",

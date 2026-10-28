@@ -429,6 +429,18 @@ abstract class AppLocalizations {
   /// **'No conversations yet.'**
   String get agentConversationEmpty;
 
+  /// Banner at the top of the agent conversation that is still running, above its stop button.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent is still working on this conversation. Stopping keeps everything written so far.'**
+  String get agentConversationLiveBanner;
+
+  /// Badge on an agent conversation thread whose wake was stopped before it finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get agentConversationStopped;
+
   /// No description provided for @agentConversationThreadSummary.
   ///
   /// In en, this message translates to:
@@ -1686,6 +1698,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wake count'**
   String get agentStateWakeCount;
+
+  /// Button label that stops an agent wake whose inference is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get agentStopWake;
+
+  /// Stop button label between the press and the agent going idle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get agentStopWakeStopping;
+
+  /// Accessibility label for the button that stops a running agent inference.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the running inference'**
+  String get agentStopWakeTooltip;
 
   /// Label for the current value in an agent-proposed time entry edit diff.
   ///

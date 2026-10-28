@@ -181,6 +181,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentConversationEmpty => 'Nog geen gesprekken.';
 
   @override
+  String get agentConversationLiveBanner =>
+      'De agent werkt nog aan dit gesprek. Als je stopt, blijft alles bewaard wat tot nu toe is geschreven.';
+
+  @override
+  String get agentConversationStopped => 'Gestopt';
+
+  @override
   String agentConversationThreadSummary(
     int messageCount,
     int toolCallCount,
@@ -909,6 +916,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Wakker worden';
+
+  @override
+  String get agentStopWake => 'Stoppen';
+
+  @override
+  String get agentStopWakeStopping => 'Bezig met stoppen…';
+
+  @override
+  String get agentStopWakeTooltip => 'Stop de lopende inferentie';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Lopend';

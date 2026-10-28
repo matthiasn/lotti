@@ -343,6 +343,48 @@ void main() {
       );
     });
 
+    group('runKeyFor', () {
+      test('returns null for an agent that is not running', () {
+        expect(runner.runKeyFor('agent-cold'), isNull);
+      });
+
+      test(
+        "tracks the active lease's run key and drops it with the lock, so a "
+        "later run never reports the earlier run's thread",
+        () {
+          fakeAsync((async) {
+            late WakeRunnerLease? first;
+            runner
+                .tryAcquireLease('agent-1', runKey: 'run-1')
+                .then((v) => first = v);
+            async.flushMicrotasks();
+            expect(runner.runKeyFor('agent-1'), 'run-1');
+
+            runner.releaseLease(first!);
+            expect(runner.runKeyFor('agent-1'), isNull);
+
+            runner.tryAcquire('agent-1', runKey: 'run-2');
+            async.flushMicrotasks();
+            expect(runner.runKeyFor('agent-1'), 'run-2');
+
+            // A stale lease cannot clear the newer run's key.
+            runner.releaseLease(first!);
+            expect(runner.runKeyFor('agent-1'), 'run-2');
+          });
+        },
+      );
+
+      test('is null for a run acquired without a run key', () {
+        fakeAsync((async) {
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          expect(runner.isRunning('agent-1'), isTrue);
+          expect(runner.runKeyFor('agent-1'), isNull);
+        });
+      });
+    });
+
     group('dispose', () {
       test('closes the runningAgentIds stream', () {
         fakeAsync((async) {

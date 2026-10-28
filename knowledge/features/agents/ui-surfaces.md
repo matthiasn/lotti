@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Agent UI surfaces
-description: The AI summary card and its proposal choreography, the internals panel, the settings tabs, and the sidebar wake queue.
+description: The AI summary card and its proposal choreography, the internals panel, stopping a running wake, the settings tabs, and the sidebar wake queue.
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-13T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T12:00:00Z }
 stale_after: 2027-01-05
 sources:
   - id: ui
@@ -32,6 +32,14 @@ sources:
     resource: ../../../lib/features/agents/ui/sidebar_wake_queue.dart
     title: SidebarWakeQueue
     last_modified: 2026-09-05
+  - id: stop
+    resource: ../../../lib/features/agents/ui/widgets/agent_stop_wake_button.dart
+    title: AgentStopWakeButton and AgentRunningControls
+    last_modified: 2026-10-28
+  - id: conversation-log
+    resource: ../../../lib/features/agents/ui/agent_conversation_log.dart
+    title: AgentConversationLog
+    last_modified: 2026-10-28
 ---
 
 None of these widgets owns business logic. They read from the providers in
@@ -738,6 +746,51 @@ fallback used by `GoalAgentWorkflow`. A selected default that cannot resolve is
 reported as broken. For legacy goal identities that
 still carry only `AgentConfig.profileId`, the profile-only sheet uses that value
 as its selected base profile until the next save writes the typed setup.
+
+# Stopping a running wake
+
+A hung inference can be stopped from wherever the agent is being read, not
+only from the sidebar's wake rows. All of these places use one control,
+`AgentStopWakeButton` in
+[`agent_stop_wake_button.dart`](../../../lib/features/agents/ui/widgets/agent_stop_wake_button.dart),
+which calls `AgentService.abortRunningWake` — the same abort as the sidebar's ×,
+a pause and the run timeout (see
+[the execution bound](wake-orchestration.md#wake-execution-bound)):
+
+- **The agent's header.** `AgentRunningControls` puts the running spinner and
+  *Stop* side by side in `AgentDetailPage`'s app bar and in the
+  `AgentInternalsPanel` header, so the stop is reachable whichever tab is open.
+- **The conversation list.** In the Conversations tab, the live wake's thread
+  carries a *Running* badge and, while collapsed, *Stop* in its row. The row is
+  found by run key (`agentRunningThreadIdProvider`, over
+  `WakeRunner.runKeyFor`), not by recency. Until the running wake writes its
+  first message, the newest thread is still the previous wake's.
+- **The live conversation.** Expanded, that thread opens on a callout saying
+  the agent is still working, with *Stop* as its trailing action. The row's
+  stop leaves when the callout arrives, so a thread never shows two.
+
+A thread whose wake run is `aborted` — stopped, paused or timed out — reads
+*Stopped* afterwards. `wakeRunStatusForThreadProvider` re-reads the run when
+the agent starts or stops running, and the drain records `aborted` before it
+releases the lock. *Running* outranks *Stopped*, so a stale read cannot mark
+the live thread stopped.
+
+The control has no state the runner does not have, apart from the moment
+between the press and the release:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Hidden
+  Hidden --> Stop: agent starts running
+  Stop --> Stopping: press, abort signalled
+  Stop --> Stop: press, wake already ended
+  Stopping --> Hidden: runner releases the agent
+  Stop --> Hidden: wake ends on its own
+```
+
+*Stopping…* swaps the glyph for a spinner and ignores further taps. The state
+resets when the agent goes idle, so a button that stays mounted — the app bar's
+— offers *Stop* again for the agent's next wake.
 
 # Settings surfaces
 

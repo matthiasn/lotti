@@ -89,6 +89,14 @@
   "agentControlsReanalyzeButton": "Re-analyze",
   "agentControlsResumeButton": "Resume",
   "agentConversationEmpty": "No conversations yet.",
+  "agentConversationLiveBanner": "The agent is still working on this conversation. Stopping keeps everything written so far.",
+  "@agentConversationLiveBanner": {
+    "description": "Banner at the top of the agent conversation that is still running, above its stop button."
+  },
+  "agentConversationStopped": "Stopped",
+  "@agentConversationStopped": {
+    "description": "Badge on an agent conversation thread whose wake was stopped before it finished."
+  },
   "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} tool calls · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -452,6 +460,18 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
+  "agentStopWake": "Stop",
+  "@agentStopWake": {
+    "description": "Button label that stops an agent wake whose inference is running."
+  },
+  "agentStopWakeStopping": "Stopping…",
+  "@agentStopWakeStopping": {
+    "description": "Stop button label between the press and the agent going idle."
+  },
+  "agentStopWakeTooltip": "Stop the running inference",
+  "@agentStopWakeTooltip": {
+    "description": "Accessibility label for the button that stops a running agent inference."
+  },
   "agentSuggestionTimeEntryUpdateCurrent": "Current",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

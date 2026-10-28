@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Omanalysera",
   "agentControlsResumeButton": "Fortsätt",
   "agentConversationEmpty": "Inga samtal än.",
+  "agentConversationLiveBanner": "Agenten arbetar fortfarande med den här konversationen. Om du stoppar behålls allt som skrivits hittills.",
+  "agentConversationStopped": "Stoppad",
   "agentConversationThreadSummary": "{messageCount} meddelanden, {toolCallCount} verktygsanrop · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -437,6 +439,9 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sov tills",
   "agentStateWakeCount": "Vakenräkning",
+  "agentStopWake": "Stoppa",
+  "agentStopWakeStopping": "Stoppar…",
+  "agentStopWakeTooltip": "Stoppa den pågående inferensen",
   "agentSuggestionTimeEntryUpdateCurrent": "Nutid",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

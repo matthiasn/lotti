@@ -33,6 +33,7 @@ class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
   final _activeStartedAt = <String, DateTime>{};
   final _activeWorkspaceKey = <String, String?>{};
+  final _activeRunKey = <String, String?>{};
   final _abortSignals = <String, Completer<void>>{};
   final _activeLeaseIds = <String, int>{};
   var _nextLeaseId = 0;
@@ -55,8 +56,17 @@ class WakeRunner {
   /// "is this agent running" checks to a specific workspace via
   /// [workspaceKeyFor] instead of treating any run of a shared agent as
   /// relevant to every workspace it might touch.
-  Future<bool> tryAcquire(String agentId, {String? workspaceKey}) async {
-    return (await tryAcquireLease(agentId, workspaceKey: workspaceKey)) != null;
+  Future<bool> tryAcquire(
+    String agentId, {
+    String? workspaceKey,
+    String? runKey,
+  }) async {
+    return (await tryAcquireLease(
+          agentId,
+          workspaceKey: workspaceKey,
+          runKey: runKey,
+        )) !=
+        null;
   }
 
   /// Attempt to acquire [agentId] and return its ownership token.
@@ -64,9 +74,14 @@ class WakeRunner {
   /// Unlike [tryAcquire], the returned lease lets asynchronous owners release
   /// or abort only the run they acquired, even after stale recovery has
   /// installed a replacement run for the same agent.
+  ///
+  /// [runKey] identifies the wake being run — it doubles as the wake's
+  /// conversation thread ID — so the UI can tell which conversation is live
+  /// via [runKeyFor].
   Future<WakeRunnerLease?> tryAcquireLease(
     String agentId, {
     String? workspaceKey,
+    String? runKey,
   }) async {
     if (_activeLocks.containsKey(agentId)) return null;
     _activeLocks[agentId] = Completer<void>();
@@ -76,6 +91,7 @@ class WakeRunner {
     _activeLeaseIds[agentId] = leaseId;
     _activeStartedAt[agentId] = clock.now();
     _activeWorkspaceKey[agentId] = workspaceKey;
+    _activeRunKey[agentId] = runKey;
     _runningController.add(activeAgentIds);
     return WakeRunnerLease._(
       agentId: agentId,
@@ -95,6 +111,7 @@ class WakeRunner {
     lock.complete();
     _activeStartedAt.remove(agentId);
     _activeWorkspaceKey.remove(agentId);
+    _activeRunKey.remove(agentId);
     _activeLeaseIds.remove(agentId);
     final abort = _abortSignals.remove(agentId);
     if (abort != null && !abort.isCompleted) abort.complete();
@@ -151,6 +168,11 @@ class WakeRunner {
   /// without a workspace key). Callers that need to distinguish those two
   /// cases must check [isRunning] first.
   String? workspaceKeyFor(String agentId) => _activeWorkspaceKey[agentId];
+
+  /// The run key passed to [tryAcquireLease] for [agentId]'s currently
+  /// active run — which is also that wake's conversation thread ID — or
+  /// `null` when [agentId] is not running or was acquired without one.
+  String? runKeyFor(String agentId) => _activeRunKey[agentId];
 
   /// Live read-only view of agent IDs to their wake start timestamps.
   /// Reflects subsequent acquire/release calls without allocating —

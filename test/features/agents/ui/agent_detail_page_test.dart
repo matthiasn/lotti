@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -424,26 +425,54 @@ void main() {
       },
     );
 
-    testWidgets('shows running spinner when agent is running', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(
-          identityOverride: (ref, agentId) async => makeTestIdentity(),
-          isRunningOverride: (ref, agentId) => Stream.value(true),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+    testWidgets(
+      'shows the running spinner with a stop button beside it, which stops '
+      'the running wake',
+      (tester) async {
+        when(
+          () => mockAgentService.abortRunningWake(any()),
+        ).thenReturn(true);
+        await tester.pumpWidget(
+          buildSubject(
+            identityOverride: (ref, agentId) async => makeTestIdentity(),
+            isRunningOverride: (ref, agentId) => Stream.value(true),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
 
-      // The running spinner should appear in the app bar.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        final inAppBar = find.ancestor(
+          of: find.byType(DesignSystemSpinner),
+          matching: find.byType(AppBar),
+        );
+        expect(inAppBar, findsOneWidget);
+        final stop = find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Stop'),
+        );
+        expect(stop, findsOneWidget);
 
-      // The running indicator tooltip should be present (back button also has one).
-      final context = tester.element(find.byType(AgentDetailPage));
-      expect(
-        findMaterialTooltip(context.messages.agentRunningIndicator),
-        findsOneWidget,
-      );
-    });
+        await tester.tap(stop);
+        await tester.pump();
+
+        verify(() => mockAgentService.abortRunningWake(_testAgentId)).called(1);
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.text('Stopping…'),
+          ),
+          findsOneWidget,
+        );
+
+        // The running indicator tooltip should be present (back button also
+        // has one).
+        final context = tester.element(find.byType(AgentDetailPage));
+        expect(
+          findMaterialTooltip(context.messages.agentRunningIndicator),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('hides running spinner when agent is not running', (
       tester,
@@ -457,8 +486,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // No spinner in the app bar.
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      // No spinner and no stop button in the app bar.
+      expect(find.byType(DesignSystemSpinner), findsNothing);
+      expect(find.text('Stop'), findsNothing);
       // No tooltip for running indicator.
       expect(findMaterialTooltip('Running'), findsNothing);
     });

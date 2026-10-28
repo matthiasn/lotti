@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T12:00:00Z }
 stale_after: 2027-01-02
 sources:
   - id: wake
@@ -491,9 +491,17 @@ produce a later notification.
 What an aborted executor no longer does is **pay for more model turns**. The
 drain runs it in a zone carrying `agentWakeAbortedZoneKey`, a check that turns
 true once the lease is aborted — by the timeout, the user's cancel or a pause —
-and `ConversationRepository` reads `isAgentWakeAborted` before every turn. An
-aborted wake stops at the next turn boundary instead of finishing its
-conversation in the background.
+and `ConversationRepository` reads `isAgentWakeAborted` before every turn and
+on every streamed chunk. An aborted wake stops at the next turn boundary, and a
+turn already streaming is cut off at its next chunk: leaving the stream cancels
+its subscription, and the cut turn is neither persisted nor are its
+half-streamed tool calls executed. A provider that hangs without sending
+anything still holds its request until the transport gives up, but the agent
+lock is already free by then.
+
+The runner also records each lease's run key, which is the wake's thread ID.
+`WakeRunner.runKeyFor` is how the UI tells which conversation is live; see
+[stopping a running wake](ui-surfaces.md#stopping-a-running-wake).
 
 # The daily wake budget
 

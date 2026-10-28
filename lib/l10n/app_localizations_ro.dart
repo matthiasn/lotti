@@ -182,6 +182,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentConversationEmpty => 'Nicio conversație încă.';
 
   @override
+  String get agentConversationLiveBanner =>
+      'Agentul încă lucrează la această conversație. Dacă o opriți, se păstrează tot ce s-a scris până acum.';
+
+  @override
+  String get agentConversationStopped => 'Oprită';
+
+  @override
   String agentConversationThreadSummary(
     int messageCount,
     int toolCallCount,
@@ -916,6 +923,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Număr de treziri';
+
+  @override
+  String get agentStopWake => 'Oprire';
+
+  @override
+  String get agentStopWakeStopping => 'Se oprește…';
+
+  @override
+  String get agentStopWakeTooltip => 'Opriți inferența în curs';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';

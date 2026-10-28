@@ -57,6 +57,50 @@ Stream<bool> agentIsRunningInWorkspace(
   yield* runner.runningAgentIds.map((_) => matches()).distinct();
 }
 
+/// The conversation thread of `agentId`'s running wake, or `null` while the
+/// agent is idle.
+///
+/// A wake's run key is its thread ID, so this is what lets the conversation
+/// log mark the one live thread rather than guessing from recency — the
+/// newest thread is still the previous wake's until the running one writes
+/// its first message.
+final StreamProviderFamily<String?, String> agentRunningThreadIdProvider =
+    StreamProvider.autoDispose.family<String?, String>(
+      agentRunningThreadId,
+      name: 'agentRunningThreadIdProvider',
+    );
+Stream<String?> agentRunningThreadId(Ref ref, String agentId) async* {
+  final runner = ref.watch(wakeRunnerProvider);
+  yield runner.runKeyFor(agentId);
+  yield* runner.runningAgentIds
+      .map((_) => runner.runKeyFor(agentId))
+      .distinct();
+}
+
+/// The persisted wake-run status of one conversation thread, or `null` when
+/// this device holds no wake-run row for it.
+///
+/// Re-reads whenever the agent starts or stops running. The drain records
+/// `aborted` before it releases the runner lock, so a stopped thread reads
+/// as stopped as soon as the running indicator goes away.
+final FutureProviderFamily<WakeRunStatus?, (String, String)>
+wakeRunStatusForThreadProvider = FutureProvider.autoDispose
+    .family<WakeRunStatus?, (String, String)>(
+      (ref, arg) => wakeRunStatusForThread(ref, arg.$1, arg.$2),
+      name: 'wakeRunStatusForThreadProvider',
+    );
+Future<WakeRunStatus?> wakeRunStatusForThread(
+  Ref ref,
+  String agentId,
+  String threadId,
+) async {
+  ref.watch(agentIsRunningProvider(agentId));
+  final run = await ref
+      .watch(agentRepositoryProvider)
+      .getWakeRunByThreadId(agentId, threadId);
+  return WakeRunStatus.values.asNameMap()[run?.status];
+}
+
 /// Stream that emits when a specific agent's data changes (from sync or local
 /// wake). Detail providers watch this to self-invalidate.
 ///

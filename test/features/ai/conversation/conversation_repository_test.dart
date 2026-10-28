@@ -842,6 +842,85 @@ void main() {
         expect(modelCalls, 1);
       });
 
+      test(
+        'an abort mid-turn leaves a hanging stream and runs none of its '
+        'half-streamed tool calls',
+        () async {
+          // The provider streams a tool call and then never closes — the
+          // hung inference the stop button exists for.
+          final streamController =
+              StreamController<CreateChatCompletionStreamResponse>();
+          var streamCancelled = false;
+          streamController.onCancel = () => streamCancelled = true;
+          _stubGenerateText(
+            mockOllamaRepo,
+          ).thenAnswer((_) => streamController.stream);
+          var aborted = false;
+
+          final sendFuture = runZoned(
+            () => repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Analyse',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              strategy: mockStrategy,
+            ),
+            zoneValues: {agentWakeAbortedZoneKey: () => aborted},
+          );
+
+          ChatCompletionStreamResponseChoice toolCallChoice(String args) =>
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: 'tool-1',
+                      type:
+                          ChatCompletionStreamMessageToolCallChunkType.function,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: 'test_function',
+                        arguments: args,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+          streamController.add(
+            CreateChatCompletionStreamResponse(
+              id: 'chunk-1',
+              choices: [toolCallChoice('{"arg": ')],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          );
+          await pumpEventQueue();
+          aborted = true;
+          streamController.add(
+            CreateChatCompletionStreamResponse(
+              id: 'chunk-2',
+              choices: [toolCallChoice('"value"}')],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          );
+
+          // Returns although the provider stream is still open.
+          await sendFuture;
+
+          expect(streamCancelled, isTrue);
+          expect(streamController.isClosed, isFalse);
+          verifyNever(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          );
+          await streamController.close();
+        },
+      );
+
       test('handles strategy with complete action', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([

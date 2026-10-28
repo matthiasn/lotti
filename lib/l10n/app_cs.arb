@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Znovu analyzovat",
   "agentControlsResumeButton": "Pokračovat",
   "agentConversationEmpty": "Zatím žádné konverzace.",
+  "agentConversationLiveBanner": "Agent na této konverzaci ještě pracuje. Zastavením zůstane zachováno vše, co už napsal.",
+  "agentConversationStopped": "Zastaveno",
   "agentConversationThreadSummary": "{messageCount} zpráv, {toolCallCount} volání nástrojů · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -430,6 +432,9 @@
   "agentStateRevision": "Revize",
   "agentStateSleepingUntil": "Spí do",
   "agentStateWakeCount": "Počet probuzení",
+  "agentStopWake": "Zastavit",
+  "agentStopWakeStopping": "Zastavuji…",
+  "agentStopWakeTooltip": "Zastav běžící inferenci",
   "agentSuggestionTimeEntryUpdateCurrent": "Aktuální",
   "agentSuggestionTimeEntryUpdateNoChange": "(beze změny)",
   "agentSuggestionTimeEntryUpdateProposed": "Navrhované",

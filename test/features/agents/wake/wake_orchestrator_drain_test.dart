@@ -1202,6 +1202,34 @@ void main() {
         });
       });
 
+      test("the runner names the executing wake's thread until it ends", () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          String? executingRunKey;
+          String? executingThreadId;
+          orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+            executingRunKey = runKey;
+            executingThreadId = threadId;
+            return gate.future;
+          };
+
+          final job = makeJob();
+          queue.enqueue(job);
+          orchestrator.processNext();
+          async.flushMicrotasks();
+
+          expect(executingRunKey, job.runKey);
+          expect(executingThreadId, job.runKey);
+          expect(runner.runKeyFor(job.agentId), job.runKey);
+
+          gate.complete(null);
+          async.flushMicrotasks();
+
+          expect(runner.isRunning(job.agentId), isFalse);
+          expect(runner.runKeyFor(job.agentId), isNull);
+        });
+      });
+
       test('mid-execution signals are queued but suppressed during drain '
           'when they match self-mutations', () {
         fakeAsync((async) {
