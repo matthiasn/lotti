@@ -49,6 +49,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/history/domain/history_entry.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/subscription/sync_subscription_api.dart';
@@ -295,6 +296,13 @@ class FallbackDeepBackfillStore extends DeepBackfillStore {
 /// `registerFallbackValue()` calls across test files. Safe to call multiple
 /// times — mocktail deduplicates internally.
 void registerAllFallbackValues() {
+  registerFallbackValue(
+    const HistoryTarget(
+      kind: HistoryEntityKind.task,
+      entityId: 'fallback',
+      route: '/tasks/fallback',
+    ),
+  );
   registerFallbackValue(Future<void>.value());
   registerFallbackValue(Uint8List(0));
   registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));

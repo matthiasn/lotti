@@ -328,24 +328,17 @@ class _HistoryRow extends ConsumerWidget {
     );
   }
 
-  /// Closes the page, then beams to the entity.
-  ///
-  /// A task that is the base of the desktop detail stack is brought back by
-  /// popping the linked tasks above it: beaming to its own route keeps the
-  /// stack (`resetDesktopTaskDetail` preserves pushes on an unchanged base),
-  /// which would leave the linked task on screen.
+  /// Closes the page, then opens the entity. A task is opened by its id
+  /// (`NavService.openTask`), so it is the task in view whatever the desktop
+  /// detail stack held before.
   void _open(BuildContext context, WidgetRef ref, HistoryTarget target) {
     final navService = ref.read(navServiceProvider);
     Navigator.of(context).pop();
     if (target.kind == HistoryEntityKind.task) {
-      final stack = navService.desktopTaskDetailStack.value;
-      if (stack.length > 1 && stack.first == target.entityId) {
-        for (var i = 1; i < stack.length; i++) {
-          navService.popDesktopTaskDetail();
-        }
-      }
+      navService.openTask(target.entityId);
+    } else {
+      navService.beamToNamed(target.route);
     }
-    navService.beamToNamed(target.route);
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

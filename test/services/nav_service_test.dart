@@ -846,6 +846,42 @@ void main() {
         expect(navService.desktopSelectedTaskId.value, 'linked-1');
       });
 
+      test('openTask on desktop shows that task alone and beams to it', () {
+        final navService = getIt<NavService>()..isDesktopMode = true;
+        addTearDown(() {
+          navService
+            ..resetDesktopTaskDetail(null)
+            ..isDesktopMode = false
+            ..beamToNamed('/tasks');
+        });
+        navService
+          ..resetDesktopTaskDetail('base')
+          ..pushDesktopTaskDetail('linked')
+          // The base again: beaming its unchanged route would keep 'linked'.
+          ..openTask('base');
+
+        expect(navService.desktopTaskDetailStack.value, ['base']);
+        expect(navService.desktopSelectedTaskId.value, 'base');
+        expect(navService.currentPath, '/tasks/base');
+        expect(navService.index, navService.tasksIndex);
+      });
+
+      test('openTask on the phone only beams to the task', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('base')
+          ..pushDesktopTaskDetail('linked');
+        addTearDown(() {
+          navService
+            ..resetDesktopTaskDetail(null)
+            ..beamToNamed('/tasks');
+        });
+
+        navService.openTask('other');
+
+        expect(navService.desktopTaskDetailStack.value, ['base', 'linked']);
+        expect(navService.currentPath, '/tasks/other');
+      });
+
       test(
         'popDesktopTaskDetail is a no-op when only one entry remains',
         () {

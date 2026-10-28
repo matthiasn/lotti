@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/history/domain/history_entry.dart';
+import 'package:lotti/features/history/state/history_providers.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -22,6 +25,8 @@ class _PushTrackingObserver extends NavigatorObserver {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockNavService mockNavService;
 
   setUp(() async {
@@ -108,6 +113,47 @@ void main() {
       // full app environment, which is out of scope for a routing test.
       tester.state<NavigatorState>(find.byType(Navigator)).pop();
       await tester.pump();
+    });
+
+    testWidgets('mobile widths record the linked task in history by id', (
+      tester,
+    ) async {
+      final recorder = MockHistoryRecorder();
+      when(() => recorder.recordVisit(any())).thenAnswer((_) async {});
+      final container = ProviderContainer(
+        overrides: [historyRecorderProvider.overrideWithValue(recorder)],
+      );
+      addTearDown(container.dispose);
+      await pumpLauncher(tester, width: 400, container: container);
+
+      await tester.tap(find.text('open'));
+
+      verify(
+        () => recorder.recordVisit(
+          const HistoryTarget(
+            kind: HistoryEntityKind.task,
+            entityId: 'task-9',
+            route: '/tasks/task-9',
+          ),
+        ),
+      ).called(1);
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pump();
+    });
+
+    testWidgets('desktop widths leave recording to the selection', (
+      tester,
+    ) async {
+      final recorder = MockHistoryRecorder();
+      final container = ProviderContainer(
+        overrides: [historyRecorderProvider.overrideWithValue(recorder)],
+      );
+      addTearDown(container.dispose);
+      await pumpLauncher(tester, width: 1280, container: container);
+
+      await tester.tap(find.text('open'));
+
+      verifyNever(() => recorder.recordVisit(any()));
     });
 
     testWidgets('focusSuggestions publishes a focus intent before navigating', (

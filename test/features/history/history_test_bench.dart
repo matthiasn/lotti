@@ -93,6 +93,7 @@ class HistoryNavFixture {
     when(() => nav.desktopSelectedRelationshipId).thenReturn(selectedPerson);
     when(() => nav.desktopSelectedDashboardId).thenReturn(selectedDashboard);
     when(() => nav.desktopTaskDetailStack).thenReturn(taskStack);
+    when(() => nav.isDesktopMode).thenAnswer((_) => desktop);
   }
 
   final nav = MockNavService();
@@ -111,6 +112,9 @@ class HistoryNavFixture {
   final taskStack = ValueNotifier<List<String>>(const []);
   final indexes = StreamController<int>.broadcast();
   int index = 0;
+
+  /// The layout `NavService.isDesktopMode` reports.
+  bool desktop = false;
 
   /// Brings the tab at [newIndex] to the front, as `NavService.setIndex`
   /// does: index first, then the stream.
