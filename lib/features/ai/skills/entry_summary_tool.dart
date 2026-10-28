@@ -177,7 +177,11 @@ Map<String, dynamic> _decodeEntrySummaryToolCall(
       .where((toolCall) => toolCall.function.name == toolName)
       .firstOrNull;
   if (call == null) {
-    final seen = toolCalls.map((c) => c.function.name).join(', ');
+    // A nameless call is a fragment the transport failed to reassemble; name
+    // it, or the reason reads "called [, , ]" and hides that.
+    final seen = toolCalls
+        .map((c) => c.function.name.isEmpty ? '<unnamed>' : c.function.name)
+        .join(', ');
     throw EntrySummaryToolException(
       seen.isEmpty
           ? 'model published no tool call'

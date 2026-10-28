@@ -17,11 +17,15 @@ class ToolCallAccumulator {
     final toolCalls = delta?.toolCalls;
     if (toolCalls == null) return;
 
-    // Special handling: if we receive multiple tool calls in one chunk all with
-    // the same index, they might be complete tool calls rather than chunks
+    // Special handling: if we receive multiple named tool calls in one chunk
+    // all with the same index, they are complete tool calls rather than
+    // chunks. Nameless ones are fragments of a call and take the normal path.
     if (toolCalls.length > 1 &&
         toolCalls.every(
-          (tc) => tc.index == 0 && tc.function?.arguments != null,
+          (tc) =>
+              tc.index == 0 &&
+              tc.function?.arguments != null &&
+              _hasName(tc.function),
         )) {
       toolCalls.forEach(_addCompleteToolCall);
     } else {
@@ -56,8 +60,9 @@ class ToolCallAccumulator {
       // Continuation chunk that repeats the same explicit ID — append rather
       // than overwriting the accumulated state.
       _appendToToolCall(explicitId, toolCallChunk);
-    } else if (hasExplicitId || toolCallChunk.function?.name != null) {
-      // This is a new tool call
+    } else if (hasExplicitId || _hasName(toolCallChunk.function)) {
+      // This is a new tool call. An empty name is no name: some
+      // OpenAI-compatible servers send `"name": ""` on every continuation.
       final toolCallId = hasExplicitId
           ? explicitId
           : _nextSyntheticToolCallId();
@@ -111,7 +116,7 @@ class ToolCallAccumulator {
 
     if (chunk.function != null) {
       _toolCalls[key] = existing.copyWith(
-        functionName: chunk.function!.name,
+        functionName: _hasName(chunk.function) ? chunk.function!.name : null,
         functionArguments: chunk.function!.arguments != null
             ? existing.functionArguments + chunk.function!.arguments!
             : null,
@@ -153,6 +158,9 @@ class ToolCallAccumulator {
 
   /// Get the number of accumulated tool calls.
   int get count => _toolCalls.length;
+
+  static bool _hasName(ChatCompletionStreamMessageFunctionCall? function) =>
+      function?.name?.isNotEmpty ?? false;
 
   String _nextSyntheticToolCallId() {
     String id;
