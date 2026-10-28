@@ -4,6 +4,8 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -76,6 +78,51 @@ void main() {
         expect(opened, 1);
       },
     );
+
+    testWidgets('a due urgency puts its marker just before the count', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        SavedTaskFilterPill(
+          label: 'Habitat checks',
+          semanticsLabel: 'Habitat checks, 7 tasks, Has overdue tasks',
+          count: 7,
+          dueUrgency: DueDateUrgency.overdue,
+          onTap: () {},
+        ),
+      );
+
+      final marker = find.byType(SavedFilterDueMarker);
+      expect(
+        tester.widget<SavedFilterDueMarker>(marker).urgency,
+        DueDateUrgency.overdue,
+      );
+      final markerRight = tester.getTopRight(marker).dx;
+      expect(markerRight, lessThan(tester.getTopLeft(find.text('7')).dx));
+      expect(
+        markerRight,
+        greaterThan(tester.getTopRight(find.text('Habitat checks')).dx),
+      );
+    });
+
+    testWidgets('no due urgency, no marker', (tester) async {
+      for (final urgency in [null, DueDateUrgency.normal]) {
+        await _pump(
+          tester,
+          SavedTaskFilterPill(
+            label: 'Backlog',
+            semanticsLabel: 'Backlog, 12 tasks',
+            count: 12,
+            dueUrgency: urgency,
+            onTap: () {},
+          ),
+        );
+
+        expect(find.byType(SavedFilterDueMarker), findsNothing);
+        expect(find.text('12'), findsOneWidget);
+      }
+    });
 
     testWidgets('zero count renders a dimmed 0', (tester) async {
       await _pump(

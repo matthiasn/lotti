@@ -17345,6 +17345,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Vencen hoy';
+
+  @override
+  String get tasksDueViewOverdue => 'Vencidas';
+
+  @override
+  String get tasksDueViewsSemantics => 'Vistas por vencimiento';
+
+  @override
   String get taskSetCategoryLabel => 'Establecer categoría';
 
   @override
@@ -17499,6 +17508,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Arrastra para reordenar';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker => 'Tiene tareas que vencen hoy';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Tiene tareas vencidas';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Renombrar filtro guardado';

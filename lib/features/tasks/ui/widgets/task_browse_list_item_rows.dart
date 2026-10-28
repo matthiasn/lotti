@@ -303,14 +303,27 @@ class TaskRowContent extends ConsumerWidget {
       );
     }
 
+    // Grouped by due date, the section header already states each row's due
+    // date (or its absence), so the footer stays quiet there.
     final showDueFooter =
         showDueDate &&
         sortOption != TaskSortOption.byDueDate &&
-        liveTask.data.due != null &&
         liveTask.data.status is! TaskDone &&
         liveTask.data.status is! TaskRejected;
     if (showDueFooter) {
-      widgets.add(DueDateText(dueDate: liveTask.data.due!));
+      final due = liveTask.data.due;
+      widgets.add(
+        due != null
+            ? DueDateText(dueDate: due)
+            // An open task with no due date says so, in the quiet meta-chip
+            // grey: absence is information too — it is what can safely wait —
+            // but it must never compete with the orange and red of a task
+            // that cannot.
+            : TaskShowcaseMetaChip(
+                icon: LottiIcons.calendar,
+                label: context.messages.taskNoDueDateLabel,
+              ),
+      );
     }
 
     if (vectorDistance case final distance?) {

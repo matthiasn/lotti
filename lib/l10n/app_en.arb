@@ -10534,6 +10534,18 @@
       }
     }
   },
+  "tasksDueViewDueToday": "Due today",
+  "@tasksDueViewDueToday": {
+    "description": "Smart view above the task list: open tasks due today (never overdue ones)."
+  },
+  "tasksDueViewOverdue": "Overdue",
+  "@tasksDueViewOverdue": {
+    "description": "Smart view above the task list: open tasks whose due date has passed."
+  },
+  "tasksDueViewsSemantics": "Due date views",
+  "@tasksDueViewsSemantics": {
+    "description": "Screen-reader label for the group of due-date smart views."
+  },
   "taskSetCategoryLabel": "Set category",
   "taskSetDueDateLabel": "Set due date",
   "taskSetEstimateLabel": "Add estimate",
@@ -10608,6 +10620,14 @@
   "tasksSavedFilterDeleteConfirmTooltip": "Tap again to delete",
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
+  "tasksSavedFilterDueTodayMarker": "Has tasks due today",
+  "@tasksSavedFilterDueTodayMarker": {
+    "description": "Screen-reader text for the orange marker on a saved view that contains tasks due today."
+  },
+  "tasksSavedFilterOverdueMarker": "Has overdue tasks",
+  "@tasksSavedFilterOverdueMarker": {
+    "description": "Screen-reader text for the red marker on a saved view that contains overdue tasks."
+  },
   "tasksSavedFilterRenameSemantics": "Rename saved filter",
   "tasksSavedFiltersAllShort": "All",
   "tasksSavedFiltersAllTasks": "All tasks",

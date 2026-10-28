@@ -51,6 +51,13 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
         unknownValue: AgentAssignmentFilter.all,
       ) ??
       AgentAssignmentFilter.all,
+  dueFilter:
+      $enumDecodeNullable(
+        _$TaskDueFilterEnumMap,
+        json['dueFilter'],
+        unknownValue: TaskDueFilter.all,
+      ) ??
+      TaskDueFilter.all,
 );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -68,6 +75,7 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'showDistances': instance.showDistances,
       'agentAssignmentFilter':
           _$AgentAssignmentFilterEnumMap[instance.agentAssignmentFilter]!,
+      'dueFilter': _$TaskDueFilterEnumMap[instance.dueFilter]!,
     };
 
 const _$TaskSortOptionEnumMap = {
@@ -80,4 +88,10 @@ const _$AgentAssignmentFilterEnumMap = {
   AgentAssignmentFilter.all: 'all',
   AgentAssignmentFilter.hasAgent: 'hasAgent',
   AgentAssignmentFilter.noAgent: 'noAgent',
+};
+
+const _$TaskDueFilterEnumMap = {
+  TaskDueFilter.all: 'all',
+  TaskDueFilter.dueToday: 'dueToday',
+  TaskDueFilter.overdue: 'overdue',
 };

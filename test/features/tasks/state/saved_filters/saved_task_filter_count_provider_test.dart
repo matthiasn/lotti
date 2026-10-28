@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -35,6 +36,28 @@ class _FakeRepo implements SavedTaskFilterCountRepository {
     calls++;
     return responses[i];
   }
+
+  @override
+  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
+      DueDateUrgency.normal;
+}
+
+/// Answers [dueUrgency] from [byStatus] (keyed by the filter's first status)
+/// and counts each call, so a test can see when the provider recomputed.
+class _UrgencyRepo implements SavedTaskFilterCountRepository {
+  _UrgencyRepo(this.byStatus);
+
+  Map<String, DueDateUrgency> byStatus;
+  int urgencyCalls = 0;
+
+  @override
+  Future<int> count(TasksFilter filter) async => 0;
+
+  @override
+  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async {
+    urgencyCalls++;
+    return byStatus[filter.selectedTaskStatuses.first] ?? DueDateUrgency.normal;
+  }
 }
 
 class _StubController extends SavedTaskFiltersController {
@@ -57,6 +80,10 @@ class _CapturingRepo implements SavedTaskFilterCountRepository {
     captured.add(filter);
     return result;
   }
+
+  @override
+  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
+      DueDateUrgency.normal;
 }
 
 const _filter = SavedTaskFilter(
@@ -523,6 +550,80 @@ void main() {
         async.elapse(Duration.zero);
         expect(repo.calls, 2);
       });
+    });
+  });
+
+  group('savedTaskFilterDueUrgenciesProvider', () {
+    ProviderContainer build(_UrgencyRepo repo, List<SavedTaskFilter> seed) =>
+        ProviderContainer(
+          overrides: withServiceOverrides([
+            savedTaskFiltersControllerProvider.overrideWith(
+              () => _StubController(seed),
+            ),
+            savedTaskFilterCountRepositoryProvider.overrideWithValue(repo),
+          ]),
+        );
+
+    test('maps every saved filter to its own urgency', () async {
+      final repo = _UrgencyRepo({
+        'IN_PROGRESS': DueDateUrgency.overdue,
+        'BLOCKED': DueDateUrgency.dueToday,
+      });
+      final container = build(repo, const [_filter, _filter2]);
+      addTearDown(container.dispose);
+      final sub = container.listen(
+        savedTaskFilterDueUrgenciesProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      await container.read(savedTaskFiltersControllerProvider.future);
+
+      expect(
+        await container.read(savedTaskFilterDueUrgenciesProvider.future),
+        {'sv-1': DueDateUrgency.overdue, 'sv-2': DueDateUrgency.dueToday},
+      );
+    });
+
+    test('asks nothing when there are no saved filters', () async {
+      final repo = _UrgencyRepo(const {});
+      final container = build(repo, const []);
+      addTearDown(container.dispose);
+      final sub = container.listen(
+        savedTaskFilterDueUrgenciesProvider,
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      expect(
+        await container.read(savedTaskFilterDueUrgenciesProvider.future),
+        isEmpty,
+      );
+      expect(repo.urgencyCalls, 0);
+    });
+
+    test('recomputes at local midnight, when due today turns overdue', () {
+      // Two minutes before midnight: no task changes, only the date does.
+      fakeAsync((async) {
+        final repo = _UrgencyRepo({'IN_PROGRESS': DueDateUrgency.dueToday});
+        final container = build(repo, const [_filter]);
+        addTearDown(container.dispose);
+        container
+          ..listen(savedTaskFilterDueUrgenciesProvider, (_, _) {})
+          ..read(savedTaskFilterDueUrgenciesProvider.future).ignore();
+        async.elapse(Duration.zero);
+        expect(
+          container.read(savedTaskFilterDueUrgenciesProvider).value,
+          {'sv-1': DueDateUrgency.dueToday},
+        );
+
+        repo.byStatus = {'IN_PROGRESS': DueDateUrgency.overdue};
+        async.elapse(const Duration(minutes: 3));
+
+        expect(
+          container.read(savedTaskFilterDueUrgenciesProvider).value,
+          {'sv-1': DueDateUrgency.overdue},
+        );
+      }, initialTime: DateTime(2024, 7, 3, 23, 58));
     });
   });
 }

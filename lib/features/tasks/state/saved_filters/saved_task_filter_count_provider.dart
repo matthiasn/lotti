@@ -8,7 +8,9 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -43,6 +45,27 @@ SavedTaskFilterCountRepository savedTaskFilterCountRepository(Ref ref) {
 /// The initial computation is never debounced — only invalidations are.
 const _savedTaskFilterCountsDebounce = Duration(milliseconds: 300);
 
+/// Recomputes the provider behind [ref] (debounced) whenever a task-shaped
+/// notification arrives — the wiring every task-count provider shares.
+///
+/// `UpdateNotifications.updateStream` multiplexes both locally-originated
+/// notifications and sync-originated ones, so counts stay in step when tasks
+/// arrive from another device.
+void invalidateOnTaskNotifications(Ref ref) {
+  Timer? debounce;
+  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
+    affectedIds,
+  ) {
+    if (!affectedIds.contains(taskNotification)) return;
+    debounce?.cancel();
+    debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
+  });
+  ref.onDispose(() {
+    debounce?.cancel();
+    sub.cancel();
+  });
+}
+
 /// Live `{savedFilterId → matching task count}` for every persisted saved
 /// filter, recomputed (debounced) when the filter list changes or when a
 /// task-shaped notification arrives.
@@ -62,18 +85,7 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
       const <SavedTaskFilter>[];
   if (saved.isEmpty) return const <String, int>{};
 
-  Timer? debounce;
-  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
-    affectedIds,
-  ) {
-    if (!affectedIds.contains(taskNotification)) return;
-    debounce?.cancel();
-    debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
-  });
-  ref.onDispose(() {
-    debounce?.cancel();
-    sub.cancel();
-  });
+  invalidateOnTaskNotifications(ref);
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   final counts = await Future.wait(
@@ -82,6 +94,40 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
 
   return {
     for (var i = 0; i < saved.length; i++) saved[i].id: counts[i],
+  };
+}
+
+/// Live `{savedFilterId → due urgency}` for every saved filter: whether the
+/// open tasks it matches include an overdue one (red marker), else one due
+/// today (orange marker), else neither.
+///
+/// Recomputed on the same triggers as [savedTaskFilterCountsProvider], and
+/// at local midnight, when yesterday's due-today tasks turn overdue without
+/// any task changing.
+final FutureProvider<Map<String, DueDateUrgency>>
+savedTaskFilterDueUrgenciesProvider =
+    FutureProvider.autoDispose<Map<String, DueDateUrgency>>(
+      savedTaskFilterDueUrgencies,
+      name: 'savedTaskFilterDueUrgenciesProvider',
+    );
+Future<Map<String, DueDateUrgency>> savedTaskFilterDueUrgencies(
+  Ref ref,
+) async {
+  final saved =
+      ref.watch(savedTaskFiltersControllerProvider).value ??
+      const <SavedTaskFilter>[];
+  if (saved.isEmpty) return const <String, DueDateUrgency>{};
+
+  ref.watch(taskDueDayProvider);
+  invalidateOnTaskNotifications(ref);
+
+  final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
+  final urgencies = await Future.wait(
+    saved.map((filter) => repo.dueUrgency(filter.filter)),
+  );
+
+  return {
+    for (var i = 0; i < saved.length; i++) saved[i].id: urgencies[i],
   };
 }
 
@@ -106,18 +152,7 @@ final FutureProvider<int> allTasksTotalCountProvider =
       name: 'allTasksTotalCountProvider',
     );
 Future<int> allTasksTotalCount(Ref ref) async {
-  Timer? debounce;
-  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
-    affectedIds,
-  ) {
-    if (!affectedIds.contains(taskNotification)) return;
-    debounce?.cancel();
-    debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
-  });
-  ref.onDispose(() {
-    debounce?.cancel();
-    sub.cancel();
-  });
+  invalidateOnTaskNotifications(ref);
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   return repo.count(_allTasksFilter);
@@ -145,18 +180,7 @@ Future<int> currentTasksFilterCount(Ref ref) async {
       ? live.copyWith(selectedTaskStatuses: {...allTaskStatuses})
       : live;
 
-  Timer? debounce;
-  final sub = ref.read(updateNotificationsProvider).updateStream.listen((
-    affectedIds,
-  ) {
-    if (!affectedIds.contains(taskNotification)) return;
-    debounce?.cancel();
-    debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
-  });
-  ref.onDispose(() {
-    debounce?.cancel();
-    sub.cancel();
-  });
+  invalidateOnTaskNotifications(ref);
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   return repo.count(effective);

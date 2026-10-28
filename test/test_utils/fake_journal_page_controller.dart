@@ -32,6 +32,7 @@ class FakeJournalPageController extends JournalPageController {
   final List<String> searchStringCalls = [];
   final List<SearchMode> searchModeCalls = [];
   final List<AgentAssignmentFilter> agentAssignmentFilterCalls = [];
+  final List<TaskDueFilter> dueFilterCalls = [];
   final List<String> toggledProjectIds = [];
 
   int selectAllCategoriesCalled = 0;
@@ -98,11 +99,13 @@ class FakeJournalPageController extends JournalPageController {
     Set<String>? priorities,
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
+    TaskDueFilter? dueFilter,
     SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
   }) async {
     applyBatchFilterUpdateCalled++;
+    if (dueFilter != null) dueFilterCalls.add(dueFilter);
     if (statuses != null) setSelectedTaskStatusesCalls.add(statuses);
     if (categoryIds != null) setSelectedCategoryIdsCalls.add(categoryIds);
     if (labelIds != null) setSelectedLabelIdsCalls.add(labelIds);
@@ -260,6 +263,7 @@ class FakeJournalPageController extends JournalPageController {
     searchStringCalls.clear();
     searchModeCalls.clear();
     agentAssignmentFilterCalls.clear();
+    dueFilterCalls.clear();
     toggledProjectIds.clear();
     selectAllCategoriesCalled = 0;
     clearSelectedLabelIdsCalled = 0;

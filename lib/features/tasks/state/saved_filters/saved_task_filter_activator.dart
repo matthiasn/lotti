@@ -28,6 +28,7 @@ class SavedTaskFilterActivator {
       priorities: f.selectedPriorities,
       sortOption: f.sortOption,
       agentAssignmentFilter: f.agentAssignmentFilter,
+      dueFilter: f.dueFilter,
       showCreationDate: f.showCreationDate,
       showDueDate: f.showDueDate,
     );
@@ -46,6 +47,7 @@ class SavedTaskFilterActivator {
       priorities: const <String>{},
       sortOption: TaskSortOption.byPriority,
       agentAssignmentFilter: AgentAssignmentFilter.all,
+      dueFilter: TaskDueFilter.all,
       showCreationDate: false,
       showDueDate: true,
     );
@@ -70,6 +72,7 @@ TasksFilter liveTasksFilterFor(JournalPageState pageState) {
     showCreationDate: pageState.showCreationDate,
     showDueDate: pageState.showDueDate,
     agentAssignmentFilter: pageState.agentAssignmentFilter,
+    dueFilter: pageState.dueFilter,
   );
 }
 
@@ -90,7 +93,8 @@ bool taskFiltersHaveSameSavedShape(TasksFilter saved, TasksFilter live) {
       saved.sortOption == live.sortOption &&
       saved.showCreationDate == live.showCreationDate &&
       saved.showDueDate == live.showDueDate &&
-      saved.agentAssignmentFilter == live.agentAssignmentFilter;
+      saved.agentAssignmentFilter == live.agentAssignmentFilter &&
+      saved.dueFilter == live.dueFilter;
 }
 
 /// How many clauses [live] narrows the task list by, relative to the page's
@@ -117,7 +121,8 @@ int taskFilterNarrowingClauseCount(TasksFilter live) {
       live.selectedProjectIds.length +
       live.selectedLabelIds.length +
       live.selectedPriorities.length +
-      (live.agentAssignmentFilter != AgentAssignmentFilter.all ? 1 : 0);
+      (live.agentAssignmentFilter != AgentAssignmentFilter.all ? 1 : 0) +
+      (live.dueFilter != TaskDueFilter.all ? 1 : 0);
 }
 
 /// Whether [live] narrows the task list at all — see

@@ -128,6 +128,8 @@ class JournalPageController extends Notifier<JournalPageState>
   bool _showDistances = false;
   @override
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
+  @override
+  TaskDueFilter _dueFilter = TaskDueFilter.all;
   int? _postFilterNextRawOffset;
   @override
   Set<String> _selectedTaskStatuses = {...defaultSelectedTaskStatuses};
@@ -375,6 +377,7 @@ class JournalPageController extends Notifier<JournalPageState>
       showProjectsHeader: _showProjectsHeader,
       showDistances: _showDistances,
       agentAssignmentFilter: _agentAssignmentFilter,
+      dueFilter: _dueFilter,
       searchMode: _searchMode,
       enableVectorSearch: _enableVectorSearch,
       enableProjects: _enableProjects,
@@ -540,6 +543,7 @@ class JournalPageController extends Notifier<JournalPageState>
       sortOption: _sortOption,
       agentAssignmentFilter: _agentAssignmentFilter,
       filters: _filters,
+      dueFilter: _showTasks ? _dueFilter : TaskDueFilter.all,
       query: _query,
       enableVectorSearch: _enableVectorSearch,
       searchMode: _searchMode,
@@ -587,6 +591,7 @@ class JournalPageController extends Notifier<JournalPageState>
       _showProjectsHeader = tasksFilter.showProjectsHeader;
       _showDistances = tasksFilter.showDistances;
       _agentAssignmentFilter = tasksFilter.agentAssignmentFilter;
+      _dueFilter = tasksFilter.dueFilter;
     } else {
       _selectedLabelIds = {};
       _selectedPriorities = {};
@@ -652,6 +657,7 @@ class JournalPageController extends Notifier<JournalPageState>
       agentAssignmentFilter: _showTasks
           ? _agentAssignmentFilter
           : AgentAssignmentFilter.all,
+      dueFilter: _showTasks ? _dueFilter : TaskDueFilter.all,
     );
     await _persistence.saveFilters(filter, _getCategoryFiltersKey());
   }

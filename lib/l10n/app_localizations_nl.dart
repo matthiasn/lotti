@@ -17194,6 +17194,15 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Vandaag af';
+
+  @override
+  String get tasksDueViewOverdue => 'Te laat';
+
+  @override
+  String get tasksDueViewsSemantics => 'Weergaven op vervaldatum';
+
+  @override
   String get taskSetCategoryLabel => 'Categorie instellen';
 
   @override
@@ -17343,6 +17352,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Sleep naar herschikken';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker =>
+      'Bevat taken die vandaag af moeten';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Bevat te late taken';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Opgeslagen filter hernoemen';

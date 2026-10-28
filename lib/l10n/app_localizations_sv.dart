@@ -16854,7 +16854,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get taskDueToday => 'Ska lämnas in idag';
+  String get taskDueToday => 'Förfaller i dag';
 
   @override
   String get taskDueTomorrow => 'Ska vara klar imorgon';
@@ -17084,7 +17084,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskMetaValueNotSet => 'Inte inställt';
 
   @override
-  String get taskNoDueDateLabel => 'Ingen beräknad förlossningsdag';
+  String get taskNoDueDateLabel => 'Inget förfallodatum';
 
   @override
   String get taskNoEstimateLabel => 'Ingen uppskattning';
@@ -17150,6 +17150,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '”$query”';
   }
+
+  @override
+  String get tasksDueViewDueToday => 'Förfaller i dag';
+
+  @override
+  String get tasksDueViewOverdue => 'Försenade';
+
+  @override
+  String get tasksDueViewsSemantics => 'Vyer efter förfallodatum';
 
   @override
   String get taskSetCategoryLabel => 'Välj kategori';
@@ -17301,6 +17310,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Dra för att omordna';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker =>
+      'Har uppgifter som förfaller i dag';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Har försenade uppgifter';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Byt namn på sparat filter';

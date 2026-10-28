@@ -10,6 +10,12 @@ enum DsPillVariant {
   /// `pillColor` at 18% alpha background, `pillColor` label.
   tinted,
 
+  /// `pillColor` at full strength behind a `text.onInteractiveAlert` label —
+  /// the loudest shell, reserved for a state that must win a glance (the
+  /// task list's Overdue view). Pass an `alert.*.defaultColor`: those are the
+  /// fills the on-alert ink is specified against in both themes.
+  solid,
+
   /// Transparent background, 50%-alpha `pillColor` border, `pillColor` label.
   outline,
 
@@ -56,6 +62,10 @@ class DsPill extends StatelessWidget {
          'tinted variant requires `color`',
        ),
        assert(
+         variant != DsPillVariant.solid || color != null,
+         'solid variant requires `color`',
+       ),
+       assert(
          variant != DsPillVariant.outline || color != null,
          'outline variant requires `color`',
        );
@@ -80,8 +90,8 @@ class DsPill extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
 
-  /// Pill accent color. Required for `tinted` and `outline`; ignored for
-  /// `filled` / `muted` (they pull from tokens).
+  /// Pill accent color. Required for `tinted`, `solid` and `outline`;
+  /// ignored for `filled` / `muted` (they pull from tokens).
   final Color? color;
 
   /// Optional override for the label text color. Defaults to the variant's
@@ -238,6 +248,14 @@ class DsPill extends StatelessWidget {
         ),
         child: content,
       ),
+      DsPillVariant.solid => DecoratedBox(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: radius,
+          border: selected ? selectedBorder : null,
+        ),
+        child: content,
+      ),
       DsPillVariant.outline => DecoratedBox(
         decoration: BoxDecoration(
           color: selected ? tokens.colors.surface.selected : null,
@@ -278,6 +296,7 @@ class DsPill extends StatelessWidget {
     return switch (variant) {
       DsPillVariant.filled => tokens.colors.text.highEmphasis,
       DsPillVariant.tinted => color!,
+      DsPillVariant.solid => tokens.colors.text.onInteractiveAlert,
       DsPillVariant.outline => color!,
       // The dashed border alone carries "unset" — the label must stay
       // legible. In light theme even mediumEmphasis grey flirted with the

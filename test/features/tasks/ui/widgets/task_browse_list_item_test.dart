@@ -2,12 +2,14 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/keyboard/ui/list_detail_focus_traversal.dart';
+import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
@@ -498,6 +500,78 @@ void main() {
       );
 
       expect(find.byIcon(LottiIcons.calendar), findsNothing);
+    });
+
+    group('an open task without a due date', () {
+      Task undated(TaskStatus status) => TestTaskFactory.create(
+        id: 'task-undated',
+        title: 'Undated Task',
+        dateFrom: DateTime(2026, 4, 8),
+        status: status,
+      );
+      final open = TaskStatus.open(
+        id: 'status-undated',
+        createdAt: DateTime(2024),
+        utcOffset: 0,
+      );
+
+      Iterable<TaskShowcaseMetaChip> noDueChips(WidgetTester tester) => tester
+          .widgetList<TaskShowcaseMetaChip>(find.byType(TaskShowcaseMetaChip))
+          .where((chip) => chip.label == 'No due date');
+
+      testWidgets('says so in the quiet meta-chip grey', (tester) async {
+        await pumpTaskBrowseItem(
+          tester,
+          undated(open),
+          sortOption: TaskSortOption.byPriority,
+          showDueDate: true,
+        );
+
+        expect(noDueChips(tester).single.icon, LottiIcons.calendar);
+        // Never the urgent read-out: no DueDateText for an undated task.
+        expect(find.byType(DueDateText), findsNothing);
+      });
+
+      testWidgets('stays quiet when due dates are hidden', (tester) async {
+        await pumpTaskBrowseItem(
+          tester,
+          undated(open),
+          sortOption: TaskSortOption.byPriority,
+          showDueDate: false,
+        );
+
+        expect(noDueChips(tester), isEmpty);
+      });
+
+      testWidgets('stays quiet when the No due date section header says it', (
+        tester,
+      ) async {
+        await pumpTaskBrowseItem(
+          tester,
+          undated(open),
+          sortOption: TaskSortOption.byDueDate,
+          showDueDate: true,
+        );
+
+        expect(noDueChips(tester), isEmpty);
+      });
+
+      testWidgets('stays quiet once the task is closed', (tester) async {
+        await pumpTaskBrowseItem(
+          tester,
+          undated(
+            TaskStatus.done(
+              id: 'status-undated-done',
+              createdAt: DateTime(2024),
+              utcOffset: 0,
+            ),
+          ),
+          sortOption: TaskSortOption.byPriority,
+          showDueDate: true,
+        );
+
+        expect(noDueChips(tester), isEmpty);
+      });
     });
 
     testWidgets('shows vector distance chip when vectorDistance is provided', (

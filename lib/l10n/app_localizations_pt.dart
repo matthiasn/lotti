@@ -17292,6 +17292,15 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Vencem hoje';
+
+  @override
+  String get tasksDueViewOverdue => 'Em atraso';
+
+  @override
+  String get tasksDueViewsSemantics => 'Vistas por prazo';
+
+  @override
   String get taskSetCategoryLabel => 'Definir categoria';
 
   @override
@@ -17441,6 +17450,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Arraste para reordenar';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker => 'Tem tarefas que vencem hoje';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Tem tarefas em atraso';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Renomear filtro salvo';

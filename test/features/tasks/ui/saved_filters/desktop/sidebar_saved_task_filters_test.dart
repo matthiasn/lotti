@@ -12,6 +12,8 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_c
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -67,6 +69,7 @@ class _GatedJournalPageController extends FakeJournalPageController {
     Set<String>? priorities,
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
+    TaskDueFilter? dueFilter,
     SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
@@ -79,6 +82,7 @@ class _GatedJournalPageController extends FakeJournalPageController {
       priorities: priorities,
       sortOption: sortOption,
       agentAssignmentFilter: agentAssignmentFilter,
+      dueFilter: dueFilter,
       searchMode: searchMode,
       showCreationDate: showCreationDate,
       showDueDate: showDueDate,
@@ -94,6 +98,7 @@ Future<FakeJournalPageController> _pumpSidebar(
   VoidCallback? onApplied,
   FakeJournalPageController? pageController,
   ValueListenable<bool>? showSidebar,
+  Map<String, DueDateUrgency> urgencies = const {},
 }) async {
   final page = pageController ?? FakeJournalPageController(pageState);
   final sidebar = SidebarSavedTaskFilters(onApplied: onApplied);
@@ -131,6 +136,9 @@ Future<FakeJournalPageController> _pumpSidebar(
           },
         ),
         allTasksTotalCountProvider.overrideWith((ref) async => 50),
+        savedTaskFilterDueUrgenciesProvider.overrideWith(
+          (ref) async => urgencies,
+        ),
       ],
     ),
   );
@@ -388,5 +396,60 @@ void main() {
     expect(label.style?.fontSize, caption.fontSize);
     expect(count.style?.fontFamily, caption.fontFamily);
     expect(count.style?.fontSize, caption.fontSize);
+  });
+
+  testWidgets('a saved view with urgent tasks carries the matching marker', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await _pumpSidebar(
+      tester,
+      urgencies: const {
+        'alpha': DueDateUrgency.overdue,
+        'blocked': DueDateUrgency.dueToday,
+        'charlie': DueDateUrgency.normal,
+      },
+    );
+
+    DueDateUrgency? markerIn(String id) {
+      final marker = find.descendant(
+        of: find.byKey(SidebarSavedTaskFiltersKeys.filter(id)),
+        matching: find.byType(SavedFilterDueMarker),
+      );
+      return marker.evaluate().isEmpty
+          ? null
+          : tester.widget<SavedFilterDueMarker>(marker).urgency;
+    }
+
+    expect(markerIn('alpha'), DueDateUrgency.overdue);
+    expect(markerIn('blocked'), DueDateUrgency.dueToday);
+    expect(markerIn('charlie'), isNull);
+    expect(markerIn('delta'), isNull);
+    // The marker beside the count, not mistaken for the leading category dot.
+    final alpha = find.byKey(SidebarSavedTaskFiltersKeys.filter('alpha'));
+    expect(
+      tester
+          .getTopRight(
+            find.descendant(
+              of: alpha,
+              matching: find.byType(SavedFilterDueMarker),
+            ),
+          )
+          .dx,
+      lessThan(
+        tester
+            .getTopLeft(find.descendant(of: alpha, matching: find.text('11')))
+            .dx,
+      ),
+    );
+    expect(
+      find.bySemanticsLabel('Alpha, 11 tasks, Has overdue tasks'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Blocked, 9 tasks, Has tasks due today'),
+      findsOneWidget,
+    );
+    handle.dispose();
   });
 }

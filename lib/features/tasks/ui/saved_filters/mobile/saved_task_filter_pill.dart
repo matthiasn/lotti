@@ -1,6 +1,8 @@
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
@@ -59,6 +61,7 @@ class SavedTaskFilterPill extends StatelessWidget {
     this.count,
     this.countLoading = false,
     this.showCount = true,
+    this.dueUrgency,
     super.key,
   });
 
@@ -95,6 +98,11 @@ class SavedTaskFilterPill extends StatelessWidget {
   /// Whether to render the trailing count slot at all. "Custom" hides it.
   final bool showCount;
 
+  /// Drives the [SavedFilterDueMarker] ahead of the count — the same marker
+  /// the desktop sidebar rows carry. Null renders none; the caller adds its
+  /// spoken form to [semanticsLabel].
+  final DueDateUrgency? dueUrgency;
+
   /// Largest value rendered verbatim; anything above shows `999+`. Shared with
   /// the sheet's count column so the two surfaces cap identically.
   static const int countCap = 999;
@@ -108,7 +116,7 @@ class SavedTaskFilterPill extends StatelessWidget {
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
 
     final leading = _buildLeading(tokens);
-    final trailing = _buildTrailing();
+    final trailing = _buildTrailing(tokens);
 
     final pill = DsPill(
       variant: DsPillVariant.filled,
@@ -167,15 +175,27 @@ class SavedTaskFilterPill extends StatelessWidget {
     );
   }
 
-  Widget? _buildTrailing() {
+  Widget? _buildTrailing(DsTokens tokens) {
     if (!showCount) return null;
+    final marked =
+        dueUrgency == DueDateUrgency.overdue ||
+        dueUrgency == DueDateUrgency.dueToday;
     // Loading folds into the `null` placeholder so the one shared renderer
     // (`SavedFilterCountText`) owns the dash; the pill never styles the count
     // itself, keeping the rail and sheet numerals byte-identical. `selected`
     // lifts the count to high emphasis so it stays legible on the mint fill.
-    return SavedFilterCountText(
+    final countText = SavedFilterCountText(
       count: countLoading ? null : count,
       selected: selected,
+    );
+    if (!marked) return countText;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SavedFilterDueMarker(urgency: dueUrgency),
+        SizedBox(width: tokens.spacing.step2),
+        countText,
+      ],
     );
   }
 }

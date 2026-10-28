@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
@@ -50,6 +51,94 @@ void main() {
     tearDownAll(() async {
       await db?.close();
       await getIt.reset();
+    });
+
+    group('getOpenTaskIdsForDueFilter -', () {
+      // 15:00 local on Wed 3 Jul 2024; "today" is the whole local day.
+      final now = DateTime(2024, 7, 3, 15);
+
+      Future<void> seed() async {
+        final base = DateTime(2024, 6, 1, 9);
+        var n = 0;
+        Future<void> add(String id, DateTime? due, {bool done = false}) {
+          final at = base.add(Duration(minutes: n++));
+          return db!.upsertJournalDbEntity(
+            toDbEntity(
+              buildTaskEntry(
+                id: id,
+                timestamp: at,
+                status: done
+                    ? TaskStatus.done(
+                        id: 'status-$id',
+                        createdAt: at,
+                        utcOffset: at.timeZoneOffset.inMinutes,
+                      )
+                    : TaskStatus.open(
+                        id: 'status-$id',
+                        createdAt: at,
+                        utcOffset: at.timeZoneOffset.inMinutes,
+                      ),
+                due: due,
+              ),
+            ),
+          );
+        }
+
+        await add('overdue-long-ago', DateTime(2024, 6, 20, 10));
+        await add('overdue-last-minute', DateTime(2024, 7, 2, 23, 59));
+        await add('today-first-minute', DateTime(2024, 7, 3));
+        await add('today-later-than-now', DateTime(2024, 7, 3, 23, 30));
+        await add('tomorrow-midnight', DateTime(2024, 7, 4));
+        await add('no-due', null);
+        await add('done-overdue', DateTime(2024, 7, 1), done: true);
+      }
+
+      test('dueToday admits exactly the open tasks due on the local day '
+          '— never an overdue one', () async {
+        await seed();
+
+        final dueToday = await db!.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.dueToday,
+          now: now,
+        );
+
+        // A due time later than "now" is still today, not future, and the
+        // minute before midnight yesterday is not today.
+        expect(dueToday, {'today-first-minute', 'today-later-than-now'});
+      });
+
+      test('overdue admits open tasks due before today only', () async {
+        await seed();
+
+        final overdue = await db!.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.overdue,
+          now: now,
+        );
+
+        // A closed task is never overdue, however old its due date.
+        expect(overdue, {'overdue-long-ago', 'overdue-last-minute'});
+      });
+
+      test('the two views are disjoint when resolved in one wave', () async {
+        await seed();
+
+        // Same microtask wave: both ride one coalesced superset fetch, and
+        // splitting it must still keep every overdue task out of Due today.
+        final results = await Future.wait([
+          db!.getOpenTaskIdsForDueFilter(TaskDueFilter.dueToday, now: now),
+          db!.getOpenTaskIdsForDueFilter(TaskDueFilter.overdue, now: now),
+        ]);
+
+        expect(results[0].intersection(results[1]), isEmpty);
+        expect(results[0], isNot(contains('overdue-last-minute')));
+      });
+
+      test('all has no due window and is rejected', () {
+        expect(
+          () => db!.getOpenTaskIdsForDueFilter(TaskDueFilter.all, now: now),
+          throwsArgumentError,
+        );
+      });
     });
 
     group('Day-agent task queries -', () {

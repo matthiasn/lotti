@@ -17341,6 +17341,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Dnes splatné';
+
+  @override
+  String get tasksDueViewOverdue => 'Po splatnosti';
+
+  @override
+  String get tasksDueViewsSemantics => 'Zobrazení podle termínu';
+
+  @override
   String get taskSetCategoryLabel => 'Nastavit kategorii';
 
   @override
@@ -17490,6 +17499,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Přetáhni pro změnu pořadí';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker => 'Obsahuje úkoly splatné dnes';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Obsahuje úkoly po splatnosti';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Přejmenovat uložený filtr';

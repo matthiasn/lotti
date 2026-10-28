@@ -1,7 +1,9 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -265,5 +267,171 @@ void main() {
     // t2: project ✓, agent ✓ → counted
     // t3: project ✗
     expect(c, 1);
+  });
+
+  group('due-date clause', () {
+    // 15:00 on 3 Jul 2024, fixed for both the repository and the stubs.
+    final now = DateTime(2024, 7, 3, 15);
+    const open = TasksFilter(selectedTaskStatuses: {'OPEN', 'IN PROGRESS'});
+
+    void stubDue({
+      Set<String> overdue = const {},
+      Set<String> dueToday = const {},
+    }) {
+      when(
+        () => db.getOpenTaskIdsForDueFilter(TaskDueFilter.overdue, now: now),
+      ).thenAnswer((_) async => overdue);
+      when(
+        () => db.getOpenTaskIdsForDueFilter(TaskDueFilter.dueToday, now: now),
+      ).thenAnswer((_) async => dueToday);
+    }
+
+    void stubMatchingIds(List<String> ids) {
+      when(
+        () => db.getFilteredTaskIds(
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+        ),
+      ).thenAnswer((_) async => ids);
+    }
+
+    Future<T> atNow<T>(Future<T> Function() body) =>
+        withClock(Clock.fixed(now), body);
+
+    test('a due clause intersects the matching ids with the due set — '
+        'Due today never counts an overdue task', () async {
+      stubDue(overdue: {'late'}, dueToday: {'today-a', 'today-b'});
+      // 'today-b' is due today but outside the filter's other clauses.
+      stubMatchingIds(const ['late', 'today-a', 'later']);
+
+      final dueToday = await atNow(
+        () => sut.count(open.copyWith(dueFilter: TaskDueFilter.dueToday)),
+      );
+      final overdue = await atNow(
+        () => sut.count(open.copyWith(dueFilter: TaskDueFilter.overdue)),
+      );
+
+      expect(dueToday, 1);
+      expect(overdue, 1);
+      // The SQL COUNT path cannot see the due set, so it is bypassed.
+      verifyNever(
+        () => db.getFilteredTasksCount(
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+        ),
+      );
+    });
+
+    test(
+      'an empty due window short-circuits to 0 without an id fetch',
+      () async {
+        stubDue();
+
+        final c = await atNow(
+          () => sut.count(open.copyWith(dueFilter: TaskDueFilter.overdue)),
+        );
+
+        expect(c, 0);
+        verifyNever(
+          () => db.getFilteredTaskIds(
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+          ),
+        );
+      },
+    );
+
+    test('the due clause composes with the project post-filter', () async {
+      stubDue(overdue: {'t1', 't2'});
+      stubMatchingIds(const ['t1', 't2', 't3']);
+      when(
+        () => db.getTaskIdsForProjects({'proj-1'}),
+      ).thenAnswer((_) async => {'t2', 't3'});
+
+      final c = await atNow(
+        () => sut.count(
+          open.copyWith(
+            dueFilter: TaskDueFilter.overdue,
+            selectedProjectIds: {'proj-1'},
+          ),
+        ),
+      );
+
+      expect(c, 1);
+    });
+
+    group('dueUrgency', () {
+      test('overdue outranks due today', () async {
+        stubDue(overdue: {'late'}, dueToday: {'today'});
+        stubMatchingIds(const ['late', 'today']);
+
+        expect(
+          await atNow(() => sut.dueUrgency(open)),
+          DueDateUrgency.overdue,
+        );
+      });
+
+      test('reads due today when nothing it matches is overdue', () async {
+        // Something is overdue, but not inside this filter.
+        stubDue(overdue: {'elsewhere'}, dueToday: {'today'});
+        stubMatchingIds(const ['today']);
+
+        expect(
+          await atNow(() => sut.dueUrgency(open)),
+          DueDateUrgency.dueToday,
+        );
+      });
+
+      test('reads normal when nothing it matches is due', () async {
+        stubDue(overdue: {'elsewhere'}, dueToday: {'elsewhere-too'});
+        stubMatchingIds(const ['undated']);
+
+        expect(
+          await atNow(() => sut.dueUrgency(open)),
+          DueDateUrgency.normal,
+        );
+      });
+
+      test('a saved Due today view is never marked overdue', () async {
+        stubDue(overdue: {'late'}, dueToday: {'today'});
+        stubMatchingIds(const ['late', 'today']);
+
+        final urgency = await atNow(
+          () =>
+              sut.dueUrgency(open.copyWith(dueFilter: TaskDueFilter.dueToday)),
+        );
+
+        expect(urgency, DueDateUrgency.dueToday);
+        verifyNever(
+          () => db.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.overdue,
+            now: any(named: 'now'),
+          ),
+        );
+      });
+
+      test('a saved Overdue view never falls back to due today', () async {
+        stubDue(dueToday: {'today'});
+        stubMatchingIds(const ['today']);
+
+        final urgency = await atNow(
+          () => sut.dueUrgency(open.copyWith(dueFilter: TaskDueFilter.overdue)),
+        );
+
+        expect(urgency, DueDateUrgency.normal);
+        verifyNever(
+          () => db.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.dueToday,
+            now: any(named: 'now'),
+          ),
+        );
+      });
+    });
   });
 }

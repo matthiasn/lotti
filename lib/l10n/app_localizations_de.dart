@@ -17256,6 +17256,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Heute fällig';
+
+  @override
+  String get tasksDueViewOverdue => 'Überfällig';
+
+  @override
+  String get tasksDueViewsSemantics => 'Ansichten nach Fälligkeit';
+
+  @override
   String get taskSetCategoryLabel => 'Kategorie festlegen';
 
   @override
@@ -17407,6 +17416,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get tasksSavedFilterDragHandleSemantics =>
       'Ziehen, um die Reihenfolge zu ändern';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker => 'Hat heute fällige Aufgaben';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Hat überfällige Aufgaben';
 
   @override
   String get tasksSavedFilterRenameSemantics =>

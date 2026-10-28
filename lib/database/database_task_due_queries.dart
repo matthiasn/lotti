@@ -33,6 +33,44 @@ mixin _JournalDbTaskDueQueries on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
+  /// Ids of the open tasks [filter] admits on [now]'s local day: due today
+  /// for [TaskDueFilter.dueToday], due on an earlier day for
+  /// [TaskDueFilter.overdue].
+  ///
+  /// The task list and the smart-view counts intersect their own predicates
+  /// with this set, so both read due-ness from the same day bounds as
+  /// [getTasksDueOn]. It shares that method's coalesced superset fetch: the
+  /// two smart views resolving in one frame cost one indexed query.
+  Future<Set<String>> getOpenTaskIdsForDueFilter(
+    TaskDueFilter filter, {
+    required DateTime now,
+  }) async {
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    final (DateTime? start, DateTime end) = switch (filter) {
+      TaskDueFilter.dueToday => (startOfDay, endOfDay),
+      TaskDueFilter.overdue => (
+        null,
+        startOfDay.subtract(const Duration(microseconds: 1)),
+      ),
+      TaskDueFilter.all => throw ArgumentError.value(
+        filter,
+        'filter',
+        'has no due-date constraint',
+      ),
+    };
+    final privateStatuses = await _visiblePrivateStatuses();
+    final superset = await _coalesceOpenTasksDueUpTo(endOfDay, privateStatuses);
+    return {
+      for (final task in _filterTasks(
+        superset,
+        startInclusive: start,
+        endInclusive: end,
+      ))
+        task.meta.id,
+    };
+  }
+
   /// Tasks now DONE or REJECTED whose row changed at or after [since] — the
   /// candidates for "closed on a day" (Daily OS Shutdown). Each task's status
   /// history decides when it actually closed; this read only narrows the set

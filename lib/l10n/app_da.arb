@@ -7050,7 +7050,7 @@
       }
     }
   },
-  "taskDueToday": "Indfalder i dag",
+  "taskDueToday": "Forfalder i dag",
   "taskDueTomorrow": "Afleveres i morgen",
   "taskDueYesterday": "Afleveres i går",
   "taskEditTitleLabel": "Rediger opgavetitel",
@@ -7153,7 +7153,7 @@
   "taskMetaPriorityLabel": "Prioritet",
   "taskMetaSheetTitle": "Opgavedetaljer",
   "taskMetaValueNotSet": "Ikke sat",
-  "taskNoDueDateLabel": "Ingen terminsdato",
+  "taskNoDueDateLabel": "Ingen forfaldsdato",
   "taskNoEstimateLabel": "Ingen oversigt",
   "taskOverdueByDays": "Forfalden med {days, plural, =1{1 dag} other{{days} dage}}",
   "@taskOverdueByDays": {
@@ -7176,6 +7176,9 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filtre}}",
   "tasksCompactHeaderExpandHint": "Vis søgning og filtre",
   "tasksCompactSearchContext": "»{query}«",
+  "tasksDueViewDueToday": "Forfalder i dag",
+  "tasksDueViewOverdue": "Forfaldne",
+  "tasksDueViewsSemantics": "Visninger efter forfaldsdato",
   "taskSetCategoryLabel": "Vælg kategori",
   "taskSetDueDateLabel": "Angiv forfaldsdato",
   "taskSetEstimateLabel": "Tilføj estimat",
@@ -7250,6 +7253,8 @@
   "tasksSavedFilterDeleteConfirmTooltip": "Tryk igen for at slette",
   "tasksSavedFilterDeleteTooltip": "Slet gemt filter",
   "tasksSavedFilterDragHandleSemantics": "Træk for at omorganisere",
+  "tasksSavedFilterDueTodayMarker": "Har opgaver, der forfalder i dag",
+  "tasksSavedFilterOverdueMarker": "Har forfaldne opgaver",
   "tasksSavedFilterRenameSemantics": "Omdøb det gemte filter",
   "tasksSavedFiltersAllShort": "Alle",
   "tasksSavedFiltersAllTasks": "Alle opgaver",

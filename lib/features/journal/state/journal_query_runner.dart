@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_database.dart';
@@ -31,6 +32,7 @@ class JournalQueryParams {
     required this.enableHabits,
     required this.enableDashboards,
     required this.enableRelationships,
+    this.dueFilter = TaskDueFilter.all,
   });
 
   final bool showTasks;
@@ -43,6 +45,9 @@ class JournalQueryParams {
   final TaskSortOption sortOption;
   final AgentAssignmentFilter agentAssignmentFilter;
   final Set<DisplayFilter> filters;
+
+  /// The smart-view narrowing (Overdue / Due today); tasks only.
+  final TaskDueFilter dueFilter;
   final String query;
   final bool enableVectorSearch;
   final SearchMode searchMode;
@@ -145,10 +150,17 @@ class JournalQueryRunner {
     );
 
     if (params.showTasks) {
+      final taskIds = await _narrowByDueFilter(ids, params.dueFilter);
+      // An empty restriction matches nothing; the task queries read an empty
+      // id list as "no rows" too, but saying so here skips the round trip.
+      if (taskIds != null && taskIds.isEmpty) {
+        setPostFilterNextRawOffset?.call(null);
+        return const <JournalEntity>[];
+      }
       return _runTaskQuery(
         params,
         pageKey,
-        ids: ids,
+        ids: taskIds,
         starredEntriesOnly: starredEntriesOnly,
         setPostFilterNextRawOffset: setPostFilterNextRawOffset,
       );
@@ -171,6 +183,24 @@ class JournalQueryRunner {
   // ---------------------------------------------------------------
   // Task-specific query
   // ---------------------------------------------------------------
+
+  /// Intersects the full-text [ids] restriction (null when no search is
+  /// active) with the open tasks [dueFilter] admits today. The due set is
+  /// small — open tasks due on or before today — so it rides the same `ids`
+  /// restriction search uses and composes with every other clause and both
+  /// sort paths without a query of its own.
+  Future<List<String>?> _narrowByDueFilter(
+    List<String>? ids,
+    TaskDueFilter dueFilter,
+  ) async {
+    if (dueFilter == TaskDueFilter.all) return ids;
+    final dueIds = await _db.getOpenTaskIdsForDueFilter(
+      dueFilter,
+      now: clock.now(),
+    );
+    if (ids == null) return dueIds.toList();
+    return ids.where(dueIds.contains).toList();
+  }
 
   Future<List<JournalEntity>> _runTaskQuery(
     JournalQueryParams params,

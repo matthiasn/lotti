@@ -1,15 +1,19 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
 /// Computes the number of tasks matching a [TasksFilter].
 ///
-/// In the common case (no project / agent filters) the answer is a single
-/// `COUNT(*)` SQL query via `JournalDb.getFilteredTasksCount`. When project
-/// or agent post-filters are active — predicates that live outside the
-/// journal table — we instead fetch a task-id list at the same predicate set
-/// and intersect with the post-filter id sets. The intersection mirrors the
+/// In the common case (no project / agent / due filters) the answer is a
+/// single `COUNT(*)` SQL query via `JournalDb.getFilteredTasksCount`. When
+/// project, agent or due post-filters are active — predicates that live
+/// outside the journal table's filter columns — we instead fetch a task-id
+/// list at the same predicate set and intersect with the post-filter id sets.
+/// The due set comes from `JournalDb.getOpenTaskIdsForDueFilter`, the same
+/// read the list narrows by. The intersection mirrors the
 /// post-filter loop in `JournalQueryRunner._runPostFilteredTaskQuery`, so
 /// the count agrees with what the live task list shows.
 class SavedTaskFilterCountRepository {
@@ -47,8 +51,17 @@ class SavedTaskFilterCountRepository {
     final hasProjectFilter = filter.selectedProjectIds.isNotEmpty;
     final hasAgentFilter =
         filter.agentAssignmentFilter != AgentAssignmentFilter.all;
+    final dueTaskIds = filter.dueFilter == TaskDueFilter.all
+        ? null
+        : await _db.getOpenTaskIdsForDueFilter(
+            filter.dueFilter,
+            now: clock.now(),
+          );
+    // Nothing open is due in the window, so nothing can match — skip the
+    // id-list fetch entirely. This is the common case for an urgency probe.
+    if (dueTaskIds != null && dueTaskIds.isEmpty) return 0;
 
-    if (!hasProjectFilter && !hasAgentFilter) {
+    if (!hasProjectFilter && !hasAgentFilter && dueTaskIds == null) {
       return _db.getFilteredTasksCount(
         taskStatuses: taskStatuses,
         categoryIds: categoryIds,
@@ -82,6 +95,7 @@ class SavedTaskFilterCountRepository {
 
     var matched = 0;
     for (final id in taskIds) {
+      if (dueTaskIds != null && !dueTaskIds.contains(id)) continue;
       if (projectTaskIds != null && !projectTaskIds.contains(id)) continue;
       if (agentLinkedIds != null) {
         final hasLink = agentLinkedIds.contains(id);
@@ -94,5 +108,25 @@ class SavedTaskFilterCountRepository {
       matched++;
     }
     return matched;
+  }
+
+  /// The most urgent due state among the open tasks [filter] matches:
+  /// [DueDateUrgency.overdue] when any is overdue, else
+  /// [DueDateUrgency.dueToday] when any is due today, else
+  /// [DueDateUrgency.normal].
+  ///
+  /// Honours the filter's own due clause — a saved "Due today" view never
+  /// reads as overdue, since it cannot contain an overdue task — and only
+  /// probes the second window when the first finds nothing.
+  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async {
+    if (filter.dueFilter != TaskDueFilter.dueToday &&
+        await count(filter.copyWith(dueFilter: TaskDueFilter.overdue)) > 0) {
+      return DueDateUrgency.overdue;
+    }
+    if (filter.dueFilter != TaskDueFilter.overdue &&
+        await count(filter.copyWith(dueFilter: TaskDueFilter.dueToday)) > 0) {
+      return DueDateUrgency.dueToday;
+    }
+    return DueDateUrgency.normal;
   }
 }

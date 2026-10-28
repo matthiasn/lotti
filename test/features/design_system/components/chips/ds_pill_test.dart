@@ -299,6 +299,79 @@ void main() {
       expect(decoration.color, accent.withValues(alpha: 0.18));
     });
 
+    testWidgets(
+      'solid variant fills with pillColor at full strength behind '
+      'on-alert ink, in both themes',
+      (tester) async {
+        for (final (pumpTheme, tokens) in [
+          (pump, dsTokensDark),
+          (pumpLight, dsTokensLight),
+        ]) {
+          final fill = tokens.colors.alert.error.defaultColor;
+          await pumpTheme(
+            tester,
+            DsPill(variant: DsPillVariant.solid, label: 'Overdue', color: fill),
+          );
+
+          final decoration =
+              tester
+                      .widgetList<DecoratedBox>(
+                        find.descendant(
+                          of: find.byType(DsPill),
+                          matching: find.byType(DecoratedBox),
+                        ),
+                      )
+                      .first
+                      .decoration
+                  as BoxDecoration;
+          expect(decoration.color, fill);
+          expect(decoration.border, isNull);
+          expect(
+            tester.widget<Text>(find.text('Overdue')).style?.color,
+            tokens.colors.text.onInteractiveAlert,
+          );
+        }
+      },
+    );
+
+    testWidgets('solid + selected keeps its fill and adds the interactive '
+        'border', (tester) async {
+      const fill = Color(0xFFD65E5C);
+      await pump(
+        tester,
+        const DsPill(
+          variant: DsPillVariant.solid,
+          label: 'Overdue',
+          color: fill,
+          selected: true,
+        ),
+      );
+
+      final decoration =
+          tester
+                  .widgetList<DecoratedBox>(
+                    find.descendant(
+                      of: find.byType(DsPill),
+                      matching: find.byType(DecoratedBox),
+                    ),
+                  )
+                  .first
+                  .decoration
+              as BoxDecoration;
+      expect(decoration.color, fill);
+      expect(
+        (decoration.border! as Border).top.color,
+        dsTokensDark.colors.interactive.enabled,
+      );
+    });
+
+    test('solid variant requires a color', () {
+      expect(
+        () => DsPill(variant: DsPillVariant.solid, label: 'x'),
+        throwsAssertionError,
+      );
+    });
+
     testWidgets('outline variant draws a 50% alpha border', (tester) async {
       const accent = Color(0xFF4AB6E8);
       await pump(

@@ -28433,6 +28433,24 @@ abstract class AppLocalizations {
   /// **'“{query}”'**
   String tasksCompactSearchContext(String query);
 
+  /// Smart view above the task list: open tasks due today (never overdue ones).
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get tasksDueViewDueToday;
+
+  /// Smart view above the task list: open tasks whose due date has passed.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get tasksDueViewOverdue;
+
+  /// Screen-reader label for the group of due-date smart views.
+  ///
+  /// In en, this message translates to:
+  /// **'Due date views'**
+  String get tasksDueViewsSemantics;
+
   /// No description provided for @taskSetCategoryLabel.
   ///
   /// In en, this message translates to:
@@ -28690,6 +28708,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to reorder'**
   String get tasksSavedFilterDragHandleSemantics;
+
+  /// Screen-reader text for the orange marker on a saved view that contains tasks due today.
+  ///
+  /// In en, this message translates to:
+  /// **'Has tasks due today'**
+  String get tasksSavedFilterDueTodayMarker;
+
+  /// Screen-reader text for the red marker on a saved view that contains overdue tasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Has overdue tasks'**
+  String get tasksSavedFilterOverdueMarker;
 
   /// No description provided for @tasksSavedFilterRenameSemantics.
   ///

@@ -20,6 +20,7 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -42,6 +43,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
+import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
@@ -51,6 +53,7 @@ import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1185,6 +1188,23 @@ void main() {
   }
 }
 
+/// How many of the world's open tasks are overdue / due today at
+/// [manualDemoNow] — the numbers the smart views above the list show.
+TaskDueViewCounts _manualDueViewCounts(ManualDemoWorld world) {
+  final urgencies = [
+    for (final task in world.taskBrowseTasks)
+      if (task.data.status is! TaskDone && task.data.status is! TaskRejected)
+        getDueDateStatus(
+          dueDate: task.data.due,
+          referenceDate: manualDemoNow,
+        ).urgency,
+  ];
+  return TaskDueViewCounts(
+    overdue: urgencies.where((u) => u == DueDateUrgency.overdue).length,
+    dueToday: urgencies.where((u) => u == DueDateUrgency.dueToday).length,
+  );
+}
+
 Future<void> _pumpTaskSurface(
   WidgetTester tester, {
   required ScreenshotDevice device,
@@ -1261,6 +1281,11 @@ Future<void> _pumpTaskSurface(
             taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(false),
+            ),
+            // The smart views count the world itself, against the same
+            // fixed "now" every capture renders at.
+            taskDueViewCountsProvider.overrideWith(
+              (ref) async => _manualDueViewCounts(world),
             ),
             taskLiveDataProvider.overrideWith(
               (ref, taskId) async => tasksById[taskId],
