@@ -739,6 +739,19 @@ class NavService {
     }
   }
 
+  /// Shows task [taskId] by id, as the one task in view: on desktop the
+  /// detail stack becomes `[taskId]` first, so no linked task pushed above
+  /// an earlier visit stays in the pane — [resetDesktopTaskDetail] keeps
+  /// pushes when the URL's base task is unchanged, so beaming alone would
+  /// not. Then beams to the task's route, bringing the Tasks tab forward.
+  void openTask(String taskId) {
+    if (_isDesktopMode) {
+      desktopTaskDetailStack.value = <String>[taskId];
+      desktopSelectedTaskId.value = taskId;
+    }
+    beamToNamed('/tasks/$taskId');
+  }
+
   /// Push a linked task onto the desktop detail stack so the right pane
   /// shows it without covering the task list pane.
   void pushDesktopTaskDetail(String taskId) {

@@ -16,7 +16,12 @@ import 'package:lotti/services/nav_service.dart';
 ///   front, or a tab coming to the front already standing on a detail route;
 /// - **the desktop detail selection** — the wide layout opens a linked task,
 ///   entry or project in the detail pane without moving the URL, so those
-///   selections are watched too.
+///   selections are watched too. The desktop tasks tab goes **by id
+///   only**: `desktopSelectedTaskId` is the task in view, so its route is
+///   never read there.
+///
+/// What neither signal shows — a linked task pushed on the phone's
+/// navigator — is reported through [recordVisit].
 ///
 /// A delegate or selection in a tab that is *not* in front is ignored: every
 /// tab is mounted at once, and a background tab can move on its own (the
@@ -59,11 +64,7 @@ class HistoryRecorder {
     (
       selection: _nav.desktopSelectedTaskId,
       tab: _nav.tasksDelegate,
-      target: (id) => HistoryTarget(
-        kind: HistoryEntityKind.task,
-        entityId: id,
-        route: '/tasks/$id',
-      ),
+      target: _taskTarget,
     ),
     (
       selection: _nav.desktopSelectedEntryId,
@@ -109,7 +110,10 @@ class HistoryRecorder {
     if (_indexSubscription != null) return;
     for (final delegate in _entityDelegates) {
       void onRouteChanged() {
-        if (_isFront(delegate)) _recordRouteOf(delegate);
+        // On desktop the tasks tab is recorded from its selected id alone,
+        // which follows the route a microtask later.
+        if (_tracksTaskById(delegate)) return;
+        if (_isFront(delegate)) _recordShownBy(delegate);
       }
 
       delegate.addListener(onRouteChanged);
@@ -127,37 +131,39 @@ class HistoryRecorder {
     _indexSubscription = _nav.getIndexStream().listen((index) {
       final delegates = _nav.beamerDelegates;
       if (index < 0 || index >= delegates.length) return;
-      _recordRouteOf(delegates[index]);
+      _recordShownBy(delegates[index]);
     });
   }
+
+  /// Records a visit the navigation service cannot see — a linked task
+  /// pushed onto the phone's navigator, which leaves the URL where it was.
+  Future<void> recordVisit(HistoryTarget target) => _record(target);
 
   bool _isFront(BeamerDelegate delegate) =>
       _nav.beamerDelegates.indexOf(delegate) == _nav.index;
 
-  Future<void> _recordRouteOf(BeamerDelegate delegate) async {
-    final uri = delegate.configuration.uri;
-    final target = historyTargetForRoute(uri.path);
-    if (target != null) await _record(_visibleTask(target) ?? target);
+  /// Whether [delegate]'s tab is recorded by the id of the task in view
+  /// rather than by its route: the desktop tasks tab, whose URL keeps the
+  /// task it was opened at while linked tasks replace it in the pane.
+  /// `desktopSelectedTaskId` is the task actually shown.
+  bool _tracksTaskById(BeamerDelegate delegate) =>
+      _nav.isDesktopMode && identical(delegate, _nav.tasksDelegate);
+
+  Future<void> _recordShownBy(BeamerDelegate delegate) async {
+    final target = _tracksTaskById(delegate)
+        ? switch (_nav.desktopSelectedTaskId.value) {
+            final id? => _taskTarget(id),
+            null => null,
+          }
+        : historyTargetForRoute(delegate.configuration.uri.path);
+    if (target != null) await _record(target);
   }
 
-  /// The linked task actually on screen when [target] is the base of the
-  /// desktop detail stack: the URL stays at the base while linked tasks are
-  /// pushed above it, so the route alone would name a task the user is not
-  /// looking at. Null when the route itself is what shows.
-  ///
-  /// A route that is *not* the stack's base is believed over the stack,
-  /// which `TasksLocation` resets to it only after this listener has run.
-  HistoryTarget? _visibleTask(HistoryTarget target) {
-    if (target.kind != HistoryEntityKind.task) return null;
-    final stack = _nav.desktopTaskDetailStack.value;
-    if (stack.length < 2 || stack.first != target.entityId) return null;
-    final top = stack.last;
-    return HistoryTarget(
-      kind: HistoryEntityKind.task,
-      entityId: top,
-      route: '/tasks/$top',
-    );
-  }
+  static HistoryTarget _taskTarget(String id) => HistoryTarget(
+    kind: HistoryEntityKind.task,
+    entityId: id,
+    route: '/tasks/$id',
+  );
 
   /// Records [target], reporting a failure instead of throwing: every call
   /// starts from a listener nobody awaits, and a lost visit costs only a row.

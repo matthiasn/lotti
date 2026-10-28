@@ -32,9 +32,7 @@ void main() {
     bench = HistoryTestBench();
     navService = MockNavService();
     when(() => navService.beamToNamed(any())).thenReturn(null);
-    when(
-      () => navService.desktopTaskDetailStack,
-    ).thenReturn(ValueNotifier<List<String>>(const []));
+    when(() => navService.openTask(any())).thenReturn(null);
   });
 
   tearDown(() => bench.close());
@@ -130,42 +128,29 @@ void main() {
     await settle(tester);
 
     expect(find.byType(HistoryPage), findsNothing);
-    verify(() => navService.beamToNamed('/tasks/t1')).called(1);
+    // A task is opened by its id, never by beaming its route.
+    verify(() => navService.openTask('t1')).called(1);
+    verifyNever(() => navService.beamToNamed(any()));
   });
 
-  historyTest('reopening a stacked base task pops the linked ones', (
-    tester,
-  ) async {
-    final stack = ValueNotifier<List<String>>(const ['A', 'B', 'C']);
-    when(() => navService.desktopTaskDetailStack).thenReturn(stack);
-    when(navService.popDesktopTaskDetail).thenAnswer((_) {
-      stack.value = stack.value.sublist(0, stack.value.length - 1);
-    });
-    bench.putTask('A', 'Base task');
-    await bench.appendTaskVisit('A', DateTime(2026, 3, 15, 9));
+  historyTest('any other kind beams to its route', (tester) async {
+    bench.entities['p1'] = testTask.copyWith(
+      meta: testTask.meta.copyWith(id: 'p1'),
+      data: testTask.data.copyWith(title: 'Colony launch'),
+    );
+    await bench.db.appendEntry(
+      kind: HistoryEntityKind.project.name,
+      entityId: 'p1',
+      route: '/projects/p1',
+      visitedAt: DateTime(2026, 3, 15, 9),
+    );
     await openHistory(tester);
 
-    await tester.tap(find.text('Base task'));
+    await tester.tap(find.text('Colony launch'));
     await settle(tester);
 
-    expect(stack.value, ['A']);
-    verify(() => navService.beamToNamed('/tasks/A')).called(1);
-  });
-
-  historyTest('a task above the base leaves the stack to its route', (
-    tester,
-  ) async {
-    final stack = ValueNotifier<List<String>>(const ['A', 'B']);
-    when(() => navService.desktopTaskDetailStack).thenReturn(stack);
-    bench.putTask('B', 'Linked task');
-    await bench.appendTaskVisit('B', DateTime(2026, 3, 15, 9));
-    await openHistory(tester);
-
-    await tester.tap(find.text('Linked task'));
-    await settle(tester);
-
-    verifyNever(navService.popDesktopTaskDetail);
-    verify(() => navService.beamToNamed('/tasks/B')).called(1);
+    verify(() => navService.beamToNamed('/projects/p1')).called(1);
+    verifyNever(() => navService.openTask(any()));
   });
 
   historyTest('deleting a row keeps the rows after it in place', (

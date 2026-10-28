@@ -99,12 +99,17 @@ void main() {
     expect(await recorded(), [for (final (_, _, row) in cases) row]);
   });
 
-  test('back on a stacked base route, the visible linked task is '
-      'recorded', () async {
-    // Task A open, linked task B pushed above it: the URL stays at A.
+  test('on desktop the tasks tab goes by the selected id, never the '
+      'route', () async {
+    fixture.desktop = true;
+    // The URL alone records nothing: the selection follows it.
     fixture.tasks.beamToNamed('/tasks/A');
-    fixture.taskStack.value = ['A', 'B'];
+    expect(await recorded(), isEmpty);
+
+    fixture.selectedTask.value = 'A';
+    // A linked task replaces A in the pane; the URL stays at /tasks/A.
     fixture.selectedTask.value = 'B';
+    fixture.journal.beamToNamed('/journal/e1');
     fixture
       ..selectTab(1)
       ..selectTab(0);
@@ -112,14 +117,26 @@ void main() {
     expect(await recorded(), [
       'task:A /tasks/A',
       'task:B /tasks/B',
-      // Coming back to the tab shows B, not A.
+      'entry:e1 /journal/e1',
+      // Back on the tab, B is what is shown.
+      'task:B /tasks/B',
     ]);
   });
 
-  test('a route that is not the stack base is believed', () async {
-    fixture.taskStack.value = ['A', 'B'];
-    fixture.tasks.beamToNamed('/tasks/C');
-    expect(await recorded(), ['task:C /tasks/C']);
+  test(
+    'on desktop a tasks tab with nothing selected records nothing',
+    () async {
+      fixture
+        ..desktop = true
+        ..selectTab(1)
+        ..selectTab(0);
+      expect(await recorded(), isEmpty);
+    },
+  );
+
+  test('recordVisit records what navigation cannot see', () async {
+    await recorder.recordVisit(taskTarget('pushed'));
+    expect(await recorded(), ['task:pushed /tasks/pushed']);
   });
 
   test('the route and the selection for one task make one visit', () async {

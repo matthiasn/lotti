@@ -150,6 +150,7 @@ import 'package:lotti/features/goals/service/goal_mirror_service.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_notifier.dart';
 import 'package:lotti/features/habits/service/habit_auto_completion_service.dart';
+import 'package:lotti/features/history/state/history_recorder.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/service/image_path_migration_service.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -1004,6 +1005,8 @@ class MockNotificationsDb extends Mock implements NotificationsDb {}
 class MockOnboardingMetricsDb extends Mock implements OnboardingMetricsDb {}
 
 class MockHistoryDb extends Mock implements HistoryDb {}
+
+class MockHistoryRecorder extends Mock implements HistoryRecorder {}
 
 class MockDayProcessingDb extends Mock implements DayProcessingDb {}
 

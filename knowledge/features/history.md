@@ -18,7 +18,7 @@ sources:
     last_modified: 2026-10-28
   - id: nav
     resource: ../../lib/services/nav_service.dart
-    title: NavService — tab delegates, desktop selections, tab index stream
+    title: NavService — tab delegates, desktop selections, tab index stream, openTask
     last_modified: 2026-10-28
   - id: shell
     resource: ../../lib/beamer/beamer_app_root_part.dart
@@ -64,12 +64,13 @@ going back from history lands on the entity, not on a form.
   — the wide layout opens a linked task or entry in the detail pane without
   moving the URL.
 
-**The route can name the wrong task on desktop.** Linked tasks are pushed onto
-`desktopTaskDetailStack` without moving the URL, so a tab standing on
-`/tasks/A` may be showing linked task B. When the route is the stack's
-**base**, the recorder records the stack's top instead; a route that is not
-the base is believed, because `TasksLocation` resets the stack to it only
-after the delegate's listeners have run.
+**Tasks go by id.** On desktop the URL keeps the task the tab was opened at
+while linked tasks replace it in the pane, so the desktop tasks tab is
+recorded from `desktopSelectedTaskId` alone — the id of the task in view —
+and its route is never read; `TasksLocation` sets that id from the route a
+microtask after each change. On a phone the route is the task in view, except
+for a linked task, which `openLinkedTaskDetail` pushes on the navigator
+without a URL: it reports that id through `HistoryRecorder.recordVisit`.
 
 **A background tab is ignored.** Every tab stays mounted, and one can move on
 its own — the logbook's newest-entry auto-selection beams within its tab — while
@@ -149,10 +150,11 @@ same dimmed scrim as every other modal. The command is enabled only where
 `historyAvailableProvider` holds, i.e. where a `HistoryDb` is bound; a bare test
 host binds none, records nothing and offers no History.
 
-Tapping a row pops the dialog, then beams to the visit's route. Reopening a
-task that is the base of a deeper desktop stack first pops the linked tasks
-above it: `resetDesktopTaskDetail` keeps pushes on an unchanged base, so the
-beam alone would leave the linked task on screen.
+Tapping a row pops the dialog, then opens the entity. A task is opened **by
+id** with `NavService.openTask`, which on desktop makes the detail stack
+`[id]` before beaming: `resetDesktopTaskDetail` keeps pushes on an unchanged
+base route, so a beam alone could leave a linked task on screen. Every other
+kind beams to its route.
 
 # Storage and lifecycle
 

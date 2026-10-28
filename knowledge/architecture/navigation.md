@@ -339,7 +339,10 @@ stacks on whatever the Tasks tab already held, like every other beam into a
 tab: a Tasks tab parked on `/tasks/A` while the bell is tapped elsewhere walks
 back through A before reaching the list. That is deliberate — a notification
 tap must not discard the tab's history — and `beamBack` always has a step to
-take. `openLinkedTaskDetail` remains what its name says: a linked task layered
+take. To show one task **by id** as the only task in view — the history page
+does — `NavService.openTask` resets the desktop detail stack to that id and
+then beams, so a linked task pushed above an earlier visit does not survive
+the unchanged-base guard. `openLinkedTaskDetail` remains what its name says: a linked task layered
 on top of an *open* task detail, where the base task's own history still gives
 `beamBack` something to pop.
 

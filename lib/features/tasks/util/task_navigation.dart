@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
+import 'package:lotti/features/history/domain/history_entry.dart';
+import 'package:lotti/features/history/state/history_providers.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/task_focus_controller.dart';
@@ -38,6 +40,17 @@ void openLinkedTaskDetail({
     getIt<NavService>().pushDesktopTaskDetail(taskId);
     return;
   }
+  // The push leaves the URL alone, so the history recorder — which follows
+  // routes and the desktop selection — is told the task's id directly.
+  ProviderScope.containerOf(context, listen: false)
+      .read(historyRecorderProvider)
+      ?.recordVisit(
+        HistoryTarget(
+          kind: HistoryEntityKind.task,
+          entityId: taskId,
+          route: '/tasks/$taskId',
+        ),
+      );
   Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (context) => TaskDetailsPage(taskId: taskId),
