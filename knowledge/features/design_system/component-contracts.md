@@ -763,9 +763,10 @@ their integration with the app shell, docked and slid away. The contract:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
   vertical space the bottom stack consumes — the launcher including the
-  bottom safe-area inset it absorbs, plus the height of the activity island
-  currently riding above it, published by the app shell. Zero in the desktop
-  layout; only the island's part while the launcher has slid away.
+  bottom safe-area inset it absorbs, plus whatever of the activity island
+  rises above it, published by the app shell (nothing for one capsule in the
+  row). Zero in the desktop layout; only the island's part while the launcher
+  has slid away.
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay above that shell. **Feature pages should use
   the wrapper rather than inventing local bottom offsets.**
@@ -799,23 +800,22 @@ their integration with the app shell, docked and slid away. The contract:
   `blurred: false` and skips the filter it could not show through.
 - `MobileActivityIsland`
   ([mobile_activity_island.dart](../../../lib/beamer/chrome/mobile_activity_island.dart))
-  is the one capsule that floats above the launcher while a timer or a
-  recording runs. It wears the same `DsGlassChipSurface`, `dsGlassChipFill`
-  and `dsGlassChipBorder` as the launcher chips — one glass dialect, not a
-  third. `capsuleHeight` is `spacing.step8` at the default text size and,
+  sits in the launcher row's `centerBand` while a timer or a recording runs:
+  one capsule per running item, a timer stacked above a recording at one
+  shared width, `stackGap` (`spacing.step2`) apart. Each capsule wears the
+  same `DsGlassChipSurface`, `dsGlassChipFill` and `dsGlassChipBorder` as
+  the launcher chips — one glass dialect, not a third — and is a button end
+  to end. `capsuleHeight` is `spacing.step8` at the default text size and,
   like `MobileNavigationLauncher.chipHeight`, grows with
   `MediaQuery.textScalerOf` (the scaled subtitle2 line inside `spacing.step2`
   of air, rounded up to the logical pixel) so large-text digits are never
-  clipped; `spacing.step3` of air sits below it, and `reservedHeight` is the
-  sum of the two and is what the shell's overlay scope publishes while the
-  island shows. Its two halves are buttons the
-  full capsule height that meet at the hairline and reach the capsule's ends
-  (they carry its insets), and the elapsed digits sit in `subtitle2` with
-  the tabular numeric features so a ticking clock never changes the
-  capsule's width. Under width pressure `bothHalvesFit` measures both times
-  the way the launcher's `labelsFit` measures its labels, and the recording
-  half drops to its orb before anything truncates. The contract for *when*
-  it shows is in
+  clipped. `dockedBottom` centres the lowest capsule on the row, so a stack
+  grows upward; `heightAboveBar` is what of it rises above the bar, which
+  the shell's overlay scope publishes. `width` measures the widest capsule
+  on a fixed `00:00:00` — the elapsed digits sit in `subtitle2` with the
+  tabular numeric features, so a ticking clock never changes it — and the
+  shell hands it to the launcher as `reservedCenterWidth`. The contract for
+  *when* it shows is in
   [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides whether a
   worded action keeps its word, budgeting the menu button's one `chipHeight`
@@ -830,7 +830,11 @@ their integration with the app shell, docked and slid away. The contract:
   `+` beside a list still reads as "add". It is consulted
   only for a `MobileNavDockAction.worded` action — the two constructors carry
   the page's own decision about wording, the same one its floating button
-  made, and a `.glyph` action is a `DsGlassRoundButton` at every width.
+  made, and a `.glyph` action is a `DsGlassRoundButton` at every width. A
+  non-zero `reservedCenterWidth` (the activity island) and one more
+  `chipGap` join the budget, so the word gives way before the island is
+  squeezed; `centerBand(context)` is the stretch between the leading chips
+  and the action, one `chipGap` clear of each, where the shell centres it.
 
 `DsGlassRoundButton` has two further rules. **`DsGlassRoundButton.glyph` takes
 a widget where the icon font has no matching mark** — the mobile launcher's

@@ -6,14 +6,15 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// The mobile shell (`lib/beamer/beamer_app.dart`) floats the
 /// [MobileNavigationLauncher] over each tab's page stack as an app-level
-/// overlay — not a `Scaffold.bottomNavigationBar` — and the activity island
-/// (running timer / recording) above it. Pages therefore reserve room for
+/// overlay — not a `Scaffold.bottomNavigationBar` — with the activity island
+/// (running timer / recording) in its row, stacking upward when both run.
+/// Pages therefore reserve room for
 /// that bottom stack themselves, through [occupiedHeight] directly or via
 /// [DesignSystemBottomNavigationFabPadding].
 abstract final class DesignSystemBottomNavigationBar {
   /// Vertical screen estate the docked bottom stack occupies: the launcher
   /// (including the bottom safe-area inset it absorbs into its padding) plus
-  /// the estate the shell-owned activity island claims above it, published
+  /// whatever of the shell-owned activity island rises above it, published
   /// via [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
   /// behind the launcher pads by this amount.
   static double occupiedHeight(BuildContext context) {
@@ -34,7 +35,7 @@ abstract final class DesignSystemBottomNavigationBar {
 /// Publishes the estate the shell-owned activity island (running timer /
 /// recording) claims above the launcher to the page stack. The app shell
 /// wraps the pages with this scope and updates [height] as the island
-/// appears and disappears, so
+/// appears, stacks and disappears, so
 /// [DesignSystemBottomNavigationBar.occupiedHeight] — and everything padding
 /// by it — matches the full rendered bottom stack, not just the launcher.
 class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
@@ -45,7 +46,8 @@ class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
     super.key,
   });
 
-  /// Estate the island claims above the launcher; 0 while it is not visible.
+  /// Estate the island claims above the launcher; 0 while nothing of it rises
+  /// above the launcher's row.
   final double height;
 
   /// Whether the launcher itself is docked at the bottom edge.

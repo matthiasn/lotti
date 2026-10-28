@@ -25,6 +25,7 @@ import 'package:lotti/providers/task_focus_controller.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' show Amplitude;
@@ -217,23 +218,24 @@ void main() {
     await tester.pump();
   }
 
-  Finder capsule() => find.byKey(MobileActivityIsland.capsuleKey);
-  Finder timerHalf() => find.byKey(MobileActivityIsland.timerKey);
-  Finder recordingHalf() => find.byKey(MobileActivityIsland.recordingKey);
-  Finder divider() => find.byKey(MobileActivityIsland.dividerKey);
+  Finder island() => find.byKey(MobileActivityIsland.islandKey);
+  Finder timerCapsule() => find.byKey(MobileActivityIsland.timerKey);
+  Finder recordingCapsule() => find.byKey(MobileActivityIsland.recordingKey);
+
+  /// The glass pill inside [capsule]: the container carrying the chip fill
+  /// and the hairline outline.
+  Finder glassOf(Finder capsule) => find.descendant(
+    of: capsule,
+    matching: find.byWidgetPredicate(
+      (w) => w is Container && w.foregroundDecoration != null,
+    ),
+  );
 
   DsTokens tokensOf(WidgetTester tester) =>
       tester.element(find.byType(MobileActivityIsland)).designTokens;
 
   BuildContext islandContext(WidgetTester tester) =>
       tester.element(find.byType(MobileActivityIsland));
-
-  /// A narrow phone at the largest accessibility text scale — the case
-  /// where two elapsed times stop sharing one capsule.
-  const narrowLargeText = MediaQueryData(
-    size: Size(320, 700),
-    textScaler: TextScaler.linear(3),
-  );
 
   group('showsRecording', () {
     test('a live recording with its modal closed counts', () {
@@ -298,7 +300,7 @@ void main() {
         state: recorder(status: AudioRecorderStatus.stopped),
       );
 
-      expect(capsule(), findsNothing);
+      expect(island(), findsNothing);
       expect(find.byType(DsGlassChipSurface), findsNothing);
     });
 
@@ -309,7 +311,7 @@ void main() {
       // waited for the stream's next tick, a second of nothing.
       await pumpIsland(tester, timer: timerEntry());
 
-      expect(capsule(), findsOneWidget);
+      expect(timerCapsule(), findsOneWidget);
       expect(find.text('00:12:34'), findsOneWidget);
     });
 
@@ -317,13 +319,13 @@ void main() {
       tester,
     ) async {
       await pumpIsland(tester);
-      expect(capsule(), findsNothing);
+      expect(island(), findsNothing);
 
       await emitTimer(tester, timerEntry());
-      expect(capsule(), findsOneWidget);
+      expect(island(), findsOneWidget);
 
       await emitTimer(tester, null);
-      expect(capsule(), findsNothing);
+      expect(island(), findsNothing);
     });
 
     testWidgets('a recording with its modal open is not shown', (
@@ -331,7 +333,7 @@ void main() {
     ) async {
       await pumpIsland(tester, state: recorder(modalVisible: true));
 
-      expect(capsule(), findsNothing);
+      expect(island(), findsNothing);
     });
 
     testWidgets('a paused session stays on the island with its elapsed time', (
@@ -342,16 +344,16 @@ void main() {
         state: recorder(status: AudioRecorderStatus.paused),
       );
 
-      expect(recordingHalf(), findsOneWidget);
+      expect(recordingCapsule(), findsOneWidget);
       expect(find.text('00:03:12'), findsOneWidget);
     });
 
-    testWidgets('a build that omits audio drops only the recording half', (
+    testWidgets('a build that omits audio drops only the recording capsule', (
       tester,
     ) async {
       await pumpIsland(tester, state: recorder(), omitAudio: true);
       expect(
-        capsule(),
+        island(),
         findsNothing,
         reason: 'a recording alone has nothing left to show',
       );
@@ -362,9 +364,9 @@ void main() {
         timer: timerEntry(),
         omitAudio: true,
       );
-      expect(timerHalf(), findsOneWidget);
-      expect(recordingHalf(), findsNothing);
-      expect(divider(), findsNothing);
+      expect(timerCapsule(), findsOneWidget);
+      expect(recordingCapsule(), findsNothing);
+      expect(find.byType(DsGlassChipSurface), findsOneWidget);
     });
 
     testWidgets('a broken recorder backend never takes the timer down', (
@@ -376,8 +378,8 @@ void main() {
         controller: _BrokenAudioRecorderController.new,
       );
 
-      expect(timerHalf(), findsOneWidget);
-      expect(recordingHalf(), findsNothing);
+      expect(timerCapsule(), findsOneWidget);
+      expect(recordingCapsule(), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });
@@ -391,16 +393,19 @@ void main() {
 
       expect(find.text('00:12:34'), findsOneWidget);
       expect(find.byType(AudioRecordingOrb), findsNothing);
-      expect(recordingHalf(), findsNothing);
-      expect(divider(), findsNothing);
+      expect(recordingCapsule(), findsNothing);
 
       final dot = tester.widget<Container>(
-        find
-            .descendant(of: timerHalf(), matching: find.byType(Container))
-            .first,
+        find.descendant(
+          of: timerCapsule(),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                (w.decoration as BoxDecoration?)?.shape == BoxShape.circle,
+          ),
+        ),
       );
       final decoration = dot.decoration! as BoxDecoration;
-      expect(decoration.shape, BoxShape.circle);
       expect(decoration.color, tokens.colors.alert.error.defaultColor);
       expect(tester.getSize(find.byWidget(dot)).width, tokens.spacing.step4);
     });
@@ -412,8 +417,7 @@ void main() {
       final tokens = tokensOf(tester);
 
       expect(find.text('00:03:12'), findsOneWidget);
-      expect(timerHalf(), findsNothing);
-      expect(divider(), findsNothing);
+      expect(timerCapsule(), findsNothing);
       final orb = tester.widget<AudioRecordingOrb>(
         find.byType(AudioRecordingOrb),
       );
@@ -421,31 +425,29 @@ void main() {
       expect(orb.size, tokens.spacing.step6);
     });
 
-    testWidgets('both: the timer leads, a hairline, then the recording', (
+    testWidgets('both: the timer stacks above the recording, one gap apart', (
       tester,
     ) async {
       await pumpIsland(tester, state: recorder(), timer: timerEntry());
       final tokens = tokensOf(tester);
 
-      expect(capsule(), findsOneWidget);
-      expect(divider(), findsOneWidget);
-      final timerX = tester.getTopLeft(timerHalf()).dx;
-      final dividerX = tester.getTopLeft(divider()).dx;
-      final recordingX = tester.getTopLeft(recordingHalf()).dx;
-      expect(timerX, lessThan(dividerX));
-      expect(dividerX, lessThan(recordingX));
-
-      final rule = tester.getSize(divider());
-      expect(rule.width, BorderWidths.hairline);
-      expect(rule.height, tokens.spacing.step5);
+      final timerRect = tester.getRect(timerCapsule());
+      final recordingRect = tester.getRect(recordingCapsule());
+      expect(timerRect.bottom, lessThan(recordingRect.top));
+      expect(recordingRect.top - timerRect.bottom, tokens.spacing.step2);
+      // One column, not two ragged pills: the same width, the same centre.
+      expect(timerRect.width, recordingRect.width);
+      expect(timerRect.center.dx, recordingRect.center.dx);
       expect(
-        tester
-            .widget<ColoredBox>(
-              find.descendant(of: divider(), matching: find.byType(ColoredBox)),
-            )
-            .color,
-        tokens.colors.decorative.level01,
+        tester.getSize(island()).height,
+        MobileActivityIsland.stackHeight(
+          islandContext(tester),
+          const MobileActivity(timer: true, recording: true),
+        ),
       );
+      // Both clocks keep their digits.
+      expect(find.text('00:12:34'), findsOneWidget);
+      expect(find.text('00:03:12'), findsOneWidget);
     });
 
     testWidgets('elapsed digits are tabular so the capsule never twitches', (
@@ -487,7 +489,7 @@ void main() {
       final tokens = tokensOf(tester);
       final radius = BorderRadius.circular(tokens.radii.badgesPills);
 
-      final container = tester.widget<Container>(capsule());
+      final container = tester.widget<Container>(glassOf(timerCapsule()));
       final fill = container.decoration! as BoxDecoration;
       expect(fill.color, dsGlassChipFill(tokens));
       expect(fill.borderRadius, radius);
@@ -511,7 +513,7 @@ void main() {
         theme: DesignSystemTheme.light(),
       );
       final tokens = tokensOf(tester);
-      final container = tester.widget<Container>(capsule());
+      final container = tester.widget<Container>(glassOf(timerCapsule()));
       expect(
         (container.decoration! as BoxDecoration).color,
         dsGlassChipFill(tokens),
@@ -522,51 +524,20 @@ void main() {
       );
     });
 
-    testWidgets('is one capsule height tall and each half fills it', (
-      tester,
-    ) async {
+    testWidgets('each capsule is one capsule height tall and a target '
+        'end to end', (tester) async {
       await pumpIsland(tester, state: recorder(), timer: timerEntry());
       final tokens = tokensOf(tester);
 
-      expect(tester.getSize(capsule()).height, tokens.spacing.step8);
       expect(
-        MobileActivityIsland.capsuleHeight(
-          tester.element(find.byType(MobileActivityIsland)),
-        ),
+        MobileActivityIsland.capsuleHeight(islandContext(tester)),
         tokens.spacing.step8,
       );
-      // Stretched halves: the tap target is the capsule's height, not the
-      // text line inside it.
-      expect(tester.getSize(timerHalf()).height, tokens.spacing.step8);
-      expect(tester.getSize(recordingHalf()).height, tokens.spacing.step8);
-    });
-
-    testWidgets('the halves meet at the hairline and reach both ends', (
-      tester,
-    ) async {
-      await pumpIsland(tester, state: recorder(), timer: timerEntry());
-
-      // The capsule's insets and the air around the rule belong to the
-      // halves, so a tap anywhere on the pill lands on one of them.
-      final pill = tester.getRect(capsule());
-      final timerRect = tester.getRect(timerHalf());
-      final ruleRect = tester.getRect(divider());
-      final recordingRect = tester.getRect(recordingHalf());
-      expect(timerRect.left, moreOrLessEquals(pill.left, epsilon: 0.5));
-      expect(timerRect.right, moreOrLessEquals(ruleRect.left, epsilon: 0.5));
-      expect(
-        recordingRect.left,
-        moreOrLessEquals(ruleRect.right, epsilon: 0.5),
-      );
-      expect(recordingRect.right, moreOrLessEquals(pill.right, epsilon: 0.5));
-    });
-
-    testWidgets('a lone half spans the whole pill', (tester) async {
-      await pumpIsland(tester, timer: timerEntry());
-      expect(tester.getRect(timerHalf()), tester.getRect(capsule()));
-
-      await pumpIsland(tester, state: recorder());
-      expect(tester.getRect(recordingHalf()), tester.getRect(capsule()));
+      for (final capsule in [timerCapsule(), recordingCapsule()]) {
+        // The button is the whole glass pill, not the text line inside it.
+        expect(tester.getRect(capsule), tester.getRect(glassOf(capsule)));
+        expect(tester.getSize(capsule).height, tokens.spacing.step8);
+      }
     });
 
     testWidgets(
@@ -574,41 +545,35 @@ void main() {
       (
         tester,
       ) async {
-        // A window wide enough that width pressure plays no part (at 3× two
-        // elapsed times outgrow even a large phone), so only the height is
-        // under test. At 3× the subtitle2 line is 60 px — half again the
-        // default capsule — and the launcher beside it grows the same way.
-        const wideLargeText = MediaQueryData(
-          size: Size(900, 932),
+        // At 3× the subtitle2 line is 60 px — half again the default
+        // capsule — and the launcher beside it grows the same way.
+        const largeText = MediaQueryData(
+          size: Size(390, 932),
           textScaler: TextScaler.linear(3),
         );
         await pumpIsland(
           tester,
           state: recorder(),
           timer: timerEntry(),
-          mediaQueryData: wideLargeText,
+          mediaQueryData: largeText,
         );
         final context = islandContext(tester);
         final tokens = context.designTokens;
 
         final expected =
-            wideLargeText.textScaler
+            largeText.textScaler
                 .scale(tokens.typography.lineHeight.subtitle2)
                 .ceilToDouble() +
             tokens.spacing.step2 * 2;
         expect(expected, greaterThan(tokens.spacing.step8));
         expect(MobileActivityIsland.capsuleHeight(context), expected);
-        expect(tester.getSize(capsule()).height, expected);
-        // The reserved estate follows the grown capsule, so pages still pad
-        // by exactly what renders.
-        expect(
-          MobileActivityIsland.reservedHeight(context),
-          expected + tokens.spacing.step3,
-        );
-        // And the digits sit fully inside the pill — nothing for the clip to
-        // cut.
-        final pill = tester.getRect(capsule());
-        for (final digits in ['00:12:34', '00:03:12']) {
+        for (final (capsule, digits) in [
+          (timerCapsule(), '00:12:34'),
+          (recordingCapsule(), '00:03:12'),
+        ]) {
+          final pill = tester.getRect(capsule);
+          expect(pill.height, expected, reason: digits);
+          // The digits sit fully inside the pill — nothing for a clip to cut.
           final rect = tester.getRect(find.text(digits));
           expect(rect.top, greaterThanOrEqualTo(pill.top), reason: digits);
           expect(rect.bottom, lessThanOrEqualTo(pill.bottom), reason: digits);
@@ -620,129 +585,20 @@ void main() {
     testWidgets('sits centred in the width it is given', (tester) async {
       await pumpIsland(tester, timer: timerEntry());
 
-      final island = tester.getRect(find.byType(MobileActivityIsland));
+      final host = tester.getRect(find.byType(MobileActivityIsland));
       expect(
-        tester.getCenter(capsule()).dx,
-        moreOrLessEquals(island.center.dx, epsilon: 0.5),
+        tester.getCenter(island()).dx,
+        moreOrLessEquals(host.center.dx, epsilon: 0.5),
       );
-    });
-
-    testWidgets('reserves its height plus the gap it keeps above the bar', (
-      tester,
-    ) async {
-      await pumpIsland(tester, timer: timerEntry());
-      final context = tester.element(find.byType(MobileActivityIsland));
-      final tokens = context.designTokens;
-
-      expect(
-        MobileActivityIsland.gapAboveBar(context),
-        tokens.spacing.step3,
-      );
-      expect(
-        MobileActivityIsland.reservedHeight(context),
-        tokens.spacing.step8 + tokens.spacing.step3,
-      );
-    });
-  });
-
-  group('width pressure', () {
-    testWidgets('both halves fit with their digits at the default scale', (
-      tester,
-    ) async {
-      await pumpIsland(tester, state: recorder(), timer: timerEntry());
-
-      expect(
-        MobileActivityIsland.bothHalvesFit(
-          islandContext(tester),
-          timerElapsed: '00:12:34',
-          recordingElapsed: '00:03:12',
-        ),
-        isTrue,
-      );
-      expect(find.text('00:12:34'), findsOneWidget);
-      expect(find.text('00:03:12'), findsOneWidget);
-      expect(tester.takeException(), isNull);
     });
 
     testWidgets(
-      'large text on a narrow phone drops the recording to its orb and '
-      'keeps the timer digits',
-      (tester) async {
-        await pumpIsland(
-          tester,
-          state: recorder(),
-          timer: timerEntry(),
-          mediaQueryData: narrowLargeText,
-        );
-
-        expect(
-          MobileActivityIsland.bothHalvesFit(
-            islandContext(tester),
-            timerElapsed: '00:12:34',
-            recordingElapsed: '00:03:12',
-          ),
-          isFalse,
-        );
-        // The timer's digits are the payload with no glyph-only reading;
-        // the orb still says "live" on its own.
-        expect(find.text('00:12:34'), findsOneWidget);
-        expect(find.text('00:03:12'), findsNothing);
-        expect(find.byType(AudioRecordingOrb), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        expect(
-          tester.getRect(capsule()).width,
-          lessThanOrEqualTo(narrowLargeText.size.width),
-        );
-      },
-    );
-
-    testWidgets('a recording without its digits still announces its time', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      try {
-        await pumpIsland(
-          tester,
-          state: recorder(),
-          timer: timerEntry(),
-          mediaQueryData: narrowLargeText,
-        );
-        expect(
-          tester.getSemantics(recordingHalf()).getSemanticsData().label,
-          'Audio recording in progress, 00:03:12',
-        );
-      } finally {
-        handle.dispose();
-      }
-    });
-
-    testWidgets('a lone half never gives up its digits', (tester) async {
-      await pumpIsland(
-        tester,
-        state: recorder(),
-        mediaQueryData: narrowLargeText,
-      );
-      expect(find.text('00:03:12'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      await pumpIsland(
-        tester,
-        timer: timerEntry(),
-        mediaQueryData: narrowLargeText,
-      );
-      expect(find.text('00:12:34'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets(
-      'where even the degraded content cannot fit, it shrinks rather than '
+      'where even one elapsed time cannot fit, it shrinks rather than '
       'clips a digit',
       (tester) async {
-        // Narrower than any phone the app targets, at the largest scale: the
-        // measured rule has already given everything it can, so the last
-        // resort has to hold on its own.
+        // Narrower than any phone the app targets, at the largest scale.
         const impossible = MediaQueryData(
-          size: Size(200, 600),
+          size: Size(120, 600),
           textScaler: TextScaler.linear(3),
         );
         await pumpIsland(
@@ -754,28 +610,172 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.text('00:12:34'), findsOneWidget);
+        expect(find.text('00:03:12'), findsOneWidget);
         expect(
-          tester.getRect(capsule()).width,
+          tester.getRect(timerCapsule()).width,
           lessThanOrEqualTo(impossible.size.width),
         );
-        // Shrunk, not cut: the digits' painted box is narrower than their
-        // natural width, which is what "never truncate a number" buys here.
+        expect(
+          MobileActivityIsland.width(
+            islandContext(tester),
+            const MobileActivity(timer: true, recording: false),
+          ),
+          greaterThan(impossible.size.width),
+          reason: 'the content really is wider than the window',
+        );
+        // Shrunk, not cut.
         final fitted = tester.widget<FittedBox>(
-          find.descendant(of: capsule(), matching: find.byType(FittedBox)),
+          find
+              .descendant(of: timerCapsule(), matching: find.byType(FittedBox))
+              .first,
         );
         expect(fitted.fit, BoxFit.scaleDown);
       },
     );
   });
 
-  group('the timer half', () {
+  group('geometry', () {
+    const both = MobileActivity(timer: true, recording: true);
+    const timerOnly = MobileActivity(timer: true, recording: false);
+    const recordingOnly = MobileActivity(timer: false, recording: true);
+
+    testWidgets('stack height is the capsules plus the gaps between them', (
+      tester,
+    ) async {
+      await pumpIsland(tester, timer: timerEntry());
+      final context = islandContext(tester);
+      final tokens = context.designTokens;
+
+      expect(MobileActivityIsland.stackHeight(context, MobileActivity.none), 0);
+      expect(
+        MobileActivityIsland.stackHeight(context, timerOnly),
+        tokens.spacing.step8,
+      );
+      expect(
+        MobileActivityIsland.stackHeight(context, both),
+        tokens.spacing.step8 * 2 + tokens.spacing.step2,
+      );
+    });
+
+    testWidgets('docked, the lowest capsule is centred on the launcher row', (
+      tester,
+    ) async {
+      await pumpIsland(tester, timer: timerEntry());
+      final context = islandContext(tester);
+      final chip = MobileNavigationLauncher.chipHeight(context);
+      final capsule = MobileActivityIsland.capsuleHeight(context);
+
+      final bottom = MobileActivityIsland.dockedBottom(context);
+      final rowBottom = MobileNavigationLauncher.rowBottom(context);
+      // Same centre line as the chips: equal air above and below.
+      expect(bottom - rowBottom, (chip - capsule) / 2);
+      expect(bottom + capsule / 2, rowBottom + chip / 2);
+    });
+
+    testWidgets('docked, one capsule claims nothing above the bar and a '
+        'stack claims only what rises above it', (tester) async {
+      await pumpIsland(tester, timer: timerEntry());
+      final context = islandContext(tester);
+
+      expect(
+        MobileActivityIsland.heightAboveBar(
+          context,
+          MobileActivity.none,
+          barDocked: true,
+        ),
+        0,
+      );
+      expect(
+        MobileActivityIsland.heightAboveBar(
+          context,
+          timerOnly,
+          barDocked: true,
+        ),
+        0,
+      );
+      final stackTop =
+          MobileActivityIsland.dockedBottom(context) +
+          MobileActivityIsland.stackHeight(context, both);
+      final above = MobileActivityIsland.heightAboveBar(
+        context,
+        both,
+        barDocked: true,
+      );
+      expect(above, greaterThan(0));
+      expect(above, stackTop - MobileNavigationLauncher.barHeight(context));
+    });
+
+    testWidgets('slid away, the whole stack and its edge gap count', (
+      tester,
+    ) async {
+      await pumpIsland(tester, timer: timerEntry());
+      final context = islandContext(tester);
+      final tokens = context.designTokens;
+
+      expect(MobileActivityIsland.gapAboveEdge(context), tokens.spacing.step3);
+      expect(
+        MobileActivityIsland.heightAboveBar(
+          context,
+          both,
+          barDocked: false,
+        ),
+        MobileActivityIsland.stackHeight(context, both) + tokens.spacing.step3,
+      );
+      expect(
+        MobileActivityIsland.heightAboveBar(
+          context,
+          MobileActivity.none,
+          barDocked: false,
+        ),
+        0,
+      );
+    });
+
+    testWidgets('width matches the widest capsule as it renders', (
+      tester,
+    ) async {
+      await pumpIsland(tester, state: recorder(), timer: timerEntry());
+      final context = islandContext(tester);
+
+      expect(MobileActivityIsland.width(context, MobileActivity.none), 0);
+      // The orb is wider than the dot, so the recording sets the stack's
+      // width, and the reserve is exactly what paints.
+      expect(
+        MobileActivityIsland.width(context, recordingOnly),
+        greaterThan(MobileActivityIsland.width(context, timerOnly)),
+      );
+      expect(
+        MobileActivityIsland.width(context, both),
+        moreOrLessEquals(tester.getSize(island()).width, epsilon: 0.5),
+      );
+
+      await pumpIsland(tester, timer: timerEntry());
+      expect(
+        MobileActivityIsland.width(islandContext(tester), timerOnly),
+        moreOrLessEquals(tester.getSize(island()).width, epsilon: 0.5),
+      );
+    });
+
+    test('activities compare by what runs', () {
+      expect(
+        const MobileActivity(timer: true, recording: false),
+        timerOnly,
+      );
+      expect(timerOnly.hashCode, isNot(recordingOnly.hashCode));
+      expect(timerOnly, isNot(recordingOnly));
+      expect(MobileActivity.none.isEmpty, isTrue);
+      expect(both.count, 2);
+    });
+  });
+
+  group('the timer capsule', () {
     testWidgets('is a button that names itself and its elapsed time', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       try {
         await pumpIsland(tester, timer: timerEntry());
-        final data = tester.getSemantics(timerHalf()).getSemanticsData();
+        final data = tester.getSemantics(timerCapsule()).getSemanticsData();
         expect(data.label, 'Running timer, 00:12:34');
         expect(data.hint, 'Open running timer');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
@@ -790,7 +790,7 @@ void main() {
       final entry = timerEntry(id: 'entry-456');
       await pumpIsland(tester, timer: entry, linkedFrom: task('task-123'));
 
-      await tester.tap(timerHalf());
+      await tester.tap(timerCapsule());
       await tester.pump();
 
       final container = ProviderScope.containerOf(
@@ -814,7 +814,7 @@ void main() {
         linkedFrom: timerEntry(id: 'journal-1'),
       );
 
-      await tester.tap(timerHalf());
+      await tester.tap(timerCapsule());
       await tester.pump();
 
       verify(
@@ -828,7 +828,7 @@ void main() {
     testWidgets('an unlinked timer opens its own entry', (tester) async {
       await pumpIsland(tester, timer: timerEntry(id: 'timer-9'));
 
-      await tester.tap(timerHalf());
+      await tester.tap(timerCapsule());
       await tester.pump();
 
       verify(
@@ -840,12 +840,12 @@ void main() {
     });
   });
 
-  group('the recording half', () {
+  group('the recording capsule', () {
     testWidgets('is a button announcing the recording', (tester) async {
       final handle = tester.ensureSemantics();
       try {
         await pumpIsland(tester, state: recorder());
-        final data = tester.getSemantics(recordingHalf()).getSemanticsData();
+        final data = tester.getSemantics(recordingCapsule()).getSemanticsData();
         expect(data.label, 'Audio recording in progress, 00:03:12');
         expect(data.hasAction(SemanticsAction.tap), isTrue);
       } finally {
@@ -856,7 +856,7 @@ void main() {
     testWidgets('tapping it reopens the recording modal', (tester) async {
       await pumpIsland(tester, state: recorder());
 
-      await tester.tap(recordingHalf());
+      await tester.tap(recordingCapsule());
       // Bounded pumps: the sheet animates in and its orb never settles.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -901,7 +901,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(recordingHalf());
+      await tester.tap(recordingCapsule());
       // Bounded pumps: the sheet animates in and its orb never settles.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -930,7 +930,7 @@ void main() {
           ],
         );
 
-        await tester.tap(recordingHalf());
+        await tester.tap(recordingCapsule());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         // Nothing yet: opening now would hand the modal a null category and
@@ -976,7 +976,7 @@ void main() {
             ).overrideWith(() => _PendingEntryController(completer)),
           ],
         );
-        await tester.tap(recordingHalf());
+        await tester.tap(recordingCapsule());
         await tester.pump();
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -1016,9 +1016,9 @@ void main() {
 
         // Both taps land while the entry is still loading, so both reopen
         // calls are waiting when it arrives.
-        await tester.tap(recordingHalf());
+        await tester.tap(recordingCapsule());
         await tester.pump();
-        await tester.tap(recordingHalf());
+        await tester.tap(recordingCapsule());
         await tester.pump();
 
         completer.complete(
@@ -1051,7 +1051,7 @@ void main() {
       final handle = tester.ensureSemantics();
       try {
         await pumpIsland(tester, state: recorder());
-        final node = tester.getSemantics(recordingHalf());
+        final node = tester.getSemantics(recordingCapsule());
         // The binding's own pipeline owner: the root owner has no semantics
         // owner in widget tests.
         // ignore: deprecated_member_use
@@ -1083,7 +1083,7 @@ void main() {
           ],
         );
 
-        await tester.tap(recordingHalf());
+        await tester.tap(recordingCapsule());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 

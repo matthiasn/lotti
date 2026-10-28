@@ -302,8 +302,6 @@ extension _AppScreenLayout on _AppScreenState {
               navService.relationshipsDelegate.currentBeamLocation,
             ));
 
-    final launcherHeight = MobileNavigationLauncher.barHeight(context);
-
     // The launcher's row: the menu button that slides the sidebar in and,
     // on the list tabs that hand one over, the active page's create action.
     // Built lazily: on routes that suppress the bar entirely it is never
@@ -312,71 +310,99 @@ extension _AppScreenLayout on _AppScreenState {
     final frontChatOn =
         (ref.watch(configFlagProvider(enableFrontAgentFlag)).value ?? false) &&
         !ref.watch(lockdownControllerProvider).isActive;
-    Widget buildLauncher() => MobileNavigationLauncher(
-      onOpenMenu: _mobileDrawer.open,
-      utilityAction: frontChatOn
-          ? MobileNavDockAction.glyph(
-              label: context.messages.frontChatOpen,
-              icon: LottiIcons.assistant,
-              onPressed: () => showFrontChatSheet(context),
-            )
-          : null,
-      pageAction: _launcherDockAction(context, destinations[index].kind),
-    );
+    MobileNavigationLauncher buildLauncher(double reservedCenterWidth) =>
+        MobileNavigationLauncher(
+          onOpenMenu: _mobileDrawer.open,
+          utilityAction: frontChatOn
+              ? MobileNavDockAction.glyph(
+                  label: context.messages.frontChatOpen,
+                  icon: LottiIcons.assistant,
+                  onPressed: () => showFrontChatSheet(context),
+                )
+              : null,
+          pageAction: _launcherDockAction(context, destinations[index].kind),
+          reservedCenterWidth: reservedCenterWidth,
+        );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final barDocked = showBottomNav && !slideNavAway;
 
-    final body = Stack(
-      children: [
-        const IncomingVerificationWrapper(),
-        // The scope keeps `occupiedHeight` (and every page padding by it)
-        // in sync with the activity island floating above the bar, so the
-        // island never covers scroll content or floating actions.
-        _MobileNavOverlayHeightScope(
-          navBarVisible: showBottomNav,
-          // A slid-away bar reserves nothing: the goal agent pages, project
-          // details and settings details dock their own pinned surfaces at
-          // the bottom edge and must not pad around a bar that is gone.
-          barDocked: showBottomNav && !slideNavAway,
-          child: _buildContentStack(
-            index: index,
-            beamerChildren: beamerChildren,
-          ),
-        ),
-        if (showBottomNav) ...[
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _SlideAwayBottomNav(
-              hidden: slideNavAway,
-              child: buildLauncher(),
+    // One watcher of the running timer and recorder drives the launcher's
+    // reserved centre, the island's place in the row and the estate pages
+    // pad by, so the three can never disagree. The page stack is built
+    // once outside it and passed through, so a timer tick does not rebuild
+    // it.
+    final body = MobileActivityBuilder(
+      // The recording capsule is omitted on Flatpak builds (MediaKit
+      // compatibility issues).
+      omitAudio: _isRunningInFlatpak(),
+      child: _buildContentStack(index: index, beamerChildren: beamerChildren),
+      builder: (context, activity, content) {
+        final launcher = buildLauncher(
+          showBottomNav && !activity.isEmpty
+              ? MobileActivityIsland.width(context, activity)
+              : 0,
+        );
+        // Docked, the island sits in the launcher row's centre band, the
+        // lowest capsule level with the chips and any second one stacked
+        // above it; slid away, it centres over the bottom safe-area edge.
+        final band = barDocked
+            ? launcher.centerBand(context)
+            : EdgeInsetsDirectional.zero;
+        return Stack(
+          children: [
+            const IncomingVerificationWrapper(),
+            // Keeps `occupiedHeight` (and every page padding by it) in sync
+            // with whatever of the island rises above the bar, so it never
+            // covers scroll content or floating actions. A slid-away bar
+            // reserves nothing: the goal agent pages, project details and
+            // settings details dock their own pinned surfaces at the bottom
+            // edge and must not pad around a bar that is gone.
+            DesignSystemBottomNavigationOverlayHeight(
+              height: showBottomNav
+                  ? MobileActivityIsland.heightAboveBar(
+                      context,
+                      activity,
+                      barDocked: barDocked,
+                    )
+                  : 0,
+              barDocked: barDocked,
+              child: content,
             ),
-          ),
-          // The activity island (running timer / recording) floats above
-          // the bar but is deliberately not part of the slide-away
-          // subtree: a running timer or recording must stay visible inside
-          // settings definition surfaces. When the bar slides away the
-          // island animates down to the bottom safe-area edge in the same
-          // motion, keeping its gap above whichever edge it lands on.
-          AnimatedPositioned(
-            duration: reduceMotion
-                ? Duration.zero
-                : _SlideAwayBottomNav.slideDuration,
-            curve: _SlideAwayBottomNav.slideCurve,
-            left: 0,
-            right: 0,
-            bottom:
-                (slideNavAway
-                    ? MediaQuery.paddingOf(context).bottom
-                    : launcherHeight) +
-                MobileActivityIsland.gapAboveBar(context),
-            // The recording half is omitted on Flatpak builds (MediaKit
-            // compatibility issues).
-            child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
-          ),
-        ],
-      ],
+            if (showBottomNav) ...[
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _SlideAwayBottomNav(
+                  hidden: slideNavAway,
+                  child: launcher,
+                ),
+              ),
+              // The activity island (running timer / recording) is
+              // deliberately not part of the slide-away subtree: a running
+              // timer or recording must stay visible inside settings
+              // definition surfaces. When the bar slides away the island
+              // animates down to the bottom safe-area edge in the same
+              // motion. Only a bottom offset is set, so a stack grows
+              // upward from it.
+              AnimatedPositionedDirectional(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : _SlideAwayBottomNav.slideDuration,
+                curve: _SlideAwayBottomNav.slideCurve,
+                start: band.start,
+                end: band.end,
+                bottom: barDocked
+                    ? MobileActivityIsland.dockedBottom(context)
+                    : MediaQuery.paddingOf(context).bottom +
+                          MobileActivityIsland.gapAboveEdge(context),
+                child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
+              ),
+            ],
+          ],
+        );
+      },
     );
     // The whole mobile shell — page, launcher and activity island — is what
     // the drawer pushes aside, so nothing of it floats over the panel.
