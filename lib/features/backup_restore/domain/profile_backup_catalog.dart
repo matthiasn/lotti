@@ -4,6 +4,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -244,6 +245,15 @@ abstract final class ProfileBackupCatalog {
       sensitivity: BackupSensitivity.personal,
       required: false,
       rationale: 'Owns profile-local onboarding progress and measurements.',
+    ),
+    ProfileBackupStore(
+      id: 'history',
+      relativePath: historyDbFileName,
+      kind: BackupStoreKind.sqliteDatabase,
+      treatment: BackupPathTreatment.include,
+      sensitivity: BackupSensitivity.personal,
+      required: false,
+      rationale: 'Owns the device-local log of opened tasks and entries.',
     ),
     ProfileBackupStore(
       id: 'ai-config',

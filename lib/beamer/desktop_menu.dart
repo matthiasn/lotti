@@ -78,7 +78,10 @@ class DesktopMenuWrapper extends StatelessWidget {
     PlatformMenuItem commandItem(AppCommandId id) {
       final definition = AppCommandCatalog.definition(id);
       final shortcut =
-          definition.bindings.first.resolve(TargetPlatform.macOS)
+          definition.bindings
+                  .map((binding) => binding.resolve(TargetPlatform.macOS))
+                  .nonNulls
+                  .firstOrNull
               as MenuSerializableShortcut?;
       VoidCallback? onSelected;
       if (commandController != null) {
@@ -168,6 +171,7 @@ class DesktopMenuWrapper extends StatelessWidget {
             commandItem(AppCommandId.zoomIn),
             commandItem(AppCommandId.zoomOut),
             commandItem(AppCommandId.resetZoom),
+            commandItem(AppCommandId.openHistory),
             const PlatformProvidedMenuItem(
               type: PlatformProvidedMenuItemType.toggleFullScreen,
             ),

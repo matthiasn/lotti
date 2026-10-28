@@ -9107,6 +9107,84 @@ class AppLocalizationsRo extends AppLocalizations {
   String get helpMenuTitle => 'Ajutor';
 
   @override
+  String get historyCustomRangeEndTitle => 'Data de sfârșit';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Data de început';
+
+  @override
+  String get historyDeleteConfirmAction => 'Eliminați';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Această vizită va fi eliminată definitiv. Elementul în sine rămâne neschimbat.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Eliminați din istoric?';
+
+  @override
+  String get historyDeleteTooltip => 'Eliminați din istoric';
+
+  @override
+  String get historyEmptyHint =>
+      'Sarcinile, înregistrările și proiectele pe care le deschideți apar aici.';
+
+  @override
+  String get historyEmptyTitle => 'Nimic aici încă';
+
+  @override
+  String get historyEntityGone => 'Nu mai este disponibil';
+
+  @override
+  String get historyLoadError => 'Istoricul nu a putut fi încărcat.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Încercați altă căutare sau o perioadă mai lungă.';
+
+  @override
+  String get historyNoMatchesTitle => 'Niciun rezultat';
+
+  @override
+  String get historyRangeAllTime => 'Toate';
+
+  @override
+  String get historyRangeCustom => 'Personalizat';
+
+  @override
+  String get historyRangeLast30Days => '30 de zile';
+
+  @override
+  String get historyRangeLast7Days => '7 zile';
+
+  @override
+  String get historyRangeLast90Days => '90 de zile';
+
+  @override
+  String get historySearchHint => 'Căutați în istoric';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Astăzi, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Ieri, $time';
+  }
+
+  @override
+  String get historyTitle => 'Istoric';
+
+  @override
+  String get historyUntitled => 'Fără titlu';
+
+  @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';
 
   @override

@@ -13,6 +13,7 @@ enum AppCommandId {
   openCommandPalette,
   openShortcutHelp,
   openFrontChat,
+  openHistory,
   createTextEntry,
   createTask,
   captureScreenshot,

@@ -110,6 +110,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 | `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |
 | `OnboardingMetricsDb` | `onboarding_metrics.sqlite` | 1 | First-run and activation measurement |
+| `HistoryDb` | `history.sqlite` | 1 | Append-only log of opened entities, never synced ([History](../features/history.md)) |
 | `AiConfigDb` | `ai_config.sqlite` | 3 | Providers, models, prompts, inference profiles, skills and their version stamps and clocks |
 | `DayProcessingDb` | `day_processing.sqlite` | 1 | Daily OS day-processing outbox |
 

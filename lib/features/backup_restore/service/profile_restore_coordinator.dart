@@ -6,6 +6,7 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -61,6 +62,7 @@ Future<void> verifyProfileDatabasesOpen({GetIt? serviceLocator}) async {
   await open<ConsumptionDatabase>();
   await open<NotificationsDb>();
   await open<OnboardingMetricsDb>();
+  await open<HistoryDb>();
   await open<DayProcessingDb>();
   if (locator.isRegistered<AiConfigRepository>()) {
     // The repository owns its database privately; any read opens it.

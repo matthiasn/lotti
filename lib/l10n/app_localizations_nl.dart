@@ -8966,6 +8966,84 @@ class AppLocalizationsNl extends AppLocalizations {
   String get helpMenuTitle => 'Hulp';
 
   @override
+  String get historyCustomRangeEndTitle => 'Einddatum';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Begindatum';
+
+  @override
+  String get historyDeleteConfirmAction => 'Verwijderen';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Dit bezoek wordt definitief verwijderd. Het item zelf blijft zoals het is.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Uit geschiedenis verwijderen?';
+
+  @override
+  String get historyDeleteTooltip => 'Uit geschiedenis verwijderen';
+
+  @override
+  String get historyEmptyHint =>
+      'Taken, items en projecten die je opent, verschijnen hier.';
+
+  @override
+  String get historyEmptyTitle => 'Nog niets hier';
+
+  @override
+  String get historyEntityGone => 'Niet meer beschikbaar';
+
+  @override
+  String get historyLoadError => 'Je geschiedenis kon niet worden geladen.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Probeer een andere zoekopdracht of een langere periode.';
+
+  @override
+  String get historyNoMatchesTitle => 'Geen resultaten';
+
+  @override
+  String get historyRangeAllTime => 'Alles';
+
+  @override
+  String get historyRangeCustom => 'Aangepast';
+
+  @override
+  String get historyRangeLast30Days => '30 dagen';
+
+  @override
+  String get historyRangeLast7Days => '7 dagen';
+
+  @override
+  String get historyRangeLast90Days => '90 dagen';
+
+  @override
+  String get historySearchHint => 'Geschiedenis doorzoeken';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Vandaag, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Gisteren, $time';
+  }
+
+  @override
+  String get historyTitle => 'Geschiedenis';
+
+  @override
+  String get historyUntitled => 'Zonder titel';
+
+  @override
   String get imageGenerationError => 'Kon afbeelding niet aanmaken';
 
   @override

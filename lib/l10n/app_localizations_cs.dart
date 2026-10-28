@@ -9041,6 +9041,83 @@ class AppLocalizationsCs extends AppLocalizations {
   String get helpMenuTitle => 'Nápověda';
 
   @override
+  String get historyCustomRangeEndTitle => 'Datum konce';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Datum začátku';
+
+  @override
+  String get historyDeleteConfirmAction => 'Odebrat';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Tahle návštěva bude odebrána natrvalo. Samotná položka zůstane beze změny.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Odebrat z historie?';
+
+  @override
+  String get historyDeleteTooltip => 'Odebrat z historie';
+
+  @override
+  String get historyEmptyHint =>
+      'Úkoly, záznamy a projekty, které otevřeš, se objeví tady.';
+
+  @override
+  String get historyEmptyTitle => 'Zatím tu nic není';
+
+  @override
+  String get historyEntityGone => 'Už není k dispozici';
+
+  @override
+  String get historyLoadError => 'Historii se nepodařilo načíst.';
+
+  @override
+  String get historyNoMatchesHint => 'Zkus jiné hledání nebo delší období.';
+
+  @override
+  String get historyNoMatchesTitle => 'Žádné výsledky';
+
+  @override
+  String get historyRangeAllTime => 'Vše';
+
+  @override
+  String get historyRangeCustom => 'Vlastní';
+
+  @override
+  String get historyRangeLast30Days => '30 dní';
+
+  @override
+  String get historyRangeLast7Days => '7 dní';
+
+  @override
+  String get historyRangeLast90Days => '90 dní';
+
+  @override
+  String get historySearchHint => 'Hledat v historii';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Dnes, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Včera, $time';
+  }
+
+  @override
+  String get historyTitle => 'Historie';
+
+  @override
+  String get historyUntitled => 'Bez názvu';
+
+  @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';
 
   @override

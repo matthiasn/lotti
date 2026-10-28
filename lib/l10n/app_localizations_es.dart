@@ -9062,6 +9062,84 @@ class AppLocalizationsEs extends AppLocalizations {
   String get helpMenuTitle => 'Ayuda';
 
   @override
+  String get historyCustomRangeEndTitle => 'Fecha de fin';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Fecha de inicio';
+
+  @override
+  String get historyDeleteConfirmAction => 'Quitar';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Esta visita se quitará para siempre. El elemento en sí no cambia.';
+
+  @override
+  String get historyDeleteConfirmTitle => '¿Quitar del historial?';
+
+  @override
+  String get historyDeleteTooltip => 'Quitar del historial';
+
+  @override
+  String get historyEmptyHint =>
+      'Las tareas, entradas y proyectos que abras aparecerán aquí.';
+
+  @override
+  String get historyEmptyTitle => 'Aún no hay nada';
+
+  @override
+  String get historyEntityGone => 'Ya no está disponible';
+
+  @override
+  String get historyLoadError => 'No se pudo cargar tu historial.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Prueba otra búsqueda o un periodo más amplio.';
+
+  @override
+  String get historyNoMatchesTitle => 'Sin resultados';
+
+  @override
+  String get historyRangeAllTime => 'Todo';
+
+  @override
+  String get historyRangeCustom => 'Personalizado';
+
+  @override
+  String get historyRangeLast30Days => '30 días';
+
+  @override
+  String get historyRangeLast7Days => '7 días';
+
+  @override
+  String get historyRangeLast90Days => '90 días';
+
+  @override
+  String get historySearchHint => 'Buscar en el historial';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Hoy, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Ayer, $time';
+  }
+
+  @override
+  String get historyTitle => 'Historial';
+
+  @override
+  String get historyUntitled => 'Sin título';
+
+  @override
   String get imageGenerationError => 'Error al generar imagen';
 
   @override

@@ -5777,6 +5777,116 @@
   "helpMenuCommandPalette": "Command Palette…",
   "helpMenuKeyboardShortcuts": "Keyboard Shortcuts…",
   "helpMenuTitle": "Help",
+  "historyCustomRangeEndTitle": "End date",
+  "@historyCustomRangeEndTitle": {
+    "description": "Title of the date picker choosing the last day of a custom history range."
+  },
+  "historyCustomRangeLabel": "{start} – {end}",
+  "@historyCustomRangeLabel": {
+    "description": "The chosen custom history range, shown under the time filter; tap to change it.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCustomRangeStartTitle": "Start date",
+  "@historyCustomRangeStartTitle": {
+    "description": "Title of the date picker choosing the first day of a custom history range."
+  },
+  "historyDeleteConfirmAction": "Remove",
+  "@historyDeleteConfirmAction": {
+    "description": "Confirm button removing a visit from the history."
+  },
+  "historyDeleteConfirmMessage": "This visit is removed for good. The item itself stays as it is.",
+  "@historyDeleteConfirmMessage": {
+    "description": "Body of the dialog confirming removal from the history: only the visit goes, never the item it points at."
+  },
+  "historyDeleteConfirmTitle": "Remove from history?",
+  "@historyDeleteConfirmTitle": {
+    "description": "Title of the dialog confirming that a visit is removed from the history."
+  },
+  "historyDeleteTooltip": "Remove from history",
+  "@historyDeleteTooltip": {
+    "description": "Tooltip of the trash button on a history row."
+  },
+  "historyEmptyHint": "Tasks, entries and projects you open show up here.",
+  "@historyEmptyHint": {
+    "description": "Empty state hint explaining what the history records."
+  },
+  "historyEmptyTitle": "Nothing here yet",
+  "@historyEmptyTitle": {
+    "description": "Empty state title when the history holds no visits in the chosen time range."
+  },
+  "historyEntityGone": "No longer available",
+  "@historyEntityGone": {
+    "description": "Shown in place of the title for a history row whose item was deleted or is hidden."
+  },
+  "historyLoadError": "Couldn't load your history.",
+  "@historyLoadError": {
+    "description": "Shown when the history could not be read."
+  },
+  "historyNoMatchesHint": "Try another search or a wider time range.",
+  "@historyNoMatchesHint": {
+    "description": "Empty state hint when no visit matches the history search."
+  },
+  "historyNoMatchesTitle": "No matches",
+  "@historyNoMatchesTitle": {
+    "description": "Empty state title when no visit matches the history search."
+  },
+  "historyRangeAllTime": "All time",
+  "@historyRangeAllTime": {
+    "description": "History time filter segment: every visit."
+  },
+  "historyRangeCustom": "Custom",
+  "@historyRangeCustom": {
+    "description": "History time filter segment that opens two date pickers for a custom start and end date."
+  },
+  "historyRangeLast30Days": "30 days",
+  "@historyRangeLast30Days": {
+    "description": "History time filter segment: visits from the last 30 days."
+  },
+  "historyRangeLast7Days": "7 days",
+  "@historyRangeLast7Days": {
+    "description": "History time filter segment: visits from the last 7 days, today included."
+  },
+  "historyRangeLast90Days": "90 days",
+  "@historyRangeLast90Days": {
+    "description": "History time filter segment: visits from the last 90 days."
+  },
+  "historySearchHint": "Search history",
+  "@historySearchHint": {
+    "description": "Hint in the history page's search field, which filters visits by the item's current title."
+  },
+  "historyTimestampToday": "Today, {time}",
+  "@historyTimestampToday": {
+    "description": "When a visit happened today, e.g. \"Today, 3:45 PM\".",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTimestampYesterday": "Yesterday, {time}",
+  "@historyTimestampYesterday": {
+    "description": "When a visit happened yesterday, e.g. \"Yesterday, 3:45 PM\".",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "historyTitle": "History",
+  "@historyTitle": {
+    "description": "Title of the history page (the list of recently opened tasks, entries and other items) and its menu and command-palette label."
+  },
+  "historyUntitled": "Untitled",
+  "@historyUntitled": {
+    "description": "Placeholder for a history row whose item has no title yet."
+  },
   "imageGenerationError": "Failed to generate image",
   "imageGenerationGenerating": "Generating image...",
   "imageGenerationProviderRejectedTitle": "The image provider rejected this request",

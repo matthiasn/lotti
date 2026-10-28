@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/desktop_menu.dart';
@@ -157,6 +158,47 @@ void main() {
           tasksItem.onSelected!();
           await tester.pump();
           expect(taskNavigations, 1);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      });
+
+      testWidgets('View menu offers History under Cmd+Y', (tester) async {
+        var historyOpenings = 0;
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        try {
+          await tester.pumpWidget(
+            makeTestableWidget(
+              AppCommandHost(
+                handlers: {
+                  AppCommandId.openHistory: AppCommandHandler(
+                    invoke: (_) => historyOpenings++,
+                  ),
+                },
+                child: const DesktopMenuWrapper(child: Text('Menu Child')),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final menuBar = tester.widget<PlatformMenuBar>(
+            find.byType(PlatformMenuBar),
+          );
+          final viewMenu = menuBar.menus.whereType<PlatformMenu>().singleWhere(
+            (menu) => menu.label == 'View',
+          );
+          final historyItem = viewMenu.menus
+              .whereType<PlatformMenuItem>()
+              .singleWhere((item) => item.label == 'History');
+
+          final shortcut = historyItem.shortcut! as SingleActivator;
+          expect(
+            (shortcut.trigger, shortcut.meta, shortcut.control),
+            (LogicalKeyboardKey.keyY, true, false),
+          );
+          historyItem.onSelected!();
+          await tester.pump();
+          expect(historyOpenings, 1);
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }

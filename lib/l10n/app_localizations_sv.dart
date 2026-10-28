@@ -8954,6 +8954,84 @@ class AppLocalizationsSv extends AppLocalizations {
   String get helpMenuTitle => 'Hjälp';
 
   @override
+  String get historyCustomRangeEndTitle => 'Slutdatum';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Startdatum';
+
+  @override
+  String get historyDeleteConfirmAction => 'Ta bort';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Det här besöket tas bort för gott. Själva objektet förblir som det är.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Ta bort från historiken?';
+
+  @override
+  String get historyDeleteTooltip => 'Ta bort från historiken';
+
+  @override
+  String get historyEmptyHint =>
+      'Uppgifter, anteckningar och projekt som du öppnar visas här.';
+
+  @override
+  String get historyEmptyTitle => 'Inget här än';
+
+  @override
+  String get historyEntityGone => 'Inte längre tillgänglig';
+
+  @override
+  String get historyLoadError => 'Din historik kunde inte läsas in.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Prova en annan sökning eller en längre period.';
+
+  @override
+  String get historyNoMatchesTitle => 'Inga träffar';
+
+  @override
+  String get historyRangeAllTime => 'Allt';
+
+  @override
+  String get historyRangeCustom => 'Anpassat';
+
+  @override
+  String get historyRangeLast30Days => '30 dagar';
+
+  @override
+  String get historyRangeLast7Days => '7 dagar';
+
+  @override
+  String get historyRangeLast90Days => '90 dagar';
+
+  @override
+  String get historySearchHint => 'Sök i historiken';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'I dag, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'I går, $time';
+  }
+
+  @override
+  String get historyTitle => 'Historik';
+
+  @override
+  String get historyUntitled => 'Utan titel';
+
+  @override
   String get imageGenerationError => 'Misslyckades med att generera bilden';
 
   @override

@@ -192,7 +192,7 @@ timers, no startup broadcast (see
 ```mermaid
 flowchart TD
   subgraph Phase1["1. Databases and primitives"]
-    P1["Fts5Db, UserActivityService, UserActivityGate,<br/>UpdateNotifications, JournalDb, AgentDatabase,<br/>ConsumptionDatabase, NotificationsDb, EditorDb,<br/>OnboardingMetricsDb, SyncDatabase,<br/>VectorClockService, TimeService"]
+    P1["Fts5Db, UserActivityService, UserActivityGate,<br/>UpdateNotifications, JournalDb, AgentDatabase,<br/>ConsumptionDatabase, NotificationsDb, EditorDb,<br/>OnboardingMetricsDb, HistoryDb, SyncDatabase,<br/>VectorClockService, TimeService"]
   end
   subgraph Phase2["2. Config flags"]
     P2["initConfigFlags(JournalDb)<br/>LoggingService.listenToConfigFlag()"]

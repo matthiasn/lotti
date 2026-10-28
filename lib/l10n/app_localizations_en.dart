@@ -8912,6 +8912,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpMenuTitle => 'Help';
 
   @override
+  String get historyCustomRangeEndTitle => 'End date';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Start date';
+
+  @override
+  String get historyDeleteConfirmAction => 'Remove';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'This visit is removed for good. The item itself stays as it is.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Remove from history?';
+
+  @override
+  String get historyDeleteTooltip => 'Remove from history';
+
+  @override
+  String get historyEmptyHint =>
+      'Tasks, entries and projects you open show up here.';
+
+  @override
+  String get historyEmptyTitle => 'Nothing here yet';
+
+  @override
+  String get historyEntityGone => 'No longer available';
+
+  @override
+  String get historyLoadError => 'Couldn\'t load your history.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Try another search or a wider time range.';
+
+  @override
+  String get historyNoMatchesTitle => 'No matches';
+
+  @override
+  String get historyRangeAllTime => 'All time';
+
+  @override
+  String get historyRangeCustom => 'Custom';
+
+  @override
+  String get historyRangeLast30Days => '30 days';
+
+  @override
+  String get historyRangeLast7Days => '7 days';
+
+  @override
+  String get historyRangeLast90Days => '90 days';
+
+  @override
+  String get historySearchHint => 'Search history';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Today, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Yesterday, $time';
+  }
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyUntitled => 'Untitled';
+
+  @override
   String get imageGenerationError => 'Failed to generate image';
 
   @override

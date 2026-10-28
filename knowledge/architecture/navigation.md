@@ -976,6 +976,7 @@ Two rules hold it together:
 | Saved task filters under the Tasks row (desktop rail and drawer) | [`lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart`](../../lib/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart) |
 | Activity summary above Settings (desktop rail and drawer) | [`lib/beamer/chrome/sidebar_activity_summary.dart`](../../lib/beamer/chrome/sidebar_activity_summary.dart) |
 | Recents list in the drawer | [`lib/features/recent_searches/`](../../lib/features/recent_searches) |
+| History of opened entities, and the recorder watching this service | [`lib/features/history/`](../../lib/features/history) |
 | Bottom clearance contract, activity island scope | [`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`](../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart) |
 | Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
 | Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |

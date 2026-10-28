@@ -1,6 +1,14 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-28
+* **New**: [History](features/history.md) — the device-local log of opened
+  entities: what counts as a visit, the recorder's three signals, live
+  titles, id-keyset paging and search over live titles, the page's load
+  states. **Update**: [Keyboard](features/keyboard.md) — per-platform
+  bindings; [Persistence](architecture/persistence.md),
+  [Backup and restore](features/backup-and-restore.md),
+  [Bootstrap and DI](architecture/bootstrap-and-di.md) and
+  [Navigation](architecture/navigation.md) — `history.sqlite`.
 * **Update**: [Provider routing](features/ai/provider-routing.md) — Mistral
   sends `reasoning_effort` (`none`/`high`) to its adjustable-reasoning models,
   driven by the model page's *Think before answering* switch; Mistral thinking

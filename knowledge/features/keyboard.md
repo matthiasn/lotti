@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/keyboard
     title: Desktop keyboard commands source
-    last_modified: 2026-08-01
+    last_modified: 2026-10-28
 ---
 
 The keyboard feature is Lotti's **desktop command layer**. It turns platform key
@@ -29,6 +29,16 @@ predicate are declared **once**. The shortcut handler, the menu-bar item, the
 palette row and the help sheet all read the same entry — so a command cannot show
 in the palette with one binding and fire with another, and a disabled command
 renders disabled everywhere.
+
+# Bindings can differ by platform
+
+A binding resolves the product-level *Primary* modifier per platform — ⌘ on
+macOS, Ctrl elsewhere. When the conventional **key** differs too, a binding
+names the platforms it exists on (`AppShortcutBinding.primaryKey(…,
+platforms: {…})`) and the definition lists one binding per group. History is
+the case in point: ⌘Y on macOS, where ⌘H is the system's Hide, and Ctrl+H on
+Linux and Windows. The macOS menu shows the first binding that resolves on
+macOS, and help lists only the bindings of the running platform.
 
 # Scopes are mounted, not registered globally
 

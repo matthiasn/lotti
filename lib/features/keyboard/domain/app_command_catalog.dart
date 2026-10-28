@@ -27,6 +27,24 @@ abstract final class AppCommandCatalog {
       bindings: [AppShortcutBinding.primaryKey(LogicalKeyboardKey.keyL)],
       paletteVisibility: AppCommandPaletteVisibility.global,
     ),
+    // The browsers' History key on each platform: ⌘Y on macOS, where ⌘H is
+    // the system's Hide, and Ctrl+H on Linux and Windows. The macOS binding
+    // comes first because the native menu shows the first one that resolves.
+    AppCommandDefinition(
+      id: AppCommandId.openHistory,
+      category: AppCommandCategory.navigation,
+      bindings: [
+        AppShortcutBinding.primaryKey(
+          LogicalKeyboardKey.keyY,
+          platforms: {TargetPlatform.macOS},
+        ),
+        AppShortcutBinding.primaryKey(
+          LogicalKeyboardKey.keyH,
+          platforms: {TargetPlatform.linux, TargetPlatform.windows},
+        ),
+      ],
+      paletteVisibility: AppCommandPaletteVisibility.global,
+    ),
     AppCommandDefinition(
       id: AppCommandId.createTextEntry,
       category: AppCommandCategory.creation,

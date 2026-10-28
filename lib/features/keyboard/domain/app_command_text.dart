@@ -12,6 +12,7 @@ abstract final class AppCommandText {
       AppCommandId.openCommandPalette => messages.keyboardCommandOpenPalette,
       AppCommandId.openShortcutHelp => messages.keyboardShortcutsTitle,
       AppCommandId.openFrontChat => messages.frontChatOpen,
+      AppCommandId.openHistory => messages.historyTitle,
       AppCommandId.createTextEntry => messages.fileMenuNewEntry,
       AppCommandId.createTask => messages.fileMenuNewTask,
       AppCommandId.captureScreenshot => messages.fileMenuNewScreenshot,

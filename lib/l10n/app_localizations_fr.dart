@@ -9083,6 +9083,84 @@ class AppLocalizationsFr extends AppLocalizations {
   String get helpMenuTitle => 'Aide';
 
   @override
+  String get historyCustomRangeEndTitle => 'Date de fin';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Date de début';
+
+  @override
+  String get historyDeleteConfirmAction => 'Retirer';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Cette visite sera retirée définitivement. L\'élément lui-même reste inchangé.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Retirer de l\'historique ?';
+
+  @override
+  String get historyDeleteTooltip => 'Retirer de l\'historique';
+
+  @override
+  String get historyEmptyHint =>
+      'Les tâches, entrées et projets que tu ouvres apparaissent ici.';
+
+  @override
+  String get historyEmptyTitle => 'Rien pour l\'instant';
+
+  @override
+  String get historyEntityGone => 'N\'est plus disponible';
+
+  @override
+  String get historyLoadError => 'Impossible de charger ton historique.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Essaie une autre recherche ou une période plus large.';
+
+  @override
+  String get historyNoMatchesTitle => 'Aucun résultat';
+
+  @override
+  String get historyRangeAllTime => 'Tout';
+
+  @override
+  String get historyRangeCustom => 'Personnalisé';
+
+  @override
+  String get historyRangeLast30Days => '30 jours';
+
+  @override
+  String get historyRangeLast7Days => '7 jours';
+
+  @override
+  String get historyRangeLast90Days => '90 jours';
+
+  @override
+  String get historySearchHint => 'Rechercher dans l\'historique';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Aujourd\'hui, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Hier, $time';
+  }
+
+  @override
+  String get historyTitle => 'Historique';
+
+  @override
+  String get historyUntitled => 'Sans titre';
+
+  @override
   String get imageGenerationError => 'Échec de la génération d\'image';
 
   @override

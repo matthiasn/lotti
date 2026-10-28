@@ -44,6 +44,8 @@ import 'package:lotti/features/front_agent/ui/front_chat_sheet.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/unified_goals_page.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
+import 'package:lotti/features/history/state/history_providers.dart';
+import 'package:lotti/features/history/ui/history_page.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
