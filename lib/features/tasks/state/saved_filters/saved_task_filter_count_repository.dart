@@ -27,8 +27,11 @@ class SavedTaskFilterCountRepository {
   final EntitiesCacheService _cache;
   final AgentRepository _agentRepository;
 
-  Future<int> count(TasksFilter filter) async {
+  /// [restrictToIds], when given, admits only those task ids — the live
+  /// search's matches, so a count can agree with a searched list.
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async {
     if (filter.selectedTaskStatuses.isEmpty) return 0;
+    if (restrictToIds != null && restrictToIds.isEmpty) return 0;
 
     // Empty category selection means "all categories" plus the empty-string
     // sentinel — same expansion `_runTaskQuery` performs.
@@ -61,7 +64,10 @@ class SavedTaskFilterCountRepository {
     // id-list fetch entirely. This is the common case for an urgency probe.
     if (dueTaskIds != null && dueTaskIds.isEmpty) return 0;
 
-    if (!hasProjectFilter && !hasAgentFilter && dueTaskIds == null) {
+    if (!hasProjectFilter &&
+        !hasAgentFilter &&
+        dueTaskIds == null &&
+        restrictToIds == null) {
       return _db.getFilteredTasksCount(
         taskStatuses: taskStatuses,
         categoryIds: categoryIds,
@@ -96,6 +102,7 @@ class SavedTaskFilterCountRepository {
     var matched = 0;
     for (final id in taskIds) {
       if (dueTaskIds != null && !dueTaskIds.contains(id)) continue;
+      if (restrictToIds != null && !restrictToIds.contains(id)) continue;
       if (projectTaskIds != null && !projectTaskIds.contains(id)) continue;
       if (agentLinkedIds != null) {
         final hasLink = agentLinkedIds.contains(id);

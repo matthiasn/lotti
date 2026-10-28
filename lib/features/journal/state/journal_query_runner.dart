@@ -394,8 +394,20 @@ class JournalQueryRunner {
               categoryIds: categoryIds,
             );
 
+      // Semantic results come back whole; narrow them to the due view here,
+      // as the paged path does through its ids restriction. The distances
+      // stay whole: they are the search's result set, which the smart-view
+      // counts restrict themselves to.
+      final dueIds = params.showTasks
+          ? await _narrowByDueFilter(null, params.dueFilter)
+          : null;
       return JournalVectorSearchResult(
-        entities: result.entities,
+        entities: dueIds == null
+            ? result.entities
+            : [
+                for (final entity in result.entities)
+                  if (dueIds.contains(entity.meta.id)) entity,
+              ],
         elapsed: result.elapsed,
         distances: result.distances,
       );

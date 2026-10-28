@@ -366,6 +366,35 @@ void main() {
       expect(c, 1);
     });
 
+    test('a search restriction narrows the due count to its matches', () async {
+      stubDue(overdue: {'late-a', 'late-b'});
+      stubMatchingIds(const ['late-a', 'late-b']);
+
+      final c = await atNow(
+        () => sut.count(
+          open.copyWith(dueFilter: TaskDueFilter.overdue),
+          restrictToIds: {'late-b', 'unrelated'},
+        ),
+      );
+
+      expect(c, 1);
+    });
+
+    test('a search restriction alone moves off the COUNT path', () async {
+      stubMatchingIds(const ['a', 'b', 'c']);
+
+      expect(await sut.count(open, restrictToIds: {'b', 'c', 'x'}), 2);
+      expect(await sut.count(open, restrictToIds: const {}), 0);
+      verifyNever(
+        () => db.getFilteredTasksCount(
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+        ),
+      );
+    });
+
     group('dueUrgency', () {
       test('overdue outranks due today', () async {
         stubDue(overdue: {'late'}, dueToday: {'today'});

@@ -87,7 +87,7 @@ class _GatedRepo implements SavedTaskFilterCountRepository {
   Completer<int>? gate;
 
   @override
-  Future<int> count(TasksFilter filter) {
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) {
     final g = gate;
     if (g != null) return g.future;
     return Future.value(value);

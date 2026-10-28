@@ -85,6 +85,11 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
       const <SavedTaskFilter>[];
   if (saved.isEmpty) return const <String, int>{};
 
+  // A saved Overdue / Due today view changes count at midnight with no task
+  // changing; only those need the day tick.
+  if (saved.any((filter) => filter.filter.dueFilter != TaskDueFilter.all)) {
+    ref.watch(taskDueDayProvider);
+  }
   invalidateOnTaskNotifications(ref);
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);

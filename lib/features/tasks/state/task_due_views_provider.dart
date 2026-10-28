@@ -5,6 +5,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activ
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// How many open tasks each smart view would show right now.
 class TaskDueViewCounts {
@@ -28,6 +29,10 @@ class TaskDueViewCounts {
 /// and the rows below it never disagree. The other view stays countable while
 /// one is active, since switching between them keeps every other clause.
 ///
+/// An active search narrows the counts the way it narrows the list: to the
+/// full-text matches, or in semantic mode to the vector result set, so a pill
+/// never counts tasks that tapping it would not show.
+///
 /// Mirrors the live list's empty-status expansion (see
 /// `currentTasksFilterCountProvider`), recomputes on task notifications, and
 /// recomputes at local midnight, when due-today tasks turn overdue.
@@ -46,10 +51,37 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
 
   invalidateOnTaskNotifications(ref);
 
+  final searchIds = await _searchRestriction(ref, pageState);
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   final counts = await Future.wait([
-    repo.count(effective.copyWith(dueFilter: TaskDueFilter.overdue)),
-    repo.count(effective.copyWith(dueFilter: TaskDueFilter.dueToday)),
+    repo.count(
+      effective.copyWith(dueFilter: TaskDueFilter.overdue),
+      restrictToIds: searchIds,
+    ),
+    repo.count(
+      effective.copyWith(dueFilter: TaskDueFilter.dueToday),
+      restrictToIds: searchIds,
+    ),
   ]);
   return TaskDueViewCounts(overdue: counts[0], dueToday: counts[1]);
+}
+
+/// The task ids the live search admits, or null when no search is active.
+///
+/// Follows `JournalPageController`'s own branch: semantic mode with vector
+/// search enabled reads the vector result set the page already holds; any
+/// other query runs the same FTS5 match the list ran.
+Future<Set<String>?> _searchRestriction(
+  Ref ref,
+  JournalPageState pageState,
+) async {
+  if (pageState.match.isEmpty) return null;
+  if (pageState.enableVectorSearch &&
+      pageState.searchMode == SearchMode.vector) {
+    return pageState.vectorSearchDistances.keys.toSet();
+  }
+  final fts = ref.read(fts5DbProvider);
+  if (fts == null) return null;
+  final matches = await fts.watchFullTextMatches(pageState.match).first;
+  return matches.toSet();
 }

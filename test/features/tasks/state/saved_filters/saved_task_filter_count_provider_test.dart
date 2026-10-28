@@ -31,7 +31,7 @@ class _FakeRepo implements SavedTaskFilterCountRepository {
   int calls = 0;
 
   @override
-  Future<int> count(TasksFilter filter) async {
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async {
     final i = calls < responses.length ? calls : responses.length - 1;
     calls++;
     return responses[i];
@@ -51,7 +51,8 @@ class _UrgencyRepo implements SavedTaskFilterCountRepository {
   int urgencyCalls = 0;
 
   @override
-  Future<int> count(TasksFilter filter) async => 0;
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async =>
+      0;
 
   @override
   Future<DueDateUrgency> dueUrgency(TasksFilter filter) async {
@@ -76,7 +77,7 @@ class _CapturingRepo implements SavedTaskFilterCountRepository {
   final List<TasksFilter> captured = [];
 
   @override
-  Future<int> count(TasksFilter filter) async {
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async {
     captured.add(filter);
     return result;
   }
@@ -625,5 +626,45 @@ void main() {
         );
       }, initialTime: DateTime(2024, 7, 3, 23, 58));
     });
+  });
+
+  group('savedTaskFilterCountsProvider and the date', () {
+    for (final (label, dueFilter, recomputes) in [
+      (
+        'a saved due view recounts at local midnight',
+        TaskDueFilter.dueToday,
+        true,
+      ),
+      ('plain saved filters do not wake at midnight', TaskDueFilter.all, false),
+    ]) {
+      test(label, () {
+        fakeAsync((async) {
+          final repo = _FakeRepo(const [2, 0]);
+          final container = _buildContainer(
+            seed: [
+              SavedTaskFilter(
+                id: 'sv-due',
+                name: 'Today',
+                filter: TasksFilter(
+                  selectedTaskStatuses: const {'OPEN'},
+                  dueFilter: dueFilter,
+                ),
+              ),
+            ],
+            repo: repo,
+          );
+          addTearDown(container.dispose);
+          container
+            ..listen(savedTaskFilterCountsProvider, (_, _) {})
+            ..read(savedTaskFilterCountsProvider.future).ignore();
+          async.elapse(Duration.zero);
+          final before = repo.calls;
+
+          async.elapse(const Duration(minutes: 3));
+
+          expect(repo.calls > before, recomputes);
+        }, initialTime: DateTime(2024, 7, 3, 23, 58));
+      });
+    }
   });
 }

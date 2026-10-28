@@ -223,6 +223,51 @@ void main() {
       verifyNever(() => mockJournalDb.getTaskIdsForProjects(any()));
     });
 
+    test(
+      'semantic results are narrowed to the view, distances kept whole',
+      () async {
+        final repo = MockVectorSearchRepository();
+        getIt.registerSingleton<VectorSearchRepository>(repo);
+        final late = hMakeTask(id: 'late', createdAt: hTestDate);
+        final undated = hMakeTask(id: 'undated', createdAt: hTestDate);
+        when(
+          () => repo.searchRelatedTasks(
+            query: any(named: 'query'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer(
+          (_) async => VectorSearchResult(
+            entities: [late, undated],
+            elapsed: const Duration(milliseconds: 5),
+            distances: const {'late': 0.1, 'undated': 0.2},
+          ),
+        );
+        when(
+          () => mockJournalDb.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.overdue,
+            now: now,
+          ),
+        ).thenAnswer((_) async => {'late'});
+
+        final result = await withClock(
+          Clock.fixed(now),
+          () => runner.runVectorSearch(
+            hDefaultParams(
+              showTasks: true,
+              dueFilter: TaskDueFilter.overdue,
+              query: 'fish',
+              enableVectorSearch: true,
+              searchMode: SearchMode.vector,
+            ),
+          ),
+        );
+
+        expect(result.entities.map((e) => e.meta.id), ['late']);
+        // The search's own result set, which the smart-view counts read.
+        expect(result.distances.keys, unorderedEquals(['late', 'undated']));
+      },
+    );
+
     test('no view leaves the search restriction untouched', () async {
       await runner.runQuery(
         hDefaultParams(showTasks: true),

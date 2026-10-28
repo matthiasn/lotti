@@ -1,15 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
+import '../../../mocks/mocks.dart';
 import '../../../test_utils/fake_journal_page_controller.dart';
 import '../../../widget_test_utils.dart';
 
@@ -20,10 +23,12 @@ class _RecordingRepo implements SavedTaskFilterCountRepository {
   final int overdue;
   final int dueToday;
   final List<TasksFilter> asked = [];
+  final List<Set<String>?> restrictions = [];
 
   @override
-  Future<int> count(TasksFilter filter) async {
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async {
     asked.add(filter);
+    restrictions.add(restrictToIds);
     return switch (filter.dueFilter) {
       TaskDueFilter.overdue => overdue,
       TaskDueFilter.dueToday => dueToday,
@@ -47,10 +52,12 @@ void main() {
 
   Future<TaskDueViewCounts> countsFor(
     JournalPageState pageState,
-    _RecordingRepo repo,
-  ) async {
+    _RecordingRepo repo, {
+    Fts5Db? fts,
+  }) async {
     final container = ProviderContainer(
       overrides: withServiceOverrides([
+        if (fts != null) fts5DbProvider.overrideWithValue(fts),
         journalPageControllerProvider(
           true,
         ).overrideWith(() => FakeJournalPageController(pageState)),
@@ -119,6 +126,52 @@ void main() {
       }
     },
   );
+
+  test('no search, no restriction', () async {
+    final repo = _RecordingRepo(overdue: 0, dueToday: 0);
+
+    await countsFor(const JournalPageState(), repo);
+
+    expect(repo.restrictions, [null, null]);
+  });
+
+  test('a full-text search restricts both counts to its matches', () async {
+    final repo = _RecordingRepo(overdue: 1, dueToday: 0);
+    final fts = MockFts5Db();
+    when(
+      () => fts.watchFullTextMatches('habitat'),
+    ).thenAnswer((_) => Stream.value(const ['t1', 't2']));
+
+    await countsFor(
+      const JournalPageState(match: 'habitat'),
+      repo,
+      fts: fts,
+    );
+
+    expect(repo.restrictions, [
+      {'t1', 't2'},
+      {'t1', 't2'},
+    ]);
+  });
+
+  test('a semantic search restricts to the vector result set', () async {
+    final repo = _RecordingRepo(overdue: 1, dueToday: 0);
+    final fts = MockFts5Db();
+
+    await countsFor(
+      const JournalPageState(
+        match: 'fish',
+        enableVectorSearch: true,
+        searchMode: SearchMode.vector,
+        vectorSearchDistances: {'v1': 0.1, 'v2': 0.3},
+      ),
+      repo,
+      fts: fts,
+    );
+
+    expect(repo.restrictions.first, {'v1', 'v2'});
+    verifyNever(() => fts.watchFullTextMatches(any()));
+  });
 
   test('all is not a view', () {
     expect(
