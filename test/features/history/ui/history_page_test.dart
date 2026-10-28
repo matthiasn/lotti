@@ -376,7 +376,15 @@ void main() {
     await tester.tap(find.text('Custom').last);
     await settle(tester);
     await pickBoth();
-    await tester.tap(find.byKey(const ValueKey('history-custom-range')));
+    // Tap the label itself, as a user does. The action's key sits on a
+    // full-width `Align` whose centre is blank space once real fonts are
+    // loaded — which another file in the same CI process does.
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('history-custom-range')),
+        matching: find.text('Mar 9, 2026 – Mar 15, 2026'),
+      ),
+    );
     await settle(tester);
 
     expect(find.text('Start date'), findsOneWidget);
