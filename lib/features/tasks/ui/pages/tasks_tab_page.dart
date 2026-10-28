@@ -34,6 +34,7 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/recent_searches/state/recent_searches_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
 import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -41,6 +42,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_r
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -444,6 +446,15 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
     // Watched here (not only in the toggle widget) so flipping density
     // rebuilds every visible row.
     final compactList = ref.watch(taskListDensityControllerProvider);
+    // An active due view is a function of the date: at midnight yesterday's
+    // due-today rows become overdue without any task changing, so nothing
+    // else would refresh the list.
+    ref.listen(taskDueDayProvider, (_, _) async {
+      if (ref.read(journalPageControllerProvider(true)).dueFilter !=
+          TaskDueFilter.all) {
+        await controller.refreshQuery(preserveVisibleItems: true);
+      }
+    });
 
     // Feeds the mobile sidebar's Recents list. Read lazily: the controller
     // is only created once a search is actually typed. A cleared field needs
@@ -479,6 +490,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
         // Mobile retains the compact task-pane switcher because it has no
         // persistent navigation sidebar.
         if (!isDesktopLayout(context)) const SavedTaskFilterRail(),
+        // Above the clause chips, on every layout: what is burning is read
+        // before how the list is narrowed.
+        const TaskDueViewsStrip(),
         const _TasksTabActiveFilters(),
       ],
     );
@@ -801,6 +815,7 @@ Future<void> _clearAll(
     priorities: const <String>{},
     sortOption: TaskSortOption.byPriority,
     agentAssignmentFilter: AgentAssignmentFilter.all,
+    dueFilter: TaskDueFilter.all,
   );
   if (searchActive) await controller.setSearchString('');
 }

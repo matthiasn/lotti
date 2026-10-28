@@ -35,6 +35,11 @@ project, and relationships to other tasks.
   search-and-filter header folds into a slim bar while scrolling down the list
   and returns on a deliberate scroll back up, so small screens show tasks
   rather than chrome.
+- **Shows what is burning first.** Above the list, on every layout, an
+  *Overdue* and a *Due today* view each narrow whatever the list shows to just
+  those open tasks, with their counts; a view with nothing in it is not shown.
+  Saved filters holding overdue or due-today work carry a red or orange dot,
+  and an open task with no due date says so quietly in its row.
 - **Makes room to focus on one task.** On desktop, the task list can be hidden
   after a task is selected and restored without losing its filters, search or
   scroll position. Back remains reserved for returning from a linked task.

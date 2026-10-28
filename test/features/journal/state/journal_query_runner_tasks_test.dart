@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -84,6 +85,204 @@ void main() {
 
   tearDown(() async {
     await getIt.reset();
+  });
+
+  group('runQuery - due-date smart views', () {
+    final now = DateTime(2024, 7, 3, 15);
+
+    List<String>? capturedTaskIds({required bool byDueDate}) {
+      final captured = byDueDate
+          ? verify(
+              () => mockJournalDb.getTasksSortedByDueDate(
+                ids: captureAny(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).captured
+          : verify(
+              () => mockJournalDb.getTasks(
+                ids: captureAny(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).captured;
+      return captured.single as List<String>?;
+    }
+
+    for (final byDueDate in [false, true]) {
+      test("restricts the task query to the view's ids "
+          '(${byDueDate ? 'due-date' : 'priority'} sort)', () async {
+        when(
+          () => mockJournalDb.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.overdue,
+            now: now,
+          ),
+        ).thenAnswer((_) async => {'late-1', 'late-2'});
+
+        await withClock(
+          Clock.fixed(now),
+          () => runner.runQuery(
+            hDefaultParams(
+              showTasks: true,
+              dueFilter: TaskDueFilter.overdue,
+              sortOption: byDueDate
+                  ? TaskSortOption.byDueDate
+                  : TaskSortOption.byPriority,
+            ),
+            0,
+            fullTextMatches: {},
+          ),
+        );
+
+        expect(
+          capturedTaskIds(byDueDate: byDueDate),
+          unorderedEquals(['late-1', 'late-2']),
+        );
+      });
+    }
+
+    test('intersects the view with an active search', () async {
+      when(
+        () => mockJournalDb.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.dueToday,
+          now: now,
+        ),
+      ).thenAnswer((_) async => {'today-1', 'today-2'});
+
+      await withClock(
+        Clock.fixed(now),
+        () => runner.runQuery(
+          hDefaultParams(
+            showTasks: true,
+            dueFilter: TaskDueFilter.dueToday,
+            query: 'habitat',
+          ),
+          0,
+          fullTextMatches: {'today-2', 'undated'},
+        ),
+      );
+
+      expect(capturedTaskIds(byDueDate: false), ['today-2']);
+    });
+
+    test('an empty view returns no rows without querying tasks', () async {
+      when(
+        () => mockJournalDb.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.overdue,
+          now: now,
+        ),
+      ).thenAnswer((_) async => <String>{});
+      var offsetReported = false;
+      int? reportedOffset = -1;
+
+      final result = await withClock(
+        Clock.fixed(now),
+        () => runner.runQuery(
+          hDefaultParams(
+            showTasks: true,
+            dueFilter: TaskDueFilter.overdue,
+            selectedProjectIds: {'proj-1'},
+          ),
+          0,
+          fullTextMatches: {},
+          setPostFilterNextRawOffset: (offset) {
+            offsetReported = true;
+            reportedOffset = offset;
+          },
+        ),
+      );
+
+      expect(result, isEmpty);
+      // The pagination cursor is cleared, as on the un-post-filtered path.
+      expect(offsetReported, isTrue);
+      expect(reportedOffset, isNull);
+      verifyNever(
+        () => mockJournalDb.getTasks(
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+          sortByDate: any(named: 'sortByDate'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      );
+      verifyNever(() => mockJournalDb.getTaskIdsForProjects(any()));
+    });
+
+    test(
+      'semantic results are narrowed to the view, distances kept whole',
+      () async {
+        final repo = MockVectorSearchRepository();
+        getIt.registerSingleton<VectorSearchRepository>(repo);
+        final late = hMakeTask(id: 'late', createdAt: hTestDate);
+        final undated = hMakeTask(id: 'undated', createdAt: hTestDate);
+        when(
+          () => repo.searchRelatedTasks(
+            query: any(named: 'query'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer(
+          (_) async => VectorSearchResult(
+            entities: [late, undated],
+            elapsed: const Duration(milliseconds: 5),
+            distances: const {'late': 0.1, 'undated': 0.2},
+          ),
+        );
+        when(
+          () => mockJournalDb.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.overdue,
+            now: now,
+          ),
+        ).thenAnswer((_) async => {'late'});
+
+        final result = await withClock(
+          Clock.fixed(now),
+          () => runner.runVectorSearch(
+            hDefaultParams(
+              showTasks: true,
+              dueFilter: TaskDueFilter.overdue,
+              query: 'fish',
+              enableVectorSearch: true,
+              searchMode: SearchMode.vector,
+            ),
+          ),
+        );
+
+        expect(result.entities.map((e) => e.meta.id), ['late']);
+        // The search's own result set, which the smart-view counts read.
+        expect(result.distances.keys, unorderedEquals(['late', 'undated']));
+      },
+    );
+
+    test('no view leaves the search restriction untouched', () async {
+      await runner.runQuery(
+        hDefaultParams(showTasks: true),
+        0,
+        fullTextMatches: {},
+      );
+
+      expect(capturedTaskIds(byDueDate: false), isNull);
+      verifyNever(
+        () => mockJournalDb.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.overdue,
+          now: now,
+        ),
+      );
+    });
   });
 
   group('runQuery - tasks with post-filter', () {

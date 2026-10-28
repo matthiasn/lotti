@@ -17454,6 +17454,15 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Scadente astăzi';
+
+  @override
+  String get tasksDueViewOverdue => 'Restante';
+
+  @override
+  String get tasksDueViewsSemantics => 'Vizualizări după termen';
+
+  @override
   String get taskSetCategoryLabel => 'Setați categoria';
 
   @override
@@ -17605,6 +17614,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Trageți pentru a reordona';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker =>
+      'Conține sarcini scadente astăzi';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Conține sarcini restante';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Redenumiți filtrul salvat';

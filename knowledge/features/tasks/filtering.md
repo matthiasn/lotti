@@ -1,9 +1,9 @@
 ---
 type: Feature Module
 title: Filtering and saved filters
-description: The browse page's shared query stack, the adaptive filter modal, saved filters as task-local navigation, and the desktop keyboard commands.
+description: The browse page's shared query stack, the adaptive filter modal, the Overdue / Due today smart views, saved filters as task-local navigation with their urgency markers, and the desktop keyboard commands.
 resource: ../../../lib/features/tasks/state/saved_filters
-tags: [tasks, filters, saved-filters, keyboard]
+tags: [tasks, filters, saved-filters, due-dates, keyboard]
 status: stable
 generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
 stale_after: 2027-03-15
@@ -15,7 +15,15 @@ sources:
   - id: ui
     resource: ../../../lib/features/tasks/ui/saved_filters
     title: Saved-filter surfaces
-    last_modified: 2026-07-17
+    last_modified: 2026-10-28
+  - id: due-views
+    resource: ../../../lib/features/tasks/ui/widgets/task_due_views_strip.dart
+    title: Overdue / Due today smart views
+    last_modified: 2026-10-28
+  - id: due-ids
+    resource: ../../../lib/database/database_task_due_queries.dart
+    title: Open-task due-window id lookup
+    last_modified: 2026-10-28
   - id: adr-0030
     resource: ../../../docs/adr/0030-desktop-keyboard-command-system.md
     title: ADR 0030 — Desktop keyboard command system
@@ -79,8 +87,10 @@ display toggle can move fully above the footer.
 ## Persisted concerns
 
 Selected statuses, priorities, labels, categories and projects; sort option;
-due-date, creation-date, cover-art, projects-header and distance display; and the
-agent-assignment filter.
+due-date, creation-date, cover-art, projects-header and distance display; the
+agent-assignment filter; and the due clause (`TaskDueFilter`, below). Every enum
+decodes an unknown value to its default rather than failing the filter, so a
+saved filter synced from a newer build stays readable.
 
 Persistence uses `TASKS_CATEGORY_FILTERS`, keeping tasks-tab filter state
 **separate from the journal tab** while sharing semantics and controller methods
@@ -89,6 +99,84 @@ via `JournalPageController`.
 Active status, category, label and project clauses are shown only by the removable
 filter-chip row. **Empty category or label ids render as the localized
 *Unassigned* chip** rather than disappearing.
+
+# Due-date smart views
+
+Two views ride the top of the task list on every layout — **Overdue** and
+**Due today** — rendered by `TaskDueViewsStrip` between the search row (and, on
+mobile, the saved-filter rail) and the clause chips. Each is a value of the
+`TaskDueFilter` clause on `TasksFilter` / `JournalPageState`, not a separate
+filter: tapping one narrows **whatever the list already shows** to its open
+tasks, and tapping it again lifts the clause.
+
+Due-ness is **day-granular in local time** and **open work only**: a task due
+at 09:00 today is due today at 18:00, and a done or rejected task is never
+overdue. One read decides it everywhere — `JournalDb.getOpenTaskIdsForDueFilter`
+splits the coalesced, index-pinned open-tasks-due superset (the one
+`getTasksDueOn` uses) at local midnight, so Due today is `[start, end]` of
+today and Overdue ends one microsecond before it. **The two windows are
+disjoint**; an overdue task never appears in, or counts toward, Due today.
+
+```mermaid
+flowchart LR
+  Ids["getOpenTaskIdsForDueFilter<br/>(small id set)"]
+  Ids --> Runner["JournalQueryRunner<br/>∩ full-text ids → ids restriction"]
+  Ids --> Repo["SavedTaskFilterCountRepository<br/>id-list path ∩ due set"]
+  Runner --> List["task list rows"]
+  Repo --> ViewCounts["taskDueViewCountsProvider<br/>(strip numbers)"]
+  Repo --> Urgency["savedTaskFilterDueUrgenciesProvider<br/>(saved-view markers)"]
+  Day["taskDueDayProvider<br/>ticks at local midnight"] --> ViewCounts
+  Day --> Urgency
+  Day -->|active view only| Refresh["TasksTabPage → refreshQuery"]
+```
+
+The due set rides the **same `ids` restriction full-text search uses**, so it
+composes with every other clause and both sort paths without new SQL; an empty
+intersection returns no rows without a query. Semantic search returns its
+results whole, so `runVectorSearch` narrows them to the view itself, keeping
+the distance map whole as the search's result set. The counts restrict to the
+same search: the FTS5 matches, or in semantic mode the vector result ids
+(`SavedTaskFilterCountRepository.count(…, restrictToIds:)`). The filter modal
+has no due control, so saving or updating from it carries the live due clause
+unchanged. Because the strip's number for a
+view is the live filter with that view's clause swapped in, **the pill counts
+exactly what tapping it lists**, and the other view stays countable while one is
+active.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Hidden
+  Hidden --> Shown: count > 0
+  Shown --> Hidden: count drops to 0
+  Shown --> Active: tap
+  Active --> Shown: tap (clause lifted), count > 0
+  Active --> Hidden: tap (clause lifted), count 0
+  Active --> Active: count drops to 0 (stays, shows 0)
+```
+
+- **Absent when empty.** A view with nothing in it is not rendered; with
+  neither, the strip takes no space. The exception is the **active** view, which
+  stays at `0` with a close glyph, so finishing the last overdue task never
+  strands the list in an empty filter with no visible way out.
+- **Two loudness steps, never colour alone.** Overdue is the page's one
+  `DsPillVariant.solid` pill (`alert.error.defaultColor` behind
+  `text.onInteractiveAlert`, AA in both themes); Due today is the tinted
+  urgent-due shell the task header's due chip uses (`alert.warning.ink`). Each
+  carries its own glyph and name.
+- **The day is an input.** At local midnight due-today tasks turn overdue
+  without a row changing, so no task notification fires. `taskDueDayProvider`
+  (a timer to the next local midnight) re-emits the date; the counts and
+  markers watch it (saved-filter counts only while some saved filter carries
+  a due clause), and `TasksTabPage` refreshes the list then if a view is
+  active.
+- A due view counts as **one narrowing clause** in
+  `taskFilterNarrowingClauseCount`, takes part in the saved shape, and is
+  lifted by *Clear all*; it has no chip of its own, because the strip already
+  shows it selected and closable.
+
+Rows say the opposite fact quietly: an open task **without** a due date carries
+a grey *No due date* meta chip in its footer (whenever due dates are shown and
+the list is not grouped by due date, where the section header says it).
 
 # Saved filters
 
@@ -144,11 +232,24 @@ notification-driven invalidations are **debounced 300 ms** so a sync burst —
 already coalesced upstream into ~1 s/100 ms batches — collapses into a single
 recompute. **The initial computation is never debounced.**
 
-`allTasksTotalCountProvider` and `currentTasksFilterCountProvider` share the same
-repository and debounce wiring. The latter additionally **expands an empty status
+`allTasksTotalCountProvider`, `currentTasksFilterCountProvider`,
+`taskDueViewCountsProvider` and `savedTaskFilterDueUrgenciesProvider` share the
+same repository and the one debounce helper, `invalidateOnTaskNotifications`.
+`currentTasksFilterCountProvider` The latter additionally **expands an empty status
 selection to every status** before counting, mirroring how the live list treats
 "no status filter" as "all statuses", so the Custom pill's number agrees with the
-list.
+list; `taskDueViewCountsProvider` does the same.
+
+A clause the journal table cannot see — project, agent, or due — moves the count
+from `COUNT(*)` to the id-list path intersected in Dart, mirroring the list's
+post-filter loop. A due window with no open tasks short-circuits to `0` without
+the id fetch, the common case for urgency probes.
+
+`SavedTaskFilterCountRepository.dueUrgency` answers the saved-view marker:
+**overdue if anything the filter matches is overdue, else due today, else
+normal**, honouring the filter's own due clause (a saved Due today view is never
+marked overdue) and probing the second window only when the first finds
+nothing.
 
 ## The save flow
 
@@ -198,7 +299,10 @@ flowchart LR
 ```
 
 - **`SidebarSavedTaskFilters`** renders `All tasks` plus the first five saved
-  filters in persisted order, each with a live trailing count. *More* expands the
+  filters in persisted order, each with a live trailing count and, when the
+  view holds urgent work, a 12px `SavedFilterDueMarker` disc beside it (red:
+  something overdue; orange: something due today) whose meaning is also appended
+  to the row's semantics label. *More* expands the
   remainder in place. **There is no pin property, expansion cap, or second
   priority model.** The enclosing navigation column scrolls, so an expanded
   collection can use as much vertical space as the user chooses while Settings,
@@ -210,7 +314,8 @@ flowchart LR
   colour-only.
 - **`SavedTaskFilterRail`** is the mobile entry surface: the Filters disclosure,
   `All`, the current saved/custom filter, width-permitting MRU quick jumps, and
-  `Save filter` for an ad-hoc filter. Large text keeps the current anchor and
+  `Save filter` for an ad-hoc filter; saved pills carry the same due marker as
+  the sidebar rows. Large text keeps the current anchor and
   reset in one horizontally scrollable run. **Mobile MRU state is in-memory and
   per-device** — it does not alter desktop order.
 - **`SavedTaskFiltersSheet`** is the complete switcher and manager. Normal rows
@@ -229,7 +334,8 @@ Whenever the pane hosting the list is narrower than `kDesktopBreakpoint` — a
 phone, a narrowed desktop window, or the desktop split view's ~400px list pane
 (the gate is the pane's own `LayoutBuilder` width, not the window's) — the
 header stack above the list — `TabSectionHeader` (title + search), the
-saved-filter rail, and the active-filter chip row — folds into a one-row
+saved-filter rail, the due-date smart views, and the active-filter chip row —
+folds into a one-row
 compact bar while the user scrolls down, and unfolds on a deliberate upward
 scroll. The mechanism lives in
 `lib/features/tasks/ui/widgets/collapsing_task_list_header.dart`:

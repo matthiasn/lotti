@@ -15,6 +15,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_f
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
@@ -86,11 +87,15 @@ class _GatedRepo implements SavedTaskFilterCountRepository {
   Completer<int>? gate;
 
   @override
-  Future<int> count(TasksFilter filter) {
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) {
     final g = gate;
     if (g != null) return g.future;
     return Future.value(value);
   }
+
+  @override
+  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
+      DueDateUrgency.normal;
 }
 
 Future<({ProviderContainer container})> _pumpRail(
@@ -100,6 +105,7 @@ Future<({ProviderContainer container})> _pumpRail(
   List<Override> extraOverrides = const [],
   Override? countsOverride,
   Override? currentCountOverride,
+  Override? urgencyOverride,
   MediaQueryData? mq,
 }) async {
   final fake = FakeJournalPageController(pageState);
@@ -120,6 +126,10 @@ Future<({ProviderContainer container})> _pumpRail(
       // repository. A distinctive value so the pill assertion is unambiguous.
       currentCountOverride ??
           currentTasksFilterCountProvider.overrideWith((ref) async => 4),
+      urgencyOverride ??
+          savedTaskFilterDueUrgenciesProvider.overrideWith(
+            (ref) async => const <String, DueDateUrgency>{},
+          ),
       ...extraOverrides,
     ],
   );
@@ -724,4 +734,25 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('saved pills carry their due marker, spoken in their label', (
+    tester,
+  ) async {
+    await _pumpRail(
+      tester,
+      pageState: const JournalPageState(selectedTaskStatuses: {'IN_PROGRESS'}),
+      urgencyOverride: savedTaskFilterDueUrgenciesProvider.overrideWith(
+        (ref) async => const {
+          'f1': DueDateUrgency.overdue,
+          'f2': DueDateUrgency.dueToday,
+        },
+      ),
+    );
+
+    final active = _pill(tester, SavedTaskFilterRailKeys.pill('f1'));
+    expect(active.dueUrgency, DueDateUrgency.overdue);
+    expect(active.semanticsLabel, contains('Has overdue tasks'));
+    // "All" is not a saved view and carries no marker.
+    expect(_pill(tester, SavedTaskFilterRailKeys.allPill).dueUrgency, isNull);
+  });
 }

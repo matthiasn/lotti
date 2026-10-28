@@ -38,6 +38,25 @@ enum AgentAssignmentFilter {
   noAgent,
 }
 
+/// Narrows the task list to open tasks by where their due date falls
+/// relative to today — the "Overdue" and "Due today" smart views above the
+/// list.
+///
+/// Day-granular in the device's local time zone, like every other due-date
+/// read-out: a task due at 09:00 today is due today at 18:00, not overdue.
+/// Closed tasks (done or rejected) are never overdue and never due, so either
+/// narrowing admits open work only, whatever statuses the filter selects.
+enum TaskDueFilter {
+  /// No due-date constraint.
+  all,
+
+  /// Open tasks whose due date is today.
+  dueToday,
+
+  /// Open tasks whose due date is before today.
+  overdue,
+}
+
 /// Sort order options for task lists.
 enum TaskSortOption {
   /// Sort by priority first (P0 > P1 > P2 > P3), then by date within each priority
@@ -93,6 +112,7 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(false) bool showDistances,
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,
+    @Default(TaskDueFilter.all) TaskDueFilter dueFilter,
     @Default(false) bool enableVectorSearch,
     @Default(false) bool enableProjects,
     @Default(false) bool vectorSearchInFlight,
@@ -129,6 +149,9 @@ abstract class TasksFilter with _$TasksFilter {
     @JsonKey(unknownEnumValue: AgentAssignmentFilter.all)
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,
+    @JsonKey(unknownEnumValue: TaskDueFilter.all)
+    @Default(TaskDueFilter.all)
+    TaskDueFilter dueFilter,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>

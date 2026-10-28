@@ -11,6 +11,8 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_cont
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -73,6 +75,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
     // pills never flash back to `–` on a background sync.
     final counts = ref.watch(savedTaskFilterCountsProvider).value;
     final total = ref.watch(allTasksTotalCountProvider).value;
+    final urgencies = ref.watch(savedTaskFilterDueUrgenciesProvider).value;
     final mruOrder = ref.watch(savedTaskFilterMruProvider);
 
     final activeFilter = activeId == null
@@ -156,6 +159,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
                     selected: true,
                     count: counts?[activeFilter.id],
                     countLoading: counts == null,
+                    dueUrgency: urgencies?[activeFilter.id],
                   );
                 } else if (hasUnsaved) {
                   allIsAnchor = false;
@@ -250,6 +254,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
                         selected: true,
                         count: counts?[activeFilter.id],
                         countLoading: counts == null,
+                        dueUrgency: urgencies?[activeFilter.id],
                       ),
                     ),
                   ] else if (hasUnsaved) ...[
@@ -279,6 +284,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
                         selected: false,
                         count: counts?[f.id],
                         countLoading: counts == null,
+                        dueUrgency: urgencies?[f.id],
                       ),
                     ),
                   ],
@@ -351,6 +357,7 @@ class SavedTaskFilterRail extends ConsumerWidget {
     required bool selected,
     required int? count,
     required bool countLoading,
+    required DueDateUrgency? dueUrgency,
   }) {
     return SavedTaskFilterPill(
       key: SavedTaskFilterRailKeys.pill(filter.id),
@@ -359,11 +366,13 @@ class SavedTaskFilterRail extends ConsumerWidget {
       categoryColor: savedFilterCategoryColor(filter),
       count: count,
       countLoading: countLoading,
+      dueUrgency: dueUrgency,
       semanticsLabel: _semanticsFor(
         context,
         name: filter.name,
         category: savedFilterCategoryName(filter),
         count: countLoading ? null : count,
+        urgency: dueUrgency,
       ),
       // The active pill opens the sheet (whole-pill tap, no caret); an inactive
       // quick-jump applies its filter.
@@ -393,12 +402,14 @@ class SavedTaskFilterRail extends ConsumerWidget {
     required String name,
     String? category,
     int? count,
+    DueDateUrgency? urgency,
   }) {
     final messages = context.messages;
     return [
       ?category,
       name,
       if (count != null) messages.tasksSavedFiltersTaskCount(count),
+      ?savedFilterDueMarkerSemantics(messages, urgency),
     ].join(', ');
   }
 

@@ -17344,6 +17344,15 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Scadono oggi';
+
+  @override
+  String get tasksDueViewOverdue => 'In ritardo';
+
+  @override
+  String get tasksDueViewsSemantics => 'Viste per scadenza';
+
+  @override
   String get taskSetCategoryLabel => 'Imposta categoria';
 
   @override
@@ -17494,6 +17503,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Trascinare per riordinare';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker =>
+      'Contiene attività che scadono oggi';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Contiene attività in ritardo';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Rinominare il filtro salvato';

@@ -75,8 +75,27 @@ void main() {
         // Display flags are passed through with their saved values.
         expect(fake.showCreationDateCalls.single, false);
         expect(fake.showDueDateCalls.single, true);
+        // No due clause saved: the batch still lifts a live one.
+        expect(fake.dueFilterCalls.single, TaskDueFilter.all);
       },
     );
+
+    test('a saved due clause is applied with the rest of the view', () async {
+      final fake = FakeJournalPageController(const JournalPageState());
+
+      await SavedTaskFilterActivator(fake).activate(
+        const SavedTaskFilter(
+          id: 'sv-due',
+          name: 'Overdue work',
+          filter: TasksFilter(
+            selectedTaskStatuses: {'OPEN'},
+            dueFilter: TaskDueFilter.overdue,
+          ),
+        ),
+      );
+
+      expect(fake.dueFilterCalls.single, TaskDueFilter.overdue);
+    });
   });
 
   group('SavedTaskFilterActivator.clearToDefault', () {
@@ -102,8 +121,65 @@ void main() {
         );
         expect(fake.showCreationDateCalls.single, false);
         expect(fake.showDueDateCalls.single, true);
+        expect(fake.dueFilterCalls.single, TaskDueFilter.all);
       },
     );
+  });
+
+  group('due clause in the saved shape', () {
+    test('liveTasksFilterFor carries the live due clause', () {
+      expect(
+        liveTasksFilterFor(
+          const JournalPageState(dueFilter: TaskDueFilter.dueToday),
+        ).dueFilter,
+        TaskDueFilter.dueToday,
+      );
+    });
+
+    test('two shapes differing only by due clause are different views', () {
+      const base = TasksFilter(selectedTaskStatuses: {'OPEN'});
+      expect(taskFiltersHaveSameSavedShape(base, base), isTrue);
+      expect(
+        taskFiltersHaveSameSavedShape(
+          base,
+          base.copyWith(dueFilter: TaskDueFilter.overdue),
+        ),
+        isFalse,
+      );
+    });
+
+    test('a due clause narrows the list by one clause', () {
+      expect(
+        taskFilterNarrowingClauseCount(
+          const TasksFilter(dueFilter: TaskDueFilter.overdue),
+        ),
+        1,
+      );
+      expect(
+        taskFilterIsNarrowing(
+          const TasksFilter(dueFilter: TaskDueFilter.dueToday),
+        ),
+        isTrue,
+      );
+    });
+
+    test('an unknown due clause from a newer build decodes to all', () {
+      // Saved filters sync: a value this build does not know must not make
+      // the whole filter undecodable.
+      final decoded = TasksFilter.fromJson(const {
+        'selectedTaskStatuses': ['OPEN'],
+        'dueFilter': 'dueThisWeek',
+      });
+      expect(decoded.dueFilter, TaskDueFilter.all);
+      expect(decoded.selectedTaskStatuses, {'OPEN'});
+    });
+
+    test('a filter saved before due clauses existed decodes to all', () {
+      final decoded = TasksFilter.fromJson(const {
+        'selectedTaskStatuses': ['OPEN'],
+      });
+      expect(decoded.dueFilter, TaskDueFilter.all);
+    });
   });
 
   group('currentSavedTaskFilterIdProvider', () {

@@ -116,13 +116,19 @@ Future<void> showTaskFilterModal(
     canCreateSavedFilter: !showTasks
         ? null
         : (draftState) => tasksFilterHasActiveClauses(
-            _draftStateToTasksFilter(draftState),
+            _draftStateToTasksFilter(
+              draftState,
+              dueFilter: controllerState.dueFilter,
+            ),
           ),
     canUpdateSavedFilter: !showTasks || matchedSavedFilter == null
         ? null
         : (draftState) => !taskFiltersHaveSameSavedShape(
             matchedSavedFilter.filter,
-            _draftStateToTasksFilter(draftState),
+            _draftStateToTasksFilter(
+              draftState,
+              dueFilter: controllerState.dueFilter,
+            ),
           ),
     onCreateSavedFilter: !showTasks
         ? null
@@ -130,7 +136,10 @@ Future<void> showTaskFilterModal(
             // The persisted filter is built from the route-scoped draft so
             // in-modal edits are captured even before Apply. The modal layer
             // applies and closes only after persistence succeeds.
-            final filter = _draftStateToTasksFilter(draftState);
+            final filter = _draftStateToTasksFilter(
+              draftState,
+              dueFilter: controllerState.dueFilter,
+            );
             final notifier = container.read(
               savedTaskFiltersControllerProvider.notifier,
             );
@@ -159,7 +168,10 @@ Future<void> showTaskFilterModal(
     onUpdateSavedFilter: !showTasks || matchedSavedFilter == null
         ? null
         : (draftState) async {
-            final filter = _draftStateToTasksFilter(draftState);
+            final filter = _draftStateToTasksFilter(
+              draftState,
+              dueFilter: controllerState.dueFilter,
+            );
             try {
               await container
                   .read(savedTaskFiltersControllerProvider.notifier)
@@ -313,7 +325,12 @@ Future<void> _applyFilterState(
   DesignSystemTaskFilterState sheetState, {
   required JournalPageController controller,
 }) async {
-  final filter = _draftStateToTasksFilter(sheetState);
+  // Read here only for priorities and sort; Apply forwards no due clause, so
+  // the live one stays as it is.
+  final filter = _draftStateToTasksFilter(
+    sheetState,
+    dueFilter: TaskDueFilter.all,
+  );
   await controller.applyBatchFilterUpdate(
     statuses: sheetState.statusField?.selectedIds,
     categoryIds: sheetState.categoryField?.selectedIds,
@@ -338,7 +355,14 @@ Future<void> _applyFilterState(
 /// Both display toggles are always present: every draft state descends, via
 /// `copyWith` and `toggleValue`, from `buildTasksFilterSheetState`, which
 /// seeds both from the page's current values.
-TasksFilter _draftStateToTasksFilter(DesignSystemTaskFilterState sheetState) {
+/// The saved-filter shape of the modal's draft. The modal has no due-date
+/// control, so the live due clause ([dueFilter]) rides along unchanged:
+/// saving while Overdue is active saves an Overdue view, and updating a saved
+/// due view keeps its clause.
+TasksFilter _draftStateToTasksFilter(
+  DesignSystemTaskFilterState sheetState, {
+  required TaskDueFilter dueFilter,
+}) {
   final internalPriorities = <String>{
     for (final displayId in sheetState.selectedPriorityIds)
       ?TasksFilterPriorityIds.toInternalId(displayId),
@@ -357,5 +381,6 @@ TasksFilter _draftStateToTasksFilter(DesignSystemTaskFilterState sheetState) {
     ),
     showCreationDate: toggle(TasksFilterToggleIds.showCreationDate),
     showDueDate: toggle(TasksFilterToggleIds.showDueDate),
+    dueFilter: dueFilter,
   );
 }

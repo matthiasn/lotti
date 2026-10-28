@@ -211,6 +211,7 @@ class JournalFilterPersistence {
       'showProjectsHeader': filter.showProjectsHeader,
       'showDistances': filter.showDistances,
       'agentAssignmentFilter': filter.agentAssignmentFilter.name,
+      'dueFilter': filter.dueFilter.name,
     });
   }
 

@@ -319,6 +319,79 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
       });
     });
 
+    test('a due view reaches the state, the task query and persistence', () {
+      fakeAsync((async) {
+        when(
+          () => setup.mockJournalDb.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.overdue,
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => {'late-1'});
+        final controller = setup.container.read(
+          journalPageControllerProvider(true).notifier,
+        );
+        settle(async);
+        clearInteractions(setup.mockJournalDb);
+        clearInteractions(setup.mockSettingsDb);
+
+        controller.applyBatchFilterUpdate(dueFilter: TaskDueFilter.overdue);
+        settle(async);
+
+        expect(
+          setup.container.read(journalPageControllerProvider(true)).dueFilter,
+          TaskDueFilter.overdue,
+        );
+        final queriedIds = verify(
+          () => setup.mockJournalDb.getTasks(
+            ids: captureAny(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).captured;
+        expect(queriedIds.last, ['late-1']);
+        final saved = verify(
+          () => setup.mockSettingsDb.saveSettingsItem(
+            JournalPageController.tasksCategoryFiltersKey,
+            captureAny(),
+          ),
+        ).captured;
+        expect(saved.last as String, contains('"dueFilter":"overdue"'));
+      });
+    });
+
+    test('a persisted due view is restored on load', () {
+      fakeAsync((async) {
+        when(
+          () => setup.mockSettingsDb.itemByKey(
+            JournalPageController.tasksCategoryFiltersKey,
+          ),
+        ).thenAnswer(
+          (_) async =>
+              '{"selectedTaskStatuses":["OPEN"],"dueFilter":"dueToday"}',
+        );
+        when(
+          () => setup.mockJournalDb.getOpenTaskIdsForDueFilter(
+            TaskDueFilter.dueToday,
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => <String>{});
+
+        setup.container.read(journalPageControllerProvider(true).notifier);
+        settle(async);
+
+        expect(
+          setup.container.read(journalPageControllerProvider(true)).dueFilter,
+          TaskDueFilter.dueToday,
+        );
+      });
+    });
+
     test('applyBatchFilterUpdate skips null fields', () {
       fakeAsync((async) {
         final controller = setup.container.read(

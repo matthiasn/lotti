@@ -7050,7 +7050,7 @@
       }
     }
   },
-  "taskDueToday": "Ska lämnas in idag",
+  "taskDueToday": "Förfaller i dag",
   "taskDueTomorrow": "Ska vara klar imorgon",
   "taskDueYesterday": "Inlämning igår",
   "taskEditTitleLabel": "Redigera uppgiftstitel",
@@ -7153,7 +7153,7 @@
   "taskMetaPriorityLabel": "Prioritet",
   "taskMetaSheetTitle": "Uppgiftsdetaljer",
   "taskMetaValueNotSet": "Inte inställt",
-  "taskNoDueDateLabel": "Ingen beräknad förlossningsdag",
+  "taskNoDueDateLabel": "Inget förfallodatum",
   "taskNoEstimateLabel": "Ingen uppskattning",
   "taskOverdueByDays": "försenad med {days, plural, =1{1 dag} other{{days} dagar}}",
   "@taskOverdueByDays": {
@@ -7176,6 +7176,9 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filter}}",
   "tasksCompactHeaderExpandHint": "Visa sökfält och filter",
   "tasksCompactSearchContext": "”{query}”",
+  "tasksDueViewDueToday": "Förfaller i dag",
+  "tasksDueViewOverdue": "Försenade",
+  "tasksDueViewsSemantics": "Vyer efter förfallodatum",
   "taskSetCategoryLabel": "Välj kategori",
   "taskSetDueDateLabel": "Ange förfallodatum",
   "taskSetEstimateLabel": "Lägg till uppskattning",
@@ -7250,6 +7253,8 @@
   "tasksSavedFilterDeleteConfirmTooltip": "Tryck igen för att ta bort",
   "tasksSavedFilterDeleteTooltip": "Ta bort sparat filter",
   "tasksSavedFilterDragHandleSemantics": "Dra för att omordna",
+  "tasksSavedFilterDueTodayMarker": "Har uppgifter som förfaller i dag",
+  "tasksSavedFilterOverdueMarker": "Har försenade uppgifter",
   "tasksSavedFilterRenameSemantics": "Byt namn på sparat filter",
   "tasksSavedFiltersAllShort": "Alla",
   "tasksSavedFiltersAllTasks": "Alla uppgifter",

@@ -17040,6 +17040,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tasksDueViewDueToday => 'Due today';
+
+  @override
+  String get tasksDueViewOverdue => 'Overdue';
+
+  @override
+  String get tasksDueViewsSemantics => 'Due date views';
+
+  @override
   String get taskSetCategoryLabel => 'Set category';
 
   @override
@@ -17187,6 +17196,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Drag to reorder';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker => 'Has tasks due today';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Has overdue tasks';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Rename saved filter';

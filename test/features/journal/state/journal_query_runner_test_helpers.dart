@@ -62,6 +62,7 @@ JournalQueryParams hDefaultParams({
   Set<String> selectedTaskStatuses = const {'OPEN', 'GROOMED', 'IN PROGRESS'},
   TaskSortOption sortOption = TaskSortOption.byPriority,
   AgentAssignmentFilter agentAssignmentFilter = AgentAssignmentFilter.all,
+  TaskDueFilter dueFilter = TaskDueFilter.all,
   Set<DisplayFilter> filters = const {},
   String query = '',
   bool enableVectorSearch = false,
@@ -89,5 +90,6 @@ JournalQueryParams hDefaultParams({
     enableHabits: enableHabits,
     enableDashboards: enableDashboards,
     enableRelationships: enableRelationships,
+    dueFilter: dueFilter,
   );
 }

@@ -23,6 +23,7 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
   set _showCreationDate(bool value);
   set _showDueDate(bool value);
   set _agentAssignmentFilter(AgentAssignmentFilter value);
+  set _dueFilter(TaskDueFilter value);
   set _selectedTaskStatuses(Set<String> value);
 
   // Lifecycle hooks implemented by the concrete JournalPageController.
@@ -51,6 +52,7 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
     Set<String>? priorities,
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
+    TaskDueFilter? dueFilter,
     SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
@@ -64,6 +66,7 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
     if (agentAssignmentFilter != null) {
       _agentAssignmentFilter = agentAssignmentFilter;
     }
+    if (dueFilter != null) _dueFilter = dueFilter;
     if (searchMode != null && _enableVectorSearch) {
       _hasExplicitSearchModeSelection = true;
       _searchMode = searchMode;

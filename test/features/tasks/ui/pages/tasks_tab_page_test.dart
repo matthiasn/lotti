@@ -31,11 +31,13 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -62,6 +64,8 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late FakeJournalPageController fakeController;
+  // What the due-date smart views count; nothing urgent unless a test says so.
+  var dueViewCounts = const TaskDueViewCounts(overdue: 0, dueToday: 0);
   late FakeRecentSearchesController fakeRecents;
   late TestGetItMocks getItMocks;
   late MockEntitiesCacheService mockEntitiesCacheService;
@@ -178,6 +182,7 @@ void main() {
 
   tearDown(() async {
     pagingController.dispose();
+    dueViewCounts = const TaskDueViewCounts(overdue: 0, dueToday: 0);
     await tearDownTestGetIt();
   });
 
@@ -190,11 +195,13 @@ void main() {
     bool enableVectorSearch = false,
     bool enableProjects = false,
     AgentAssignmentFilter agentAssignmentFilter = AgentAssignmentFilter.all,
+    TaskDueFilter dueFilter = TaskDueFilter.all,
     String match = '',
   }) {
     return JournalPageState(
       match: match,
       agentAssignmentFilter: agentAssignmentFilter,
+      dueFilter: dueFilter,
       showTasks: true,
       pagingController: pagingController,
       taskStatuses: const ['OPEN', 'IN PROGRESS'],
@@ -216,6 +223,7 @@ void main() {
     journalPageControllerProvider(true).overrideWith(() => fakeController),
     fakeRecentSearches(fakeRecents = FakeRecentSearchesController()),
     taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+    taskDueViewCountsProvider.overrideWith((ref) async => dueViewCounts),
   ]);
 
   /// The desktop list pane reads the desktop selection; stub it before
@@ -1207,6 +1215,64 @@ void main() {
       },
     );
 
+    for (final desktop in [false, true]) {
+      testWidgets('the due views ride the header between search and the '
+          'clause chips (${desktop ? 'desktop' : 'mobile'})', (tester) async {
+        dueViewCounts = const TaskDueViewCounts(overdue: 2, dueToday: 0);
+        await tester.pumpWidget(
+          buildSubject(
+            desktop: desktop,
+            state: state(
+              selectedTaskStatuses: const <String>{},
+              selectedPriorities: const <String>{'P0'},
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final overdue = find.byKey(
+          TaskDueViewsStripKeys.view(TaskDueFilter.overdue),
+        );
+        expect(overdue, findsOneWidget);
+        expect(
+          find.byKey(TaskDueViewsStripKeys.view(TaskDueFilter.dueToday)),
+          findsNothing,
+        );
+        expect(
+          tester.getTopLeft(overdue).dy,
+          lessThan(tester.getTopLeft(find.byType(ActiveFilterChip).first).dy),
+        );
+      });
+    }
+
+    testWidgets('an active due view refreshes the list at local midnight', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(state: state(dueFilter: TaskDueFilter.dueToday)),
+      );
+      await tester.pump();
+      final before = fakeController.refreshQueryCalled;
+
+      // Past the next local midnight, wherever the fake clock started.
+      await tester.pump(const Duration(hours: 24, minutes: 1));
+
+      expect(fakeController.refreshQueryCalled, greaterThan(before));
+    });
+
+    testWidgets('without a due view, midnight leaves the list alone', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pump();
+      final before = fakeController.refreshQueryCalled;
+
+      await tester.pump(const Duration(hours: 24, minutes: 1));
+
+      expect(fakeController.refreshQueryCalled, before);
+    });
+
     testWidgets('the noAgent clause names itself too, not just hasAgent', (
       tester,
     ) async {
@@ -1263,6 +1329,8 @@ void main() {
           fakeController.setSelectedTaskStatusesCalls.last,
           defaultSelectedTaskStatuses,
         );
+        // A due view is a clause like any other: Clear all lifts it too.
+        expect(fakeController.dueFilterCalls.last, TaskDueFilter.all);
       },
     );
 

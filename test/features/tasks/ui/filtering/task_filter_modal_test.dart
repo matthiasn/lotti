@@ -1416,6 +1416,63 @@ void main() {
       },
     );
 
+    testWidgets('saving while a due view is active saves that view', (
+      tester,
+    ) async {
+      final recorder = _RecordingSavedFiltersController(const []);
+      await tester.pumpWidget(
+        buildSaveFlowSubject(
+          recorder: recorder,
+          pageState: const JournalPageState(
+            taskStatuses: ['OPEN', 'IN PROGRESS'],
+            selectedTaskStatuses: {'IN PROGRESS'},
+            dueFilter: TaskDueFilter.overdue,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await openModalAndCreate(tester, typedName: 'Late work');
+
+      expect(recorder.creates.single.filter.dueFilter, TaskDueFilter.overdue);
+    });
+
+    testWidgets('updating a saved due view keeps its due clause', (
+      tester,
+    ) async {
+      final recorder = _RecordingSavedFiltersController(
+        const [
+          SavedTaskFilter(
+            id: 'sv-1',
+            name: 'Today',
+            filter: TasksFilter(dueFilter: TaskDueFilter.dueToday),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        buildSaveFlowSubject(
+          recorder: recorder,
+          activeId: 'sv-1',
+          pageState: const JournalPageState(
+            taskStatuses: ['OPEN', 'IN PROGRESS', 'BLOCKED'],
+            selectedTaskStatuses: {'BLOCKED'},
+            dueFilter: TaskDueFilter.dueToday,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byKey(const ValueKey('open-filter-modal'))),
+      );
+      await container.read(savedTaskFiltersControllerProvider.future);
+      await tester.pumpAndSettle();
+
+      await openModalAndUpdate(tester);
+
+      expect(recorder.updates.single.filter.dueFilter, TaskDueFilter.dueToday);
+      expect(recorder.updates.single.filter.selectedTaskStatuses, {'BLOCKED'});
+    });
+
     testWidgets(
       'creates a new saved filter when active id has no resolved name',
       (tester) async {

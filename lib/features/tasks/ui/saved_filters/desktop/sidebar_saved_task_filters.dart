@@ -10,6 +10,8 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_c
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -69,6 +71,7 @@ class _SidebarSavedTaskFiltersState
     final activeId = ref.watch(currentSavedTaskFilterIdProvider);
     final hasUnsaved = ref.watch(tasksFilterHasUnsavedClausesProvider);
     final counts = ref.watch(savedTaskFilterCountsProvider).value;
+    final urgencies = ref.watch(savedTaskFilterDueUrgenciesProvider).value;
     final total = ref.watch(allTasksTotalCountProvider).value;
     final allSelected = activeId == null && !hasUnsaved;
     final visible = _showAll
@@ -110,8 +113,10 @@ class _SidebarSavedTaskFiltersState
                   filter.name,
                   counts?[filter.id],
                   categoryName: savedFilterCategoryName(filter),
+                  urgency: urgencies?[filter.id],
                 ),
                 count: counts?[filter.id],
+                urgency: urgencies?[filter.id],
                 selected: filter.id == activeId,
                 leading: _CategoryMarker(
                   color: savedFilterCategoryColor(filter),
@@ -144,11 +149,13 @@ class _SidebarSavedTaskFiltersState
     String name,
     int? count, {
     String? categoryName,
+    DueDateUrgency? urgency,
   }) {
     return [
       ?categoryName,
       name,
       if (count != null) context.messages.tasksSavedFiltersTaskCount(count),
+      ?savedFilterDueMarkerSemantics(context.messages, urgency),
     ].join(', ');
   }
 
@@ -246,12 +253,16 @@ class _FilterRow extends StatelessWidget {
     required this.selected,
     required this.leading,
     required this.onTap,
+    this.urgency,
     super.key,
   });
 
   final String label;
   final String semanticsLabel;
   final int? count;
+
+  /// Drives the [SavedFilterDueMarker] beside the count; null renders none.
+  final DueDateUrgency? urgency;
   final bool selected;
   final Widget leading;
   final VoidCallback onTap;
@@ -321,6 +332,12 @@ class _FilterRow extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: tokens.spacing.step2),
+                        if (urgency
+                            case DueDateUrgency.overdue ||
+                                DueDateUrgency.dueToday) ...[
+                          SavedFilterDueMarker(urgency: urgency),
+                          SizedBox(width: tokens.spacing.step2),
+                        ],
                         SavedFilterCountText(
                           count: count,
                           selected: selected,

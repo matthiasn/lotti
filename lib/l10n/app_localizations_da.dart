@@ -16837,7 +16837,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get taskDueToday => 'Indfalder i dag';
+  String get taskDueToday => 'Forfalder i dag';
 
   @override
   String get taskDueTomorrow => 'Afleveres i morgen';
@@ -17067,7 +17067,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskMetaValueNotSet => 'Ikke sat';
 
   @override
-  String get taskNoDueDateLabel => 'Ingen terminsdato';
+  String get taskNoDueDateLabel => 'Ingen forfaldsdato';
 
   @override
   String get taskNoEstimateLabel => 'Ingen oversigt';
@@ -17133,6 +17133,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '»$query«';
   }
+
+  @override
+  String get tasksDueViewDueToday => 'Forfalder i dag';
+
+  @override
+  String get tasksDueViewOverdue => 'Forfaldne';
+
+  @override
+  String get tasksDueViewsSemantics => 'Visninger efter forfaldsdato';
 
   @override
   String get taskSetCategoryLabel => 'Vælg kategori';
@@ -17282,6 +17291,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDragHandleSemantics => 'Træk for at omorganisere';
+
+  @override
+  String get tasksSavedFilterDueTodayMarker =>
+      'Har opgaver, der forfalder i dag';
+
+  @override
+  String get tasksSavedFilterOverdueMarker => 'Har forfaldne opgaver';
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Omdøb det gemte filter';
