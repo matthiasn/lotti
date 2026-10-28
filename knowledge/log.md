@@ -5,7 +5,8 @@
   sends `reasoning_effort` (`none`/`high`) to its adjustable-reasoning models,
   driven by the model page's *Think before answering* switch; Mistral thinking
   chunks reach agent internals as `<think>` blocks; Mistral reasoning keeps
-  its normal temperature instead of `1.0`.
+  its normal temperature instead of `1.0`; one-shot results drop reasoning
+  before they are stored, as conversation history already did.
 * **Update**: [Text-to-speech](features/tts.md) — which voice speaks: a
   profile's read-aloud model as a cloud voice (Voxtral TTS), else the
   on-device voice; the voice catalog cache, per-language voices, and why cloud

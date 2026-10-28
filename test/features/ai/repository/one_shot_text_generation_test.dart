@@ -109,6 +109,26 @@ void main() {
     },
   );
 
+  test('drops streamed reasoning from the returned text', () async {
+    stubGenerate().thenAnswer(
+      (_) => Stream.fromIterable([
+        _chunk('<think>Weigh '),
+        _chunk('the options.</think>'),
+        _chunk('Start here.'),
+      ]),
+    );
+
+    expect(await run(), 'Start here.');
+  });
+
+  test('an answer that is only reasoning comes back empty', () async {
+    stubGenerate().thenAnswer(
+      (_) => Stream.value(_chunk('<think>No answer yet.</think>')),
+    );
+
+    expect(await run(), isEmpty);
+  });
+
   test(
     'a tool call comes back assembled from its chunks, with the text beside '
     'it, offered only the given tools under the given pin',
@@ -162,7 +182,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          _chunk(' Calling. '),
+          _chunk('<think>Which tool?</think> Calling. '),
           chunk(call('publish', '{"a":')),
           chunk(call(null, ' 1}')),
         ]),

@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/util/think_blocks.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
@@ -19,28 +20,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart' hide Error;
 import 'package:uuid/uuid.dart';
-
-/// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
-/// (case-insensitive, possibly spanning newlines). Used to remove
-/// chain-of-thought reasoning from assistant content before it is stored
-/// in conversation history. Persisting and resending these blocks wastes
-/// tokens and, for Gemma 4, violates Google's guidance that past
-/// reasoning must not be carried forward into subsequent turns.
-final _thinkBlockPattern = RegExp(
-  r'<think(?:ing)?\b[^>]*>[\s\S]*?</think(?:ing)?>',
-  caseSensitive: false,
-);
-
-/// Removes `<think>`/`<thinking>` reasoning blocks from assistant [content]
-/// before it is stored in conversation history (see [_thinkBlockPattern]).
-/// Returns null when the input is null or nothing meaningful remains after
-/// stripping and trimming.
-@visibleForTesting
-String? stripThinkBlocks(String? content) {
-  if (content == null) return null;
-  final stripped = content.replaceAll(_thinkBlockPattern, '').trim();
-  return stripped.isEmpty ? null : stripped;
-}
 
 /// Repository for managing AI conversations.
 ///

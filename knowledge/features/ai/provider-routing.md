@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/ai/repository/mistral_stream_content.dart
     title: Mistral thinking chunks to think tags
     last_modified: 2026-10-28
+  - id: think-blocks
+    resource: ../../../lib/features/ai/util/think_blocks.dart
+    title: Stripping reasoning from stored text
+    last_modified: 2026-10-28
   - id: sampling-temperature
     resource: ../../../lib/features/ai/util/sampling_temperature.dart
     title: Reasoning temperature rule
@@ -509,6 +513,12 @@ only ones with a user-facing control; both live in the model row's
 | Melious | The caller's effort unchanged, except for `qwen3.8-27b` and `qwen3.8-max`, which reject a request without one: those get `low` when the caller set nothing and `medium` in place of `high` | `MeliousInferenceRepository.resolveReasoningEffort` |
 | Mistral | `reasoning_effort` only for the [adjustable-reasoning models](https://docs.mistral.ai/studio-api/conversations/reasoning) (`mistral-small-latest`, `mistral-medium-3-5`, `mistral-large-4-0`), which take just `none` or `high`: the caller's effort, else the row's thinking setting (the model page's *Think before answering* switch), with minimal and low sent as `none`, medium and high as `high`. Other Mistral models get nothing. Streamed `thinking` chunks come back wrapped in `<think>` tags, as Ollama's do | `MistralInferenceRepository.reasoningEffortWireValue`, `MistralStreamContent` |
 | OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, oMLX, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent, and oMLX's catalog only flags which models reason | `CloudInferenceGenerate` |
+
+Every reasoning trace travels inside `<think>` tags in the streamed content, so
+live views (agent internals, the chat) can show it. Whatever is *stored* drops
+it through `stripThinkBlocks`: conversation history, so past reasoning is never
+resent, and one-shot results (`OneShotTextGeneration`), which callers persist
+and display as is — tomorrow's note, for one.
 
 On the pass-through providers the effort is whatever the call site asks for, and
 only four call sites ask: the goal check-in compactor, the goal check-in digest,
