@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.68]
+
+### Added
+
+- **Pin the task filters you live in.** Every saved filter in Task filters now
+  has a pin — tap it, or swipe the filter right. Turn on *Pinned only* in the
+  sheet's bar and the sidebar shows just your pinned filters — all of them,
+  without the five-row limit. Pins sync with the filters themselves; *Pinned
+  only* is per device, so a phone can keep to a few while a desktop shows
+  everything.
+- **You can see who analysed an image or recording, and go there.** The
+  details behind an analysis, transcript or summary now list the agent, the
+  inference profile and the skill that produced it, plus the task it belongs
+  to. Tap the agent, profile or task to open it.
+
+### Changed
+
+- **Swipe a task filter left to delete it.** The trash button is gone; you
+  still confirm before anything is deleted.
+- **Task filters manages your filters and no longer creates them.** Save a new
+  filter from the filter panel, where you build it.
+- **Task filter names get more room in the sidebar.** The saved filters under
+  Tasks sat indented beneath it, so the highlighted filter looked narrower than
+  the Tasks row above it and long names were cut short. The filters now span
+  the full width of the sidebar, giving every name 16 more pixels before it
+  is truncated, on desktop and in the mobile drawer alike.
+- **AI work is credited by a quiet line of text instead of a pill, and it no
+  longer disappears when no cost was reported.** The pill used to vanish for
+  local models and Melious speech-to-text, so nothing showed that AI had
+  written the text. Wherever the app recorded who did the work, a small, faint
+  line now sits under it: on an analysis or summary it names the model, on a
+  recording it names the transcription, and either adds the cost only when it
+  is known. Tap it for the details. Analyses and generated prompts from before
+  the app kept this record show their model and say that nothing more was
+  recorded.
+- **The running-timer island stays off pages with their own action bar.** On
+  the phone, the capsule showing a running timer or recording now appears only
+  alongside the navigation row with its menu button and add action. Editors
+  that dock their own Save or action bar at the bottom — such as Edit category,
+  a project, a goal or a habit — no longer show it over that bar; it slides
+  away with the navigation row and returns with it. The running timer stays
+  reachable from the sidebar's activity summary.
+
+### Fixed
+
+- **Task filters scroll once.** The sheet's list used to scroll inside the
+  scrolling sheet; it is now one scroll, with Pinned only and Edit kept in reach
+  on a glass bar at the top.
+- **The sidebar's scrollbar no longer covers the task counts.** It now runs
+  down the sidebar's own edge, clear of numbers like 999+.
+- **The expanded Activity section in the sidebar showed every timer twice.**
+  Opening it kept the compact recording time, timer and agent count in its
+  heading while the cards below repeated the same values. Expanded, the heading
+  now shows just the section name, sitting right above the cards, which keep
+  their elapsed times and stop buttons. The section also lost its grey
+  background and sits directly on the sidebar.
+- **Recording summaries failed with DeepSeek.** DeepSeek can send its answer in
+  small pieces, and each piece was read as a separate, unnamed answer, so the
+  summary was rejected twice and never saved. The pieces are now put back
+  together, and recordings summarise with DeepSeek just as they do with Mistral
+  or GLM.
+
 ## [1.1.67]
 
 ### Added
