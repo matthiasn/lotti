@@ -66,11 +66,23 @@ going back from history lands on the entity, not on a form.
 
 **Tasks go by id.** On desktop the URL keeps the task the tab was opened at
 while linked tasks replace it in the pane, so the desktop tasks tab is
-recorded from `desktopSelectedTaskId` alone — the id of the task in view —
-and its route is never read; `TasksLocation` sets that id from the route a
-microtask after each change. On a phone the route is the task in view, except
-for a linked task, which `openLinkedTaskDetail` pushes on the navigator
-without a URL: it reports that id through `HistoryRecorder.recordVisit`.
+recorded from the top of `desktopTaskDetailStack` — the id of the task in
+view — and its route is never read. Every change to that stack assigns a new
+list and so notifies: `TasksLocation`'s reset to the route (a microtask after
+each route change), a linked push or pop, and `NavService.openTask`, which
+beams first so Tasks is in front when the stack changes, and replaces the
+stack even when it already held that one task, so reopening it from History
+is still a visit. A stack change while Tasks is in the background is not.
+
+Bringing the tab forward records nothing by itself: a beam into it from
+another tab (a notification, a Daily OS lane) moves the tab index a frame
+before the stack catches up, so reading the stack then would log the task the
+tab showed before. The stack's own change records the visit — and, as in a
+browser, merely switching back to a tab is not one.
+
+On a phone the route is the task in view, except for a linked task, which
+`openLinkedTaskDetail` pushes on the navigator without a URL: it reports that
+id through `HistoryRecorder.recordVisit`.
 
 **A background tab is ignored.** Every tab stays mounted, and one can move on
 its own — the logbook's newest-entry auto-selection beams within its tab — while

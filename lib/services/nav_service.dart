@@ -740,16 +740,21 @@ class NavService {
   }
 
   /// Shows task [taskId] by id, as the one task in view: on desktop the
-  /// detail stack becomes `[taskId]` first, so no linked task pushed above
+  /// detail stack becomes `[taskId]`, so no linked task pushed above
   /// an earlier visit stays in the pane — [resetDesktopTaskDetail] keeps
   /// pushes when the URL's base task is unchanged, so beaming alone would
-  /// not. Then beams to the task's route, bringing the Tasks tab forward.
+  /// not.
+  ///
+  /// Beams first, so the Tasks tab is already in front when the stack
+  /// changes: whoever watches the stack sees the open as a change in the
+  /// tab being looked at. The stack is replaced with a new list even when
+  /// it already held only [taskId], so an explicit open always notifies. A
+  /// refused beam (Tasks not allowed) leaves the stack alone.
   void openTask(String taskId) {
-    if (_isDesktopMode) {
-      desktopTaskDetailStack.value = <String>[taskId];
-      desktopSelectedTaskId.value = taskId;
-    }
     beamToNamed('/tasks/$taskId');
+    if (!_isDesktopMode || index != tasksIndex) return;
+    desktopTaskDetailStack.value = <String>[taskId];
+    desktopSelectedTaskId.value = taskId;
   }
 
   /// Push a linked task onto the desktop detail stack so the right pane
