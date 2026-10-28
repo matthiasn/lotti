@@ -52,6 +52,11 @@ void main() {
     );
   });
 
+  test('drops an unclosed block through the end of input', () {
+    expect(stripThinkBlocks('Answer <think>cut off mid-thought'), 'Answer');
+    expect(stripThinkBlocks('<thinking>never closed'), isNull);
+  });
+
   test('trims and returns null when only whitespace remains', () {
     expect(stripThinkBlocks('  <think>x</think>\n Answer  '), 'Answer');
     expect(stripThinkBlocks(' <THINKING a=1>x</THINKING> '), isNull);

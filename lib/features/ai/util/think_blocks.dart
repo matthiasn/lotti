@@ -1,11 +1,12 @@
 /// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
-/// (case-insensitive, possibly spanning newlines). Providers stream their
-/// reasoning inside these tags so live views can show it; anything stored
-/// must drop it. Conversation history would otherwise resend it, which wastes
+/// (case-insensitive, possibly spanning newlines), and an unclosed one
+/// through the end of input, as a stream cut off mid-thought leaves.
+/// Providers stream their reasoning inside these tags so live views can show
+/// it; anything stored must drop it. Conversation history would otherwise resend it, which wastes
 /// tokens and, for Gemma 4, violates Google's guidance that past reasoning
 /// must not be carried forward; a one-shot result would show it to the user.
 final _thinkBlockPattern = RegExp(
-  r'<think(?:ing)?\b[^>]*>[\s\S]*?</think(?:ing)?>',
+  r'<think(?:ing)?\b[^>]*>[\s\S]*?(?:</think(?:ing)?>|$)',
   caseSensitive: false,
 );
 
