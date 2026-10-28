@@ -413,7 +413,7 @@ void main() {
     }
   });
 
-  testWidgets('unfilled shell gains an outline around the expanded details', (
+  testWidgets('paints no fill or frame; expanded cards span the header width', (
     tester,
   ) async {
     when(
@@ -427,37 +427,34 @@ void main() {
 
     Material shell() =>
         tester.widget<Material>(find.byKey(SidebarActivitySummaryKeys.root));
-    BorderSide shellBorder() => (shell().shape! as RoundedRectangleBorder).side;
 
-    // The shell never paints a fill: collapsed it sits on the sidebar like a
-    // navigation row, and expanded the cards keep their own single surface.
-    expect(shell().color, Colors.transparent);
-    expect(shellBorder(), BorderSide.none);
+    // The summary sits on the sidebar like a navigation row: a transparent
+    // ink surface with no shape, so neither a fill nor an outline is painted.
+    expect(shell().type, MaterialType.transparency);
+    expect(shell().shape, isNull);
 
     await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
     await tester.pump();
     await tester.pump(SidebarTimerSection.animationDuration);
 
-    final context = tester.element(find.byKey(SidebarActivitySummaryKeys.root));
-    expect(shell().color, Colors.transparent);
-    expect(
-      shellBorder().color,
-      context.designTokens.colors.decorative.level01,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(SidebarActivitySummaryKeys.root),
-        matching: find.byType(SidebarTimerSection),
-      ),
-      findsOneWidget,
-    );
-    final shellRect = tester.getRect(
-      find.byKey(SidebarActivitySummaryKeys.root),
+    expect(shell().type, MaterialType.transparency);
+    expect(shell().shape, isNull);
+    final headerRect = tester.getRect(
+      find.byKey(SidebarActivitySummaryKeys.header),
     );
     final cardRect = tester.getRect(find.byType(SidebarTimerSection));
-    expect(cardRect.left, greaterThan(shellRect.left));
-    expect(cardRect.right, lessThan(shellRect.right));
-    expect(cardRect.bottom, lessThan(shellRect.bottom));
+    expect(cardRect.left, headerRect.left);
+    expect(cardRect.right, headerRect.right);
+    expect(cardRect.top, greaterThanOrEqualTo(headerRect.bottom));
+
+    // Expanded, the heading labels the cards directly beneath it: only a
+    // slim spacing.step2 gap separates its row from the first card.
+    final context = tester.element(find.byKey(SidebarActivitySummaryKeys.root));
+    final chevronRect = tester.getRect(find.byIcon(LottiIcons.expand));
+    expect(
+      cardRect.top - chevronRect.bottom,
+      context.designTokens.spacing.step2,
+    );
   });
 
   testWidgets('expanded header names the section without the durations', (
