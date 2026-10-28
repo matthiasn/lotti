@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_view_counts.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/save_current_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_rail.dart';
@@ -94,8 +95,14 @@ class _GatedRepo implements SavedTaskFilterCountRepository {
   }
 
   @override
-  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
-      DueDateUrgency.normal;
+  Future<List<DueDateUrgency>> dueUrgencies(List<TasksFilter> filters) async =>
+      List.filled(filters.length, DueDateUrgency.normal);
+
+  @override
+  Future<TaskDueViewCounts> dueViewCounts(
+    TasksFilter filter, {
+    Set<String>? restrictToIds,
+  }) async => TaskDueViewCounts.zero;
 }
 
 Future<({ProviderContainer container})> _pumpRail(

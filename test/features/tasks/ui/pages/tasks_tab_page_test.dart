@@ -31,6 +31,7 @@ import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/features/tasks/state/task_due_view_counts.dart';
 import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/state/task_list_density_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
@@ -65,7 +66,7 @@ void main() {
 
   late FakeJournalPageController fakeController;
   // What the due-date smart views count; nothing urgent unless a test says so.
-  var dueViewCounts = const TaskDueViewCounts(overdue: 0, dueToday: 0);
+  var dueViewCounts = TaskDueViewCounts.zero;
   late FakeRecentSearchesController fakeRecents;
   late TestGetItMocks getItMocks;
   late MockEntitiesCacheService mockEntitiesCacheService;
@@ -182,7 +183,7 @@ void main() {
 
   tearDown(() async {
     pagingController.dispose();
-    dueViewCounts = const TaskDueViewCounts(overdue: 0, dueToday: 0);
+    dueViewCounts = TaskDueViewCounts.zero;
     await tearDownTestGetIt();
   });
 

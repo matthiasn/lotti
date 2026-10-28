@@ -5,6 +5,7 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
+import 'package:lotti/features/tasks/state/task_due_view_counts.dart';
 import 'package:lotti/features/tasks/state/task_due_views_provider.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
@@ -16,7 +17,7 @@ import '../../../mocks/mocks.dart';
 import '../../../test_utils/fake_journal_page_controller.dart';
 import '../../../widget_test_utils.dart';
 
-/// Records every filter it is asked to count and answers by due clause.
+/// Records every filter the provider asks it to count both views for.
 class _RecordingRepo implements SavedTaskFilterCountRepository {
   _RecordingRepo({required this.overdue, required this.dueToday});
 
@@ -26,19 +27,23 @@ class _RecordingRepo implements SavedTaskFilterCountRepository {
   final List<Set<String>?> restrictions = [];
 
   @override
-  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) async {
+  Future<TaskDueViewCounts> dueViewCounts(
+    TasksFilter filter, {
+    Set<String>? restrictToIds,
+  }) async {
     asked.add(filter);
     restrictions.add(restrictToIds);
-    return switch (filter.dueFilter) {
-      TaskDueFilter.overdue => overdue,
-      TaskDueFilter.dueToday => dueToday,
-      TaskDueFilter.all => -1,
-    };
+    return TaskDueViewCounts(overdue: overdue, dueToday: dueToday);
   }
 
+  // The views must come from the one batched call, never from two counts.
   @override
-  Future<DueDateUrgency> dueUrgency(TasksFilter filter) async =>
-      DueDateUrgency.normal;
+  Future<int> count(TasksFilter filter, {Set<String>? restrictToIds}) =>
+      throw StateError('smart views counted view by view');
+
+  @override
+  Future<List<DueDateUrgency>> dueUrgencies(List<TasksFilter> filters) =>
+      throw UnimplementedError();
 }
 
 void main() {
@@ -70,7 +75,7 @@ void main() {
     return container.read(taskDueViewCountsProvider.future);
   }
 
-  test('counts each view as the live filter with that due clause', () async {
+  test('counts both views from the live filter in one call', () async {
     final repo = _RecordingRepo(overdue: 3, dueToday: 2);
 
     final counts = await countsFor(
@@ -81,19 +86,10 @@ void main() {
       repo,
     );
 
-    expect(counts.overdue, 3);
-    expect(counts.dueToday, 2);
-    expect(counts.of(TaskDueFilter.overdue), 3);
-    expect(counts.of(TaskDueFilter.dueToday), 2);
-    expect(repo.asked.map((f) => f.dueFilter), [
-      TaskDueFilter.overdue,
-      TaskDueFilter.dueToday,
-    ]);
+    expect((counts.overdue, counts.dueToday), (3, 2));
     // Every other clause rides along, so the pill counts what it would list.
-    for (final filter in repo.asked) {
-      expect(filter.selectedTaskStatuses, {'OPEN'});
-      expect(filter.selectedCategoryIds, {'cat-1'});
-    }
+    expect(repo.asked.single.selectedTaskStatuses, {'OPEN'});
+    expect(repo.asked.single.selectedCategoryIds, {'cat-1'});
   });
 
   test("an active view does not hide the other view's count", () async {
@@ -108,10 +104,7 @@ void main() {
     );
 
     expect(counts.dueToday, 1);
-    expect(
-      repo.asked.map((f) => f.dueFilter),
-      containsAll([TaskDueFilter.overdue, TaskDueFilter.dueToday]),
-    );
+    expect(repo.asked, hasLength(1));
   });
 
   test(
@@ -121,9 +114,7 @@ void main() {
 
       await countsFor(const JournalPageState(), repo);
 
-      for (final filter in repo.asked) {
-        expect(filter.selectedTaskStatuses, {...allTaskStatuses});
-      }
+      expect(repo.asked.single.selectedTaskStatuses, {...allTaskStatuses});
     },
   );
 
@@ -132,7 +123,7 @@ void main() {
 
     await countsFor(const JournalPageState(), repo);
 
-    expect(repo.restrictions, [null, null]);
+    expect(repo.restrictions, [null]);
   });
 
   test('a full-text search restricts both counts to its matches', () async {
@@ -149,7 +140,6 @@ void main() {
     );
 
     expect(repo.restrictions, [
-      {'t1', 't2'},
       {'t1', 't2'},
     ]);
   });
@@ -171,15 +161,5 @@ void main() {
 
     expect(repo.restrictions.first, {'v1', 'v2'});
     verifyNever(() => fts.watchFullTextMatches(any()));
-  });
-
-  test('all is not a view', () {
-    expect(
-      () => const TaskDueViewCounts(
-        overdue: 1,
-        dueToday: 1,
-      ).of(TaskDueFilter.all),
-      throwsArgumentError,
-    );
   });
 }

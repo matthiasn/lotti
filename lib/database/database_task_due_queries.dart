@@ -45,30 +45,36 @@ mixin _JournalDbTaskDueQueries on _$JournalDb, _JournalDbConfigFlags {
     TaskDueFilter filter, {
     required DateTime now,
   }) async {
+    if (filter == TaskDueFilter.all) {
+      throw ArgumentError.value(filter, 'filter', 'has no due-date constraint');
+    }
+    final windows = await getOpenTaskIdsByDueWindow(now: now);
+    return filter == TaskDueFilter.dueToday
+        ? windows.dueToday
+        : windows.overdue;
+  }
+
+  /// Both due windows of [now]'s local day from **one** read of the open
+  /// tasks due up to tonight: the ids overdue (due before today) and the ids
+  /// due today. Disjoint by construction — the split is local midnight.
+  ///
+  /// Callers that need both windows — the smart-view counts, the saved-filter
+  /// urgency markers — take them from here rather than asking
+  /// [getOpenTaskIdsForDueFilter] twice.
+  Future<({Set<String> overdue, Set<String> dueToday})>
+  getOpenTaskIdsByDueWindow({required DateTime now}) async {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-    final (DateTime? start, DateTime end) = switch (filter) {
-      TaskDueFilter.dueToday => (startOfDay, endOfDay),
-      TaskDueFilter.overdue => (
-        null,
-        startOfDay.subtract(const Duration(microseconds: 1)),
-      ),
-      TaskDueFilter.all => throw ArgumentError.value(
-        filter,
-        'filter',
-        'has no due-date constraint',
-      ),
-    };
     final privateStatuses = await _visiblePrivateStatuses();
     final superset = await _coalesceOpenTasksDueUpTo(endOfDay, privateStatuses);
-    return {
-      for (final task in _filterTasks(
-        superset,
-        startInclusive: start,
-        endInclusive: end,
-      ))
+    final overdue = <String>{};
+    final dueToday = <String>{};
+    for (final task in _filterTasks(superset, endInclusive: endOfDay)) {
+      (task.data.due!.isBefore(startOfDay) ? overdue : dueToday).add(
         task.meta.id,
-    };
+      );
+    }
+    return (overdue: overdue, dueToday: dueToday);
   }
 
   /// Tasks now DONE or REJECTED whose row changed at or after [since] — the
