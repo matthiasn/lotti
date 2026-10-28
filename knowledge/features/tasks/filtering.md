@@ -359,11 +359,16 @@ flowchart LR
   (`DesignSystemGlassStrip` docked to the top, hairline below): the
   *Pinned only* `DesignSystemToggle` on the leading edge and Edit / Done as a
   tertiary `DesignSystemButton` on the trailing one. *Save current filter…* is
-  the page's sticky action (`SavedTaskFiltersSaveFooter`): a large full-width
-  primary `DesignSystemButton` on `DesignSystemGlassActionFooter`, the footer
-  every modal's primary action uses, with the rows reserving
-  `reservedHeightFor` at the bottom so the last one scrolls clear of it. It
-  closes the sheet only when a filter was actually saved. Normal rows are
+  the page's sticky action (`SavedTaskFiltersSaveFooter`): a large primary
+  `DesignSystemButton` on the standard glass `DesignSystemModalActionBar`, in
+  the `compactPrimary` layout so it keeps its own width on the trailing edge —
+  an occasional action beside a list mostly picked from, not a form's
+  confirm. Its padding matches `DesignSystemGlassActionFooter`, whose
+  `reservedHeightFor` the rows keep at the bottom so the last one scrolls
+  clear of it. It closes the sheet only when a filter was actually saved.
+  Both row builders pass a `findChildIndexCallback`, so an unpin in
+  pinned-only mode does not rebuild the rows below it — except in Edit mode,
+  where `SliverReorderableList` keys its items by index itself. Normal rows are
   single-select ≥48dp targets with live counts and **multi-channel selection**
   (selected surface, radio, bold name), and end in a ≥48dp
   `SavedTaskFilterPinToggle` — filled accent pin when pinned, outline when not,
