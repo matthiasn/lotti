@@ -11062,6 +11062,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Skrýt na dnešek';
 
   @override
+  String nudgeBannerDockPageLabel(int index, int count) {
+    return 'Zobrazit banner $index z $count';
+  }
+
+  @override
   String get nudgeBannerRateLabel => 'Ohodnotit';
 
   @override

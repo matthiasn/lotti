@@ -10880,6 +10880,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Dismiss for today';
 
   @override
+  String nudgeBannerDockPageLabel(int index, int count) {
+    return 'Show banner $index of $count';
+  }
+
+  @override
   String get nudgeBannerRateLabel => 'Rate';
 
   @override

@@ -13,9 +13,12 @@ import 'package:material_ui/material_ui.dart';
 /// medium-emphasis ink, on the [TapTargets.minimum] floor — a dismissal and
 /// a verdict beside a primary, neither of which may out-shout it. Rate is
 /// labelled for the same reason Snooze is: a lone glyph reads as a state,
-/// not an action, and on touch there is no hover to explain it. Snooze ends
-/// its label on the host's trailing edge, where the row's other trailing
-/// content ends. Shared by the goal banner card and the dock, at every
+/// not an action, and on touch there is no hover to explain it. Snooze sits
+/// inside the host's padding like everything else on the banner: its button
+/// frame, not its label, meets the trailing inset, mirroring the persona chip
+/// on the leading edge. Pulled outward so the label met that inset instead,
+/// the word sat hard against the card's border and its hover pill spilled
+/// into the margin. Shared by the goal banner card and the dock, at every
 /// width.
 ///
 /// On a [compact] host above [TextScales.large] the pair is its glyphs
@@ -90,7 +93,6 @@ class NudgeBannerQuietActions extends StatelessWidget {
             variant: DesignSystemButtonVariant.quiet,
             size: DesignSystemButtonSize.dense,
             tapTargetSize: MaterialTapTargetSize.padded,
-            alignsLabelToTrailingEdge: true,
             onPressed: onSnooze,
           );
 

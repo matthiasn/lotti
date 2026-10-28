@@ -4684,6 +4684,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Voor vandaag verbergen",
+  "nudgeBannerDockPageLabel": "Banner {index} van {count} tonen",
   "nudgeBannerRateLabel": "Beoordelen",
   "nudgeBannerRateTooltip": "Beoordeel deze banner",
   "nudgeBannerRatingSkip": "Overslaan",

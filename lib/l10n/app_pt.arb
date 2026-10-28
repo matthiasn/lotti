@@ -4684,6 +4684,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Ocultar por hoje",
+  "nudgeBannerDockPageLabel": "Mostrar banner {index} de {count}",
   "nudgeBannerRateLabel": "Avaliar",
   "nudgeBannerRateTooltip": "Avaliar este banner",
   "nudgeBannerRatingSkip": "Ignorar",

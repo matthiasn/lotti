@@ -626,6 +626,206 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
   });
 
+  /// How far the tenure hairline has run, 0–1.
+  double hairlineProgress(WidgetTester tester) {
+    final paint = tester.widget<CustomPaint>(
+      find.descendant(
+        of: find.byKey(const ValueKey('nudge-banner-dock-frame')),
+        matching: find.byType(CustomPaint),
+      ),
+    );
+    // The painter is private to the dock; its progress is the countdown.
+    // ignore: avoid_dynamic_calls
+    return (paint.painter! as dynamic).progress.value as double;
+  }
+
+  testWidgets('hover rewinds the countdown rather than freezing it: the '
+      'hairline empties, and leaving gives the banner a whole new tenure', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    // Two thirds of the way through the first tenure.
+    await tester.pump(nudgeBannerDockTenure * 2 ~/ 3);
+    expect(hairlineProgress(tester), greaterThan(0.5));
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await tester.pump();
+    await mouse.moveTo(tester.getCenter(find.text('First voice')));
+    await tester.pump();
+    expect(
+      hairlineProgress(tester),
+      0,
+      reason:
+          'the empty hairline is the '
+          'visible pause',
+    );
+
+    await mouse.moveTo(Offset.zero);
+    await tester.pump();
+    // Frozen and resumed, the dock would have advanced a third of a tenure
+    // after the pointer left; rewound, the banner holds for a whole one.
+    await tester.pump(nudgeBannerDockTenure * 2 ~/ 3);
+    expect(find.text('First voice'), findsOneWidget);
+    await tester.pump(nudgeBannerDockTenure ~/ 3);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+  });
+
+  testWidgets('the dots sit below the card, outside its frame, and each one '
+      'shows its banner when chosen', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+      entry(id: 'c', headline: 'Third voice'),
+    ]);
+    final frame = tester.getRect(
+      find.byKey(const ValueKey('nudge-banner-dock-frame')),
+    );
+    final pager = tester.getRect(
+      find.byKey(const ValueKey('nudge-banner-dock-pager')),
+    );
+    expect(pager.top, greaterThanOrEqualTo(frame.bottom));
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Show banner 1 of 3')),
+      isSemantics(isSelected: true, isButton: true, hasTapAction: true),
+    );
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Show banner 3 of 3')),
+      isSemantics(isSelected: false),
+    );
+
+    await tester.tap(find.bySemanticsLabel('Show banner 3 of 3'));
+    await settleTransition(tester);
+    expect(find.text('Third voice'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.bySemanticsLabel('Show banner 3 of 3')),
+      isSemantics(isSelected: true),
+    );
+    // A banner the user went to on purpose gets its whole tenure.
+    await tester.pump(nudgeBannerDockTenure * 2 ~/ 3);
+    expect(find.text('Third voice'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('a swipe pages the dock — left for the next banner, right for '
+      'the previous, wrapping at the ends', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+      entry(id: 'c', headline: 'Third voice'),
+    ]);
+
+    await tester.dragFrom(
+      tester.getCenter(find.text('First voice')),
+      const Offset(-160, 0),
+    );
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+
+    await tester.dragFrom(
+      tester.getCenter(find.text('Second voice')),
+      const Offset(160, 0),
+    );
+    await settleTransition(tester);
+    await tester.dragFrom(
+      tester.getCenter(find.text('First voice')),
+      const Offset(160, 0),
+    );
+    await settleTransition(tester);
+    expect(find.text('Third voice'), findsOneWidget, reason: 'wraps');
+  });
+
+  testWidgets('keyboard focus on a dot follows its banner when the queue '
+      'changes around it', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    final node = Focus.of(
+      tester.element(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('nudge-banner-dock-dot-b')),
+              matching: find.byType(Container),
+            )
+            .first,
+      ),
+    )..requestFocus();
+    await tester.pump();
+    expect(node.hasFocus, isTrue);
+
+    // A banner lands in front: every dot shifts one position right.
+    notifier(tester).entries = [
+      entry(id: 'z', headline: 'Newest voice'),
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ];
+    await tester.pump();
+    await tester.pump();
+
+    expect(node.hasFocus, isTrue, reason: 'the same node, still focused');
+    expect(
+      find.ancestor(
+        of: find.byElementPredicate((e) => e == node.context),
+        matching: find.byKey(const ValueKey('nudge-banner-dock-dot-b')),
+      ),
+      findsOneWidget,
+      reason: 'and still on the dot of the banner it was on',
+    );
+  });
+
+  testWidgets('a long queue wraps its dots on a narrow phone: none overflows, '
+      'and the last one is still reachable', (tester) async {
+    tester.view
+      ..physicalSize = const Size(320, 640)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpDock(tester, [
+      for (var i = 0; i < 13; i++) entry(id: 'n$i', headline: 'Voice $i'),
+    ], compact: true);
+
+    expect(tester.takeException(), isNull);
+    final last = find.byKey(const ValueKey('nudge-banner-dock-dot-n12'));
+    final screen = Offset.zero & tester.view.physicalSize;
+    expect(screen.contains(tester.getCenter(last)), isTrue);
+    await tester.tap(last);
+    await settleTransition(tester);
+    expect(find.text('Voice 12'), findsOneWidget);
+  });
+
+  testWidgets('a dot the pointer rests on lights its ring — the only way a '
+      'dot can say it is clickable', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    double ringAlpha() {
+      final dot = tester.widget<Container>(
+        find.descendant(
+          of: find.byKey(const ValueKey('nudge-banner-dock-dot-b')),
+          matching: find.byType(Container),
+        ),
+      );
+      return ((dot.decoration! as BoxDecoration).border! as Border).top.color.a;
+    }
+
+    expect(ringAlpha(), closeTo(SurfaceAlphas.muted, 0.01));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(const ValueKey('nudge-banner-dock-dot-b'))),
+    );
+    await tester.pump();
+    expect(ringAlpha(), closeTo(SurfaceAlphas.linework, 0.01));
+  });
+
   testWidgets('a fresh banner arriving mid-rotation jumps the queue', (
     tester,
   ) async {
@@ -1174,8 +1374,10 @@ void main() {
     );
   });
 
-  testWidgets("a second tenant arriving does not change the dock's height "
-      "— the dots overlay the tenant's own inset", (tester) async {
+  testWidgets("a second tenant arriving does not change the card's height "
+      '— the hairline overlays its edge and the dots sit below it', (
+    tester,
+  ) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
     final frame = find.byKey(const ValueKey('nudge-banner-dock-frame'));
     final lone = tester.getSize(frame).height;
@@ -1185,8 +1387,12 @@ void main() {
     ];
     await tester.pump();
     await tester.pump();
-    // Hairline and dots both overlay the tenant: no growth at all.
+    // The card does not grow; the dock does, by the dot row beneath it.
     expect(tester.getSize(frame).height, lone);
+    expect(
+      tester.getRect(find.byKey(const ValueKey('nudge-banner-dock-pager'))).top,
+      greaterThanOrEqualTo(tester.getRect(frame).bottom),
+    );
   });
 
   testWidgets('the wide dock renders its star and Snooze through the shared '

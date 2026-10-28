@@ -4179,6 +4179,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Ascundeți pentru azi",
+  "nudgeBannerDockPageLabel": "Afișați bannerul {index} din {count}",
   "nudgeBannerRateLabel": "Evaluați",
   "nudgeBannerRateTooltip": "Evaluați acest banner",
   "nudgeBannerRatingSkip": "Omiteți",

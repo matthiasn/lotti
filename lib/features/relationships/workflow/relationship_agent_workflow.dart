@@ -351,6 +351,7 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       threadId: threadId,
       runKey: runKey,
       activeAdIds: activeAdIds,
+      bannerAllowed: cadenceDue,
       sourceCheckInIds: {
         for (final entry in relationshipCheckInWindow(checkIns)) entry.id,
       },
@@ -890,7 +891,10 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       final freshActive = byId.values.any(
         (n) => n.status == NudgeStatus.active,
       );
-      if (firstAd != null && !freshActive && !_dismissedToday(rows, now)) {
+      if (firstAd != null &&
+          !freshActive &&
+          !_dismissedToday(rows, now) &&
+          await _cadenceStillDue(agentId, subject, now)) {
         // The dock renders the brief verbatim, and the FACTS block hands the
         // model literal adId=<uuid> lines — sanitize before persisting (the
         // goal-workflow rule, shared helper). UTC stamps: updatedAt feeds the
@@ -947,6 +951,26 @@ class RelationshipAgentWorkflow with AgentErrorLogging {
       attributionFinalized: attributionFinalized,
       reportHeadAdvanced: reportHeadAdvanced,
     );
+  }
+
+  /// Whether [subject]'s cadence is still due as the banner is about to be
+  /// written — re-derived inside the transaction, not taken from the
+  /// derivation the wake started with. A check-in saved while the model was
+  /// thinking makes the person not due, and Phase A's sweep, which retires
+  /// a banner that outlives its lapse, has already run for that check-in: a
+  /// banner written now would chide the user about someone they were in
+  /// touch with minutes ago, until the next morning's tick retired it.
+  Future<bool> _cadenceStillDue(
+    String agentId,
+    RelationshipEntry subject,
+    DateTime now,
+  ) async {
+    final current = await _phaseA.deriveCadenceFacts(
+      agentId: agentId,
+      relationship: subject,
+      now: now,
+    );
+    return current.status == RelationshipCadenceStatus.due;
   }
 
   InferenceUsage? _merge(InferenceUsage? a, InferenceUsage? b) =>

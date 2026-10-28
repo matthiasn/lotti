@@ -1050,6 +1050,86 @@ void main() {
     },
   );
 
+  /// The model answers with a briefing and a banner, whatever the FACTS say;
+  /// [during] runs while it "thinks", for a check-in landing mid-inference.
+  void stubBriefingAndBanner({void Function()? during}) {
+    stubGlmResolution();
+    conversationRepository
+      ..maxDelegateCalls = 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0,
+            strategy,
+          }) async {
+            during?.call();
+            await strategy!.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  RelationshipAgentToolNames.updateRelationshipReport,
+                  briefingArgs(),
+                ),
+                toolCall(
+                  RelationshipAgentToolNames.createRelationshipAd,
+                  adArgs(),
+                  id: 'call-2',
+                ),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+  }
+
+  test('the refresh a check-in arms briefs but raises no banner: the person '
+      'was just contacted, so a "check in" reminder would be wrong', () async {
+    // Yesterday's call: inside the 7-day cadence, and newer than any
+    // briefing, so the refresh wake does run.
+    when(
+      () => relationshipRepository.getAllCheckInsForRelationship(
+        relationshipId,
+      ),
+    ).thenAnswer((_) async => [checkIn('c-2', DateTime(2026, 8, 15, 18))]);
+    stubBriefingAndBanner();
+
+    final result = await run(tokens: {relationshipReportRefreshTriggerToken});
+
+    expect(result.success, isTrue);
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+    expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+  });
+
+  test('a check-in landing while the model thinks cancels the banner the '
+      'due escalation was about to raise — the briefing still lands', () async {
+    stubBriefingAndBanner(
+      during: () =>
+          when(
+            () => relationshipRepository.getAllCheckInsForRelationship(
+              relationshipId,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              checkIn('c-1', DateTime(2026, 8, 1, 18)),
+              checkIn('c-2', DateTime(2026, 8, 16, 11)),
+            ],
+          ),
+    );
+
+    final result = await run(
+      tokens: {relationshipEscalationWorkspaceKey('2026-08-08')},
+    );
+
+    expect(result.success, isTrue);
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+    expect(upserts.whereType<RelationshipNudgeEntity>(), isEmpty);
+  });
+
   test(
     'a lapsed cadence keeps needs attention publishable after a good rating',
     () async {

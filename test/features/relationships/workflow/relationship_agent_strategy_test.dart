@@ -62,6 +62,7 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       activeAdIds: {'ad-live'},
+      bannerAllowed: true,
       sourceCheckInIds: {'check-in-1'},
     );
   });
@@ -254,6 +255,7 @@ void main() {
         threadId: 'thread-1',
         runKey: 'run-1',
         activeAdIds: const {},
+        bannerAllowed: true,
         allowedHealthBands: const {
           RelationshipHealthBand.needsAttention,
           RelationshipHealthBand.strained,
@@ -395,6 +397,39 @@ void main() {
         expect(strategy.createdAds, hasLength(1));
         expect(strategy.createdAds.single.brief.headline, 'Call Anna.');
         expect(lastResponse(), contains('at most once'));
+      },
+    );
+
+    test(
+      'rejects a banner while the cadence is not due — the refresh wake a '
+      'check-in arms must not chide about someone just contacted',
+      () async {
+        final notDue = RelationshipAgentStrategy(
+          domainLogger: MockDomainLogger(),
+          syncService: syncService,
+          agentId: 'relationship_agent:person-1',
+          threadId: 'thread-1',
+          runKey: 'run-1',
+          activeAdIds: const {},
+          bannerAllowed: false,
+        );
+
+        await notDue.processToolCalls(
+          toolCalls: [
+            _call(
+              name: RelationshipAgentToolNames.createRelationshipAd,
+              args: {
+                'headline': 'Check in with Anna soon.',
+                'tone': 'nudge',
+                'animation': 'steady',
+              },
+            ),
+          ],
+          manager: manager,
+        );
+
+        expect(notDue.createdAds, isEmpty);
+        expect(lastResponse(), contains('only allowed while the cadence is'));
       },
     );
 

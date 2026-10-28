@@ -4685,6 +4685,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Dölj resten av dagen",
+  "nudgeBannerDockPageLabel": "Visa banner {index} av {count}",
   "nudgeBannerRateLabel": "Betygsätt",
   "nudgeBannerRateTooltip": "Betygsätt den här bannern",
   "nudgeBannerRatingSkip": "Hoppa över",

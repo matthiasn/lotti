@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -35,6 +36,32 @@ bool touchesRelationshipBanners(Set<String> affectedIds) => affectedIds.any(
       id == relationshipNotification ||
       id == privateToggleNotification,
 );
+
+/// The day [register] says its person next becomes due, while that day is
+/// still ahead of [now] — the person is within their cadence, so no check-in
+/// reminder may speak about them. Null when there is no live register or
+/// the due day has come.
+///
+/// The lapse rule is Phase A's own (`deriveCadenceFacts`): due from UTC
+/// midnight of the due day key, one instant for every device. It reads the
+/// register's `dueAt` rather than its stored status, so a register no tick
+/// has rewritten since its due day passed stops hiding banners on time.
+///
+/// The writing side already refuses a banner while the cadence is not due;
+/// this is the render half, for a banner a peer on an older version raised
+/// right after a check-in, and for the minutes between a check-in landing and
+/// Phase A retiring the banner it made obsolete.
+@visibleForTesting
+DateTime? relationshipCadenceOkUntil(
+  AgentDomainEntity? register,
+  DateTime now,
+) {
+  if (register is! RelationshipHealthEntity || register.deletedAt != null) {
+    return null;
+  }
+  final dueAt = register.dueAt;
+  return GoalWindow.dayUtc(now.toUtc()).isBefore(dueAt) ? dueAt : null;
+}
 
 /// The notification batches [touchesRelationshipBanners] lets through.
 final StreamProvider<Set<String>> relationshipBannerUpdatesProvider =
@@ -97,6 +124,16 @@ final FutureProvider<List<NudgeBannerEntry>> activeRelationshipNudgesProvider =
           relationshipId,
         );
         if (relationship == null || relationship.meta.deletedAt != null) {
+          continue;
+        }
+        final okUntil = relationshipCadenceOkUntil(
+          await repository.getEntity(relationshipHealthId(identity.agentId)),
+          now,
+        );
+        if (okUntil != null) {
+          // Re-evaluate when the cadence lapses: a banner still standing
+          // then is one the person is due for.
+          considerDeadline(okUntil);
           continue;
         }
         final nudges = (await repository.getEntitiesByAgentId(

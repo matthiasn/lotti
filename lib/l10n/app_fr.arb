@@ -4179,6 +4179,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Masquer pour aujourd’hui",
+  "nudgeBannerDockPageLabel": "Afficher la bannière {index} sur {count}",
   "nudgeBannerRateLabel": "Noter",
   "nudgeBannerRateTooltip": "Noter cette bannière",
   "nudgeBannerRatingSkip": "Passer",

@@ -11113,6 +11113,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Masquer pour aujourd’hui';
 
   @override
+  String nudgeBannerDockPageLabel(int index, int count) {
+    return 'Afficher la bannière $index sur $count';
+  }
+
+  @override
   String get nudgeBannerRateLabel => 'Noter';
 
   @override

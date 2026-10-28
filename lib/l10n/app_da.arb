@@ -4685,6 +4685,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Skjul resten af dagen",
+  "nudgeBannerDockPageLabel": "Vis banner {index} af {count}",
   "nudgeBannerRateLabel": "Bedøm",
   "nudgeBannerRateTooltip": "Bedøm dette banner",
   "nudgeBannerRatingSkip": "Spring over",
