@@ -56,8 +56,15 @@ class MistralStreamContent {
       out.write('<think>');
       _inThinking = true;
     }
-    out.write(text);
+    // Mistral marks the block's end structurally, so a literal closing tag
+    // in the trace is just text. Defuse it, or it would end the block early
+    // for every downstream parser and leak the rest of the reasoning.
+    out.write(
+      text.replaceAllMapped(_closingTag, (m) => '</ ${m.group(1)}'),
+    );
   }
+
+  static final _closingTag = RegExp('</(think(?:ing)?)', caseSensitive: false);
 
   void _close(StringBuffer out) {
     out.write('</think>');

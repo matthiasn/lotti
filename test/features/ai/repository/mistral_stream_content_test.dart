@@ -95,6 +95,14 @@ void main() {
       expect(content.next('Answer'), 'Answer');
     });
 
+    test('defuses a literal closing tag inside the trace', () {
+      expect(
+        content.next([_thinking('Close with </think> or </THINKING>.')]),
+        '<think>Close with </ think> or </ THINKING>.',
+      );
+      expect(content.next('Answer'), '</think>Answer');
+    });
+
     test('reads string parts and skips other parts inside thinking', () {
       expect(
         content.next([
