@@ -4091,6 +4091,8 @@
   "modelEditLoadError": "Modellkonfiguration konnte nicht geladen werden",
   "modelEditMaxTokensHint": "Optional — leer lassen für unbegrenzt",
   "modelEditMaxTokensLabel": "Maximale Completion-Tokens",
+  "modelEditMistralThinkingDescription": "Mistral denkt das Problem zuerst durch: gründlichere Antworten, aber langsamer und mehr Tokens.",
+  "modelEditMistralThinkingLabel": "Vor dem Antworten nachdenken",
   "modelEditModalityNoneSelected": "Nichts ausgewählt",
   "modelEditOutputModalitiesHint": "Ausgabetypen auswählen",
   "modelEditOutputModalitiesLabel": "Ausgabemodalitäten",

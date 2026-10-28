@@ -1521,4 +1521,27 @@ void main() {
       });
     });
   });
+
+  group('isMistralAdjustableReasoningModelId', () {
+    test('matches the documented models, ignoring case and spaces', () {
+      for (final id in mistralAdjustableReasoningModelIds) {
+        expect(isMistralAdjustableReasoningModelId(id), isTrue, reason: id);
+      }
+      expect(
+        isMistralAdjustableReasoningModelId(' Mistral-Small-Latest '),
+        isTrue,
+      );
+    });
+
+    test('rejects other Mistral models', () {
+      for (final id in [
+        'mistral-medium-latest',
+        'mistral-small-2501',
+        'magistral-medium-2509',
+        'voxtral-mini-tts-3-0',
+      ]) {
+        expect(isMistralAdjustableReasoningModelId(id), isFalse, reason: id);
+      }
+    });
+  });
 }

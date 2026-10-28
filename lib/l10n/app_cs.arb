@@ -4098,6 +4098,8 @@
   "modelEditLoadError": "Nepodařilo se načíst konfiguraci modelu",
   "modelEditMaxTokensHint": "Volitelné — ponech prázdné pro neomezeno",
   "modelEditMaxTokensLabel": "Maximální počet completion tokenů",
+  "modelEditMistralThinkingDescription": "Mistral nejdřív promyslí problém: důkladnější odpovědi, ale pomalejší a s více tokeny.",
+  "modelEditMistralThinkingLabel": "Přemýšlet před odpovědí",
   "modelEditModalityNoneSelected": "Nic nevybráno",
   "modelEditOutputModalitiesHint": "Vyber výstupní typy",
   "modelEditOutputModalitiesLabel": "Výstupní modality",

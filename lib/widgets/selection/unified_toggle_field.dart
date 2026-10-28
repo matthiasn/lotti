@@ -1,8 +1,13 @@
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// AI-specific toggle field that matches the AI Settings design language
+/// AI-specific toggle field that matches the AI Settings design language.
+///
+/// It shares the settings selector rows' frame (a border around the card's
+/// own surface), insets, icon size and type scale, so a column of selectors
+/// and toggles lines up. The switch carries the on/off state; the frame stays
+/// the same either way.
 class UnifiedAiToggleField extends StatelessWidget {
   const UnifiedAiToggleField({
     required this.label,
@@ -23,100 +28,73 @@ class UnifiedAiToggleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
-            context.colorScheme.surfaceContainerHigh.withValues(alpha: 0.2),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: value
-              ? context.colorScheme.primary.withValues(alpha: 0.3)
-              : context.colorScheme.primaryContainer.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: enabled && onChanged != null ? () => onChanged!(!value) : null,
-          borderRadius: BorderRadius.circular(12),
-          splashColor: context.colorScheme.primary.withValues(alpha: 0.1),
-          highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                if (icon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: value
-                          ? context.colorScheme.primaryContainer.withValues(
-                              alpha: 0.3,
-                            )
-                          : context.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.m);
+    final mutedAlpha = enabled ? 1.0 : 0.5;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled && onChanged != null ? () => onChanged!(!value) : null,
+        borderRadius: radius,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step3,
+          ),
+          // No fill, like the selector rows: the card's surface shows through.
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (icon != null) ...[
+                    Icon(
                       icon,
                       size: 18,
-                      color: value
-                          ? context.colorScheme.primary
-                          : context.colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.6,
-                            ),
+                      color: tokens.colors.text.mediumEmphasis.withValues(
+                        alpha: mutedAlpha,
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
+                  ],
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis.withValues(
+                          alpha: mutedAlpha,
+                        ),
+                        fontWeight: tokens.typography.weight.semiBold,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: tokens.spacing.step3),
+                  UnifiedToggle(
+                    value: value,
+                    onChanged: enabled ? onChanged : null,
+                    enabled: enabled,
+                    semanticLabel: label,
+                  ),
                 ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: context.textTheme.titleMedium?.copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: enabled
-                              ? context.colorScheme.onSurface
-                              : context.colorScheme.onSurface.withValues(
-                                  alpha: 0.5,
-                                ),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      if (description != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          description!,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: context.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ],
+              ),
+              // Full width under the headline row, starting at the icon's
+              // edge rather than indented past it, so it wraps in fewer lines.
+              if (description != null) ...[
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  description!,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
-                const SizedBox(width: 12),
-                UnifiedToggle(
-                  value: value,
-                  onChanged: enabled ? onChanged : null,
-                  enabled: enabled,
-                  semanticLabel: label,
-                ),
               ],
-            ),
+            ],
           ),
         ),
       ),

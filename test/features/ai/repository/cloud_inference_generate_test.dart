@@ -103,7 +103,14 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
   _FakeMistralInferenceRepository() : super(domainLogger: MockDomainLogger());
 
   final textCalls =
-      <({String prompt, String model, ReasoningEffort? reasoningEffort})>[];
+      <
+        ({
+          String prompt,
+          String model,
+          ReasoningEffort? reasoningEffort,
+          GeminiThinkingMode? thinkingMode,
+        })
+      >[];
 
   @override
   Stream<CreateChatCompletionStreamResponse> generateText({
@@ -117,11 +124,13 @@ class _FakeMistralInferenceRepository extends MistralInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
+    GeminiThinkingMode? thinkingMode,
   }) {
     textCalls.add((
       prompt: prompt,
       model: model,
       reasoningEffort: reasoningEffort,
+      thinkingMode: thinkingMode,
     ));
     return Stream.value(_FakeMeliousInferenceRepository._chunk('mistral text'));
   }
@@ -405,7 +414,8 @@ void main() {
       );
     });
 
-    test('routes reasoning effort to the Mistral repository', () async {
+    test('routes reasoning effort and thinking mode to the Mistral '
+        'repository', () async {
       final fakeMistralRepo = _FakeMistralInferenceRepository();
       addTearDown(fakeMistralRepo.close);
       generate = CloudInferenceGenerate(
@@ -427,6 +437,7 @@ void main() {
             apiKey: 'sk-mistral-test',
             provider: providerOfType(InferenceProviderType.mistral),
             reasoningEffort: ReasoningEffort.high,
+            geminiThinkingMode: GeminiThinkingMode.medium,
           )
           .toList();
 
@@ -436,6 +447,10 @@ void main() {
       expect(
         fakeMistralRepo.textCalls.single.reasoningEffort,
         ReasoningEffort.high,
+      );
+      expect(
+        fakeMistralRepo.textCalls.single.thinkingMode,
+        GeminiThinkingMode.medium,
       );
     });
   });

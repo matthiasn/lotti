@@ -4091,6 +4091,8 @@
   "modelEditLoadError": "Error al cargar la configuración del modelo",
   "modelEditMaxTokensHint": "Opcional — déjalo vacío para ilimitado",
   "modelEditMaxTokensLabel": "Tokens máximos de compleción",
+  "modelEditMistralThinkingDescription": "Mistral analiza primero el problema: respuestas más profundas, pero más lentas y con más tokens.",
+  "modelEditMistralThinkingLabel": "Pensar antes de responder",
   "modelEditModalityNoneSelected": "Ninguno seleccionado",
   "modelEditOutputModalitiesHint": "Selecciona los tipos de salida",
   "modelEditOutputModalitiesLabel": "Modalidades de salida",

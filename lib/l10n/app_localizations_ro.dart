@@ -10932,6 +10932,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get modelEditMaxTokensLabel => 'Tokenuri maxime de completare';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral analizează mai întâi problema: răspunsuri mai temeinice, dar mai lente și cu mai mulți tokeni.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Gândire înainte de răspuns';
+
+  @override
   String get modelEditModalityNoneSelected => 'Niciunul selectat';
 
   @override

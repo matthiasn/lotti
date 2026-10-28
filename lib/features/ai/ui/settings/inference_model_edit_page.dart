@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
@@ -328,7 +329,31 @@ class _InferenceModelEditPageState
                 onChanged: formController.isReasoningModelChanged,
                 icon: LottiIcons.reasoning,
               ),
-              SizedBox(height: tokens.spacing.step3),
+              if (ownerProvider?.inferenceProviderType ==
+                      InferenceProviderType.mistral &&
+                  isMistralAdjustableReasoningModelId(
+                    formState.providerModelId.value,
+                  )) ...[
+                SizedBox(height: tokens.spacing.step4),
+                UnifiedAiToggleField(
+                  label: messages.modelEditMistralThinkingLabel,
+                  description: messages.modelEditMistralThinkingDescription,
+                  value: switch (formState.geminiThinkingMode) {
+                    GeminiThinkingMode.minimal ||
+                    GeminiThinkingMode.low => false,
+                    GeminiThinkingMode.medium ||
+                    GeminiThinkingMode.high => true,
+                  },
+                  onChanged: (thinks) =>
+                      formController.geminiThinkingModeChanged(
+                        thinks
+                            ? GeminiThinkingMode.high
+                            : GeminiThinkingMode.low,
+                      ),
+                  icon: LottiIcons.reasoning,
+                ),
+              ],
+              SizedBox(height: tokens.spacing.step4),
               UnifiedAiToggleField(
                 label: messages.modelEditFunctionCallingLabel,
                 description: messages.modelEditFunctionCallingDescription,

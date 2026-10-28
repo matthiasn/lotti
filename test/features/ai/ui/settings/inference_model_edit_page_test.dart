@@ -236,6 +236,79 @@ void main() {
       expect(find.text('Minimal'), findsOneWidget);
     });
 
+    group('Mistral thinking switch', () {
+      void useMistral({
+        required String providerModelId,
+        GeminiThinkingMode mode = GeminiThinkingMode.low,
+      }) {
+        final testDate = DateTime(2024, 3, 15, 10, 30);
+        testProvider = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          name: 'Mistral (EU)',
+          baseUrl: 'https://api.mistral.ai/v1',
+          apiKey: 'test-key',
+          createdAt: testDate,
+          inferenceProviderType: InferenceProviderType.mistral,
+        );
+        testModel = AiConfig.model(
+          id: 'test-model-id',
+          name: 'Mistral Model',
+          providerModelId: providerModelId,
+          inferenceProviderId: 'provider-1',
+          createdAt: testDate,
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: true,
+          geminiThinkingMode: mode,
+        );
+      }
+
+      Future<GeminiThinkingMode> toggleAndSave(WidgetTester tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+        await tester.tap(find.text('Think before answering'));
+        await pumpAndIdle(tester);
+        await tester.tap(find.text('Save'));
+        await pumpAndIdle(tester);
+        final saved =
+            verify(
+                  () => mockRepository.saveConfig(captureAny()),
+                ).captured.single
+                as AiConfigModel;
+        return saved.geminiThinkingMode;
+      }
+
+      testWidgets('turning it on stores high thinking', (tester) async {
+        useMistral(providerModelId: 'mistral-medium-3-5');
+        expect(await toggleAndSave(tester), GeminiThinkingMode.high);
+        expect(find.text('Gemini thinking mode'), findsNothing);
+      });
+
+      testWidgets('turning it off stores low thinking', (tester) async {
+        useMistral(
+          providerModelId: 'mistral-small-latest',
+          mode: GeminiThinkingMode.medium,
+        );
+        expect(await toggleAndSave(tester), GeminiThinkingMode.low);
+      });
+
+      testWidgets('is hidden for a Mistral model without adjustable '
+          'reasoning', (tester) async {
+        useMistral(providerModelId: 'magistral-medium-2509');
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+        expect(find.text('Max completion tokens'), findsOneWidget);
+        expect(find.text('Think before answering'), findsNothing);
+      });
+
+      testWidgets('is hidden for other providers', (tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+        expect(find.text('Max completion tokens'), findsOneWidget);
+        expect(find.text('Think before answering'), findsNothing);
+      });
+    });
+
     testWidgets('Save action is in the AppBar (not a bottom bar)', (
       tester,
     ) async {

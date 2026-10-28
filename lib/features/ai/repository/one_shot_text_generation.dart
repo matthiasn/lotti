@@ -5,6 +5,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
+import 'package:lotti/features/ai/util/think_blocks.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -43,9 +44,10 @@ class OneShotGenerationAttribution {
 /// so its tokens and cost land in the consumption ledger under the given
 /// attribution.
 extension OneShotTextGeneration on CloudInferenceRepository {
-  /// Streams one completion of [prompt] and returns its trimmed text, which
-  /// may be empty — callers decide whether an empty answer is an error. A
-  /// null [maxCompletionTokens] leaves the limit to the provider.
+  /// Streams one completion of [prompt] and returns its trimmed text without
+  /// reasoning blocks, which may be empty — callers decide whether an empty
+  /// answer is an error. A null [maxCompletionTokens] leaves the limit to the
+  /// provider.
   Future<String> generateText({
     required String prompt,
     required String systemMessage,
@@ -72,13 +74,14 @@ extension OneShotTextGeneration on CloudInferenceRepository {
       final content = response.choices?.firstOrNull?.delta?.content;
       if (content != null) buffer.write(content);
     }
-    return buffer.toString().trim();
+    return stripThinkBlocks(buffer.toString()) ?? '';
   }
 
   /// Streams one completion of [prompt] offered only [tools], pinned with
   /// [toolChoice] where the model honours a pin, and returns the tool calls
-  /// it made with whatever text came alongside. Decoding and validating the
-  /// calls is the caller's; an empty list means the model answered in prose.
+  /// it made with whatever text came alongside, reasoning blocks removed.
+  /// Decoding and validating the calls is the caller's; an empty list means
+  /// the model answered in prose.
   Future<({String content, List<ChatCompletionMessageToolCall> toolCalls})>
   generateToolCalls({
     required String prompt,
@@ -113,7 +116,10 @@ extension OneShotTextGeneration on CloudInferenceRepository {
       if (content != null) buffer.write(content);
       calls.processChunk(delta);
     }
-    return (content: buffer.toString().trim(), toolCalls: calls.toToolCalls());
+    return (
+      content: stripThinkBlocks(buffer.toString()) ?? '',
+      toolCalls: calls.toToolCalls(),
+    );
   }
 
   /// The completion stream, recorded in the consumption ledger when the

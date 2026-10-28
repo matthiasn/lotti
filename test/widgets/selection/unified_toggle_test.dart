@@ -172,47 +172,52 @@ void main() {
   });
 
   group('UnifiedAiToggleField', () {
-    testWidgets('renders with AI-specific styling', (
-      WidgetTester tester,
-    ) async {
-      var value = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: UnifiedAiToggleField(
-              label: 'AI Feature',
-              value: value,
-              onChanged: (newValue) {
-                value = newValue;
-              },
+    testWidgets(
+      "has the settings selector's frame without a fill of its own, and the "
+      'frame does not change '
+      'with the value',
+      (WidgetTester tester) async {
+        Future<BoxDecoration> frame({required bool value}) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              theme: ThemeData.light().copyWith(
+                extensions: const [dsTokensLight],
+              ),
+              home: Scaffold(
+                body: UnifiedAiToggleField(
+                  label: 'AI Feature',
+                  value: value,
+                  onChanged: (_) {},
+                ),
+              ),
             ),
-          ),
-        ),
-      );
+          );
+          final container = tester.widget<Container>(
+            find
+                .descendant(
+                  of: find.byType(UnifiedAiToggleField),
+                  matching: find.byType(Container),
+                )
+                .first,
+          );
+          return container.decoration! as BoxDecoration;
+        }
 
-      expect(find.text('AI Feature'), findsOneWidget);
-      expect(find.byType(UnifiedToggle), findsOneWidget);
+        final off = await frame(value: false);
+        // No fill of its own: the surrounding card's surface shows through.
+        expect(off.color, isNull);
+        expect(off.borderRadius, BorderRadius.circular(dsTokensLight.radii.m));
+        expect(
+          tester.widget<UnifiedToggle>(find.byType(UnifiedToggle)).variant,
+          UnifiedToggleVariant.normal,
+        );
 
-      // Verify it uses normal variant
-      final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
-      expect(toggle.variant, UnifiedToggleVariant.normal);
-
-      // AI-specific container chrome: gradient backdrop and rounded corners.
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(UnifiedAiToggleField),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.gradient, isA<LinearGradient>());
-      expect(decoration.borderRadius, BorderRadius.circular(12));
-    });
+        final on = await frame(value: true);
+        expect(on.border, off.border);
+        expect(on.color, off.color);
+      },
+    );
 
     testWidgets('reflects the initial value on the inner toggle', (
       WidgetTester tester,
@@ -220,7 +225,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -241,7 +248,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -265,7 +274,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -282,13 +293,46 @@ void main() {
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
+    testWidgets(
+      'the icon shares the headline row and the description runs full '
+      'width beneath it',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            theme: ThemeData.light().copyWith(
+              extensions: const [dsTokensLight],
+            ),
+            home: Scaffold(
+              body: UnifiedAiToggleField(
+                label: 'AI Feature',
+                description: 'Enable AI assistance',
+                icon: LottiIcons.aiSpark,
+                value: false,
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        final icon = tester.getRect(find.byIcon(LottiIcons.aiSpark));
+        final label = tester.getRect(find.text('AI Feature'));
+        final description = tester.getRect(find.text('Enable AI assistance'));
+        expect(description.left, lessThan(icon.right));
+        expect(description.left, lessThan(label.left));
+        expect(description.top, greaterThanOrEqualTo(icon.bottom));
+      },
+    );
+
     testWidgets('tap toggles value', (WidgetTester tester) async {
       var value = false;
 
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {
@@ -319,9 +363,12 @@ void main() {
       const value = false;
 
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          home: Scaffold(
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
+          home: const Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
               value: value,
@@ -344,7 +391,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'Enable AI suggestions',

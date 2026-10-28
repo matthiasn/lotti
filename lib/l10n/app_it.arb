@@ -4597,6 +4597,8 @@
   "modelEditLoadError": "Non è possibile caricare la configurazione del modello",
   "modelEditMaxTokensHint": "Facoltativo — lasciare vuoto per illimitato",
   "modelEditMaxTokensLabel": "Token di completamento massimo",
+  "modelEditMistralThinkingDescription": "Mistral ragiona prima sul problema: risposte più approfondite, ma più lente e con più token.",
+  "modelEditMistralThinkingLabel": "Pensa prima di rispondere",
   "modelEditModalityNoneSelected": "Nessuno selezionato",
   "modelEditOutputModalitiesHint": "Seleziona i tipi di output",
   "modelEditOutputModalitiesLabel": "Modalità di produzione",

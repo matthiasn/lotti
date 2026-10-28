@@ -64,7 +64,10 @@ void main() {
     when(() => aiConfigRepo.getConfigById(id)).thenAnswer((_) async => config);
   }
 
-  void stubHappyResolution({bool isReasoningModel = false}) {
+  void stubHappyResolution({
+    bool isReasoningModel = false,
+    AiConfigInferenceProvider? withProvider,
+  }) {
     stubCategory(defaultProfileId: 'prof-1');
     stubConfig(
       'prof-1',
@@ -82,7 +85,7 @@ void main() {
         isReasoningModel: isReasoningModel,
       ),
     );
-    stubConfig('prov-1', provider);
+    stubConfig('prov-1', withProvider ?? provider);
   }
 
   void stubGenerate(List<String> chunks) {
@@ -270,6 +273,21 @@ void main() {
       await service.structure(transcript: 'hi', categoryId: categoryId);
 
       expect(lastGenerate!.namedArguments[#temperature], 1.0);
+    });
+
+    test('keeps 0.3 for a Mistral reasoning model', () async {
+      stubHappyResolution(
+        isReasoningModel: true,
+        withProvider: AiTestDataFactory.createTestProvider(
+          id: 'prov-1',
+          type: InferenceProviderType.mistral,
+        ),
+      );
+      stubGenerate(['{"title":"X","items":[]}']);
+
+      await service.structure(transcript: 'hi', categoryId: categoryId);
+
+      expect(lastGenerate!.namedArguments[#temperature], 0.3);
     });
 
     test(

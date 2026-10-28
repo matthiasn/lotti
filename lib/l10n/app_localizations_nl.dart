@@ -10754,6 +10754,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get modelEditMaxTokensLabel => 'Max. aanvultekens';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral denkt eerst over het probleem na: grondigere antwoorden, maar trager en meer tokens.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Nadenken voor het antwoord';
+
+  @override
   String get modelEditModalityNoneSelected => 'Geen geselecteerd';
 
   @override

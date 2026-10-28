@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/ai/repository/mistral_stream_content.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -429,8 +430,11 @@ class MistralInferenceRepository {
   ///   tools: Optional list of tools for function calling
   ///   toolChoice: Optional tool-selection override (`auto`, required, none,
   ///     or a specific function).
-  ///   reasoningEffort: Accepted for interface compatibility but not sent;
-  ///     Mistral's chat-completions API does not document this parameter.
+  ///   reasoningEffort: The caller's effort for this request; wins over
+  ///     [thinkingMode].
+  ///   thinkingMode: The model row's thinking setting. Both are sent as
+  ///     `reasoning_effort` only for adjustable-reasoning models, see
+  ///     [reasoningEffortWireValue].
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -445,6 +449,7 @@ class MistralInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
+    GeminiThinkingMode? thinkingMode,
   }) async* {
     yield* _generate(
       messages: [
@@ -458,13 +463,18 @@ class MistralInferenceRepository {
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
       toolChoice: toolChoice,
+      reasoningEffort: reasoningEffortWireValue(
+        model: model,
+        requested: reasoningEffort,
+        thinkingMode: thinkingMode,
+      ),
     );
   }
 
   /// Generate text with full conversation history.
   ///
   /// This method supports multi-turn conversations with Mistral's API and
-  /// the same tool-selection override as [generateText].
+  /// the same tool-selection override and reasoning effort as [generateText].
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -475,6 +485,7 @@ class MistralInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     ReasoningEffort? reasoningEffort,
+    GeminiThinkingMode? thinkingMode,
   }) async* {
     yield* _generate(
       messages: convertMessages(messages),
@@ -485,7 +496,41 @@ class MistralInferenceRepository {
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
       toolChoice: toolChoice,
+      reasoningEffort: reasoningEffortWireValue(
+        model: model,
+        requested: reasoningEffort,
+        thinkingMode: thinkingMode,
+      ),
     );
+  }
+
+  /// The `reasoning_effort` value to send for [model], or null to omit it.
+  ///
+  /// Only [isMistralAdjustableReasoningModelId] models take the parameter, and
+  /// they accept just `none` and `high`; sending it elsewhere risks a
+  /// rejected request. [requested] (a caller asking for a cheap background
+  /// call, say) wins over the row's [thinkingMode]. Minimal and low map to
+  /// `none`, medium and high to `high`.
+  static String? reasoningEffortWireValue({
+    required String model,
+    ReasoningEffort? requested,
+    GeminiThinkingMode? thinkingMode,
+  }) {
+    if (!isMistralAdjustableReasoningModelId(model)) return null;
+    final thinks = switch (requested) {
+      ReasoningEffort.minimal || ReasoningEffort.low => false,
+      ReasoningEffort.medium || ReasoningEffort.high => true,
+      null => switch (thinkingMode) {
+        GeminiThinkingMode.minimal || GeminiThinkingMode.low => false,
+        GeminiThinkingMode.medium || GeminiThinkingMode.high => true,
+        null => null,
+      },
+    };
+    return switch (thinks) {
+      true => 'high',
+      false => 'none',
+      null => null,
+    };
   }
 
   /// Convert openai_dart messages to plain maps for manual serialization.
@@ -600,6 +645,7 @@ class MistralInferenceRepository {
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
+    String? reasoningEffort,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
@@ -607,6 +653,7 @@ class MistralInferenceRepository {
       'stream': true,
       'temperature': ?temperature,
       'max_tokens': ?maxCompletionTokens,
+      'reasoning_effort': ?reasoningEffort,
     };
 
     // Add tools if provided
@@ -629,7 +676,8 @@ class MistralInferenceRepository {
     _domainLogger.log(
       LogDomain.ai,
       'Sending streaming request to Mistral API - '
-      'model: $model, tools: ${tools?.length ?? 0}',
+      'model: $model, tools: ${tools?.length ?? 0}, '
+      'reasoning: ${reasoningEffort ?? 'default'}',
       subDomain: 'MistralInferenceRepository',
     );
 
@@ -660,6 +708,7 @@ class MistralInferenceRepository {
         );
       }
 
+      final content = MistralStreamContent();
       var chunksReceived = 0;
       var parseErrorCount = 0;
       const maxParseErrors = 5;
@@ -700,7 +749,7 @@ class MistralInferenceRepository {
 
             try {
               final json = jsonDecode(data) as Map<String, dynamic>;
-              final response = _parseStreamResponse(json);
+              final response = _parseStreamResponse(json, content);
               if (response != null) {
                 chunksReceived++;
                 yield response;
@@ -765,10 +814,11 @@ class MistralInferenceRepository {
 
   /// Parse a streaming response chunk from Mistral's API.
   ///
-  /// This method handles Mistral's response format where content may be
-  /// returned as an array instead of a string.
+  /// Content may arrive as a string or as a list of chunks; [content] keeps
+  /// the stream's thinking state across chunks (see [MistralStreamContent]).
   CreateChatCompletionStreamResponse? _parseStreamResponse(
     Map<String, dynamic> json,
+    MistralStreamContent content,
   ) {
     final choices = json['choices'] as List<dynamic>?;
     if (choices == null || choices.isEmpty) {
@@ -782,11 +832,13 @@ class MistralInferenceRepository {
       final delta = choiceMap['delta'] as Map<String, dynamic>?;
       if (delta == null) continue;
 
-      // Handle content that may be a string or an array
-      final content = _extractContent(delta['content']);
-
-      // Handle tool calls
       final toolCalls = _parseToolCalls(delta['tool_calls']);
+      final finishReasonStr = choiceMap['finish_reason'] as String?;
+      final text = content.next(
+        delta['content'],
+        hasToolCalls: toolCalls != null && toolCalls.isNotEmpty,
+        finishing: finishReasonStr != null,
+      );
 
       // Handle role
       final roleStr = delta['role'] as String?;
@@ -799,7 +851,6 @@ class MistralInferenceRepository {
       }
 
       // Handle finish reason - convert snake_case from API to camelCase enum
-      final finishReasonStr = choiceMap['finish_reason'] as String?;
       ChatCompletionFinishReason? finishReason;
       if (finishReasonStr != null) {
         // Convert snake_case to camelCase for enum matching
@@ -813,7 +864,7 @@ class MistralInferenceRepository {
       parsedChoices.add(
         ChatCompletionStreamResponseChoice(
           delta: ChatCompletionStreamResponseDelta(
-            content: content,
+            content: text,
             role: role,
             toolCalls: toolCalls,
           ),
@@ -850,43 +901,6 @@ class MistralInferenceRepository {
       model: json['model'] as String?,
       usage: usage,
     );
-  }
-
-  /// Extract content from the delta, handling both string and array formats.
-  ///
-  /// Mistral may return content as:
-  /// - A simple string: "Hello"
-  /// - An array of content parts: [{"type": "text", "text": "Hello"}]
-  String? _extractContent(dynamic content) {
-    if (content == null) {
-      return null;
-    }
-
-    if (content is String) {
-      return content;
-    }
-
-    if (content is List) {
-      // Extract text from content parts
-      final textParts = <String>[];
-      for (final part in content) {
-        if (part is Map<String, dynamic>) {
-          final type = part['type'] as String?;
-          if (type == 'text') {
-            final text = part['text'] as String?;
-            if (text != null) {
-              textParts.add(text);
-            }
-          }
-        } else if (part is String) {
-          textParts.add(part);
-        }
-      }
-      return textParts.isEmpty ? null : textParts.join();
-    }
-
-    // Fallback: try to convert to string
-    return content.toString();
   }
 
   /// Convert snake_case to camelCase (e.g., 'tool_calls' -> 'toolCalls')

@@ -10738,6 +10738,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get modelEditMaxTokensLabel => 'Max-fullbordande-tokens';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral tänker igenom problemet först: grundligare svar, men långsammare och fler tokens.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Tänk före svar';
+
+  @override
   String get modelEditModalityNoneSelected => 'Ingen vald';
 
   @override

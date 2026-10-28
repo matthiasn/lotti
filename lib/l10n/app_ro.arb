@@ -4091,6 +4091,8 @@
   "modelEditLoadError": "Eșec la încărcarea configurației modelului",
   "modelEditMaxTokensHint": "Opțional — lăsați gol pentru nelimitat",
   "modelEditMaxTokensLabel": "Tokenuri maxime de completare",
+  "modelEditMistralThinkingDescription": "Mistral analizează mai întâi problema: răspunsuri mai temeinice, dar mai lente și cu mai mulți tokeni.",
+  "modelEditMistralThinkingLabel": "Gândire înainte de răspuns",
   "modelEditModalityNoneSelected": "Niciunul selectat",
   "modelEditOutputModalitiesHint": "Selectați tipurile de ieșire",
   "modelEditOutputModalitiesLabel": "Modalități de ieșire",

@@ -4597,6 +4597,8 @@
   "modelEditLoadError": "Kunne ikke indlæse modelkonfiguration",
   "modelEditMaxTokensHint": "Valgfrit — lad det stå tomt for ubegrænset",
   "modelEditMaxTokensLabel": "Maks fuldførelsestokens",
+  "modelEditMistralThinkingDescription": "Mistral tænker problemet igennem først: grundigere svar, men langsommere og flere tokens.",
+  "modelEditMistralThinkingLabel": "Tænk før svar",
   "modelEditModalityNoneSelected": "Ingen udvalgt",
   "modelEditOutputModalitiesHint": "Vælg outputtyper",
   "modelEditOutputModalitiesLabel": "Outputmodaliteter",

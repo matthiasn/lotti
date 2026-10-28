@@ -10860,6 +10860,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get modelEditMaxTokensLabel => 'Maximální počet completion tokenů';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral nejdřív promyslí problém: důkladnější odpovědi, ale pomalejší a s více tokeny.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Přemýšlet před odpovědí';
+
+  @override
   String get modelEditModalityNoneSelected => 'Nic nevybráno';
 
   @override

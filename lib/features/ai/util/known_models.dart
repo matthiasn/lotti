@@ -172,6 +172,21 @@ const String omlxWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
 bool isMistralOcrModelId(String providerModelId) =>
     providerModelId.trim().toLowerCase().startsWith('mistral-ocr');
 
+/// Mistral models that take `reasoning_effort` on chat completions, as listed
+/// in Mistral's reasoning docs on 2026-10-28. They accept only `none` and
+/// `high`; other Mistral models are not documented to take the parameter.
+const Set<String> mistralAdjustableReasoningModelIds = {
+  'mistral-small-latest',
+  'mistral-medium-3-5',
+  'mistral-large-4-0',
+};
+
+/// Whether [providerModelId] is a Mistral model with adjustable reasoning.
+bool isMistralAdjustableReasoningModelId(String providerModelId) =>
+    mistralAdjustableReasoningModelIds.contains(
+      providerModelId.trim().toLowerCase(),
+    );
+
 /// Whether [model] can receive instruction-following chat requests.
 ///
 /// Mistral OCR models advertise text and image modalities, but they accept

@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/sampling_temperature.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
@@ -255,12 +256,11 @@ class UnifiedAiInferenceRepository {
       // Start timing the inference
       final stopwatch = Stopwatch()..start();
 
-      // OpenAI reasoning models with reasoning_effort set only accept temperature=1.0.
-      // Other models (including non-reasoning OpenAI models like GPT-4/GPT-4o)
-      // support custom temperature values.
-      final useReasoningEffort =
-          model.isReasoningModel && promptConfig.useReasoning;
-      final temperature = useReasoningEffort ? 1.0 : 0.6;
+      final temperature = samplingTemperature(
+        providerType: provider.inferenceProviderType,
+        reasoning: model.isReasoningModel && promptConfig.useReasoning,
+        fallback: 0.6,
+      );
 
       // Side-channel for per-call cost/energy impact (Melious non-streaming
       // path populates it; other providers leave it null).
