@@ -1481,6 +1481,58 @@ void main() {
   // The OS-reminder projection (ADR 0039, plan v2 phase 8). Phase A decides
   // when a person is due; the sink turns that into a durable row and an alarm.
   group('OS reminder projection', () {
+    // A check-in on 2026-08-16 at 18:00, then a wake at noon the day before
+    // the cadence lapses and another at noon on the due day itself.
+    for (final (label, cadenceDays) in [
+      ('daily', 1),
+      ('weekly', 7),
+      ('monthly', 30),
+    ]) {
+      test('$label: nothing fires the day before the due day — the alarm '
+          'waits for the due day, which escalates', () async {
+        final contacted = DateTime(2026, 8, 16, 18);
+        final dueDay = DateTime.utc(2026, 8, 16 + cadenceDays);
+        when(
+          () => relationshipRepository.getRelationshipByIdUnfiltered(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => relationship(cadenceDays: cadenceDays));
+        when(
+          () => relationshipRepository.getAllCheckInsForRelationship(
+            relationshipId,
+          ),
+        ).thenAnswer((_) async => [checkIn('c-1', contacted)]);
+        bool escalated() => writtenWakes().any(
+          (wake) =>
+              wake.workspaceKey ==
+              relationshipEscalationWorkspaceKey(
+                const GoalWindow.day().periodKey(dueDay),
+              ),
+        );
+
+        // The day before (for a daily cadence that is the contact day
+        // itself): within the cadence, so no escalation, and the alarm is
+        // armed for the due day, still ahead.
+        final dayBefore = DateTime(2026, 8, 16 + cadenceDays - 1, 12);
+        await withClock(Clock.fixed(dayBefore), run);
+        expect(writtenRegister()!.status, RelationshipCadenceStatus.ok);
+        expect(escalated(), isFalse);
+        expect(reminders.armed.single.derivation.dueDayUtc, dueDay);
+
+        upserts.clear();
+        reminders.armed.clear();
+        await withClock(
+          Clock.fixed(DateTime(2026, 8, 16 + cadenceDays, 12)),
+          run,
+        );
+        expect(writtenRegister()!.status, RelationshipCadenceStatus.due);
+        expect(escalated(), isTrue);
+        // Same episode: the alarm armed the day before is the one that
+        // fires, never a second one.
+        expect(reminders.armed.single.derivation.dueDayUtc, dueDay);
+      });
+    }
+
     test('arms the reminder from the same derivation as the register', () async {
       await withClock(Clock.fixed(now), run);
 

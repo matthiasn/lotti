@@ -51,6 +51,7 @@ class RelationshipAgentStrategy extends ConversationStrategy
     required this.threadId,
     required this.runKey,
     required this._activeAdIds,
+    required this.bannerAllowed,
     this.sourceCheckInIds = const {},
     this.allowedHealthBands,
   });
@@ -71,6 +72,14 @@ class RelationshipAgentStrategy extends ConversationStrategy
   /// Ad ids currently rendered — the only ids snooze may reference, so a
   /// hallucinated id fails in-conversation instead of corrupting state.
   final Set<String> _activeAdIds;
+
+  /// Whether this wake may raise a banner at all: the person's cadence is
+  /// due. A check-in reminder for someone the user has just been in touch
+  /// with is wrong whatever the model makes of the FACTS, so the contract's
+  /// "only when DUE" is enforced here rather than trusted to the prompt —
+  /// most visibly on the refresh wake a check-in arms, which reads a fresh
+  /// conversation and used to come back with a "check in" chide.
+  final bool bannerAllowed;
 
   /// Only check-ins actually rendered in this wake may supply evidence.
   final Set<String> sourceCheckInIds;
@@ -330,6 +339,16 @@ class RelationshipAgentStrategy extends ConversationStrategy
         error:
             'Error: create_relationship_ad may be called at most once per '
             'wake; the first banner is already queued.',
+      );
+      return;
+    }
+    if (!bannerAllowed) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: create_relationship_ad is only allowed while the '
+            'cadence is DUE; it is not, so no banner is raised this wake.',
       );
       return;
     }

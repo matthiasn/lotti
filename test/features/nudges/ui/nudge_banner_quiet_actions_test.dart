@@ -172,13 +172,20 @@ void main() {
     expect(tester.getSize(find.byType(NudgeBannerQuietActions)).width, width);
   });
 
-  testWidgets('Snooze ends its label on the trailing edge of its host, where '
-      "the row's other trailing content ends", (tester) async {
+  testWidgets('Snooze stays inside its host: the button frame meets the '
+      'trailing edge and the label keeps its inset, rather than the word '
+      'meeting the edge and the ink spilling past it', (tester) async {
     await pump(tester, ratingDue: false);
     final snooze = tester.widget<DesignSystemButton>(find.byKey(snoozeKey));
-    expect(snooze.alignsLabelToTrailingEdge, isTrue);
+    expect(snooze.alignsLabelToTrailingEdge, isFalse);
     final host = tester.getRect(find.byType(Align));
+    final button = tester.getRect(find.byKey(snoozeKey));
     final label = tester.getRect(find.text('Snooze'));
-    expect(label.right, closeTo(host.right, 1));
+    expect(button.right, lessThanOrEqualTo(host.right + 0.5));
+    final tokens = tester.element(find.byKey(snoozeKey)).designTokens;
+    expect(
+      host.right - label.right,
+      greaterThanOrEqualTo(tokens.spacing.step2),
+    );
   });
 }

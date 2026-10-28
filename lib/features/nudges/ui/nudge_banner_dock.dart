@@ -8,6 +8,7 @@ import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_animated_text.dart';
+import 'package:lotti/features/nudges/ui/nudge_banner_dock_swipe.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_exposure_tracker.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
@@ -305,16 +306,37 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
     return null;
   }
 
+  /// Pauses the rotation while the pointer rests on the dock or a finger
+  /// holds it, and hands the banner a whole new tenure on release.
+  ///
+  /// The countdown is rewound, not frozen: a hairline stuck part-way told
+  /// nobody the rotation had stopped, and resuming it there let the dock
+  /// advance a moment after the pointer left — taking the banner away just
+  /// as the user turned to act on it. An empty hairline is the visible
+  /// pause, and the time to read starts over when it ends.
   void _setPaused({bool? hovered, bool? touched}) {
+    final wasPaused = _hovered || _touched;
     _hovered = hovered ?? _hovered;
     _touched = touched ?? _touched;
-    if (_hovered || _touched) {
-      _tenure.stop();
-    } else if (!_tenure.isAnimating &&
-        !_backgrounded &&
-        _visible(ref.read(activeNudgeBannersProvider)).length > 1) {
-      _tenure.forward();
-    }
+    final paused = _hovered || _touched;
+    if (paused == wasPaused) return;
+    _restartTenure(_visible(ref.read(activeNudgeBannersProvider)).length);
+  }
+
+  /// Shows the banner [id] by the user's own hand — a dot, a swipe — with
+  /// a fresh tenure, which stays paused while the hand is still on the dock.
+  void _show(String id) {
+    if (id == _currentId) return;
+    setState(() => _currentId = id);
+    _restartTenure(_visible(ref.read(activeNudgeBannersProvider)).length);
+  }
+
+  /// Moves [offset] banners along the rotation, wrapping at either end.
+  void _step(int offset) {
+    final entries = _visible(ref.read(activeNudgeBannersProvider));
+    if (entries.length <= 1) return;
+    final index = entries.indexWhere((e) => e.nudge.id == _currentId);
+    _show(entries[(index + offset) % entries.length].nudge.id);
   }
 
   @override
@@ -428,6 +450,75 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
       ),
     );
 
+    final card = Material(
+      color: style.fill,
+      borderRadius: radius,
+      child: Ink(
+        key: const ValueKey('nudge-banner-dock-frame'),
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(color: style.border),
+        ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: Stack(
+            children: [
+              AnimatedSwitcher(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : MotionDurations.medium1,
+                switchInCurve: MotionCurves.emphasizedDecelerate,
+                switchOutCurve: MotionCurves.standard,
+                transitionBuilder: (child, animation) => reduceMotion
+                    // Crossfade under reduced motion; slide-up is the
+                    // standard transition between tenants.
+                    ? FadeTransition(opacity: animation, child: child)
+                    : FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.25),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                child: tenant,
+              ),
+              // Tenure progress hairline: the rotation made visible, only
+              // with someone waiting in the queue, and empty while the
+              // rotation is paused. It overlays the tenant's top edge. A
+              // CustomPaint (repaint-only) rather than a
+              // FractionallySizedBox — a per-tick relayout inside the
+              // collapse AnimatedSwitcher's SizeTransition would re-dirty it
+              // mid-layout. A true hairline, at rest strength: the rotation
+              // is chrome, the current dot below already marks progress at
+              // linework, and the strip's entry corner must not be its most
+              // saturated accent.
+              if (multi)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: BorderWidths.hairline,
+                  child: CustomPaint(
+                    painter: _TenurePainter(
+                      progress: _tenure,
+                      color: style.accent.withValues(
+                        alpha: SurfaceAlphas.muted,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // The whole carousel — the card and its dots — is one hover region, one
+    // hold and one swipe surface: resting on the dots to pick a banner must
+    // not let the rotation move the banner out from under the pointer.
     return MouseRegion(
       onEnter: (_) => _setPaused(hovered: true),
       onExit: (_) => _setPaused(hovered: false),
@@ -435,104 +526,36 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
         onPointerDown: (_) => _setPaused(touched: true),
         onPointerUp: (_) => _setPaused(touched: false),
         onPointerCancel: (_) => _setPaused(touched: false),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step3),
-          child: Material(
-            color: style.fill,
-            borderRadius: radius,
-            child: Ink(
-              key: const ValueKey('nudge-banner-dock-frame'),
-              decoration: BoxDecoration(
-                borderRadius: radius,
-                border: Border.all(color: style.border),
-              ),
-              child: ClipRRect(
-                borderRadius: radius,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
-                      children: [
-                        AnimatedSwitcher(
-                          duration: reduceMotion
-                              ? Duration.zero
-                              : MotionDurations.medium1,
-                          switchInCurve: MotionCurves.emphasizedDecelerate,
-                          switchOutCurve: MotionCurves.standard,
-                          transitionBuilder: (child, animation) => reduceMotion
-                              // Crossfade under reduced motion; slide-up
-                              // is the standard transition between
-                              // tenants.
-                              ? FadeTransition(
-                                  opacity: animation,
-                                  child: child,
-                                )
-                              : FadeTransition(
-                                  opacity: animation,
-                                  child: SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(0, 0.25),
-                                      end: Offset.zero,
-                                    ).animate(animation),
-                                    child: child,
-                                  ),
-                                ),
-                          child: tenant,
-                        ),
-                        // Tenure progress hairline: the rotation made
-                        // visible, only with someone waiting in the queue.
-                        // It overlays the tenant's top edge and the dots its
-                        // bottom inset, so a second tenant arriving never
-                        // changes the dock's height or pushes the page. A
-                        // CustomPaint (repaint-only) rather than a
-                        // FractionallySizedBox — a per-tick relayout inside
-                        // the collapse AnimatedSwitcher's SizeTransition
-                        // would re-dirty it mid-layout. A true hairline, at
-                        // rest strength: the rotation is chrome, the current
-                        // dot below already marks progress at linework, and
-                        // the strip's entry corner must not be its most
-                        // saturated accent.
-                        if (multi)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: BorderWidths.hairline,
-                            child: CustomPaint(
-                              painter: _TenurePainter(
-                                progress: _tenure,
-                                color: style.accent.withValues(
-                                  alpha: SurfaceAlphas.muted,
-                                ),
-                              ),
-                            ),
-                          ),
-                        // Decorative — the tenant's content carries the
-                        // semantics; dots would only add noise for readers.
-                        if (multi)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: tokens.spacing.step1,
-                            child: ExcludeSemantics(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  for (final entry in entries)
-                                    _TenureDot(
-                                      current:
-                                          entry.nudge.id == current.nudge.id,
-                                      accent: style.accent,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+        child: NudgeBannerDockSwipe(
+          enabled: multi,
+          onNext: () => _step(1),
+          onPrevious: () => _step(-1),
+          child: Padding(
+            // With dots, the bottom inset is the dot row's own: its hit
+            // boxes are taller than the dots, and their slack below the dot
+            // matches the gap above it.
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step3,
+              tokens.spacing.step3,
+              tokens.spacing.step3,
+              multi ? 0 : tokens.spacing.step3,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                card,
+                // Below the card, not inside it: overlaid on the tenant's
+                // bottom inset the dots crowded the CTA and read as part of
+                // the banner's copy. A second tenant arriving therefore
+                // grows the dock by the dot row — once, as the queue forms.
+                if (multi)
+                  _DockPager(
+                    entries: entries,
+                    currentId: current.nudge.id,
+                    accent: style.accent,
+                    onSelect: _show,
+                  ),
+              ],
             ),
           ),
         ),
@@ -541,14 +564,80 @@ class _NudgeBannerDockState extends ConsumerState<NudgeBannerDock>
   }
 }
 
+/// The dots under the dock: where the current banner sits in the rotation,
+/// and a way to go straight to any other.
+///
+/// Each dot is a button on a `step6`-square hit box (24 dp) — the WCAG
+/// 2.2 minimum target size — named for the banner it shows, so a screen
+/// reader or a keyboard reaches every banner without waiting out the
+/// rotation. Larger targets would put a 48 dp row under every queue; a touch
+/// user has the swipe as well.
+class _DockPager extends StatelessWidget {
+  const _DockPager({
+    required this.entries,
+    required this.currentId,
+    required this.accent,
+    required this.onSelect,
+  });
+
+  final List<NudgeBannerEntry> entries;
+  final String currentId;
+  final Color accent;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final hitBox = tokens.spacing.step6;
+    return Row(
+      key: const ValueKey('nudge-banner-dock-pager'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final (index, entry) in entries.indexed)
+          Semantics(
+            button: true,
+            selected: entry.nudge.id == currentId,
+            label: context.messages.nudgeBannerDockPageLabel(
+              index + 1,
+              entries.length,
+            ),
+            child: DsQuietInk(
+              key: ValueKey('nudge-banner-dock-dot-${entry.nudge.id}'),
+              borderRadius: BorderRadius.circular(hitBox),
+              focusRing: true,
+              onTap: () => onSelect(entry.nudge.id),
+              builder: (context, highlighted) => SizedBox.square(
+                dimension: hitBox,
+                child: Center(
+                  child: _TenureDot(
+                    current: entry.nudge.id == currentId,
+                    highlighted: highlighted,
+                    accent: accent,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 /// One pagination dot. The current tenant is a filled disc, the queued ones
 /// rings — position is carried by shape as well as strength, so it survives
 /// the light theme's pale tint and a reader who does not resolve alpha. Both
-/// stay below the CTA's full accent: the disc at linework, the rings at rest.
+/// stay below the CTA's full accent: the disc at linework, the rings at rest,
+/// and a ring the pointer or focus rests on at linework too — the answer to
+/// "can I click this" that a dot has no other way to give.
 class _TenureDot extends StatelessWidget {
-  const _TenureDot({required this.current, required this.accent});
+  const _TenureDot({
+    required this.current,
+    required this.highlighted,
+    required this.accent,
+  });
 
   final bool current;
+  final bool highlighted;
   final Color accent;
 
   @override
@@ -558,7 +647,6 @@ class _TenureDot extends StatelessWidget {
     return Container(
       width: tokens.spacing.step3,
       height: tokens.spacing.step3,
-      margin: EdgeInsets.symmetric(horizontal: tokens.spacing.step1),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: current
@@ -567,7 +655,11 @@ class _TenureDot extends StatelessWidget {
         border: current
             ? null
             : Border.all(
-                color: accent.withValues(alpha: SurfaceAlphas.muted),
+                color: accent.withValues(
+                  alpha: highlighted
+                      ? SurfaceAlphas.linework
+                      : SurfaceAlphas.muted,
+                ),
               ),
       ),
     );

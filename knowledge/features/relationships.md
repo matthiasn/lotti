@@ -59,7 +59,7 @@ sources:
   - id: src
     resource: ../../lib/features/relationships
     title: Relationships feature source
-    last_modified: 2026-09-19
+    last_modified: 2026-10-28
   - id: queries
     resource: ../../lib/database/database_relationship_queries.dart
     title: Relationship and check-in queries
@@ -155,7 +155,7 @@ sources:
   - id: workflow
     resource: ../../lib/features/relationships/workflow/relationship_agent_workflow.dart
     title: RelationshipAgentWorkflow — the LLM tier
-    last_modified: 2026-09-12
+    last_modified: 2026-10-28
   - id: adr-0059
     resource: ../../docs/adr/0059-relationship-agent-runtime-and-nudge-generalization.md
     title: ADR 0059 — Relationship agents on the shared runtime
@@ -1257,7 +1257,22 @@ removed:
   one transaction. Deletion is always fenced;
   `important` and active status are fenced for automatic wakes, while chat and
   explicit briefing requests may still persist their reply, briefing and
-  banner after unmarking because the user directly requested them. Deferred
+  banner after unmarking because the user directly requested them.
+  **A banner needs a due cadence, on every wake, chat included.** The
+  contract's "only when DUE" used to be prompt text alone, and the refresh
+  wake a check-in arms — a fresh conversation, briefing on a person the user
+  contacted minutes ago — could come back with a "check in" banner and, through
+  `AgentAlertCopy`, re-word the OS reminder too. So the strategy is built with
+  `bannerAllowed` (the cadence is due) and rejects `create_relationship_ad`
+  in-conversation otherwise, and `persistOutputs` re-derives the cadence
+  inside its transaction before writing one, because a check-in can land while
+  the model is thinking. The dock's source
+  (`activeRelationshipNudgesProvider`) applies the same rule on render through
+  `relationshipCadenceOkUntil`: while the person's register names a due day
+  still ahead, no banner of theirs speaks, so one raised by a peer on an older
+  version, or still active in the minutes before Phase A retires it, never
+  reaches the dock; the provider re-reads on its own when that day comes.
+  Deferred
   task proposals are written only while the person is still important and
   active, on every wake. Briefings cite relevant linked tasks with their
   stored status. The health band follows the user's sentiment labels;
@@ -2491,6 +2506,17 @@ Four properties carry the design:
   cadence register — has already committed. Letting a notification-store
   failure escape would fail a wake that succeeded and schedule a retry of it,
   to fix an alarm the next daily tick re-derives anyway.
+
+**Nothing fires the day before.** The cadence lapses on the due day — the
+newest check-in's calendar day plus the cadence — so a weekly person called on
+a Monday is due the next Monday, and a daily one the day after the call. On the
+day before, the register says `ok`, no escalation arms and no banner may
+speak; the OS reminder was armed for the due day's 09:00 when the check-in
+landed, and that same alarm is the one that fires — the episode key is the due
+day, so a later tick never arms a second. A check-in the evening before the due
+day mints the next episode and retracts this one as soon as Phase A runs for
+it, which the check-in's own signal triggers. The Phase A tests pin this
+boundary for a daily, a weekly and a monthly cadence.
 
 **One reminder per episode means an ignored person is reminded once.** The
 episode key is the due day, and the due day only moves when a check-in lands —

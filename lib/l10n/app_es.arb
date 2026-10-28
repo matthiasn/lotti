@@ -4179,6 +4179,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Ocultar por hoy",
+  "nudgeBannerDockPageLabel": "Mostrar banner {index} de {count}",
   "nudgeBannerRateLabel": "Valorar",
   "nudgeBannerRateTooltip": "Valorar este banner",
   "nudgeBannerRatingSkip": "Omitir",

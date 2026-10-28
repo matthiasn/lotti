@@ -4685,6 +4685,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Nascondi per oggi",
+  "nudgeBannerDockPageLabel": "Mostra banner {index} di {count}",
   "nudgeBannerRateLabel": "Valuta",
   "nudgeBannerRateTooltip": "Valuta questo banner",
   "nudgeBannerRatingSkip": "Salta",

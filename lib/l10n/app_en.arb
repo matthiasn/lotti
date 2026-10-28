@@ -6770,6 +6770,18 @@
   "@nudgeBannerDismissForDay": {
     "description": "De-emphasized action that hides a nudge banner until the next local day."
   },
+  "nudgeBannerDockPageLabel": "Show banner {index} of {count}",
+  "@nudgeBannerDockPageLabel": {
+    "description": "Accessible label of one pagination dot under the rotating banner dock; activating it shows that banner.",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "nudgeBannerRateLabel": "Rate",
   "@nudgeBannerRateLabel": {
     "description": "Caption-tier label beside the star glyph on a banner's quiet rating button; the tooltip nudgeBannerRateTooltip explains it on hover."

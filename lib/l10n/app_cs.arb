@@ -4186,6 +4186,7 @@
     }
   },
   "nudgeBannerDismissForDay": "Skrýt na dnešek",
+  "nudgeBannerDockPageLabel": "Zobrazit banner {index} z {count}",
   "nudgeBannerRateLabel": "Ohodnotit",
   "nudgeBannerRateTooltip": "Ohodnotit tento banner",
   "nudgeBannerRatingSkip": "Přeskočit",

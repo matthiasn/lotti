@@ -18349,6 +18349,12 @@ abstract class AppLocalizations {
   /// **'Dismiss for today'**
   String get nudgeBannerDismissForDay;
 
+  /// Accessible label of one pagination dot under the rotating banner dock; activating it shows that banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Show banner {index} of {count}'**
+  String nudgeBannerDockPageLabel(int index, int count);
+
   /// Caption-tier label beside the star glyph on a banner's quiet rating button; the tooltip nudgeBannerRateTooltip explains it on hover.
   ///
   /// In en, this message translates to:

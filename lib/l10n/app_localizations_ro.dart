@@ -11134,6 +11134,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Ascundeți pentru azi';
 
   @override
+  String nudgeBannerDockPageLabel(int index, int count) {
+    return 'Afișați bannerul $index din $count';
+  }
+
+  @override
   String get nudgeBannerRateLabel => 'Evaluați';
 
   @override

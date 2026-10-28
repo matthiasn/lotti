@@ -12,6 +12,7 @@ import 'package:lotti/classes/agents/agent_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -85,6 +86,24 @@ void main() {
             dismissedForDayAt: dismissedForDayAt,
           )
           as RelationshipNudgeEntity;
+
+  /// The person's cadence register, as Phase A writes it: due on [dueAt].
+  AgentDomainEntity register({
+    required DateTime dueAt,
+    DateTime? deletedAt,
+  }) => AgentDomainEntity.relationshipHealth(
+    id: relationshipHealthId(agentId),
+    agentId: agentId,
+    relationshipId: relationshipId,
+    status: RelationshipCadenceStatus.ok,
+    cadenceDays: 7,
+    referenceAt: testDate.toUtc(),
+    dueAt: dueAt,
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: null,
+    deletedAt: deletedAt,
+  );
 
   ProviderContainer container({bool flagEnabled = true}) {
     final c = ProviderContainer(
@@ -161,6 +180,8 @@ void main() {
         type: AgentEntityTypes.relationshipNudge,
       ),
     ).thenAnswer((_) async => []);
+    // No cadence register unless a test seeds one.
+    when(() => repository.getEntity(any())).thenAnswer((_) async => null);
   });
 
   tearDown(tearDownTestGetIt);
@@ -340,6 +361,113 @@ void main() {
         () => agentService.listAgents(lifecycle: AgentLifecycle.active),
       ).called(1);
     }
+  });
+
+  group('relationshipCadenceOkUntil — no reminder within the cadence', () {
+    final noon = DateTime.utc(2026, 8, 16, 12);
+
+    test('the due day while it is still ahead, and only then', () {
+      final tomorrow = DateTime.utc(2026, 8, 17);
+      expect(
+        relationshipCadenceOkUntil(register(dueAt: tomorrow), noon),
+        tomorrow,
+      );
+      // The due day itself is due — the day a reminder is for — and so is
+      // every day after it.
+      expect(
+        relationshipCadenceOkUntil(
+          register(dueAt: DateTime.utc(2026, 8, 16)),
+          noon,
+        ),
+        isNull,
+      );
+      expect(
+        relationshipCadenceOkUntil(
+          register(dueAt: DateTime.utc(2026, 8, 10)),
+          noon,
+        ),
+        isNull,
+      );
+    });
+
+    test('lapses at UTC midnight of the due day, the instant Phase A uses', () {
+      final register_ = register(dueAt: DateTime.utc(2026, 8, 17));
+      expect(
+        relationshipCadenceOkUntil(
+          register_,
+          DateTime.utc(2026, 8, 16, 23, 59, 59),
+        ),
+        isNotNull,
+      );
+      expect(
+        relationshipCadenceOkUntil(register_, DateTime.utc(2026, 8, 17)),
+        isNull,
+      );
+    });
+
+    test('no live register hides nothing', () {
+      expect(relationshipCadenceOkUntil(null, noon), isNull);
+      expect(
+        relationshipCadenceOkUntil(
+          register(
+            dueAt: DateTime.utc(2026, 8, 30),
+            deletedAt: DateTime.utc(2026, 8, 2),
+          ),
+          noon,
+        ),
+        isNull,
+      );
+      expect(
+        relationshipCadenceOkUntil(nudge('not-a-register'), noon),
+        isNull,
+      );
+    });
+  });
+
+  test('a banner for a person still within their cadence stays off the dock '
+      'until the due day comes — a peer that raised it right after a '
+      'check-in cannot make this device nag', () {
+    fakeAsync((async) {
+      withClock(async.getClock(now), () {
+        when(
+          () => repository.getEntity(relationshipHealthId(agentId)),
+        ).thenAnswer(
+          (_) async => register(dueAt: DateTime.utc(2026, 8, 17)),
+        );
+        when(
+          () => repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.relationshipNudge,
+          ),
+        ).thenAnswer((_) async => [nudge('ad-1')]);
+        final c = container();
+        final flag = c.listen(
+          configFlagProvider(enableRelationshipsFlag),
+          (_, _) {},
+        );
+        async.flushMicrotasks();
+        List<NudgeBannerEntry>? latest;
+        final sub = c.listen(
+          activeRelationshipNudgesProvider,
+          (_, next) => latest = next.value,
+          fireImmediately: true,
+        );
+        async
+          ..flushMicrotasks()
+          ..elapse(Duration.zero);
+        expect(latest, isEmpty);
+
+        // Past the due day's UTC midnight the provider re-reads on its own
+        // and the banner speaks.
+        async
+          ..elapse(const Duration(days: 1))
+          ..flushMicrotasks();
+        expect(latest?.map((e) => e.nudge.id), ['ad-1']);
+
+        sub.close();
+        flag.close();
+      });
+    });
   });
 
   test('a source disposed while it reads never arms its deadline timer', () {

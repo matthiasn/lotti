@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/nudges
     title: Nudges feature source
-    last_modified: 2026-10-26
+    last_modified: 2026-10-28
   - id: vocabulary
     resource: ../../lib/classes/nudge_models.dart
     title: The kind-agnostic nudge vocabulary
@@ -165,9 +165,11 @@ stateDiagram-v2
     collapsed --> rotating: two or more tenants
     single --> rotating: another tenant appears
     rotating --> single: falls to one tenant (tenure stops)
-    rotating --> paused: hover, touch, or app backgrounded
-    paused --> rotating: released or resumed
+    rotating --> paused: hover or touch (countdown rewound), or app backgrounded (frozen)
+    paused --> rotating: released (a whole new tenure) or resumed
+    paused --> paused: dot or swipe → chosen banner
     rotating --> rotating: tenure elapsed → advance to successor
+    rotating --> rotating: dot or swipe → chosen banner, fresh tenure
     rotating --> rotating: fresh activation jumps the queue
     single --> collapsed: last tenant leaves
     rotating --> collapsed: last tenant leaves
@@ -190,6 +192,43 @@ The reconcile pass (`_reconcile`) is what keeps that machine honest:
   provider event behind it; without reconciling on `didUpdateWidget` the tenure
   would elapse there, the advance would bail on the empty list, and the
   rotation would never restart on the way back.
+
+# Pausing and paging by hand
+
+The rotation is the dock's default, never the only way through it. Three
+rules, all in `ui/nudge_banner_dock.dart` and `ui/nudge_banner_dock_swipe.dart`:
+
+- **A hover or a hold rewinds the countdown; it does not freeze it.** The
+  pointer resting anywhere on the carousel — card or dots — or a finger holding
+  it stops the tenure and resets it to zero, so the hairline empties: the
+  visible sign that the rotation has stopped, on a body that otherwise paints
+  no hover state at all (it is a `DsQuietInk` doorway). Release starts a whole
+  tenure. The earlier freeze left a part-run hairline that said nothing, and
+  resuming from it let the dock advance a moment after the pointer left —
+  taking a banner away just as the user turned to act on it. Backgrounding the
+  app still freezes rather than rewinds: nobody was reading.
+- **The dots are buttons.** They sit *below* the card, outside its frame —
+  overlaid on the tenant's bottom inset they crowded the CTA and read as part of
+  the copy — each a `DsQuietInk` on a 24 dp (`step6`) hit box, the WCAG 2.2
+  minimum target size, announced as *Show banner n of m* with its selected
+  state. A ring the pointer or keyboard focus rests on rises from `muted` to
+  `linework`, the one way a dot can say it is clickable. Choosing one shows that
+  banner with a fresh tenure. The dot row grows the dock by its height when a
+  second tenant arrives: the card itself never changes height.
+- **A horizontal swipe pages, one banner per gesture, wrapping.** Content
+  follows the fingers: a leftward swipe shows the next banner. Two input
+  routes carry the same gesture. A *drag* — a finger, or two fingers on a
+  trackpad that the platform reports as a pan — goes through a horizontal drag
+  recognizer counted from where the pointer landed (`DragStartBehavior.down`,
+  so the touch slop is part of the swipe), paging past
+  `nudgeBannerDockSwipeDistance` or on a fling; a mouse drag is excluded,
+  because pressing the dock is a tap. *Horizontal scroll signals* — a trackpad
+  that reports the swipe as scrolling, a tilt wheel — are claimed through the
+  pointer-signal resolver only when their horizontal part dominates, so the
+  page still scrolls vertically under the dock; one burst pages once, and the
+  next swipe starts after `nudgeBannerDockSwipeGap` of quiet, measured on the
+  events' own timestamps. With one tenant the handlers are off but the wrappers
+  stay, so a second tenant arriving never remounts the first.
 
 # The lane is structural, not an overlay
 
@@ -244,7 +283,10 @@ by shape, not alpha alone. Rate and Snooze are
 `NudgeBannerQuietActions` (`ui/nudge_banner_quiet_actions.dart`): the same
 `quiet` dense `DesignSystemButton` twice, star and snooze glyph, in the
 neutral medium-emphasis ink on one `TapTargets.minimum` floor with no fill at
-rest, Snooze's label ending on the host's trailing edge. Both are labelled: a
+rest, Snooze's button frame — not its label — meeting the host's trailing
+inset, mirroring the persona chip on the leading edge. (It used to be pulled
+outward so the *word* met the inset, which put it hard against the card's
+border and spilled its hover pill into the margin.) Both are labelled: a
 lone glyph reads as a state, and on touch there is no hover to explain it.
 Snooze used to be a *primary* button here, which put the brand fill on the
 dismissal and a wash on the way forward; the hierarchy was inverted and the
@@ -257,9 +299,9 @@ override exactly as the pill does — one doorway, one verb. Rate keeps its
 footprint while hidden, on both surfaces: the card's header never reflows
 after a rating, and the dock's pill holds one position across tenants whether
 or not each has been rated. The pill itself stands on the same
-`TapTargets.minimum` floor as the quiet pair, and the dock's dots overlay the
-tenant's bottom inset as the hairline overlays its top, so a second tenant
-never changes the dock's height. The strip and the card share one frame
+`TapTargets.minimum` floor as the quiet pair. The hairline overlays the
+tenant's top edge and the dots sit below the card (see *Pausing and paging by
+hand*), so a second tenant never changes the card's height. The strip and the card share one frame
 radius.
 
 The compact (phone) dock is **the card's grammar at phone width**, not a

@@ -10938,6 +10938,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get nudgeBannerDismissForDay => 'Dölj resten av dagen';
 
   @override
+  String nudgeBannerDockPageLabel(int index, int count) {
+    return 'Visa banner $index av $count';
+  }
+
+  @override
   String get nudgeBannerRateLabel => 'Betygsätt';
 
   @override
