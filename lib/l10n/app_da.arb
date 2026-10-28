@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Gen-analyser",
   "agentControlsResumeButton": "CV",
   "agentConversationEmpty": "Ingen samtaler endnu.",
+  "agentConversationLiveBanner": "Agenten arbejder stadig på denne samtale. Hvis du stopper den, beholdes de gemte beskeder, og svaret under udarbejdelse kasseres.",
+  "agentConversationStopped": "Stoppet",
   "agentConversationThreadSummary": "{messageCount} beskeder, {toolCallCount} værktøjskald · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -437,6 +439,8 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sover indtil",
   "agentStateWakeCount": "Vågenopgørelse",
+  "agentStopWakeStopping": "Stopper…",
+  "agentStopWakeTooltip": "Stop den kørende inferens",
   "agentSuggestionTimeEntryUpdateCurrent": "Nuværende",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

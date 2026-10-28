@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
 import '../test_data/entity_factories.dart';
 
@@ -26,6 +29,9 @@ void main() {
     required List<Override> overrides,
     Size screenSize = const Size(900, 800),
     bool passAgentName = true,
+    // A running agent's spinner turns forever; reduced motion stills it so
+    // the panel can settle.
+    bool reduceMotion = false,
   }) async {
     final identity = makeTestIdentity();
     tester.view
@@ -34,7 +40,10 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
-        mediaQueryData: MediaQueryData(size: screenSize),
+        mediaQueryData: MediaQueryData(
+          size: screenSize,
+          disableAnimations: reduceMotion,
+        ),
         overrides: [
           ...overrides,
           agentIdentityProvider.overrideWith(
@@ -104,6 +113,43 @@ void main() {
       await tester.pumpAndSettle();
       expect(content, findsOneWidget);
     });
+
+    testWidgets(
+      'a running agent can be stopped from the header, whichever tab is open',
+      (tester) async {
+        final agentService = MockAgentService();
+        when(() => agentService.abortRunningWake(any())).thenReturn(true);
+        await pumpPanel(
+          tester,
+          reduceMotion: true,
+          overrides: [
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(true),
+            ),
+            agentServiceProvider.overrideWithValue(agentService),
+          ],
+        );
+
+        final header = find.ancestor(
+          of: find.text('Agent internals'),
+          matching: find.byType(Row),
+        );
+        final stop = find.descendant(
+          of: header.first,
+          matching: find.byType(DsAiDiscButton),
+        );
+        expect(stop, findsOneWidget);
+
+        await tester.tap(stop);
+        await tester.pump();
+
+        verify(
+          () => agentService.abortRunningWake(makeTestIdentity().agentId),
+        ).called(1);
+        expect(tester.widget<DsAiDiscButton>(stop).label, 'Stopping…');
+      },
+    );
 
     testWidgets('renders the localized title and the agent display name', (
       tester,

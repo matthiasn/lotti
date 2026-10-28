@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Rianalizzare",
   "agentControlsResumeButton": "Ripresa",
   "agentConversationEmpty": "Ancora nessuna conversazione.",
+  "agentConversationLiveBanner": "L’agente sta ancora lavorando a questa conversazione. Se lo fermi, i messaggi già salvati restano e la risposta in corso viene scartata.",
+  "agentConversationStopped": "Fermata",
   "agentConversationThreadSummary": "{messageCount} messaggi, {toolCallCount} chiamate strumento · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -437,6 +439,8 @@
   "agentStateRevision": "Revisione",
   "agentStateSleepingUntil": "Dormire fino a quando",
   "agentStateWakeCount": "Contesto di sveglia",
+  "agentStopWakeStopping": "Arresto in corso…",
+  "agentStopWakeTooltip": "Ferma l’inferenza in corso",
   "agentSuggestionTimeEntryUpdateCurrent": "Corrente",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."

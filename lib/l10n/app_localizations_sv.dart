@@ -183,6 +183,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentConversationEmpty => 'Inga samtal än.';
 
   @override
+  String get agentConversationLiveBanner =>
+      'Agenten arbetar fortfarande med den här konversationen. Om du stoppar den behålls sparade meddelanden och svaret som skrivs kastas.';
+
+  @override
+  String get agentConversationStopped => 'Stoppad';
+
+  @override
   String agentConversationThreadSummary(
     int messageCount,
     int toolCallCount,
@@ -912,6 +919,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Vakenräkning';
+
+  @override
+  String get agentStopWakeStopping => 'Stoppar…';
+
+  @override
+  String get agentStopWakeTooltip => 'Stoppa den pågående inferensen';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Nutid';

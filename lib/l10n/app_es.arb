@@ -90,6 +90,8 @@
   "agentControlsReanalyzeButton": "Reanalizar",
   "agentControlsResumeButton": "Reanudar",
   "agentConversationEmpty": "Aún no hay conversaciones.",
+  "agentConversationLiveBanner": "El agente sigue trabajando en esta conversación. Si lo detienes, se conservan los mensajes guardados y se descarta la respuesta en curso.",
+  "agentConversationStopped": "Detenida",
   "agentConversationThreadSummary": "{messageCount} mensajes, {toolCallCount} llamadas a herramientas · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -423,6 +425,8 @@
   "agentStateRevision": "Revisión",
   "agentStateSleepingUntil": "Durmiendo hasta",
   "agentStateWakeCount": "Número de activaciones",
+  "agentStopWakeStopping": "Deteniendo…",
+  "agentStopWakeTooltip": "Detén la inferencia en curso",
   "agentSuggestionTimeEntryUpdateCurrent": "Actual",
   "agentSuggestionTimeEntryUpdateNoChange": "(sin cambios)",
   "agentSuggestionTimeEntryUpdateProposed": "Propuesto",

@@ -449,6 +449,10 @@ class ConversationRepository extends Notifier<void> {
                 );
 
           await for (final response in stream) {
+            // A stop also lands mid-turn: a model stuck streaming would
+            // otherwise keep going, and billing, until it ends on its own.
+            // Leaving the loop cancels the stream subscription.
+            if (isAgentWakeAborted) break;
             // Capture usage from the response (typically on the final chunk).
             if (response.usage != null) {
               final u = response.usage!;
@@ -503,6 +507,20 @@ class ConversationRepository extends Notifier<void> {
         // Accumulate token usage from this turn.
         if (turnUsage != null) {
           accumulated = accumulated.merge(turnUsage);
+        }
+
+        // A cut-off turn may hold half-streamed tool-call arguments, so it is
+        // neither persisted nor executed. Checked here rather than only on
+        // each chunk: a stop can land after the last chunk but before the
+        // stream closes, when the per-chunk check no longer runs.
+        if (isAgentWakeAborted) {
+          _logger.log(
+            LogDomain.ai,
+            'agent wake aborted — cut the current model turn short',
+            subDomain: _subDomain,
+          );
+          shouldContinue = false;
+          continue;
         }
 
         // Add assistant message.

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_stop_wake_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
@@ -101,17 +102,7 @@ class AgentDetailPage extends ConsumerWidget {
             AgentLifecycleBadge(lifecycle: identity.lifecycle),
             if (isRunning) ...[
               const SizedBox(width: AppTheme.spacingMedium),
-              Tooltip(
-                message: context.messages.agentRunningIndicator,
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: context.colorScheme.primary,
-                  ),
-                ),
-              ),
+              AgentStopWakeButton(agentId: identity.agentId),
             ],
           ],
         ),

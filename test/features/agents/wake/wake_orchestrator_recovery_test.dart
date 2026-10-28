@@ -16,10 +16,12 @@ class _AcquisitionGatedWakeRunner extends WakeRunner {
   Future<WakeRunnerLease?> tryAcquireLease(
     String agentId, {
     String? workspaceKey,
+    String? runKey,
   }) async {
     final lease = await super.tryAcquireLease(
       agentId,
       workspaceKey: workspaceKey,
+      runKey: runKey,
     );
     if (agentId == gatedAgentId) await gate.future;
     return lease;

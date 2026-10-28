@@ -184,6 +184,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentConversationEmpty => 'Nenhuma conversa ainda.';
 
   @override
+  String get agentConversationLiveBanner =>
+      'O agente ainda está a trabalhar nesta conversa. Se o parares, as mensagens já guardadas mantêm-se e a resposta em curso é descartada.';
+
+  @override
+  String get agentConversationStopped => 'Parada';
+
+  @override
   String agentConversationThreadSummary(
     int messageCount,
     int toolCallCount,
@@ -914,6 +921,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Contagem de despertares';
+
+  @override
+  String get agentStopWakeStopping => 'A parar…';
+
+  @override
+  String get agentStopWakeTooltip => 'Para a inferência em curso';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Atual';

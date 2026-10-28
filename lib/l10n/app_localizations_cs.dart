@@ -181,6 +181,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentConversationEmpty => 'Zatím žádné konverzace.';
 
   @override
+  String get agentConversationLiveBanner =>
+      'Agent na této konverzaci ještě pracuje. Když ho zastavíš, uložené zprávy zůstanou a rozepsaná odpověď se zahodí.';
+
+  @override
+  String get agentConversationStopped => 'Zastaveno';
+
+  @override
   String agentConversationThreadSummary(
     int messageCount,
     int toolCallCount,
@@ -907,6 +914,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentStateWakeCount => 'Počet probuzení';
+
+  @override
+  String get agentStopWakeStopping => 'Zastavuji…';
+
+  @override
+  String get agentStopWakeTooltip => 'Zastav běžící inferenci';
 
   @override
   String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuální';

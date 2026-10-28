@@ -5,10 +5,13 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
+import 'package:lotti/features/agents/ui/agent_badge_widgets.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_stop_wake_button.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -17,7 +20,8 @@ import 'package:material_ui/material_ui.dart';
 
 /// Displays agent messages grouped by thread (wake cycle).
 ///
-/// Each thread renders as an [ExpansionTile] with the thread's timestamp as
+/// The thread of a running wake is marked and can be stopped from here; see
+/// [_ThreadTile]. Each thread renders as an [ExpansionTile] with the thread's timestamp as
 /// header and a summary (e.g., "2 tool calls"). Inside, messages are shown
 /// chronologically with full expandability, followed by the report snapshot
 /// produced during that wake cycle (if any). Threads are sorted
@@ -110,7 +114,13 @@ class AgentConversationLog extends ConsumerWidget {
   }
 }
 
-class _ThreadTile extends ConsumerWidget {
+/// One wake's conversation: a list row that expands into its messages.
+///
+/// The thread of the agent's running wake is marked *Running* and carries
+/// the stop control — in the row while collapsed, and at the top of the
+/// conversation once expanded, so the row never holds two. A thread whose
+/// wake was aborted, by the stop or by the run timeout, is marked *Stopped*.
+class _ThreadTile extends ConsumerStatefulWidget {
   const _ThreadTile({
     required this.threadId,
     required this.messages,
@@ -126,7 +136,18 @@ class _ThreadTile extends ConsumerWidget {
   final bool initiallyExpanded;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ThreadTile> createState() => _ThreadTileState();
+}
+
+class _ThreadTileState extends ConsumerState<_ThreadTile> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = widget.messages;
+    final agentId = widget.agentId;
+    final threadId = widget.threadId;
+    final report = widget.report;
     if (messages.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -140,6 +161,14 @@ class _ThreadTile extends ConsumerWidget {
     final durationStr = _formatDuration(duration);
 
     final shortId = threadId.length > 7 ? threadId.substring(0, 7) : threadId;
+
+    final isLive =
+        ref.watch(agentRunningThreadIdProvider(agentId)).value == threadId;
+    // Live outranks this in the badge below: a read taken before a new run
+    // of the same thread started must not mark it stopped.
+    final isStopped =
+        ref.watch(wakeRunStatusForThreadProvider((agentId, threadId))).value ==
+        WakeRunStatus.aborted;
 
     // Resolve the model that was used for this specific conversation,
     // from the template version recorded at wake time.
@@ -158,19 +187,39 @@ class _ThreadTile extends ConsumerWidget {
       tokenUsageForThreadProvider((agentId, threadId)),
     );
     final tokenUsage = tokenUsageAsync.value;
+    final tokens = context.designTokens;
 
     return ExpansionTile(
-      initiallyExpanded: initiallyExpanded,
+      initiallyExpanded: widget.initiallyExpanded,
+      onExpansionChanged: (expanded) => setState(() => _expanded = expanded),
       tilePadding: const EdgeInsets.symmetric(
         horizontal: AppTheme.cardPadding,
       ),
-      title: Text(
-        durationStr.isNotEmpty
-            ? '$startTimestamp ($durationStr)'
-            : startTimestamp,
-        style: context.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+      title: Wrap(
+        spacing: tokens.spacing.step3,
+        runSpacing: tokens.spacing.step2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            durationStr.isNotEmpty
+                ? '$startTimestamp ($durationStr)'
+                : startTimestamp,
+            style: context.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (isLive)
+            AgentBadge(
+              label: context.messages.agentRunningIndicator,
+              color: context.colorScheme.primary,
+            )
+          else if (isStopped)
+            AgentBadge(
+              label: context.messages.agentConversationStopped,
+              color: context.colorScheme.outline,
+            ),
+          if (isLive && !_expanded) AgentStopWakeButton(agentId: agentId),
+        ],
       ),
       subtitle: Text(
         [
@@ -190,13 +239,27 @@ class _ThreadTile extends ConsumerWidget {
         ),
       ),
       children: [
+        if (isLive)
+          Padding(
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              right: tokens.spacing.cardPadding,
+              bottom: tokens.spacing.step3,
+            ),
+            child: DesignSystemInlineCallout(
+              icon: LottiIcons.aiSpark,
+              tone: tokens.colors.aiCard.accent,
+              text: context.messages.agentConversationLiveBanner,
+              trailing: AgentStopWakeButton(agentId: agentId),
+            ),
+          ),
         AgentActivityLog.fromMessages(
           agentId: firstMsg.agentId,
           messages: messages,
           expandToolCalls: true,
         ),
-        if (report != null && report!.content.isNotEmpty)
-          _ThreadReportCard(report: report!),
+        if (report != null && report.content.isNotEmpty)
+          _ThreadReportCard(report: report),
         const SizedBox(height: AppTheme.spacingSmall),
       ],
     );

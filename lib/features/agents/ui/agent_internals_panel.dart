@@ -3,6 +3,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_stop_wake_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/side_sheet.dart';
@@ -105,6 +106,7 @@ class AgentInternalsPanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Header(
+            agentId: agentId,
             title: messages.aiInternalsTitle,
             subtitle: headerSubtitle,
             onClose: () => Navigator.of(context).maybePop(),
@@ -159,11 +161,13 @@ class AgentInternalsPanel extends ConsumerWidget {
 
 class _Header extends StatelessWidget {
   const _Header({
+    required this.agentId,
     required this.title,
     required this.subtitle,
     required this.onClose,
   });
 
+  final String agentId;
   final String title;
   final String? subtitle;
   final VoidCallback onClose;
@@ -216,6 +220,9 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
+          // The stop sits in the header, not a tab, so a hung run can be
+          // ended from wherever the reader is in the panel.
+          AgentStopWakeButton(agentId: agentId),
           IconButton(
             tooltip: MaterialLocalizations.of(context).closeButtonLabel,
             icon: Icon(LottiIcons.close, size: 20, color: ai.metaText),

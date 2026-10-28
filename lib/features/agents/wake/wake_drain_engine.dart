@@ -298,6 +298,7 @@ extension WakeDrainEngine on WakeOrchestrator {
           final lease = await runner.tryAcquireLease(
             job.agentId,
             workspaceKey: job.workspaceKey,
+            runKey: job.runKey,
           );
           if (_discardCancelledDrainOwnedJob(
             generation,

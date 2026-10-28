@@ -10,9 +10,13 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 import '../test_utils.dart';
@@ -26,10 +30,24 @@ void main() {
       [],
     ),
     FutureOr<String?> Function(Ref, String)? payloadOverride,
+    String? runningThreadId,
+    Map<String, WakeRunStatus> statuses = const {},
+    MockAgentService? agentService,
   }) {
     return makeTestableWidgetWithScaffold(
       const AgentConversationLog(agentId: _testAgentId),
       overrides: [
+        agentRunningThreadIdProvider.overrideWith(
+          (ref, agentId) => Stream.value(runningThreadId),
+        ),
+        agentIsRunningProvider.overrideWith(
+          (ref, agentId) => Stream.value(runningThreadId != null),
+        ),
+        wakeRunStatusForThreadProvider.overrideWith(
+          (ref, key) async => statuses[key.$2],
+        ),
+        if (agentService != null)
+          agentServiceProvider.overrideWithValue(agentService),
         agentMessagesByThreadProvider.overrideWith(
           (ref, agentId) => threadsValue.when(
             data: (data) async => data,
@@ -422,6 +440,154 @@ void main() {
 
       // The token count should appear formatted in the subtitle.
       expect(find.textContaining('1,500 tokens'), findsOneWidget);
+    });
+
+    group('running and stopped threads', () {
+      // The newest thread is the previous wake's; the live wake is the older
+      // one, so a marker keyed on recency would land on the wrong row.
+      final threads = <String, List<AgentDomainEntity>>{
+        'newest-thread': [
+          makeTestMessage(
+            id: 'msg-newest',
+            threadId: 'newest-thread',
+            createdAt: DateTime(2024, 3, 15, 11),
+          ),
+        ],
+        'live-thread': [
+          makeTestMessage(
+            id: 'msg-live',
+            threadId: 'live-thread',
+            createdAt: DateTime(2024, 3, 15, 10),
+          ),
+        ],
+      };
+
+      // Threads resolve first; each row's stop button then subscribes to
+      // the running state on its own.
+      Future<void> settle(WidgetTester tester) async {
+        for (var i = 0; i < 3; i++) {
+          await tester.pump();
+        }
+      }
+
+      Finder rowOf(String threadId) => find.ancestor(
+        of: find.textContaining(threadId.substring(0, 7)),
+        matching: find.byType(ExpansionTile),
+      );
+
+      Finder inRow(String threadId, Finder finder) =>
+          find.descendant(of: rowOf(threadId), matching: finder);
+
+      testWidgets(
+        'marks only the running thread, and stops it from its collapsed row',
+        (tester) async {
+          final agentService = MockAgentService();
+          when(() => agentService.abortRunningWake(any())).thenReturn(true);
+          await tester.pumpWidget(
+            buildSubject(
+              threadsValue: AsyncValue.data(threads),
+              runningThreadId: 'live-thread',
+              agentService: agentService,
+            ),
+          );
+          await settle(tester);
+
+          expect(inRow('live-thread', find.text('Running')), findsOneWidget);
+          expect(inRow('newest-thread', find.text('Running')), findsNothing);
+          final stop = find.byType(DsAiDiscButton);
+          expect(stop, findsOneWidget);
+          expect(inRow('live-thread', stop), findsOneWidget);
+
+          await tester.tap(stop);
+          await tester.pump();
+
+          verify(() => agentService.abortRunningWake(_testAgentId)).called(1);
+          expect(tester.widget<DsAiDiscButton>(stop).label, 'Stopping…');
+        },
+      );
+
+      testWidgets(
+        'expanding the running thread moves its stop into a banner at the top '
+        'of the conversation, never showing two',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              threadsValue: AsyncValue.data(threads),
+              runningThreadId: 'live-thread',
+              agentService: MockAgentService(),
+            ),
+          );
+          await settle(tester);
+          expect(find.byType(DesignSystemInlineCallout), findsNothing);
+
+          await tester.tap(find.textContaining('live-th'));
+          await tester.pump(const Duration(milliseconds: 500));
+
+          final banner = find.byType(DesignSystemInlineCallout);
+          expect(banner, findsOneWidget);
+          expect(
+            find.descendant(
+              of: banner,
+              matching: find.text(
+                'The agent is still working on this conversation. Stopping '
+                'the agent keeps its saved messages and drops the reply in '
+                'progress.',
+              ),
+            ),
+            findsOneWidget,
+          );
+          expect(find.byType(DsAiDiscButton), findsOneWidget);
+          expect(
+            find.descendant(of: banner, matching: find.byType(DsAiDiscButton)),
+            findsOneWidget,
+          );
+          // The banner leads the conversation, above its messages.
+          expect(
+            tester.getTopLeft(banner).dy,
+            lessThan(tester.getTopLeft(find.text('Thought').last).dy),
+          );
+        },
+      );
+
+      testWidgets(
+        'marks a thread whose wake was aborted as Stopped, and no other',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              threadsValue: AsyncValue.data(threads),
+              statuses: {
+                'live-thread': WakeRunStatus.aborted,
+                'newest-thread': WakeRunStatus.completed,
+              },
+            ),
+          );
+          await settle(tester);
+
+          expect(inRow('live-thread', find.text('Stopped')), findsOneWidget);
+          expect(inRow('newest-thread', find.text('Stopped')), findsNothing);
+          expect(find.text('Running'), findsNothing);
+          expect(find.byType(DsAiDiscButton), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'a running thread reads Running, not Stopped, even while its row '
+        'still says aborted from a stale read',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              threadsValue: AsyncValue.data(threads),
+              runningThreadId: 'live-thread',
+              statuses: {'live-thread': WakeRunStatus.aborted},
+              agentService: MockAgentService(),
+            ),
+          );
+          await settle(tester);
+
+          expect(inRow('live-thread', find.text('Running')), findsOneWidget);
+          expect(find.text('Stopped'), findsNothing);
+        },
+      );
     });
 
     testWidgets('tool call messages start expanded in threads', (tester) async {
