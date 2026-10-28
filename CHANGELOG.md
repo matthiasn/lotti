@@ -4,6 +4,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.67]
+
+### Added
+
+- **The task list now leads with what is overdue and what is due today.** Two
+  views sit above the list on phone and desktop: a solid red *Overdue* and an
+  orange *Due today*, each with its count. Tap one to narrow whatever you are
+  looking at to just those open tasks; tap it again to go back. A view with
+  nothing in it does not appear at all, so a calm day shows no extra chrome,
+  and the counts roll over at midnight on their own.
+- **Saved task filters show when they hold urgent work.** A red dot beside a
+  saved filter's count means something in it is overdue; an orange one means
+  something is due today. Screen readers hear the same.
+- **Open tasks without a due date say so.** A quiet grey *No due date* tag in
+  the task's row marks tasks with no recorded deadline, kept apart from the
+  red and orange of overdue and due-today work.
+- **A history of everything you opened.** Every task, entry, project, event,
+  person, dashboard and habit you open is remembered on this device, listed
+  newest first under its current title. Open it with ⌘Y on macOS (or View →
+  History) and Ctrl+H on Linux and Windows, search by title, narrow it to the
+  last 7, 30 or 90 days or a range of your own, and click a row to go straight
+  back. A visit can be removed for good; the item itself is never touched. The
+  history stays on the device and is never synced.
+- **A running agent can be stopped from where you read it.** Its page, the
+  agent internals panel and the conversation it is having now show a stop
+  button while it runs, the same one the summary's read-aloud uses. The
+  Conversations list marks which conversation is live, and one that was
+  stopped reads *Stopped* afterwards. Before, the only way to stop a stuck
+  run was the sidebar's wake queue.
+- **Mistral models with adjustable reasoning can think before answering.**
+  Mistral Small, Medium 3.5 and Large 4 get a *Think before answering* switch
+  on their model page: on, they work through the problem first, which gives
+  deeper answers, but they are slower and use more tokens. Quick background
+  summaries still ask for a fast answer.
+- **Every definition now shows when it was created and last modified.** At the
+  bottom of the editor for a category, label, habit, measurable, dashboard or
+  speech dictionary entry, a quiet line pair under Delete reads *Created* and
+  *Last modified*, in your device's own date and clock format.
+
+### Changed
+
+- **The running timer and recording now sit in the bottom navigation row.** On
+  phones and narrow desktop windows, the red-dot timer (and the recording orb)
+  used to float in a capsule above the navigation, centred on the window rather
+  than on anything around it. It now sits in the row itself, centred between the
+  menu button and the create button, with a timer and a recording still sharing
+  one capsule. Only when the row is too narrow for that — the create button
+  drops to its `+` first — do the two stack, timer above recording, growing
+  upward out of the row instead of crowding it.
+- **Banner dots sit below the banner, and you can page by hand.** Click or tap
+  a dot to jump straight to that banner, or swipe left and right — with a
+  finger, or with two fingers on a trackpad — to go to the next or previous one.
+  Screen readers announce each dot as a button.
+
+### Fixed
+
+- **Stopping an agent now stops its current answer, not only the next one.**
+  A stopped agent used to keep streaming, and paying for, the answer it was in
+  the middle of until the model finished on its own. It now breaks off at the
+  next piece of the answer, and nothing from that half-written turn is applied.
+- **No more "check in with them" reminder right after you did.** Logging a
+  check-in could still bring up a reminder banner about that person, and could
+  re-word their phone reminder, until the next morning. A reminder now only
+  appears once someone is actually due — the day their weekly, monthly or
+  custom interval runs out — never the day before, and a banner already showing
+  disappears as soon as you check in.
+- **The reminder banner no longer moves on as you reach for it.** Resting the
+  pointer on the banners stops the rotation and empties its progress line, and
+  moving away gives the banner its full time again instead of advancing a moment
+  later.
+- **Snooze no longer sits against the banner's edge.** It keeps the same
+  margin as everything else on the banner.
+- **Mistral's reasoning now shows in agent internals.** Its thinking used to be
+  thrown away; it now appears as thoughts, as it does for Gemini and Ollama.
+- **Mistral reasoning models were run hotter than Mistral recommends.** They
+  were sent the temperature OpenAI's reasoning models need; they now keep their
+  normal temperature.
+- **Editing a habit or a measurable now records when it was changed.** Saving
+  either kept its previous modification time, so the new *Last modified* line
+  would have shown the time of an older edit.
+- **The settings breadcrumb reads as one even line.** The page you are on, the
+  last segment of the trail in the desktop settings header, used to sit closer
+  to its `›` than the segments before it and stood out in a brighter colour.
+  Every segment now has the same spacing and the same colour.
+- **Swedish and Danish described a missing due date as a missing birth date.**
+  The labels for "No due date" and "Due today" used pregnancy vocabulary; they
+  now use the words for a task deadline.
+
 ## [1.1.66]
 
 ### Added
