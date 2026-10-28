@@ -17,8 +17,8 @@ import 'package:lotti/services/nav_service.dart';
 /// - **the desktop detail selection** — the wide layout opens a linked task,
 ///   entry or project in the detail pane without moving the URL, so those
 ///   selections are watched too. The desktop tasks tab goes **by id
-///   only**: `desktopSelectedTaskId` is the task in view, so its route is
-///   never read there.
+///   only**: the top of `desktopTaskDetailStack` is the task in view, so
+///   its route is never read there.
 ///
 /// What neither signal shows — a linked task pushed on the phone's
 /// navigator — is reported through [recordVisit].
@@ -51,8 +51,9 @@ class HistoryRecorder {
     _nav.habitsDelegate,
   ];
 
-  /// The desktop selections, each with the tab it belongs to and the route
-  /// that shows the selected entity.
+  /// The desktop selections other than the task's, each with the tab it
+  /// belongs to and the route that shows the selected entity. The task in
+  /// view is followed through the detail stack instead — see [start].
   List<
     ({
       ValueListenable<String?> selection,
@@ -61,11 +62,6 @@ class HistoryRecorder {
     })
   >
   get _desktopSelections => [
-    (
-      selection: _nav.desktopSelectedTaskId,
-      tab: _nav.tasksDelegate,
-      target: _taskTarget,
-    ),
     (
       selection: _nav.desktopSelectedEntryId,
       tab: _nav.journalDelegate,
@@ -128,10 +124,30 @@ class HistoryRecorder {
       selection.addListener(onSelectionChanged);
       _detach.add(() => selection.removeListener(onSelectionChanged));
     }
+    // The desktop task in view is the top of the detail stack, and every
+    // change to it — a route-driven reset, a linked push or pop,
+    // `NavService.openTask` — assigns a new list, so each one notifies,
+    // even reopening the task already shown.
+    void onTaskStackChanged() {
+      final stack = _nav.desktopTaskDetailStack.value;
+      if (stack.isEmpty || !_tracksTaskById(_nav.tasksDelegate)) return;
+      if (_isFront(_nav.tasksDelegate)) _record(_taskTarget(stack.last));
+    }
+
+    _nav.desktopTaskDetailStack.addListener(onTaskStackChanged);
+    _detach.add(
+      () => _nav.desktopTaskDetailStack.removeListener(onTaskStackChanged),
+    );
     _indexSubscription = _nav.getIndexStream().listen((index) {
       final delegates = _nav.beamerDelegates;
       if (index < 0 || index >= delegates.length) return;
-      _recordShownBy(delegates[index]);
+      final delegate = delegates[index];
+      // Coming to the desktop tasks tab is not a visit by itself: a beam
+      // into it from another tab moves the index a frame before the
+      // stack catches up, so reading it here would record the task the
+      // tab showed before. The stack's own change records the visit.
+      if (_tracksTaskById(delegate)) return;
+      _recordShownBy(delegate);
     });
   }
 
@@ -145,17 +161,12 @@ class HistoryRecorder {
   /// Whether [delegate]'s tab is recorded by the id of the task in view
   /// rather than by its route: the desktop tasks tab, whose URL keeps the
   /// task it was opened at while linked tasks replace it in the pane.
-  /// `desktopSelectedTaskId` is the task actually shown.
+  /// The top of `desktopTaskDetailStack` is the task actually shown.
   bool _tracksTaskById(BeamerDelegate delegate) =>
       _nav.isDesktopMode && identical(delegate, _nav.tasksDelegate);
 
   Future<void> _recordShownBy(BeamerDelegate delegate) async {
-    final target = _tracksTaskById(delegate)
-        ? switch (_nav.desktopSelectedTaskId.value) {
-            final id? => _taskTarget(id),
-            null => null,
-          }
-        : historyTargetForRoute(delegate.configuration.uri.path);
+    final target = historyTargetForRoute(delegate.configuration.uri.path);
     if (target != null) await _record(target);
   }
 

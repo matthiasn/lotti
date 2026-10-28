@@ -866,6 +866,30 @@ void main() {
         expect(navService.index, navService.tasksIndex);
       });
 
+      test('openTask brings Tasks forward before the stack changes, and '
+          'always notifies', () {
+        final navService = getIt<NavService>()..isDesktopMode = true;
+        final indexAtChange = <int>[];
+        void onStack() => indexAtChange.add(navService.index);
+        addTearDown(() {
+          navService.desktopTaskDetailStack.removeListener(onStack);
+          navService
+            ..resetDesktopTaskDetail(null)
+            ..isDesktopMode = false
+            ..beamToNamed('/tasks');
+        });
+        navService
+          ..resetDesktopTaskDetail('a')
+          ..beamToNamed('/journal');
+        navService.desktopTaskDetailStack.addListener(onStack);
+
+        // The task already in view, opened again from another tab.
+        navService.openTask('a');
+
+        expect(indexAtChange, [navService.tasksIndex]);
+        expect(navService.desktopTaskDetailStack.value, ['a']);
+      });
+
       test('openTask on the phone only beams to the task', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('base')
