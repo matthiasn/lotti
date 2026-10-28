@@ -800,24 +800,26 @@ their integration with the app shell, docked and slid away. The contract:
   `blurred: false` and skips the filter it could not show through.
 - `MobileActivityIsland`
   ([mobile_activity_island.dart](../../../lib/beamer/chrome/mobile_activity_island.dart))
-  sits in the launcher row's `centerBand` while a timer or a recording runs:
-  one capsule per running item, a timer stacked above a recording at one
-  shared width, `stackGap` (`spacing.step2`) apart. Each capsule wears the
-  same `DsGlassChipSurface`, `dsGlassChipFill` and `dsGlassChipBorder` as
-  the launcher chips — one glass dialect, not a third — and is a button end
-  to end. `capsuleHeight` is `spacing.step8` at the default text size and,
+  sits in the launcher row's `centerBand` while a timer or a recording runs.
+  Both at once share one capsule, a hairline between the halves; only when
+  `MobileIslandLayout.resolve` finds no room for that does it pass
+  `stacked`, and the two become capsules of their own, timer above
+  recording at one shared width, `stackGap` (`spacing.step2`) apart. Every
+  capsule wears the same `DsGlassChipSurface`, `dsGlassChipFill` and
+  `dsGlassChipBorder` as the launcher chips — one glass dialect, not a
+  third. `capsuleHeight` is `spacing.step8` at the default text size and,
   like `MobileNavigationLauncher.chipHeight`, grows with
   `MediaQuery.textScalerOf` (the scaled subtitle2 line inside `spacing.step2`
   of air, rounded up to the logical pixel) so large-text digits are never
   clipped. `dockedBottom` centres the lowest capsule on the row, so a stack
   grows upward; `heightAboveBar` is what of it rises above the bar, which
-  the shell's overlay scope publishes. `width` measures the widest capsule
-  on a fixed `00:00:00` — the elapsed digits sit in `subtitle2` with the
-  tabular numeric features, so a ticking clock never changes it — and the
-  shell hands it to the launcher as `reservedCenterWidth`. When the
-  launcher's `centerFits` says the band cannot carry it, the island floats
-  `floatGap` above the bar at full width instead. The contract for
-  *when* it shows is in
+  the shell's overlay scope publishes. `width` measures the shared capsule,
+  or the widest stacked one, on a fixed `00:00:00` — the elapsed digits sit
+  in `subtitle2` with the tabular numeric features, so a ticking clock never
+  changes it — and the shell hands it to the launcher as
+  `reservedCenterWidth`. When the launcher's `centerFits` rejects even the
+  stack, the island floats `floatGap` above the bar at full width instead.
+  The ladder and the contract for *when* it shows are in
   [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides whether a
   worded action keeps its word, budgeting the menu button's one `chipHeight`

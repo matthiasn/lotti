@@ -1801,6 +1801,7 @@ void main() {
     Future<void> pumpMobileShell(
       WidgetTester tester, {
       JournalEntity? runningTimer,
+      Size viewportSize = _phoneViewportSize,
     }) async {
       final mockNavService = MockNavService();
       await _stubNavService(
@@ -1819,6 +1820,7 @@ void main() {
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
+        viewportSize: viewportSize,
         audioRecorderState: AudioRecorderState(
           status: AudioRecorderStatus.recording,
           progress: const Duration(seconds: 30),
@@ -1888,12 +1890,74 @@ void main() {
     );
 
     testWidgets(
-      'stacks the timer above the recording and grows upward out of the row',
+      'a timer and a recording share one capsule in the row while it fits',
       (tester) async {
         debugIsRunningInFlatpakOverride = false;
         await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
         await tester.pump();
 
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.stacked, isFalse);
+        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
+        final recording = tester.getRect(
+          find.byKey(MobileActivityIsland.recordingKey),
+        );
+        final menu = tester.getRect(
+          find.byKey(MobileNavigationLauncherKeys.menuButton),
+        );
+        // Side by side, level with the menu button, inside the row.
+        expect(timer.right, lessThanOrEqualTo(recording.left));
+        expect(timer.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(recording.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(find.byKey(MobileActivityIsland.dividerKey), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'stacks the timer above the recording only when the shared capsule '
+      'does not fit, growing upward out of the row',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = false;
+        // Find a width where the row holds the stack but not the shared
+        // capsule, measured from the shell's own launcher rather than
+        // hard-coded against one font's metrics.
+        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
+        await tester.pump();
+        final context = tester.element(find.byType(MobileNavigationLauncher));
+        final launcher = tester.widget<MobileNavigationLauncher>(
+          find.byType(MobileNavigationLauncher),
+        );
+        const both = MobileActivity(timer: true, recording: true);
+        final band = launcher.centerBand(context);
+        final chrome = band.start + band.end;
+        final shared = MobileActivityIsland.width(
+          context,
+          both,
+          stacked: false,
+        );
+        final stack = MobileActivityIsland.width(context, both, stacked: true);
+        final width = (chrome + (shared + stack) / 2).floorToDouble();
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        await pumpMobileShell(
+          tester,
+          runningTimer: _runningTimerEntry,
+          viewportSize: Size(width, _phoneViewportSize.height),
+        );
+        await tester.pump();
+
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.stacked, isTrue);
         final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
         final recording = tester.getRect(
           find.byKey(MobileActivityIsland.recordingKey),
@@ -1911,8 +1975,9 @@ void main() {
         final pageContext = tester.element(find.byType(IndexedStack));
         final above = MobileActivityIsland.heightAboveBar(
           pageContext,
-          const MobileActivity(timer: true, recording: true),
+          both,
           inRow: true,
+          stacked: true,
         );
         expect(above, greaterThan(0));
         expect(
@@ -2109,6 +2174,7 @@ void main() {
         MobileActivityIsland.width(
           barContext,
           const MobileActivity(timer: true, recording: false),
+          stacked: false,
         ),
       );
 
@@ -2175,6 +2241,7 @@ void main() {
           reservedCenterWidth: MobileActivityIsland.width(
             barContext,
             const MobileActivity(timer: true, recording: false),
+            stacked: false,
           ),
         );
         expect(

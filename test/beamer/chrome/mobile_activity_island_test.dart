@@ -183,6 +183,7 @@ void main() {
     JournalEntity? timer,
     JournalEntity? linkedFrom,
     bool omitAudio = false,
+    bool stacked = false,
     AudioRecorderController Function()? controller,
     ThemeData? theme,
     MediaQueryData? mediaQueryData,
@@ -196,7 +197,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        MobileActivityIsland(omitAudio: omitAudio),
+        MobileActivityIsland(omitAudio: omitAudio, stacked: stacked),
         theme: theme ?? DesignSystemTheme.dark(),
         mediaQueryData: mediaQueryData,
         overrides: <Override>[
@@ -221,15 +222,17 @@ void main() {
   Finder island() => find.byKey(MobileActivityIsland.islandKey);
   Finder timerCapsule() => find.byKey(MobileActivityIsland.timerKey);
   Finder recordingCapsule() => find.byKey(MobileActivityIsland.recordingKey);
+  Finder divider() => find.byKey(MobileActivityIsland.dividerKey);
 
-  /// The glass pill inside [capsule]: the container carrying the chip fill
-  /// and the hairline outline.
-  Finder glassOf(Finder capsule) => find.descendant(
-    of: capsule,
-    matching: find.byWidgetPredicate(
-      (w) => w is Container && w.foregroundDecoration != null,
-    ),
-  );
+  bool isGlass(Widget w) => w is Container && w.foregroundDecoration != null;
+
+  /// Every glass pill on screen: the containers carrying the chip fill and
+  /// the hairline outline.
+  Finder glass() => find.byWidgetPredicate(isGlass);
+
+  /// The glass pill inside [capsule], when it is framed on its own.
+  Finder glassOf(Finder capsule) =>
+      find.descendant(of: capsule, matching: find.byWidgetPredicate(isGlass));
 
   DsTokens tokensOf(WidgetTester tester) =>
       tester.element(find.byType(MobileActivityIsland)).designTokens;
@@ -394,6 +397,7 @@ void main() {
       expect(find.text('00:12:34'), findsOneWidget);
       expect(find.byType(AudioRecordingOrb), findsNothing);
       expect(recordingCapsule(), findsNothing);
+      expect(divider(), findsNothing);
 
       final dot = tester.widget<Container>(
         find.descendant(
@@ -418,6 +422,7 @@ void main() {
 
       expect(find.text('00:03:12'), findsOneWidget);
       expect(timerCapsule(), findsNothing);
+      expect(divider(), findsNothing);
       final orb = tester.widget<AudioRecordingOrb>(
         find.byType(AudioRecordingOrb),
       );
@@ -425,17 +430,51 @@ void main() {
       expect(orb.size, tokens.spacing.step6);
     });
 
-    testWidgets('both: the timer stacks above the recording, one gap apart', (
-      tester,
-    ) async {
+    testWidgets('both, side by side: one capsule, the timer leads, a '
+        'hairline, then the recording', (tester) async {
       await pumpIsland(tester, state: recorder(), timer: timerEntry());
       final tokens = tokensOf(tester);
 
+      expect(find.byType(DsGlassChipSurface), findsOneWidget);
+      final timerX = tester.getTopLeft(timerCapsule()).dx;
+      final dividerX = tester.getTopLeft(divider()).dx;
+      final recordingX = tester.getTopLeft(recordingCapsule()).dx;
+      expect(timerX, lessThan(dividerX));
+      expect(dividerX, lessThan(recordingX));
+      // One row: the halves share the capsule's height and centre line.
+      expect(
+        tester.getCenter(timerCapsule()).dy,
+        tester.getCenter(recordingCapsule()).dy,
+      );
+
+      final rule = tester.getSize(divider());
+      expect(rule.width, BorderWidths.hairline);
+      expect(rule.height, tokens.spacing.step5);
+      expect(
+        tester
+            .widget<ColoredBox>(
+              find.descendant(of: divider(), matching: find.byType(ColoredBox)),
+            )
+            .color,
+        tokens.colors.decorative.level01,
+      );
+    });
+
+    testWidgets('both, stacked: the timer above the recording, one gap '
+        'apart, one width, no hairline', (tester) async {
+      await pumpIsland(
+        tester,
+        state: recorder(),
+        timer: timerEntry(),
+        stacked: true,
+      );
+      final tokens = tokensOf(tester);
+
+      expect(divider(), findsNothing);
+      expect(find.byType(DsGlassChipSurface), findsNWidgets(2));
       final timerRect = tester.getRect(timerCapsule());
       final recordingRect = tester.getRect(recordingCapsule());
-      expect(timerRect.bottom, lessThan(recordingRect.top));
       expect(recordingRect.top - timerRect.bottom, tokens.spacing.step2);
-      // One column, not two ragged pills: the same width, the same centre.
       expect(timerRect.width, recordingRect.width);
       expect(timerRect.center.dx, recordingRect.center.dx);
       expect(
@@ -443,11 +482,21 @@ void main() {
         MobileActivityIsland.stackHeight(
           islandContext(tester),
           const MobileActivity(timer: true, recording: true),
+          stacked: true,
         ),
       );
-      // Both clocks keep their digits.
       expect(find.text('00:12:34'), findsOneWidget);
       expect(find.text('00:03:12'), findsOneWidget);
+    });
+
+    testWidgets('stacked means nothing with one item running', (tester) async {
+      await pumpIsland(tester, timer: timerEntry(), stacked: true);
+
+      expect(find.byType(DsGlassChipSurface), findsOneWidget);
+      expect(
+        tester.getSize(island()).height,
+        tokensOf(tester).spacing.step8,
+      );
     });
 
     testWidgets('elapsed digits are tabular so the capsule never twitches', (
@@ -489,7 +538,7 @@ void main() {
       final tokens = tokensOf(tester);
       final radius = BorderRadius.circular(tokens.radii.badgesPills);
 
-      final container = tester.widget<Container>(glassOf(timerCapsule()));
+      final container = tester.widget<Container>(glass().first);
       final fill = container.decoration! as BoxDecoration;
       expect(fill.color, dsGlassChipFill(tokens));
       expect(fill.borderRadius, radius);
@@ -513,7 +562,7 @@ void main() {
         theme: DesignSystemTheme.light(),
       );
       final tokens = tokensOf(tester);
-      final container = tester.widget<Container>(glassOf(timerCapsule()));
+      final container = tester.widget<Container>(glass().first);
       expect(
         (container.decoration! as BoxDecoration).color,
         dsGlassChipFill(tokens),
@@ -524,20 +573,53 @@ void main() {
       );
     });
 
-    testWidgets('each capsule is one capsule height tall and a target '
-        'end to end', (tester) async {
+    testWidgets('side by side, the halves fill the capsule and meet at the '
+        'hairline', (tester) async {
       await pumpIsland(tester, state: recorder(), timer: timerEntry());
       final tokens = tokensOf(tester);
 
+      // The capsule's insets and the air around the rule belong to the
+      // halves, so a tap anywhere on the pill lands on one of them.
+      final pill = tester.getRect(glass());
+      final timerRect = tester.getRect(timerCapsule());
+      final ruleRect = tester.getRect(divider());
+      final recordingRect = tester.getRect(recordingCapsule());
+      expect(pill.height, tokens.spacing.step8);
+      expect(timerRect.height, tokens.spacing.step8);
+      expect(recordingRect.height, tokens.spacing.step8);
+      expect(timerRect.left, moreOrLessEquals(pill.left, epsilon: 0.5));
+      expect(timerRect.right, moreOrLessEquals(ruleRect.left, epsilon: 0.5));
+      expect(
+        recordingRect.left,
+        moreOrLessEquals(ruleRect.right, epsilon: 0.5),
+      );
+      expect(recordingRect.right, moreOrLessEquals(pill.right, epsilon: 0.5));
+    });
+
+    testWidgets('stacked or alone, each capsule is a target end to end', (
+      tester,
+    ) async {
+      await pumpIsland(
+        tester,
+        state: recorder(),
+        timer: timerEntry(),
+        stacked: true,
+      );
+      final tokens = tokensOf(tester);
       expect(
         MobileActivityIsland.capsuleHeight(islandContext(tester)),
         tokens.spacing.step8,
       );
       for (final capsule in [timerCapsule(), recordingCapsule()]) {
-        // The button is the whole glass pill, not the text line inside it.
         expect(tester.getRect(capsule), tester.getRect(glassOf(capsule)));
         expect(tester.getSize(capsule).height, tokens.spacing.step8);
       }
+
+      await pumpIsland(tester, timer: timerEntry());
+      expect(
+        tester.getRect(timerCapsule()),
+        tester.getRect(glassOf(timerCapsule())),
+      );
     });
 
     testWidgets(
@@ -555,6 +637,7 @@ void main() {
           tester,
           state: recorder(),
           timer: timerEntry(),
+          stacked: true,
           mediaQueryData: largeText,
         );
         final context = islandContext(tester);
@@ -593,7 +676,7 @@ void main() {
     });
 
     testWidgets(
-      'where even one elapsed time cannot fit, it shrinks rather than '
+      'where even the shared capsule cannot fit, it shrinks rather than '
       'clips a digit',
       (tester) async {
         // Narrower than any phone the app targets, at the largest scale.
@@ -612,22 +695,21 @@ void main() {
         expect(find.text('00:12:34'), findsOneWidget);
         expect(find.text('00:03:12'), findsOneWidget);
         expect(
-          tester.getRect(timerCapsule()).width,
+          tester.getRect(glass()).width,
           lessThanOrEqualTo(impossible.size.width),
         );
         expect(
           MobileActivityIsland.width(
             islandContext(tester),
-            const MobileActivity(timer: true, recording: false),
+            const MobileActivity(timer: true, recording: true),
+            stacked: false,
           ),
           greaterThan(impossible.size.width),
           reason: 'the content really is wider than the window',
         );
         // Shrunk, not cut.
         final fitted = tester.widget<FittedBox>(
-          find
-              .descendant(of: timerCapsule(), matching: find.byType(FittedBox))
-              .first,
+          find.descendant(of: glass(), matching: find.byType(FittedBox)),
         );
         expect(fitted.fit, BoxFit.scaleDown);
       },
@@ -714,20 +796,30 @@ void main() {
     const timerOnly = MobileActivity(timer: true, recording: false);
     const recordingOnly = MobileActivity(timer: false, recording: true);
 
-    testWidgets('stack height is the capsules plus the gaps between them', (
-      tester,
-    ) async {
+    testWidgets('one capsule tall unless stacked, then the capsules plus '
+        'the gap between them', (tester) async {
       await pumpIsland(tester, timer: timerEntry());
       final context = islandContext(tester);
       final tokens = context.designTokens;
 
-      expect(MobileActivityIsland.stackHeight(context, MobileActivity.none), 0);
       expect(
-        MobileActivityIsland.stackHeight(context, timerOnly),
+        MobileActivityIsland.stackHeight(
+          context,
+          MobileActivity.none,
+          stacked: true,
+        ),
+        0,
+      );
+      expect(
+        MobileActivityIsland.stackHeight(context, timerOnly, stacked: true),
         tokens.spacing.step8,
       );
       expect(
-        MobileActivityIsland.stackHeight(context, both),
+        MobileActivityIsland.stackHeight(context, both, stacked: false),
+        tokens.spacing.step8,
+      );
+      expect(
+        MobileActivityIsland.stackHeight(context, both, stacked: true),
         tokens.spacing.step8 * 2 + tokens.spacing.step2,
       );
     });
@@ -752,35 +844,36 @@ void main() {
       await pumpIsland(tester, timer: timerEntry());
       final context = islandContext(tester);
 
-      expect(
-        MobileActivityIsland.heightAboveBar(
-          context,
-          MobileActivity.none,
-          inRow: true,
-        ),
-        0,
-      );
-      expect(
-        MobileActivityIsland.heightAboveBar(
-          context,
-          timerOnly,
-          inRow: true,
-        ),
-        0,
-      );
+      for (final (activity, stacked) in [
+        (MobileActivity.none, false),
+        (timerOnly, false),
+        (both, false),
+      ]) {
+        expect(
+          MobileActivityIsland.heightAboveBar(
+            context,
+            activity,
+            inRow: true,
+            stacked: stacked,
+          ),
+          0,
+          reason: '$activity',
+        );
+      }
       final stackTop =
           MobileActivityIsland.dockedBottom(context) +
-          MobileActivityIsland.stackHeight(context, both);
+          MobileActivityIsland.stackHeight(context, both, stacked: true);
       final above = MobileActivityIsland.heightAboveBar(
         context,
         both,
         inRow: true,
+        stacked: true,
       );
       expect(above, greaterThan(0));
       expect(above, stackTop - MobileNavigationLauncher.barHeight(context));
     });
 
-    testWidgets('floating, the whole stack and its float gap count', (
+    testWidgets('floating, the whole island and its float gap count', (
       tester,
     ) async {
       await pumpIsland(tester, timer: timerEntry());
@@ -788,54 +881,80 @@ void main() {
       final tokens = context.designTokens;
 
       expect(MobileActivityIsland.floatGap(context), tokens.spacing.step3);
-      expect(
-        MobileActivityIsland.heightAboveBar(
-          context,
-          both,
-          inRow: false,
-        ),
-        MobileActivityIsland.stackHeight(context, both) + tokens.spacing.step3,
-      );
+      for (final stacked in [false, true]) {
+        expect(
+          MobileActivityIsland.heightAboveBar(
+            context,
+            both,
+            inRow: false,
+            stacked: stacked,
+          ),
+          MobileActivityIsland.stackHeight(context, both, stacked: stacked) +
+              tokens.spacing.step3,
+        );
+      }
       expect(
         MobileActivityIsland.heightAboveBar(
           context,
           MobileActivity.none,
           inRow: false,
+          stacked: false,
         ),
         0,
       );
     });
 
-    testWidgets('width matches the widest capsule as it renders', (
-      tester,
-    ) async {
+    testWidgets('width matches what paints in every layout', (tester) async {
       await pumpIsland(tester, state: recorder(), timer: timerEntry());
-      final context = islandContext(tester);
-
-      expect(MobileActivityIsland.width(context, MobileActivity.none), 0);
-      // The orb is wider than the dot, so the recording sets the stack's
-      // width, and the reserve is exactly what paints.
+      var context = islandContext(tester);
       expect(
-        MobileActivityIsland.width(context, recordingOnly),
-        greaterThan(MobileActivityIsland.width(context, timerOnly)),
+        MobileActivityIsland.width(
+          context,
+          MobileActivity.none,
+          stacked: false,
+        ),
+        0,
       );
       expect(
-        MobileActivityIsland.width(context, both),
+        MobileActivityIsland.width(context, both, stacked: false),
         moreOrLessEquals(tester.getSize(island()).width, epsilon: 0.5),
+      );
+
+      await pumpIsland(
+        tester,
+        state: recorder(),
+        timer: timerEntry(),
+        stacked: true,
+      );
+      context = islandContext(tester);
+      // The orb is wider than the dot, so the recording sets the stack's
+      // width — far narrower than the shared capsule.
+      expect(
+        MobileActivityIsland.width(context, both, stacked: true),
+        moreOrLessEquals(tester.getSize(island()).width, epsilon: 0.5),
+      );
+      expect(
+        MobileActivityIsland.width(context, both, stacked: true),
+        MobileActivityIsland.width(context, recordingOnly, stacked: false),
+      );
+      expect(
+        MobileActivityIsland.width(context, both, stacked: true),
+        lessThan(MobileActivityIsland.width(context, both, stacked: false)),
       );
 
       await pumpIsland(tester, timer: timerEntry());
       expect(
-        MobileActivityIsland.width(islandContext(tester), timerOnly),
+        MobileActivityIsland.width(
+          islandContext(tester),
+          timerOnly,
+          stacked: false,
+        ),
         moreOrLessEquals(tester.getSize(island()).width, epsilon: 0.5),
       );
     });
 
     test('activities compare by what runs', () {
-      expect(
-        const MobileActivity(timer: true, recording: false),
-        timerOnly,
-      );
+      expect(const MobileActivity(timer: true, recording: false), timerOnly);
       expect(timerOnly.hashCode, isNot(recordingOnly.hashCode));
       expect(timerOnly, isNot(recordingOnly));
       expect(MobileActivity.none.isEmpty, isTrue);
@@ -843,6 +962,169 @@ void main() {
     });
   });
 
+  group('MobileIslandLayout.resolve', () {
+    late BuildContext resolvedContext;
+    const both = MobileActivity(timer: true, recording: true);
+    const timerOnly = MobileActivity(timer: true, recording: false);
+
+    /// Resolves the ladder in a real context of [size] at [scale], with a
+    /// worded page action and, when [utility], the chat button docked.
+    Future<MobileIslandLayout> resolveAt(
+      WidgetTester tester, {
+      required MobileActivity activity,
+      Size size = const Size(390, 844),
+      double scale = 1,
+      bool utility = false,
+      bool barDocked = true,
+    }) async {
+      late MobileIslandLayout layout;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) {
+              resolvedContext = context;
+              layout = MobileIslandLayout.resolve(
+                context,
+                activity: activity,
+                barDocked: barDocked,
+                buildLauncher: (reserve) => MobileNavigationLauncher(
+                  onOpenMenu: () {},
+                  utilityAction: utility
+                      ? MobileNavDockAction.glyph(
+                          label: 'Chat',
+                          icon: Icons.chat,
+                          onPressed: () {},
+                        )
+                      : null,
+                  pageAction: MobileNavDockAction.worded(
+                    label: 'New task',
+                    icon: Icons.add,
+                    onPressed: () {},
+                  ),
+                  reservedCenterWidth: reserve,
+                ),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+          theme: DesignSystemTheme.dark(),
+          mediaQueryData: MediaQueryData(
+            size: size,
+            textScaler: TextScaler.linear(scale),
+          ),
+        ),
+      );
+      return layout;
+    }
+
+    testWidgets('nothing running: in the row, reserving nothing', (
+      tester,
+    ) async {
+      final layout = await resolveAt(tester, activity: MobileActivity.none);
+
+      expect(layout.inRow, isTrue);
+      expect(layout.stacked, isFalse);
+      expect(layout.launcher.reservedCenterWidth, 0);
+    });
+
+    testWidgets('both share one capsule in the row while it fits', (
+      tester,
+    ) async {
+      final layout = await resolveAt(
+        tester,
+        activity: both,
+        size: const Size(800, 700),
+      );
+
+      expect(layout.inRow, isTrue);
+      expect(layout.stacked, isFalse);
+      expect(
+        layout.launcher.reservedCenterWidth,
+        MobileActivityIsland.width(
+          resolvedContext,
+          both,
+          stacked: false,
+        ),
+      );
+    });
+
+    testWidgets('stacks only when the shared capsule no longer fits the row', (
+      tester,
+    ) async {
+      final layout = await resolveAt(tester, activity: both, utility: true);
+      final context = resolvedContext;
+
+      // The precondition: even with the action down to its glyph, the
+      // shared capsule does not fit beside the menu and chat buttons.
+      final shared = MobileNavigationLauncher(
+        onOpenMenu: () {},
+        utilityAction: layout.launcher.utilityAction,
+        pageAction: layout.launcher.pageAction,
+        reservedCenterWidth: MobileActivityIsland.width(
+          context,
+          both,
+          stacked: false,
+        ),
+      );
+      expect(shared.centerFits(context), isFalse);
+
+      expect(layout.inRow, isTrue);
+      expect(layout.stacked, isTrue);
+      expect(layout.launcher.centerFits(context), isTrue);
+    });
+
+    testWidgets('one item never stacks', (tester) async {
+      final layout = await resolveAt(
+        tester,
+        activity: timerOnly,
+        utility: true,
+      );
+
+      expect(layout.inRow, isTrue);
+      expect(layout.stacked, isFalse);
+    });
+
+    testWidgets('floats with a reserve-free launcher when not even the stack '
+        'fits the row, side by side while the window has room', (
+      tester,
+    ) async {
+      final layout = await resolveAt(
+        tester,
+        activity: both,
+        size: const Size(320, 700),
+        utility: true,
+      );
+
+      expect(layout.inRow, isFalse);
+      expect(layout.stacked, isFalse);
+      expect(layout.launcher.reservedCenterWidth, 0);
+    });
+
+    testWidgets('floating, it stacks once the window cannot hold the shared '
+        'capsule', (tester) async {
+      final layout = await resolveAt(
+        tester,
+        activity: both,
+        size: const Size(320, 700),
+        scale: 3,
+      );
+
+      expect(layout.inRow, isFalse);
+      expect(layout.stacked, isTrue);
+    });
+
+    testWidgets('a slid-away bar always floats', (tester) async {
+      final layout = await resolveAt(
+        tester,
+        activity: timerOnly,
+        size: const Size(800, 700),
+        barDocked: false,
+      );
+
+      expect(layout.inRow, isFalse);
+      expect(layout.launcher.reservedCenterWidth, 0);
+    });
+  });
   group('the timer capsule', () {
     testWidgets('is a button that names itself and its elapsed time', (
       tester,

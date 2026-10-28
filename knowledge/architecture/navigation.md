@@ -699,17 +699,18 @@ with the slide. With animations disabled the panel jumps instead of sliding.
 ## The activity island
 
 While a time recording and/or an audio recording runs somewhere other than
-the page on screen, the mobile shell shows glass capsules —
+the page on screen, the mobile shell shows a glass capsule —
 [`MobileActivityIsland`](../../lib/beamer/chrome/mobile_activity_island.dart)
 — in the launcher's own row, centred between the leading chips (menu button,
 and the chat button when it docks) and the page action. A running timer is a
 red dot (`alert.error`) and its elapsed time; a live recording is the level
-orb and its elapsed time. Each is a capsule of its own and a button end to
-end: the timer opens the running entry through `navigateToTimerTarget` (the
-same routing the desktop sidebar's timer card uses), the recording reopens
-its modal. Both at once stack, timer above recording, `spacing.step2` apart
-at one shared width. With nothing running the island renders nothing and
-reserves nothing.
+orb and its elapsed time; both at once share the capsule with a hairline
+between them. Each half is its own button: the timer opens the running entry
+through `navigateToTimerTarget` (the same routing the desktop sidebar's timer
+card uses), the recording reopens its modal. The halves carry the capsule's
+insets and the air around the hairline themselves, so every point of the
+pill is one of the two targets. With nothing running the island renders
+nothing and reserves nothing.
 
 The island is built from the launcher chips' own vocabulary —
 `DsGlassChipSurface`, `dsGlassChipFill`, `dsGlassChipBorder`,
@@ -719,61 +720,66 @@ subordinate rather than a third peer, growing with the system text scale the
 way the launcher's chips do (`capsuleHeight`: the scaled subtitle2 line inside
 `spacing.step2` of air, never below `step8`).
 
+### Where it goes: the layout ladder
+
+`MobileIslandLayout.resolve` picks the first rung that fits, measuring the
+island (`MobileActivityIsland.width`) against the launcher's `centerBand`
+(`MobileNavigationLauncher.centerFits`):
+
 ```mermaid
-flowchart TB
-  subgraph Row["Launcher row (docked)"]
-    direction LR
-    Menu["Menu button<br/>(+ chat button)"] --- Band["centerBand<br/>island centred here"] --- Action["Page action"]
-  end
-  Timer["Timer capsule"] -->|stacks above| Rec["Recording capsule"]
-  Rec -->|"lowest capsule centred on the row<br/>(dockedBottom)"| Band
+flowchart TD
+  Start{"Bar docked?"} -->|no| Float
+  Start -->|yes| Shared{"Shared capsule fits the band?<br/>(worded action first, else its glyph)"}
+  Shared -->|yes| InRowShared["In the row, side by side"]
+  Shared -->|no| Two{"Two items running?"}
+  Two -->|no| Float
+  Two -->|yes| Stack{"Stack fits the band?"}
+  Stack -->|yes| InRowStack["In the row, timer stacked above recording,<br/>growing upward"]
+  Stack -->|no| Float["Floats floatGap above the bar (or the safe-area edge),<br/>full width, launcher reserves nothing;<br/>stacked only if the window cannot hold the shared capsule"]
 ```
 
-Four contracts hold it together:
+The launcher budgets the reserved width in `labelsFit`, so on the shared rung
+a worded page action keeps its word when it can and drops to its glyph before
+the island stacks: prose degrades before layout does. Stacking happens only
+when the shared capsule cannot fit even beside the glyph — a narrow phone with
+the chat button docked, or large text. A stack is two capsules at one shared
+width, `stackGap` apart; the lowest keeps the row's centre line
+(`dockedBottom`: the launcher's `rowBottom` plus half the difference between
+chip and capsule height) and only a bottom offset is set, so the second rises
+out of the row rather than pushing it down.
+
+Digits are measured on a fixed `00:00:00` (tabular, so every reading below a
+hundred hours paints at that width and the layout does not jitter as the
+clock ticks). As a last resort a capsule scales its content down rather than
+clipping a digit.
+
+### Contracts
 
 - **One watcher, one rule for what counts.** `MobileActivityIsland.showsRecording`
   decides which recorder states show (a session in flight — recording or
   paused, which the modal treats as active too — with its modal closed, and
-  not on a Flatpak build, which omits the recording capsule). The shell reads
+  not on a Flatpak build, which omits the recording half). The shell reads
   that predicate and the `TimeService` stream once, through
-  `MobileActivityBuilder`, and derives three things from the resulting
-  `MobileActivity`: the width the launcher keeps free for the island
-  (`MobileActivityIsland.width` → `MobileNavigationLauncher.reservedCenterWidth`),
-  where the island sits (`centerBand`, `dockedBottom`), and the estate pages
-  pad by (`MobileActivityIsland.heightAboveBar`). The island renders from the
-  same predicate and stream, so the space reserved and the island it is
-  reserved for can never disagree. Both seed from `TimeService.getCurrent()`,
-  so a timer already running shows, and is reserved for, on the first frame.
-- **It grows upward, never down or clipped.** Docked, the lowest capsule is
-  centred on the row (`dockedBottom`: the launcher's `rowBottom` plus half
-  the difference between chip and capsule height) and only a bottom offset is
-  set, so a second capsule stacks above it. One capsule sits inside the row
-  and claims nothing above the bar; a stack claims only what rises above the
-  row's top (`heightAboveBar`), which `occupiedHeight` adds to the bar.
+  `MobileActivityBuilder`, and resolves the ladder from the resulting
+  `MobileActivity`: the launcher (with its `reservedCenterWidth`), whether
+  the island sits in the row and whether it stacks, and the estate pages pad
+  by (`MobileActivityIsland.heightAboveBar` — nothing for a capsule in the
+  row, the overhang for a stack, the whole island plus `floatGap` when it
+  floats). The island renders from the same predicate and stream, so the
+  space reserved and the island it is reserved for can never disagree. Both
+  seed from `TimeService.getCurrent()`, so a timer already running shows, and
+  is reserved for, on the first frame. `MobileActivityBuilder` maps the
+  stream to whether a timer runs and drops repeats, so the ladder is resolved
+  when a timer starts or stops, not on each one-second tick; the island's own
+  `StreamBuilder` ticks the digits.
 - **Outside the slide-away subtree.** The island is positioned by the shell,
   not inside the launcher: on routes that slide the launcher away it animates
   down to `floatGap` above the bottom safe-area edge and out to the full
   width in the same motion, so a running timer stays visible inside settings
   editors; on task and entry details the whole bottom stack, island included,
   yields to the page's own action bar.
-- **Prose degrades before payloads.** The launcher budgets the island's
-  measured width in `labelsFit`, so a worded page action drops to its glyph
-  before the island is squeezed. Digits are measured on a fixed `00:00:00`
-  (tabular, so every reading below a hundred hours paints at that width and
-  the reserve does not jitter). Where even the glyph-only row leaves a band
-  narrower than the island (`MobileNavigationLauncher.centerFits` — the
-  largest text on the narrowest phone with every chip docked), the shell
-  drops the reserve and floats the island `floatGap` above the bar at full
-  width instead, and pages pad for the whole floating stack. As a last
-  resort each capsule scales its content down rather than clipping a digit.
-
-`MobileActivityBuilder` maps the timer stream to whether a timer runs and
-drops repeats, so the shell's launcher, band and measurements are rebuilt
-when a timer starts or stops, not on each one-second tick; the island's own
-`StreamBuilder` ticks the digits.
-
-A broken recorder never takes it down: if the recorder controller fails to
-build (MediaKit on some hosts), the island degrades to its timer capsule.
+- **A broken recorder never takes it down.** If the recorder controller fails
+  to build (MediaKit on some hosts), the island degrades to its timer half.
 
 ### The launcher's row, and the page action docked on it
 

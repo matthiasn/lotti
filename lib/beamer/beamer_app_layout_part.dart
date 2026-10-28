@@ -338,19 +338,20 @@ extension _AppScreenLayout on _AppScreenState {
       omitAudio: _isRunningInFlatpak(),
       child: _buildContentStack(index: index, beamerChildren: beamerChildren),
       builder: (context, activity, content) {
-        final reserving = buildLauncher(
-          showBottomNav && !activity.isEmpty
-              ? MobileActivityIsland.width(context, activity)
-              : 0,
-        );
         // Docked, the island sits in the launcher row's centre band, the
-        // lowest capsule level with the chips and any second one stacked
-        // above it. Where even the glyph-only row leaves no band wide
-        // enough, it floats above the bar at full width and the launcher
+        // lowest capsule level with the chips; a timer and a recording
+        // share one capsule and stack only when the row cannot hold it.
+        // Past that it floats above the bar at full width and the launcher
         // keeps its word; slid away, it centres over the bottom safe-area
         // edge.
-        final inRow = barDocked && reserving.centerFits(context);
-        final launcher = inRow ? reserving : buildLauncher(0);
+        final layout = MobileIslandLayout.resolve(
+          context,
+          activity: showBottomNav ? activity : MobileActivity.none,
+          barDocked: barDocked,
+          buildLauncher: buildLauncher,
+        );
+        final launcher = layout.launcher;
+        final inRow = layout.inRow;
         final band = inRow
             ? launcher.centerBand(context)
             : EdgeInsetsDirectional.zero;
@@ -372,6 +373,7 @@ extension _AppScreenLayout on _AppScreenState {
                       context,
                       activity,
                       inRow: inRow,
+                      stacked: layout.stacked,
                     )
                   : 0,
               barDocked: barDocked,
@@ -404,7 +406,10 @@ extension _AppScreenLayout on _AppScreenState {
                 bottom: inRow
                     ? MobileActivityIsland.dockedBottom(context)
                     : floatOver + MobileActivityIsland.floatGap(context),
-                child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
+                child: MobileActivityIsland(
+                  omitAudio: _isRunningInFlatpak(),
+                  stacked: layout.stacked,
+                ),
               ),
             ],
           ],
