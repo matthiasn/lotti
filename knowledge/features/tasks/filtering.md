@@ -132,7 +132,13 @@ flowchart LR
 
 The due set rides the **same `ids` restriction full-text search uses**, so it
 composes with every other clause and both sort paths without new SQL; an empty
-intersection returns no rows without a query. Because the strip's number for a
+intersection returns no rows without a query. Semantic search returns its
+results whole, so `runVectorSearch` narrows them to the view itself, keeping
+the distance map whole as the search's result set. The counts restrict to the
+same search: the FTS5 matches, or in semantic mode the vector result ids
+(`SavedTaskFilterCountRepository.count(…, restrictToIds:)`). The filter modal
+has no due control, so saving or updating from it carries the live due clause
+unchanged. Because the strip's number for a
 view is the live filter with that view's clause swapped in, **the pill counts
 exactly what tapping it lists**, and the other view stays countable while one is
 active.
@@ -160,7 +166,8 @@ stateDiagram-v2
 - **The day is an input.** At local midnight due-today tasks turn overdue
   without a row changing, so no task notification fires. `taskDueDayProvider`
   (a timer to the next local midnight) re-emits the date; the counts and
-  markers watch it, and `TasksTabPage` refreshes the list then if a view is
+  markers watch it (saved-filter counts only while some saved filter carries
+  a due clause), and `TasksTabPage` refreshes the list then if a view is
   active.
 - A due view counts as **one narrowing clause** in
   `taskFilterNarrowingClauseCount`, takes part in the saved shape, and is
