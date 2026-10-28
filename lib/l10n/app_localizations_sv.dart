@@ -17433,9 +17433,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Spara filter';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Spara strömfilter...';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Kunde inte rädda det här filtret. Försök igen.';
 

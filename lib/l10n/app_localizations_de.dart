@@ -17540,10 +17540,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Filter speichern';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs =>
-      'Aktuellen Filter speichern als…';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Der Filter konnte nicht gespeichert werden. Versuch es noch einmal.';
 

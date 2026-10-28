@@ -28919,12 +28919,6 @@ abstract class AppLocalizations {
   /// **'Save filter'**
   String get tasksSavedFiltersSaveChoiceTitle;
 
-  /// No description provided for @tasksSavedFiltersSaveCurrentAs.
-  ///
-  /// In en, this message translates to:
-  /// **'Save current filter…'**
-  String get tasksSavedFiltersSaveCurrentAs;
-
   /// No description provided for @tasksSavedFiltersSaveError.
   ///
   /// In en, this message translates to:

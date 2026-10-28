@@ -17697,10 +17697,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Enregistrer le filtre';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs =>
-      'Enregistrer le filtre actuel sous…';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Impossible d’enregistrer ce filtre. Réessaie.';
 

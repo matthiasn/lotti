@@ -10717,7 +10717,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Save filter…",
   "tasksSavedFiltersSaveChoiceIntro": "Choose whether to update the saved filter or create a separate one.",
   "tasksSavedFiltersSaveChoiceTitle": "Save filter",
-  "tasksSavedFiltersSaveCurrentAs": "Save current filter…",
   "tasksSavedFiltersSaveError": "Couldn't save this filter. Try again.",
   "tasksSavedFiltersSavePageHelper": "Give this filter a short name. You can reorder it later in Task filters.",
   "tasksSavedFiltersSavePopupCancel": "Cancel",

@@ -6625,7 +6625,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Uložit filtr…",
   "tasksSavedFiltersSaveChoiceIntro": "Zvol, jestli chceš aktualizovat uložený filtr, nebo vytvořit samostatný.",
   "tasksSavedFiltersSaveChoiceTitle": "Uložit filtr",
-  "tasksSavedFiltersSaveCurrentAs": "Uložit aktuální filtr…",
   "tasksSavedFiltersSaveError": "Filtr se nepodařilo uložit. Zkus to znovu.",
   "tasksSavedFiltersSavePageHelper": "Dej filtru krátký název. Pořadí můžeš později změnit ve Filtrech úkolů.",
   "tasksSavedFiltersSavePopupCancel": "Zrušit",

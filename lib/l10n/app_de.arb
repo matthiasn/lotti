@@ -6618,7 +6618,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Filter speichern…",
   "tasksSavedFiltersSaveChoiceIntro": "Wähle, ob du den gespeicherten Filter aktualisieren oder einen separaten erstellen möchtest.",
   "tasksSavedFiltersSaveChoiceTitle": "Filter speichern",
-  "tasksSavedFiltersSaveCurrentAs": "Aktuellen Filter speichern als…",
   "tasksSavedFiltersSaveError": "Der Filter konnte nicht gespeichert werden. Versuch es noch einmal.",
   "tasksSavedFiltersSavePageHelper": "Gib diesem Filter einen kurzen Namen. Du kannst ihn später in den Aufgabenfiltern neu anordnen.",
   "tasksSavedFiltersSavePopupCancel": "Abbrechen",

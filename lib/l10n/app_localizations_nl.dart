@@ -17475,9 +17475,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Filter opslaan';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Huidige filter opslaan...';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Kon dit filter niet opslaan. Probeer het opnieuw.';
 

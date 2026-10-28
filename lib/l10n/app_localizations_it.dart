@@ -17627,9 +17627,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Salvare il filtro';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Salvare il filtro corrente...';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Non ho potuto salvare questo filtro.';
 

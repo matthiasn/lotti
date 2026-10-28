@@ -1,9 +1,9 @@
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
@@ -38,7 +38,6 @@ class _RecordingSavedController extends SavedTaskFiltersController {
 
   final List<(String id, String name)> renameCalls = [];
   final List<String> deleteCalls = [];
-  final List<String> createCalls = [];
   final List<(String dragId, String targetId)> reorderCalls = [];
   final List<String> togglePinCalls = [];
 
@@ -53,15 +52,12 @@ class _RecordingSavedController extends SavedTaskFiltersController {
   @override
   Future<void> delete(String id) async {
     deleteCalls.add(id);
-  }
-
-  @override
-  Future<SavedTaskFilter> create({
-    required String name,
-    required TasksFilter filter,
-  }) async {
-    createCalls.add(name);
-    return SavedTaskFilter(id: 'new', name: name, filter: filter);
+    // Gone from the list, as the real controller does at once — a swiped-away
+    // row must not come back on the next build.
+    state = AsyncData([
+      for (final f in state.value ?? const <SavedTaskFilter>[])
+        if (f.id != id) f,
+    ]);
   }
 
   @override
@@ -115,7 +111,6 @@ _pumpSheet(
     makeTestableWidgetNoScroll(
       const Scaffold(
         body: CustomScrollView(slivers: [SavedTaskFiltersSheet()]),
-        bottomNavigationBar: SavedTaskFiltersSaveFooter(),
       ),
       overrides: [
         savedTaskFiltersPinnedOnlyProvider.overrideWith(() => pinnedOnlyStub),
@@ -131,6 +126,24 @@ _pumpSheet(
   await tester.pump();
   await tester.pump();
   return (fake: fake, saved: saved, pinnedOnly: pinnedOnlyStub);
+}
+
+/// Swipes a browse row past its action threshold and lets a confirmation,
+/// if one opens, finish its entrance.
+Future<void> swipe(
+  WidgetTester tester,
+  String id, {
+  required bool left,
+}) async {
+  await tester.drag(
+    find.byKey(SavedTaskFiltersSheetKeys.row(id)),
+    Offset(left ? -500 : 500, 0),
+  );
+  await tester.pump();
+  // The row slides out first; only then is the confirmation asked for, and
+  // it animates in on its own clock.
+  await tester.pump(const Duration(milliseconds: 400));
+  await tester.pump(const Duration(milliseconds: 400));
 }
 
 void main() {
@@ -256,8 +269,8 @@ void main() {
   );
 
   testWidgets(
-    'Edit-mode Rename/Delete: >=48dp targets, generous separation, inset from '
-    'the row edge, with clear icon weight',
+    'Edit-mode Rename is a >=48dp target with clear icon weight, and there '
+    'is no trash button',
     (tester) async {
       await _pumpSheet(tester);
 
@@ -267,40 +280,19 @@ void main() {
       final renameRect = tester.getRect(
         find.byKey(SavedTaskFiltersSheetKeys.rename('f1')),
       );
-      final deleteRect = tester.getRect(
-        find.byKey(SavedTaskFiltersSheetKeys.delete('f1')),
+      expect(renameRect.width, greaterThanOrEqualTo(48));
+      expect(renameRect.height, greaterThanOrEqualTo(48));
+      // The glyph carries the larger (step6) icon weight — bigger than the
+      // step5 radio.
+      final icon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(SavedTaskFiltersSheetKeys.rename('f1')),
+          matching: find.byType(Icon),
+        ),
       );
-      final rowRect = tester.getRect(
-        find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
-      );
-
-      for (final r in [renameRect, deleteRect]) {
-        expect(r.width, greaterThanOrEqualTo(48));
-        expect(r.height, greaterThanOrEqualTo(48));
-      }
-      // Generous (>= step5) gap between the two targets so the destructive
-      // Delete is clearly separated from Rename and can't be mis-tapped.
-      expect(
-        deleteRect.left - renameRect.right,
-        greaterThanOrEqualTo(dsTokensLight.spacing.step5),
-      );
-      // Delete is inset from the row's right edge (trailing gap + row padding),
-      // so the destructive control isn't the smallest / edge-most element.
-      expect(
-        rowRect.right - deleteRect.right,
-        greaterThanOrEqualTo(dsTokensLight.spacing.step4),
-      );
-      // Both glyphs carry the larger (step6) icon weight — bigger than the
-      // step5 radio — for clear parity between the two controls.
-      for (final key in [
-        SavedTaskFiltersSheetKeys.rename('f1'),
-        SavedTaskFiltersSheetKeys.delete('f1'),
-      ]) {
-        final icon = tester.widget<Icon>(
-          find.descendant(of: find.byKey(key), matching: find.byType(Icon)),
-        );
-        expect(icon.size, dsTokensLight.spacing.step6);
-      }
+      expect(icon.size, dsTokensLight.spacing.step6);
+      // Deleting is a swipe outside Edit mode, never a button.
+      expect(find.byIcon(LottiIcons.delete), findsNothing);
     },
   );
 
@@ -474,7 +466,7 @@ void main() {
     },
   );
 
-  testWidgets('Edit toggle reveals and hides per-row Rename / Delete', (
+  testWidgets('Edit toggle reveals and hides per-row Rename', (
     tester,
   ) async {
     await _pumpSheet(tester);
@@ -484,7 +476,6 @@ void main() {
     await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
     await tester.pump();
     expect(find.byKey(SavedTaskFiltersSheetKeys.rename('f1')), findsOneWidget);
-    expect(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')), findsOneWidget);
 
     await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
     await tester.pump();
@@ -610,14 +601,12 @@ void main() {
     expect(bench.saved.renameCalls.single, ('f1', 'Doing now'));
   });
 
-  testWidgets('Delete asks for confirmation, then deletes', (tester) async {
+  testWidgets('a swipe left asks for confirmation, then deletes', (
+    tester,
+  ) async {
     final bench = await _pumpSheet(tester);
 
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
-    await tester.pump();
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await swipe(tester, 'f1', left: true);
 
     // Confirmation modal — the primary action renders the confirm label verbatim.
     await tester.tap(find.text('Delete'));
@@ -625,9 +614,77 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(bench.saved.deleteCalls.single, 'f1');
+    expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsNothing);
     // f1 is not the active filter here (default page state), so the live
     // filter is left untouched — no fallback reset.
     expect(bench.fake.applyBatchFilterUpdateCalled, 0);
+  });
+
+  testWidgets('cancelling the confirmation keeps the row', (tester) async {
+    final bench = await _pumpSheet(tester);
+
+    await swipe(tester, 'f1', left: true);
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(bench.saved.deleteCalls, isEmpty);
+    expect(find.byKey(SavedTaskFiltersSheetKeys.row('f1')), findsOneWidget);
+  });
+
+  testWidgets('a swipe right flips the pin and the row snaps back', (
+    tester,
+  ) async {
+    final bench = await _pumpSheet(tester);
+    final restingLeft = tester
+        .getTopLeft(find.byKey(SavedTaskFiltersSheetKeys.row('f1')))
+        .dx;
+
+    await swipe(tester, 'f1', left: false);
+
+    expect(bench.saved.togglePinCalls, ['f1']);
+    // Not dismissed, and not applied either.
+    expect(bench.saved.deleteCalls, isEmpty);
+    expect(bench.fake.applyBatchFilterUpdateCalled, 0);
+    expect(
+      tester.getTopLeft(find.byKey(SavedTaskFiltersSheetKeys.row('f1'))).dx,
+      restingLeft,
+    );
+  });
+
+  testWidgets("a screen reader deletes through the row's Delete action", (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final bench = await _pumpSheet(tester);
+
+    final node = tester.getSemantics(
+      find.byKey(SavedTaskFiltersSheetKeys.row('f1')),
+    );
+    final action = node.getSemanticsData().customSemanticsActionIds!.single;
+    node.owner!.performAction(
+      node.id,
+      SemanticsAction.customAction,
+      action,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Delete'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(bench.saved.deleteCalls.single, 'f1');
+    handle.dispose();
+  });
+
+  testWidgets('Edit rows do not swipe: dragging is for reordering there', (
+    tester,
+  ) async {
+    await _pumpSheet(tester);
+    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
+    await tester.pump();
+
+    expect(find.byType(Dismissible), findsNothing);
   });
 
   testWidgets(
@@ -643,11 +700,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.editToggle));
-      await tester.pump();
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.delete('f1')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await swipe(tester, 'f1', left: true);
 
       await tester.tap(find.text('Delete'));
       await tester.pump();
@@ -660,102 +713,6 @@ void main() {
       expect(bench.fake.setSelectedTaskStatusesCalls.single, <String>{});
     },
   );
-
-  testWidgets(
-    "Save current filter is the sticky glass bar's one large primary action, "
-    'at its own width on the trailing edge',
-    (tester) async {
-      await _pumpSheet(tester);
-
-      final button = tester.widget<DesignSystemButton>(
-        find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
-      );
-      expect(button.variant, DesignSystemButtonVariant.primary);
-      expect(button.size, DesignSystemButtonSize.large);
-      expect(button.leadingIcon, LottiIcons.add);
-      expect(button.label, 'Save current filter…');
-      final bar = tester.widget<DesignSystemModalActionBar>(
-        find.ancestor(
-          of: find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
-          matching: find.byType(DesignSystemModalActionBar),
-        ),
-      );
-      expect(bar.glass, isTrue);
-      expect(bar.layout, DesignSystemModalActionBarLayout.compactPrimary);
-
-      // Not stretched: it ends on the bar's trailing padding and leaves
-      // most of the width free.
-      final barRect = tester.getRect(find.byType(DesignSystemModalActionBar));
-      final buttonRect = tester.getRect(
-        find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
-      );
-      expect(buttonRect.width, lessThan(barRect.width / 2));
-      expect(
-        barRect.right - buttonRect.right,
-        dsTokensLight.spacing.step5,
-      );
-      // It is the footer, not a row of the list.
-      expect(
-        find.descendant(
-          of: find.byType(SavedTaskFiltersSheet),
-          matching: find.byKey(SavedTaskFiltersSheetKeys.saveCurrent),
-        ),
-        findsNothing,
-      );
-    },
-  );
-
-  testWidgets('the last row scrolls clear of the sticky footer', (
-    tester,
-  ) async {
-    await _pumpSheet(
-      tester,
-      seed: List.generate(
-        20,
-        (index) => SavedTaskFilter(
-          id: 'filter-$index',
-          name: 'Filter $index',
-          filter: const TasksFilter(),
-        ),
-      ),
-    );
-
-    await tester.drag(
-      find.byKey(SavedTaskFiltersSheetKeys.row('filter-3')),
-      const Offset(0, -5000),
-    );
-    await tester.pump();
-
-    final lastRow = tester.getRect(
-      find.byKey(SavedTaskFiltersSheetKeys.row('filter-19')),
-    );
-    final footer = tester.getRect(find.byType(DesignSystemModalActionBar));
-    expect(lastRow.bottom, lessThanOrEqualTo(footer.top));
-  });
-
-  testWidgets('Save current filter as… creates from the live filter', (
-    tester,
-  ) async {
-    final bench = await _pumpSheet(
-      tester,
-      pageState: const JournalPageState(selectedTaskStatuses: {'OPEN'}),
-    );
-
-    await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    await tester.enterText(
-      nameTextField(),
-      'My filter',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(bench.saved.createCalls.single, 'My filter');
-  });
 
   testWidgets(
     'a filter with a category renders a colored dot and names it in semantics',
@@ -796,80 +753,6 @@ void main() {
       // The category is also spoken in the row's accessibility label so the
       // information is never colour-only.
       expect(find.bySemanticsLabel('Work, Work items'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'create closes the sheet only when a filter is saved, not on cancel',
-    (tester) async {
-      // The sheet is presented as a real route so its post-create
-      // `Navigator.maybePop()` has something to close — the default harness
-      // renders it as the root route where a pop is a no-op.
-      final fake = FakeJournalPageController(
-        const JournalPageState(selectedTaskStatuses: {'OPEN'}),
-      );
-      final saved = _RecordingSavedController(const [_f1, _f2]);
-      final navKey = GlobalKey<NavigatorState>();
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: SizedBox.shrink()),
-          navigatorKey: navKey,
-          overrides: [
-            journalPageControllerProvider(true).overrideWith(() => fake),
-            savedTaskFiltersControllerProvider.overrideWith(() => saved),
-            savedTaskFiltersPinnedOnlyProvider.overrideWith(
-              () => _StubPinnedOnly(initial: false),
-            ),
-            savedTaskFilterCountsProvider.overrideWith(
-              (ref) async => const {'f1': 12, 'f2': 7},
-            ),
-            allTasksTotalCountProvider.overrideWith((ref) async => 124),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      navKey.currentState!.push(
-        MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(
-            body: CustomScrollView(slivers: [SavedTaskFiltersSheet()]),
-            bottomNavigationBar: SavedTaskFiltersSaveFooter(),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
-
-      // Cancel the name modal → nothing is created and the sheet stays open.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.tapAt(const Offset(10, 10));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(saved.createCalls, isEmpty);
-      expect(find.byType(SavedTaskFiltersSheet), findsOneWidget);
-
-      // Save a name → the filter is created and the sheet closes.
-      await tester.tap(find.byKey(SavedTaskFiltersSheetKeys.saveCurrent));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.enterText(
-        nameTextField(),
-        'My filter',
-      );
-      await tester.pump();
-      await tester.tap(find.byKey(SaveCurrentTaskFilterKeys.saveButton));
-      await tester.pump();
-      // Two transitions run back-to-back: the name modal closes, then
-      // `_create` pops the sheet route — pump enough for both to finish.
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.pump(const Duration(milliseconds: 400));
-
-      expect(saved.createCalls, ['My filter']);
-      expect(find.byType(SavedTaskFiltersSheet), findsNothing);
     },
   );
 

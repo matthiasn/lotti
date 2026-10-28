@@ -311,7 +311,7 @@ flowchart LR
   Counts[Live count providers]
   Desktop[SidebarSavedTaskFilters<br/>first five + expandable remainder,<br/>or every pinned filter]
   Mobile[SavedTaskFilterRail<br/>compact MRU quick jumps]
-  Sheet[SavedTaskFiltersSheet<br/>switch + pin + create + rename + reorder + delete]
+  Sheet[SavedTaskFiltersSheet<br/>switch + pin + rename + reorder + delete]
 
   State --> Shown
   PinnedOnly --> Shown
@@ -352,35 +352,37 @@ flowchart LR
   the sidebar rows. Large text keeps the current anchor and
   reset in one horizontally scrollable run. **Mobile MRU state is in-memory and
   per-device** — it does not alter desktop order.
-- **`SavedTaskFiltersSheet`** is the complete switcher and manager, built as
-  **one sliver group in the modal's own scroll view** (a sliver Wolt page), so
-  the sheet has a single scroll — never a list scrolling inside it. A
-  `SavedTaskFiltersSheetBar` pins to its top on the app's standard glass
-  (`DesignSystemGlassStrip` docked to the top, hairline below): the
-  *Pinned only* `DesignSystemToggle` on the leading edge and Edit / Done as a
-  tertiary `DesignSystemButton` on the trailing one. *Save current filter…* is
-  the page's sticky action (`SavedTaskFiltersSaveFooter`): a large primary
-  `DesignSystemButton` on the standard glass `DesignSystemModalActionBar`, in
-  the `compactPrimary` layout so it keeps its own width on the trailing edge —
-  an occasional action beside a list mostly picked from, not a form's
-  confirm. Its padding matches `DesignSystemGlassActionFooter`, whose
-  `reservedHeightFor` the rows keep at the bottom so the last one scrolls
-  clear of it. It closes the sheet only when a filter was actually saved.
-  Both row builders pass a `findChildIndexCallback`, so an unpin in
-  pinned-only mode does not rebuild the rows below it — except in Edit mode,
-  where `SliverReorderableList` keys its items by index itself. Normal rows are
+- **`SavedTaskFiltersSheet`** is the switcher and manager for filters that
+  exist, built as **one sliver group in the modal's own scroll view** (a
+  sliver Wolt page), so the sheet has a single scroll — never a list scrolling
+  inside it. **It does not create filters**: saving the live query belongs
+  where the query is built, the filter modal's Save filter flow and the
+  rail's Save chip. A `SavedTaskFiltersSheetBar` pins to its top on the app's
+  standard glass (`DesignSystemGlassStrip` docked to the top, hairline below):
+  the *Pinned only* `DesignSystemToggle` on the leading edge and Edit / Done
+  as a tertiary `DesignSystemButton` on the trailing one. Normal rows are
   single-select ≥48dp targets with live counts and **multi-channel selection**
   (selected surface, radio, bold name), and end in a ≥48dp
   `SavedTaskFilterPinToggle` — filled accent pin when pinned, outline when not,
   swapped through a short scale-and-fade — which flips `pinned` at once with no
   confirmation and is its own button to a screen reader, outside the row's
   merged semantics. `All tasks` keeps an empty pin slot so its count stays in
-  the column. Edit mode replaces selection controls with a ≥48dp drag handle
-  plus rename/delete (and drops the pin) while retaining a small active-status
-  dot. With pinned only on, both modes list the pinned filters only; a drag
-  among them is placed by id, so unpinned filters keep their places, and an
-  empty pinned set says how to fill it. **Deleting the active filter resets the
-  live query to `All`.**
+  the column.
+- **Normal rows swipe.** A swipe right flips the pin and snaps the row back; a
+  swipe left asks the delete confirmation and removes the row only on a yes.
+  The revealed fills are tokens — `interactive.enabled` under the pin it is
+  about to set, `alert.error.defaultColor` under the delete glyph — and the row
+  slides inside its own rounded rect. Swipes have no screen-reader
+  equivalent, so each row also carries *Delete {name}* as a custom semantics
+  action. **There is no trash button.** Edit mode replaces selection controls
+  with a ≥48dp drag handle plus Rename (and drops the pin and the swipes,
+  since dragging there reorders) while retaining a small active-status dot.
+- With pinned only on, both modes list the pinned filters only; a drag among
+  them is placed by id, so unpinned filters keep their places, and an empty
+  pinned set says how to fill it. Both row builders pass a
+  `findChildIndexCallback`, so an unpin there does not rebuild the rows below
+  it — except in Edit mode, where `SliverReorderableList` keys its items by
+  index itself. **Deleting the active filter resets the live query to `All`.**
 
 The redesigned browse page preserves the existing non-filter behaviour:
 pull-to-refresh, the full-text versus vector search toggle, the create-task FAB

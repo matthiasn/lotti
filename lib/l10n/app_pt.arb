@@ -7322,7 +7322,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Salvar filtro…",
   "tasksSavedFiltersSaveChoiceIntro": "Escolha se deseja atualizar o filtro salvo ou criar um separado.",
   "tasksSavedFiltersSaveChoiceTitle": "Salvar filtro",
-  "tasksSavedFiltersSaveCurrentAs": "Salvar filtro atual…",
   "tasksSavedFiltersSaveError": "Não foi possível salvar este filtro. Tente novamente.",
   "tasksSavedFiltersSavePageHelper": "Dê um nome curto a este filtro. Você pode reordená-lo posteriormente em Filtros de tarefas.",
   "tasksSavedFiltersSavePopupCancel": "Cancelar",

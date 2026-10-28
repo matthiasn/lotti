@@ -17414,9 +17414,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Gem filter';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Gem strømfilteret...';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Kunne ikke gemme dette filter. Prøv igen.';
 

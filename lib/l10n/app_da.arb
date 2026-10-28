@@ -7323,7 +7323,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Gem filter...",
   "tasksSavedFiltersSaveChoiceIntro": "Vælg om du vil opdatere det gemte filter eller oprette et separat.",
   "tasksSavedFiltersSaveChoiceTitle": "Gem filter",
-  "tasksSavedFiltersSaveCurrentAs": "Gem strømfilteret...",
   "tasksSavedFiltersSaveError": "Kunne ikke gemme dette filter. Prøv igen.",
   "tasksSavedFiltersSavePageHelper": "Giv dette filter et kort navn. Du kan omarrangere det senere i Task-filtrene.",
   "tasksSavedFiltersSavePopupCancel": "Annuller",

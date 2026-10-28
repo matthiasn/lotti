@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
@@ -27,22 +25,22 @@ abstract final class SavedTaskFiltersSheetKeys {
   static const Key root = Key('saved-filters-sheet');
   static const Key editToggle = Key('saved-filters-sheet-edit-toggle');
   static const Key allRow = Key('saved-filters-sheet-all-row');
-  static const Key saveCurrent = Key('saved-filters-sheet-save-current');
   static const Key pinnedEmpty = Key('saved-filters-sheet-pinned-empty');
   static Key row(String id) => Key('saved-filters-sheet-row-$id');
   static Key dragHandle(String id) =>
       Key('saved-filters-sheet-drag-handle-$id');
   static Key rename(String id) => Key('saved-filters-sheet-rename-$id');
-  static Key delete(String id) => Key('saved-filters-sheet-delete-$id');
 }
 
 /// Opens the saved-filters sheet as a Wolt bottom sheet (mobile) / dialog
 /// (desktop) — the complete switcher + manager described in the plan.
 ///
 /// A sliver page, so the sheet's rows live in the modal's own scroll view:
-/// one scroll for the whole sheet, never a list scrolling inside it. Saving
-/// the current filter is the page's sticky action, on the glass footer every
-/// modal's primary action uses.
+/// one scroll for the whole sheet, never a list scrolling inside it.
+///
+/// The sheet manages filters that exist; it does not create them. Saving the
+/// live query as a new filter belongs where the query is built — the filter
+/// modal's Save filter flow and the mobile rail's Save chip.
 Future<void> showSavedTaskFiltersSheet(BuildContext context) {
   return ModalUtils.showMultiPageModal<void>(
     context: context,
@@ -50,60 +48,16 @@ Future<void> showSavedTaskFiltersSheet(BuildContext context) {
       ModalUtils.sliverModalSheetPage(
         context: modalContext,
         title: modalContext.messages.tasksSavedFiltersSheetTitle,
-        stickyActionBar: const SavedTaskFiltersSaveFooter(),
         slivers: const [SavedTaskFiltersSheet()],
       ),
     ],
   );
 }
 
-/// The sheet's sticky footer: *Save current filter…* as the page's one
-/// primary action, on the app's standard glass [DesignSystemModalActionBar].
-///
-/// The compact layout keeps the button at its own width on the trailing
-/// edge: saving is an occasional action beside a list the user mostly picks
-/// from, so it should not span the sheet like a form's confirm. The padding
-/// matches [DesignSystemGlassActionFooter], whose reserved height the rows
-/// keep clear.
-///
-/// Closes the sheet only when a filter was actually saved — a cancelled or
-/// blank name leaves the user on the list.
-class SavedTaskFiltersSaveFooter extends ConsumerWidget {
-  const SavedTaskFiltersSaveFooter({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final spacing = context.designTokens.spacing;
-    return DesignSystemModalActionBar(
-      glass: true,
-      layout: DesignSystemModalActionBarLayout.compactPrimary,
-      padding: EdgeInsets.symmetric(
-        horizontal: spacing.step5,
-        vertical: spacing.step4,
-      ),
-      primary: DesignSystemButton(
-        key: SavedTaskFiltersSheetKeys.saveCurrent,
-        label: context.messages.tasksSavedFiltersSaveCurrentAs,
-        leadingIcon: LottiIcons.add,
-        size: DesignSystemButtonSize.large,
-        fullWidth: true,
-        onPressed: () => _save(context, ref),
-      ),
-    );
-  }
-
-  Future<void> _save(BuildContext context, WidgetRef ref) async {
-    final created = await promptSaveCurrentTaskFilter(context, ref);
-    if (created != null && context.mounted) {
-      await Navigator.of(context).maybePop();
-    }
-  }
-}
-
 /// The vertical, single-select switcher + manager body, as one sliver.
 ///
-/// [SavedTaskFiltersSheetBar] pins to the top of the scroll view; All tasks,
-/// the saved filters and the create row scroll beneath it. Pumpable directly
+/// [SavedTaskFiltersSheetBar] pins to the top of the scroll view; All tasks
+/// and the saved filters scroll beneath it. Pumpable directly
 /// in tests inside a `CustomScrollView`; hosted inside
 /// [showSavedTaskFiltersSheet] in the app.
 ///
@@ -163,21 +117,34 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
         .rename(saved.id, name);
   }
 
-  Future<void> _delete(SavedTaskFilter saved) async {
+  /// Asks before a delete. A swipe left waits on this before the row goes.
+  Future<bool> _confirmDelete(SavedTaskFilter saved) {
     final messages = context.messages;
-    // Capture whether the deleted filter is the live selection *before* the
-    // async gap so a background re-match can't flip the answer mid-delete.
-    final wasActive = ref.read(currentSavedTaskFilterIdProvider) == saved.id;
-    final confirmed = await showConfirmationModal(
+    return showConfirmationModal(
       context: context,
       message: messages.tasksSavedFiltersDeleteConfirmMessage(saved.name),
       confirmLabel: messages.tasksSavedFiltersDeleteConfirmAction,
       cancelLabel: messages.tasksSavedFiltersSavePopupCancel,
     );
-    if (!confirmed) return;
+  }
+
+  /// Confirms, then deletes — the screen-reader path, which cannot swipe.
+  Future<void> _delete(SavedTaskFilter saved) async {
+    // Capture whether the deleted filter is the live selection *before* the
+    // async gap so a background re-match can't flip the answer mid-delete.
+    final wasActive = ref.read(currentSavedTaskFilterIdProvider) == saved.id;
+    final confirmed = await _confirmDelete(saved);
     // The confirmation modal is an async gap — bail before touching the ref if
     // the sheet unmounted meanwhile.
-    if (!mounted) return;
+    if (!confirmed || !mounted) return;
+    await _deleteConfirmed(saved, wasActive: wasActive);
+  }
+
+  /// Deletes a filter the user already confirmed.
+  Future<void> _deleteConfirmed(
+    SavedTaskFilter saved, {
+    required bool wasActive,
+  }) async {
     await ref
         .read(savedTaskFiltersControllerProvider.notifier)
         .delete(saved.id);
@@ -234,11 +201,10 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
     final total = ref.watch(allTasksTotalCountProvider).value;
 
     final allSelected = activeId == null && !hasUnsaved;
-    // The last row must scroll clear of the sticky save footer.
     final pagePadding = EdgeInsetsDirectional.only(
       start: tokens.spacing.step5,
       end: tokens.spacing.step5,
-      bottom: DesignSystemGlassActionFooter.reservedHeightFor(context),
+      bottom: tokens.spacing.step8,
     );
 
     // Rows are keyed by filter id, and these maps let each builder find a
@@ -280,7 +246,6 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
               editing: true,
               reorderIndex: index,
               onRename: () => _rename(f),
-              onDelete: () => _delete(f),
             ),
           );
         },
@@ -291,15 +256,27 @@ class _SavedTaskFiltersSheetState extends ConsumerState<SavedTaskFiltersSheet> {
         findChildIndexCallback: (key) => rowIndex[key],
         itemBuilder: (context, index) {
           final f = shown[index];
-          return _SavedFilterRow(
+          // Read when the swipe is confirmed, used once the row has gone.
+          var wasActive = false;
+          return _SwipeableFilterRow(
             key: SavedTaskFiltersSheetKeys.row(f.id),
-            rowKey: f.id == activeId ? _activeRowKey : null,
             filter: f,
-            selected: f.id == activeId,
-            count: counts?[f.id],
-            editing: false,
-            onTap: () => _applySaved(f),
             onTogglePin: () => _togglePin(f),
+            confirmDelete: () {
+              wasActive = f.id == ref.read(currentSavedTaskFilterIdProvider);
+              return _confirmDelete(f);
+            },
+            onDeleted: () => _deleteConfirmed(f, wasActive: wasActive),
+            onDeleteAction: () => _delete(f),
+            child: _SavedFilterRow(
+              rowKey: f.id == activeId ? _activeRowKey : null,
+              filter: f,
+              selected: f.id == activeId,
+              count: counts?[f.id],
+              editing: false,
+              onTap: () => _applySaved(f),
+              onTogglePin: () => _togglePin(f),
+            ),
           );
         },
       );
@@ -590,7 +567,6 @@ class _SavedFilterRow extends StatelessWidget {
     this.onTap,
     this.onTogglePin,
     this.onRename,
-    this.onDelete,
     this.reorderIndex,
     this.rowKey,
     super.key,
@@ -606,7 +582,6 @@ class _SavedFilterRow extends StatelessWidget {
   /// width on the drag handle and the Rename / Delete pair.
   final VoidCallback? onTogglePin;
   final VoidCallback? onRename;
-  final VoidCallback? onDelete;
   final int? reorderIndex;
   final Key? rowKey;
 
@@ -659,15 +634,16 @@ class _SavedFilterRow extends StatelessWidget {
     );
 
     if (editing) {
-      // In edit mode the row is not selectable; it surfaces labeled Rename /
-      // Delete actions instead of the count column. It keeps the SAME 48dp row
-      // height and the same horizontal padding as the normal
-      // `_SheetRowScaffold` row, so toggling Edit swaps the count for the action
-      // pair without the list rows jumping or shifting the radio / name
-      // positions. The ≥48dp action targets define the row height exactly, so
-      // (unlike the normal row, whose short content is floated to 48 by its
-      // minHeight + vertical padding) no extra vertical padding is added — that
-      // would push the row to 56 and make the list jump on toggle.
+      // In edit mode the row is not selectable; it surfaces a labeled Rename
+      // action instead of the count column (deleting is a swipe left outside
+      // Edit mode). It keeps the SAME 48dp row height and the same horizontal
+      // padding as the normal `_SheetRowScaffold` row, so toggling Edit swaps
+      // the count and pin for Rename without the list rows jumping or
+      // shifting the radio / name positions. The ≥48dp action target defines
+      // the row height exactly, so (unlike the normal row, whose short content
+      // is floated to 48 by its minHeight + vertical padding) no extra
+      // vertical padding is added — that would push the row to 56 and make
+      // the list jump on toggle.
       return KeyedSubtree(
         key: rowKey,
         child: ConstrainedBox(
@@ -690,21 +666,6 @@ class _SavedFilterRow extends StatelessWidget {
                   tooltip: messages.tasksSavedFiltersRenameNamed(filter.name),
                   onTap: onRename!,
                 ),
-                // Generous gap between the two ≥48dp targets so the destructive
-                // Delete is clearly separated from Rename (mis-tap safety) and
-                // is not the smallest / tightest-packed element in the row.
-                SizedBox(width: tokens.spacing.step5),
-                _EditAction(
-                  buttonKey: SavedTaskFiltersSheetKeys.delete(filter.id),
-                  icon: LottiIcons.delete,
-                  tooltip: messages.tasksSavedFiltersDeleteNamed(filter.name),
-                  onTap: onDelete!,
-                  destructive: true,
-                ),
-                // Breathing room between the destructive target and the row's
-                // right edge, so Delete isn't the edge-most element (on top of
-                // the row's own step3 horizontal padding → step5 total inset).
-                SizedBox(width: tokens.spacing.step3),
               ],
             ),
           ),
@@ -802,14 +763,12 @@ class _EditAction extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
-    this.destructive = false,
   });
 
   final Key buttonKey;
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
@@ -832,17 +791,116 @@ class _EditAction extends StatelessWidget {
             ),
             child: Center(
               child: Icon(
-                // Larger than the radio / create-row glyphs (step5) so the
-                // Rename / Delete controls carry clear icon weight and the
-                // destructive target isn't the smallest element in the row.
+                // Larger than the radio glyph (step5) so the Rename control
+                // carries clear icon weight.
                 icon,
                 size: tokens.spacing.step6,
-                color: destructive
-                    ? tokens.colors.alert.error.defaultColor
-                    : tokens.colors.text.mediumEmphasis,
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Swipe actions on a browse row: right flips the pin, left deletes.
+///
+/// A swipe right never dismisses — the row snaps back with its pin flipped,
+/// as the checklist's archive swipe does. A swipe left asks the usual delete
+/// confirmation and dismisses only on a yes. Swipes have no screen-reader
+/// equivalent, so the row also carries Delete as a custom semantics action;
+/// the pin has its own button.
+class _SwipeableFilterRow extends StatelessWidget {
+  const _SwipeableFilterRow({
+    required this.filter,
+    required this.onTogglePin,
+    required this.confirmDelete,
+    required this.onDeleted,
+    required this.onDeleteAction,
+    required this.child,
+    super.key,
+  });
+
+  final SavedTaskFilter filter;
+  final VoidCallback onTogglePin;
+
+  /// Asks before the row goes; a no snaps it back.
+  final Future<bool> Function() confirmDelete;
+
+  /// Deletes once the row has been swiped away.
+  final VoidCallback onDeleted;
+
+  /// The screen-reader path: confirm, then delete.
+  final VoidCallback onDeleteAction;
+  final Widget child;
+
+  /// Share of the row's width a swipe must cross to act.
+  static const swipeThreshold = 0.25;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.m);
+
+    Widget background({
+      required Color color,
+      required IconData icon,
+      required AlignmentGeometry alignment,
+    }) => DecoratedBox(
+      decoration: BoxDecoration(color: color, borderRadius: radius),
+      child: Align(
+        alignment: alignment,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+          child: Icon(
+            icon,
+            size: tokens.spacing.step5,
+            color: tokens.colors.text.onInteractiveAlert,
+          ),
+        ),
+      ),
+    );
+
+    return Semantics(
+      customSemanticsActions: {
+        CustomSemanticsAction(
+          label: context.messages.tasksSavedFiltersDeleteNamed(filter.name),
+        ): onDeleteAction,
+      },
+      // The row slides inside its own rounded rect, so it never runs past the
+      // sheet's gutter or over the row beside it.
+      child: ClipRRect(
+        borderRadius: radius,
+        child: Dismissible(
+          key: ValueKey('saved-filter-swipe-${filter.id}'),
+          dismissThresholds: const {
+            DismissDirection.startToEnd: swipeThreshold,
+            DismissDirection.endToStart: swipeThreshold,
+          },
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              onTogglePin();
+              return false;
+            }
+            return confirmDelete();
+          },
+          onDismissed: (_) => onDeleted(),
+          // What the swipe will do, revealed under the row as it slides: the
+          // pin it is about to set (or the outline it returns to) in the
+          // accent, and the delete glyph on the error fill.
+          background: background(
+            color: tokens.colors.interactive.enabled,
+            icon: filter.pinned ? LottiIcons.pin : LottiIconsFilled.pin,
+            alignment: AlignmentDirectional.centerStart,
+          ),
+          secondaryBackground: background(
+            color: tokens.colors.alert.error.defaultColor,
+            icon: LottiIcons.delete,
+            alignment: AlignmentDirectional.centerEnd,
+          ),
+          child: child,
         ),
       ),
     );

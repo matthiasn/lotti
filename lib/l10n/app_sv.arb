@@ -7323,7 +7323,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Spara filter...",
   "tasksSavedFiltersSaveChoiceIntro": "Välj om du vill uppdatera sparat filter eller skapa ett separat.",
   "tasksSavedFiltersSaveChoiceTitle": "Spara filter",
-  "tasksSavedFiltersSaveCurrentAs": "Spara strömfilter...",
   "tasksSavedFiltersSaveError": "Kunde inte rädda det här filtret. Försök igen.",
   "tasksSavedFiltersSavePageHelper": "Ge detta filter ett kort namn. Du kan ordna om det senare i Uppgiftsfiltren.",
   "tasksSavedFiltersSavePopupCancel": "Avbryt",

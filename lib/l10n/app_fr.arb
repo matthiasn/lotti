@@ -6618,7 +6618,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Enregistrer le filtre…",
   "tasksSavedFiltersSaveChoiceIntro": "Choisis entre mettre à jour le filtre enregistré et en créer un autre.",
   "tasksSavedFiltersSaveChoiceTitle": "Enregistrer le filtre",
-  "tasksSavedFiltersSaveCurrentAs": "Enregistrer le filtre actuel sous…",
   "tasksSavedFiltersSaveError": "Impossible d’enregistrer ce filtre. Réessaie.",
   "tasksSavedFiltersSavePageHelper": "Donne un nom court à ce filtre. Tu pourras le réordonner plus tard dans les filtres de tâches.",
   "tasksSavedFiltersSavePopupCancel": "Annuler",

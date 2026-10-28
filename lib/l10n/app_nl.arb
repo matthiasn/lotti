@@ -7322,7 +7322,6 @@
   "tasksSavedFiltersSaveButtonLabel": "Filter opslaan...",
   "tasksSavedFiltersSaveChoiceIntro": "Kies of het opgeslagen filter moet worden bijgewerkt of een aparte filter moet worden aangemaakt.",
   "tasksSavedFiltersSaveChoiceTitle": "Filter opslaan",
-  "tasksSavedFiltersSaveCurrentAs": "Huidige filter opslaan...",
   "tasksSavedFiltersSaveError": "Kon dit filter niet opslaan. Probeer het opnieuw.",
   "tasksSavedFiltersSavePageHelper": "Geef dit filter een korte naam. U kunt het later herschikken in taakfilters.",
   "tasksSavedFiltersSavePopupCancel": "Annuleren",

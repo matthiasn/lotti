@@ -17621,9 +17621,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Uložit filtr';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Uložit aktuální filtr…';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Filtr se nepodařilo uložit. Zkus to znovu.';
 

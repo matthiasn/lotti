@@ -17737,9 +17737,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersSaveChoiceTitle => 'Salvați filtrul';
 
   @override
-  String get tasksSavedFiltersSaveCurrentAs => 'Salvați filtrul curent ca…';
-
-  @override
   String get tasksSavedFiltersSaveError =>
       'Filtrul nu a putut fi salvat. Încercați din nou.';
 
