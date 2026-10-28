@@ -715,6 +715,16 @@ insets and the air around the hairline themselves, so every point of the
 pill is one of the two targets. With nothing running the island renders
 nothing and reserves nothing.
 
+The island belongs to the launcher row, so it shows **only while that row is
+docked** — where the menu button and, on list tabs, the page's add action are
+on screen. Every route that owns the bottom edge with a sticky action bar has
+no such row and never shows the island: task, entry and event details unmount
+the launcher outright, and the routes that slide it away (settings editors
+such as Edit category, project details, a goal's pages, habit and person
+editors) take the island down with it. There it would only compete with the
+page's own primary actions. The shell's `showActivityIsland` is that one
+flag; a running timer stays reachable from the drawer's activity summary.
+
 The island is built from the launcher chips' own vocabulary —
 `DsGlassChipSurface`, `dsGlassChipFill`, `dsGlassChipBorder`,
 `radii.badgesPills`, subtitle2 in tabular figures — at `spacing.step8` tall at
@@ -731,15 +741,17 @@ island (`MobileActivityIsland.width`) against the launcher's `centerBand`
 
 ```mermaid
 flowchart TD
-  Start{"Bar docked?"} -->|no| Float
-  Start -->|yes| Shared{"Shared capsule fits the band?<br/>(worded action first, else its glyph)"}
+  Shared{"Shared capsule fits the band?<br/>(worded action first, else its glyph)"}
   Shared -->|yes| InRowShared["In the row, side by side"]
   Shared -->|no| Two{"Two items running?"}
   Two -->|no| Float
   Two -->|yes| Stack{"Stack fits the band?"}
   Stack -->|yes| InRowStack["In the row, timer stacked above recording,<br/>growing upward"]
-  Stack -->|no| Float["Floats floatGap above the bar (or the safe-area edge),<br/>full width, launcher reserves nothing;<br/>stacked only if the window cannot hold the shared capsule"]
+  Stack -->|no| Float["Floats floatGap above the bar,<br/>full width, launcher reserves nothing;<br/>stacked only if the window cannot hold the shared capsule"]
 ```
+
+The ladder is always resolved for the docked row, even while the bar slides
+away, so neither the launcher nor the island reflows mid-slide.
 
 The launcher budgets the reserved width in `labelsFit`, so on the shared rung
 a worded page action keeps its word when it can and drops to its glyph before
@@ -775,12 +787,13 @@ clipping a digit.
   stream to whether a timer runs and drops repeats, so the ladder is resolved
   when a timer starts or stops, not on each one-second tick; the island's own
   `StreamBuilder` ticks the digits.
-- **Outside the slide-away subtree.** The island is positioned by the shell,
-  not inside the launcher: on routes that slide the launcher away it animates
-  down to `floatGap` above the bottom safe-area edge and out to the full
-  width in the same motion, so a running timer stays visible inside settings
-  editors; on task and entry details the whole bottom stack, island included,
-  yields to the page's own action bar.
+- **Outside the slide-away subtree, leaving with it.** The island is
+  positioned by the shell, not inside the launcher, since a stack rises above
+  the bar's own height. On routes that slide the launcher away it animates
+  down past the bottom edge (`-stackHeight`) in the bar's own duration and
+  curve, inert to pointers, screen readers and focus, and the shell publishes
+  no island estate there; it comes back with the bar. On task, entry and
+  event details the whole bottom stack, island included, is unmounted.
 - **A broken recorder never takes it down.** If the recorder controller fails
   to build (MediaKit on some hosts), the island degrades to its timer half.
 

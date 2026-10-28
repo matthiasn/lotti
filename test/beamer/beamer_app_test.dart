@@ -2138,9 +2138,9 @@ void main() {
         navService: mockNavService,
       );
 
-      // The island is shell-owned and lives OUTSIDE the bar widget, so it
-      // stays visible when the bar slides away in settings definition
-      // surfaces.
+      // The island is shell-owned and lives OUTSIDE the bar widget, so a
+      // stack can rise above the bar's height; it leaves with the bar on
+      // routes that slide it away.
       expect(
         find.descendant(
           of: find.byType(MobileNavigationLauncher),
@@ -3933,7 +3933,12 @@ void main() {
           isDashboardsEnabled: () => false,
           settingsDelegate: settingsDelegate,
         );
-        await _registerAppScreenGetIt(mockNavService);
+        // A timer runs throughout, so the island has a capsule to show — or
+        // to keep off the category editor.
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
         addTearDown(tearDownTestGetIt);
 
         await _pumpAppScreen(tester, navService: mockNavService);
@@ -3983,35 +3988,64 @@ void main() {
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
 
+        IgnorePointer islandIgnorePointer() => tester.widget<IgnorePointer>(
+          find
+              .ancestor(
+                of: find.byType(MobileActivityIsland),
+                matching: find.byType(IgnorePointer),
+              )
+              .first,
+        );
+        final barContext = tester.element(
+          find.byType(MobileNavigationLauncher),
+        );
+        final timer = find.byKey(MobileActivityIsland.timerKey);
+
+        // The list page has the launcher row — menu button on screen — so
+        // the island shows there, live and in the row.
+        expect(island().bottom, MobileActivityIsland.dockedBottom(barContext));
+        expect(islandIgnorePointer().ignoring, isFalse);
+        expect(
+          tester.getRect(timer).bottom,
+          lessThan(_phoneViewportSize.height),
+        );
+
         // Entering a category editor keeps the bar mounted (so the move
         // can animate) but slides it down by its own height and makes it
-        // inert. The activity island stays mounted outside the sliding
-        // subtree and drops to its gap above the bottom safe-area edge.
+        // inert. The editor owns the bottom edge with its sticky action
+        // bar, so the island leaves with the launcher: down past the edge,
+        // inert, reserving no estate.
         settingsDelegate.beamToNamed('/settings/categories/some-category-id');
         await tester.pump();
         expect(find.byType(MobileNavigationLauncher), findsOneWidget);
         expect(slide().offset, const Offset(0, 1));
         expect(ignorePointer().ignoring, isTrue);
-        expect(find.byType(MobileActivityIsland), findsOneWidget);
-        final barContext = tester.element(
-          find.byType(MobileNavigationLauncher),
-        );
         expect(
           island().bottom,
-          MediaQuery.paddingOf(barContext).bottom +
-              MobileActivityIsland.floatGap(barContext),
+          -MobileActivityIsland.capsuleHeight(barContext),
         );
-        // With no row to sit in, it centres across the whole width.
-        expect(island().start, 0);
-        expect(island().end, 0);
+        expect(island().duration, const Duration(milliseconds: 450));
+        expect(islandIgnorePointer().ignoring, isTrue);
         await tester.pump(const Duration(milliseconds: 450));
+        expect(
+          tester.getRect(timer).top,
+          greaterThanOrEqualTo(_phoneViewportSize.height),
+          reason: 'the capsule must be wholly below the screen edge',
+        );
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(
+            tester.element(find.byType(IndexedStack)),
+          ),
+          0,
+        );
 
         // Popping back to the list slides the bar into place and lifts
-        // the island back into the row's centre band.
+        // the island back into the row's centre band, live again.
         settingsDelegate.beamToNamed('/settings/categories');
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
+        expect(islandIgnorePointer().ignoring, isFalse);
         expect(
           island().bottom,
           MobileActivityIsland.dockedBottom(barContext),

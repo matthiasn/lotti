@@ -110,26 +110,37 @@ class _SlideAwayBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return ExcludeFocus(
-      excluding: hidden,
-      // A bar translated off-screen must leave keyboard traversal too, or
-      // Tab still reaches its slots and Enter navigates away from the page
-      // the user is on.
-      child: ExcludeSemantics(
-        excluding: hidden,
-        child: IgnorePointer(
-          ignoring: hidden,
-          child: AnimatedSlide(
-            // Offset is in multiples of the child's own size, so (0, 1)
-            // moves the bar down by exactly its rendered height — flush
-            // off-screen, since it docks at the bottom edge.
-            offset: hidden ? const Offset(0, 1) : Offset.zero,
-            duration: reduceMotion ? Duration.zero : slideDuration,
-            curve: slideCurve,
-            child: child,
-          ),
-        ),
+    return _InertWhen(
+      inert: hidden,
+      child: AnimatedSlide(
+        // Offset is in multiples of the child's own size, so (0, 1) moves
+        // the bar down by exactly its rendered height — flush off-screen,
+        // since it docks at the bottom edge.
+        offset: hidden ? const Offset(0, 1) : Offset.zero,
+        duration: reduceMotion ? Duration.zero : slideDuration,
+        curve: slideCurve,
+        child: child,
       ),
     );
   }
+}
+
+/// Makes [child] unreachable while [inert]: no pointer, no screen reader and
+/// no keyboard focus. For chrome moved off-screen but kept mounted so its
+/// exit can animate — a translated widget still takes Tab and Enter, which
+/// would navigate away from the page the user is on.
+class _InertWhen extends StatelessWidget {
+  const _InertWhen({required this.inert, required this.child});
+
+  final bool inert;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ExcludeFocus(
+    excluding: inert,
+    child: ExcludeSemantics(
+      excluding: inert,
+      child: IgnorePointer(ignoring: inert, child: child),
+    ),
+  );
 }

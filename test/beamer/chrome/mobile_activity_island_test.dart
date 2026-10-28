@@ -975,7 +975,6 @@ void main() {
       Size size = const Size(390, 844),
       double scale = 1,
       bool utility = false,
-      bool barDocked = true,
     }) async {
       late MobileIslandLayout layout;
       await tester.pumpWidget(
@@ -986,7 +985,6 @@ void main() {
               layout = MobileIslandLayout.resolve(
                 context,
                 activity: activity,
-                barDocked: barDocked,
                 buildLauncher: (reserve) => MobileNavigationLauncher(
                   onOpenMenu: () {},
                   utilityAction: utility
@@ -1111,18 +1109,6 @@ void main() {
 
       expect(layout.inRow, isFalse);
       expect(layout.stacked, isTrue);
-    });
-
-    testWidgets('a slid-away bar always floats', (tester) async {
-      final layout = await resolveAt(
-        tester,
-        activity: timerOnly,
-        size: const Size(800, 700),
-        barDocked: false,
-      );
-
-      expect(layout.inRow, isFalse);
-      expect(layout.launcher.reservedCenterWidth, 0);
     });
   });
   group('the timer capsule', () {
