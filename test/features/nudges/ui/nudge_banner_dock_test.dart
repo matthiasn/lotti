@@ -741,6 +741,64 @@ void main() {
     expect(find.text('Third voice'), findsOneWidget, reason: 'wraps');
   });
 
+  testWidgets('keyboard focus on a dot follows its banner when the queue '
+      'changes around it', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    final node = Focus.of(
+      tester.element(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('nudge-banner-dock-dot-b')),
+              matching: find.byType(Container),
+            )
+            .first,
+      ),
+    )..requestFocus();
+    await tester.pump();
+    expect(node.hasFocus, isTrue);
+
+    // A banner lands in front: every dot shifts one position right.
+    notifier(tester).entries = [
+      entry(id: 'z', headline: 'Newest voice'),
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ];
+    await tester.pump();
+    await tester.pump();
+
+    expect(node.hasFocus, isTrue, reason: 'the same node, still focused');
+    expect(
+      find.ancestor(
+        of: find.byElementPredicate((e) => e == node.context),
+        matching: find.byKey(const ValueKey('nudge-banner-dock-dot-b')),
+      ),
+      findsOneWidget,
+      reason: 'and still on the dot of the banner it was on',
+    );
+  });
+
+  testWidgets('a long queue wraps its dots on a narrow phone: none overflows, '
+      'and the last one is still reachable', (tester) async {
+    tester.view
+      ..physicalSize = const Size(320, 640)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await pumpDock(tester, [
+      for (var i = 0; i < 13; i++) entry(id: 'n$i', headline: 'Voice $i'),
+    ], compact: true);
+
+    expect(tester.takeException(), isNull);
+    final last = find.byKey(const ValueKey('nudge-banner-dock-dot-n12'));
+    final screen = Offset.zero & tester.view.physicalSize;
+    expect(screen.contains(tester.getCenter(last)), isTrue);
+    await tester.tap(last);
+    await settleTransition(tester);
+    expect(find.text('Voice 12'), findsOneWidget);
+  });
+
   testWidgets('a dot the pointer rests on lights its ring — the only way a '
       'dot can say it is clickable', (tester) async {
     await pumpDock(tester, [

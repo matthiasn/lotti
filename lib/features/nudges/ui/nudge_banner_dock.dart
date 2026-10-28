@@ -589,12 +589,20 @@ class _DockPager extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hitBox = tokens.spacing.step6;
-    return Row(
+    // A Wrap, not a Row: the queue has no upper bound, and a row of 24 dp
+    // targets runs off a narrow phone after a dozen banners, stranding the
+    // outer ones. Wrapped, every dot stays on screen and reachable.
+    return Wrap(
       key: const ValueKey('nudge-banner-dock-pager'),
-      mainAxisAlignment: MainAxisAlignment.center,
+      alignment: WrapAlignment.center,
       children: [
         for (final (index, entry) in entries.indexed)
           Semantics(
+            // Keyed on the direct child, by banner: when the queue gains,
+            // loses or reorders a banner, each button — and the focus node
+            // its ink owns — follows its banner instead of being rebuilt in
+            // place, so keyboard focus survives a background refresh.
+            key: ValueKey('nudge-banner-dock-dot-${entry.nudge.id}'),
             button: true,
             selected: entry.nudge.id == currentId,
             label: context.messages.nudgeBannerDockPageLabel(
@@ -602,7 +610,6 @@ class _DockPager extends StatelessWidget {
               entries.length,
             ),
             child: DsQuietInk(
-              key: ValueKey('nudge-banner-dock-dot-${entry.nudge.id}'),
               borderRadius: BorderRadius.circular(hitBox),
               focusRing: true,
               onTap: () => onSelect(entry.nudge.id),

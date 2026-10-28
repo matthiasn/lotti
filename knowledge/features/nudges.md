@@ -213,7 +213,10 @@ rules, all in `ui/nudge_banner_dock.dart` and `ui/nudge_banner_dock_swipe.dart`:
   minimum target size, announced as *Show banner n of m* with its selected
   state. A ring the pointer or keyboard focus rests on rises from `muted` to
   `linework`, the one way a dot can say it is clickable. Choosing one shows that
-  banner with a fresh tenure. The dot row grows the dock by its height when a
+  banner with a fresh tenure. The row wraps rather than overflows — the queue
+  has no upper bound, and a dozen 24 dp targets outrun a narrow phone — and
+  each dot is keyed by its banner on the row's direct child, so a queue change
+  moves the button, and the keyboard focus it holds, with its banner. The dot row grows the dock by its height when a
   second tenant arrives: the card itself never changes height.
 - **A horizontal swipe pages, one banner per gesture, wrapping.** Content
   follows the fingers: a leftward swipe shows the next banner. Two input
