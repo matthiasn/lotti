@@ -703,6 +703,37 @@ void main() {
       });
     }
 
+    testWidgets('a screen reader can follow a link through its semantics', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final handle = tester.ensureSemantics();
+
+      await openSheet(
+        tester,
+        attributionWith(fullTrigger, taskId: 'task-1'),
+        taskTitle: 'Count the colony',
+      );
+      final link = find.bySemanticsLabel('Task: Count the colony');
+      expect(
+        tester.getSemantics(link),
+        matchesSemantics(
+          label: 'Task: Count the colony',
+          isLink: true,
+          hasTapAction: true,
+        ),
+      );
+
+      tester.semantics.tap(find.semantics.byLabel('Task: Count the colony'));
+      await tester.pumpAndSettle();
+
+      expect(beamed, ['/tasks/task-1']);
+      expect(find.text('AI attribution'), findsNothing);
+      handle.dispose();
+    });
+
     testWidgets(
       'falls back to ids and the generic task link when no name was recorded',
       (tester) async {

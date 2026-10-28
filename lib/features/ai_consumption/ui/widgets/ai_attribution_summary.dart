@@ -582,18 +582,23 @@ class _LinkDetail extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = tokens.colors.interactive.enabled;
+    void open() {
+      Navigator.of(context).maybePop();
+      beamToNamed(route);
+    }
+
+    // The semantics node carries the tap itself: ExcludeSemantics drops the
+    // InkWell's action, and a link a screen reader cannot follow is no link.
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.step2),
       child: Semantics(
         link: true,
         label: '$label: $value',
+        onTap: open,
         child: ExcludeSemantics(
           child: InkWell(
             borderRadius: BorderRadius.circular(tokens.radii.s),
-            onTap: () {
-              Navigator.of(context).maybePop();
-              beamToNamed(route);
-            },
+            onTap: open,
             // Centred, unlike a plain detail row: the trailing chevron is
             // shorter than a line of text and reads as superscript at the top.
             child: Row(

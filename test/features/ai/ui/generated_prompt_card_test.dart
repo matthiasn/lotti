@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
@@ -66,6 +67,29 @@ Please provide step-by-step guidance.
       // Check for the title text
       expect(find.text('AI Coding Prompt'), findsOneWidget);
     });
+
+    testWidgets(
+      'a prompt generated before attribution was recorded still names its '
+      'model',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              aiAttributionForArtifactProvider.overrideWith(
+                (ref, artifact) async => null,
+              ),
+            ],
+            child: GeneratedPromptCard(testAiResponseEntry),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('gemini-2.5-pro · Provenance not recorded'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('displays summary section by default', (tester) async {
       await tester.pumpWidget(

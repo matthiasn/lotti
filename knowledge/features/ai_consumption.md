@@ -57,8 +57,9 @@ did the work all the same, and the pill is how a reader finds out who. The
 label leads with the model (or, for a group, the kind of work) and appends cost
 and impact only when the provider reported them, so an unbilled output does not
 carry "Cost unknown"; the full attribution row and the details sheet still say
-so. An AI response made before attribution existed passes the model it recorded
-as `unrecordedModel`, and its pill reads "<model> · Provenance not recorded"
+so. An AI response made before attribution existed — the analysis or summary
+card and the generated-prompt card alike — passes the model it recorded as
+`unrecordedModel`, and its pill reads "<model> · Provenance not recorded"
 rather than vanishing; it opens nothing, because there is no record to open.
 The group renders nothing only without attributions, taking its `topSpacing`
 along, so an audio card keeps an even rhythm without it.

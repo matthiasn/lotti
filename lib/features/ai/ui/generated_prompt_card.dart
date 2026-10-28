@@ -245,6 +245,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
           ),
           attribution: widget.aiResponse.data.aiAttribution,
           asPill: true,
+          unrecordedModel: widget.aiResponse.data.model,
         ),
         // Expandable full prompt
         AnimatedBuilder(

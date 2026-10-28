@@ -1522,7 +1522,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiAttributionSkill => 'Habilidade';
 
   @override
-  String get aiAttributionSource => 'Origem';
+  String get aiAttributionSource => 'Fonte';
 
   @override
   String get aiAttributionStartedAt => 'Iniciado às';
