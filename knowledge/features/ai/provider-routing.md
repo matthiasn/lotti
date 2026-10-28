@@ -12,6 +12,14 @@ sources:
     resource: ../../../lib/features/ai/repository/ollama_api_client.dart
     title: Ollama chat client and its thinking switch
     last_modified: 2026-10-03
+  - id: mistral-stream-content
+    resource: ../../../lib/features/ai/repository/mistral_stream_content.dart
+    title: Mistral thinking chunks to think tags
+    last_modified: 2026-10-28
+  - id: sampling-temperature
+    resource: ../../../lib/features/ai/util/sampling_temperature.dart
+    title: Reasoning temperature rule
+    last_modified: 2026-10-28
   - id: mistral
     resource: ../../../lib/features/ai/repository/mistral_inference_repository.dart
     title: Mistral request shaping
@@ -71,10 +79,10 @@ streaming while keeping an impact collector for buffered fallback.
 
 | Operation | Dedicated branches | Fallback |
 |-----------|--------------------|----------|
-| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; explicit reasoning effort forwarded where supported, omitted from Mistral |
+| `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; reasoning effort forwarded where supported (Mistral: adjustable-reasoning models only, see below) |
 | `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` |
 | `generateWithAudio()` | embedded sherpa, Whisper, Voxtral, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` |
-| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; reasoning effort omitted from Mistral |
+| `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; reasoning effort as for `generate()` |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported — throws for every other provider type |
 
 Speech synthesis is not routed here. A profile's read-aloud model reaches
@@ -490,26 +498,30 @@ There is no app-wide reasoning setting. Each provider's API accepts a different
 field, or none, so each repository decides on its own, and **that is deliberate
 policy, not drift waiting to be unified**: a shared knob would have to either
 send fields some APIs reject or silently mean different things per provider.
-Gemini, above, is the only provider with a user-facing control.
+Gemini, above, and Mistral's adjustable-reasoning models, below, are the
+only ones with a user-facing control; both live in the model row's
+`geminiThinkingMode` field.
 
 | Provider | What is sent | Where |
 |----------|--------------|-------|
 | Gemini | `thinkingConfig` on every native request; `reasoning_effort` on the audio and image paths for Gemini 3 only | Section above |
 | Ollama | `think: true` for model ids starting with `gemma4`, nothing otherwise; the separate `thinking` field comes back wrapped in `<think>` tags so the shared parser can split it out | `OllamaApiClient.shouldEnableThinking` |
 | Melious | The caller's effort unchanged, except for `qwen3.8-27b` and `qwen3.8-max`, which reject a request without one: those get `low` when the caller set nothing and `medium` in place of `high` | `MeliousInferenceRepository.resolveReasoningEffort` |
-| Mistral | Nothing: `reasoningEffort` is accepted for interface compatibility and dropped, since the chat-completions API does not document it | `MistralInferenceRepository` |
+| Mistral | `reasoning_effort` only for the [adjustable-reasoning models](https://docs.mistral.ai/studio-api/conversations/reasoning) (`mistral-small-latest`, `mistral-medium-3-5`, `mistral-large-4-0`), which take just `none` or `high`: the caller's effort, else the row's thinking setting (the model page's *Think before answering* switch), with minimal and low sent as `none`, medium and high as `high`. Other Mistral models get nothing. Streamed `thinking` chunks come back wrapped in `<think>` tags, as Ollama's do | `MistralInferenceRepository.reasoningEffortWireValue`, `MistralStreamContent` |
 | OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, oMLX, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent, and oMLX's catalog only flags which models reason | `CloudInferenceGenerate` |
 
 On the pass-through providers the effort is whatever the call site asks for, and
-only three call sites ask: the goal check-in compactor, the goal check-in digest
-and the GitHub pull-request summary, all for `minimal`, to keep short
-summarisation cheap. Everything else sends no effort and gets the provider's
+only four call sites ask: the goal check-in compactor, the goal check-in digest,
+the GitHub pull-request summary and person capture, all for `minimal`, to keep
+short summarisation cheap. Everything else sends no effort and gets the provider's
 default.
 
 A model row's `isReasoningModel` flag, combined with a prompt's `useReasoning`,
 changes only the temperature in `UnifiedAiInferenceRepository` — `1.0` instead
-of `0.6`, because OpenAI's reasoning models reject any other value. It sends no
-effort of its own.
+of `0.6`, because OpenAI's reasoning models reject any other value — except on
+Mistral, which recommends 0.0–0.7 for every model and keeps `0.6`
+(`samplingTemperature`; onboarding task structuring applies the same rule to
+its `0.3`). It sends no effort of its own.
 
 # Speech dictionaries
 

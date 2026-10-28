@@ -491,6 +491,7 @@ class CloudInferenceGenerateMore {
         tools: tools,
         toolChoice: toolChoice,
         reasoningEffort: reasoningEffort,
+        thinkingMode: geminiThinkingMode,
       );
     }
 

@@ -4596,6 +4596,8 @@
   "modelEditLoadError": "Laden van modelconfiguratie is mislukt",
   "modelEditMaxTokensHint": "Optioneel",
   "modelEditMaxTokensLabel": "Max. aanvultekens",
+  "modelEditMistralThinkingDescription": "Mistral denkt eerst over het probleem na: grondigere antwoorden, maar trager en meer tokens.",
+  "modelEditMistralThinkingLabel": "Nadenken voor het antwoord",
   "modelEditModalityNoneSelected": "Geen geselecteerd",
   "modelEditOutputModalitiesHint": "Selecteer uitvoertypen",
   "modelEditOutputModalitiesLabel": "Uitvoermodaliteiten",

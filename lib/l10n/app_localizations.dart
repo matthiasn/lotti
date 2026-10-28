@@ -18031,6 +18031,18 @@ abstract class AppLocalizations {
   /// **'Max completion tokens'**
   String get modelEditMaxTokensLabel;
 
+  /// No description provided for @modelEditMistralThinkingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral works through the problem first: deeper answers, but slower and more tokens.'**
+  String get modelEditMistralThinkingDescription;
+
+  /// No description provided for @modelEditMistralThinkingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Think before answering'**
+  String get modelEditMistralThinkingLabel;
+
   /// No description provided for @modelEditModalityNoneSelected.
   ///
   /// In en, this message translates to:

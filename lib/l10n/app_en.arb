@@ -6666,6 +6666,8 @@
   "modelEditLoadError": "Failed to load model configuration",
   "modelEditMaxTokensHint": "Optional — leave empty for unlimited",
   "modelEditMaxTokensLabel": "Max completion tokens",
+  "modelEditMistralThinkingDescription": "Mistral works through the problem first: deeper answers, but slower and more tokens.",
+  "modelEditMistralThinkingLabel": "Think before answering",
   "modelEditModalityNoneSelected": "None selected",
   "modelEditOutputModalitiesHint": "Select output types",
   "modelEditOutputModalitiesLabel": "Output modalities",

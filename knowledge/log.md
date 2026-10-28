@@ -1,6 +1,11 @@
 # Knowledge Bundle Update Log
 
 ## 2026-10-28
+* **Update**: [Provider routing](features/ai/provider-routing.md) — Mistral
+  sends `reasoning_effort` (`none`/`high`) to its adjustable-reasoning models,
+  driven by the model page's *Think before answering* switch; Mistral thinking
+  chunks reach agent internals as `<think>` blocks; Mistral reasoning keeps
+  its normal temperature instead of `1.0`.
 * **Update**: [Text-to-speech](features/tts.md) — which voice speaks: a
   profile's read-aloud model as a cloud voice (Voxtral TTS), else the
   on-device voice; the voice catalog cache, per-language voices, and why cloud

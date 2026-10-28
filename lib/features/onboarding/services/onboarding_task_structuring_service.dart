@@ -7,6 +7,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
+import 'package:lotti/features/ai/util/sampling_temperature.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -135,7 +136,11 @@ Rules:
         systemMessage: systemPrompt,
         model: resolved.model.providerModelId,
         provider: resolved.provider,
-        temperature: resolved.model.isReasoningModel ? 1.0 : _temperature,
+        temperature: samplingTemperature(
+          providerType: resolved.provider.inferenceProviderType,
+          reasoning: resolved.model.isReasoningModel,
+          fallback: _temperature,
+        ),
         maxCompletionTokens: resolved.model.maxCompletionTokens,
         geminiThinkingMode: resolved.model.geminiThinkingMode,
         attribution: OneShotGenerationAttribution(

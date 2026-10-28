@@ -10724,6 +10724,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get modelEditMaxTokensLabel => 'Maks fuldførelsestokens';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral tænker problemet igennem først: grundigere svar, men langsommere og flere tokens.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Tænk før svar';
+
+  @override
   String get modelEditModalityNoneSelected => 'Ingen udvalgt';
 
   @override

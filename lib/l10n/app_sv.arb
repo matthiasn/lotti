@@ -4597,6 +4597,8 @@
   "modelEditLoadError": "Misslyckades med att ladda modellkonfigurationen",
   "modelEditMaxTokensHint": "Valfritt — lämna tomt för obegränsat",
   "modelEditMaxTokensLabel": "Max-fullbordande-tokens",
+  "modelEditMistralThinkingDescription": "Mistral tänker igenom problemet först: grundligare svar, men långsammare och fler tokens.",
+  "modelEditMistralThinkingLabel": "Tänk före svar",
   "modelEditModalityNoneSelected": "Ingen vald",
   "modelEditOutputModalitiesHint": "Välj utdatatyper",
   "modelEditOutputModalitiesLabel": "Utdatamodaliteter",

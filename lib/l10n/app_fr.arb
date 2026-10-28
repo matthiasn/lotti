@@ -4091,6 +4091,8 @@
   "modelEditLoadError": "Échec du chargement de la configuration du modèle",
   "modelEditMaxTokensHint": "Optionnel — laisser vide pour illimité",
   "modelEditMaxTokensLabel": "Nombre maximal de jetons de complétion",
+  "modelEditMistralThinkingDescription": "Mistral réfléchit d'abord au problème : des réponses plus approfondies, mais plus lentes et plus de jetons.",
+  "modelEditMistralThinkingLabel": "Réfléchir avant de répondre",
   "modelEditModalityNoneSelected": "Aucun sélectionné",
   "modelEditOutputModalitiesHint": "Sélectionner les types de sortie",
   "modelEditOutputModalitiesLabel": "Modalités de sortie",

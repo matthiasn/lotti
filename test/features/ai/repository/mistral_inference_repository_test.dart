@@ -1215,36 +1215,90 @@ void main() {
         expect((reqMessages[1] as Map)['content'], equals('Hello'));
       });
 
-      test('serializes reasoning effort for supported models', () async {
-        final events = [
-          createSseChunkEvent(content: 'Response'),
-          createSseFinalEvent(),
-        ];
+      Future<Map<String, dynamic>> sentBody(
+        Stream<CreateChatCompletionStreamResponse> Function() call,
+      ) async {
         when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => createSseStreamedResponse(events: events),
+          (_) async => createSseStreamedResponse(
+            events: [
+              createSseChunkEvent(content: 'Response'),
+              createSseFinalEvent(),
+            ],
+          ),
         );
-
-        final stream = repository.generateTextWithMessages(
-          messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
-          ],
-          model: model,
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-          reasoningEffort: ReasoningEffort.high,
-        );
-
-        await stream.toList();
-
+        await call().toList();
         final request =
             verify(
                   () => mockHttpClient.send(captureAny()),
                 ).captured.single
                 as http.Request;
-        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(requestBody, isNot(contains('reasoning_effort')));
+        return jsonDecode(request.body) as Map<String, dynamic>;
+      }
+
+      const userHello = [
+        ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Hello'),
+        ),
+      ];
+
+      test(
+        'sends reasoning_effort for an adjustable-reasoning model',
+        () async {
+          final body = await sentBody(
+            () => repository.generateTextWithMessages(
+              messages: userHello,
+              model: 'mistral-medium-3-5',
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              reasoningEffort: ReasoningEffort.high,
+            ),
+          );
+          expect(body['reasoning_effort'], 'high');
+        },
+      );
+
+      test(
+        "a caller's effort wins over the model row's thinking mode",
+        () async {
+          final body = await sentBody(
+            () => repository.generateText(
+              prompt: 'Hello',
+              model: 'mistral-small-latest',
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+              reasoningEffort: ReasoningEffort.minimal,
+              thinkingMode: GeminiThinkingMode.high,
+            ),
+          );
+          expect(body['reasoning_effort'], 'none');
+        },
+      );
+
+      test('the thinking mode applies when the caller sets none', () async {
+        final body = await sentBody(
+          () => repository.generateText(
+            prompt: 'Hello',
+            model: 'mistral-large-4-0',
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            thinkingMode: GeminiThinkingMode.high,
+          ),
+        );
+        expect(body['reasoning_effort'], 'high');
+      });
+
+      test('omits reasoning_effort for other Mistral models', () async {
+        final body = await sentBody(
+          () => repository.generateTextWithMessages(
+            messages: userHello,
+            model: model,
+            baseUrl: baseUrl,
+            apiKey: apiKey,
+            reasoningEffort: ReasoningEffort.high,
+            thinkingMode: GeminiThinkingMode.high,
+          ),
+        );
+        expect(body, isNot(contains('reasoning_effort')));
       });
 
       test('should convert assistant messages with tool calls', () async {
@@ -1553,6 +1607,58 @@ void main() {
 
         // Assert
         expect(results[0].choices?.first.delta?.content, equals('Hello world'));
+      });
+
+      test('wraps streamed thinking chunks in think tags', () async {
+        Map<String, dynamic> event(Object content) => {
+          'id': 'chatcmpl-test',
+          'choices': [
+            {
+              'index': 0,
+              'delta': {'content': content},
+              'finish_reason': null,
+            },
+          ],
+        };
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(
+            events: [
+              event([
+                {
+                  'type': 'thinking',
+                  'thinking': [
+                    {'type': 'text', 'text': 'Weigh '},
+                  ],
+                },
+              ]),
+              event([
+                {
+                  'type': 'thinking',
+                  'thinking': [
+                    {'type': 'text', 'text': 'it.'},
+                  ],
+                },
+                {'type': 'text', 'text': 'Answer'},
+              ]),
+              event(' done'),
+              createSseFinalEvent(),
+            ],
+          ),
+        );
+
+        final results = await repository
+            .generateText(
+              prompt: 'Hi',
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        expect(
+          results.map((r) => r.choices?.first.delta?.content ?? '').join(),
+          '<think>Weigh it.</think>Answer done',
+        );
       });
 
       test('should handle content as array of text parts', () async {
@@ -2605,6 +2711,36 @@ data: not valid json 5
           }
         },
         tags: 'glados',
+      );
+    });
+  });
+
+  group('reasoningEffortWireValue', () {
+    test('maps the two halves of each scale onto none and high', () {
+      String? wire(ReasoningEffort? r, [GeminiThinkingMode? m]) =>
+          MistralInferenceRepository.reasoningEffortWireValue(
+            model: ' Mistral-Medium-3-5 ',
+            requested: r,
+            thinkingMode: m,
+          );
+      expect(wire(ReasoningEffort.minimal), 'none');
+      expect(wire(ReasoningEffort.low), 'none');
+      expect(wire(ReasoningEffort.medium), 'high');
+      expect(wire(ReasoningEffort.high), 'high');
+      expect(wire(null, GeminiThinkingMode.minimal), 'none');
+      expect(wire(null, GeminiThinkingMode.low), 'none');
+      expect(wire(null, GeminiThinkingMode.medium), 'high');
+      expect(wire(null, GeminiThinkingMode.high), 'high');
+      expect(wire(null), isNull);
+    });
+
+    test('is null for a model without adjustable reasoning', () {
+      expect(
+        MistralInferenceRepository.reasoningEffortWireValue(
+          model: 'magistral-medium-2509',
+          requested: ReasoningEffort.high,
+        ),
+        isNull,
       );
     });
   });

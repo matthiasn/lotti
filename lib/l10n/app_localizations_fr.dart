@@ -10904,6 +10904,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Nombre maximal de jetons de complétion';
 
   @override
+  String get modelEditMistralThinkingDescription =>
+      'Mistral réfléchit d\'abord au problème : des réponses plus approfondies, mais plus lentes et plus de jetons.';
+
+  @override
+  String get modelEditMistralThinkingLabel => 'Réfléchir avant de répondre';
+
+  @override
   String get modelEditModalityNoneSelected => 'Aucun sélectionné';
 
   @override
