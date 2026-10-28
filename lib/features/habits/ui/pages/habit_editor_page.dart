@@ -33,6 +33,7 @@ import 'package:lotti/widgets/settings/settings_date_time_field.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_form_text_field.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Where the habit definition is written: a two-step wizard for a new
@@ -482,6 +483,13 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
           fullWidth: true,
         ),
     ];
+    final timestamps = <Widget>[
+      if (onSignalsStep && !widget.isCreate)
+        SettingsTimestampsFooter(
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        ),
+    ];
 
     // Two columns only where there is a second column's worth: the edit
     // path's Settings, Options and Delete. The wizard's step has a short
@@ -522,6 +530,7 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                       // The Options section already ends with its section
                       // gap, which is Delete's distance from it.
                       ...deleteAction,
+                      ...timestamps,
                     ],
                   ),
                 ),
@@ -540,6 +549,7 @@ class HabitEditorPageState extends ConsumerState<HabitEditorPage> {
                 SizedBox(height: tokens.spacing.step4),
                 ...deleteAction,
               ],
+              ...timestamps,
             ],
           ];
 

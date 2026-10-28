@@ -156,6 +156,8 @@ class _SpeechDictionaryDetailsPageState
             ? null
             : () => _confirmDelete(context, existing),
         deleteEnabled: !state.isSaving,
+        createdAt: existing?.createdAt,
+        updatedAt: existing?.updatedAt,
         children: [
           SettingsFormSection(
             title: messages.basicSettings,

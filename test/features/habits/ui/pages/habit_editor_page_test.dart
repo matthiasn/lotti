@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -185,6 +187,26 @@ void main() {
         ),
       );
       expect(beamedTo, '/habits');
+    });
+
+    testWidgets('neither step shows timestamps for an unsaved habit', (
+      tester,
+    ) async {
+      await pumpEditor(tester);
+      expect(find.byType(SettingsTimestampsFooter), findsNothing);
+
+      await tester.enterText(
+        find.byKey(const Key('habit_name_field')),
+        'Hydrate',
+      );
+      await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('habit-signal-add-row')),
+        findsOneWidget,
+      );
+      expect(find.byType(SettingsTimestampsFooter), findsNothing);
     });
 
     testWidgets(
@@ -425,6 +447,38 @@ void main() {
       expect(find.byKey(const ValueKey('habit-editor-delete')), findsOneWidget);
     });
 
+    testWidgets("ends with the habit's own timestamps", (tester) async {
+      final dated = ruledHabit.copyWith(
+        createdAt: DateTime(2024, 3, 15, 14, 30),
+        updatedAt: DateTime(2025, 11, 2, 9, 5),
+      );
+      when(
+        () => mocks.journalDb.getHabitById(ruledHabit.id),
+      ).thenAnswer((_) async => dated);
+      await pumpEditor(tester, habitId: ruledHabit.id);
+
+      final footer = tester.widget<SettingsTimestampsFooter>(
+        find.byType(SettingsTimestampsFooter),
+      );
+      expect(footer.createdAt, dated.createdAt);
+      expect(footer.updatedAt, dated.updatedAt);
+    });
+
+    testWidgets('saving stamps the edit time as last modified', (
+      tester,
+    ) async {
+      final editedAt = DateTime(2026, 10, 28, 9, 15);
+      await withClock(Clock.fixed(editedAt), () async {
+        await pumpEditor(tester, habitId: ruledHabit.id);
+        await tester.tap(find.byKey(const ValueKey('habit-editor-primary')));
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+
+      final saved = savedHabit();
+      expect(saved.updatedAt, editedAt);
+      expect(saved.createdAt, ruledHabit.createdAt);
+    });
+
     testWidgets('toggling notify and saving persists the flag', (tester) async {
       await pumpEditor(
         tester,
@@ -588,6 +642,20 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The timestamps close the administrative column, right under Delete.
+      final footer = find.byType(SettingsTimestampsFooter);
+      expect(
+        find.descendant(of: find.byWidget(row.children.last), matching: footer),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(footer).dy,
+        moreOrLessEquals(
+          tester
+              .getBottomLeft(find.byKey(const ValueKey('habit-editor-delete')))
+              .dy,
+        ),
+      );
       // The whole form fits the window: the scroll view has no overflow.
       final scrollable = tester.widget<Scrollable>(
         find.byType(Scrollable).first,
@@ -604,6 +672,21 @@ void main() {
       );
       expect(find.byKey(const ValueKey('habit-editor-columns')), findsNothing);
       expect(find.byType(HabitSignalCard), findsOneWidget);
+      // The single column ends with Delete, then the timestamps.
+      final footer = find.byType(SettingsTimestampsFooter);
+      await tester.scrollUntilVisible(
+        footer,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        tester.getTopLeft(footer).dy,
+        moreOrLessEquals(
+          tester
+              .getBottomLeft(find.byKey(const ValueKey('habit-editor-delete')))
+              .dy,
+        ),
+      );
     });
 
     testWidgets('the create wizard stays a single column on desktop, on both '

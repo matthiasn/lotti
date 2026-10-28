@@ -9085,8 +9085,24 @@
   "settingsDashboardsSearchHint": "Search dashboards…",
   "settingsDashboardsSubtitle": "Customize your dashboard views",
   "settingsDashboardsTitle": "Dashboards",
+  "settingsDefinitionCreatedAt": "Created {timestamp}",
+  "@settingsDefinitionCreatedAt": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "settingsDefinitionsSubtitle": "Habits, categories, labels, dashboards, and measurables",
   "settingsDefinitionsTitle": "Definitions",
+  "settingsDefinitionUpdatedAt": "Last modified {timestamp}",
+  "@settingsDefinitionUpdatedAt": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      }
+    }
+  },
   "settingsFlagsEmptySearch": "No flags match your search",
   "settingsFlagsEmptySearchSectionsHint": "Looking for Habits, Projects or Daily OS? They live under Settings → Sections.",
   "settingsFlagsGroupAdvanced": "ADVANCED & EXPERIMENTAL",

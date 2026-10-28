@@ -14505,11 +14505,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDashboardsTitle => 'Dashboards';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Erstellt am $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Gewohnheiten, Kategorien, Labels, Dashboards und Messgrößen';
 
   @override
   String get settingsDefinitionsTitle => 'Definitionen';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Zuletzt geändert am $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch => 'Keine Flags entsprechen deiner Suche';

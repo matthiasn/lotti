@@ -23867,6 +23867,12 @@ abstract class AppLocalizations {
   /// **'Dashboards'**
   String get settingsDashboardsTitle;
 
+  /// No description provided for @settingsDefinitionCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created {timestamp}'**
+  String settingsDefinitionCreatedAt(String timestamp);
+
   /// No description provided for @settingsDefinitionsSubtitle.
   ///
   /// In en, this message translates to:
@@ -23878,6 +23884,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Definitions'**
   String get settingsDefinitionsTitle;
+
+  /// No description provided for @settingsDefinitionUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Last modified {timestamp}'**
+  String settingsDefinitionUpdatedAt(String timestamp);
 
   /// No description provided for @settingsFlagsEmptySearch.
   ///

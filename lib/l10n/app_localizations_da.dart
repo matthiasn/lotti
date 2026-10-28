@@ -14411,11 +14411,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsDashboardsTitle => 'Dashboards';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Oprettet $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Vaner, kategorier, etiketter, dashboards og målbare ting';
 
   @override
   String get settingsDefinitionsTitle => 'Definitioner';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Sidst ændret $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch => 'Ingen flag matcher din søgning';

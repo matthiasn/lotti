@@ -272,6 +272,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         deleteLabel: context.messages.deleteButton,
         onDelete: _showDeleteDialog,
         deleteEnabled: !state.isSaving,
+        createdAt: category?.createdAt,
+        updatedAt: category?.updatedAt,
         children: [
           if (state.errorMessage != null)
             ErrorStateWidget(

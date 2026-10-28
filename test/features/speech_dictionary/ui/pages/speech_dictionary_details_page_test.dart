@@ -23,6 +23,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -175,6 +176,33 @@ void main() {
     expect(find.text('Kuber Nets; Q Bernetes'), findsOneWidget);
     // Nothing edited yet, so nothing to save.
     expect(pillEnabled(tester, messages.saveButton), isFalse);
+  });
+
+  testWidgets("editing ends with the entry's own timestamps", (tester) async {
+    final edited = kubernetes.copyWith(
+      createdAt: DateTime(2024, 3, 15, 14, 30),
+      updatedAt: DateTime(2025, 11, 2, 9, 5),
+    );
+    await pumpPage(tester, SpeechDictionaryDetailsPage(entryId: kubernetes.id));
+    entries.add([edited]);
+    await tester.pump();
+    await tester.pump();
+
+    final footer = tester.widget<SettingsTimestampsFooter>(
+      find.byType(SettingsTimestampsFooter),
+    );
+    expect(footer.createdAt, edited.createdAt);
+    expect(footer.updatedAt, edited.updatedAt);
+  });
+
+  testWidgets('adding a term shows no timestamps yet', (tester) async {
+    await pumpPage(tester, const SpeechDictionaryDetailsPage());
+
+    expect(
+      find.text(messages.settingsSpeechDictionaryCreateTitle),
+      findsWidgets,
+    );
+    expect(find.byType(SettingsTimestampsFooter), findsNothing);
   });
 
   testWidgets('saving an edit sends the whole form and the old entry', (

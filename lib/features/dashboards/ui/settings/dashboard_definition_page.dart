@@ -376,6 +376,12 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             ? null
                             : messages.deleteButton,
                         onDelete: widget.isCreateMode ? null : deleteDashboard,
+                        createdAt: widget.isCreateMode
+                            ? null
+                            : widget.dashboard.createdAt,
+                        updatedAt: widget.isCreateMode
+                            ? null
+                            : widget.dashboard.updatedAt,
                         children: [
                           FormBuilder(
                             key: formKey,

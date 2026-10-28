@@ -6,6 +6,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../test_helper.dart';
@@ -126,5 +127,54 @@ void main() {
 
     await tester.tap(find.text('Delete'));
     expect(deleted, isTrue);
+  });
+
+  testWidgets('renders the timestamps footer last, below the delete row', (
+    tester,
+  ) async {
+    final createdAt = DateTime(2024, 3, 15, 14, 30);
+    final updatedAt = DateTime(2025, 11, 2, 9, 5);
+    await pumpScaffold(
+      tester,
+      scaffold: SettingsDetailScaffold(
+        title: 'Edit label',
+        onBack: () {},
+        deleteLabel: 'Delete',
+        onDelete: () {},
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        children: const [Text('form content')],
+      ),
+    );
+
+    final footer = tester.widget<SettingsTimestampsFooter>(
+      find.byType(SettingsTimestampsFooter),
+    );
+    expect(footer.createdAt, createdAt);
+    expect(footer.updatedAt, updatedAt);
+    // The footer's first line sits one step6 gap under the delete row.
+    final spacing = tester
+        .element(find.byType(SettingsTimestampsFooter))
+        .designTokens
+        .spacing;
+    expect(
+      tester.getTopLeft(find.textContaining('Created')).dy,
+      tester.getBottomLeft(find.byType(SettingsDeleteRow)).dy + spacing.step6,
+    );
+  });
+
+  testWidgets('renders no timestamps footer without timestamps', (
+    tester,
+  ) async {
+    await pumpScaffold(
+      tester,
+      scaffold: SettingsDetailScaffold(
+        title: 'Create label',
+        onBack: () {},
+        children: const [Text('form content')],
+      ),
+    );
+
+    expect(find.byType(SettingsTimestampsFooter), findsNothing);
   });
 }

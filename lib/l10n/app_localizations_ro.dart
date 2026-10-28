@@ -14681,11 +14681,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsDashboardsTitle => 'Panouri de bord';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Data creării: $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Obiceiuri, categorii, etichete, panouri și unități măsurabile';
 
   @override
   String get settingsDefinitionsTitle => 'Definiții';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Ultima modificare: $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch =>
