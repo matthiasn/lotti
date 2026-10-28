@@ -494,8 +494,9 @@ true once the lease is aborted — by the timeout, the user's cancel or a pause 
 and `ConversationRepository` reads `isAgentWakeAborted` before every turn and
 on every streamed chunk. An aborted wake stops at the next turn boundary, and a
 turn already streaming is cut off at its next chunk: leaving the stream cancels
-its subscription, and the cut turn is neither persisted nor are its
-half-streamed tool calls executed. A provider that hangs without sending
+its subscription. The abort is checked again once the stream has ended, so a
+stop that lands between the last chunk and the stream closing is caught too.
+Either way the turn is neither persisted nor are its tool calls executed. A provider that hangs without sending
 anything still holds its request until the transport gives up, but the agent
 lock is already free by then.
 
