@@ -18,11 +18,16 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// States:
 /// - Empty path → only the localized root label is shown, rendered as
-///   the highEmphasis terminal segment (no tap target — there is no
-///   shorter path to truncate to).
+///   the terminal segment (no tap target — there is no shorter path to
+///   truncate to).
 /// - Non-empty path → root + every ancestor up to the focused node.
-///   The trailing segment renders at highEmphasis as the page title;
-///   every preceding segment is a tappable link.
+///   The trailing segment is the page title; every preceding segment
+///   is a tappable link.
+///
+/// Every segment, terminal or not, shares one text style (mediumEmphasis)
+/// and one inset ([_segmentPadding]), so the gap from each `›` to the
+/// label after it is identical and the trail reads as one line. Only
+/// hover/focus on a link changes a color.
 ///
 /// Layout: a single horizontal line. The trailing (terminal) segment
 /// is the only one that flexes — it ellipsizes when the available
@@ -73,8 +78,9 @@ class SettingsTopCrumbs extends ConsumerWidget {
 
     final segments = <String>[rootLabel, ...ancestorTitles];
     final headingStyle = tokens.typography.styles.heading.heading3;
-    final highEmphasis = tokens.colors.text.highEmphasis;
-    final mediumEmphasis = tokens.colors.text.mediumEmphasis;
+    final segmentStyle = headingStyle.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
     final lowEmphasis = tokens.colors.text.lowEmphasis;
     final accent = tokens.colors.interactive.enabled;
 
@@ -100,7 +106,7 @@ class SettingsTopCrumbs extends ConsumerWidget {
           _TopCrumbLink(
             label: segments[i],
             onTap: () => onTap(i),
-            style: headingStyle.copyWith(color: mediumEmphasis),
+            style: segmentStyle,
             hoverColor: accent,
           ),
         );
@@ -111,12 +117,15 @@ class SettingsTopCrumbs extends ConsumerWidget {
               message: segments[i],
               child: Semantics(
                 header: true,
-                child: Text(
-                  segments[i],
-                  style: headingStyle.copyWith(color: highEmphasis),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
+                child: Padding(
+                  padding: _segmentPadding(tokens),
+                  child: Text(
+                    segments[i],
+                    style: segmentStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
                 ),
               ),
             ),
@@ -130,6 +139,14 @@ class SettingsTopCrumbs extends ConsumerWidget {
     );
   }
 }
+
+/// Inset around every crumb label. Links need it as their [InkWell] hit
+/// area; the terminal segment carries the same inset so its distance
+/// from the preceding `›` matches every other segment's.
+EdgeInsets _segmentPadding(DsTokens tokens) => EdgeInsets.symmetric(
+  horizontal: tokens.spacing.step2,
+  vertical: tokens.spacing.step1,
+);
 
 /// Tappable header crumb segment. Mirrors the old `_CrumbLink` from
 /// `leaf_panel.dart` (now removed): an [InkWell] surface that paints
@@ -172,10 +189,7 @@ class _TopCrumbLinkState extends State<_TopCrumbLink> {
         onFocusChange: (v) => setState(() => _focused = v),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step2,
-            vertical: tokens.spacing.step1,
-          ),
+          padding: _segmentPadding(tokens),
           child: Text(widget.label, style: style),
         ),
       ),

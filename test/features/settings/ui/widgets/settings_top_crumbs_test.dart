@@ -181,6 +181,45 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'the leaf is painted in the same color as the links before it',
+      (tester) async {
+        await _pump(
+          tester,
+          initialPath: const ['sync', 'sync/backfill'],
+        );
+
+        final tokens = tester
+            .element(find.byType(SettingsTopCrumbs))
+            .designTokens;
+        Color? colorOf(String label) =>
+            tester.widget<Text>(find.text(label)).style?.color;
+
+        expect(colorOf('Settings'), tokens.colors.text.mediumEmphasis);
+        expect(colorOf('Sync Settings'), tokens.colors.text.mediumEmphasis);
+        expect(colorOf('Backfill Sync'), tokens.colors.text.mediumEmphasis);
+      },
+    );
+
+    testWidgets(
+      'every label sits the same distance after its chevron, leaf included',
+      (tester) async {
+        await _pump(
+          tester,
+          initialPath: const ['sync', 'sync/backfill'],
+        );
+
+        final chevrons = find.text('›');
+        double gapAfter(int chevron, String label) =>
+            tester.getTopLeft(find.text(label)).dx -
+            tester.getTopRight(chevrons.at(chevron)).dx;
+
+        final linkGap = gapAfter(0, 'Sync Settings');
+        expect(linkGap, greaterThan(0));
+        expect(gapAfter(1, 'Backfill Sync'), linkGap);
+      },
+    );
   });
 
   group('SettingsTopCrumbs — interactions', () {
