@@ -190,6 +190,126 @@ extension _AudioSummaryCases on _SkillInferenceTestSetup {
       );
 
       test(
+        'reassembles a summary call streamed as nameless fragments, as '
+        'DeepSeek sends it, and publishes it on the first attempt',
+        () async {
+          // The name opens the call with no arguments; every continuation
+          // repeats `"name": ""`. Read as calls of their own, these failed
+          // twice with "model called [, , …] but not publish_recording_summary".
+          final arguments = jsonEncode({
+            EntrySummaryToolArgs.oneLiner: 'Penguins agreed on a new nest.',
+            EntrySummaryToolArgs.tldr: 'The colony moves to the ridge.',
+            EntrySummaryToolArgs.summary: '## Decisions\n- Nest on the ridge',
+          });
+          const deepSeekModelId = 'deepseek-v4-flash-0731';
+          final fragments = [
+            for (var i = 0; i < arguments.length; i += 20)
+              arguments.substring(i, (i + 20).clamp(0, arguments.length)),
+          ];
+          CreateChatCompletionStreamResponse delta({
+            required String name,
+            required String arguments,
+            String? id,
+          }) => CreateChatCompletionStreamResponse(
+            id: 'resp-fragments',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                delta: ChatCompletionStreamResponseDelta(
+                  toolCalls: [
+                    ChatCompletionStreamMessageToolCallChunk(
+                      index: 0,
+                      id: id,
+                      function: ChatCompletionStreamMessageFunctionCall(
+                        name: name,
+                        arguments: arguments,
+                      ),
+                    ),
+                  ],
+                ),
+                index: 0,
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: DateTime(2024).millisecondsSinceEpoch ~/ 1000,
+          );
+          final attribution = _registerInteractionCapture();
+          final audio = makeAudioEntity(
+            id: 'audio-fragments',
+            plainText: longTranscript,
+          );
+          stubPersistence(audio);
+          stubGenerate(
+            () => [
+              delta(
+                id: 'call-summary',
+                name: recordingSummaryToolName,
+                arguments: '',
+              ),
+              for (final fragment in fragments)
+                delta(name: '', arguments: fragment),
+            ],
+          );
+          stubLoggingEvent();
+
+          await runner.runAudioSummary(
+            audioEntryId: 'audio-fragments',
+            automationResult: makeAudioSummaryResult(
+              thinkingModel:
+                  AiConfig.model(
+                        id: 'model-deepseek',
+                        name: 'DeepSeek V4 Flash',
+                        providerModelId: deepSeekModelId,
+                        inferenceProviderId: 'p-flash',
+                        createdAt: DateTime(2024),
+                        inputModalities: const [Modality.text],
+                        outputModalities: const [Modality.text],
+                        isReasoningModel: true,
+                        supportsFunctionCalling: true,
+                      )
+                      as AiConfigModel,
+            ),
+            linkedTaskId: 'task-1',
+          );
+
+          final data =
+              verify(
+                    () => mockAiInputRepo.createAiResponseEntry(
+                      id: any(named: 'id'),
+                      data: captureAny(named: 'data'),
+                      start: any(named: 'start'),
+                      linkedId: any(named: 'linkedId'),
+                      categoryId: any(named: 'categoryId'),
+                    ),
+                  ).captured.single
+                  as AiResponseData;
+          expect(data.oneLiner, 'Penguins agreed on a new nest.');
+          expect(data.tldr, 'The colony moves to the ridge.');
+          expect(data.response, '## Decisions\n- Nest on the ridge');
+          // One model call: nothing was rejected, so nothing was retried.
+          verify(
+            () => mockCloudRepo.generate(
+              any(),
+              model: deepSeekModelId,
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+          // The provenance names the model that actually answered.
+          final event = _capturedEvents(attribution).single;
+          expect(event.providerModelId, deepSeekModelId);
+          expect(event.interactionParameters?['model'], deepSeekModelId);
+          expect(event.responseType, AiConsumptionResponseType.audioSummary);
+        },
+      );
+
+      test(
         'persists a one-liner longer than the schema asks for on the first '
         'call — a long label never costs the summary or a retry',
         () async {

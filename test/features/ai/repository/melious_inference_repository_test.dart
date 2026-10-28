@@ -3577,6 +3577,123 @@ void main() {
       expect(collector.impact, isNull);
     });
 
+    test('folds nameless tool-call fragments into the call they continue, '
+        'as Melious-hosted DeepSeek returns them', () async {
+      const fragments = [
+        '{"one_liner": "Penguins',
+        ' waddle",',
+        ' "tldr": "Ice',
+        ' floes",',
+        ' "summary": "Colony"',
+        ', "corrections": []}',
+      ];
+      final repo = repositoryWith((request) async {
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'content': null,
+                  'tool_calls': [
+                    {
+                      'id': 'call_summary',
+                      'type': 'function',
+                      'function': {
+                        'name': 'publish_recording_summary',
+                        'arguments': '',
+                      },
+                    },
+                    for (final fragment in fragments)
+                      {
+                        'id': null,
+                        'type': 'function',
+                        'function': {'name': null, 'arguments': fragment},
+                      },
+                  ],
+                },
+                'finish_reason': 'tool_calls',
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      final chunks = await collectChat(
+        repo,
+        InferenceImpactCollector(),
+        model: meliousDeepseekV4FlashModelId,
+      );
+
+      final toolCall = toolCallsOf(chunks).single;
+      expect(toolCall.id, 'call_summary');
+      expect(toolCall.function?.name, 'publish_recording_summary');
+      expect(toolCall.function?.arguments, fragments.join());
+      expect(jsonDecode(toolCall.function!.arguments!), {
+        'one_liner': 'Penguins waddle',
+        'tldr': 'Ice floes',
+        'summary': 'Colony',
+        'corrections': <Object?>[],
+      });
+    });
+
+    test('appends an indexed fragment to the call with that provider index, '
+        'and drops entries that are not objects', () async {
+      final repo = repositoryWith((request) async {
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {
+                  'tool_calls': [
+                    {
+                      'index': 0,
+                      'id': 'call_a',
+                      'function': {'name': 'count_eggs', 'arguments': '{"n"'},
+                    },
+                    {
+                      'index': 1,
+                      'id': 'call_b',
+                      'function': {'name': 'count_fish', 'arguments': '{"n"'},
+                    },
+                    'not a call',
+                    {
+                      'index': 0,
+                      'function': {'name': '', 'arguments': ': 2}'},
+                    },
+                    {
+                      'index': 1,
+                      'function': {'arguments': ': 9}'},
+                    },
+                  ],
+                },
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      final chunks = await collectChat(repo, InferenceImpactCollector());
+
+      final toolCalls = toolCallsOf(chunks);
+      expect(
+        [
+          for (final call in toolCalls)
+            (
+              call.index,
+              call.id,
+              call.function?.name,
+              call.function?.arguments,
+            ),
+        ],
+        [
+          (0, 'call_a', 'count_eggs', '{"n": 2}'),
+          (1, 'call_b', 'count_fish', '{"n": 9}'),
+        ],
+      );
+    });
+
     test('preserves a length finish reason in the synthetic chunk', () async {
       final repo = repositoryWith((request) async {
         return http.Response(
@@ -3869,23 +3986,21 @@ void main() {
       final chunks = await collectChat(repo, InferenceImpactCollector());
 
       final toolCalls = toolCallsOf(chunks);
+      final toolCall = toolCalls.single;
       expect(
-        toolCalls,
-        hasLength(2),
-        reason: 'the non-map entry is skipped',
-      );
-      expect(
-        toolCalls.first.index,
+        toolCall.index,
         1,
         reason: 'skipped entries keep their slot in the index sequence',
       );
-      expect(toolCalls.first.id, 'tool_1');
-      expect(toolCalls.first.function?.name, isNull);
-      expect(toolCalls.first.function?.arguments, '');
-      expect(toolCalls.last.index, 2);
-      expect(toolCalls.last.id, 'tool_2');
-      expect(toolCalls.last.function?.name, isNull);
-      expect(toolCalls.last.function?.arguments, '');
+      expect(toolCall.id, 'tool_1');
+      expect(toolCall.function?.name, isNull);
+      expect(
+        toolCall.function?.arguments,
+        '',
+        reason:
+            'the nameless last entry continues the first, and its '
+            'non-string arguments add nothing',
+      );
 
       final usage = chunks.firstWhere((c) => c.usage != null).usage!;
       expect(usage.promptTokens, 12, reason: 'string counts are coerced');

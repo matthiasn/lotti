@@ -662,6 +662,119 @@ void main() {
         expect(toolCall.function.arguments, '{"crate": 7}');
       });
 
+      test('treats an empty name on a continuation as no name', () {
+        // The opening delta names the call with no arguments; every
+        // continuation repeats `"name": ""` with a piece of the JSON. Read as
+        // new calls, they leave only nameless calls behind.
+        const fragments = ['{"one_liner":', ' "Penguins', ' waddle"}'];
+        accumulator.processChunk(
+          const ChatCompletionStreamResponseDelta(
+            toolCalls: [
+              ChatCompletionStreamMessageToolCallChunk(
+                index: 0,
+                id: 'call_summary',
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: 'publish_recording_summary',
+                  arguments: '',
+                ),
+              ),
+            ],
+          ),
+        );
+        for (final fragment in fragments) {
+          accumulator.processChunk(
+            ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: '',
+                    arguments: fragment,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final toolCall = accumulator.toToolCalls().single;
+        expect(toolCall.id, 'call_summary');
+        expect(toolCall.function.name, 'publish_recording_summary');
+        expect(toolCall.function.arguments, fragments.join());
+      });
+
+      test('keeps the name when a repeated-ID continuation sends an empty '
+          'one', () {
+        accumulator
+          ..processChunk(
+            const ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  id: 'call_1',
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: 'ship_crate',
+                    arguments: '{"crate": ',
+                  ),
+                ),
+              ],
+            ),
+          )
+          ..processChunk(
+            const ChatCompletionStreamResponseDelta(
+              toolCalls: [
+                ChatCompletionStreamMessageToolCallChunk(
+                  index: 0,
+                  id: 'call_1',
+                  function: ChatCompletionStreamMessageFunctionCall(
+                    name: '',
+                    arguments: '7}',
+                  ),
+                ),
+              ],
+            ),
+          );
+
+        final toolCall = accumulator.toToolCalls().single;
+        expect(toolCall.function.name, 'ship_crate');
+        expect(toolCall.function.arguments, '{"crate": 7}');
+      });
+
+      test('reassembles nameless fragments that share one chunk at index 0 '
+          'instead of reading them as complete calls', () {
+        accumulator.processChunk(
+          const ChatCompletionStreamResponseDelta(
+            toolCalls: [
+              ChatCompletionStreamMessageToolCallChunk(
+                index: 0,
+                id: 'call_summary',
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: 'publish_recording_summary',
+                  arguments: '',
+                ),
+              ),
+              ChatCompletionStreamMessageToolCallChunk(
+                index: 0,
+                function: ChatCompletionStreamMessageFunctionCall(
+                  arguments: '{"tldr": ',
+                ),
+              ),
+              ChatCompletionStreamMessageToolCallChunk(
+                index: 0,
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: '',
+                  arguments: '"Ice"}',
+                ),
+              ),
+            ],
+          ),
+        );
+
+        final toolCall = accumulator.toToolCalls().single;
+        expect(toolCall.function.name, 'publish_recording_summary');
+        expect(toolCall.function.arguments, '{"tldr": "Ice"}');
+      });
+
       Glados(any.toolCallStream).test(
         'accumulates generated parallel indexed tool-call streams',
         (scenario) {

@@ -201,31 +201,60 @@ extension _MeliousChat on MeliousInferenceRepository {
     }
   }
 
+  /// Parses `message.tool_calls` into one complete chunk per call.
+  ///
+  /// An entry without a name is a fragment of an earlier call, not a call of
+  /// its own: Melious-hosted DeepSeek can return a call as its streaming
+  /// deltas — the name with empty arguments, then nameless entries carrying
+  /// the JSON piece by piece. Each fragment is appended to the call with the
+  /// same provider `index`, or to the previous call when it gives none. Read
+  /// as one call per entry, the name lands on a call with no arguments and
+  /// the caller sees only nameless calls.
   static List<ChatCompletionStreamMessageToolCallChunk> _parseToolCalls(
     Object? raw,
   ) {
     if (raw is! List) return const [];
-    final out = <ChatCompletionStreamMessageToolCallChunk>[];
-    for (final (index, item) in raw.indexed) {
+    final calls =
+        <({int position, Object? providerIndex, String id, String? name})>[];
+    final arguments = <StringBuffer>[];
+    for (final (position, item) in raw.indexed) {
       if (item is! Map) continue;
       final map = item.cast<String, dynamic>();
       final fn = map['function'] is Map
           ? (map['function'] as Map).cast<String, dynamic>()
           : const <String, dynamic>{};
+      final providerIndex = map['index'];
       final id = map['id'];
       final name = fn['name'];
-      final arguments = fn['arguments'];
-      out.add(
+      final fragment = fn['arguments'];
+      final hasName = name is String && name.isNotEmpty;
+      final owner = hasName
+          ? -1
+          : providerIndex == null
+          ? calls.length - 1
+          : calls.lastIndexWhere((c) => c.providerIndex == providerIndex);
+      if (owner >= 0) {
+        if (fragment is String) arguments[owner].write(fragment);
+        continue;
+      }
+      calls.add((
+        position: position,
+        providerIndex: providerIndex,
+        id: id is String ? id : 'tool_$position',
+        name: hasName ? name : null,
+      ));
+      arguments.add(StringBuffer(fragment is String ? fragment : ''));
+    }
+    return [
+      for (final (slot, call) in calls.indexed)
         ChatCompletionStreamMessageToolCallChunk(
-          index: index,
-          id: id is String ? id : 'tool_$index',
+          index: call.position,
+          id: call.id,
           function: ChatCompletionStreamMessageFunctionCall(
-            name: name is String ? name : null,
-            arguments: arguments is String ? arguments : '',
+            name: call.name,
+            arguments: arguments[slot].toString(),
           ),
         ),
-      );
-    }
-    return out;
+    ];
   }
 }

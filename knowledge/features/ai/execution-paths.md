@@ -483,7 +483,13 @@ Two properties are contract rather than detail:
   honours a pinned choice — `recordingSummaryToolChoiceFor` (through
   `forcedToolChoiceFor`) omits it for the DeepSeek family, which answers a pinned choice with the call written as
   `<｜DSML｜ invoke …>` prose and an empty `tool_calls`, losing the summary
-  outright; the single-tool list is what steers those. `parseRecordingSummaryToolCall`
+  outright; the single-tool list is what steers those. DeepSeek can also
+  deliver the call in fragments: the name with empty arguments, then nameless
+  pieces of the JSON — as `"name": ""` stream deltas, or as extra entries in a
+  non-streamed Melious `tool_calls` list. `ToolCallAccumulator` and the Melious
+  parser both treat a nameless piece as a continuation of its call, never as a
+  call of its own; read the other way, the reason reads
+  `model called [<unnamed>, …] but not publish_recording_summary`. `parseRecordingSummaryToolCall`
   decodes typed arguments — the tiers through `parseEntrySummaryToolCall`, the
   same shape the agents' `update_report` uses, and the corrections best effort,
   so a missing or malformed list is no correction. A rejected call (no tool call, wrong tool,

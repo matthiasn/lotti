@@ -102,6 +102,23 @@ void main() {
       );
     });
 
+    test('names nameless calls rather than listing empty slots', () {
+      expect(
+        () => parseEntrySummaryToolCall([
+          _call('{"one', name: ''),
+          _call('_liner"}', name: '', id: 'call-2'),
+        ]),
+        throwsA(
+          isA<EntrySummaryToolException>().having(
+            (e) => e.reason,
+            'reason',
+            'model called [<unnamed>, <unnamed>] but not '
+                '$entrySummaryToolName',
+          ),
+        ),
+      );
+    });
+
     test('rejects arguments that are not valid JSON', () {
       expect(
         () => parseEntrySummaryToolCall([_call('{"oneLiner": ')]),
