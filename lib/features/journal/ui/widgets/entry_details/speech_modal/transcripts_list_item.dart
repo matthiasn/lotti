@@ -159,7 +159,7 @@ class _TranscriptListItemState extends ConsumerState<TranscriptListItem> {
               subId: widget.transcript.id,
             ),
             attribution: widget.transcript.aiAttribution,
-            asPill: true,
+            asCaption: true,
           ),
         ],
       ),

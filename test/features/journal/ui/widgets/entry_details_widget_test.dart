@@ -24,7 +24,6 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/linked_event_card.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -1499,9 +1498,8 @@ void main() {
       );
       await tester.pump();
 
-      // No projection has arrived yet, so no model or cost is known; the pill
-      // still says AI work was done here and opens what is known.
-      expect(find.byType(DsPill), findsOneWidget);
+      // No projection has arrived yet, so no model or cost is known; the
+      // caption still says AI work was done here and opens what is known.
       expect(find.text('Unknown model'), findsOneWidget);
       expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
     });
@@ -3914,7 +3912,7 @@ void main() {
             ),
           ]);
 
-      testWidgets('a photo the AI worked on carries the attribution pill', (
+      testWidgets('a photo the AI worked on carries the attribution caption', (
         tester,
       ) async {
         await pumpCollapsedImage(
@@ -3947,7 +3945,7 @@ void main() {
         );
       });
 
-      testWidgets('a photo with no AI work behind it shows no pill', (
+      testWidgets('a photo with no AI work behind it shows no attribution', (
         tester,
       ) async {
         await pumpCollapsedImage(
@@ -3957,7 +3955,13 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(DsPill), findsNothing);
+        final caption = find.byKey(
+          const ValueKey('image-analysis-attribution'),
+        );
+        expect(
+          find.descendant(of: caption, matching: find.byType(Text)),
+          findsNothing,
+        );
       });
 
       testWidgets(

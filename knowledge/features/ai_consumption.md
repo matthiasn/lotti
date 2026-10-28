@@ -47,20 +47,23 @@ non-streaming response, which `MeliousCallImpact.fromResponseJson` parses.
 The transcription's event is still written with its duration, so it counts as
 a call, but its credits stay null. The post-processing that follows is a chat
 call, so its cost is reported, lands on the same task, and shows on the
-summary's own pill. Only the transcription itself is missing from a task's
+summary's own caption. Only the transcription itself is missing from a task's
 total.
 
-**A pill says who did the work first, and what it cost only when known.** An
-`AiAttributionSummary` pill and an `AiAttributionSummaryGroup` show for every
-attributed output — a Whisper transcript or a local model that bills nothing
-did the work all the same, and the pill is how a reader finds out who. The
-label leads with the model (or, for a group, the kind of work) and appends cost
-and impact only when the provider reported them, so an unbilled output does not
-carry "Cost unknown"; the full attribution row and the details sheet still say
-so. An AI response made before attribution existed — the analysis or summary
-card and the generated-prompt card alike — passes the model it recorded as
-`unrecordedModel`, and its pill reads "<model> · Provenance not recorded"
-rather than vanishing; it opens nothing, because there is no record to open.
+**The caption says who did the work, quietly, and what it cost only when
+known.** On an entry, `AiAttributionSummary` (with `asCaption`) and
+`AiAttributionSummaryGroup` render one line of small, low-emphasis caption
+text — no pill, no icon — under every attributed output: a Whisper transcript
+or a local model that bills nothing did the work all the same, and the caption
+is how a reader finds out who, without it competing with the output itself.
+The line leads with the model (or, for a group, the kind of work) and appends
+cost and impact only when the provider reported them, so an unbilled output
+does not carry "Cost unknown"; the full attribution row and the details sheet
+still say so. Tapping it opens the details sheet. An AI response made before
+attribution existed — the analysis or summary card and the generated-prompt
+card alike — passes the model it recorded as `unrecordedModel`, and its caption
+reads "<model> · Provenance not recorded" rather than vanishing; it opens
+nothing, because there is no record to open.
 The group renders nothing only without attributions, taking its `topSpacing`
 along, so an audio card keeps an even rhythm without it.
 

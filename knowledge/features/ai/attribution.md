@@ -26,7 +26,7 @@ sources:
     last_modified: 2026-10-28
   - id: summary
     resource: ../../../lib/features/ai_consumption/ui/widgets/ai_attribution_summary.dart
-    title: Attribution pill and details sheet, with the Source links
+    title: Attribution caption and details sheet, with the Source links
     last_modified: 2026-10-28
 ---
 

@@ -3,6 +3,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,7 +19,7 @@ void main() {
     bool includeCarrier = true,
     AiWorkAttribution? carrier,
     Future<AiAttributionDetails?> Function()? loadDetails,
-    bool asPill = false,
+    bool asCaption = false,
     String? unrecordedModel,
     String? taskTitle,
   }) async {
@@ -28,7 +29,7 @@ void main() {
         AiAttributionSummary(
           artifact: makeAiArtifact(),
           attribution: includeCarrier ? attribution : null,
-          asPill: asPill,
+          asCaption: asCaption,
           unrecordedModel: unrecordedModel,
         ),
         overrides: [
@@ -141,45 +142,53 @@ void main() {
     },
   );
 
-  testWidgets('pill presents entry attribution and opens the details modal', (
-    tester,
-  ) async {
-    final attribution = makeAiWorkAttribution();
-    final details = AiAttributionDetails(
-      attribution: attribution,
-      interactions: [
-        makeConsumptionEvent(
-          attributionId: attribution.id,
-          providerModelId: 'voxtral-small',
-          credits: 0.0042,
-          costCreditsDecimal: '0.0042',
-        ),
-      ],
-    );
+  testWidgets(
+    'caption presents entry attribution and opens the details modal',
+    (
+      tester,
+    ) async {
+      final attribution = makeAiWorkAttribution();
+      final details = AiAttributionDetails(
+        attribution: attribution,
+        interactions: [
+          makeConsumptionEvent(
+            attributionId: attribution.id,
+            providerModelId: 'voxtral-small',
+            credits: 0.0042,
+            costCreditsDecimal: '0.0042',
+          ),
+        ],
+      );
 
-    await pumpSummary(tester, details: details, asPill: true);
+      await pumpSummary(tester, details: details, asCaption: true);
 
-    expect(find.byType(DsPill), findsOneWidget);
-    expect(
-      find.text('voxtral-small · <€0.01 · <1 Wh · 0.1 g'),
-      findsOneWidget,
-    );
+      // Quiet provenance: one line of small low-emphasis text, not a pill.
+      final caption = find.text('voxtral-small · <€0.01 · <1 Wh · 0.1 g');
+      expect(caption, findsOneWidget);
+      expect(find.byType(DsPill), findsNothing);
+      final style = tester.widget<Text>(caption).style!;
+      expect(
+        style.fontSize,
+        dsTokensLight.typography.styles.others.caption.fontSize,
+      );
+      expect(style.color, dsTokensLight.colors.text.lowEmphasis);
 
-    await tester.tap(find.byType(DsPill));
-    await tester.pumpAndSettle();
+      await tester.tap(caption);
+      await tester.pumpAndSettle();
 
-    expect(find.text('AI attribution'), findsOneWidget);
-    expect(find.text('<€0.01'), findsWidgets);
-  });
+      expect(find.text('AI attribution'), findsOneWidget);
+      expect(find.text('<€0.01'), findsWidgets);
+    },
+  );
 
   testWidgets(
-    'a pill whose calls reported no cost still names its model, without a '
+    'a caption whose calls reported no cost still names its model, without a '
     'cost, and opens the details',
     (tester) async {
       final attribution = makeAiWorkAttribution();
       await pumpSummary(
         tester,
-        asPill: true,
+        asCaption: true,
         details: AiAttributionDetails(
           attribution: attribution,
           interactions: [
@@ -196,11 +205,11 @@ void main() {
       );
 
       // The label is the model alone: an unreported cost is not spelled out
-      // on the pill.
+      // in the caption.
       expect(find.text('whisper-large-v3'), findsOneWidget);
       expect(find.text('Cost unknown'), findsNothing);
 
-      await tester.tap(find.byType(DsPill));
+      await tester.tap(find.text('whisper-large-v3'));
       await tester.pumpAndSettle();
 
       expect(find.text('AI attribution'), findsOneWidget);
@@ -215,7 +224,7 @@ void main() {
     (tester) async {
       await pumpSummary(
         tester,
-        asPill: true,
+        asCaption: true,
         details: null,
         includeCarrier: false,
         unrecordedModel: 'mistral-small-latest',
@@ -227,7 +236,9 @@ void main() {
       );
 
       // There is no record to open.
-      await tester.tap(find.byType(DsPill));
+      await tester.tap(
+        find.text('mistral-small-latest · Provenance not recorded'),
+      );
       await tester.pumpAndSettle();
       expect(find.text('AI attribution'), findsNothing);
     },
@@ -240,22 +251,21 @@ void main() {
       () => Future<AiAttributionDetails?>.error(StateError('unavailable')),
     ),
   ]) {
-    testWidgets('a pill whose details are $label stays', (tester) async {
+    testWidgets('a caption whose details are $label stays', (tester) async {
       await pumpSummary(
         tester,
-        asPill: true,
+        asCaption: true,
         details: null,
         loadDetails: load,
       );
       await tester.pump();
 
-      expect(find.byType(DsPill), findsOneWidget);
       expect(find.text('Unknown model'), findsOneWidget);
     });
   }
 
   testWidgets(
-    'a group with an attribution not yet synced keeps its pill',
+    'a group with an attribution not yet synced keeps its caption',
     (tester) async {
       final transcription = makeAiWorkAttribution();
       final unsynced = makeAiWorkAttribution(attributionId: 'attribution-2');
@@ -329,7 +339,7 @@ void main() {
 
       expect(find.text('Transcription · <1 Wh · 0.2 g'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.byType(DsPill)).dy -
+        tester.getTopLeft(find.text('Transcription · <1 Wh · 0.2 g')).dy -
             tester.getTopLeft(find.byType(AiAttributionSummaryGroup)).dy,
         12,
       );
@@ -385,7 +395,7 @@ void main() {
 
       expect(find.text('Transcription · €0.40'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.byType(DsPill)).dy -
+        tester.getTopLeft(find.text('Transcription · €0.40')).dy -
             tester.getTopLeft(find.byType(AiAttributionSummaryGroup)).dy,
         12,
       );
@@ -397,7 +407,7 @@ void main() {
     (name: 'phone', size: const Size(390, 844), bottomSheet: true),
   ]) {
     testWidgets(
-      'group pill aggregates transcript cost and impact into one entry '
+      'group caption aggregates transcript cost and impact into one entry '
       'control (${layout.name})',
       (tester) async {
         await tester.binding.setSurfaceSize(layout.size);
@@ -450,7 +460,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.byType(DsPill));
+        await tester.tap(find.text('Transcription · €0.30 · 12 Wh · 3.0 g'));
         await tester.pumpAndSettle();
         expect(find.text('AI attribution'), findsOneWidget);
 
