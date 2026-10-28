@@ -57,6 +57,12 @@ void main() {
     expect(stripThinkBlocks('<thinking>never closed'), isNull);
   });
 
+  test('leaves tags that only start like a think tag', () {
+    const text = '<thinking-process>idea</thinking-process> Final answer';
+    expect(stripThinkBlocks(text), text);
+    expect(stripThinkBlocks('<thinker>x'), '<thinker>x');
+  });
+
   test('trims and returns null when only whitespace remains', () {
     expect(stripThinkBlocks('  <think>x</think>\n Answer  '), 'Answer');
     expect(stripThinkBlocks(' <THINKING a=1>x</THINKING> '), isNull);
