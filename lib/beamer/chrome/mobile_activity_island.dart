@@ -156,6 +156,14 @@ class _MobileActivityBuilderState extends ConsumerState<MobileActivityBuilder> {
 /// fallback past it, is [MobileIslandLayout.resolve]'s. With nothing running
 /// the island renders nothing and reserves nothing.
 ///
+/// The island belongs to the launcher row, so it shows only while that row
+/// is docked — where the menu button and, on list tabs, the page's add
+/// action are on screen. A page that owns the bottom edge with a sticky
+/// action bar (a task, entry or event detail, a settings editor such as Edit
+/// category, a project, goal, habit or person page) has no such row, and the
+/// island never shows there: it would only compete with the page's own
+/// primary actions. The shell applies this rule.
+///
 /// Which recordings count is decided once, in [showsRecording], and the
 /// shell reads the same rule through [MobileActivityBuilder] — so the space
 /// the row and the pages reserve for the island can never disagree with
@@ -219,9 +227,8 @@ class MobileActivityIsland extends ConsumerWidget {
         : capsuleHeight(context) * rows + stackGap(context) * (rows - 1);
   }
 
-  /// Air below the island whenever it floats rather than sitting in the row:
-  /// above the bar when the row has no band wide enough for it, or above the
-  /// bottom safe-area edge once the bar has slid away.
+  /// Air between the bar and the island when it floats above the row
+  /// because the row has no band wide enough for it.
   static double floatGap(BuildContext context) =>
       context.designTokens.spacing.step3;
 
@@ -237,9 +244,8 @@ class MobileActivityIsland extends ConsumerWidget {
   /// their scrollables by through the shell's overlay-height scope.
   ///
   /// [inRow], one capsule sits inside the row and claims nothing; a stack
-  /// claims only what rises above the row's top. Floating — above the bar,
-  /// or above the edge once the bar slid away — the whole island and its
-  /// [floatGap] count.
+  /// claims only what rises above the row's top. Floating above the bar,
+  /// the whole island and its [floatGap] count.
   static double heightAboveBar(
     BuildContext context,
     MobileActivity activity, {
@@ -439,35 +445,36 @@ class MobileIslandLayout {
   /// (the page action keeping its word if it can, else down to its glyph);
   /// stacked in the row; and, past that, floating above the bar — side by
   /// side if the window has room, stacked if not — with the launcher
-  /// reserving nothing. A slid-away bar ([barDocked] false) always floats.
+  /// reserving nothing.
+  ///
+  /// The ladder is always resolved for the docked row: the island only
+  /// shows while the launcher does, and a launcher sliding away carries the
+  /// island off in the layout it already had.
   ///
   /// [buildLauncher] builds the row with a given reserved centre width.
   factory MobileIslandLayout.resolve(
     BuildContext context, {
     required MobileActivity activity,
-    required bool barDocked,
     required MobileNavigationLauncher Function(double reservedCenterWidth)
     buildLauncher,
   }) {
     if (activity.isEmpty) {
       return MobileIslandLayout(
         launcher: buildLauncher(0),
-        inRow: barDocked,
+        inRow: true,
         stacked: false,
       );
     }
-    if (barDocked) {
-      for (final stacked in [false, if (activity.count > 1) true]) {
-        final launcher = buildLauncher(
-          MobileActivityIsland.width(context, activity, stacked: stacked),
+    for (final stacked in [false, if (activity.count > 1) true]) {
+      final launcher = buildLauncher(
+        MobileActivityIsland.width(context, activity, stacked: stacked),
+      );
+      if (launcher.centerFits(context)) {
+        return MobileIslandLayout(
+          launcher: launcher,
+          inRow: true,
+          stacked: stacked,
         );
-        if (launcher.centerFits(context)) {
-          return MobileIslandLayout(
-            launcher: launcher,
-            inRow: true,
-            stacked: stacked,
-          );
-        }
       }
     }
     return MobileIslandLayout(

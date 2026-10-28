@@ -261,7 +261,7 @@ extension _AppScreenLayout on _AppScreenState {
     // that take over the bottom edge with their own sticky surface
     // (`/tasks/<uuid>` with TaskActionBar, `/journal/<uuid>` and
     // `/events/<uuid>` with EntryActionBar) suppress the nav pill — including
-    // the activity island that floats above it — so the page-owned bar can
+    // the activity island in its row — so the page-owned bar can
     // dock flush against the home indicator. The enclosing ListenableBuilder
     // ensures we rebuild on every route change.
     final showBottomNav =
@@ -327,6 +327,14 @@ extension _AppScreenLayout on _AppScreenState {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final barDocked = showBottomNav && !slideNavAway;
 
+    // The activity island shows only where the launcher row does: that row
+    // is where the top-level navigation (the menu button) and the page's add
+    // action live. Every route that owns the bottom edge with a sticky action
+    // bar — task, entry and event details above, the settings editors such
+    // as Edit category, project, goal, habit and person pages below — has no
+    // launcher on screen, so the island never competes with that bar there.
+    final showActivityIsland = barDocked;
+
     // One watcher of the running timer and recorder drives the launcher's
     // reserved centre, the island's place in the row and the estate pages
     // pad by, so the three can never disagree. The page stack is built
@@ -338,16 +346,15 @@ extension _AppScreenLayout on _AppScreenState {
       omitAudio: _isRunningInFlatpak(),
       child: _buildContentStack(index: index, beamerChildren: beamerChildren),
       builder: (context, activity, content) {
-        // Docked, the island sits in the launcher row's centre band, the
-        // lowest capsule level with the chips; a timer and a recording
-        // share one capsule and stack only when the row cannot hold it.
-        // Past that it floats above the bar at full width and the launcher
-        // keeps its word; slid away, it centres over the bottom safe-area
-        // edge.
+        // The island sits in the launcher row's centre band, the lowest
+        // capsule level with the chips; a timer and a recording share one
+        // capsule and stack only when the row cannot hold it. Past that it
+        // floats above the bar at full width and the launcher keeps its
+        // word. A sliding-away bar keeps this layout, so neither reflows
+        // mid-slide.
         final layout = MobileIslandLayout.resolve(
           context,
           activity: showBottomNav ? activity : MobileActivity.none,
-          barDocked: barDocked,
           buildLauncher: buildLauncher,
         );
         final launcher = layout.launcher;
@@ -355,20 +362,30 @@ extension _AppScreenLayout on _AppScreenState {
         final band = inRow
             ? launcher.centerBand(context)
             : EdgeInsetsDirectional.zero;
-        final floatOver = barDocked
-            ? MobileNavigationLauncher.barHeight(context)
-            : MediaQuery.paddingOf(context).bottom;
+        final islandBottom = !showActivityIsland
+            // Just below the bottom edge, top flush with it: off-screen
+            // whatever the stack's height, in the bar's own motion.
+            ? -MobileActivityIsland.stackHeight(
+                context,
+                activity,
+                stacked: layout.stacked,
+              )
+            : inRow
+            ? MobileActivityIsland.dockedBottom(context)
+            : MobileNavigationLauncher.barHeight(context) +
+                  MobileActivityIsland.floatGap(context);
         return Stack(
           children: [
             const IncomingVerificationWrapper(),
             // Keeps `occupiedHeight` (and every page padding by it) in sync
             // with whatever of the island rises above the bar, so it never
             // covers scroll content or floating actions. A slid-away bar
-            // reserves nothing: the goal agent pages, project details and
-            // settings details dock their own pinned surfaces at the bottom
-            // edge and must not pad around a bar that is gone.
+            // reserves nothing, island included: the goal agent pages,
+            // project details and settings details dock their own pinned
+            // surfaces at the bottom edge and must not pad around chrome
+            // that is gone.
             DesignSystemBottomNavigationOverlayHeight(
-              height: showBottomNav
+              height: showActivityIsland
                   ? MobileActivityIsland.heightAboveBar(
                       context,
                       activity,
@@ -389,12 +406,11 @@ extension _AppScreenLayout on _AppScreenState {
                   child: launcher,
                 ),
               ),
-              // The activity island (running timer / recording) is
-              // deliberately not part of the slide-away subtree: a running
-              // timer or recording must stay visible inside settings
-              // definition surfaces. When the bar slides away the island
-              // animates down to the bottom safe-area edge in the same
-              // motion. Only a bottom offset is set, so a stack grows
+              // The activity island (running timer / recording) is not part
+              // of the slide-away subtree, since a stack rises above the
+              // bar's own height. It leaves with the bar in the same motion
+              // instead — down past the bottom edge, inert — and comes back
+              // with it. Only a bottom offset is set, so a stack grows
               // upward from it.
               AnimatedPositionedDirectional(
                 duration: reduceMotion
@@ -403,12 +419,13 @@ extension _AppScreenLayout on _AppScreenState {
                 curve: _SlideAwayBottomNav.slideCurve,
                 start: band.start,
                 end: band.end,
-                bottom: inRow
-                    ? MobileActivityIsland.dockedBottom(context)
-                    : floatOver + MobileActivityIsland.floatGap(context),
-                child: MobileActivityIsland(
-                  omitAudio: _isRunningInFlatpak(),
-                  stacked: layout.stacked,
+                bottom: islandBottom,
+                child: _InertWhen(
+                  inert: !showActivityIsland,
+                  child: MobileActivityIsland(
+                    omitAudio: _isRunningInFlatpak(),
+                    stacked: layout.stacked,
+                  ),
                 ),
               ),
             ],

@@ -22,8 +22,8 @@ abstract final class DesignSystemBottomNavigationBar {
     // it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
 
-    // A slid-away launcher occupies nothing; the activity island above it
-    // stays, so its height still counts.
+    // A slid-away launcher occupies nothing, and takes the activity island
+    // with it: the shell then publishes a zero overlay height too.
     final barHeight =
         DesignSystemBottomNavigationOverlayHeight.barDockedOf(context)
         ? MobileNavigationLauncher.barHeight(context)

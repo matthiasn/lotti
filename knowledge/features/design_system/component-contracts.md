@@ -765,8 +765,8 @@ their integration with the app shell, docked and slid away. The contract:
   vertical space the bottom stack consumes — the launcher including the
   bottom safe-area inset it absorbs, plus whatever of the activity island
   rises above it, published by the app shell (nothing for one capsule in the
-  row). Zero in the desktop layout; only the island's part while the launcher
-  has slid away.
+  row). Zero in the desktop layout, and zero while the launcher has slid
+  away — the island leaves with it.
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay above that shell. **Feature pages should use
   the wrapper rather than inventing local bottom offsets.**
@@ -819,6 +819,8 @@ their integration with the app shell, docked and slid away. The contract:
   changes it — and the shell hands it to the launcher as
   `reservedCenterWidth`. When the launcher's `centerFits` rejects even the
   stack, the island floats `floatGap` above the bar at full width instead.
+  It shows only while the launcher is docked: a route with a sticky action
+  bar, which slides the launcher away or unmounts it, never shows it.
   The ladder and the contract for *when* it shows are in
   [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides whether a
