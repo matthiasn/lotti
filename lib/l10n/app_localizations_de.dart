@@ -8989,6 +8989,84 @@ class AppLocalizationsDe extends AppLocalizations {
   String get helpMenuTitle => 'Hilfe';
 
   @override
+  String get historyCustomRangeEndTitle => 'Enddatum';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Startdatum';
+
+  @override
+  String get historyDeleteConfirmAction => 'Entfernen';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Dieser Besuch wird endgültig entfernt. Das Element selbst bleibt unverändert.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Aus dem Verlauf entfernen?';
+
+  @override
+  String get historyDeleteTooltip => 'Aus dem Verlauf entfernen';
+
+  @override
+  String get historyEmptyHint =>
+      'Aufgaben, Einträge und Projekte, die du öffnest, erscheinen hier.';
+
+  @override
+  String get historyEmptyTitle => 'Noch nichts hier';
+
+  @override
+  String get historyEntityGone => 'Nicht mehr verfügbar';
+
+  @override
+  String get historyLoadError => 'Dein Verlauf konnte nicht geladen werden.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Versuch eine andere Suche oder einen längeren Zeitraum.';
+
+  @override
+  String get historyNoMatchesTitle => 'Keine Treffer';
+
+  @override
+  String get historyRangeAllTime => 'Gesamt';
+
+  @override
+  String get historyRangeCustom => 'Zeitraum';
+
+  @override
+  String get historyRangeLast30Days => '30 Tage';
+
+  @override
+  String get historyRangeLast7Days => '7 Tage';
+
+  @override
+  String get historyRangeLast90Days => '90 Tage';
+
+  @override
+  String get historySearchHint => 'Verlauf durchsuchen';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Heute, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Gestern, $time';
+  }
+
+  @override
+  String get historyTitle => 'Verlauf';
+
+  @override
+  String get historyUntitled => 'Ohne Titel';
+
+  @override
   String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';
 
   @override

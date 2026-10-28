@@ -1,0 +1,21 @@
+/* Append-only log of the entities the user opened: tasks, entries, projects,
+   events, people, dashboards, habits. Device-local and never synced.
+
+   A row says WHAT was opened and WHEN, never what it was called: the history
+   page shows each entity's current title, read from the journal when the row
+   is shown. Rows are only ever inserted, or deleted outright by the user. */
+CREATE TABLE history_entries (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  -- The HistoryEntityKind name: which table the entity id points into.
+  kind TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  -- The route the visit was made at, beamed again to return to it.
+  route TEXT NOT NULL,
+  visited_at DATETIME NOT NULL
+) AS HistoryEntryRow;
+
+CREATE INDEX idx_history_entries_visited_at ON history_entries (visited_at);
+
+/* Queries ----------------------------------------------------- */
+latestHistoryEntry:
+SELECT * FROM history_entries ORDER BY id DESC LIMIT 1;

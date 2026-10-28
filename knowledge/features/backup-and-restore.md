@@ -134,6 +134,7 @@ rename is a compile-time change instead of documentation drift.
 | AI consumption | `ai_consumption.sqlite` | include when present | Local interaction and usage ledger |
 | Notifications | `notifications.sqlite` | include when present | Durable notification state |
 | Onboarding | `onboarding_metrics.sqlite` | include when present | Profile-local progress and measurements |
+| History | `history.sqlite` | include when present | Device-local log of opened entities |
 | AI configuration | `ai_config.sqlite` | include, credential-sensitive | Providers and profiles, holding only references to API keys kept in the OS keystore |
 | Daily OS | `day_processing.sqlite` | include when present | Durable day-processing outbox |
 | Legacy Daily OS outbox | `.day_processing_outbox/` | exclude | Mandatory startup migration imports every recoverable job into the SQLite outbox; retained files are a temporary rollback copy |

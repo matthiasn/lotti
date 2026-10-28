@@ -9011,6 +9011,84 @@ class AppLocalizationsPt extends AppLocalizations {
   String get helpMenuTitle => 'Ajuda';
 
   @override
+  String get historyCustomRangeEndTitle => 'Data de fim';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Data de início';
+
+  @override
+  String get historyDeleteConfirmAction => 'Remover';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Esta visita é removida de vez. O item mantém-se como está.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Remover do histórico?';
+
+  @override
+  String get historyDeleteTooltip => 'Remover do histórico';
+
+  @override
+  String get historyEmptyHint =>
+      'As tarefas, entradas e projetos que abrires aparecem aqui.';
+
+  @override
+  String get historyEmptyTitle => 'Nada aqui ainda';
+
+  @override
+  String get historyEntityGone => 'Já não está disponível';
+
+  @override
+  String get historyLoadError => 'Não foi possível carregar o teu histórico.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Experimenta outra pesquisa ou um período mais longo.';
+
+  @override
+  String get historyNoMatchesTitle => 'Nenhum resultado';
+
+  @override
+  String get historyRangeAllTime => 'Tudo';
+
+  @override
+  String get historyRangeCustom => 'Personalizado';
+
+  @override
+  String get historyRangeLast30Days => '30 dias';
+
+  @override
+  String get historyRangeLast7Days => '7 dias';
+
+  @override
+  String get historyRangeLast90Days => '90 dias';
+
+  @override
+  String get historySearchHint => 'Pesquisar no histórico';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Hoje, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Ontem, $time';
+  }
+
+  @override
+  String get historyTitle => 'Histórico';
+
+  @override
+  String get historyUntitled => 'Sem título';
+
+  @override
   String get imageGenerationError => 'Falha ao gerar imagem';
 
   @override

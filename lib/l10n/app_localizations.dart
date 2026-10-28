@@ -14952,6 +14952,144 @@ abstract class AppLocalizations {
   /// **'Help'**
   String get helpMenuTitle;
 
+  /// Title of the date picker choosing the last day of a custom history range.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get historyCustomRangeEndTitle;
+
+  /// The chosen custom history range, shown under the time filter; tap to change it.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String historyCustomRangeLabel(String start, String end);
+
+  /// Title of the date picker choosing the first day of a custom history range.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get historyCustomRangeStartTitle;
+
+  /// Confirm button removing a visit from the history.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get historyDeleteConfirmAction;
+
+  /// Body of the dialog confirming removal from the history: only the visit goes, never the item it points at.
+  ///
+  /// In en, this message translates to:
+  /// **'This visit is removed for good. The item itself stays as it is.'**
+  String get historyDeleteConfirmMessage;
+
+  /// Title of the dialog confirming that a visit is removed from the history.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from history?'**
+  String get historyDeleteConfirmTitle;
+
+  /// Tooltip of the trash button on a history row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from history'**
+  String get historyDeleteTooltip;
+
+  /// Empty state hint explaining what the history records.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks, entries and projects you open show up here.'**
+  String get historyEmptyHint;
+
+  /// Empty state title when the history holds no visits in the chosen time range.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get historyEmptyTitle;
+
+  /// Shown in place of the title for a history row whose item was deleted or is hidden.
+  ///
+  /// In en, this message translates to:
+  /// **'No longer available'**
+  String get historyEntityGone;
+
+  /// Shown when the history could not be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your history.'**
+  String get historyLoadError;
+
+  /// Empty state hint when no visit matches the history search.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or a wider time range.'**
+  String get historyNoMatchesHint;
+
+  /// Empty state title when no visit matches the history search.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get historyNoMatchesTitle;
+
+  /// History time filter segment: every visit.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get historyRangeAllTime;
+
+  /// History time filter segment that opens two date pickers for a custom start and end date.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get historyRangeCustom;
+
+  /// History time filter segment: visits from the last 30 days.
+  ///
+  /// In en, this message translates to:
+  /// **'30 days'**
+  String get historyRangeLast30Days;
+
+  /// History time filter segment: visits from the last 7 days, today included.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get historyRangeLast7Days;
+
+  /// History time filter segment: visits from the last 90 days.
+  ///
+  /// In en, this message translates to:
+  /// **'90 days'**
+  String get historyRangeLast90Days;
+
+  /// Hint in the history page's search field, which filters visits by the item's current title.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history'**
+  String get historySearchHint;
+
+  /// When a visit happened today, e.g. "Today, 3:45 PM".
+  ///
+  /// In en, this message translates to:
+  /// **'Today, {time}'**
+  String historyTimestampToday(String time);
+
+  /// When a visit happened yesterday, e.g. "Yesterday, 3:45 PM".
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday, {time}'**
+  String historyTimestampYesterday(String time);
+
+  /// Title of the history page (the list of recently opened tasks, entries and other items) and its menu and command-palette label.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// Placeholder for a history row whose item has no title yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get historyUntitled;
+
   /// No description provided for @imageGenerationError.
   ///
   /// In en, this message translates to:

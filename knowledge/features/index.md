@@ -47,6 +47,7 @@ what it does for a user; these describe how it runs.
 * [System health](system_health.md) - the on-demand log report: daily files in, redaction, a bucketed digest, and a model's top three findings out.
 * [Design system](design_system/) - tokens, theming, and the component contracts.
 * [Theming](theming.md) - theme selection and construction.
+* [History](history.md) - the device-local log of opened tasks, entries and other entities, searchable by their current titles.
 * [Keyboard](keyboard.md) - the desktop command layer.
 * [Lockdown](lockdown.md) - the hidden logo menu that narrows the desktop app to one category for demos.
 * [Onboarding](onboarding.md) - the first-run path and its measurement substrate.

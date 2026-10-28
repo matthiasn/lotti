@@ -83,6 +83,9 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       // (Phase A) when synced signals arrive — the orchestrator only
       // listens locally (ADR 0054).
       ..listen(goalSignalSyncListenerProvider, (_, _) {})
+      // historyRecorderProvider: record opened entities from the first
+      // route on, not from the first time the history page is opened.
+      ..listen(historyRecorderProvider, (_, _) {})
       ..watch(dayProcessingRuntimeProvider);
 
     final themingState = ref.watch(themingControllerProvider);
@@ -232,6 +235,14 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
           final modalContext =
               routerDelegate.navigatorKey.currentContext ?? invocation.context;
           return showFrontChatSheet(modalContext);
+        },
+      ),
+      AppCommandId.openHistory: AppCommandHandler(
+        isEnabled: () => ref.read(historyAvailableProvider),
+        invoke: (invocation) {
+          final modalContext =
+              routerDelegate.navigatorKey.currentContext ?? invocation.context;
+          return showHistoryModal(modalContext);
         },
       ),
       AppCommandId.createTextEntry: AppCommandHandler(

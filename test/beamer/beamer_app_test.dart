@@ -29,6 +29,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
@@ -60,6 +61,8 @@ import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/history/state/history_providers.dart';
+import 'package:lotti/features/history/ui/history_page.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -6888,6 +6891,95 @@ void main() {
         await tester.pump();
       },
     );
+  });
+
+  group('the history command', () {
+    Future<void> pumpShell(
+      WidgetTester tester, {
+      required List<Override> overrides,
+    }) async {
+      final nav = MockNavService();
+      await _stubNavService(
+        nav,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => false,
+        isHabitsEnabled: () => false,
+        isDashboardsEnabled: () => false,
+      );
+      await _registerAppScreenGetIt(nav);
+      addTearDown(tearDownTestGetIt);
+      final userActivityService = _SpyUserActivityService();
+      addTearDown(userActivityService.dispose);
+      await _pumpReadyMyBeamerApp(
+        tester,
+        app: MyBeamerApp(
+          navService: nav,
+          userActivityService: userActivityService,
+          linkedIdResolver: () async => null,
+          createTextEntryAction: ({String? linkedId}) async => null,
+          createTaskAction: ({String? linkedId}) async => null,
+          captureScreenshotAction: ({String? linkedId}) async => null,
+        ),
+        extraOverrides: overrides,
+      );
+    }
+
+    testWidgets('is unavailable on a host without a history database', (
+      tester,
+    ) async {
+      await pumpShell(tester, overrides: const []);
+
+      final commandContext = tester.element(find.byType(ZoomWrapper));
+      expect(
+        AppCommandControllerProvider.of(
+          commandContext,
+        ).isAvailable(commandContext, AppCommandId.openHistory),
+        isFalse,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('opens the history page over the app', (tester) async {
+      final historyDb = HistoryDb(inMemoryDatabase: true, background: false);
+      addTearDown(historyDb.close);
+      await pumpShell(
+        tester,
+        overrides: [
+          historyDbProvider.overrideWithValue(historyDb),
+          // The recorder watches real tab delegates; this shell's nav is a
+          // stub, and recording is not what is under test here.
+          historyRecorderProvider.overrideWithValue(null),
+        ],
+      );
+
+      final commandContext = tester.element(find.byType(ZoomWrapper));
+      final commandController = AppCommandControllerProvider.of(
+        commandContext,
+      );
+      expect(
+        commandController.isAvailable(
+          commandContext,
+          AppCommandId.openHistory,
+        ),
+        isTrue,
+      );
+
+      final invocation = commandController.invoke(
+        commandContext,
+        AppCommandId.openHistory,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(HistoryPage), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(HistoryPage))).pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(await invocation, isTrue);
+      expect(find.byType(HistoryPage), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 
   group('the companion chat entry points', () {

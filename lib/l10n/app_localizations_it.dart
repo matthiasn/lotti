@@ -9032,6 +9032,84 @@ class AppLocalizationsIt extends AppLocalizations {
   String get helpMenuTitle => 'Aiuto';
 
   @override
+  String get historyCustomRangeEndTitle => 'Data di fine';
+
+  @override
+  String historyCustomRangeLabel(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get historyCustomRangeStartTitle => 'Data di inizio';
+
+  @override
+  String get historyDeleteConfirmAction => 'Rimuovi';
+
+  @override
+  String get historyDeleteConfirmMessage =>
+      'Questa visita viene rimossa per sempre. L\'elemento in sé resta com\'è.';
+
+  @override
+  String get historyDeleteConfirmTitle => 'Rimuovere dalla cronologia?';
+
+  @override
+  String get historyDeleteTooltip => 'Rimuovi dalla cronologia';
+
+  @override
+  String get historyEmptyHint =>
+      'Le attività, le voci e i progetti che apri compaiono qui.';
+
+  @override
+  String get historyEmptyTitle => 'Ancora niente qui';
+
+  @override
+  String get historyEntityGone => 'Non più disponibile';
+
+  @override
+  String get historyLoadError => 'Impossibile caricare la tua cronologia.';
+
+  @override
+  String get historyNoMatchesHint =>
+      'Prova un\'altra ricerca o un periodo più ampio.';
+
+  @override
+  String get historyNoMatchesTitle => 'Nessun risultato';
+
+  @override
+  String get historyRangeAllTime => 'Tutto';
+
+  @override
+  String get historyRangeCustom => 'Personalizzato';
+
+  @override
+  String get historyRangeLast30Days => '30 giorni';
+
+  @override
+  String get historyRangeLast7Days => '7 giorni';
+
+  @override
+  String get historyRangeLast90Days => '90 giorni';
+
+  @override
+  String get historySearchHint => 'Cerca nella cronologia';
+
+  @override
+  String historyTimestampToday(String time) {
+    return 'Oggi, $time';
+  }
+
+  @override
+  String historyTimestampYesterday(String time) {
+    return 'Ieri, $time';
+  }
+
+  @override
+  String get historyTitle => 'Cronologia';
+
+  @override
+  String get historyUntitled => 'Senza titolo';
+
+  @override
   String get imageGenerationError => 'Non è riuscito a generare immagine';
 
   @override

@@ -17,6 +17,7 @@ class AppShortcutBinding {
     this.shift = false,
     this.alt = false,
     this.includeRepeats = false,
+    this.platforms,
   }) : _kind = _AppShortcutTriggerKind.logicalKey,
        character = null,
        usesPrimaryModifier = true;
@@ -28,7 +29,8 @@ class AppShortcutBinding {
   }) : _kind = _AppShortcutTriggerKind.character,
        key = null,
        usesPrimaryModifier = true,
-       shift = false;
+       shift = false,
+       platforms = null;
 
   const AppShortcutBinding.allKey(
     this.key, {
@@ -37,7 +39,8 @@ class AppShortcutBinding {
     this.includeRepeats = false,
   }) : _kind = _AppShortcutTriggerKind.logicalKey,
        character = null,
-       usesPrimaryModifier = false;
+       usesPrimaryModifier = false,
+       platforms = null;
 
   final _AppShortcutTriggerKind _kind;
   final LogicalKeyboardKey? key;
@@ -46,6 +49,13 @@ class AppShortcutBinding {
   final bool shift;
   final bool alt;
   final bool includeRepeats;
+
+  /// The desktop platforms this binding exists on, or null for all of them.
+  ///
+  /// For a command whose conventional key differs by platform — History is
+  /// ⌘Y on macOS, where ⌘H is the system's Hide, and Ctrl+H elsewhere — the
+  /// definition lists one binding per platform group.
+  final Set<TargetPlatform>? platforms;
 
   ShortcutActivator? resolve(TargetPlatform platform) {
     final desktop = switch (platform) {
@@ -57,6 +67,7 @@ class AppShortcutBinding {
       TargetPlatform.iOS => false,
     };
     if (!desktop) return null;
+    if (platforms case final only? when !only.contains(platform)) return null;
 
     final meta = usesPrimaryModifier && platform == TargetPlatform.macOS;
     final control = usesPrimaryModifier && platform != TargetPlatform.macOS;

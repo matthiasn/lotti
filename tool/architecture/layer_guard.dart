@@ -48,6 +48,7 @@ const featureOrder = <String>[
   'user_activity',
   'design_system',
   'recent_searches',
+  'history',
   'ratings',
   'notifications',
   'whats_new',

@@ -41,6 +41,24 @@ void main() {
       );
     });
 
+    test('a platform-restricted binding resolves only on its platforms', () {
+      const macOnly = AppShortcutBinding.primaryKey(
+        LogicalKeyboardKey.keyY,
+        platforms: {TargetPlatform.macOS},
+      );
+
+      final mac = macOnly.resolve(TargetPlatform.macOS)! as SingleActivator;
+      expect((mac.meta, mac.trigger), (true, LogicalKeyboardKey.keyY));
+      expect(macOnly.resolve(TargetPlatform.linux), isNull);
+      expect(macOnly.resolve(TargetPlatform.windows), isNull);
+      // A restriction never brings a binding to a mobile target.
+      const mobileListed = AppShortcutBinding.primaryKey(
+        LogicalKeyboardKey.keyY,
+        platforms: {TargetPlatform.iOS},
+      );
+      expect(mobileListed.resolve(TargetPlatform.iOS), isNull);
+    });
+
     test('does not expose desktop shortcuts on mobile targets', () {
       const binding = AppShortcutBinding.allKey(LogicalKeyboardKey.f1);
 

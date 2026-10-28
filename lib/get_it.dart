@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
@@ -185,6 +186,7 @@ Future<void> registerSingletons({
     ..registerSingleton<NotificationsDb>(NotificationsDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<OnboardingMetricsDb>(OnboardingMetricsDb())
+    ..registerSingleton<HistoryDb>(HistoryDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<StartupTasks>(StartupTasks())
     ..registerSingleton<VectorClockService>(buildVectorClockService())

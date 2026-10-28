@@ -28,6 +28,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/day_processing_db.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/notifications_db.dart';
@@ -1001,6 +1002,8 @@ class MockNotificationService extends Mock implements NotificationService {}
 class MockNotificationsDb extends Mock implements NotificationsDb {}
 
 class MockOnboardingMetricsDb extends Mock implements OnboardingMetricsDb {}
+
+class MockHistoryDb extends Mock implements HistoryDb {}
 
 class MockDayProcessingDb extends Mock implements DayProcessingDb {}
 

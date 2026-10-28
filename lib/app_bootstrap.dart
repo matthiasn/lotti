@@ -13,6 +13,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -43,6 +44,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_habit_reflections.dart';
 import 'package:lotti/features/habits/state/habit_reflections_slot.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:lotti/features/history/state/history_providers.dart';
 import 'package:lotti/features/journal/state/journal_card_ports.dart';
 import 'package:lotti/features/journal/state/journal_detail_slots.dart';
 import 'package:lotti/features/journal/state/task_title_hooks.dart';
@@ -318,6 +320,8 @@ List<Override> buildProviderOverrides(ProfileContext context) {
       persistenceLogicProvider.overrideWithValue(getIt<PersistenceLogic>()),
     if (getIt.isRegistered<NavService>())
       navServiceProvider.overrideWithValue(getIt<NavService>()),
+    if (getIt.isRegistered<HistoryDb>())
+      historyDbProvider.overrideWithValue(getIt<HistoryDb>()),
     if (getIt.isRegistered<TimeService>())
       timeServiceProvider.overrideWithValue(getIt<TimeService>()),
     // Lazy: the notification service registers itself on first use.

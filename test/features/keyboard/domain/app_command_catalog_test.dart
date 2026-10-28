@@ -44,6 +44,72 @@ void main() {
       }
     });
 
+    test('history is Cmd+Y on macOS and Ctrl+H elsewhere', () {
+      AppCommandId? commandFor(
+        TargetPlatform platform,
+        LogicalKeyboardKey key, {
+        required bool meta,
+      }) {
+        final bindings = AppCommandCatalog.bindingsFor(platform: platform);
+        for (final MapEntry(key: activator, :value) in bindings.entries) {
+          if (activator is SingleActivator &&
+              activator.trigger == key &&
+              activator.meta == meta &&
+              activator.control == !meta &&
+              !activator.shift &&
+              !activator.alt) {
+            return value;
+          }
+        }
+        return null;
+      }
+
+      expect(
+        commandFor(TargetPlatform.macOS, LogicalKeyboardKey.keyY, meta: true),
+        AppCommandId.openHistory,
+      );
+      // Cmd+H stays the system's Hide.
+      expect(
+        commandFor(TargetPlatform.macOS, LogicalKeyboardKey.keyH, meta: true),
+        isNull,
+      );
+      for (final platform in [TargetPlatform.linux, TargetPlatform.windows]) {
+        expect(
+          commandFor(platform, LogicalKeyboardKey.keyH, meta: false),
+          AppCommandId.openHistory,
+        );
+        expect(
+          commandFor(platform, LogicalKeyboardKey.keyY, meta: false),
+          isNull,
+        );
+      }
+    });
+
+    test('no two commands share an activator on any desktop platform', () {
+      for (final platform in [
+        TargetPlatform.macOS,
+        TargetPlatform.linux,
+        TargetPlatform.windows,
+      ]) {
+        final seen = <ShortcutActivator>[];
+        for (final definition in AppCommandCatalog.definitions) {
+          for (final binding in definition.bindings) {
+            final activator = binding.resolve(platform);
+            if (activator == null) continue;
+            final clash = seen.where(
+              (other) => other.toString() == activator.toString(),
+            );
+            expect(
+              clash,
+              isEmpty,
+              reason: '${definition.id} on $platform reuses $activator',
+            );
+            seen.add(activator);
+          }
+        }
+      }
+    });
+
     test('only continuous commands opt into repeats', () {
       expect(
         AppCommandCatalog.definition(AppCommandId.createTask).allowRepeat,

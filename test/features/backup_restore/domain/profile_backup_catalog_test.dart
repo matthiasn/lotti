@@ -22,6 +22,7 @@ void main() {
           'fts5_db.sqlite': 'full-text-index',
           'notifications.sqlite': 'notifications',
           'onboarding_metrics.sqlite': 'onboarding-metrics',
+          'history.sqlite': 'history',
           'ai_config.sqlite': 'ai-config',
           'day_processing.sqlite': 'day-processing',
           'matrix/lotti_sync.db': 'matrix-sdk',
