@@ -9,8 +9,8 @@
   saved filter's count means something in it is overdue; an orange one means
   something is due today. Screen readers hear the same.
 - **Open tasks without a due date say so.** A quiet grey *No due date* tag in
-  the task's row tells you what can safely wait, without competing with the
-  red and orange of what cannot.
+  the task's row marks tasks with no recorded deadline, kept apart from the
+  red and orange of overdue and due-today work.
 
 ### Fixed
 - **Swedish and Danish described a missing due date as a missing birth date.**

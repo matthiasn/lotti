@@ -316,9 +316,8 @@ class TaskRowContent extends ConsumerWidget {
         due != null
             ? DueDateText(dueDate: due)
             // An open task with no due date says so, in the quiet meta-chip
-            // grey: absence is information too — it is what can safely wait —
-            // but it must never compete with the orange and red of a task
-            // that cannot.
+            // grey: a missing deadline is information too, but it must never
+            // compete with the orange and red of a deadline due or passed.
             : TaskShowcaseMetaChip(
                 icon: LottiIcons.calendar,
                 label: context.messages.taskNoDueDateLabel,

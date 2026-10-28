@@ -17194,7 +17194,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get tasksDueViewDueToday => 'Vandaag af';
+  String get tasksDueViewDueToday => 'Vervalt vandaag';
 
   @override
   String get tasksDueViewOverdue => 'Te laat';
@@ -17355,7 +17355,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tasksSavedFilterDueTodayMarker =>
-      'Bevat taken die vandaag af moeten';
+      'Bevat taken die vandaag vervallen';
 
   @override
   String get tasksSavedFilterOverdueMarker => 'Bevat te late taken';
