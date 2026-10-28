@@ -6453,7 +6453,7 @@ void main() {
         expect(find.byType(SidebarWakeQueue), findsNothing);
         expect(find.byType(SidebarAudioRecordingSection), findsNothing);
 
-        await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+        await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
         await tester.pump(SidebarTimerSection.animationDuration);
         expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
         expect(find.byType(SidebarTimerSection), findsOneWidget);
@@ -6514,7 +6514,7 @@ void main() {
         expect(find.byKey(SidebarActivitySummaryKeys.timer), findsNothing);
         expect(find.byKey(SidebarActivitySummaryKeys.audio), findsNothing);
 
-        await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+        await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
         await tester.pump(SidebarTimerSection.animationDuration);
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
         expect(find.text('Running wake'), findsOneWidget);

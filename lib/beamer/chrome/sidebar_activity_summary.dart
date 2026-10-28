@@ -19,6 +19,7 @@ import 'package:material_ui/material_ui.dart';
 @visibleForTesting
 abstract final class SidebarActivitySummaryKeys {
   static const Key root = Key('sidebar-activity-summary');
+  static const Key header = Key('sidebar-activity-header');
   static const Key audio = Key('sidebar-activity-audio');
   static const Key timer = Key('sidebar-activity-timer');
   static const Key agents = Key('sidebar-activity-agents');
@@ -27,9 +28,12 @@ abstract final class SidebarActivitySummaryKeys {
 
 /// Consolidates every transient desktop-sidebar status into one disclosure.
 ///
-/// The collapsed row preserves the low idle footprint. Expanding it in place
-/// restores the full recording, timer, and agent context plus direct controls
-/// without moving the user into a modal surface.
+/// The collapsed row preserves the low idle footprint: a heading over one
+/// compact metric per activity. Expanding it in place restores the full
+/// recording, timer, and agent context plus direct controls without moving the
+/// user into a modal surface. The expanded panel is one bordered shell, and its
+/// heading drops the compact metrics, because each detail card already shows
+/// its own elapsed time or count.
 class SidebarActivitySummary extends ConsumerStatefulWidget {
   const SidebarActivitySummary({required this.showAudio, super.key});
 
@@ -91,12 +95,16 @@ class _SidebarActivitySummaryState
 
         return _ActivitySurface(
           metrics: metrics,
-          semanticsLabel: _semanticsLabel(
-            context,
-            audioDuration: audioVisible ? recorder.progress : null,
-            timerDuration: timer == null ? null : entryDuration(timer),
-            agentCounts: agentsVisible ? agentCounts : null,
-          ),
+          // Expanded, the detail cards announce their own values; the header
+          // then names only the section so nothing is read out twice.
+          semanticsLabel: _expanded
+              ? context.messages.sidebarActiveSectionTitle
+              : _semanticsLabel(
+                  context,
+                  audioDuration: audioVisible ? recorder.progress : null,
+                  timerDuration: timer == null ? null : entryDuration(timer),
+                  agentCounts: agentsVisible ? agentCounts : null,
+                ),
           expanded: _expanded,
           onTap: () => setState(() => _expanded = !_expanded),
           details: _ActivityDetails(
@@ -188,82 +196,117 @@ class _ActivitySurface extends StatelessWidget {
         ? context.messages.sidebarActivityCollapseTooltip
         : context.messages.sidebarActivityExpandTooltip;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          button: true,
-          liveRegion: false,
-          label: '$semanticsLabel, $toggleTooltip',
-          child: Material(
-            key: SidebarActivitySummaryKeys.root,
-            color: tokens.colors.surface.enabled,
-            borderRadius: radius,
-            clipBehavior: Clip.antiAlias,
+    // One shell holds the heading and, once expanded, the detail cards. The
+    // border appears only while expanded, so the open disclosure reads as a
+    // single contained panel instead of loose tiles on the sidebar.
+    return Material(
+      key: SidebarActivitySummaryKeys.root,
+      color: tokens.colors.surface.enabled,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: expanded
+            ? BorderSide(color: tokens.colors.decorative.level01)
+            : BorderSide.none,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            button: true,
+            liveRegion: false,
+            label: '$semanticsLabel, $toggleTooltip',
             child: InkWell(
+              key: SidebarActivitySummaryKeys.header,
               onTap: onTap,
-              borderRadius: radius,
               hoverColor: tokens.colors.surface.hover,
               focusColor: tokens.colors.surface.focusPressed,
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: minTarget),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spacing.step4,
-                    vertical: tokens.spacing.step3,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: label),
-                          SizedBox(width: tokens.spacing.step3),
-                          Tooltip(
-                            message: toggleTooltip,
-                            child: ExcludeSemantics(
-                              child: Icon(
-                                expanded
-                                    ? LottiIcons.expand
-                                    : LottiIcons.chevronRight,
-                                size: tokens.spacing.step5,
-                                color: tokens.colors.text.mediumEmphasis,
+                // Centres the heading in the tap target once the metric line
+                // has stepped aside.
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  heightFactor: 1,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step4,
+                      vertical: tokens.spacing.step3,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(child: label),
+                            SizedBox(width: tokens.spacing.step3),
+                            Tooltip(
+                              message: toggleTooltip,
+                              child: ExcludeSemantics(
+                                child: Icon(
+                                  expanded
+                                      ? LottiIcons.expand
+                                      : LottiIcons.chevronRight,
+                                  size: tokens.spacing.step5,
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: tokens.spacing.step2),
-                      Wrap(
-                        spacing: tokens.spacing.step4,
-                        runSpacing: tokens.spacing.step2,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          for (final metric in metrics)
-                            ExcludeSemantics(child: metric),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                        // The compact metrics summarise what the detail cards
+                        // show in full, so they step aside while expanded and
+                        // each elapsed time and the agent count appear once.
+                        AnimatedSize(
+                          duration: SidebarWakeQueue.animationDuration,
+                          curve: Curves.easeInOut,
+                          alignment: Alignment.topCenter,
+                          child: expanded
+                              ? const SizedBox.shrink()
+                              : Padding(
+                                  padding: EdgeInsets.only(
+                                    top: tokens.spacing.step2,
+                                  ),
+                                  child: Wrap(
+                                    spacing: tokens.spacing.step4,
+                                    runSpacing: tokens.spacing.step2,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      for (final metric in metrics)
+                                        ExcludeSemantics(child: metric),
+                                    ],
+                                  ),
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        AnimatedSize(
-          duration: SidebarWakeQueue.animationDuration,
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: expanded
-              ? Padding(
-                  key: SidebarActivitySummaryKeys.details,
-                  padding: EdgeInsets.only(top: tokens.spacing.step3),
-                  child: details,
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
+          AnimatedSize(
+            duration: SidebarWakeQueue.animationDuration,
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? Padding(
+                    key: SidebarActivitySummaryKeys.details,
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step2,
+                      0,
+                      tokens.spacing.step2,
+                      tokens.spacing.step2,
+                    ),
+                    child: details,
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 }
