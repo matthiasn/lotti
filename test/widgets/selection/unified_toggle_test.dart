@@ -180,7 +180,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -220,7 +222,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -241,7 +245,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -265,7 +271,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
@@ -282,13 +290,46 @@ void main() {
       expect(find.byIcon(LottiIcons.aiSpark), findsOneWidget);
     });
 
+    testWidgets(
+      'the icon shares the headline row and the description runs full '
+      'width beneath it',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            theme: ThemeData.light().copyWith(
+              extensions: const [dsTokensLight],
+            ),
+            home: Scaffold(
+              body: UnifiedAiToggleField(
+                label: 'AI Feature',
+                description: 'Enable AI assistance',
+                icon: LottiIcons.aiSpark,
+                value: false,
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        final icon = tester.getRect(find.byIcon(LottiIcons.aiSpark));
+        final label = tester.getRect(find.text('AI Feature'));
+        final description = tester.getRect(find.text('Enable AI assistance'));
+        expect(description.left, lessThan(icon.right));
+        expect(description.left, lessThan(label.left));
+        expect(description.top, greaterThanOrEqualTo(icon.bottom));
+      },
+    );
+
     testWidgets('tap toggles value', (WidgetTester tester) async {
       var value = false;
 
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {
@@ -319,9 +360,12 @@ void main() {
       const value = false;
 
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          home: Scaffold(
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
+          home: const Scaffold(
             body: UnifiedAiToggleField(
               label: 'AI Feature',
               value: value,
@@ -344,7 +388,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           builder: LegacyMaterialBridge.builder,
-          theme: ThemeData.light(),
+          theme: ThemeData.light().copyWith(
+            extensions: const [dsTokensLight],
+          ),
           home: Scaffold(
             body: UnifiedAiToggleField(
               label: 'Enable AI suggestions',

@@ -1,3 +1,4 @@
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 import 'package:material_ui/material_ui.dart';
@@ -23,6 +24,7 @@ class UnifiedAiToggleField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -50,37 +52,37 @@ class UnifiedAiToggleField extends StatelessWidget {
           highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (icon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: value
-                          ? context.colorScheme.primaryContainer.withValues(
-                              alpha: 0.3,
-                            )
-                          : context.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 18,
-                      color: value
-                          ? context.colorScheme.primary
-                          : context.colorScheme.onSurfaceVariant.withValues(
-                              alpha: 0.6,
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                Row(
+                  children: [
+                    if (icon != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: value
+                              ? context.colorScheme.primaryContainer.withValues(
+                                  alpha: 0.3,
+                                )
+                              : context.colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 18,
+                          color: value
+                              ? context.colorScheme.primary
+                              : context.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step4),
+                    ],
+                    Expanded(
+                      child: Text(
                         label,
                         style: context.textTheme.titleMedium?.copyWith(
                           fontSize: 15,
@@ -93,28 +95,31 @@ class UnifiedAiToggleField extends StatelessWidget {
                           letterSpacing: 0.3,
                         ),
                       ),
-                      if (description != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          description!,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: context.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
+                    SizedBox(width: tokens.spacing.step4),
+                    UnifiedToggle(
+                      value: value,
+                      onChanged: enabled ? onChanged : null,
+                      enabled: enabled,
+                      semanticLabel: label,
+                    ),
+                  ],
+                ),
+                // Full width under the headline row, not indented past the
+                // icon, so a long description wraps in fewer lines.
+                if (description != null) ...[
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    description!,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                UnifiedToggle(
-                  value: value,
-                  onChanged: enabled ? onChanged : null,
-                  enabled: enabled,
-                  semanticLabel: label,
-                ),
+                ],
               ],
             ),
           ),
