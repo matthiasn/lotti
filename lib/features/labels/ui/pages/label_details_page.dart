@@ -228,6 +228,8 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
         onDelete: widget.isCreateMode ? null : handleDelete,
         deleteEnabled: !state.isSaving,
+        createdAt: existingLabel?.createdAt,
+        updatedAt: existingLabel?.updatedAt,
         children: [
           SettingsFormSection(
             title: messages.basicSettings,

@@ -26,6 +26,7 @@ import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -293,6 +294,63 @@ void main() {
       await tester.pump();
 
       verify(() => repo.deleteLabel('label-1')).called(1);
+    });
+
+    testWidgets("edit mode: ends with the label's own timestamps", (
+      tester,
+    ) async {
+      final label = testLabelDefinition1.copyWith(
+        id: 'label-1',
+        createdAt: DateTime(2024, 3, 15, 14, 30),
+        updatedAt: DateTime(2025, 11, 2, 9, 5),
+      );
+      final repo = MockLabelsRepository();
+      when(
+        () => repo.watchLabel('label-1'),
+      ).thenAnswer((_) => Stream<LabelDefinition?>.value(label));
+
+      await pumpPage(
+        tester,
+        overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+        child: const LabelDetailsPage(labelId: 'label-1'),
+      );
+      await tester.scrollUntilVisible(
+        find.byType(SettingsTimestampsFooter),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final footer = tester.widget<SettingsTimestampsFooter>(
+        find.byType(SettingsTimestampsFooter),
+      );
+      expect(footer.createdAt, label.createdAt);
+      expect(footer.updatedAt, label.updatedAt);
+    });
+
+    testWidgets('create mode: shows no timestamps for an unsaved label', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        overrides: [
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => const LabelEditorState(
+              name: '',
+              colorHex: '#FF0000',
+              isPrivate: false,
+              selectedCategoryIds: {},
+            ),
+          ),
+        ],
+      );
+      await tester.drag(
+        find.byType(Scrollable).first,
+        const Offset(0, -2000),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(find.byType(SettingsTimestampsFooter), findsNothing);
     });
 
     testWidgets('color field shows the matching preset name, never hex', (

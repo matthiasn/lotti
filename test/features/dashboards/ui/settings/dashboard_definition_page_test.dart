@@ -24,6 +24,7 @@ import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -203,6 +204,47 @@ void main() {
         expect(beamedTo, '/settings/dashboards');
       },
     );
+
+    testWidgets("edit mode ends with the dashboard's own timestamps", (
+      tester,
+    ) async {
+      final dashboard = testDashboardConfig.copyWith(
+        createdAt: DateTime(2024, 3, 15, 14, 30),
+        updatedAt: DateTime(2025, 11, 2, 9, 5),
+      );
+      await _pumpPage(tester, DashboardDefinitionPage(dashboard: dashboard));
+      await tester.scrollUntilVisible(
+        find.byType(SettingsTimestampsFooter),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final footer = tester.widget<SettingsTimestampsFooter>(
+        find.byType(SettingsTimestampsFooter),
+      );
+      expect(footer.createdAt, dashboard.createdAt);
+      expect(footer.updatedAt, dashboard.updatedAt);
+    });
+
+    testWidgets('create mode shows no timestamps for an unsaved dashboard', (
+      tester,
+    ) async {
+      await _pumpPage(
+        tester,
+        DashboardDefinitionPage(
+          dashboard: testDashboardConfig,
+          isCreateMode: true,
+        ),
+      );
+      await tester.drag(
+        find.byType(Scrollable).first,
+        const Offset(0, -4000),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(find.byType(SettingsTimestampsFooter), findsNothing);
+    });
 
     testWidgets(
       'Options section card groups Private then Active with the unified '

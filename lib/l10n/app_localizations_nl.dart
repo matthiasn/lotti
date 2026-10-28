@@ -14446,11 +14446,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsDashboardsTitle => 'Dashboards';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Aangemaakt op $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Gewoontes, categorieën, etiketten, dashboards en meetbare gegevens';
 
   @override
   String get settingsDefinitionsTitle => 'Definities';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Laatst gewijzigd op $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch =>

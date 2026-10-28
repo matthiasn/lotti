@@ -3,6 +3,7 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Unified shell for settings definition detail pages (category, label,
@@ -18,6 +19,8 @@ import 'package:material_ui/material_ui.dart';
 ///   box-widget form, or [slivers] for pages that need lazy/sliver
 ///   content (each sliver is mounted as-is; wrap in
 ///   [SettingsContentSliver] to stay on the grid),
+/// * when the definition already exists, its created / last-modified
+///   timestamps as a [SettingsTimestampsFooter] after everything else,
 /// * a sticky [SettingsFormActionBar] floating on blurred glass at the
 ///   bottom (`extendBody` is set so the form scrolls behind it).
 ///
@@ -35,6 +38,8 @@ class SettingsDetailScaffold extends StatelessWidget {
     this.deleteLabel,
     this.onDelete,
     this.deleteEnabled = true,
+    this.createdAt,
+    this.updatedAt,
     super.key,
   }) : assert(
          (children == null) != (slivers == null),
@@ -74,6 +79,12 @@ class SettingsDetailScaffold extends StatelessWidget {
   final String? deleteLabel;
   final VoidCallback? onDelete;
   final bool deleteEnabled;
+
+  /// The edited definition's timestamps, shown as a [SettingsTimestampsFooter]
+  /// at the very end of the form. Left null while creating, so a definition
+  /// that does not exist yet claims no history.
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +135,15 @@ class SettingsDetailScaffold extends StatelessWidget {
                         onTap: onDelete!,
                         enabled: deleteEnabled,
                       ),
+                    ),
+                  ),
+                ),
+              if (createdAt != null || updatedAt != null)
+                SettingsContentSliver(
+                  sliver: SliverToBoxAdapter(
+                    child: SettingsTimestampsFooter(
+                      createdAt: createdAt,
+                      updatedAt: updatedAt,
                     ),
                   ),
                 ),

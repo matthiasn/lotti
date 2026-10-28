@@ -14422,11 +14422,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsDashboardsTitle => 'Instrumentpaneler';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Skapades $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Vanor, kategorier, etiketter, instrumentpaneler och mätbara saker';
 
   @override
   String get settingsDefinitionsTitle => 'Definitioner';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Ändrades senast $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch => 'Inga flaggor matchar din sökning';

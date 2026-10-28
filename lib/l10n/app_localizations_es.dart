@@ -14581,11 +14581,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsDashboardsTitle => 'Paneles';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Fecha de creación: $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Hábitos, categorías, etiquetas, paneles y valores medibles';
 
   @override
   String get settingsDefinitionsTitle => 'Definiciones';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Última modificación: $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch =>

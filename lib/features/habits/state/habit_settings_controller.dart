@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -244,6 +245,8 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
       private: private,
       active: active,
       priority: priority,
+      // The edit's own time, which the editor shows back as last modified.
+      updatedAt: clock.now(),
     );
 
     await ref.read(persistenceLogicProvider).upsertEntityDefinition(dataType);

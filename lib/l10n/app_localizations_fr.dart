@@ -14642,11 +14642,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsDashboardsTitle => 'Gestion du tableau de bord';
 
   @override
+  String settingsDefinitionCreatedAt(String timestamp) {
+    return 'Création : $timestamp';
+  }
+
+  @override
   String get settingsDefinitionsSubtitle =>
       'Habitudes, catégories, étiquettes, tableaux de bord et mesures';
 
   @override
   String get settingsDefinitionsTitle => 'Définitions';
+
+  @override
+  String settingsDefinitionUpdatedAt(String timestamp) {
+    return 'Dernière modification : $timestamp';
+  }
 
   @override
   String get settingsFlagsEmptySearch =>

@@ -30,6 +30,7 @@ import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
@@ -202,6 +203,64 @@ void main() {
         await streamController.close();
       },
     );
+
+    group('Timestamps footer', () {
+      testWidgets(
+        'shows the stored timestamps and follows a later save',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          addTearDown(streamController.close);
+          when(
+            () => mockRepository.watchCategory(testCategoryId),
+          ).thenAnswer((_) => streamController.stream);
+          final category =
+              CategoryTestUtils.createTestCategory(
+                id: testCategoryId,
+              ).copyWith(
+                createdAt: DateTime(2024, 3, 15, 14, 30),
+                updatedAt: DateTime(2025, 11, 2, 9, 5),
+              );
+
+          await pumpCategoryDetailsPage(tester);
+          streamController.add(category);
+          await tester.pump();
+          await tester.scrollUntilVisible(
+            find.byType(SettingsTimestampsFooter),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+
+          SettingsTimestampsFooter footer() =>
+              tester.widget<SettingsTimestampsFooter>(
+                find.byType(SettingsTimestampsFooter),
+              );
+          expect(footer().createdAt, category.createdAt);
+          expect(footer().updatedAt, category.updatedAt);
+
+          final saved = category.copyWith(
+            updatedAt: DateTime(2026, 10, 28, 9, 15),
+          );
+          streamController.add(saved);
+          await tester.pump();
+
+          expect(footer().createdAt, category.createdAt);
+          expect(footer().updatedAt, saved.updatedAt);
+        },
+      );
+
+      testWidgets('create mode shows no timestamps', (tester) async {
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -2000),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+
+        expect(find.byType(SettingsTimestampsFooter), findsNothing);
+      });
+    });
 
     group('Loading and Error States', () {
       testWidgets('displays loading state initially', (tester) async {

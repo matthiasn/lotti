@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -180,6 +181,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                   for (final choice in _choices)
                     choice.copyWith(title: choice.title.trim()),
                 ],
+          // The edit's own time, which the editor shows back as last
+          // modified.
+          updatedAt: clock.now(),
         );
 
         await persistenceLogic.upsertEntityDefinition(dataType);
@@ -236,6 +240,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         ),
         deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
         onDelete: widget.isCreateMode ? null : onDeletePressed,
+        createdAt: widget.isCreateMode ? null : item.createdAt,
+        updatedAt: widget.isCreateMode ? null : item.updatedAt,
         children: [
           FormBuilder(
             key: _formKey,

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
+import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -143,6 +145,63 @@ void main() {
         expect(beamedTo, '/settings/measurables');
       },
     );
+
+    testWidgets('saving stamps the edit time as last modified', (
+      tester,
+    ) async {
+      final editedAt = DateTime(2026, 10, 28, 9, 15);
+      await withClock(Clock.fixed(editedAt), () async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
+        );
+        await tester.enterText(
+          find.byKey(const Key('measurable_name_field')),
+          'Sparkling water',
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+      });
+
+      final saved = capturedUpsert();
+      expect(saved.updatedAt, editedAt);
+      expect(saved.createdAt, measurableWater.createdAt);
+    });
+
+    testWidgets("edit mode ends with the measurable's own timestamps", (
+      tester,
+    ) async {
+      await pumpPage(tester, MeasurableDetailsPage(dataType: measurableWater));
+      await tester.scrollUntilVisible(
+        find.byType(SettingsTimestampsFooter),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      final footer = tester.widget<SettingsTimestampsFooter>(
+        find.byType(SettingsTimestampsFooter),
+      );
+      expect(footer.createdAt, measurableWater.createdAt);
+      expect(footer.updatedAt, measurableWater.updatedAt);
+    });
+
+    testWidgets('create mode shows no timestamps for an unsaved measurable', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        MeasurableDetailsPage(dataType: measurableWater, isCreateMode: true),
+      );
+      await tester.drag(
+        find.byType(Scrollable).first,
+        const Offset(0, -2000),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+
+      expect(find.byType(SettingsTimestampsFooter), findsNothing);
+    });
 
     testWidgets(
       'Options section card groups Favorite then Private with the unified '

@@ -35,7 +35,11 @@ sources:
   - id: detail-kit
     resource: ../../lib/widgets/settings/settings_detail_scaffold.dart
     title: Shared settings detail scaffold
-    last_modified: 2026-07-15
+    last_modified: 2026-10-28
+  - id: timestamps-footer
+    resource: ../../lib/widgets/settings/settings_timestamps_footer.dart
+    title: Created / last-modified footer of every definition editor
+    last_modified: 2026-10-28
   - id: list-shell
     resource: ../../lib/widgets/pages/definitions_list_page.dart
     title: DefinitionsListPage — the shared definition list shell
@@ -412,13 +416,22 @@ title at every pane width and centres as a capped column on wide windows.
 
 ## The detail kit
 
-All detail editors render through `SettingsDetailScaffold`, which provides the
-header (back beams to the list route), a catalog-driven **Primary+S** save handler
-in the nearest `AppCommandScope`, and a sticky glass action bar with the primary
-save pill — **gated on the page's dirty state, with the command using the same
-enabled predicate** and disabled rendering as quiet translucent glass — plus
-cancel, and in edit mode a full-width delete row at the end of the form reusing
-each page's confirm flow.
+The category, label, measurable, dashboard and speech dictionary editors render
+through `SettingsDetailScaffold`, which provides the header (back beams to the
+list route), a catalog-driven **Primary+S** save handler in the nearest
+`AppCommandScope`, and a sticky glass action bar with the primary save pill —
+**gated on the page's dirty state, with the command using the same enabled
+predicate** and disabled rendering as quiet translucent glass — plus cancel, and
+in edit mode a full-width delete row at the end of the form reusing each page's
+confirm flow. The habit editor is its own two-step wizard and does not use the
+scaffold; see [habits](habits.md).
+
+In edit mode every definition editor, the habit editor included, ends with a
+`SettingsTimestampsFooter`: the definition's *Created* and *Last modified*
+times as one low-emphasis caption group below Delete, each in the device's own
+date and clock convention. Create mode passes no timestamps, so a definition
+that is not stored yet shows none. *Last modified* is the stored `updatedAt`,
+which every editor stamps with the edit's own time on save.
 
 Form rows group into `SettingsFormSection` cards; FormBuilder-driven pages bridge
 into the design system through dedicated wrappers. **Visibility toggles share
