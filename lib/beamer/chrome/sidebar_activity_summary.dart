@@ -31,9 +31,10 @@ abstract final class SidebarActivitySummaryKeys {
 /// The collapsed row preserves the low idle footprint: a heading over one
 /// compact metric per activity. Expanding it in place restores the full
 /// recording, timer, and agent context plus direct controls without moving the
-/// user into a modal surface. The expanded panel is one bordered shell, and its
-/// heading drops the compact metrics, because each detail card already shows
-/// its own elapsed time or count.
+/// user into a modal surface. The summary paints no fill of its own; expanded,
+/// a thin outline groups it into one panel, and its heading drops the compact
+/// metrics, because each detail card already shows its own elapsed time or
+/// count.
 class SidebarActivitySummary extends ConsumerStatefulWidget {
   const SidebarActivitySummary({required this.showAudio, super.key});
 

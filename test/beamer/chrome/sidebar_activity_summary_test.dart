@@ -413,7 +413,7 @@ void main() {
     }
   });
 
-  testWidgets('expanded details sit inside one bordered shell', (
+  testWidgets('unfilled shell gains an outline around the expanded details', (
     tester,
   ) async {
     when(
@@ -425,17 +425,13 @@ void main() {
     );
     await tester.pump();
 
-    BorderSide shellBorder() {
-      final shape =
-          tester
-                  .widget<Material>(
-                    find.byKey(SidebarActivitySummaryKeys.root),
-                  )
-                  .shape!
-              as RoundedRectangleBorder;
-      return shape.side;
-    }
+    Material shell() =>
+        tester.widget<Material>(find.byKey(SidebarActivitySummaryKeys.root));
+    BorderSide shellBorder() => (shell().shape! as RoundedRectangleBorder).side;
 
+    // The shell never paints a fill: collapsed it sits on the sidebar like a
+    // navigation row, and expanded the cards keep their own single surface.
+    expect(shell().color, Colors.transparent);
     expect(shellBorder(), BorderSide.none);
 
     await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
@@ -443,6 +439,7 @@ void main() {
     await tester.pump(SidebarTimerSection.animationDuration);
 
     final context = tester.element(find.byKey(SidebarActivitySummaryKeys.root));
+    expect(shell().color, Colors.transparent);
     expect(
       shellBorder().color,
       context.designTokens.colors.decorative.level01,
