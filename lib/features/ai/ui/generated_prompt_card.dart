@@ -244,7 +244,8 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             id: widget.aiResponse.meta.id,
           ),
           attribution: widget.aiResponse.data.aiAttribution,
-          asPill: true,
+          asCaption: true,
+          unrecordedModel: widget.aiResponse.data.model,
         ),
         // Expandable full prompt
         AnimatedBuilder(

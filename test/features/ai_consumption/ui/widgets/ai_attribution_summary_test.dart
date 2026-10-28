@@ -3,6 +3,8 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
@@ -17,7 +19,9 @@ void main() {
     bool includeCarrier = true,
     AiWorkAttribution? carrier,
     Future<AiAttributionDetails?> Function()? loadDetails,
-    bool asPill = false,
+    bool asCaption = false,
+    String? unrecordedModel,
+    String? taskTitle,
   }) async {
     final attribution = carrier ?? makeAiWorkAttribution();
     await tester.pumpWidget(
@@ -25,9 +29,13 @@ void main() {
         AiAttributionSummary(
           artifact: makeAiArtifact(),
           attribution: includeCarrier ? attribution : null,
-          asPill: asPill,
+          asCaption: asCaption,
+          unrecordedModel: unrecordedModel,
         ),
         overrides: [
+          aiAttributionTaskTitleProvider.overrideWith(
+            (ref, taskId) async => taskTitle,
+          ),
           aiAttributionDetailsProvider.overrideWith(
             (ref, id) => loadDetails?.call() ?? Future.value(details),
           ),
@@ -134,63 +142,107 @@ void main() {
     },
   );
 
-  testWidgets('pill presents entry attribution and opens the details modal', (
-    tester,
-  ) async {
-    final attribution = makeAiWorkAttribution();
-    final details = AiAttributionDetails(
-      attribution: attribution,
-      interactions: [
-        makeConsumptionEvent(
-          attributionId: attribution.id,
-          providerModelId: 'voxtral-small',
-          credits: 0.0042,
-          costCreditsDecimal: '0.0042',
-        ),
-      ],
-    );
-
-    await pumpSummary(tester, details: details, asPill: true);
-
-    expect(find.byType(DsPill), findsOneWidget);
-    expect(
-      find.text('voxtral-small · <€0.01 · <1 Wh · 0.1 g'),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byType(DsPill));
-    await tester.pumpAndSettle();
-
-    expect(find.text('AI attribution'), findsOneWidget);
-    expect(find.text('<€0.01'), findsWidgets);
-  });
-
-  testWidgets('a pill whose calls reported no cost renders nothing', (
-    tester,
-  ) async {
-    final attribution = makeAiWorkAttribution();
-    await pumpSummary(
+  testWidgets(
+    'caption presents entry attribution and opens the details modal',
+    (
       tester,
-      asPill: true,
-      details: AiAttributionDetails(
+    ) async {
+      final attribution = makeAiWorkAttribution();
+      final details = AiAttributionDetails(
         attribution: attribution,
         interactions: [
           makeConsumptionEvent(
             attributionId: attribution.id,
-            providerModelId: 'whisper-large-v3',
-            credits: null,
-            costCreditsDecimal: null,
-            energyKwh: null,
-            carbonGCo2: null,
+            providerModelId: 'voxtral-small',
+            credits: 0.0042,
+            costCreditsDecimal: '0.0042',
           ),
         ],
-      ),
-    );
+      );
 
-    expect(find.byType(DsPill), findsNothing);
-    expect(find.textContaining('whisper-large-v3'), findsNothing);
-    expect(find.text('Cost unknown'), findsNothing);
-  });
+      await pumpSummary(tester, details: details, asCaption: true);
+
+      // Quiet provenance: one line of small low-emphasis text, not a pill.
+      final caption = find.text('voxtral-small · <€0.01 · <1 Wh · 0.1 g');
+      expect(caption, findsOneWidget);
+      expect(find.byType(DsPill), findsNothing);
+      final style = tester.widget<Text>(caption).style!;
+      expect(
+        style.fontSize,
+        dsTokensLight.typography.styles.others.caption.fontSize,
+      );
+      expect(style.color, dsTokensLight.colors.text.lowEmphasis);
+
+      await tester.tap(caption);
+      await tester.pumpAndSettle();
+
+      expect(find.text('AI attribution'), findsOneWidget);
+      expect(find.text('<€0.01'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'a caption whose calls reported no cost still names its model, without a '
+    'cost, and opens the details',
+    (tester) async {
+      final attribution = makeAiWorkAttribution();
+      await pumpSummary(
+        tester,
+        asCaption: true,
+        details: AiAttributionDetails(
+          attribution: attribution,
+          interactions: [
+            makeConsumptionEvent(
+              attributionId: attribution.id,
+              providerModelId: 'whisper-large-v3',
+              credits: null,
+              costCreditsDecimal: null,
+              energyKwh: null,
+              carbonGCo2: null,
+            ),
+          ],
+        ),
+      );
+
+      // The label is the model alone: an unreported cost is not spelled out
+      // in the caption.
+      expect(find.text('whisper-large-v3'), findsOneWidget);
+      expect(find.text('Cost unknown'), findsNothing);
+
+      await tester.tap(find.text('whisper-large-v3'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('AI attribution'), findsOneWidget);
+      // The sheet still says the cost is unknown.
+      expect(find.text('Cost unknown'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'an output without any attribution names the model it recorded and says '
+    'nothing more was recorded',
+    (tester) async {
+      await pumpSummary(
+        tester,
+        asCaption: true,
+        details: null,
+        includeCarrier: false,
+        unrecordedModel: 'mistral-small-latest',
+      );
+
+      expect(
+        find.text('mistral-small-latest · Provenance not recorded'),
+        findsOneWidget,
+      );
+
+      // There is no record to open.
+      await tester.tap(
+        find.text('mistral-small-latest · Provenance not recorded'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('AI attribution'), findsNothing);
+    },
+  );
 
   for (final (label, load) in [
     ('not synced yet', Future<AiAttributionDetails?>.value),
@@ -199,22 +251,21 @@ void main() {
       () => Future<AiAttributionDetails?>.error(StateError('unavailable')),
     ),
   ]) {
-    testWidgets('a pill whose details are $label stays', (tester) async {
+    testWidgets('a caption whose details are $label stays', (tester) async {
       await pumpSummary(
         tester,
-        asPill: true,
+        asCaption: true,
         details: null,
         loadDetails: load,
       );
       await tester.pump();
 
-      expect(find.byType(DsPill), findsOneWidget);
-      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
+      expect(find.text('Unknown model'), findsOneWidget);
     });
   }
 
   testWidgets(
-    'a group with an attribution not yet synced keeps its pill',
+    'a group with an attribution not yet synced keeps its caption',
     (tester) async {
       final transcription = makeAiWorkAttribution();
       final unsynced = makeAiWorkAttribution(attributionId: 'attribution-2');
@@ -247,12 +298,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Transcription · Cost unknown'), findsOneWidget);
+      expect(find.text('Transcription'), findsOneWidget);
     },
   );
 
   testWidgets(
-    'a group whose calls reported no cost renders nothing, its gap included',
+    'a group whose calls reported no cost still shows, with its gap above',
     (tester) async {
       final transcription = makeAiWorkAttribution();
       final correction = makeAiWorkAttribution(attributionId: 'attribution-2');
@@ -286,10 +337,11 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(DsPill), findsNothing);
+      expect(find.text('Transcription · <1 Wh · 0.2 g'), findsOneWidget);
       expect(
-        tester.getSize(find.byType(AiAttributionSummaryGroup)).height,
-        0,
+        tester.getTopLeft(find.text('Transcription · <1 Wh · 0.2 g')).dy -
+            tester.getTopLeft(find.byType(AiAttributionSummaryGroup)).dy,
+        12,
       );
     },
   );
@@ -343,7 +395,7 @@ void main() {
 
       expect(find.text('Transcription · €0.40'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.byType(DsPill)).dy -
+        tester.getTopLeft(find.text('Transcription · €0.40')).dy -
             tester.getTopLeft(find.byType(AiAttributionSummaryGroup)).dy,
         12,
       );
@@ -355,7 +407,7 @@ void main() {
     (name: 'phone', size: const Size(390, 844), bottomSheet: true),
   ]) {
     testWidgets(
-      'group pill aggregates transcript cost and impact into one entry '
+      'group caption aggregates transcript cost and impact into one entry '
       'control (${layout.name})',
       (tester) async {
         await tester.binding.setSurfaceSize(layout.size);
@@ -408,7 +460,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.byType(DsPill));
+        await tester.tap(find.text('Transcription · €0.30 · 12 Wh · 3.0 g'));
         await tester.pumpAndSettle();
         expect(find.text('AI attribution'), findsOneWidget);
 
@@ -589,4 +641,138 @@ void main() {
       },
     );
   }
+
+  group('source section', () {
+    AiWorkAttribution attributionWith(
+      AiTriggerSnapshot trigger, {
+      String? taskId,
+    }) => makeAiWorkAttribution().copyWith(trigger: trigger, taskId: taskId);
+
+    Future<void> openSheet(
+      WidgetTester tester,
+      AiWorkAttribution attribution, {
+      String? taskTitle,
+    }) async {
+      await pumpSummary(
+        tester,
+        carrier: attribution,
+        taskTitle: taskTitle,
+        details: AiAttributionDetails(
+          attribution: attribution,
+          interactions: const [],
+        ),
+      );
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+    }
+
+    const fullTrigger = AiTriggerSnapshot(
+      type: AiTriggerType.automatic,
+      skillId: 'skill-1',
+      skillName: 'Image analysis',
+      profileId: 'profile-1',
+      profileName: 'Penguin vision',
+      agentId: 'agent-1',
+      agentName: 'Waddle planner',
+    );
+
+    testWidgets('names the agent, profile, skill and task that did the work', (
+      tester,
+    ) async {
+      await openSheet(
+        tester,
+        attributionWith(fullTrigger, taskId: 'task-1'),
+        taskTitle: 'Count the colony',
+      );
+
+      expect(find.text('Source'), findsOneWidget);
+      expect(find.text('Waddle planner'), findsOneWidget);
+      expect(find.text('Penguin vision'), findsOneWidget);
+      expect(find.text('Image analysis'), findsOneWidget);
+      expect(find.text('Count the colony'), findsOneWidget);
+    });
+
+    for (final (row, route) in [
+      ('ai-attribution-source-agent', '/settings/agents/instances/agent-1'),
+      ('ai-attribution-source-profile', '/settings/ai/profile/profile-1'),
+      ('ai-attribution-source-task', '/tasks/task-1'),
+    ]) {
+      testWidgets('$row closes the sheet and opens $route', (tester) async {
+        final beamed = <String>[];
+        beamToNamedOverride = beamed.add;
+        addTearDown(() => beamToNamedOverride = null);
+
+        await openSheet(tester, attributionWith(fullTrigger, taskId: 'task-1'));
+        await tester.ensureVisible(find.byKey(ValueKey(row)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(ValueKey(row)));
+        await tester.pumpAndSettle();
+
+        expect(beamed, [route]);
+        expect(find.text('AI attribution'), findsNothing);
+      });
+    }
+
+    testWidgets('a screen reader can follow a link through its semantics', (
+      tester,
+    ) async {
+      final beamed = <String>[];
+      beamToNamedOverride = beamed.add;
+      addTearDown(() => beamToNamedOverride = null);
+      final handle = tester.ensureSemantics();
+
+      await openSheet(
+        tester,
+        attributionWith(fullTrigger, taskId: 'task-1'),
+        taskTitle: 'Count the colony',
+      );
+      final link = find.bySemanticsLabel('Task: Count the colony');
+      expect(
+        tester.getSemantics(link),
+        matchesSemantics(
+          label: 'Task: Count the colony',
+          isLink: true,
+          hasTapAction: true,
+        ),
+      );
+
+      tester.semantics.tap(find.semantics.byLabel('Task: Count the colony'));
+      await tester.pumpAndSettle();
+
+      expect(beamed, ['/tasks/task-1']);
+      expect(find.text('AI attribution'), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets(
+      'falls back to ids and the generic task link when no name was recorded',
+      (tester) async {
+        await openSheet(
+          tester,
+          attributionWith(
+            const AiTriggerSnapshot(
+              type: AiTriggerType.automatic,
+              profileId: 'profile-1',
+              agentId: 'agent-1',
+            ),
+            taskId: 'task-1',
+          ),
+        );
+
+        expect(find.text('agent-1'), findsOneWidget);
+        expect(find.text('profile-1'), findsOneWidget);
+        expect(find.text('Open task'), findsOneWidget);
+        expect(find.text('Skill'), findsNothing);
+      },
+    );
+
+    testWidgets('is left out when the attribution names no source', (
+      tester,
+    ) async {
+      await openSheet(tester, makeAiWorkAttribution());
+
+      expect(find.text('AI attribution'), findsOneWidget);
+      expect(find.text('Source'), findsNothing);
+    });
+  });
 }

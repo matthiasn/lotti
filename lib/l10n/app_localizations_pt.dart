@@ -1458,6 +1458,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get aiAssistantTitle => 'Gerar…';
 
   @override
+  String get aiAttributionAgent => 'Agente';
+
+  @override
   String get aiAttributionArtifactOutput => 'Resultado';
 
   @override
@@ -1489,6 +1492,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não há detalhes das interações.';
 
   @override
+  String get aiAttributionNotRecorded => 'Proveniência não registada';
+
+  @override
+  String get aiAttributionOpenTask => 'Abrir tarefa';
+
+  @override
+  String get aiAttributionProfile => 'Perfil';
+
+  @override
   String get aiAttributionRequestEvidence => 'Dados do pedido';
 
   @override
@@ -1505,6 +1517,12 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$model · $time · $_temp0';
   }
+
+  @override
+  String get aiAttributionSkill => 'Habilidade';
+
+  @override
+  String get aiAttributionSource => 'Fonte';
 
   @override
   String get aiAttributionStartedAt => 'Iniciado às';
@@ -1528,6 +1546,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String aiAttributionSummary(String actor, String trigger, String status) {
     return '$actor · $trigger · $status';
   }
+
+  @override
+  String get aiAttributionTask => 'Tarefa';
 
   @override
   String get aiAttributionTitle => 'Atribuição de IA';

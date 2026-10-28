@@ -588,6 +588,7 @@ class SkillInferenceRunner {
     final identity = getIt<AiAttributionIdentityResolver>();
     final human = await identity.humanInitiator();
     final automatic = automationResult.skillAssignment?.automate ?? false;
+    final profile = automationResult.resolvedProfile;
     final actor = automatic
         ? AiActorSnapshot(
             type: AiActorType.automation,
@@ -600,9 +601,16 @@ class SkillInferenceRunner {
       AiAttributionStart(
         workType: workType,
         initiator: actor,
+        // The profile — and the agent that chose it, when one did — is who
+        // ran this skill: it is what a reader of the output navigates to.
         trigger: AiTriggerSnapshot(
           type: automatic ? AiTriggerType.automatic : AiTriggerType.manual,
           skillId: skill.id,
+          skillName: skill.name,
+          profileId: profile?.profileId,
+          profileName: profile?.profileName,
+          agentId: profile?.agentId,
+          agentName: profile?.agentName,
         ),
         intendedOutputs: [output],
         taskId: taskId,

@@ -2527,6 +2527,12 @@ abstract class AppLocalizations {
   /// **'Generate…'**
   String get aiAssistantTitle;
 
+  /// Label of the row naming the agent whose profile ran the AI work; tapping it opens the agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get aiAttributionAgent;
+
   /// No description provided for @aiAttributionArtifactOutput.
   ///
   /// In en, this message translates to:
@@ -2587,6 +2593,24 @@ abstract class AppLocalizations {
   /// **'No interaction details are available.'**
   String get aiAttributionNoInteractionDetails;
 
+  /// Shown next to the model name on an AI output created before the app recorded who produced it.
+  ///
+  /// In en, this message translates to:
+  /// **'Provenance not recorded'**
+  String get aiAttributionNotRecorded;
+
+  /// Link text on the task row when the task title cannot be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get aiAttributionOpenTask;
+
+  /// Label of the row naming the inference profile that ran the AI work; tapping it opens the profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get aiAttributionProfile;
+
   /// No description provided for @aiAttributionRequestEvidence.
   ///
   /// In en, this message translates to:
@@ -2604,6 +2628,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}'**
   String aiAttributionSecondary(String model, String time, int callCount);
+
+  /// Label of the row naming the skill (e.g. image analysis) that produced the AI output.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill'**
+  String get aiAttributionSkill;
+
+  /// Heading of the AI attribution details section that names the skill, profile, agent and task behind a piece of AI work.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get aiAttributionSource;
 
   /// No description provided for @aiAttributionStartedAt.
   ///
@@ -2646,6 +2682,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{actor} · {trigger} · {status}'**
   String aiAttributionSummary(String actor, String trigger, String status);
+
+  /// Label of the row naming the task the AI work belongs to; tapping it opens the task.
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get aiAttributionTask;
 
   /// No description provided for @aiAttributionTitle.
   ///

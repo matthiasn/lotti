@@ -5,7 +5,7 @@ description: How every inference call becomes an auditable, costed record attach
 resource: ../../../lib/features/ai_consumption
 tags: [ai, attribution, consumption, cost, provenance]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T22:00:00Z }
 stale_after: 2026-12-26
 sources:
   - id: consumption
@@ -20,6 +20,14 @@ sources:
     resource: ../../../lib/features/ai/services/skill_inference_runner_transcription.dart
     title: SkillInferenceRunner transcription attribution and failed-segment accounting
     last_modified: 2026-10-08
+  - id: resolved-profile
+    resource: ../../../lib/features/ai/model/resolved_profile.dart
+    title: ResolvedProfile, which carries the profile and agent a route came from
+    last_modified: 2026-10-28
+  - id: summary
+    resource: ../../../lib/features/ai_consumption/ui/widgets/ai_attribution_summary.dart
+    title: Attribution caption and details sheet, with the Source links
+    last_modified: 2026-10-28
 ---
 
 # The boundary
@@ -84,6 +92,38 @@ projection after the carrier write.
 
 Attributed image analysis is stored as the authoritative `AiResponseEntry`
 instead of also duplicating the response into journal entry text.
+
+# Who ran it
+
+A skill run — image analysis, transcription, audio summary — is not run by the
+agent itself but by the profile automation resolved for the entry. The trigger
+snapshot records that chain, so an output can say who produced it:
+
+```mermaid
+flowchart LR
+  Agent["Task agent<br/>(agentConfig.profileId)"] -->|chooses| Profile
+  Inherited["Subject or category<br/>profileId"] -->|or falls back to| Profile
+  Profile["ResolvedProfile<br/>profileId · profileName<br/>agentId · agentName"] --> Runner["SkillInferenceRunner<br/>_beginAttribution"]
+  Skill["AiConfigSkill"] --> Runner
+  Runner --> Trigger["AiTriggerSnapshot<br/>skill / profile / agent<br/>ids + names"]
+  Trigger --> Sheet["Details sheet · Source<br/>agent → agent page<br/>profile → profile page<br/>task → task"]
+```
+
+- `ProfileResolver` stamps every profile-built `ResolvedProfile` with the
+  profile's id and name; a bare legacy model route and the direct-transcription
+  stand-in carry neither, because no profile produced them.
+- `ProfileAutomationResolver` adds the agent's id and display name only on the
+  agent path. A profile inherited from the subject or its category names no
+  agent, and the record does not pretend one ran it.
+- `_beginAttribution` copies ids **and** names into `AiTriggerSnapshot`. Names
+  are snapshots, like `InferenceRouteSnapshot`'s: the record still reads as it
+  did after a rename or deletion. The ids are what the links navigate by.
+- The details sheet's **Source** section lists the agent, profile, skill and
+  task the attribution names, each opening its page where one exists, and is
+  left out when the attribution names none of them. `ai_consumption` ranks below
+  `ai`, `agents` and `tasks`, so it reads names from the snapshot and routes by
+  path rather than importing those features; only the task title is read live,
+  through `JournalDb`.
 
 # Rules that keep the ledger honest
 

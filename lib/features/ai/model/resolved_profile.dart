@@ -40,7 +40,27 @@ class ResolvedProfile {
     this.speechProvider,
     this.speechModel,
     this.skillAssignments = const [],
+    this.profileId,
+    this.profileName,
+    this.agentId,
+    this.agentName,
   });
+
+  /// Id of the `AiConfigInferenceProfile` this route was built from; null for
+  /// a bare legacy model route and for the ephemeral direct-transcription
+  /// stand-in, which come from no profile at all.
+  final String? profileId;
+
+  /// The profile's name when this route was resolved, copied so a record of
+  /// what ran survives a later rename or deletion of the profile.
+  final String? profileName;
+
+  /// Id of the agent whose configuration selected this profile; null when the
+  /// profile came from the subject or its category rather than from an agent.
+  final String? agentId;
+
+  /// That agent's display name, copied for the same reason as [profileName].
+  final String? agentName;
 
   /// The provider-native model id for the thinking slot.
   final String thinkingModelId;
@@ -159,11 +179,30 @@ class ResolvedProfile {
   ResolvedProfile withThinkingRoute({
     required AiConfigModel model,
     required AiConfigInferenceProvider provider,
+  }) => _copyWith(
+    thinkingModelId: model.providerModelId,
+    thinkingProvider: provider,
+    thinkingModel: model,
+  );
+
+  /// Returns this profile as selected by the agent [agentId], named
+  /// [agentName].
+  ResolvedProfile forAgent({
+    required String agentId,
+    required String agentName,
+  }) => _copyWith(agentId: agentId, agentName: agentName);
+
+  ResolvedProfile _copyWith({
+    String? thinkingModelId,
+    AiConfigInferenceProvider? thinkingProvider,
+    AiConfigModel? thinkingModel,
+    String? agentId,
+    String? agentName,
   }) {
     return ResolvedProfile(
-      thinkingModelId: model.providerModelId,
-      thinkingProvider: provider,
-      thinkingModel: model,
+      thinkingModelId: thinkingModelId ?? this.thinkingModelId,
+      thinkingProvider: thinkingProvider ?? this.thinkingProvider,
+      thinkingModel: thinkingModel ?? this.thinkingModel,
       chatModelId: chatModelId,
       chatProvider: chatProvider,
       chatModel: chatModel,
@@ -189,6 +228,10 @@ class ResolvedProfile {
       speechProvider: speechProvider,
       speechModel: speechModel,
       skillAssignments: skillAssignments,
+      profileId: profileId,
+      profileName: profileName,
+      agentId: agentId ?? this.agentId,
+      agentName: agentName ?? this.agentName,
     );
   }
 
@@ -227,7 +270,11 @@ class ResolvedProfile {
           speechModelId == other.speechModelId &&
           speechProvider == other.speechProvider &&
           speechModel == other.speechModel &&
-          _listEquals.equals(skillAssignments, other.skillAssignments);
+          _listEquals.equals(skillAssignments, other.skillAssignments) &&
+          profileId == other.profileId &&
+          profileName == other.profileName &&
+          agentId == other.agentId &&
+          agentName == other.agentName;
 
   @override
   int get hashCode => Object.hashAll([
@@ -259,6 +306,10 @@ class ResolvedProfile {
     speechProvider,
     speechModel,
     _listEquals.hash(skillAssignments),
+    profileId,
+    profileName,
+    agentId,
+    agentName,
   ]);
 }
 

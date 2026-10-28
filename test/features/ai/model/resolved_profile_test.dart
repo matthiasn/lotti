@@ -470,6 +470,77 @@ void main() {
       expect(replaced.imageGenerationModelId, original.imageGenerationModelId);
       expect(replaced.skillAssignments, original.skillAssignments);
     });
+
+    group('provenance', () {
+      final base = ResolvedProfile(
+        thinkingModelId: 'thinking',
+        thinkingProvider: provider1,
+        imageRecognitionModelId: 'vision',
+        imageRecognitionProvider: provider1,
+        profileId: 'profile-1',
+        profileName: 'Penguin vision',
+      );
+
+      test(
+        'forAgent names the agent and keeps every route and the profile',
+        () {
+          final chosen = base.forAgent(
+            agentId: 'agent-1',
+            agentName: 'Waddle planner',
+          );
+
+          expect(chosen.agentId, 'agent-1');
+          expect(chosen.agentName, 'Waddle planner');
+          expect(chosen.profileId, 'profile-1');
+          expect(chosen.profileName, 'Penguin vision');
+          expect(chosen.imageRecognitionModelId, 'vision');
+          expect(chosen, isNot(base));
+        },
+      );
+
+      test('a thinking replacement keeps who the profile and agent are', () {
+        final replaced = base
+            .forAgent(agentId: 'agent-1', agentName: 'Waddle planner')
+            .withThinkingRoute(
+              model: AiTestDataFactory.createTestModel(id: 'override'),
+              provider: provider2,
+            );
+
+        expect(replaced.profileId, 'profile-1');
+        expect(replaced.profileName, 'Penguin vision');
+        expect(replaced.agentId, 'agent-1');
+        expect(replaced.agentName, 'Waddle planner');
+      });
+
+      test('every provenance field participates in equality and hashing', () {
+        ResolvedProfile variant({
+          String? profileId = 'profile-1',
+          String? profileName = 'Penguin vision',
+          String? agentId,
+          String? agentName,
+        }) => ResolvedProfile(
+          thinkingModelId: 'thinking',
+          thinkingProvider: provider1,
+          imageRecognitionModelId: 'vision',
+          imageRecognitionProvider: provider1,
+          profileId: profileId,
+          profileName: profileName,
+          agentId: agentId,
+          agentName: agentName,
+        );
+
+        expect(variant(), base);
+        expect(variant().hashCode, base.hashCode);
+        final variants = {
+          variant(),
+          variant(profileId: 'profile-2'),
+          variant(profileName: 'Renamed'),
+          variant(agentId: 'agent-1'),
+          variant(agentName: 'Waddle planner'),
+        };
+        expect(variants, hasLength(5));
+      });
+    });
   });
 
   group('InferenceRouteFingerprint', () {

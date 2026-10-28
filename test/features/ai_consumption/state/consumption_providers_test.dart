@@ -12,6 +12,7 @@ import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/device_region.dart';
@@ -19,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
@@ -170,6 +172,37 @@ void main() {
         expect(byArtifact?.interactions, isEmpty);
         expect(missing, isNull);
         verifyNever(() => repository.interactionsForAttribution('missing'));
+      },
+    );
+
+    test(
+      "reads the attributed task's current title, and nothing for an id "
+      'that is not a task',
+      () async {
+        final journalDb = MockJournalDb();
+        when(
+          () => journalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => journalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+        final container = ProviderContainer(
+          overrides: [journalDbProvider.overrideWithValue(journalDb)],
+        );
+        addTearDown(container.dispose);
+
+        expect(
+          await container.read(
+            aiAttributionTaskTitleProvider(testTask.meta.id).future,
+          ),
+          testTask.data.title,
+        );
+        expect(
+          await container.read(
+            aiAttributionTaskTitleProvider(testTextEntry.meta.id).future,
+          ),
+          isNull,
+        );
       },
     );
   });

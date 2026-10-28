@@ -1454,6 +1454,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiAssistantTitle => 'Generera...';
 
   @override
+  String get aiAttributionAgent => 'Agent';
+
+  @override
   String get aiAttributionArtifactOutput => 'Utdata';
 
   @override
@@ -1485,6 +1488,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det finns inga detaljer om interaktionerna.';
 
   @override
+  String get aiAttributionNotRecorded => 'Ursprung inte registrerat';
+
+  @override
+  String get aiAttributionOpenTask => 'Öppna uppgiften';
+
+  @override
+  String get aiAttributionProfile => 'Profil';
+
+  @override
   String get aiAttributionRequestEvidence => 'Underlag för begäran';
 
   @override
@@ -1501,6 +1513,12 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$model · $time · $_temp0';
   }
+
+  @override
+  String get aiAttributionSkill => 'Färdighet';
+
+  @override
+  String get aiAttributionSource => 'Källa';
 
   @override
   String get aiAttributionStartedAt => 'Startad';
@@ -1524,6 +1542,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String aiAttributionSummary(String actor, String trigger, String status) {
     return '$actor · $trigger · $status';
   }
+
+  @override
+  String get aiAttributionTask => 'Uppgift';
 
   @override
   String get aiAttributionTitle => 'AI-ursprung';

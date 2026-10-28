@@ -390,9 +390,10 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       _ => null,
     };
 
-    // A recording's player carries its transcription cost pill beneath it.
-    // The pill hides itself when no cost was reported, gap included, so it
-    // rides with the player instead of taking a rhythm step of its own.
+    // A recording's player carries its transcription attribution caption
+    // beneath it. The caption hides itself without attributions, gap
+    // included, so it rides with the player instead of taking a rhythm step
+    // of its own.
     final audioSection = item is JournalAudio
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,7 +509,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
               id: item.id,
             ),
             attribution: item.data.aiAttribution,
-            asPill: true,
+            asCaption: true,
             includeTopSpacing: false,
           ),
       ];
@@ -552,7 +553,7 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
             id: item.id,
           ),
           attribution: item.data.aiAttribution,
-          asPill: true,
+          asCaption: true,
           includeTopSpacing: false,
         ),
     ];
@@ -776,7 +777,7 @@ class _CollapsedImagePreview extends ConsumerWidget {
                           color: tokens.colors.text.mediumEmphasis,
                         ),
                       ),
-                      // The same pill the expanded card carries, so a
+                      // The same caption the expanded card carries, so a
                       // collapsed photo says who wrote the line above it
                       // rather than leaving a model's words in the ink of
                       // the user's own caption. It hides itself when the
@@ -790,7 +791,7 @@ class _CollapsedImagePreview extends ConsumerWidget {
                             id: image.id,
                           ),
                           attribution: image.data.aiAttribution,
-                          asPill: true,
+                          asCaption: true,
                           includeTopSpacing: false,
                         ),
                       ),

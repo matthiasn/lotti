@@ -316,6 +316,81 @@ extension _ImageAnalysisPersistenceCases on _SkillInferenceTestSetup {
     });
 
     test(
+      'records the skill, profile and agent that ran the analysis on its '
+      'attribution',
+      () async {
+        final attribution = _registerInteractionCapture();
+        final imageEntity = makeImageEntity();
+        await createStubImageFile();
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) => Stream.value(makeStreamChunk('Two penguins')));
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            id: any(named: 'id'),
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((invocation) async => makePersistedResponse(invocation));
+        stubLoggingEvent();
+
+        final base = makeImageAnalysisResult();
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              imageRecognitionModelId: 'vision-model',
+              imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
+              profileId: 'profile-vision',
+              profileName: 'Penguin vision',
+            ).forAgent(agentId: 'agent-1', agentName: 'Waddle planner'),
+            skill: base.skill,
+            skillAssignment: base.skillAssignment,
+          ),
+        );
+
+        final start =
+            verify(
+                  () => attribution.service.begin(captureAny()),
+                ).captured.single
+                as AiAttributionStart;
+        expect(
+          start.trigger,
+          AiTriggerSnapshot(
+            type: AiTriggerType.automatic,
+            skillId: testImageSkill.id,
+            skillName: testImageSkill.name,
+            profileId: 'profile-vision',
+            profileName: 'Penguin vision',
+            agentId: 'agent-1',
+            agentName: 'Waddle planner',
+          ),
+        );
+      },
+    );
+
+    test(
       'fails the run without finalizing attribution when the attributed '
       'analysis cannot be persisted',
       () async {

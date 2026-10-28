@@ -68,7 +68,19 @@ void main() {
 
       final result = await resolver.resolveForSubject('task-1');
 
-      expect(result, equals(resolvedProfile));
+      // The profile comes back stamped with the agent that chose it, which is
+      // how an AI output later names who ran it.
+      expect(
+        result,
+        equals(
+          resolvedProfile.forAgent(
+            agentId: agent.agentId,
+            agentName: agent.displayName,
+          ),
+        ),
+      );
+      expect(result?.agentId, agent.agentId);
+      expect(result?.agentName, agent.displayName);
       verify(
         () => mockTaskAgentService.getTaskAgentForTask('task-1'),
       ).called(1);
@@ -279,7 +291,7 @@ void main() {
         'task-with-profile',
       );
 
-      expect(result, equals(resolvedProfile));
+      expect(result?.agentId, agent.agentId);
       // Agent path was used, not the task fallback.
       verifyNever(
         () => mockProfileResolver.resolveByProfileId(any()),
@@ -401,9 +413,18 @@ void main() {
         final result = await generatedResolver.resolveForSubject(taskId);
 
         if (scenario.resolvesViaAgent) {
-          expect(result, same(agentProfile), reason: '$scenario');
+          expect(
+            result,
+            agentProfile.forAgent(
+              agentId: agent.agentId,
+              agentName: agent.displayName,
+            ),
+            reason: '$scenario',
+          );
         } else if (scenario.resolvesViaTask) {
+          // A profile the subject inherited names no agent.
           expect(result, same(taskProfile), reason: '$scenario');
+          expect(result?.agentId, isNull, reason: '$scenario');
         } else {
           expect(result, isNull, reason: '$scenario');
         }

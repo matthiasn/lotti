@@ -1053,6 +1053,10 @@
   "aggregationHourlySum": "Hourly sum",
   "aggregationNone": "Raw values",
   "aiAssistantTitle": "Generate…",
+  "aiAttributionAgent": "Agent",
+  "@aiAttributionAgent": {
+    "description": "Label of the row naming the agent whose profile ran the AI work; tapping it opens the agent."
+  },
   "aiAttributionArtifactOutput": "Output",
   "aiAttributionCompletedAt": "Completed at",
   "aiAttributionCost": "Cost",
@@ -1063,6 +1067,18 @@
   "aiAttributionInteractions": "Interactions",
   "aiAttributionLoading": "Loading AI attribution…",
   "aiAttributionNoInteractionDetails": "No interaction details are available.",
+  "aiAttributionNotRecorded": "Provenance not recorded",
+  "@aiAttributionNotRecorded": {
+    "description": "Shown next to the model name on an AI output created before the app recorded who produced it."
+  },
+  "aiAttributionOpenTask": "Open task",
+  "@aiAttributionOpenTask": {
+    "description": "Link text on the task row when the task title cannot be read."
+  },
+  "aiAttributionProfile": "Profile",
+  "@aiAttributionProfile": {
+    "description": "Label of the row naming the inference profile that ran the AI work; tapping it opens the profile."
+  },
   "aiAttributionRequestEvidence": "Request evidence",
   "aiAttributionResponseEvidence": "Response evidence",
   "aiAttributionSecondary": "{model} · {time} · {callCount, plural, =0{no calls} =1{1 call} other{{callCount} calls}}",
@@ -1078,6 +1094,14 @@
         "type": "int"
       }
     }
+  },
+  "aiAttributionSkill": "Skill",
+  "@aiAttributionSkill": {
+    "description": "Label of the row naming the skill (e.g. image analysis) that produced the AI output."
+  },
+  "aiAttributionSource": "Source",
+  "@aiAttributionSource": {
+    "description": "Heading of the AI attribution details section that names the skill, profile, agent and task behind a piece of AI work."
   },
   "aiAttributionStartedAt": "Started at",
   "aiAttributionStatus": "Status",
@@ -1098,6 +1122,10 @@
         "type": "String"
       }
     }
+  },
+  "aiAttributionTask": "Task",
+  "@aiAttributionTask": {
+    "description": "Label of the row naming the task the AI work belongs to; tapping it opens the task."
   },
   "aiAttributionTitle": "AI attribution",
   "aiAttributionTokenBreakdown": "Input: {input} · Output: {output} · Cached: {cached} · Reasoning: {reasoning}",

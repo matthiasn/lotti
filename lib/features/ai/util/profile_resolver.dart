@@ -394,6 +394,8 @@ class ProfileResolver {
       speechProvider: speechSlot?.provider,
       speechModel: speechSlot?.model,
       skillAssignments: config.skillAssignments,
+      profileId: config.id,
+      profileName: config.name,
     );
   }
 

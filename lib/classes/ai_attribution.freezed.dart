@@ -287,7 +287,7 @@ as String?,
 /// @nodoc
 mixin _$AiTriggerSnapshot {
 
- AiTriggerType get type; String? get skillId; String? get promptId; String? get profileId; String? get agentId; String? get wakeRunKey; String? get automationRuleId;
+ AiTriggerType get type; String? get skillId; String? get promptId; String? get profileId; String? get agentId; String? get wakeRunKey; String? get automationRuleId; String? get skillName; String? get profileName; String? get agentName;
 /// Create a copy of AiTriggerSnapshot
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -300,16 +300,16 @@ $AiTriggerSnapshotCopyWith<AiTriggerSnapshot> get copyWith => _$AiTriggerSnapsho
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiTriggerSnapshot&&(identical(other.type, type) || other.type == type)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&(identical(other.automationRuleId, automationRuleId) || other.automationRuleId == automationRuleId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiTriggerSnapshot&&(identical(other.type, type) || other.type == type)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&(identical(other.automationRuleId, automationRuleId) || other.automationRuleId == automationRuleId)&&(identical(other.skillName, skillName) || other.skillName == skillName)&&(identical(other.profileName, profileName) || other.profileName == profileName)&&(identical(other.agentName, agentName) || other.agentName == agentName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,skillId,promptId,profileId,agentId,wakeRunKey,automationRuleId);
+int get hashCode => Object.hash(runtimeType,type,skillId,promptId,profileId,agentId,wakeRunKey,automationRuleId,skillName,profileName,agentName);
 
 @override
 String toString() {
-  return 'AiTriggerSnapshot(type: $type, skillId: $skillId, promptId: $promptId, profileId: $profileId, agentId: $agentId, wakeRunKey: $wakeRunKey, automationRuleId: $automationRuleId)';
+  return 'AiTriggerSnapshot(type: $type, skillId: $skillId, promptId: $promptId, profileId: $profileId, agentId: $agentId, wakeRunKey: $wakeRunKey, automationRuleId: $automationRuleId, skillName: $skillName, profileName: $profileName, agentName: $agentName)';
 }
 
 
@@ -320,7 +320,7 @@ abstract mixin class $AiTriggerSnapshotCopyWith<$Res>  {
   factory $AiTriggerSnapshotCopyWith(AiTriggerSnapshot value, $Res Function(AiTriggerSnapshot) _then) = _$AiTriggerSnapshotCopyWithImpl;
 @useResult
 $Res call({
- AiTriggerType type, String? skillId, String? promptId, String? profileId, String? agentId, String? wakeRunKey, String? automationRuleId
+ AiTriggerType type, String? skillId, String? promptId, String? profileId, String? agentId, String? wakeRunKey, String? automationRuleId, String? skillName, String? profileName, String? agentName
 });
 
 
@@ -337,7 +337,7 @@ class _$AiTriggerSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of AiTriggerSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? skillId = freezed,Object? promptId = freezed,Object? profileId = freezed,Object? agentId = freezed,Object? wakeRunKey = freezed,Object? automationRuleId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? skillId = freezed,Object? promptId = freezed,Object? profileId = freezed,Object? agentId = freezed,Object? wakeRunKey = freezed,Object? automationRuleId = freezed,Object? skillName = freezed,Object? profileName = freezed,Object? agentName = freezed,}) {
   return _then(_self.copyWith(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as AiTriggerType,skillId: freezed == skillId ? _self.skillId : skillId // ignore: cast_nullable_to_non_nullable
@@ -346,6 +346,9 @@ as String?,profileId: freezed == profileId ? _self.profileId : profileId // igno
 as String?,agentId: freezed == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
 as String?,wakeRunKey: freezed == wakeRunKey ? _self.wakeRunKey : wakeRunKey // ignore: cast_nullable_to_non_nullable
 as String?,automationRuleId: freezed == automationRuleId ? _self.automationRuleId : automationRuleId // ignore: cast_nullable_to_non_nullable
+as String?,skillName: freezed == skillName ? _self.skillName : skillName // ignore: cast_nullable_to_non_nullable
+as String?,profileName: freezed == profileName ? _self.profileName : profileName // ignore: cast_nullable_to_non_nullable
+as String?,agentName: freezed == agentName ? _self.agentName : agentName // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -431,10 +434,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId,  String? skillName,  String? profileName,  String? agentName)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiTriggerSnapshot() when $default != null:
-return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId);case _:
+return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId,_that.skillName,_that.profileName,_that.agentName);case _:
   return orElse();
 
 }
@@ -452,10 +455,10 @@ return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.ag
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId,  String? skillName,  String? profileName,  String? agentName)  $default,) {final _that = this;
 switch (_that) {
 case _AiTriggerSnapshot():
-return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId);case _:
+return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId,_that.skillName,_that.profileName,_that.agentName);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -472,10 +475,10 @@ return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.ag
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AiTriggerType type,  String? skillId,  String? promptId,  String? profileId,  String? agentId,  String? wakeRunKey,  String? automationRuleId,  String? skillName,  String? profileName,  String? agentName)?  $default,) {final _that = this;
 switch (_that) {
 case _AiTriggerSnapshot() when $default != null:
-return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId);case _:
+return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.agentId,_that.wakeRunKey,_that.automationRuleId,_that.skillName,_that.profileName,_that.agentName);case _:
   return null;
 
 }
@@ -487,7 +490,7 @@ return $default(_that.type,_that.skillId,_that.promptId,_that.profileId,_that.ag
 @JsonSerializable()
 
 class _AiTriggerSnapshot implements AiTriggerSnapshot {
-  const _AiTriggerSnapshot({required this.type, this.skillId, this.promptId, this.profileId, this.agentId, this.wakeRunKey, this.automationRuleId});
+  const _AiTriggerSnapshot({required this.type, this.skillId, this.promptId, this.profileId, this.agentId, this.wakeRunKey, this.automationRuleId, this.skillName, this.profileName, this.agentName});
   factory _AiTriggerSnapshot.fromJson(Map<String, dynamic> json) => _$AiTriggerSnapshotFromJson(json);
 
 @override final  AiTriggerType type;
@@ -497,6 +500,9 @@ class _AiTriggerSnapshot implements AiTriggerSnapshot {
 @override final  String? agentId;
 @override final  String? wakeRunKey;
 @override final  String? automationRuleId;
+@override final  String? skillName;
+@override final  String? profileName;
+@override final  String? agentName;
 
 /// Create a copy of AiTriggerSnapshot
 /// with the given fields replaced by the non-null parameter values.
@@ -511,16 +517,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiTriggerSnapshot&&(identical(other.type, type) || other.type == type)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&(identical(other.automationRuleId, automationRuleId) || other.automationRuleId == automationRuleId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiTriggerSnapshot&&(identical(other.type, type) || other.type == type)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&(identical(other.automationRuleId, automationRuleId) || other.automationRuleId == automationRuleId)&&(identical(other.skillName, skillName) || other.skillName == skillName)&&(identical(other.profileName, profileName) || other.profileName == profileName)&&(identical(other.agentName, agentName) || other.agentName == agentName));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,skillId,promptId,profileId,agentId,wakeRunKey,automationRuleId);
+int get hashCode => Object.hash(runtimeType,type,skillId,promptId,profileId,agentId,wakeRunKey,automationRuleId,skillName,profileName,agentName);
 
 @override
 String toString() {
-  return 'AiTriggerSnapshot(type: $type, skillId: $skillId, promptId: $promptId, profileId: $profileId, agentId: $agentId, wakeRunKey: $wakeRunKey, automationRuleId: $automationRuleId)';
+  return 'AiTriggerSnapshot(type: $type, skillId: $skillId, promptId: $promptId, profileId: $profileId, agentId: $agentId, wakeRunKey: $wakeRunKey, automationRuleId: $automationRuleId, skillName: $skillName, profileName: $profileName, agentName: $agentName)';
 }
 
 
@@ -531,7 +537,7 @@ abstract mixin class _$AiTriggerSnapshotCopyWith<$Res> implements $AiTriggerSnap
   factory _$AiTriggerSnapshotCopyWith(_AiTriggerSnapshot value, $Res Function(_AiTriggerSnapshot) _then) = __$AiTriggerSnapshotCopyWithImpl;
 @override @useResult
 $Res call({
- AiTriggerType type, String? skillId, String? promptId, String? profileId, String? agentId, String? wakeRunKey, String? automationRuleId
+ AiTriggerType type, String? skillId, String? promptId, String? profileId, String? agentId, String? wakeRunKey, String? automationRuleId, String? skillName, String? profileName, String? agentName
 });
 
 
@@ -548,7 +554,7 @@ class __$AiTriggerSnapshotCopyWithImpl<$Res>
 
 /// Create a copy of AiTriggerSnapshot
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? skillId = freezed,Object? promptId = freezed,Object? profileId = freezed,Object? agentId = freezed,Object? wakeRunKey = freezed,Object? automationRuleId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? skillId = freezed,Object? promptId = freezed,Object? profileId = freezed,Object? agentId = freezed,Object? wakeRunKey = freezed,Object? automationRuleId = freezed,Object? skillName = freezed,Object? profileName = freezed,Object? agentName = freezed,}) {
   return _then(_AiTriggerSnapshot(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as AiTriggerType,skillId: freezed == skillId ? _self.skillId : skillId // ignore: cast_nullable_to_non_nullable
@@ -557,6 +563,9 @@ as String?,profileId: freezed == profileId ? _self.profileId : profileId // igno
 as String?,agentId: freezed == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
 as String?,wakeRunKey: freezed == wakeRunKey ? _self.wakeRunKey : wakeRunKey // ignore: cast_nullable_to_non_nullable
 as String?,automationRuleId: freezed == automationRuleId ? _self.automationRuleId : automationRuleId // ignore: cast_nullable_to_non_nullable
+as String?,skillName: freezed == skillName ? _self.skillName : skillName // ignore: cast_nullable_to_non_nullable
+as String?,profileName: freezed == profileName ? _self.profileName : profileName // ignore: cast_nullable_to_non_nullable
+as String?,agentName: freezed == agentName ? _self.agentName : agentName // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

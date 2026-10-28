@@ -45,7 +45,7 @@ const _fadeOutPreviewMaxHeight = 200.0;
 /// - [collapsible]: binary show-full-or-collapsed. Long content (by
 ///   [_collapseCharThreshold] / [_collapseNewlineThreshold]) starts fully
 ///   collapsed — no body at all, just the "Show more" toggle and the
-///   attribution pill identifying the analysis. Short content renders fully
+///   attribution caption identifying the analysis. Short content renders fully
 ///   with no toggle.
 /// - [fadeOut]: legacy always-faded preview without a toggle, used where the
 ///   response renders as its own journal entry detail.
@@ -212,7 +212,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     // Collapsed rendering depends on whether the response published tiers.
     // A summary collapses to its TLDR — the tier written for exactly this
     // slot. Everything else collapses to no body at all, leaving just the
-    // toggle and the attribution pill that identifies the analysis.
+    // toggle and the attribution caption that identifies the analysis.
     final isCollapsed = _canCollapse && _collapsed;
     final tldr = _tldr;
     final Widget? body;
@@ -247,7 +247,9 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
               id: aiResponse.meta.id,
             ),
             attribution: aiResponse.data.aiAttribution,
-            asPill: true,
+            asCaption: true,
+            // An analysis older than attribution still names its model.
+            unrecordedModel: aiResponse.data.model,
           ),
         ],
       ),
