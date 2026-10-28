@@ -90,7 +90,7 @@
   "agentControlsReanalyzeButton": "Erneut analysieren",
   "agentControlsResumeButton": "Fortsetzen",
   "agentConversationEmpty": "Noch keine Konversationen.",
-  "agentConversationLiveBanner": "Der Agent arbeitet noch an dieser Unterhaltung. Wenn du stoppst, bleibt alles bisher Geschriebene erhalten.",
+  "agentConversationLiveBanner": "Der Agent arbeitet noch an dieser Unterhaltung. Wenn du ihn stoppst, bleiben gespeicherte Nachrichten erhalten und die angefangene Antwort wird verworfen.",
   "agentConversationStopped": "Gestoppt",
   "agentConversationThreadSummary": "{messageCount} Nachrichten, {toolCallCount} Tool-Aufrufe · {shortId}",
   "@agentConversationThreadSummary": {

@@ -186,7 +186,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'L’agente sta ancora lavorando a questa conversazione. Se la fermi, resta tutto ciò che è stato scritto finora.';
+      'L’agente sta ancora lavorando a questa conversazione. Se lo fermi, i messaggi già salvati restano e la risposta in corso viene scartata.';
 
   @override
   String get agentConversationStopped => 'Fermata';

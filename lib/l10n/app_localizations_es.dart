@@ -186,7 +186,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'El agente sigue trabajando en esta conversación. Si la detienes, se conserva todo lo escrito hasta ahora.';
+      'El agente sigue trabajando en esta conversación. Si lo detienes, se conservan los mensajes guardados y se descarta la respuesta en curso.';
 
   @override
   String get agentConversationStopped => 'Detenida';

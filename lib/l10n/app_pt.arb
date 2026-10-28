@@ -89,7 +89,7 @@
   "agentControlsReanalyzeButton": "Reanalisar",
   "agentControlsResumeButton": "Currículo",
   "agentConversationEmpty": "Nenhuma conversa ainda.",
-  "agentConversationLiveBanner": "O agente ainda está a trabalhar nesta conversa. Se parares, fica guardado tudo o que já foi escrito.",
+  "agentConversationLiveBanner": "O agente ainda está a trabalhar nesta conversa. Se o parares, as mensagens já guardadas mantêm-se e a resposta em curso é descartada.",
   "agentConversationStopped": "Parada",
   "agentConversationThreadSummary": "{messageCount} mensagens, {toolCallCount} chamadas de ferramenta · {shortId}",
   "@agentConversationThreadSummary": {

@@ -89,7 +89,7 @@
   "agentControlsReanalyzeButton": "Heranalyseren",
   "agentControlsResumeButton": "Hervatten",
   "agentConversationEmpty": "Nog geen gesprekken.",
-  "agentConversationLiveBanner": "De agent werkt nog aan dit gesprek. Als je stopt, blijft alles bewaard wat tot nu toe is geschreven.",
+  "agentConversationLiveBanner": "De agent werkt nog aan dit gesprek. Als je hem stopt, blijven opgeslagen berichten bewaard en wordt het antwoord in uitvoering weggegooid.",
   "agentConversationStopped": "Gestopt",
   "agentConversationThreadSummary": "{messageCount} berichten, {toolCallCount} tool calls · {shortId}",
   "@agentConversationThreadSummary": {

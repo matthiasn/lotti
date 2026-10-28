@@ -90,7 +90,7 @@
   "agentControlsReanalyzeButton": "Omanalysera",
   "agentControlsResumeButton": "Fortsätt",
   "agentConversationEmpty": "Inga samtal än.",
-  "agentConversationLiveBanner": "Agenten arbetar fortfarande med den här konversationen. Om du stoppar behålls allt som skrivits hittills.",
+  "agentConversationLiveBanner": "Agenten arbetar fortfarande med den här konversationen. Om du stoppar den behålls sparade meddelanden och svaret som skrivs kastas.",
   "agentConversationStopped": "Stoppad",
   "agentConversationThreadSummary": "{messageCount} meddelanden, {toolCallCount} verktygsanrop · {shortId}",
   "@agentConversationThreadSummary": {

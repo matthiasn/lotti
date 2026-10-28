@@ -182,7 +182,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'De agent werkt nog aan dit gesprek. Als je stopt, blijft alles bewaard wat tot nu toe is geschreven.';
+      'De agent werkt nog aan dit gesprek. Als je hem stopt, blijven opgeslagen berichten bewaard en wordt het antwoord in uitvoering weggegooid.';
 
   @override
   String get agentConversationStopped => 'Gestopt';

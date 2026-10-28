@@ -182,7 +182,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'Agent na této konverzaci ještě pracuje. Zastavením zůstane zachováno vše, co už napsal.';
+      'Agent na této konverzaci ještě pracuje. Když ho zastavíš, uložené zprávy zůstanou a rozepsaná odpověď se zahodí.';
 
   @override
   String get agentConversationStopped => 'Zastaveno';

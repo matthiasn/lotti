@@ -90,7 +90,7 @@
   "agentControlsReanalyzeButton": "Gen-analyser",
   "agentControlsResumeButton": "CV",
   "agentConversationEmpty": "Ingen samtaler endnu.",
-  "agentConversationLiveBanner": "Agenten arbejder stadig på denne samtale. Hvis du stopper, beholdes alt, der er skrevet indtil nu.",
+  "agentConversationLiveBanner": "Agenten arbejder stadig på denne samtale. Hvis du stopper den, beholdes de gemte beskeder, og svaret under udarbejdelse kasseres.",
   "agentConversationStopped": "Stoppet",
   "agentConversationThreadSummary": "{messageCount} beskeder, {toolCallCount} værktøjskald · {shortId}",
   "@agentConversationThreadSummary": {

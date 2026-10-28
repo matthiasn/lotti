@@ -185,7 +185,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'O agente ainda está a trabalhar nesta conversa. Se parares, fica guardado tudo o que já foi escrito.';
+      'O agente ainda está a trabalhar nesta conversa. Se o parares, as mensagens já guardadas mantêm-se e a resposta em curso é descartada.';
 
   @override
   String get agentConversationStopped => 'Parada';

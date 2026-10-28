@@ -90,7 +90,7 @@
   "agentControlsReanalyzeButton": "Znovu analyzovat",
   "agentControlsResumeButton": "Pokračovat",
   "agentConversationEmpty": "Zatím žádné konverzace.",
-  "agentConversationLiveBanner": "Agent na této konverzaci ještě pracuje. Zastavením zůstane zachováno vše, co už napsal.",
+  "agentConversationLiveBanner": "Agent na této konverzaci ještě pracuje. Když ho zastavíš, uložené zprávy zůstanou a rozepsaná odpověď se zahodí.",
   "agentConversationStopped": "Zastaveno",
   "agentConversationThreadSummary": "{messageCount} zpráv, {toolCallCount} volání nástrojů · {shortId}",
   "@agentConversationThreadSummary": {

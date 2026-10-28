@@ -383,7 +383,6 @@ class ConversationRepository extends Notifier<void> {
         // This prevents JSON corruption when chunks are split mid-character or arrive out of order
         final toolCallArgumentBuffers = <String, StringBuffer>{};
         InferenceUsage? turnUsage;
-        var abortedMidTurn = false;
 
         try {
           // Make the provider call with full conversation history. The
@@ -453,10 +452,7 @@ class ConversationRepository extends Notifier<void> {
             // A stop also lands mid-turn: a model stuck streaming would
             // otherwise keep going, and billing, until it ends on its own.
             // Leaving the loop cancels the stream subscription.
-            if (isAgentWakeAborted) {
-              abortedMidTurn = true;
-              break;
-            }
+            if (isAgentWakeAborted) break;
             // Capture usage from the response (typically on the final chunk).
             if (response.usage != null) {
               final u = response.usage!;
@@ -514,8 +510,10 @@ class ConversationRepository extends Notifier<void> {
         }
 
         // A cut-off turn may hold half-streamed tool-call arguments, so it is
-        // neither persisted nor executed.
-        if (abortedMidTurn) {
+        // neither persisted nor executed. Checked here rather than only on
+        // each chunk: a stop can land after the last chunk but before the
+        // stream closes, when the per-chunk check no longer runs.
+        if (isAgentWakeAborted) {
           _logger.log(
             LogDomain.ai,
             'agent wake aborted — cut the current model turn short',

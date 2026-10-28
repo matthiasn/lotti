@@ -183,7 +183,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'Agentul încă lucrează la această conversație. Dacă o opriți, se păstrează tot ce s-a scris până acum.';
+      'Agentul încă lucrează la această conversație. Dacă opriți agentul, mesajele deja salvate se păstrează, iar răspunsul în curs se pierde.';
 
   @override
   String get agentConversationStopped => 'Oprită';

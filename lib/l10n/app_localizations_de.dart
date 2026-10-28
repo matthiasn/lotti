@@ -186,7 +186,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'Der Agent arbeitet noch an dieser Unterhaltung. Wenn du stoppst, bleibt alles bisher Geschriebene erhalten.';
+      'Der Agent arbeitet noch an dieser Unterhaltung. Wenn du ihn stoppst, bleiben gespeicherte Nachrichten erhalten und die angefangene Antwort wird verworfen.';
 
   @override
   String get agentConversationStopped => 'Gestoppt';

@@ -90,7 +90,7 @@
   "agentControlsReanalyzeButton": "Réanalyser",
   "agentControlsResumeButton": "Reprendre",
   "agentConversationEmpty": "Pas encore de conversations.",
-  "agentConversationLiveBanner": "L’agent travaille encore sur cette conversation. Si tu l’arrêtes, tout ce qui a été écrit jusqu’ici est conservé.",
+  "agentConversationLiveBanner": "L’agent travaille encore sur cette conversation. Si tu l’arrêtes, les messages déjà enregistrés sont conservés et la réponse en cours est abandonnée.",
   "agentConversationStopped": "Arrêtée",
   "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} appels d'outils · {shortId}",
   "@agentConversationThreadSummary": {

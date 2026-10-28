@@ -432,7 +432,7 @@ abstract class AppLocalizations {
   /// Banner at the top of the agent conversation that is still running, above its stop button.
   ///
   /// In en, this message translates to:
-  /// **'The agent is still working on this conversation. Stopping keeps everything written so far.'**
+  /// **'The agent is still working on this conversation. Stopping the agent keeps its saved messages and drops the reply in progress.'**
   String get agentConversationLiveBanner;
 
   /// Badge on an agent conversation thread whose wake was stopped before it finished.

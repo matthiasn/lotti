@@ -921,6 +921,71 @@ void main() {
         },
       );
 
+      test(
+        'a stop after the last chunk but before the stream closes still runs '
+        "none of the turn's tool calls",
+        () async {
+          final streamController =
+              StreamController<CreateChatCompletionStreamResponse>();
+          _stubGenerateText(
+            mockOllamaRepo,
+          ).thenAnswer((_) => streamController.stream);
+          var aborted = false;
+
+          final sendFuture = runZoned(
+            () => repository.sendMessage(
+              conversationId: conversationId,
+              message: 'Analyse',
+              model: 'test-model',
+              provider: provider,
+              inferenceRepo: mockOllamaRepo,
+              strategy: mockStrategy,
+            ),
+            zoneValues: {agentWakeAbortedZoneKey: () => aborted},
+          );
+
+          // The whole tool call arrives, then the stop, then the close — so
+          // the per-chunk check never sees the abort.
+          streamController.add(
+            const CreateChatCompletionStreamResponse(
+              id: 'chunk-1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      ChatCompletionStreamMessageToolCallChunk(
+                        index: 0,
+                        id: 'tool-1',
+                        type: ChatCompletionStreamMessageToolCallChunkType
+                            .function,
+                        function: ChatCompletionStreamMessageFunctionCall(
+                          name: 'test_function',
+                          arguments: '{"arg": "value"}',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          );
+          await pumpEventQueue();
+          aborted = true;
+          await streamController.close();
+          await sendFuture;
+
+          verifyNever(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          );
+        },
+      );
+
       test('handles strategy with complete action', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([

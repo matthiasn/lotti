@@ -182,7 +182,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentConversationLiveBanner =>
-      'Agenten arbejder stadig på denne samtale. Hvis du stopper, beholdes alt, der er skrevet indtil nu.';
+      'Agenten arbejder stadig på denne samtale. Hvis du stopper den, beholdes de gemte beskeder, og svaret under udarbejdelse kasseres.';
 
   @override
   String get agentConversationStopped => 'Stoppet';
