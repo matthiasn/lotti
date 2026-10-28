@@ -52,9 +52,21 @@ void main() {
     );
   });
 
-  test('drops an unclosed block through the end of input', () {
-    expect(stripThinkBlocks('Answer <think>cut off mid-thought'), 'Answer');
+  test('an unclosed leading block is a cut-off thought and drops', () {
     expect(stripThinkBlocks('<thinking>never closed'), isNull);
+    expect(
+      stripThinkBlocks('<think>first</think>\n<think>cut off mid-thought'),
+      isNull,
+    );
+  });
+
+  test('an unclosed tag inside the answer is quoted text and stays', () {
+    const answer = 'Wrap reasoning in `<think>` tags:\n```\n<think>\n```';
+    expect(stripThinkBlocks(answer), answer);
+    expect(
+      stripThinkBlocks('<think>plan</think> Use `<think>` here.'),
+      'Use `<think>` here.',
+    );
   });
 
   test('leaves tags that only start like a think tag', () {
