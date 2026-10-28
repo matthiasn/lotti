@@ -226,6 +226,16 @@ class MobileNavigationLauncher extends StatelessWidget {
     );
   }
 
+  /// Whether the [centerBand] is at least [reservedCenterWidth] wide. False
+  /// when the leading chips and the page action, even down to its glyph,
+  /// leave too little of the row — the shell then floats the island above
+  /// the row instead of squeezing it to nothing.
+  bool centerFits(BuildContext context) {
+    final band = centerBand(context);
+    return MediaQuery.sizeOf(context).width - band.start - band.end >=
+        reservedCenterWidth;
+  }
+
   /// Whether [action] rides the row with its label, given this launcher's
   /// utility button and reserved centre.
   bool _labeled(BuildContext context, MobileNavDockAction action) =>

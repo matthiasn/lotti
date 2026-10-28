@@ -634,6 +634,81 @@ void main() {
     );
   });
 
+  group('MobileActivityBuilder', () {
+    /// Pumps the builder and records every activity it hands out.
+    Future<List<MobileActivity>> pumpBuilder(
+      WidgetTester tester, {
+      AudioRecorderState? state,
+      JournalEntity? timer,
+      bool omitAudio = false,
+    }) async {
+      when(timeService.getCurrent).thenReturn(timer);
+      final seen = <MobileActivity>[];
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MobileActivityBuilder(
+            omitAudio: omitAudio,
+            child: const SizedBox.shrink(),
+            builder: (context, activity, child) {
+              seen.add(activity);
+              return child;
+            },
+          ),
+          theme: DesignSystemTheme.dark(),
+          overrides: <Override>[
+            audioRecorderControllerProvider.overrideWith(
+              () => StubAudioRecorderController(state),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      return seen;
+    }
+
+    testWidgets('a timer already running counts on the first frame', (
+      tester,
+    ) async {
+      final seen = await pumpBuilder(tester, timer: timerEntry());
+
+      expect(
+        seen.first,
+        const MobileActivity(timer: true, recording: false),
+      );
+    });
+
+    testWidgets('rebuilds when a timer starts or stops, not on every tick', (
+      tester,
+    ) async {
+      final seen = await pumpBuilder(tester);
+      expect(seen, [MobileActivity.none]);
+
+      await emitTimer(tester, timerEntry());
+      for (var s = 35; s < 38; s++) {
+        await emitTimer(tester, timerEntry(elapsed: Duration(seconds: s)));
+      }
+      await emitTimer(tester, null);
+
+      expect(seen, [
+        MobileActivity.none,
+        const MobileActivity(timer: true, recording: false),
+        MobileActivity.none,
+      ]);
+    });
+
+    testWidgets('counts a recording by the island rule, and none when audio '
+        'is omitted', (tester) async {
+      expect(
+        (await pumpBuilder(tester, state: recorder())).last,
+        const MobileActivity(timer: false, recording: true),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(
+        (await pumpBuilder(tester, state: recorder(), omitAudio: true)).last,
+        MobileActivity.none,
+      );
+    });
+  });
   group('geometry', () {
     const both = MobileActivity(timer: true, recording: true);
     const timerOnly = MobileActivity(timer: true, recording: false);
@@ -672,7 +747,7 @@ void main() {
       expect(bottom + capsule / 2, rowBottom + chip / 2);
     });
 
-    testWidgets('docked, one capsule claims nothing above the bar and a '
+    testWidgets('in the row, one capsule claims nothing above the bar and a '
         'stack claims only what rises above it', (tester) async {
       await pumpIsland(tester, timer: timerEntry());
       final context = islandContext(tester);
@@ -681,7 +756,7 @@ void main() {
         MobileActivityIsland.heightAboveBar(
           context,
           MobileActivity.none,
-          barDocked: true,
+          inRow: true,
         ),
         0,
       );
@@ -689,7 +764,7 @@ void main() {
         MobileActivityIsland.heightAboveBar(
           context,
           timerOnly,
-          barDocked: true,
+          inRow: true,
         ),
         0,
       );
@@ -699,25 +774,25 @@ void main() {
       final above = MobileActivityIsland.heightAboveBar(
         context,
         both,
-        barDocked: true,
+        inRow: true,
       );
       expect(above, greaterThan(0));
       expect(above, stackTop - MobileNavigationLauncher.barHeight(context));
     });
 
-    testWidgets('slid away, the whole stack and its edge gap count', (
+    testWidgets('floating, the whole stack and its float gap count', (
       tester,
     ) async {
       await pumpIsland(tester, timer: timerEntry());
       final context = islandContext(tester);
       final tokens = context.designTokens;
 
-      expect(MobileActivityIsland.gapAboveEdge(context), tokens.spacing.step3);
+      expect(MobileActivityIsland.floatGap(context), tokens.spacing.step3);
       expect(
         MobileActivityIsland.heightAboveBar(
           context,
           both,
-          barDocked: false,
+          inRow: false,
         ),
         MobileActivityIsland.stackHeight(context, both) + tokens.spacing.step3,
       );
@@ -725,7 +800,7 @@ void main() {
         MobileActivityIsland.heightAboveBar(
           context,
           MobileActivity.none,
-          barDocked: false,
+          inRow: false,
         ),
         0,
       );

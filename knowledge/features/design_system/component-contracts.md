@@ -814,7 +814,9 @@ their integration with the app shell, docked and slid away. The contract:
   the shell's overlay scope publishes. `width` measures the widest capsule
   on a fixed `00:00:00` — the elapsed digits sit in `subtitle2` with the
   tabular numeric features, so a ticking clock never changes it — and the
-  shell hands it to the launcher as `reservedCenterWidth`. The contract for
+  shell hands it to the launcher as `reservedCenterWidth`. When the
+  launcher's `centerFits` says the band cannot carry it, the island floats
+  `floatGap` above the bar at full width instead. The contract for
   *when* it shows is in
   [navigation](../../architecture/navigation.md#the-activity-island).
 - `MobileNavigationLauncher.labelsFit(context, action)` decides whether a

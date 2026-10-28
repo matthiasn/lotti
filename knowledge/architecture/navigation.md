@@ -752,7 +752,7 @@ Four contracts hold it together:
   row's top (`heightAboveBar`), which `occupiedHeight` adds to the bar.
 - **Outside the slide-away subtree.** The island is positioned by the shell,
   not inside the launcher: on routes that slide the launcher away it animates
-  down to `gapAboveEdge` above the bottom safe-area edge and out to the full
+  down to `floatGap` above the bottom safe-area edge and out to the full
   width in the same motion, so a running timer stays visible inside settings
   editors; on task and entry details the whole bottom stack, island included,
   yields to the page's own action bar.
@@ -760,8 +760,17 @@ Four contracts hold it together:
   measured width in `labelsFit`, so a worded page action drops to its glyph
   before the island is squeezed. Digits are measured on a fixed `00:00:00`
   (tabular, so every reading below a hundred hours paints at that width and
-  the reserve does not jitter); in a band still too narrow, each capsule
-  scales its content down rather than clipping a digit.
+  the reserve does not jitter). Where even the glyph-only row leaves a band
+  narrower than the island (`MobileNavigationLauncher.centerFits` — the
+  largest text on the narrowest phone with every chip docked), the shell
+  drops the reserve and floats the island `floatGap` above the bar at full
+  width instead, and pages pad for the whole floating stack. As a last
+  resort each capsule scales its content down rather than clipping a digit.
+
+`MobileActivityBuilder` maps the timer stream to whether a timer runs and
+drops repeats, so the shell's launcher, band and measurements are rebuilt
+when a timer starts or stops, not on each one-second tick; the island's own
+`StreamBuilder` ticks the digits.
 
 A broken recorder never takes it down: if the recorder controller fails to
 build (MediaKit on some hosts), the island degrades to its timer capsule.

@@ -822,6 +822,46 @@ void main() {
         MobileNavigationLauncher.labelsFit(context, action()),
       );
     });
+
+    testWidgets('centerFits holds for a reserve the band can carry', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        subject(pageAction: action(), reservedCenterWidth: 120),
+      );
+      final launcher = tester.widget<MobileNavigationLauncher>(
+        find.byType(MobileNavigationLauncher),
+      );
+
+      expect(launcher.centerFits(launcherContext(tester)), isTrue);
+    });
+
+    testWidgets('centerFits fails where the chips and the glyph-only action '
+        'leave less than the reserve', (tester) async {
+      // The narrowest phone at the largest text, with the utility button:
+      // the action is already down to its glyph and the band is still
+      // narrower than one elapsed time.
+      await tester.pumpWidget(
+        subject(
+          pageAction: action(),
+          utilityAction: glyphAction(label: 'Chat'),
+          reservedCenterWidth: 120,
+          mediaQueryData: sized(
+            const Size(320, 700),
+            const TextScaler.linear(3),
+          ),
+        ),
+      );
+      final context = launcherContext(tester);
+      final launcher = tester.widget<MobileNavigationLauncher>(
+        find.byType(MobileNavigationLauncher),
+      );
+
+      expect(glyphActionButton, findsNWidgets(2));
+      final band = launcher.centerBand(context);
+      expect(320 - band.start - band.end, lessThan(120));
+      expect(launcher.centerFits(context), isFalse);
+    });
   });
   group('right-to-left', () {
     testWidgets('mirrors the corners and the gutters: menu button on the '

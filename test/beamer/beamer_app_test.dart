@@ -1912,7 +1912,7 @@ void main() {
         final above = MobileActivityIsland.heightAboveBar(
           pageContext,
           const MobileActivity(timer: true, recording: true),
-          barDocked: true,
+          inRow: true,
         );
         expect(above, greaterThan(0));
         expect(
@@ -2130,6 +2130,98 @@ void main() {
       expect(capsule.center.dy, moreOrLessEquals(menu.center.dy));
     });
 
+    testWidgets(
+      'floats the island above the row at full width when even the '
+      'glyph-only row leaves it no band',
+      (tester) async {
+        // The narrowest phone at the largest text: the menu button and the
+        // collapsed action alone outgrow what the island needs.
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
+        addTearDown(tearDownTestGetIt);
+
+        const narrow = Size(320, 700);
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: narrow,
+        );
+
+        final barContext = tester.element(
+          find.byType(MobileNavigationLauncher),
+        );
+        final launcher = tester.widget<MobileNavigationLauncher>(
+          find.byType(MobileNavigationLauncher),
+        );
+        // The island would not fit the band, so the launcher reserves
+        // nothing for it and keeps its own layout.
+        final reserving = MobileNavigationLauncher(
+          onOpenMenu: launcher.onOpenMenu,
+          pageAction: launcher.pageAction,
+          utilityAction: launcher.utilityAction,
+          reservedCenterWidth: MobileActivityIsland.width(
+            barContext,
+            const MobileActivity(timer: true, recording: false),
+          ),
+        );
+        expect(
+          reserving.centerFits(barContext),
+          isFalse,
+          reason: 'the precondition: no band for the island in this row',
+        );
+        expect(launcher.reservedCenterWidth, 0);
+
+        final positioned = tester.widget<AnimatedPositionedDirectional>(
+          find.ancestor(
+            of: find.byType(MobileActivityIsland),
+            matching: find.byType(AnimatedPositionedDirectional),
+          ),
+        );
+        expect(positioned.start, 0);
+        expect(positioned.end, 0);
+        expect(
+          positioned.bottom,
+          MobileNavigationLauncher.barHeight(barContext) +
+              MobileActivityIsland.floatGap(barContext),
+        );
+
+        // Visible and whole: above the row, centred on the window, digits
+        // intact, and pages pad for the whole floating capsule.
+        final capsule = tester.getRect(
+          find.byKey(MobileActivityIsland.timerKey),
+        );
+        expect(
+          capsule.bottom,
+          lessThanOrEqualTo(
+            narrow.height - MobileNavigationLauncher.barHeight(barContext),
+          ),
+        );
+        expect(capsule.center.dx, moreOrLessEquals(narrow.width / 2));
+        expect(capsule.width, greaterThan(0));
+        expect(find.text('00:05:00'), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
+          MobileNavigationLauncher.barHeight(pageContext) +
+              MobileActivityIsland.capsuleHeight(pageContext) +
+              MobileActivityIsland.floatGap(pageContext),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
     testWidgets(
       'occupiedHeight inside the page stack stays the bar while a lone '
       'timer sits in the row',
@@ -3837,7 +3929,7 @@ void main() {
         expect(
           island().bottom,
           MediaQuery.paddingOf(barContext).bottom +
-              MobileActivityIsland.gapAboveEdge(barContext),
+              MobileActivityIsland.floatGap(barContext),
         );
         // With no row to sit in, it centres across the whole width.
         expect(island().start, 0);

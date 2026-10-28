@@ -55,9 +55,11 @@ class MobileActivity {
 /// island's position and the estate pages pad by all read the same rule
 /// as what the island renders.
 ///
-/// [child] is a prebuilt subtree passed through to [builder] untouched, so
-/// the page stack is not rebuilt on every timer tick.
-class MobileActivityBuilder extends ConsumerWidget {
+/// The timer stream ticks every second while a timer runs, but only whether
+/// one runs matters here — the island ticks its own digits — so [builder]
+/// runs when a timer starts or stops, not on every tick. [child] is a
+/// prebuilt subtree passed through untouched.
+class MobileActivityBuilder extends ConsumerStatefulWidget {
   const MobileActivityBuilder({
     required this.omitAudio,
     required this.builder,
@@ -78,7 +80,29 @@ class MobileActivityBuilder extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MobileActivityBuilder> createState() =>
+      _MobileActivityBuilderState();
+}
+
+class _MobileActivityBuilderState extends ConsumerState<MobileActivityBuilder> {
+  /// Whether a timer runs, seeded like the island so a timer already running
+  /// on the first frame claims its room on that frame too.
+  late final bool _timerAtStart;
+
+  /// Created once: a mapped stream built in [build] would resubscribe on
+  /// every rebuild.
+  late final Stream<bool> _timerRuns;
+
+  @override
+  void initState() {
+    super.initState();
+    final timeService = ref.read(timeServiceProvider);
+    _timerAtStart = timeService.getCurrent() != null;
+    _timerRuns = timeService.getStream().map((e) => e != null).distinct();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Same guard as the island: if the recorder controller fails to build
     // (MediaKit/audio issues), no recording shows, so none counts here.
     bool recording;
@@ -87,7 +111,7 @@ class MobileActivityBuilder extends ConsumerWidget {
         audioRecorderControllerProvider.select(
           (state) => MobileActivityIsland.showsRecording(
             state,
-            omitAudio: omitAudio,
+            omitAudio: widget.omitAudio,
           ),
         ),
       );
@@ -95,16 +119,13 @@ class MobileActivityBuilder extends ConsumerWidget {
       recording = false;
     }
 
-    final timeService = ref.read(timeServiceProvider);
-    return StreamBuilder<JournalEntity?>(
-      // Seeded like the island, so a timer already running on the first
-      // frame claims its room on that frame too.
-      initialData: timeService.getCurrent(),
-      stream: timeService.getStream(),
-      builder: (context, snapshot) => builder(
+    return StreamBuilder<bool>(
+      initialData: _timerAtStart,
+      stream: _timerRuns,
+      builder: (context, snapshot) => widget.builder(
         context,
-        MobileActivity(timer: snapshot.data != null, recording: recording),
-        child,
+        MobileActivity(timer: snapshot.data ?? false, recording: recording),
+        widget.child,
       ),
     );
   }
@@ -126,7 +147,10 @@ class MobileActivityBuilder extends ConsumerWidget {
 /// ([navigateToTimerTarget]), the recording reopens its modal. Both at once
 /// stack, timer above recording, at one shared width. The lowest capsule
 /// keeps the row's centre line, so the stack grows upward out of the row
-/// rather than pushing the row down or clipping ([dockedBottom]). With
+/// rather than pushing the row down or clipping ([dockedBottom]). Where the
+/// row has no band wide enough even with the page action down to its glyph
+/// — the largest text on the narrowest phone with every chip docked — the
+/// island floats [floatGap] above the bar at full width instead. With
 /// nothing running the island renders nothing and reserves nothing.
 ///
 /// Which recordings count is decided once, in [showsRecording], and the
@@ -174,9 +198,10 @@ class MobileActivityIsland extends ConsumerWidget {
       : capsuleHeight(context) * activity.count +
             stackGap(context) * (activity.count - 1);
 
-  /// Air between the island and the bottom safe-area edge once the bar has
-  /// slid away and the island no longer has a row to sit in.
-  static double gapAboveEdge(BuildContext context) =>
+  /// Air below the island whenever it floats rather than sitting in the row:
+  /// above the bar when the row has no band wide enough for it, or above the
+  /// bottom safe-area edge once the bar has slid away.
+  static double floatGap(BuildContext context) =>
       context.designTokens.spacing.step3;
 
   /// The island's bottom offset while the bar is docked: the lowest capsule
@@ -190,17 +215,18 @@ class MobileActivityIsland extends ConsumerWidget {
   /// Vertical estate the island claims above the launcher, which pages pad
   /// their scrollables by through the shell's overlay-height scope.
   ///
-  /// Docked, one capsule sits inside the row and claims nothing; a stack
-  /// claims only what rises above the row's top. Slid away, the whole stack
-  /// and its gap above the edge count.
+  /// [inRow], one capsule sits inside the row and claims nothing; a stack
+  /// claims only what rises above the row's top. Floating — above the bar,
+  /// or above the edge once the bar slid away — the whole stack and its
+  /// [floatGap] count.
   static double heightAboveBar(
     BuildContext context,
     MobileActivity activity, {
-    required bool barDocked,
+    required bool inRow,
   }) {
     if (activity.isEmpty) return 0;
     final height = stackHeight(context, activity);
-    if (!barDocked) return height + gapAboveEdge(context);
+    if (!inRow) return height + floatGap(context);
     return math.max(
       0,
       dockedBottom(context) +

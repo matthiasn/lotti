@@ -338,17 +338,25 @@ extension _AppScreenLayout on _AppScreenState {
       omitAudio: _isRunningInFlatpak(),
       child: _buildContentStack(index: index, beamerChildren: beamerChildren),
       builder: (context, activity, content) {
-        final launcher = buildLauncher(
+        final reserving = buildLauncher(
           showBottomNav && !activity.isEmpty
               ? MobileActivityIsland.width(context, activity)
               : 0,
         );
         // Docked, the island sits in the launcher row's centre band, the
         // lowest capsule level with the chips and any second one stacked
-        // above it; slid away, it centres over the bottom safe-area edge.
-        final band = barDocked
+        // above it. Where even the glyph-only row leaves no band wide
+        // enough, it floats above the bar at full width and the launcher
+        // keeps its word; slid away, it centres over the bottom safe-area
+        // edge.
+        final inRow = barDocked && reserving.centerFits(context);
+        final launcher = inRow ? reserving : buildLauncher(0);
+        final band = inRow
             ? launcher.centerBand(context)
             : EdgeInsetsDirectional.zero;
+        final floatOver = barDocked
+            ? MobileNavigationLauncher.barHeight(context)
+            : MediaQuery.paddingOf(context).bottom;
         return Stack(
           children: [
             const IncomingVerificationWrapper(),
@@ -363,7 +371,7 @@ extension _AppScreenLayout on _AppScreenState {
                   ? MobileActivityIsland.heightAboveBar(
                       context,
                       activity,
-                      barDocked: barDocked,
+                      inRow: inRow,
                     )
                   : 0,
               barDocked: barDocked,
@@ -393,10 +401,9 @@ extension _AppScreenLayout on _AppScreenState {
                 curve: _SlideAwayBottomNav.slideCurve,
                 start: band.start,
                 end: band.end,
-                bottom: barDocked
+                bottom: inRow
                     ? MobileActivityIsland.dockedBottom(context)
-                    : MediaQuery.paddingOf(context).bottom +
-                          MobileActivityIsland.gapAboveEdge(context),
+                    : floatOver + MobileActivityIsland.floatGap(context),
                 child: MobileActivityIsland(omitAudio: _isRunningInFlatpak()),
               ),
             ],
