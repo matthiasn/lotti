@@ -69,6 +69,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
     TextDirection textDirection = TextDirection.ltr,
+    double reservedCenterWidth = 0,
   }) => makeTestableWidgetWithScaffold(
     Directionality(
       textDirection: textDirection,
@@ -76,6 +77,7 @@ void main() {
         onOpenMenu: openMenu ?? onOpenMenu,
         pageAction: pageAction,
         utilityAction: utilityAction,
+        reservedCenterWidth: reservedCenterWidth,
       ),
     ),
     theme: theme ?? DesignSystemTheme.light(),
@@ -660,6 +662,207 @@ void main() {
     });
   });
 
+  group('centre band', () {
+    final utilityButton = find.byKey(
+      MobileNavigationLauncherKeys.utilityButton,
+    );
+    final utility = MobileNavDockAction.glyph(
+      label: 'Chat',
+      icon: LottiIcons.assistant,
+      onPressed: () {},
+    );
+
+    MobileNavigationLauncher launcherOf(WidgetTester tester) =>
+        tester.widget<MobileNavigationLauncher>(
+          find.byType(MobileNavigationLauncher),
+        );
+
+    /// The band resolved to physical left/right offsets from the window.
+    EdgeInsets bandOf(WidgetTester tester) {
+      final context = launcherContext(tester);
+      return launcherOf(
+        tester,
+      ).centerBand(context).resolve(Directionality.of(context));
+    }
+
+    double gapOf(WidgetTester tester) =>
+        MobileNavigationLauncher.chipGap(launcherContext(tester));
+
+    testWidgets('spans from the menu button to the worded action, one gap '
+        'clear of each', (tester) async {
+      await tester.pumpWidget(subject(pageAction: action()));
+      final band = bandOf(tester);
+      final width = launcherRect(tester).width;
+
+      expect(band.left, closeTo(menuRect(tester).right + gapOf(tester), 0.01));
+      expect(
+        width - band.right,
+        closeTo(pillRect(tester).left - gapOf(tester), 0.01),
+      );
+    });
+
+    testWidgets('starts past the utility button when one docks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        subject(pageAction: action(), utilityAction: utility),
+      );
+
+      expect(
+        bandOf(tester).left,
+        closeTo(tester.getRect(utilityButton).right + gapOf(tester), 0.01),
+      );
+    });
+
+    testWidgets('reaches the trailing gutter when no action docks', (
+      tester,
+    ) async {
+      await tester.pumpWidget(subject());
+
+      expect(bandOf(tester).right, trailingGutterOf(tester));
+    });
+
+    testWidgets('includes the side safe-area insets', (tester) async {
+      await tester.pumpWidget(
+        subject(
+          pageAction: glyphAction(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(932, 430),
+            padding: EdgeInsets.only(left: 47, right: 47, bottom: 21),
+          ),
+        ),
+      );
+      final band = bandOf(tester);
+
+      expect(band.left, closeTo(menuRect(tester).right + gapOf(tester), 0.01));
+      expect(
+        932 - band.right,
+        closeTo(tester.getRect(glyphActionButton).left - gapOf(tester), 0.01),
+      );
+      expect(band.right, greaterThan(47 + trailingGutterOf(tester)));
+    });
+
+    testWidgets('mirrors in right-to-left', (tester) async {
+      await tester.pumpWidget(
+        subject(pageAction: action(), textDirection: TextDirection.rtl),
+      );
+      final band = bandOf(tester);
+      final width = launcherRect(tester).width;
+
+      // Menu on the right, action on the left.
+      expect(
+        width - band.right,
+        closeTo(menuRect(tester).left - gapOf(tester), 0.01),
+      );
+      expect(band.left, closeTo(pillRect(tester).right + gapOf(tester), 0.01));
+    });
+  });
+
+  group('reserved centre', () {
+    testWidgets('a reserve the row cannot spare drops the worded action to '
+        'its glyph, still announcing its name', (tester) async {
+      // Exactly room for the menu button, the gap and the worded action.
+      await pumpAtFitThreshold(tester, pageAction: action(), delta: 0);
+      expect(find.text('Add a task'), findsOneWidget);
+      final mediaQuery = MediaQuery.of(launcherContext(tester));
+
+      await tester.pumpWidget(
+        subject(
+          pageAction: action(),
+          mediaQueryData: mediaQuery,
+          reservedCenterWidth: 1,
+        ),
+      );
+
+      expect(
+        MobileNavigationLauncher.labelsFit(
+          launcherContext(tester),
+          action(),
+          reservedCenterWidth: 1,
+        ),
+        isFalse,
+      );
+      expect(find.text('Add a task'), findsNothing);
+      expect(find.bySemanticsLabel('Add a task'), findsOneWidget);
+      expect(glyphActionButton, findsOneWidget);
+    });
+
+    testWidgets('a reserve that fits keeps the word, and the band is at '
+        'least as wide as the reserve', (tester) async {
+      const reserve = 120.0;
+      await tester.pumpWidget(
+        subject(pageAction: action(), reservedCenterWidth: reserve),
+      );
+      final context = launcherContext(tester);
+
+      expect(find.text('Add a task'), findsOneWidget);
+      final band = tester
+          .widget<MobileNavigationLauncher>(
+            find.byType(MobileNavigationLauncher),
+          )
+          .centerBand(context)
+          .resolve(TextDirection.ltr);
+      expect(
+        launcherRect(tester).width - band.left - band.right,
+        greaterThanOrEqualTo(reserve),
+      );
+    });
+
+    testWidgets('no reserve changes nothing about the fit', (tester) async {
+      await pumpAtFitThreshold(tester, pageAction: action(), delta: 0);
+      final context = launcherContext(tester);
+
+      expect(
+        MobileNavigationLauncher.labelsFit(
+          context,
+          action(),
+          // ignore: avoid_redundant_argument_values
+          reservedCenterWidth: 0,
+        ),
+        MobileNavigationLauncher.labelsFit(context, action()),
+      );
+    });
+
+    testWidgets('centerFits holds for a reserve the band can carry', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        subject(pageAction: action(), reservedCenterWidth: 120),
+      );
+      final launcher = tester.widget<MobileNavigationLauncher>(
+        find.byType(MobileNavigationLauncher),
+      );
+
+      expect(launcher.centerFits(launcherContext(tester)), isTrue);
+    });
+
+    testWidgets('centerFits fails where the chips and the glyph-only action '
+        'leave less than the reserve', (tester) async {
+      // The narrowest phone at the largest text, with the utility button:
+      // the action is already down to its glyph and the band is still
+      // narrower than one elapsed time.
+      await tester.pumpWidget(
+        subject(
+          pageAction: action(),
+          utilityAction: glyphAction(label: 'Chat'),
+          reservedCenterWidth: 120,
+          mediaQueryData: sized(
+            const Size(320, 700),
+            const TextScaler.linear(3),
+          ),
+        ),
+      );
+      final context = launcherContext(tester);
+      final launcher = tester.widget<MobileNavigationLauncher>(
+        find.byType(MobileNavigationLauncher),
+      );
+
+      expect(glyphActionButton, findsNWidgets(2));
+      final band = launcher.centerBand(context);
+      expect(320 - band.start - band.end, lessThan(120));
+      expect(launcher.centerFits(context), isFalse);
+    });
+  });
   group('right-to-left', () {
     testWidgets('mirrors the corners and the gutters: menu button on the '
         'right, action on the left', (tester) async {

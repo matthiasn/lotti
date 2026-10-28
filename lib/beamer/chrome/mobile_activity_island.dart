@@ -20,53 +20,168 @@ import 'package:lotti/themes/theme_text_styles.dart'
     show numericBadgeFontFeatures;
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
+import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The mobile shell's "something is running" island: one glass capsule that
-/// floats above the bottom navigation while a time recording and/or an
-/// audio recording runs somewhere other than the page on screen.
-///
-/// It replaced two square-bottomed *tabs* that were drawn to sit flush on
-/// the top edge of the old full-width bar. The launcher is not a bar — it is
-/// a transparent strip with centred glass chips — so the tabs floated in
-/// mid-air over page content with nothing to be an extension of, in the
-/// legacy Material palette rather than the launcher's glass. The island is
-/// built from the same vocabulary as those chips ([DsGlassChipSurface],
-/// [dsGlassChipFill], [dsGlassChipBorder]) and floats [gapAboveBar] above
-/// the launcher, so the two read as one glass dialect.
-///
-/// A running timer is a red dot and its elapsed time; a live recording is
-/// the level orb and its elapsed time; both at once share the capsule with a
-/// hairline between them. Each half is its own button — the timer opens the
-/// running entry ([navigateToTimerTarget]), the recording reopens its modal —
-/// and the halves meet at the hairline and reach the capsule's ends, so every
-/// point of the pill is a target. With nothing running the island renders
-/// nothing and reserves nothing.
-///
-/// Which recordings count is decided once, in [showsRecording], and the
-/// shell's overlay-height scope reads the same rule — so the space pages
-/// reserve for the island can never disagree with what it renders.
-///
-/// Prose degrades before payloads, as on the launcher beside it: when both
-/// halves no longer fit the window with their digits — large accessibility
-/// text on a narrow phone — the recording half drops to its orb
-/// ([bothHalvesFit]). The orb still says "live"; the timer's digits have no
-/// glyph-only reading, so they are the payload that never gives.
-class MobileActivityIsland extends ConsumerWidget {
-  const MobileActivityIsland({required this.omitAudio, super.key});
+/// Which of the island's items are running, as the shell lays out around
+/// them: whether a time recording runs, and whether a recording the island
+/// shows ([MobileActivityIsland.showsRecording]) does.
+@immutable
+class MobileActivity {
+  const MobileActivity({required this.timer, required this.recording});
 
-  /// Whether the recording half is left out altogether. Flatpak builds carry
-  /// no MediaKit-backed recorder, so the shell passes true there.
+  static const none = MobileActivity(timer: false, recording: false);
+
+  final bool timer;
+  final bool recording;
+
+  /// How many capsules the island stacks.
+  int get count => (timer ? 1 : 0) + (recording ? 1 : 0);
+
+  bool get isEmpty => count == 0;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MobileActivity &&
+      other.timer == timer &&
+      other.recording == recording;
+
+  @override
+  int get hashCode => Object.hash(timer, recording);
+}
+
+/// Watches the running timer and the recorder once and hands the shell the
+/// resulting [MobileActivity], so the launcher's reserved centre, the
+/// island's position and the estate pages pad by all read the same rule
+/// as what the island renders.
+///
+/// The timer stream ticks every second while a timer runs, but only whether
+/// one runs matters here — the island ticks its own digits — so [builder]
+/// runs when a timer starts or stops, not on every tick. [child] is a
+/// prebuilt subtree passed through untouched.
+class MobileActivityBuilder extends ConsumerStatefulWidget {
+  const MobileActivityBuilder({
+    required this.omitAudio,
+    required this.builder,
+    required this.child,
+    super.key,
+  });
+
+  /// See [MobileActivityIsland.omitAudio].
   final bool omitAudio;
 
-  static const Key capsuleKey = ValueKey('mobileActivityIsland');
+  final Widget Function(
+    BuildContext context,
+    MobileActivity activity,
+    Widget child,
+  )
+  builder;
+
+  final Widget child;
+
+  @override
+  ConsumerState<MobileActivityBuilder> createState() =>
+      _MobileActivityBuilderState();
+}
+
+class _MobileActivityBuilderState extends ConsumerState<MobileActivityBuilder> {
+  /// Whether a timer runs, seeded like the island so a timer already running
+  /// on the first frame claims its room on that frame too.
+  late final bool _timerAtStart;
+
+  /// Created once: a mapped stream built in [build] would resubscribe on
+  /// every rebuild.
+  late final Stream<bool> _timerRuns;
+
+  @override
+  void initState() {
+    super.initState();
+    final timeService = ref.read(timeServiceProvider);
+    _timerAtStart = timeService.getCurrent() != null;
+    _timerRuns = timeService.getStream().map((e) => e != null).distinct();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Same guard as the island: if the recorder controller fails to build
+    // (MediaKit/audio issues), no recording shows, so none counts here.
+    bool recording;
+    try {
+      recording = ref.watch(
+        audioRecorderControllerProvider.select(
+          (state) => MobileActivityIsland.showsRecording(
+            state,
+            omitAudio: widget.omitAudio,
+          ),
+        ),
+      );
+    } catch (_) {
+      recording = false;
+    }
+
+    return StreamBuilder<bool>(
+      initialData: _timerAtStart,
+      stream: _timerRuns,
+      builder: (context, snapshot) => widget.builder(
+        context,
+        MobileActivity(timer: snapshot.data ?? false, recording: recording),
+        widget.child,
+      ),
+    );
+  }
+}
+
+/// The mobile shell's "something is running" island: glass capsules that
+/// sit in the bottom navigation row, centred between the leading chips and
+/// the page action, while a time recording and/or an audio recording runs
+/// somewhere other than the page on screen.
+///
+/// It is built from the launcher chips' own vocabulary
+/// ([DsGlassChipSurface], [dsGlassChipFill], [dsGlassChipBorder]) so the row
+/// reads as one glass dialect, a step shorter than the chips so it reads as
+/// their subordinate rather than a third peer.
+///
+/// A running timer is a red dot and its elapsed time; a live recording is
+/// the level orb and its elapsed time. Each is a button — the timer opens
+/// the running entry ([navigateToTimerTarget]), the recording reopens its
+/// modal. Both at once share one capsule, a hairline between the halves,
+/// which meet at it and reach the capsule's ends so every point of the pill
+/// is a target.
+///
+/// Only when the row has no room for that capsule does the shell pass
+/// [stacked]: the two become capsules of their own, timer above recording
+/// at one shared width. The lowest capsule keeps the row's centre line, so
+/// a stack grows upward out of the row rather than pushing the row down or
+/// clipping ([dockedBottom]). The order the shell tries, and the floating
+/// fallback past it, is [MobileIslandLayout.resolve]'s. With nothing running
+/// the island renders nothing and reserves nothing.
+///
+/// Which recordings count is decided once, in [showsRecording], and the
+/// shell reads the same rule through [MobileActivityBuilder] — so the space
+/// the row and the pages reserve for the island can never disagree with
+/// what it renders.
+class MobileActivityIsland extends ConsumerWidget {
+  const MobileActivityIsland({
+    required this.omitAudio,
+    this.stacked = false,
+    super.key,
+  });
+
+  /// Whether the recording half is left out altogether. Flatpak builds
+  /// carry no MediaKit-backed recorder, so the shell passes true there.
+  final bool omitAudio;
+
+  /// Whether a timer and a recording running together stack as two
+  /// capsules instead of sharing one. Meaningless with one item running.
+  final bool stacked;
+
+  static const Key islandKey = ValueKey('mobileActivityIsland');
   static const Key timerKey = ValueKey('mobileActivityIslandTimer');
   static const Key recordingKey = ValueKey('mobileActivityIslandRecording');
   static const Key dividerKey = ValueKey('mobileActivityIslandDivider');
 
-  /// Rendered height of the capsule, which is also its tap height: a step
-  /// under the 48 px chips it floats above at the default text size, so it
-  /// reads as their subordinate rather than a third peer on the row.
+  /// Rendered height of one capsule, which is also its tap height: a step
+  /// under the 48 px chips it sits beside at the default text size.
   ///
   /// Like the launcher's chips, it grows with the system text scale rather
   /// than clipping: the `subtitle2` line the digits sit on, scaled the way
@@ -84,15 +199,108 @@ class MobileActivityIsland extends ConsumerWidget {
     );
   }
 
-  /// Air between the capsule and the bar (or the safe-area edge, once the
-  /// bar has slid away).
-  static double gapAboveBar(BuildContext context) =>
+  /// Air between two stacked capsules.
+  static double stackGap(BuildContext context) =>
+      context.designTokens.spacing.step2;
+
+  /// How many capsules the island shows for [activity].
+  static int _rows(MobileActivity activity, {required bool stacked}) =>
+      activity.isEmpty ? 0 : (stacked ? activity.count : 1);
+
+  /// Height of the island with [activity] running.
+  static double stackHeight(
+    BuildContext context,
+    MobileActivity activity, {
+    required bool stacked,
+  }) {
+    final rows = _rows(activity, stacked: stacked);
+    return rows == 0
+        ? 0
+        : capsuleHeight(context) * rows + stackGap(context) * (rows - 1);
+  }
+
+  /// Air below the island whenever it floats rather than sitting in the row:
+  /// above the bar when the row has no band wide enough for it, or above the
+  /// bottom safe-area edge once the bar has slid away.
+  static double floatGap(BuildContext context) =>
       context.designTokens.spacing.step3;
 
-  /// Vertical estate the island claims above the bar while it shows. Pages
-  /// pad their scrollables by this through the shell's overlay-height scope.
-  static double reservedHeight(BuildContext context) =>
-      capsuleHeight(context) + gapAboveBar(context);
+  /// The island's bottom offset while it sits in the row: the lowest
+  /// capsule centred on the launcher's row, so one capsule sits level with
+  /// the chips and a second one stacks upward from there.
+  static double dockedBottom(BuildContext context) =>
+      MobileNavigationLauncher.rowBottom(context) +
+      (MobileNavigationLauncher.chipHeight(context) - capsuleHeight(context)) /
+          2;
+
+  /// Vertical estate the island claims above the launcher, which pages pad
+  /// their scrollables by through the shell's overlay-height scope.
+  ///
+  /// [inRow], one capsule sits inside the row and claims nothing; a stack
+  /// claims only what rises above the row's top. Floating — above the bar,
+  /// or above the edge once the bar slid away — the whole island and its
+  /// [floatGap] count.
+  static double heightAboveBar(
+    BuildContext context,
+    MobileActivity activity, {
+    required bool inRow,
+    required bool stacked,
+  }) {
+    if (activity.isEmpty) return 0;
+    final height = stackHeight(context, activity, stacked: stacked);
+    if (!inRow) return height + floatGap(context);
+    return math.max(
+      0,
+      dockedBottom(context) +
+          height -
+          MobileNavigationLauncher.barHeight(context),
+    );
+  }
+
+  /// Width the island takes with [activity] running, measured as it will
+  /// paint at the current text scale: the shared capsule's when both run
+  /// side by side, otherwise the widest single capsule's.
+  ///
+  /// The elapsed times are measured on a fixed `00:00:00`: the digits are
+  /// tabular, so every reading below a hundred hours paints at that width,
+  /// and the reserve does not jitter as the clock ticks. Beyond that — or
+  /// in a band too narrow even for this — the capsule scales its content
+  /// down to fit rather than clipping a digit.
+  static double width(
+    BuildContext context,
+    MobileActivity activity, {
+    required bool stacked,
+  }) {
+    if (activity.isEmpty) return 0;
+    final tokens = context.designTokens;
+    final digits = _measure(context, '00:00:00', _elapsedStyle(tokens));
+    final timer = _timerGlyphWidth(context) + tokens.spacing.step3 + digits;
+    final recording =
+        _recordingGlyphWidth(context) + tokens.spacing.step3 + digits;
+    final outer = _outerInset(context) * 2;
+    if (activity.count == 2 && !stacked) {
+      return outer +
+          timer +
+          _innerInset(context) * 2 +
+          BorderWidths.hairline +
+          recording;
+    }
+    return outer +
+        math.max(
+          activity.timer ? timer : 0,
+          activity.recording ? recording : 0,
+        );
+  }
+
+  /// Horizontal room the island may take when it floats: the window inside
+  /// its safe-area insets and `spacing.step3` gutters.
+  static double availableWidth(BuildContext context) {
+    final insets = MediaQuery.paddingOf(context);
+    return MediaQuery.sizeOf(context).width -
+        insets.left -
+        insets.right -
+        context.designTokens.spacing.step3 * 2;
+  }
 
   /// Whether [state] is a recording the island shows: a session in flight —
   /// recording, or paused mid-session, which the modal treats as active too
@@ -107,55 +315,19 @@ class MobileActivityIsland extends ConsumerWidget {
           state.status == AudioRecorderStatus.paused) &&
       !state.modalVisible;
 
-  /// Horizontal room the capsule may take: the window inside its safe-area
-  /// insets and the same gutters the launcher keeps.
-  static double availableWidth(BuildContext context) {
-    final insets = MediaQuery.paddingOf(context);
-    return MediaQuery.sizeOf(context).width -
-        insets.left -
-        insets.right -
-        context.designTokens.spacing.step3 * 2;
-  }
-
-  /// Whether both halves fit side by side with their digits intact at the
-  /// current text scale — the capsule's own insets, the dot, the orb, the
-  /// hairline band and both elapsed times measured as they will paint.
-  /// Below the threshold the recording half renders its orb alone.
-  ///
-  /// Measured rather than guessed, like the launcher's `labelsFit`: the digits
-  /// are user-scaled, so no fixed breakpoint can tell whether `01:15:45` and
-  /// `00:03:12` share a 320 px window at 3×.
-  static bool bothHalvesFit(
-    BuildContext context, {
-    required String timerElapsed,
-    required String recordingElapsed,
-  }) {
-    final style = _elapsedStyle(context.designTokens);
-    final needed =
-        _insetWidth(context) * 2 +
-        _timerGlyphWidth(context) +
-        _measure(context, timerElapsed, style) +
-        _dividerBandWidth(context) +
-        _recordingGlyphWidth(context) +
-        _measure(context, recordingElapsed, style);
-    return needed <= availableWidth(context);
-  }
-
-  static double _insetWidth(BuildContext context) =>
+  /// Air between a capsule's ends and its content.
+  static double _outerInset(BuildContext context) =>
       context.designTokens.spacing.step4;
 
-  /// The dot and the gap that follows it.
+  /// Air either side of the hairline in the shared capsule.
+  static double _innerInset(BuildContext context) =>
+      context.designTokens.spacing.step3;
+
   static double _timerGlyphWidth(BuildContext context) =>
-      context.designTokens.spacing.step4 + context.designTokens.spacing.step3;
+      context.designTokens.spacing.step4;
 
-  /// The orb and the gap that follows it.
   static double _recordingGlyphWidth(BuildContext context) =>
-      context.designTokens.spacing.step6 + context.designTokens.spacing.step3;
-
-  /// The hairline and the air on either side of it, which the neighbouring
-  /// halves carry as their own inner insets.
-  static double _dividerBandWidth(BuildContext context) =>
-      context.designTokens.spacing.step3 * 2 + BorderWidths.hairline;
+      context.designTokens.spacing.step6;
 
   static double _measure(BuildContext context, String text, TextStyle style) {
     final painter = TextPainter(
@@ -193,116 +365,124 @@ class MobileActivityIsland extends ConsumerWidget {
         if (timer == null && recording == null) {
           return const SizedBox.shrink();
         }
-        return _Capsule(
-          timer: timer,
-          linkedFrom: timeService.linkedFrom,
-          recording: recording,
-        );
+        final outer = _outerInset(context);
+        final inner = _innerInset(context);
+        Widget timerHalf({required bool framed, required double end}) =>
+            _TimerSegment(
+              entry: timer!,
+              elapsed: formatDuration(entryDuration(timer)),
+              linkedFrom: timeService.linkedFrom,
+              framed: framed,
+              inset: EdgeInsetsDirectional.only(start: outer, end: end),
+            );
+        Widget recordingHalf({required bool framed, required double start}) =>
+            _RecordingSegment(
+              state: recording!,
+              elapsed: formatDuration(recording.progress),
+              framed: framed,
+              inset: EdgeInsetsDirectional.only(start: start, end: outer),
+            );
+
+        final Widget island;
+        if (timer != null && recording != null && !stacked) {
+          // Side by side in one capsule. The capsule's insets and the air
+          // around the hairline belong to the halves, so the whole pill is
+          // a tap target.
+          island = _Glass(
+            key: islandKey,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                timerHalf(framed: false, end: inner),
+                const _SegmentDivider(),
+                recordingHalf(framed: false, start: inner),
+              ],
+            ),
+          );
+        } else {
+          // One capsule per item; when both run, one shared width so the
+          // stack reads as one column rather than two ragged pills.
+          island = IntrinsicWidth(
+            key: islandKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (timer != null) timerHalf(framed: true, end: outer),
+                if (timer != null && recording != null)
+                  SizedBox(height: stackGap(context)),
+                if (recording != null)
+                  recordingHalf(framed: true, start: outer),
+              ],
+            ),
+          );
+        }
+        return Center(child: island);
       },
     );
   }
 }
 
-class _Capsule extends StatelessWidget {
-  const _Capsule({
-    required this.timer,
-    required this.linkedFrom,
-    required this.recording,
+/// How the shell lays the island out for one frame: whether it sits in the
+/// launcher row or floats, whether two items stack, and the launcher that
+/// goes with it.
+@immutable
+class MobileIslandLayout {
+  const MobileIslandLayout({
+    required this.launcher,
+    required this.inRow,
+    required this.stacked,
   });
 
-  final JournalEntity? timer;
-  final JournalEntity? linkedFrom;
-  final AudioRecorderState? recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final spacing = tokens.spacing;
-    final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final timer = this.timer;
-    final recording = this.recording;
-    final both = timer != null && recording != null;
-    final timerElapsed = timer == null
-        ? null
-        : formatDuration(entryDuration(timer));
-    final recordingElapsed = recording == null
-        ? null
-        : formatDuration(recording.progress);
-    final recordingDigits =
-        !both ||
-        MobileActivityIsland.bothHalvesFit(
-          context,
-          timerElapsed: timerElapsed!,
-          recordingElapsed: recordingElapsed!,
+  /// Tries, in order, until one fits: both items side by side in the row
+  /// (the page action keeping its word if it can, else down to its glyph);
+  /// stacked in the row; and, past that, floating above the bar — side by
+  /// side if the window has room, stacked if not — with the launcher
+  /// reserving nothing. A slid-away bar ([barDocked] false) always floats.
+  ///
+  /// [buildLauncher] builds the row with a given reserved centre width.
+  factory MobileIslandLayout.resolve(
+    BuildContext context, {
+    required MobileActivity activity,
+    required bool barDocked,
+    required MobileNavigationLauncher Function(double reservedCenterWidth)
+    buildLauncher,
+  }) {
+    if (activity.isEmpty) {
+      return MobileIslandLayout(
+        launcher: buildLauncher(0),
+        inRow: barDocked,
+        stacked: false,
+      );
+    }
+    if (barDocked) {
+      for (final stacked in [false, if (activity.count > 1) true]) {
+        final launcher = buildLauncher(
+          MobileActivityIsland.width(context, activity, stacked: stacked),
         );
-    // The capsule's insets and the air around the hairline belong to the
-    // halves, not to the container, so the whole pill is a tap target: an
-    // outer end of the capsule and the band around the divider are the
-    // neighbouring half's own padding.
-    final outer = spacing.step4;
-    final inner = spacing.step3;
-    return Center(
-      child: DsGlassChipSurface(
-        radius: radius,
-        blurred: true,
-        child: Container(
-          key: MobileActivityIsland.capsuleKey,
-          height: MobileActivityIsland.capsuleHeight(context),
-          decoration: BoxDecoration(
-            color: dsGlassChipFill(tokens),
-            borderRadius: radius,
-          ),
-          // The hairline is a foreground decoration, as on every glass chip:
-          // painted over the fill without widening the capsule.
-          foregroundDecoration: BoxDecoration(
-            border: dsGlassChipBorder(tokens),
-            borderRadius: radius,
-          ),
-          // Last resort beneath [MobileActivityIsland.bothHalvesFit]: on a
-          // window where even the degraded content cannot fit — a lone
-          // elapsed time at the largest text scale on the narrowest phone —
-          // the content shrinks to the window rather than clipping a digit.
-          // At every size the rule handles, the box renders at its natural
-          // size and this is a no-op.
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: SizedBox(
-              height: MobileActivityIsland.capsuleHeight(context),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                // Stretched, so each half's tap target is the capsule's full
-                // height rather than its text line.
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (timer != null)
-                    _TimerSegment(
-                      entry: timer,
-                      elapsed: timerElapsed!,
-                      linkedFrom: linkedFrom,
-                      inset: EdgeInsetsDirectional.only(
-                        start: outer,
-                        end: both ? inner : outer,
-                      ),
-                    ),
-                  if (both) const _SegmentDivider(),
-                  if (recording != null)
-                    _RecordingSegment(
-                      state: recording,
-                      elapsed: recordingElapsed!,
-                      showDigits: recordingDigits,
-                      inset: EdgeInsetsDirectional.only(
-                        start: both ? inner : outer,
-                        end: outer,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+        if (launcher.centerFits(context)) {
+          return MobileIslandLayout(
+            launcher: launcher,
+            inRow: true,
+            stacked: stacked,
+          );
+        }
+      }
+    }
+    return MobileIslandLayout(
+      launcher: buildLauncher(0),
+      inRow: false,
+      stacked:
+          activity.count > 1 &&
+          MobileActivityIsland.width(context, activity, stacked: false) >
+              MobileActivityIsland.availableWidth(context),
     );
   }
+
+  final MobileNavigationLauncher launcher;
+  final bool inRow;
+  final bool stacked;
 }
 
 /// The elapsed-time style both halves share: the chip register, in the
@@ -313,59 +493,141 @@ TextStyle _elapsedStyle(DsTokens tokens) =>
       fontFeatures: numericBadgeFontFeatures,
     );
 
+/// The glass capsule: the launcher chips' surface, one capsule tall.
+class _Glass extends StatelessWidget {
+  const _Glass({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final height = MobileActivityIsland.capsuleHeight(context);
+    return DsGlassChipSurface(
+      radius: radius,
+      blurred: true,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: dsGlassChipFill(tokens),
+          borderRadius: radius,
+        ),
+        // The hairline is a foreground decoration, as on every glass chip:
+        // painted over the fill without widening the capsule.
+        foregroundDecoration: BoxDecoration(
+          border: dsGlassChipBorder(tokens),
+          borderRadius: radius,
+        ),
+        // Last resort beneath the shell's layout ladder: in a space too
+        // narrow even for one elapsed time — the largest text scale on the
+        // narrowest phone — the content shrinks rather than clipping a
+        // digit. At every size the ladder handles, this is a no-op.
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(height: height, child: child),
+        ),
+      ),
+    );
+  }
+}
+
+/// One item's button: [glyph] and [elapsed] inside [inset]. [framed], it is
+/// a glass capsule of its own, a target end to end; otherwise it is a half
+/// of the shared capsule, its inset part of its target.
+class _Segment extends StatelessWidget {
+  const _Segment({
+    required this.buttonKey,
+    required this.glyph,
+    required this.elapsed,
+    required this.semanticLabel,
+    required this.onTap,
+    required this.framed,
+    required this.inset,
+    this.semanticHint,
+  });
+
+  final Key buttonKey;
+  final Widget glyph;
+  final String elapsed;
+  final String semanticLabel;
+  final String? semanticHint;
+  final VoidCallback onTap;
+  final bool framed;
+  final EdgeInsetsGeometry inset;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final content = Padding(
+      padding: inset,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          glyph,
+          SizedBox(width: tokens.spacing.step3),
+          Text(elapsed, style: _elapsedStyle(tokens)),
+        ],
+      ),
+    );
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      hint: semanticHint,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            key: buttonKey,
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: framed ? _Glass(child: content) : content,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TimerSegment extends ConsumerWidget {
   const _TimerSegment({
     required this.entry,
     required this.elapsed,
     required this.linkedFrom,
+    required this.framed,
     required this.inset,
   });
 
   final JournalEntity entry;
   final String elapsed;
   final JournalEntity? linkedFrom;
+  final bool framed;
   final EdgeInsetsGeometry inset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    void open() => navigateToTimerTarget(
-      current: entry,
-      linkedFrom: linkedFrom,
-      ref: ref,
-    );
-    return Semantics(
-      button: true,
-      label: '${messages.sidebarRunningTimerLabel}, $elapsed',
-      hint: messages.taskActionBarOpenRunningTimer,
-      onTap: open,
-      child: ExcludeSemantics(
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            key: MobileActivityIsland.timerKey,
-            behavior: HitTestBehavior.opaque,
-            onTap: open,
-            child: Padding(
-              padding: inset,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: tokens.spacing.step4,
-                    height: tokens.spacing.step4,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: tokens.colors.alert.error.defaultColor,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Text(elapsed, style: _elapsedStyle(tokens)),
-                ],
-              ),
-            ),
-          ),
+    final size = MobileActivityIsland._timerGlyphWidth(context);
+    return _Segment(
+      buttonKey: MobileActivityIsland.timerKey,
+      elapsed: elapsed,
+      framed: framed,
+      inset: inset,
+      semanticLabel: '${messages.sidebarRunningTimerLabel}, $elapsed',
+      semanticHint: messages.taskActionBarOpenRunningTimer,
+      onTap: () => navigateToTimerTarget(
+        current: entry,
+        linkedFrom: linkedFrom,
+        ref: ref,
+      ),
+      glyph: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: tokens.colors.alert.error.defaultColor,
         ),
       ),
     );
@@ -376,20 +638,17 @@ class _RecordingSegment extends ConsumerWidget {
   const _RecordingSegment({
     required this.state,
     required this.elapsed,
-    required this.showDigits,
+    required this.framed,
     required this.inset,
   });
 
   final AudioRecorderState state;
   final String elapsed;
-
-  /// False under width pressure: the orb alone stands for the recording.
-  final bool showDigits;
+  final bool framed;
   final EdgeInsetsGeometry inset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
     final linkedId = state.linkedId;
     // Watched, not only read at tap time: the provider is autoDispose, and
     // the subscription is what keeps the linked entry loaded and warm for
@@ -430,45 +689,25 @@ class _RecordingSegment extends ConsumerWidget {
       );
     }
 
-    return Semantics(
-      button: true,
-      // Announced with its time either way: the digits may leave the
-      // capsule under width pressure, never the announcement.
-      label: '${context.messages.taskActionBarAudioRecordingActive}, $elapsed',
+    return _Segment(
+      buttonKey: MobileActivityIsland.recordingKey,
+      elapsed: elapsed,
+      framed: framed,
+      inset: inset,
+      semanticLabel:
+          '${context.messages.taskActionBarAudioRecordingActive}, $elapsed',
       onTap: () => unawaited(reopen()),
-      child: ExcludeSemantics(
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            key: MobileActivityIsland.recordingKey,
-            behavior: HitTestBehavior.opaque,
-            onTap: () => unawaited(reopen()),
-            child: Padding(
-              padding: inset,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AudioRecordingOrb(
-                    dBFS: state.dBFS,
-                    size: tokens.spacing.step6,
-                  ),
-                  if (showDigits) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    Text(elapsed, style: _elapsedStyle(tokens)),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
+      glyph: AudioRecordingOrb(
+        dBFS: state.dBFS,
+        size: MobileActivityIsland._recordingGlyphWidth(context),
       ),
     );
   }
 }
 
-/// The hairline between the two halves when both run. It carries no air of
-/// its own — the halves on either side pad up to it, so a tap beside the
-/// rule still lands on a half.
+/// The hairline between the two halves of the shared capsule. It carries no
+/// air of its own — the halves on either side pad up to it, so a tap beside
+/// the rule still lands on a half.
 class _SegmentDivider extends StatelessWidget {
   const _SegmentDivider();
 

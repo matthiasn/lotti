@@ -96,14 +96,16 @@ abstract final class MobileNavigationLauncherKeys {
 /// round control against the screen's rounded corner would otherwise read
 /// as crowded.
 ///
-/// The surrounding area stays transparent so the page remains visible; the
-/// shell owns the activity island (running timer / recording) floating
-/// above the row.
+/// The surrounding area stays transparent so the page remains visible. The
+/// shell owns the activity island (running timer / recording) and centres it
+/// in the row's [centerBand], between the leading chips and the page action;
+/// the row keeps [reservedCenterWidth] free for it.
 class MobileNavigationLauncher extends StatelessWidget {
   const MobileNavigationLauncher({
     required this.onOpenMenu,
     this.pageAction,
     this.utilityAction,
+    this.reservedCenterWidth = 0,
     super.key,
   });
 
@@ -118,6 +120,11 @@ class MobileNavigationLauncher extends StatelessWidget {
   /// The active page's primary action, or null when the page has none — the
   /// menu button then stands alone in its corner.
   final MobileNavDockAction? pageAction;
+
+  /// Width the row keeps free between the leading chips and the page action
+  /// for the shell's activity island; 0 while nothing runs. A worded action
+  /// drops to its glyph before it would squeeze the island ([labelsFit]).
+  final double reservedCenterWidth;
 
   /// The least the menu button and the page action may sit apart, matching
   /// the task action bar's rhythm so every glass row in the app spaces its
@@ -141,7 +148,14 @@ class MobileNavigationLauncher extends StatelessWidget {
   static double barHeight(BuildContext context) =>
       chipHeight(context) +
       context.designTokens.spacing.step2 +
-      _bottomPadding(context);
+      rowBottom(context);
+
+  /// Distance from the window's bottom edge to the bottom of the chips: the
+  /// bottom safe-area inset, never less than `spacing.step6`.
+  static double rowBottom(BuildContext context) => math.max(
+    MediaQuery.paddingOf(context).bottom,
+    context.designTokens.spacing.step6,
+  );
 
   /// Gutter between the window's leading safe-area edge and the menu button.
   static double leadingGutter(BuildContext context) =>
@@ -174,16 +188,84 @@ class MobileNavigationLauncher extends StatelessWidget {
   /// Only consulted for a [MobileNavDockAction.worded] action; a
   /// [MobileNavDockAction.glyph] one is round at every width.
   ///
-  /// [utilityDocked] reserves the utility button's chip and gap too.
+  /// [utilityDocked] reserves the utility button's chip and gap too, and a
+  /// non-zero [reservedCenterWidth] the activity island and its gap.
   static bool labelsFit(
     BuildContext context,
     MobileNavDockAction action, {
     bool utilityDocked = false,
+    double reservedCenterWidth = 0,
   }) =>
-      chipHeight(context) * (utilityDocked ? 2 : 1) +
-          chipGap(context) * (utilityDocked ? 2 : 1) +
+      _leadingWidth(context, utilityDocked: utilityDocked) +
+          chipGap(context) +
+          (reservedCenterWidth > 0
+              ? reservedCenterWidth + chipGap(context)
+              : 0) +
           DsGlassPill.intrinsicWidth(context, label: action.label) <=
       availableRowWidth(context);
+
+  /// The stretch of the row between the leading chips and the page action
+  /// (or the trailing gutter, when no action docks), each kept [chipGap]
+  /// away — measured from the window's start and end edges, safe-area insets
+  /// included. The shell centres the activity island in it.
+  EdgeInsetsDirectional centerBand(BuildContext context) {
+    final action = pageAction;
+    final actionWidth = action == null
+        ? 0.0
+        : (_labeled(context, action)
+                  ? DsGlassPill.intrinsicWidth(context, label: action.label)
+                  : chipHeight(context)) +
+              chipGap(context);
+    return EdgeInsetsDirectional.only(
+      start:
+          _startInset(context) +
+          leadingGutter(context) +
+          _leadingWidth(context, utilityDocked: utilityAction != null) +
+          chipGap(context),
+      end: _endInset(context) + trailingGutter(context) + actionWidth,
+    );
+  }
+
+  /// Whether the [centerBand] is at least [reservedCenterWidth] wide. False
+  /// when the leading chips and the page action, even down to its glyph,
+  /// leave too little of the row — the shell then floats the island above
+  /// the row instead of squeezing it to nothing.
+  bool centerFits(BuildContext context) {
+    final band = centerBand(context);
+    return MediaQuery.sizeOf(context).width - band.start - band.end >=
+        reservedCenterWidth;
+  }
+
+  /// Whether [action] rides the row with its label, given this launcher's
+  /// utility button and reserved centre.
+  bool _labeled(BuildContext context, MobileNavDockAction action) =>
+      action.worded &&
+      labelsFit(
+        context,
+        action,
+        utilityDocked: utilityAction != null,
+        reservedCenterWidth: reservedCenterWidth,
+      );
+
+  /// The menu button, plus the utility button and its gap when docked.
+  static double _leadingWidth(
+    BuildContext context, {
+    required bool utilityDocked,
+  }) => utilityDocked
+      ? chipHeight(context) * 2 + chipGap(context)
+      : chipHeight(context);
+
+  // The safe-area insets are physical; the gutters follow the reading
+  // direction.
+  static double _startInset(BuildContext context) =>
+      Directionality.of(context) == TextDirection.ltr
+      ? MediaQuery.paddingOf(context).left
+      : MediaQuery.paddingOf(context).right;
+
+  static double _endInset(BuildContext context) =>
+      Directionality.of(context) == TextDirection.ltr
+      ? MediaQuery.paddingOf(context).right
+      : MediaQuery.paddingOf(context).left;
 
   /// One line of the chips' label style at the ambient text scale, never
   /// shorter than the style's own line height.
@@ -196,27 +278,18 @@ class MobileNavigationLauncher extends StatelessWidget {
     );
   }
 
-  static double _bottomPadding(BuildContext context) => math.max(
-    MediaQuery.paddingOf(context).bottom,
-    context.designTokens.spacing.step6,
-  );
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final height = chipHeight(context);
     final action = pageAction;
     final utility = utilityAction;
-    // The safe-area insets are physical; the gutters follow the reading
-    // direction.
-    final insets = MediaQuery.paddingOf(context);
-    final ltr = Directionality.of(context) == TextDirection.ltr;
     return Padding(
       padding: EdgeInsetsDirectional.fromSTEB(
-        (ltr ? insets.left : insets.right) + leadingGutter(context),
+        _startInset(context) + leadingGutter(context),
         tokens.spacing.step2,
-        (ltr ? insets.right : insets.left) + trailingGutter(context),
-        _bottomPadding(context),
+        _endInset(context) + trailingGutter(context),
+        rowBottom(context),
       ),
       child: Row(
         children: [
@@ -266,13 +339,7 @@ class MobileNavigationLauncher extends StatelessWidget {
                 child: _LauncherPageActionChip(
                   action: action,
                   height: height,
-                  labeled:
-                      action.worded &&
-                      labelsFit(
-                        context,
-                        action,
-                        utilityDocked: utility != null,
-                      ),
+                  labeled: _labeled(context, action),
                 ),
               ),
             ),

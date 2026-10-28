@@ -1796,8 +1796,13 @@ void main() {
     });
 
     /// Pumps the mobile shell with a live recording, so the island's
-    /// recording half is what the sandbox gate is observed on.
-    Future<void> pumpMobileShell(WidgetTester tester) async {
+    /// recording capsule is what the sandbox gate is observed on, and a
+    /// running timer beside it when [runningTimer] is given.
+    Future<void> pumpMobileShell(
+      WidgetTester tester, {
+      JournalEntity? runningTimer,
+      Size viewportSize = _phoneViewportSize,
+    }) async {
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1807,11 +1812,15 @@ void main() {
         isHabitsEnabled: () => true,
         isDashboardsEnabled: () => true,
       );
-      await _registerAppScreenGetIt(mockNavService);
+      await _registerAppScreenGetIt(
+        mockNavService,
+        runningTimer: runningTimer,
+      );
       addTearDown(tearDownTestGetIt);
       await _pumpAppScreen(
         tester,
         navService: mockNavService,
+        viewportSize: viewportSize,
         audioRecorderState: AudioRecorderState(
           status: AudioRecorderStatus.recording,
           progress: const Duration(seconds: 30),
@@ -1836,7 +1845,7 @@ void main() {
         expect(island.omitAudio, isTrue);
         expect(find.byKey(MobileActivityIsland.recordingKey), findsNothing);
         // Nothing else runs, so no island and no reserved height either.
-        expect(find.byKey(MobileActivityIsland.capsuleKey), findsNothing);
+        expect(find.byKey(MobileActivityIsland.islandKey), findsNothing);
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           DesignSystemBottomNavigationOverlayHeight.of(pageContext),
@@ -1849,8 +1858,8 @@ void main() {
     );
 
     testWidgets(
-      'shows the recording half of the activity island outside the Flatpak '
-      'sandbox',
+      'shows the recording capsule of the activity island outside the '
+      'Flatpak sandbox, inside the row',
       (tester) async {
         debugIsRunningInFlatpakOverride = false;
         await pumpMobileShell(tester);
@@ -1859,11 +1868,121 @@ void main() {
           find.byType(MobileActivityIsland),
         );
         expect(island.omitAudio, isFalse);
-        expect(find.byKey(MobileActivityIsland.recordingKey), findsOneWidget);
-        final pageContext = tester.element(find.byType(IndexedStack));
+        final recording = find.byKey(MobileActivityIsland.recordingKey);
+        expect(recording, findsOneWidget);
+        // A lone capsule sits level with the menu button, inside the row,
+        // so pages reserve nothing above the bar for it.
         expect(
-          DesignSystemBottomNavigationOverlayHeight.of(pageContext),
-          MobileActivityIsland.reservedHeight(pageContext),
+          tester.getCenter(recording).dy,
+          moreOrLessEquals(
+            tester
+                .getCenter(find.byKey(MobileNavigationLauncherKeys.menuButton))
+                .dy,
+            epsilon: 0.5,
+          ),
+        );
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'a timer and a recording share one capsule in the row while it fits',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = false;
+        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
+        await tester.pump();
+
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.stacked, isFalse);
+        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
+        final recording = tester.getRect(
+          find.byKey(MobileActivityIsland.recordingKey),
+        );
+        final menu = tester.getRect(
+          find.byKey(MobileNavigationLauncherKeys.menuButton),
+        );
+        // Side by side, level with the menu button, inside the row.
+        expect(timer.right, lessThanOrEqualTo(recording.left));
+        expect(timer.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(recording.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(find.byKey(MobileActivityIsland.dividerKey), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(DesignSystemBottomNavigationOverlayHeight.of(pageContext), 0);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'stacks the timer above the recording only when the shared capsule '
+      'does not fit, growing upward out of the row',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = false;
+        // Find a width where the row holds the stack but not the shared
+        // capsule, measured from the shell's own launcher rather than
+        // hard-coded against one font's metrics.
+        await pumpMobileShell(tester, runningTimer: _runningTimerEntry);
+        await tester.pump();
+        final context = tester.element(find.byType(MobileNavigationLauncher));
+        final launcher = tester.widget<MobileNavigationLauncher>(
+          find.byType(MobileNavigationLauncher),
+        );
+        const both = MobileActivity(timer: true, recording: true);
+        final band = launcher.centerBand(context);
+        final chrome = band.start + band.end;
+        final shared = MobileActivityIsland.width(
+          context,
+          both,
+          stacked: false,
+        );
+        final stack = MobileActivityIsland.width(context, both, stacked: true);
+        final width = (chrome + (shared + stack) / 2).floorToDouble();
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        await pumpMobileShell(
+          tester,
+          runningTimer: _runningTimerEntry,
+          viewportSize: Size(width, _phoneViewportSize.height),
+        );
+        await tester.pump();
+
+        final island = tester.widget<MobileActivityIsland>(
+          find.byType(MobileActivityIsland),
+        );
+        expect(island.stacked, isTrue);
+        final timer = tester.getRect(find.byKey(MobileActivityIsland.timerKey));
+        final recording = tester.getRect(
+          find.byKey(MobileActivityIsland.recordingKey),
+        );
+        final menu = tester.getRect(
+          find.byKey(MobileNavigationLauncherKeys.menuButton),
+        );
+        expect(timer.bottom, lessThan(recording.top));
+        // The lowest capsule keeps the row's centre line; the stack rises
+        // above the row's top rather than pushing the row down.
+        expect(recording.center.dy, moreOrLessEquals(menu.center.dy));
+        expect(timer.top, lessThan(menu.top));
+
+        // Pages pad by exactly what rises above the bar.
+        final pageContext = tester.element(find.byType(IndexedStack));
+        final above = MobileActivityIsland.heightAboveBar(
+          pageContext,
+          both,
+          inRow: true,
+          stacked: true,
+        );
+        expect(above, greaterThan(0));
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
+          MobileNavigationLauncher.barHeight(pageContext) + above,
         );
 
         await tester.pumpWidget(const SizedBox.shrink());
@@ -1991,7 +2110,8 @@ void main() {
       },
     );
 
-    testWidgets('floats the activity island its gap above the nav bar', (
+    testWidgets('centres the activity island in the row between the menu '
+        'button and the page action', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -2026,38 +2146,152 @@ void main() {
         findsNothing,
       );
       expect(find.byType(MobileActivityIsland), findsOneWidget);
-      expect(find.byKey(MobileActivityIsland.capsuleKey), findsOneWidget);
+      final timer = find.byKey(MobileActivityIsland.timerKey);
+      expect(timer, findsOneWidget);
 
-      // It sits in an AnimatedPositioned anchored to the bar's top edge plus
-      // its own gap — the same height contract the bar itself renders with,
-      // so the capsule floats above the bar instead of fusing with it.
-      final positioned = tester.widget<AnimatedPositioned>(
+      // It sits in the launcher's centre band, its capsule centred on the
+      // row — the same geometry the launcher reserves room for.
+      final positioned = tester.widget<AnimatedPositionedDirectional>(
         find
             .ancestor(
               of: find.byType(MobileActivityIsland),
-              matching: find.byType(AnimatedPositioned),
+              matching: find.byType(AnimatedPositionedDirectional),
             )
             .first,
       );
       final barContext = tester.element(
         find.byType(MobileNavigationLauncher),
       );
+      final launcher = tester.widget<MobileNavigationLauncher>(
+        find.byType(MobileNavigationLauncher),
+      );
+      final band = launcher.centerBand(barContext);
+      expect(positioned.start, band.start);
+      expect(positioned.end, band.end);
+      expect(positioned.bottom, MobileActivityIsland.dockedBottom(barContext));
       expect(
-        positioned.bottom,
-        MobileNavigationLauncher.barHeight(barContext) +
-            MobileActivityIsland.gapAboveBar(barContext),
+        launcher.reservedCenterWidth,
+        MobileActivityIsland.width(
+          barContext,
+          const MobileActivity(timer: true, recording: false),
+          stacked: false,
+        ),
       );
 
-      // Centred over the bar rather than spread to its edges.
-      expect(
-        tester.getCenter(find.byKey(MobileActivityIsland.capsuleKey)).dx,
-        moreOrLessEquals(_phoneViewportSize.width / 2, epsilon: 0.5),
+      // Centred in the band — clear of the menu button, not on the
+      // window's centre line — and level with the chips.
+      final menu = tester.getRect(
+        find.byKey(MobileNavigationLauncherKeys.menuButton),
       );
+      final capsule = tester.getRect(timer);
+      final bandRect = band.resolve(TextDirection.ltr);
+      expect(capsule.left, greaterThan(menu.right));
+      expect(
+        capsule.center.dx,
+        moreOrLessEquals(
+          (bandRect.left + _phoneViewportSize.width - bandRect.right) / 2,
+          epsilon: 0.5,
+        ),
+      );
+      expect(capsule.center.dy, moreOrLessEquals(menu.center.dy));
     });
 
     testWidgets(
-      'occupiedHeight inside the page stack grows by the indicator height '
-      'while a timer runs',
+      'floats the island above the row at full width when even the '
+      'glyph-only row leaves it no band',
+      (tester) async {
+        // The narrowest phone at the largest text: the menu button and the
+        // collapsed action alone outgrow what the island needs.
+        tester.platformDispatcher.textScaleFactorTestValue = 3;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
+        addTearDown(tearDownTestGetIt);
+
+        const narrow = Size(320, 700);
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: narrow,
+        );
+
+        final barContext = tester.element(
+          find.byType(MobileNavigationLauncher),
+        );
+        final launcher = tester.widget<MobileNavigationLauncher>(
+          find.byType(MobileNavigationLauncher),
+        );
+        // The island would not fit the band, so the launcher reserves
+        // nothing for it and keeps its own layout.
+        final reserving = MobileNavigationLauncher(
+          onOpenMenu: launcher.onOpenMenu,
+          pageAction: launcher.pageAction,
+          utilityAction: launcher.utilityAction,
+          reservedCenterWidth: MobileActivityIsland.width(
+            barContext,
+            const MobileActivity(timer: true, recording: false),
+            stacked: false,
+          ),
+        );
+        expect(
+          reserving.centerFits(barContext),
+          isFalse,
+          reason: 'the precondition: no band for the island in this row',
+        );
+        expect(launcher.reservedCenterWidth, 0);
+
+        final positioned = tester.widget<AnimatedPositionedDirectional>(
+          find.ancestor(
+            of: find.byType(MobileActivityIsland),
+            matching: find.byType(AnimatedPositionedDirectional),
+          ),
+        );
+        expect(positioned.start, 0);
+        expect(positioned.end, 0);
+        expect(
+          positioned.bottom,
+          MobileNavigationLauncher.barHeight(barContext) +
+              MobileActivityIsland.floatGap(barContext),
+        );
+
+        // Visible and whole: above the row, centred on the window, digits
+        // intact, and pages pad for the whole floating capsule.
+        final capsule = tester.getRect(
+          find.byKey(MobileActivityIsland.timerKey),
+        );
+        expect(
+          capsule.bottom,
+          lessThanOrEqualTo(
+            narrow.height - MobileNavigationLauncher.barHeight(barContext),
+          ),
+        );
+        expect(capsule.center.dx, moreOrLessEquals(narrow.width / 2));
+        expect(capsule.width, greaterThan(0));
+        expect(find.text('00:05:00'), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
+          MobileNavigationLauncher.barHeight(pageContext) +
+              MobileActivityIsland.capsuleHeight(pageContext) +
+              MobileActivityIsland.floatGap(pageContext),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+    testWidgets(
+      'occupiedHeight inside the page stack stays the bar while a lone '
+      'timer sits in the row',
       (tester) async {
         final mockNavService = MockNavService();
 
@@ -2077,14 +2311,14 @@ void main() {
 
         await _pumpAppScreen(tester, navService: mockNavService);
 
-        // Pages padding by occupiedHeight reserve room for the activity
-        // island floating above the bar, so it never covers scroll content
-        // or floating actions.
+        // A single capsule sits inside the launcher row, so pages padding by
+        // occupiedHeight reserve exactly the bar — no gutter for an island
+        // that no longer floats above it.
+        expect(find.byKey(MobileActivityIsland.timerKey), findsOneWidget);
         final pageContext = tester.element(find.byType(IndexedStack));
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
-          MobileNavigationLauncher.barHeight(pageContext) +
-              MobileActivityIsland.reservedHeight(pageContext),
+          MobileNavigationLauncher.barHeight(pageContext),
         );
       },
     );
@@ -3723,14 +3957,15 @@ void main() {
               .first,
         );
 
-        AnimatedPositioned island() => tester.widget<AnimatedPositioned>(
-          find
-              .ancestor(
-                of: find.byType(MobileActivityIsland),
-                matching: find.byType(AnimatedPositioned),
-              )
-              .first,
-        );
+        AnimatedPositionedDirectional island() =>
+            tester.widget<AnimatedPositionedDirectional>(
+              find
+                  .ancestor(
+                    of: find.byType(MobileActivityIsland),
+                    matching: find.byType(AnimatedPositionedDirectional),
+                  )
+                  .first,
+            );
 
         // On the settings root the bar sits in place and accepts taps, and
         // its slide keeps the design system's easeOutQuart.
@@ -3761,20 +3996,31 @@ void main() {
         expect(
           island().bottom,
           MediaQuery.paddingOf(barContext).bottom +
-              MobileActivityIsland.gapAboveBar(barContext),
+              MobileActivityIsland.floatGap(barContext),
         );
+        // With no row to sit in, it centres across the whole width.
+        expect(island().start, 0);
+        expect(island().end, 0);
         await tester.pump(const Duration(milliseconds: 450));
 
         // Popping back to the list slides the bar into place and lifts
-        // the island back above it.
+        // the island back into the row's centre band.
         settingsDelegate.beamToNamed('/settings/categories');
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
         expect(
           island().bottom,
-          MobileNavigationLauncher.barHeight(barContext) +
-              MobileActivityIsland.gapAboveBar(barContext),
+          MobileActivityIsland.dockedBottom(barContext),
+        );
+        expect(
+          island().start,
+          tester
+              .widget<MobileNavigationLauncher>(
+                find.byType(MobileNavigationLauncher),
+              )
+              .centerBand(barContext)
+              .start,
         );
         await tester.pump(const Duration(milliseconds: 450));
 
@@ -4563,7 +4809,7 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('floats the activity island above the launcher', (
+    testWidgets('docks the activity island on the launcher row', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -4588,16 +4834,20 @@ void main() {
       await tester.pump();
 
       final context = tester.element(find.byType(MobileActivityIsland));
-      final island = tester.widget<AnimatedPositioned>(
+      final island = tester.widget<AnimatedPositionedDirectional>(
         find.ancestor(
           of: find.byType(MobileActivityIsland),
-          matching: find.byType(AnimatedPositioned),
+          matching: find.byType(AnimatedPositionedDirectional),
         ),
       );
+      expect(island.bottom, MobileActivityIsland.dockedBottom(context));
       expect(
-        island.bottom,
-        MobileNavigationLauncher.barHeight(context) +
-            MobileActivityIsland.gapAboveBar(context),
+        tester.getCenter(find.byKey(MobileActivityIsland.timerKey)).dy,
+        moreOrLessEquals(
+          tester
+              .getCenter(find.byKey(MobileNavigationLauncherKeys.menuButton))
+              .dy,
+        ),
       );
 
       await unmount(tester);
