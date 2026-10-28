@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
@@ -65,6 +66,25 @@ void main() {
       final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
       expect(gptMarkdown.data, responseText);
     });
+
+    testWidgets(
+      'an analysis made before attribution was recorded still names its model',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            overrides: [
+              aiAttributionForArtifactProvider.overrideWith(
+                (ref, artifact) async => null,
+              ),
+            ],
+            child: AiResponseSummary(testAiResponseEntry, fadeOut: false),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('gpt-4 · Provenance not recorded'), findsOneWidget);
+      },
+    );
 
     testWidgets('does not filter H1 for non-task summary responses', (
       tester,

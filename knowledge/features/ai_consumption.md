@@ -5,7 +5,7 @@ description: "Two small facts per piece of AI work — who initiated it and what
 resource: ../../lib/features/ai_consumption
 tags: [ai-consumption, attribution, cost, impact]
 status: stable
-generated: { by: codex/gpt-6, at: 2026-09-12T12:48:35Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-28T22:00:00Z }
 stale_after: 2027-02-22
 sources:
   - id: src
@@ -50,14 +50,18 @@ call, so its cost is reported, lands on the same task, and shows on the
 summary's own pill. Only the transcription itself is missing from a task's
 total.
 
-**A pill is a cost read-out, so it shows only a known cost.** An
-`AiAttributionSummary` pill and an `AiAttributionSummaryGroup` render nothing
-once every attribution they cover has resolved and every call in it has null
-credits — a Whisper transcript, or a provider that never bills. Details still
-loading, not yet synced or failing are an unknown rather than a known absence,
-so the pill stays until a resolved projection says otherwise. The full attribution row and the details sheet,
-which do say "Cost unknown", are unchanged. The group takes its `topSpacing`
-along when it hides, so an audio card keeps an even rhythm without it.
+**A pill says who did the work first, and what it cost only when known.** An
+`AiAttributionSummary` pill and an `AiAttributionSummaryGroup` show for every
+attributed output — a Whisper transcript or a local model that bills nothing
+did the work all the same, and the pill is how a reader finds out who. The
+label leads with the model (or, for a group, the kind of work) and appends cost
+and impact only when the provider reported them, so an unbilled output does not
+carry "Cost unknown"; the full attribution row and the details sheet still say
+so. An AI response made before attribution existed passes the model it recorded
+as `unrecordedModel`, and its pill reads "<model> · Provenance not recorded"
+rather than vanishing; it opens nothing, because there is no record to open.
+The group renders nothing only without attributions, taking its `topSpacing`
+along, so an audio card keeps an even rhythm without it.
 
 # Why the carrier is authoritative
 

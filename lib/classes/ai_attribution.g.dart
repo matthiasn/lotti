@@ -38,6 +38,9 @@ _AiTriggerSnapshot _$AiTriggerSnapshotFromJson(Map<String, dynamic> json) =>
       agentId: json['agentId'] as String?,
       wakeRunKey: json['wakeRunKey'] as String?,
       automationRuleId: json['automationRuleId'] as String?,
+      skillName: json['skillName'] as String?,
+      profileName: json['profileName'] as String?,
+      agentName: json['agentName'] as String?,
     );
 
 Map<String, dynamic> _$AiTriggerSnapshotToJson(_AiTriggerSnapshot instance) =>
@@ -49,6 +52,9 @@ Map<String, dynamic> _$AiTriggerSnapshotToJson(_AiTriggerSnapshot instance) =>
       'agentId': instance.agentId,
       'wakeRunKey': instance.wakeRunKey,
       'automationRuleId': instance.automationRuleId,
+      'skillName': instance.skillName,
+      'profileName': instance.profileName,
+      'agentName': instance.agentName,
     };
 
 const _$AiTriggerTypeEnumMap = {

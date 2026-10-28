@@ -1464,6 +1464,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAssistantTitle => 'Generează…';
 
   @override
+  String get aiAttributionAgent => 'Agent';
+
+  @override
   String get aiAttributionArtifactOutput => 'Rezultat';
 
   @override
@@ -1495,6 +1498,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu sunt disponibile detalii despre interacțiune.';
 
   @override
+  String get aiAttributionNotRecorded => 'Proveniență neînregistrată';
+
+  @override
+  String get aiAttributionOpenTask => 'Deschideți sarcina';
+
+  @override
+  String get aiAttributionProfile => 'Profil';
+
+  @override
   String get aiAttributionRequestEvidence => 'Dovada solicitării';
 
   @override
@@ -1511,6 +1523,12 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$model · $time · $_temp0';
   }
+
+  @override
+  String get aiAttributionSkill => 'Abilitate';
+
+  @override
+  String get aiAttributionSource => 'Sursă';
 
   @override
   String get aiAttributionStartedAt => 'Început la';
@@ -1534,6 +1552,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String aiAttributionSummary(String actor, String trigger, String status) {
     return '$actor · $trigger · $status';
   }
+
+  @override
+  String get aiAttributionTask => 'Sarcină';
 
   @override
   String get aiAttributionTitle => 'Atribuire AI';

@@ -266,10 +266,14 @@ class ProfileAutomationResolver {
       return null;
     }
 
-    return _profileResolver.resolve(
+    final profile = await _profileResolver.resolve(
       agentConfig: agent.config,
       template: template,
       version: version,
+    );
+    return profile?.forAgent(
+      agentId: agent.agentId,
+      agentName: agent.displayName,
     );
   }
 

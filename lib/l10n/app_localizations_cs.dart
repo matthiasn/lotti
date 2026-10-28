@@ -1455,6 +1455,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAssistantTitle => 'Generovat…';
 
   @override
+  String get aiAttributionAgent => 'Agent';
+
+  @override
   String get aiAttributionArtifactOutput => 'Výstup';
 
   @override
@@ -1486,6 +1489,15 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nejsou dostupné žádné podrobnosti interakce.';
 
   @override
+  String get aiAttributionNotRecorded => 'Původ nezaznamenán';
+
+  @override
+  String get aiAttributionOpenTask => 'Otevřít úkol';
+
+  @override
+  String get aiAttributionProfile => 'Profil';
+
+  @override
   String get aiAttributionRequestEvidence => 'Doklad požadavku';
 
   @override
@@ -1502,6 +1514,12 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$model · $time · $_temp0';
   }
+
+  @override
+  String get aiAttributionSkill => 'Dovednost';
+
+  @override
+  String get aiAttributionSource => 'Zdroj';
 
   @override
   String get aiAttributionStartedAt => 'Zahájeno';
@@ -1525,6 +1543,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String aiAttributionSummary(String actor, String trigger, String status) {
     return '$actor · $trigger · $status';
   }
+
+  @override
+  String get aiAttributionTask => 'Úkol';
 
   @override
   String get aiAttributionTitle => 'Přiřazení AI';

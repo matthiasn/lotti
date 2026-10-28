@@ -1499,10 +1499,10 @@ void main() {
       );
       await tester.pump();
 
-      // No projection has arrived yet: an unknown, not a known absence of
-      // cost, so the pill stays.
+      // No projection has arrived yet, so no model or cost is known; the pill
+      // still says AI work was done here and opens what is known.
       expect(find.byType(DsPill), findsOneWidget);
-      expect(find.text('Unknown model · Cost unknown'), findsOneWidget);
+      expect(find.text('Unknown model'), findsOneWidget);
       expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
     });
 

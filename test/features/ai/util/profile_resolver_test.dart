@@ -819,7 +819,10 @@ void main() {
 
   group('resolveByProfileId', () {
     test('resolves valid profile by ID', () async {
-      final profile = testInferenceProfile(id: 'direct-profile');
+      final profile = testInferenceProfile(
+        id: 'direct-profile',
+        name: 'Penguin vision',
+      );
       stubProfile(profile);
       stubModelResolution();
 
@@ -827,6 +830,11 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.thinkingModelId, 'models/gemini-3-flash-preview');
+      // The route remembers which profile it came from, by id and by name,
+      // so the output it produces can say so.
+      expect(result.profileId, 'direct-profile');
+      expect(result.profileName, 'Penguin vision');
+      expect(result.agentId, isNull);
       verify(() => mockAiConfig.getConfigById('direct-profile')).called(1);
     });
 

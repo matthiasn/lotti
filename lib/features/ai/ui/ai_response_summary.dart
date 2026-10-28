@@ -248,6 +248,8 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
             ),
             attribution: aiResponse.data.aiAttribution,
             asPill: true,
+            // An analysis older than attribution still names its model.
+            unrecordedModel: aiResponse.data.model,
           ),
         ],
       ),

@@ -79,6 +79,10 @@ abstract class AiActorSnapshot with _$AiActorSnapshot {
 }
 
 /// Immutable snapshot of why an AI operation started.
+///
+/// The `*Name` fields copy what the skill, profile and agent were called when
+/// the work ran, so the record still says who did it after any of them is
+/// renamed or deleted. Their ids are what a reader navigates by.
 @freezed
 abstract class AiTriggerSnapshot with _$AiTriggerSnapshot {
   const factory AiTriggerSnapshot({
@@ -89,6 +93,9 @@ abstract class AiTriggerSnapshot with _$AiTriggerSnapshot {
     String? agentId,
     String? wakeRunKey,
     String? automationRuleId,
+    String? skillName,
+    String? profileName,
+    String? agentName,
   }) = _AiTriggerSnapshot;
 
   factory AiTriggerSnapshot.fromJson(Map<String, dynamic> json) =>

@@ -7,11 +7,18 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/side_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// Says who produced an AI output, and opens the full attribution on tap.
+///
+/// As a pill it is provenance first: the model that ran, then the cost and
+/// impact when the provider reported them. It shows for every attributed
+/// output, priced or not — a local model or a speech-to-text engine that
+/// bills nothing still did the work, and the pill is the way to find out who.
 class AiAttributionSummary extends ConsumerWidget {
   const AiAttributionSummary({
     required this.artifact,
@@ -19,6 +26,7 @@ class AiAttributionSummary extends ConsumerWidget {
     this.compact = false,
     this.asPill = false,
     this.includeTopSpacing = true,
+    this.unrecordedModel,
     super.key,
   });
 
@@ -27,6 +35,12 @@ class AiAttributionSummary extends ConsumerWidget {
   final bool compact;
   final bool asPill;
   final bool includeTopSpacing;
+
+  /// The model the output itself names, for an output made before
+  /// attribution was recorded. When no attribution resolves, the pill shows
+  /// this model and says that nothing more was recorded, instead of
+  /// disappearing; null renders nothing, as before.
+  final String? unrecordedModel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,15 +61,9 @@ class AiAttributionSummary extends ConsumerWidget {
           label: context.messages.aiAttributionUnavailable,
         );
       }
-      return const SizedBox.shrink();
-    }
-    // A pill is a cost read-out: once the calls are known and none of them
-    // reported a cost — a speech-to-text engine, a provider without billing —
-    // it has nothing to say, and the full details stay one row away. Details
-    // still loading, not yet synced or failing are an unknown, not a known
-    // absence, so the pill stays until a resolved projection says otherwise.
-    if (asPill && details != null && !_hasKnownCost(details.interactions)) {
-      return const SizedBox.shrink();
+      final model = unrecordedModel;
+      if (model == null) return const SizedBox.shrink();
+      return _withTopSpacing(context, _UnrecordedPill(model: model));
     }
     final row = _AttributionRow(
       attribution: resolvedAttribution,
@@ -64,10 +72,42 @@ class AiAttributionSummary extends ConsumerWidget {
       asPill: asPill,
       isLoading: asyncDetails.isLoading && details == null,
     );
-    if (!includeTopSpacing) return row;
+    return _withTopSpacing(context, row);
+  }
+
+  Widget _withTopSpacing(BuildContext context, Widget child) {
+    if (!includeTopSpacing) return child;
     return Padding(
       padding: EdgeInsets.only(top: context.designTokens.spacing.step3),
-      child: row,
+      child: child,
+    );
+  }
+}
+
+/// The pill of an output that predates attribution: the model it names, and
+/// that nothing more is known. Not tappable — there is no record to open.
+class _UnrecordedPill extends StatelessWidget {
+  const _UnrecordedPill({required this.model});
+
+  final String model;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = '$model · ${context.messages.aiAttributionNotRecorded}';
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: DsPill(
+          variant: DsPillVariant.filled,
+          bordered: true,
+          label: label,
+          leading: Icon(
+            LottiIcons.aiSpark,
+            size: 12,
+            color: context.designTokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -76,10 +116,11 @@ class AiAttributionSummary extends ConsumerWidget {
 ///
 /// Audio entries can contain more than one transcript, each with its own
 /// attribution. This keeps the card surface concise while retaining every
-/// individual attribution in the details sheet. Like a single pill it renders
-/// nothing once every attribution resolved and no call reported a cost —
-/// [topSpacing] included, so a caller hands the gap above it here rather than
-/// leaving it behind an empty pill.
+/// individual attribution in the details sheet. Like a single pill it shows
+/// whenever there is an attribution, with the cost only when one was
+/// reported. It renders nothing without attributions — [topSpacing]
+/// included, so a caller hands the gap above it here rather than leaving it
+/// behind an empty pill.
 class AiAttributionSummaryGroup extends ConsumerWidget {
   const AiAttributionSummaryGroup({
     required this.label,
@@ -110,12 +151,6 @@ class AiAttributionSummaryGroup extends ConsumerWidget {
       (asyncDetail) => asyncDetail.isLoading && asyncDetail.value == null,
     );
     final interactions = details.expand((detail) => detail.interactions);
-    // Hidden only once every attribution resolved and none reported a cost;
-    // one still loading, unsynced or failing keeps the pill.
-    final allResolved = details.length == asyncDetails.length;
-    if (allResolved && !_hasKnownCost(interactions)) {
-      return const SizedBox.shrink();
-    }
     final cost = isLoading
         ? '…'
         : _formatInteractionCosts(context, interactions);
@@ -405,6 +440,7 @@ class _AttributionDetailsBody extends StatelessWidget {
             label: context.messages.aiAttributionCreator,
             value: _actorDisplayName(context, attribution.initiator),
           ),
+          _AttributionSources(attribution: attribution),
           _Detail(
             label: context.messages.aiAttributionTrigger,
             value: _triggerLabel(context, attribution.trigger.type),
@@ -460,6 +496,135 @@ class _AttributionDetailsBody extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Who stood behind the work — the agent, profile and skill that ran it and
+/// the task it belongs to — each opening its own page where it has one.
+///
+/// Names come from the attribution's own snapshot, so they read as they did
+/// when the work ran; ids are what the links navigate by. A row is left out
+/// when the attribution does not name it, and the section with them.
+class _AttributionSources extends ConsumerWidget {
+  const _AttributionSources({required this.attribution});
+
+  final AiWorkAttribution attribution;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
+    final trigger = attribution.trigger;
+    final taskId = attribution.taskId;
+    final agentId = trigger.agentId;
+    final profileId = trigger.profileId;
+    final skillName = trigger.skillName;
+    final rows = <Widget>[
+      if (agentId != null)
+        _LinkDetail(
+          key: const ValueKey('ai-attribution-source-agent'),
+          label: messages.aiAttributionAgent,
+          value: trigger.agentName ?? agentId,
+          route: '/settings/agents/instances/$agentId',
+        ),
+      if (profileId != null)
+        _LinkDetail(
+          key: const ValueKey('ai-attribution-source-profile'),
+          label: messages.aiAttributionProfile,
+          value: trigger.profileName ?? profileId,
+          route: '/settings/ai/profile/$profileId',
+        ),
+      if (skillName != null)
+        _Detail(label: messages.aiAttributionSkill, value: skillName),
+      if (taskId != null)
+        _LinkDetail(
+          key: const ValueKey('ai-attribution-source-task'),
+          label: messages.aiAttributionTask,
+          value:
+              ref.watch(aiAttributionTaskTitleProvider(taskId)).value ??
+              messages.aiAttributionOpenTask,
+          route: '/tasks/$taskId',
+        ),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SectionHeading(messages.aiAttributionSource),
+          SizedBox(height: tokens.spacing.step2),
+          ...rows,
+        ],
+      ),
+    );
+  }
+}
+
+/// A [_Detail] whose value opens [route], closing the sheet on the way so
+/// the page it opens is not left behind it.
+class _LinkDetail extends StatelessWidget {
+  const _LinkDetail({
+    required this.label,
+    required this.value,
+    required this.route,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = tokens.colors.interactive.enabled;
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+      child: Semantics(
+        link: true,
+        label: '$label: $value',
+        child: ExcludeSemantics(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
+            onTap: () {
+              Navigator.of(context).maybePop();
+              beamToNamed(route);
+            },
+            // Centred, unlike a plain detail row: the trailing chevron is
+            // shorter than a line of text and reads as superscript at the top.
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.end,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: color,
+                    ),
+                  ),
+                ),
+                Icon(
+                  LottiIcons.chevronRight,
+                  size: tokens.spacing.step4,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -688,7 +853,12 @@ String _formatPillLabel(
   required Iterable<AiConsumptionEvent> interactions,
 }) {
   final values = interactions.toList();
-  final parts = [prefix, _formatInteractionCosts(context, values)];
+  // A cost nobody reported is left out rather than spelled "Cost unknown" on
+  // every free or unbilled output; the details sheet still says so.
+  final parts = [
+    prefix,
+    if (_hasKnownCost(values)) _formatInteractionCosts(context, values),
+  ];
   final energy = values
       .map((interaction) => interaction.energyKwh)
       .whereType<double>();
