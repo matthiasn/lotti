@@ -914,9 +914,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentStateWakeCount => 'Vågenopgørelse';
 
   @override
-  String get agentStopWake => 'Stop';
-
-  @override
   String get agentStopWakeStopping => 'Stopper…';
 
   @override

@@ -923,9 +923,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentStateWakeCount => 'Contagem de despertares';
 
   @override
-  String get agentStopWake => 'Parar';
-
-  @override
   String get agentStopWakeStopping => 'A parar…';
 
   @override

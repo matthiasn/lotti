@@ -432,7 +432,6 @@
   "agentStateRevision": "Revize",
   "agentStateSleepingUntil": "Spí do",
   "agentStateWakeCount": "Počet probuzení",
-  "agentStopWake": "Zastavit",
   "agentStopWakeStopping": "Zastavuji…",
   "agentStopWakeTooltip": "Zastav běžící inferenci",
   "agentSuggestionTimeEntryUpdateCurrent": "Aktuální",

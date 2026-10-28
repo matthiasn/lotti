@@ -438,7 +438,6 @@
   "agentStateRevision": "Herziening",
   "agentStateSleepingUntil": "Slapen tot",
   "agentStateWakeCount": "Wakker worden",
-  "agentStopWake": "Stoppen",
   "agentStopWakeStopping": "Bezig met stoppen…",
   "agentStopWakeTooltip": "Stop de lopende inferentie",
   "agentSuggestionTimeEntryUpdateCurrent": "Lopend",

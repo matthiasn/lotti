@@ -926,9 +926,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentStateWakeCount => 'Contesto di sveglia';
 
   @override
-  String get agentStopWake => 'Ferma';
-
-  @override
   String get agentStopWakeStopping => 'Arresto in corso…';
 
   @override

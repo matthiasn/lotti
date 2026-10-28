@@ -222,7 +222,7 @@ class _Header extends StatelessWidget {
           ),
           // The stop sits in the header, not a tab, so a hung run can be
           // ended from wherever the reader is in the panel.
-          AgentRunningControls(agentId: agentId),
+          AgentStopWakeButton(agentId: agentId),
           IconButton(
             tooltip: MaterialLocalizations.of(context).closeButtonLabel,
             icon: Icon(LottiIcons.close, size: 20, color: ai.metaText),

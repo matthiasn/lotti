@@ -425,7 +425,6 @@
   "agentStateRevision": "Revisión",
   "agentStateSleepingUntil": "Durmiendo hasta",
   "agentStateWakeCount": "Número de activaciones",
-  "agentStopWake": "Detener",
   "agentStopWakeStopping": "Deteniendo…",
   "agentStopWakeTooltip": "Detén la inferencia en curso",
   "agentSuggestionTimeEntryUpdateCurrent": "Actual",

@@ -425,7 +425,6 @@
   "agentStateRevision": "Überarbeitung",
   "agentStateSleepingUntil": "Schlafend bis",
   "agentStateWakeCount": "Aufwachzähler",
-  "agentStopWake": "Stoppen",
   "agentStopWakeStopping": "Wird gestoppt…",
   "agentStopWakeTooltip": "Laufende Inferenz stoppen",
   "agentSuggestionTimeEntryUpdateCurrent": "Aktuell",

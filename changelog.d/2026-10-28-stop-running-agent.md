@@ -1,9 +1,10 @@
 ### Added
 - **A running agent can be stopped from where you read it.** Its page, the
-  agent internals panel and the conversation it is having now offer *Stop*
-  while it runs. The Conversations list marks which conversation is live, and
-  one that was stopped reads *Stopped* afterwards. Before, the only way to
-  stop a stuck run was the sidebar's wake queue.
+  agent internals panel and the conversation it is having now show a stop
+  button while it runs, the same one the summary's read-aloud uses. The
+  Conversations list marks which conversation is live, and one that was
+  stopped reads *Stopped* afterwards. Before, the only way to stop a stuck
+  run was the sidebar's wake queue.
 
 ### Fixed
 - **Stopping an agent now stops its current answer, not only the next one.**

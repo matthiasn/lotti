@@ -918,9 +918,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentStateWakeCount => 'Wakker worden';
 
   @override
-  String get agentStopWake => 'Stoppen';
-
-  @override
   String get agentStopWakeStopping => 'Bezig met stoppen…';
 
   @override

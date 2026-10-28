@@ -34,7 +34,7 @@ sources:
     last_modified: 2026-09-05
   - id: stop
     resource: ../../../lib/features/agents/ui/widgets/agent_stop_wake_button.dart
-    title: AgentStopWakeButton and AgentRunningControls
+    title: AgentStopWakeButton
     last_modified: 2026-10-28
   - id: conversation-log
     resource: ../../../lib/features/agents/ui/agent_conversation_log.dart
@@ -755,18 +755,25 @@ only from the sidebar's wake rows. All of these places use one control,
 [`agent_stop_wake_button.dart`](../../../lib/features/agents/ui/widgets/agent_stop_wake_button.dart),
 which calls `AgentService.abortRunningWake` — the same abort as the sidebar's ×,
 a pause and the run timeout (see
-[the execution bound](wake-orchestration.md#wake-execution-bound)):
+[the execution bound](wake-orchestration.md#wake-execution-bound)).
 
-- **The agent's header.** `AgentRunningControls` puts the running spinner and
-  *Stop* side by side in `AgentDetailPage`'s app bar and in the
+It wears the read-aloud control's `DsAiDiscButton`: the accent disc with the
+stop glyph inside a spinning ring. That disc is the app's one grammar for "AI
+work under way, tap to stop", so the running indicator and the stop are a
+single control rather than a spinner with a button beside it. A generic
+outlined button here read as a different design system from the AI chrome
+around it. The disc appears in three places:
+
+- **The agent's header.** The disc replaces the bare spinner in
+  `AgentDetailPage`'s app bar and sits beside the close button in the
   `AgentInternalsPanel` header, so the stop is reachable whichever tab is open.
 - **The conversation list.** In the Conversations tab, the live wake's thread
-  carries a *Running* badge and, while collapsed, *Stop* in its row. The row is
+  carries a *Running* badge and, while collapsed, the disc in its row. The row is
   found by run key (`agentRunningThreadIdProvider`, over
   `WakeRunner.runKeyFor`), not by recency. Until the running wake writes its
   first message, the newest thread is still the previous wake's.
 - **The live conversation.** Expanded, that thread opens on a callout saying
-  the agent is still working, with *Stop* as its trailing action. The row's
+  the agent is still working, with the disc as its trailing action. The row's
   stop leaves when the callout arrives, so a thread never shows two.
 
 A thread whose wake run is `aborted` — stopped, paused or timed out — reads
@@ -788,9 +795,11 @@ stateDiagram-v2
   Stop --> Hidden: wake ends on its own
 ```
 
-*Stopping…* swaps the glyph for a spinner and ignores further taps. The state
-resets when the agent goes idle, so a button that stays mounted — the app bar's
-— offers *Stop* again for the agent's next wake.
+While stopping, the glyph turns to the pending one (as read-aloud does while it
+prepares), the label reads *Stopping…*, and further taps do nothing. Under
+reduced motion the ring holds still. The state resets when the agent goes idle,
+so a disc that stays mounted — the app bar's — offers the stop again for the
+agent's next wake.
 
 # Settings surfaces
 

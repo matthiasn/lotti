@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_stop_wake_button.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -219,11 +218,7 @@ class _ThreadTileState extends ConsumerState<_ThreadTile> {
               label: context.messages.agentConversationStopped,
               color: context.colorScheme.outline,
             ),
-          if (isLive && !_expanded)
-            AgentStopWakeButton(
-              agentId: agentId,
-              size: DesignSystemButtonSize.dense,
-            ),
+          if (isLive && !_expanded) AgentStopWakeButton(agentId: agentId),
         ],
       ),
       subtitle: Text(
@@ -253,7 +248,7 @@ class _ThreadTileState extends ConsumerState<_ThreadTile> {
             ),
             child: DesignSystemInlineCallout(
               icon: LottiIcons.aiSpark,
-              tone: tokens.colors.alert.info.defaultColor,
+              tone: tokens.colors.aiCard.accent,
               text: context.messages.agentConversationLiveBanner,
               trailing: AgentStopWakeButton(agentId: agentId),
             ),

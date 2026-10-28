@@ -916,9 +916,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStateWakeCount => 'Počet probuzení';
 
   @override
-  String get agentStopWake => 'Zastavit';
-
-  @override
   String get agentStopWakeStopping => 'Zastavuji…';
 
   @override

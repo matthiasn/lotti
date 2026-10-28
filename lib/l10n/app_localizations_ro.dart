@@ -925,9 +925,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStateWakeCount => 'Număr de treziri';
 
   @override
-  String get agentStopWake => 'Oprire';
-
-  @override
   String get agentStopWakeStopping => 'Se oprește…';
 
   @override

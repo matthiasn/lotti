@@ -1699,13 +1699,7 @@ abstract class AppLocalizations {
   /// **'Wake count'**
   String get agentStateWakeCount;
 
-  /// Button label that stops an agent wake whose inference is running.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop'**
-  String get agentStopWake;
-
-  /// Stop button label between the press and the agent going idle.
+  /// Accessible label of the stop control between the press and the agent going idle.
   ///
   /// In en, this message translates to:
   /// **'Stopping…'**

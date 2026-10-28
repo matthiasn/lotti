@@ -439,7 +439,6 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sov tills",
   "agentStateWakeCount": "Vakenräkning",
-  "agentStopWake": "Stoppa",
   "agentStopWakeStopping": "Stoppar…",
   "agentStopWakeTooltip": "Stoppa den pågående inferensen",
   "agentSuggestionTimeEntryUpdateCurrent": "Nutid",

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -493,14 +494,15 @@ void main() {
 
           expect(inRow('live-thread', find.text('Running')), findsOneWidget);
           expect(inRow('newest-thread', find.text('Running')), findsNothing);
-          expect(find.text('Stop'), findsOneWidget);
-          expect(inRow('live-thread', find.text('Stop')), findsOneWidget);
+          final stop = find.byType(DsAiDiscButton);
+          expect(stop, findsOneWidget);
+          expect(inRow('live-thread', stop), findsOneWidget);
 
-          await tester.tap(find.text('Stop'));
+          await tester.tap(stop);
           await tester.pump();
 
           verify(() => agentService.abortRunningWake(_testAgentId)).called(1);
-          expect(inRow('live-thread', find.text('Stopping…')), findsOneWidget);
+          expect(tester.widget<DsAiDiscButton>(stop).label, 'Stopping…');
         },
       );
 
@@ -533,9 +535,9 @@ void main() {
             ),
             findsOneWidget,
           );
-          expect(find.text('Stop'), findsOneWidget);
+          expect(find.byType(DsAiDiscButton), findsOneWidget);
           expect(
-            find.descendant(of: banner, matching: find.text('Stop')),
+            find.descendant(of: banner, matching: find.byType(DsAiDiscButton)),
             findsOneWidget,
           );
           // The banner leads the conversation, above its messages.
@@ -563,7 +565,7 @@ void main() {
           expect(inRow('live-thread', find.text('Stopped')), findsOneWidget);
           expect(inRow('newest-thread', find.text('Stopped')), findsNothing);
           expect(find.text('Running'), findsNothing);
-          expect(find.text('Stop'), findsNothing);
+          expect(find.byType(DsAiDiscButton), findsNothing);
         },
       );
 

@@ -460,13 +460,9 @@
   "agentStateRevision": "Revision",
   "agentStateSleepingUntil": "Sleeping until",
   "agentStateWakeCount": "Wake count",
-  "agentStopWake": "Stop",
-  "@agentStopWake": {
-    "description": "Button label that stops an agent wake whose inference is running."
-  },
   "agentStopWakeStopping": "Stopping…",
   "@agentStopWakeStopping": {
-    "description": "Stop button label between the press and the agent going idle."
+    "description": "Accessible label of the stop control between the press and the agent going idle."
   },
   "agentStopWakeTooltip": "Stop the running inference",
   "@agentStopWakeTooltip": {

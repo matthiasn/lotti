@@ -439,7 +439,6 @@
   "agentStateRevision": "Revisione",
   "agentStateSleepingUntil": "Dormire fino a quando",
   "agentStateWakeCount": "Contesto di sveglia",
-  "agentStopWake": "Ferma",
   "agentStopWakeStopping": "Arresto in corso…",
   "agentStopWakeTooltip": "Ferma l’inferenza in corso",
   "agentSuggestionTimeEntryUpdateCurrent": "Corrente",

@@ -2,8 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_stop_wake_button.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -23,10 +22,14 @@ void main() {
 
   tearDown(() => runner.dispose());
 
-  Future<void> pump(WidgetTester tester, Widget child) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    MediaQueryData? mediaQueryData,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        child,
+        const AgentStopWakeButton(agentId: kTestAgentId),
+        mediaQueryData: mediaQueryData,
         overrides: [
           wakeRunnerProvider.overrideWithValue(runner),
           agentServiceProvider.overrideWithValue(agentService),
@@ -47,99 +50,83 @@ void main() {
     await tester.pump();
   }
 
-  DesignSystemButton stopButton(WidgetTester tester) =>
-      tester.widget<DesignSystemButton>(find.byType(DesignSystemButton));
+  DsAiDiscButton disc(WidgetTester tester) =>
+      tester.widget<DsAiDiscButton>(find.byType(DsAiDiscButton));
 
-  group('AgentStopWakeButton', () {
-    testWidgets('renders nothing while the agent is idle', (tester) async {
-      await pump(tester, const AgentStopWakeButton(agentId: kTestAgentId));
+  CircularProgressIndicator ring(WidgetTester tester) =>
+      disc(tester).ring! as CircularProgressIndicator;
 
-      expect(find.byType(DesignSystemButton), findsNothing);
-    });
+  testWidgets('renders nothing while the agent is idle', (tester) async {
+    await pump(tester);
 
-    testWidgets(
-      'stops the running wake, shows Stopping… and ignores further taps until '
-      'the agent is idle, then reads Stop again for the next wake',
-      (tester) async {
-        when(() => agentService.abortRunningWake(any())).thenReturn(true);
-        await setRunning(tester, running: true);
-        await pump(tester, const AgentStopWakeButton(agentId: kTestAgentId));
-
-        expect(find.text('Stop'), findsOneWidget);
-        expect(stopButton(tester).isLoading, isFalse);
-        expect(stopButton(tester).leadingIcon, LottiIcons.stop);
-
-        await tester.tap(find.text('Stop'));
-        await tester.pump();
-
-        verify(() => agentService.abortRunningWake(kTestAgentId)).called(1);
-        expect(find.text('Stopping…'), findsOneWidget);
-        expect(stopButton(tester).isLoading, isTrue);
-
-        await tester.tap(find.text('Stopping…'), warnIfMissed: false);
-        await tester.pump();
-        verifyNever(() => agentService.abortRunningWake(any()));
-
-        await setRunning(tester, running: false);
-        expect(find.byType(DesignSystemButton), findsNothing);
-
-        await setRunning(tester, running: true);
-        expect(find.text('Stop'), findsOneWidget);
-        expect(stopButton(tester).isLoading, isFalse);
-      },
-    );
-
-    testWidgets(
-      'stays on Stop when the wake had already ended before the tap landed',
-      (tester) async {
-        when(() => agentService.abortRunningWake(any())).thenReturn(false);
-        await setRunning(tester, running: true);
-        await pump(tester, const AgentStopWakeButton(agentId: kTestAgentId));
-
-        await tester.tap(find.text('Stop'));
-        await tester.pump();
-
-        verify(() => agentService.abortRunningWake(kTestAgentId)).called(1);
-        expect(find.text('Stop'), findsOneWidget);
-        expect(stopButton(tester).isLoading, isFalse);
-      },
-    );
-
-    testWidgets('publishes what it does as its accessible label', (
-      tester,
-    ) async {
-      await setRunning(tester, running: true);
-      await pump(
-        tester,
-        const AgentStopWakeButton(
-          agentId: kTestAgentId,
-          size: DesignSystemButtonSize.dense,
-        ),
-      );
-
-      expect(stopButton(tester).semanticsLabel, 'Stop the running inference');
-      expect(stopButton(tester).size, DesignSystemButtonSize.dense);
-    });
+    expect(find.byType(DsAiDiscButton), findsNothing);
   });
 
-  group('AgentRunningControls', () {
-    testWidgets('pairs the running spinner with the stop button while the '
-        'agent runs, and shows neither once it is idle', (tester) async {
-      await pump(tester, const AgentRunningControls(agentId: kTestAgentId));
-      expect(find.byType(DesignSystemSpinner), findsNothing);
-      expect(find.byType(DesignSystemButton), findsNothing);
-
+  testWidgets(
+    'is the active disc with the stop glyph inside a spinning ring while the '
+    "agent runs — the read-aloud control's busy-and-stoppable grammar",
+    (tester) async {
       await setRunning(tester, running: true);
-      expect(
-        find.bySemanticsLabel('Running'),
-        findsOneWidget,
-      );
-      expect(find.byType(DesignSystemSpinner), findsOneWidget);
-      expect(find.text('Stop'), findsOneWidget);
+      await pump(tester);
+
+      expect(disc(tester).active, isTrue);
+      expect(disc(tester).icon, LottiIcons.stop);
+      expect(disc(tester).label, 'Stop the running inference');
+      expect(ring(tester).value, isNull);
+    },
+  );
+
+  testWidgets(
+    'stops the running wake, turns to Stopping… and ignores further taps until '
+    'the agent is idle, then offers the stop again for the next wake',
+    (tester) async {
+      when(() => agentService.abortRunningWake(any())).thenReturn(true);
+      await setRunning(tester, running: true);
+      await pump(tester);
+
+      await tester.tap(find.byType(DsAiDiscButton));
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake(kTestAgentId)).called(1);
+      expect(disc(tester).icon, LottiIcons.pending);
+      expect(disc(tester).label, 'Stopping…');
+
+      await tester.tap(find.byType(DsAiDiscButton));
+      await tester.pump();
+      verifyNever(() => agentService.abortRunningWake(any()));
 
       await setRunning(tester, running: false);
-      expect(find.byType(DesignSystemSpinner), findsNothing);
-      expect(find.text('Stop'), findsNothing);
-    });
+      expect(find.byType(DsAiDiscButton), findsNothing);
+
+      await setRunning(tester, running: true);
+      expect(disc(tester).icon, LottiIcons.stop);
+      expect(disc(tester).label, 'Stop the running inference');
+    },
+  );
+
+  testWidgets(
+    'keeps offering the stop when the wake had already ended before the tap '
+    'landed',
+    (tester) async {
+      when(() => agentService.abortRunningWake(any())).thenReturn(false);
+      await setRunning(tester, running: true);
+      await pump(tester);
+
+      await tester.tap(find.byType(DsAiDiscButton));
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake(kTestAgentId)).called(1);
+      expect(disc(tester).icon, LottiIcons.stop);
+    },
+  );
+
+  testWidgets('holds the ring still under reduced motion', (tester) async {
+    await setRunning(tester, running: true);
+    await pump(
+      tester,
+      mediaQueryData: const MediaQueryData(disableAnimations: true),
+    );
+
+    expect(ring(tester).value, 1.0);
   });
 }

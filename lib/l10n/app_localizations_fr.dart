@@ -930,9 +930,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentStateWakeCount => 'Nombre de réveils';
 
   @override
-  String get agentStopWake => 'Arrêter';
-
-  @override
   String get agentStopWakeStopping => 'Arrêt en cours…';
 
   @override

@@ -921,9 +921,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentStateWakeCount => 'Vakenräkning';
 
   @override
-  String get agentStopWake => 'Stoppa';
-
-  @override
   String get agentStopWakeStopping => 'Stoppar…';
 
   @override

@@ -102,7 +102,7 @@ class AgentDetailPage extends ConsumerWidget {
             AgentLifecycleBadge(lifecycle: identity.lifecycle),
             if (isRunning) ...[
               const SizedBox(width: AppTheme.spacingMedium),
-              AgentRunningControls(agentId: identity.agentId),
+              AgentStopWakeButton(agentId: identity.agentId),
             ],
           ],
         ),

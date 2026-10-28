@@ -425,7 +425,6 @@
   "agentStateRevision": "Revizie",
   "agentStateSleepingUntil": "Doarme până la",
   "agentStateWakeCount": "Număr de treziri",
-  "agentStopWake": "Oprire",
   "agentStopWakeStopping": "Se oprește…",
   "agentStopWakeTooltip": "Opriți inferența în curs",
   "agentSuggestionTimeEntryUpdateCurrent": "Curent",

@@ -1,12 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Stops [agentId]'s running wake — the control for an inference that hangs.
+/// Shows that [agentId] is running and stops it — the control for an
+/// inference that hangs.
+///
+/// It wears the read-aloud control's disc: the accent disc inside a spinning
+/// ring is the app's one grammar for "AI work under way, tap to stop", so the
+/// running indicator and the stop are one control rather than a spinner with
+/// a button beside it.
 ///
 /// Renders nothing while the agent is idle, so a host can place it
 /// unconditionally. A press signals the orchestrator's abort: the runner
@@ -14,18 +19,14 @@ import 'package:material_ui/material_ui.dart';
 /// conversation loop leaves its current model turn at the next streamed
 /// chunk instead of waiting for the model to finish.
 ///
-/// Between the press and the runner letting go, the button reads
-/// "Stopping…" and ignores further taps. It returns to "Stop" once the agent
-/// is idle, so the same button serves the agent's next wake.
+/// Between the press and the runner letting go, the glyph turns to the
+/// pending one, the label to "Stopping…", and further taps do nothing. It
+/// returns to the stop glyph once the agent is idle, so the same control
+/// serves the agent's next wake.
 class AgentStopWakeButton extends ConsumerStatefulWidget {
-  const AgentStopWakeButton({
-    required this.agentId,
-    this.size = DesignSystemButtonSize.small,
-    super.key,
-  });
+  const AgentStopWakeButton({required this.agentId, super.key});
 
   final String agentId;
-  final DesignSystemButtonSize size;
 
   @override
   ConsumerState<AgentStopWakeButton> createState() =>
@@ -36,11 +37,12 @@ class _AgentStopWakeButtonState extends ConsumerState<AgentStopWakeButton> {
   bool _stopping = false;
 
   void _stop() {
+    if (_stopping) return;
     final signalled = ref
         .read(agentServiceProvider)
         .abortRunningWake(widget.agentId);
     // A wake that ended on its own between the frame and the tap has
-    // nothing to stop; the button goes with the running state.
+    // nothing to stop; the control goes with the running state.
     if (signalled) setState(() => _stopping = true);
   }
 
@@ -55,49 +57,23 @@ class _AgentStopWakeButtonState extends ConsumerState<AgentStopWakeButton> {
         ref.watch(agentIsRunningProvider(widget.agentId)).value ?? false;
     if (!isRunning) return const SizedBox.shrink();
 
+    final ai = context.designTokens.colors.aiCard;
     final messages = context.messages;
-    return DesignSystemButton(
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return DsAiDiscButton(
+      icon: _stopping ? LottiIcons.pending : LottiIcons.stop,
       label: _stopping
           ? messages.agentStopWakeStopping
-          : messages.agentStopWake,
-      semanticsLabel: messages.agentStopWakeTooltip,
+          : messages.agentStopWakeTooltip,
       onPressed: _stop,
-      isLoading: _stopping,
-      variant: DesignSystemButtonVariant.outlined,
-      size: widget.size,
-      leadingIcon: LottiIcons.stop,
-    );
-  }
-}
-
-/// The running indicator and its [AgentStopWakeButton], side by side, for a
-/// page or panel header. Renders nothing while [agentId] is idle.
-class AgentRunningControls extends ConsumerWidget {
-  const AgentRunningControls({required this.agentId, super.key});
-
-  final String agentId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
-    if (!isRunning) return const SizedBox.shrink();
-
-    final tokens = context.designTokens;
-    final label = context.messages.agentRunningIndicator;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Tooltip(
-          message: label,
-          child: DesignSystemSpinner(
-            style: DesignSystemSpinnerStyle.plain,
-            size: IconSizes.m,
-            semanticsLabel: label,
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        AgentStopWakeButton(agentId: agentId),
-      ],
+      active: true,
+      ring: CircularProgressIndicator(
+        strokeWidth: 2,
+        value: reduceMotion ? 1.0 : null,
+        color: ai.accent,
+        backgroundColor: ai.borderSoft,
+      ),
     );
   }
 }

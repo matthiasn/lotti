@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_ai_disc_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -137,16 +137,9 @@ void main() {
         );
         final stop = find.descendant(
           of: header.first,
-          matching: find.text('Stop'),
+          matching: find.byType(DsAiDiscButton),
         );
         expect(stop, findsOneWidget);
-        expect(
-          find.descendant(
-            of: header.first,
-            matching: find.byType(DesignSystemSpinner),
-          ),
-          findsOneWidget,
-        );
 
         await tester.tap(stop);
         await tester.pump();
@@ -154,7 +147,7 @@ void main() {
         verify(
           () => agentService.abortRunningWake(makeTestIdentity().agentId),
         ).called(1);
-        expect(find.text('Stopping…'), findsOneWidget);
+        expect(tester.widget<DsAiDiscButton>(stop).label, 'Stopping…');
       },
     );
 
