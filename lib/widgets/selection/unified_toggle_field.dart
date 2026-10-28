@@ -4,9 +4,10 @@ import 'package:material_ui/material_ui.dart';
 
 /// AI-specific toggle field that matches the AI Settings design language.
 ///
-/// It shares the settings selector rows' surface, border, insets, icon size
-/// and type scale, so a column of selectors and toggles lines up. The switch
-/// carries the on/off state; the frame stays the same either way.
+/// It shares the settings selector rows' frame (a border around the card's
+/// own surface), insets, icon size and type scale, so a column of selectors
+/// and toggles lines up. The switch carries the on/off state; the frame stays
+/// the same either way.
 class UnifiedAiToggleField extends StatelessWidget {
   const UnifiedAiToggleField({
     required this.label,
@@ -40,8 +41,8 @@ class UnifiedAiToggleField extends StatelessWidget {
             horizontal: tokens.spacing.step4,
             vertical: tokens.spacing.step3,
           ),
+          // No fill, like the selector rows: the card's surface shows through.
           decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
             borderRadius: radius,
             border: Border.all(
               color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.2),

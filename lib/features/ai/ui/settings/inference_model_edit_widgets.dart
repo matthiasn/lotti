@@ -172,8 +172,9 @@ class SelectorField extends StatelessWidget {
             horizontal: tokens.spacing.step4,
             vertical: tokens.spacing.step3,
           ),
+          // No fill: the row shows the card's own surface, framed by its
+          // border, rather than a darker well inside a lighter card.
           decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
             borderRadius: BorderRadius.circular(tokens.radii.m),
             border: Border.all(color: borderColor),
           ),

@@ -173,7 +173,8 @@ void main() {
 
   group('UnifiedAiToggleField', () {
     testWidgets(
-      "uses the settings selector's surface, and its frame does not change "
+      "has the settings selector's frame without a fill of its own, and the "
+      'frame does not change '
       'with the value',
       (WidgetTester tester) async {
         Future<BoxDecoration> frame({required bool value}) async {
@@ -204,7 +205,8 @@ void main() {
         }
 
         final off = await frame(value: false);
-        expect(off.color, dsTokensLight.colors.background.level01);
+        // No fill of its own: the surrounding card's surface shows through.
+        expect(off.color, isNull);
         expect(off.borderRadius, BorderRadius.circular(dsTokensLight.radii.m));
         expect(
           tester.widget<UnifiedToggle>(find.byType(UnifiedToggle)).variant,
