@@ -174,7 +174,10 @@ stateDiagram-v2
 `SidebarActivitySummary` and `TaskActionBar`'s running pill read the **same live
 `TimeService` session**. The persistent sidebar shows one compact timer metric on
 a wrapping line beneath the Activity heading, shared with recording and agent
-activity; selecting it expands `SidebarTimerSection` in place.
+activity; selecting it expands `SidebarTimerSection` in place. The summary has
+no fill or frame of its own. Expanded, the heading sits just above its detail
+cards and the compact metric line steps aside, because each card already shows
+its own elapsed time — no value is ever shown twice.
 
 ```mermaid
 stateDiagram-v2

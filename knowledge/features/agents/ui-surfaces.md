@@ -926,7 +926,8 @@ Selecting the summary expands `SidebarWakeQueue` **in place**, surfacing a quiet
 sentence-case `Agents` sublabel with a summary such as `1 active · 2 queued`, the
 top running wake (green dot, `Working · mm:ss`, linked title), the next compact
 scheduled row (neutral dot, `Queued · ETA`), and a compact overflow row when more
-are hidden.
+are hidden. While expanded, the summary's own sparkle metric steps aside so the
+count appears only in that sublabel.
 
 It renders as a quiet neutral card with no accent rail or tint, and reserves no
 permanent sidebar height — the summary's expanded state *is* the detail surface.

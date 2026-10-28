@@ -355,7 +355,7 @@ void main() {
     expect(find.byKey(SidebarActivitySummaryKeys.details), findsNothing);
     expect(find.byType(SidebarTimerSection), findsNothing);
 
-    await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
     await tester.pump(SidebarTimerSection.animationDuration);
 
     expect(find.byKey(SidebarActivitySummaryKeys.details), findsOneWidget);
@@ -363,10 +363,124 @@ void main() {
     expect(find.text('00:02:05'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
 
-    await tester.tap(find.byKey(SidebarActivitySummaryKeys.root));
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
     await tester.pump(SidebarTimerSection.animationDuration);
 
     expect(find.byKey(SidebarActivitySummaryKeys.details), findsNothing);
     expect(find.byType(SidebarTimerSection), findsNothing);
+    expect(find.text('02:05'), findsOneWidget);
+  });
+
+  testWidgets('expanded, every elapsed time and the agent count show once', (
+    tester,
+  ) async {
+    when(
+      () => timeService.getCurrent(),
+    ).thenReturn(timerEntry(const Duration(minutes: 14, seconds: 40)));
+
+    await tester.pumpWidget(
+      subject(
+        recorder: recorderState(
+          status: AudioRecorderStatus.recording,
+          progress: const Duration(minutes: 1, seconds: 47),
+        ),
+        ongoing: [
+          OngoingWakeRecord(
+            agentId: 'agent-1',
+            title: 'Create a proper manual',
+            startedAt: DateTime(2026, 7, 17, 9),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
+    await tester.pump(SidebarTimerSection.animationDuration);
+
+    // The detail cards carry the recording and timer readouts; the header's
+    // compact copies of the same values are gone, so each appears once.
+    expect(find.text('00:01:47'), findsOneWidget);
+    expect(find.text('00:14:40'), findsOneWidget);
+    expect(find.text('01:47'), findsNothing);
+    expect(find.text('14:40'), findsNothing);
+    for (final key in [
+      SidebarActivitySummaryKeys.audio,
+      SidebarActivitySummaryKeys.timer,
+      SidebarActivitySummaryKeys.agents,
+    ]) {
+      expect(find.byKey(key), findsNothing);
+    }
+  });
+
+  testWidgets('paints no fill or frame; expanded cards span the header width', (
+    tester,
+  ) async {
+    when(
+      () => timeService.getCurrent(),
+    ).thenReturn(timerEntry(const Duration(minutes: 2)));
+
+    await tester.pumpWidget(
+      subject(recorder: recorderState(), showAudio: false),
+    );
+    await tester.pump();
+
+    Material shell() =>
+        tester.widget<Material>(find.byKey(SidebarActivitySummaryKeys.root));
+
+    // The summary sits on the sidebar like a navigation row: a transparent
+    // ink surface with no shape, so neither a fill nor an outline is painted.
+    expect(shell().type, MaterialType.transparency);
+    expect(shell().shape, isNull);
+
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
+    await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
+
+    expect(shell().type, MaterialType.transparency);
+    expect(shell().shape, isNull);
+    final headerRect = tester.getRect(
+      find.byKey(SidebarActivitySummaryKeys.header),
+    );
+    final cardRect = tester.getRect(find.byType(SidebarTimerSection));
+    expect(cardRect.left, headerRect.left);
+    expect(cardRect.right, headerRect.right);
+    expect(cardRect.top, greaterThanOrEqualTo(headerRect.bottom));
+
+    // Expanded, the heading labels the cards directly beneath it: only a
+    // slim spacing.step2 gap separates its row from the first card.
+    final context = tester.element(find.byKey(SidebarActivitySummaryKeys.root));
+    final chevronRect = tester.getRect(find.byIcon(LottiIcons.expand));
+    expect(
+      cardRect.top - chevronRect.bottom,
+      context.designTokens.spacing.step2,
+    );
+  });
+
+  testWidgets('expanded header names the section without the durations', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    when(
+      () => timeService.getCurrent(),
+    ).thenReturn(timerEntry(const Duration(minutes: 2)));
+
+    await tester.pumpWidget(
+      subject(recorder: recorderState(), showAudio: false),
+    );
+    await tester.pump();
+
+    String headerLabel() => tester
+        .getSemantics(find.byKey(SidebarActivitySummaryKeys.header))
+        .label;
+
+    expect(headerLabel(), contains('Running timer 00:02:00'));
+
+    await tester.tap(find.byKey(SidebarActivitySummaryKeys.header));
+    await tester.pump(SidebarTimerSection.animationDuration);
+
+    expect(headerLabel(), isNot(contains('Running timer')));
+    expect(headerLabel(), contains('Collapse activity'));
+    semantics.dispose();
   });
 }
