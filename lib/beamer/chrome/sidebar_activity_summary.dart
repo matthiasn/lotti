@@ -196,12 +196,13 @@ class _ActivitySurface extends StatelessWidget {
         ? context.messages.sidebarActivityCollapseTooltip
         : context.messages.sidebarActivityExpandTooltip;
 
-    // One shell holds the heading and, once expanded, the detail cards. The
-    // border appears only while expanded, so the open disclosure reads as a
-    // single contained panel instead of loose tiles on the sidebar.
+    // One unfilled shell holds the heading and, once expanded, the detail
+    // cards. It sits directly on the sidebar like the navigation rows; only
+    // while expanded does a thin outline group the cards, which keep their
+    // own single surface instead of stacking a second grey behind them.
     return Material(
       key: SidebarActivitySummaryKeys.root,
-      color: tokens.colors.surface.enabled,
+      color: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
         side: expanded
