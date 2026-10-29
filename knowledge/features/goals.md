@@ -1922,8 +1922,10 @@ redefinition, injury or best-ever streak was invisible to the wake. Whether
 hierarchical digests close that gap without inventing history was a measured
 question, not an assumed one —
 [the compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md)
-runs five seeded two-year goals through all three strategies on the real
-renderer and contract, and scores status accuracy, dated fact recall by age,
+runs five seeded two-year step goals and two journals through the full,
+truncating and hierarchical strategies — the last at three verbatim-tail sizes,
+digesting by each goal's `GoalCheckInWeight` — on the real renderer and
+contract, and scores status accuracy, dated fact recall by age,
 recommendation agreement with the full-context arm, and the token growth
 curve. The pass bar is written down there and was met before the digest
 layer was wired in (third run, 2026-08-27); re-run it as the gate for any

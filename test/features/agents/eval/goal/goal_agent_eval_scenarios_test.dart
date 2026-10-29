@@ -9,6 +9,8 @@ import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
+import 'package:lotti/features/goals/workflow/goal_report_instructions.dart';
 import 'package:lotti/logic/signals/signal_day_buckets.dart';
 
 import 'support/goal_agent_eval_fixtures.dart';
@@ -775,12 +777,81 @@ void main() {
       expect(scheduled.adToolsOffered, isFalse);
     });
 
-    test('no-op scenario forbids the entire tool surface', () {
-      final noop = goalAgentEvalScenarios.singleWhere(
-        (s) => s.expectsNoToolCalls,
-      );
+    test('every no-op scenario forbids the entire tool surface', () {
+      final noops = goalAgentEvalScenarios.where((s) => s.expectsNoToolCalls);
       final allNames = goalAgentTools.map((t) => t.name).toSet();
-      expect(noop.forbiddenToolNames.toSet(), allNames);
+      expect(noops, isNotEmpty);
+      for (final noop in noops) {
+        expect(noop.forbiddenToolNames.toSet(), allNames, reason: noop.id);
+      }
+    });
+  });
+
+  group('journaling scenarios render through the production path', () {
+    Map<String, dynamic> facts(String id) => goalAgentEvalScenarios
+        .singleWhere((scenario) => scenario.id == id)
+        .factsJson!;
+
+    List<Object?> marked(Map<String, dynamic> json) => [
+      for (final entry
+          in ((json['userVoice'] as Map<String, dynamic>)['entries'] as List)
+              .cast<Map<String, dynamic>>())
+        if (entry['sinceLastReport'] == true) entry['sourceEntryId'],
+    ];
+
+    test('the real evaluator puts the journal on track, and its charter and '
+        'check-in-time criterion reach FACTS', () {
+      final json = facts('journal_new_checkins_reflected');
+      expect(
+        (json['evaluation'] as Map<String, dynamic>)['trackStatus'],
+        'onTrack',
+      );
+      expect(json['charter'], isNotNull);
+      expect(
+        ((json['goal'] as Map<String, dynamic>)['criteria']
+            as Map<String, dynamic>)['checkInTime'],
+        isTrue,
+      );
+    });
+
+    test('only the check-ins after the standing report are marked, counted '
+        'and made a material change', () {
+      final fresh = facts('journal_new_checkins_reflected');
+      expect(marked(fresh), ['journal-entry-12', 'journal-entry-13']);
+      expect(fresh['reporting'], {
+        'materialChangeSinceLastReport': true,
+        'lastReportStatus': 'onTrack',
+        'newCheckInsSinceLastReport': 2,
+      });
+
+      final briefing = facts('journal_briefing_follows_commitment');
+      expect(marked(briefing), ['journal-entry-13']);
+      expect(
+        (briefing['reporting'] as Map<String, dynamic>)['dailyBriefing'],
+        isTrue,
+      );
+
+      final quiet = facts('journal_quiet_wake_stays_quiet');
+      expect(marked(quiet), isEmpty);
+      expect(
+        (quiet['reporting']
+            as Map<String, dynamic>)['materialChangeSinceLastReport'],
+        isFalse,
+      );
+    });
+
+    test('a wake carries the instruction production appends for it', () {
+      String text(String id) =>
+          goalAgentEvalScenarios.singleWhere((s) => s.id == id).facts;
+      expect(
+        text('journal_new_checkins_reflected'),
+        endsWith(goalAutomaticRefreshInstruction),
+      );
+      expect(
+        text('journal_briefing_follows_commitment'),
+        endsWith(goalDailyBriefingInstruction),
+      );
+      expect(text('journal_quiet_wake_stays_quiet'), endsWith('```'));
     });
   });
 

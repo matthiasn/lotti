@@ -642,6 +642,9 @@ String? _structuredReportSectionText(
   GoalStructuredReport? report,
   String key,
 ) => switch ((report, key)) {
+  (final GoalStructuredReport value, GoalReportSectionKeys.tldr) => value.tldr,
+  (final GoalStructuredReport value, GoalReportSectionKeys.reflection) =>
+    value.reflection,
   (final GoalStructuredReport value, GoalReportSectionKeys.currentPeriod) =>
     value.currentPeriod,
   (final GoalStructuredReport value, GoalReportSectionKeys.rollingWindow) =>

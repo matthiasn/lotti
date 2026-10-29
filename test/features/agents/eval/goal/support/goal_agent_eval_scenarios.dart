@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 
 import 'goal_agent_eval_fixtures.dart';
+import 'goal_agent_eval_journal_scenarios.dart';
 import 'goal_agent_spec.dart';
 
 /// An expected tool call: name plus an optional argument subset that must
@@ -1224,4 +1225,5 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       r'\btoday\b.{0,50}\b(?:take|log|record|complete)\b.{0,50}\b(?:meds?|medication|dose)\b',
     ],
   ),
+  ...goalAgentJournalEvalScenarios,
 ];

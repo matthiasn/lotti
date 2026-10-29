@@ -35,7 +35,7 @@ are **not comparable** — do not put them in one table.
 | Scored | tool calls attempted | entities persisted |
 | Strategy | records, accepts everything | the real `GoalAgentStrategy`, which rejects |
 | Retries | none | `_forceReport` / `_forceAd` / `_forceReply` all run |
-| Scenarios | 27, P1–P17 | 9, the rows where attempt ≠ outcome |
+| Scenarios | 32, P1–P21 | 9, the rows where attempt ≠ outcome |
 | Cost | ~1 call per case | 1–3 calls per case |
 
 Tier 1 is the workhorse: cheap, broad, and every scenario is legible. But
@@ -50,7 +50,7 @@ narrow: nine scenarios over the policy rows where the two can disagree.
 
 ### Tier 1 — what is measured
 
-Four behaviours, one scenario catalog
+Five behaviours, one scenario catalog
 (`goal_agent_eval_scenarios.dart`, ids in parentheses):
 
 1. **Goal progression reporting** — restating the deterministic evaluation
@@ -65,9 +65,20 @@ Four behaviours, one scenario catalog
    calls. This is the cheapest discriminator between models that follow
    policy and models that churn; the task-agent evals found 4/5 models
    churn without it being tested.
+5. **The user's own words** (ADR 0143) — a journal goal's report must engage
+   with check-ins the standing report never answered, in its `reflection`
+   slot (`journal_new_checkins_reflected`, P18); the morning briefing must
+   follow up a commitment the user made (`journal_briefing_follows_commitment`,
+   P19); a fact stated in chat is remembered in the user's words
+   (`journal_remember_from_chat`, P20); a question about the past beyond
+   `userVoice` is a recall, not a guess (`journal_recall_older_entry`, P21);
+   and a wake with nothing new stays quiet even with the user's words in
+   FACTS (`journal_quiet_wake_stays_quiet`, P2). Tier 1 records rather than
+   rejects, so P18 measures whether the model fills the reflection **on its
+   first response** — production would refuse an empty one and retry once.
 
 Every expectation derives from the policy matrix `goalAgentPolicyMatrix`
-(P1–P17) in the spec file — the single source of truth. The offline
+(P1–P21) in the spec file — the single source of truth. The offline
 self-test enforces that every policy row has a scenario and that every
 fixture number matches the REAL `GoalProgressEvaluator` + `GoalTrackPolicy`
 (`lib/features/goals/evaluation/`), so the fixtures double as the executable
@@ -92,7 +103,12 @@ their deterministic arithmetic against the real evaluator and use the
 production prompt/tool contract, but the block itself is written by hand and
 can drift from what `GoalFactsRenderer` actually emits. Tier 2 does not
 re-implement any of these — its nine scenarios are new, built from entities —
-so all 27 tier-1 scenarios still run on authored FACTS.
+so the 27 tier-1 scenarios before the journal ones still run on authored FACTS.
+The five journal scenarios (`goal_agent_eval_journal_scenarios.dart`) do not:
+they render through the production `GoalFactsRenderer`, with `userVoice`
+selected by `goalUserVoiceEntries` and marked by `goalCheckInReflection`, and
+append the instruction `GoalAgentWorkflow` appends — the shapes ADR 0143 changed
+the contract to read cannot be hand-written stale.
 
 ### Tier 2 — what is measured
 
@@ -1075,6 +1091,12 @@ the rejection log and stand, while the headline `+4.5/54` was measuring a
 population of failures the matcher fix has since removed. Re-running it now
 would price a small residual, which is not worth a matrix run — but nothing
 here should be quoted as the batching change's effect size.
+
+**The user-voice contract has not been measured live.** ADR 0141's
+`remember_goal_fact` and ADR 0143's reflection slot reached production on
+offline scenario tests alone. The journal scenarios above and the journal
+fixtures of the [compaction evaluation](compaction.md) are the instruments;
+neither has had a live run yet.
 
 ## Methodology caveats
 

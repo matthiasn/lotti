@@ -54,6 +54,45 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.none);
     });
 
+    test('a journal report is scored on its reflection: a count of minutes '
+        'fails, an answer to what the user said passes', () {
+      GoalAgentEvalFailureCategory classify(String reflection) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('journal_new_checkins_reflected'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                jsonEncode({
+                  'status': 'onTrack',
+                  'oneLiner': 'Seven days of journaling.',
+                  'report': {
+                    'tldr': '84 minutes this week, above the 70 target.',
+                    'reflection': reflection,
+                    'currentPeriod': "Today's 12 minutes are in.",
+                    'rollingWindow': '84 of 70 minutes over 7 days.',
+                    'latestChange': '',
+                    'coverage': '',
+                    'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+                  },
+                }),
+              ),
+            ],
+            assistantContent: '',
+          );
+
+      expect(
+        classify('You journaled every day this week.'),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      expect(
+        classify(
+          'The question has moved from whether to where: the north ridge, '
+          'maybe with a halfway camp at the seal rocks.',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('a remembered fact is held to the parser production runs', () {
       GoalAgentEvalFailureCategory classifyFact(String arguments) =>
           classifyGoalAgentResult(

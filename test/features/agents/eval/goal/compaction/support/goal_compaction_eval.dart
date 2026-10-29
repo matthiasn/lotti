@@ -28,6 +28,10 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
+import 'package:lotti/features/goals/logic/goal_user_voice.dart';
+import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
+import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
@@ -48,21 +52,18 @@ const goalCompactionEvalHorizons = [3, 6, 12, 18, 24];
 
 // ── Digest writer ────────────────────────────────────────────────────────
 
-const _digestSystemMessage =
-    "You condense a span of a person's spoken check-ins about one personal "
-    'goal into a faithful digest that a coach will read months or years '
-    'later instead of the originals. Preserve, with dates where they were '
-    'given: what actually happened to the numbers over the span; every '
-    'commitment made and whether it was kept; setbacks, injuries, medical '
-    'advice, and life changes; anything that changed about the goal itself; '
-    "how the person's mood related to their results. Drop routine "
-    'repetition. Write in plain prose within the word limit given. Never '
-    'infer, advise or judge — record.';
+/// A digest writer that can write for a goal's check-in weight — the
+/// hierarchical arms ask it for the weight of the fixture's goal, so a
+/// journal's history is digested the way production digests a journal.
+abstract interface class GoalCompactionWeightedDigestWriter
+    implements GoalCheckInDigestWriter {
+  GoalCheckInDigestWriter forWeight(GoalCheckInWeight weight);
+}
 
 /// Writes span digests with one inference call each, cached on disk by
 /// content so a re-run of the evaluation (or a later horizon that folds
 /// the same span) costs nothing.
-class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
+class CachedLlmDigestWriter implements GoalCompactionWeightedDigestWriter {
   CachedLlmDigestWriter({
     required this.provider,
     required this.modelId,
@@ -90,8 +91,22 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
     'outputTokens': usage?.outputTokens,
   };
 
+  /// Writes under [GoalCheckInWeight.context], as every fixture did before
+  /// weights existed.
   @override
-  Future<String> write(GoalCheckInDigestRequest request) async {
+  Future<String> write(GoalCheckInDigestRequest request) =>
+      _write(request, GoalCheckInWeight.context);
+
+  /// A view writing under [weight], sharing this writer's cache and counters.
+  @override
+  GoalCheckInDigestWriter forWeight(GoalCheckInWeight weight) =>
+      _WeightedDigestWriter((request) => _write(request, weight));
+
+  Future<String> _write(
+    GoalCheckInDigestRequest request,
+    GoalCheckInWeight weight,
+  ) async {
+    final systemMessage = goalCheckInDigestSystemMessage(weight);
     final prompt = _prompt(request);
     // Every input that shapes the digest: a provider or prompt change must
     // miss the cache rather than silently reuse another backend's output.
@@ -99,7 +114,7 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
         .convert(
           utf8.encode(
             '${provider.inferenceProviderType.name}\n${provider.baseUrl}\n'
-            '$modelId\n$temperature\n$_digestSystemMessage\n$prompt',
+            '$modelId\n$temperature\n$systemMessage\n$prompt',
           ),
         )
         .toString();
@@ -113,7 +128,7 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
 
     calls++;
     final conversationId = conversationRepository.createConversation(
-      systemMessage: _digestSystemMessage,
+      systemMessage: systemMessage,
       maxTurns: 2,
     );
     try {
@@ -173,6 +188,15 @@ class CachedLlmDigestWriter implements GoalCheckInDigestWriter {
     }
     return buffer.toString();
   }
+}
+
+class _WeightedDigestWriter implements GoalCheckInDigestWriter {
+  _WeightedDigestWriter(this._write);
+
+  final Future<String> Function(GoalCheckInDigestRequest request) _write;
+
+  @override
+  Future<String> write(GoalCheckInDigestRequest request) => _write(request);
 }
 
 /// Plain assistant text across a conversation, newline-joined.
@@ -512,7 +536,13 @@ class GoalCompactionEvalRunner {
         fixture,
         reference: _reference,
       );
-      for (final strategy in strategies) {
+      final weight = GoalCheckInWeight.of(fixture.criteria);
+      for (final arm in strategies) {
+        // The arm's name stays its own; what it builds follows the goal.
+        final strategy = arm is GoalCompactionHierarchicalArm
+            ? arm.forWeight(weight)
+            : arm;
+        final armId = arm.id;
         // Growth curve first: it needs no agent call, and it warms the
         // digest cache for the spans the full-horizon wake will fold.
         for (final months in horizons) {
@@ -530,7 +560,7 @@ class GoalCompactionEvalRunner {
           growth.add(
             GoalCompactionGrowthPoint(
               fixtureId: fixture.id,
-              strategyId: strategy.id,
+              strategyId: armId,
               months: months,
               checkIns: prefix.length,
               context: context,
@@ -549,11 +579,11 @@ class GoalCompactionEvalRunner {
           reference: _reference,
         );
         for (var sample = 1; sample <= samples; sample++) {
-          log?.call('${fixture.id} × ${strategy.id} × s$sample');
+          log?.call('${fixture.id} × $armId × s$sample');
           cases.add(
             await _runCase(
               fixture,
-              strategy.id,
+              armId,
               sample,
               facts,
               context,
@@ -748,13 +778,65 @@ class GoalCompactionEvalRunner {
 }
 
 /// Convenience for tests and the live driver: the three arms.
+/// The verbatim-tail budgets the hierarchical arms are measured at: what
+/// ships for every goal, and two larger tails a goal whose check-ins are its
+/// substance might afford (ADR 0143). The first keeps the arm name every
+/// earlier run reported under.
+const List<int> goalCompactionEvalVerbatimBudgets = [
+  goalUserVoiceTokenBudget,
+  2400,
+  3600,
+];
+
 List<GoalCheckInCompactionStrategy> goalCompactionEvalArms(
   GoalCheckInDigestWriter digestWriter,
 ) => [
   const FullContextCheckInCompaction(),
   const TruncatingCheckInCompaction(),
-  HierarchicalCheckInCompaction(digestWriter: digestWriter),
+  for (final budget in goalCompactionEvalVerbatimBudgets)
+    GoalCompactionHierarchicalArm(
+      digestWriterFor: (weight) =>
+          digestWriter is GoalCompactionWeightedDigestWriter
+          ? digestWriter.forWeight(weight)
+          : digestWriter,
+      verbatimBudget: budget,
+    ),
 ];
+
+/// A hierarchical arm whose digests follow the check-in weight of the goal
+/// being evaluated, with a verbatim tail of [verbatimBudget] tokens.
+///
+/// The runner asks it [forWeight] per fixture; [build] on its own reads as a
+/// goal whose check-ins are context.
+class GoalCompactionHierarchicalArm implements GoalCheckInCompactionStrategy {
+  GoalCompactionHierarchicalArm({
+    required this.digestWriterFor,
+    this.verbatimBudget = goalUserVoiceTokenBudget,
+  });
+
+  final GoalCheckInDigestWriter Function(GoalCheckInWeight weight)
+  digestWriterFor;
+  final int verbatimBudget;
+
+  @override
+  String get id => verbatimBudget == goalUserVoiceTokenBudget
+      ? 'hierarchical'
+      : 'hierarchical_$verbatimBudget';
+
+  GoalCheckInCompactionStrategy forWeight(GoalCheckInWeight weight) =>
+      HierarchicalCheckInCompaction(
+        digestWriter: digestWriterFor(weight),
+        verbatimBudget: verbatimBudget,
+      );
+
+  @override
+  Future<GoalUserVoiceContext> build(
+    List<GoalCheckInSummary> summaries, {
+    required DateTime reference,
+  }) => forWeight(
+    GoalCheckInWeight.context,
+  ).build(summaries, reference: reference);
+}
 
 /// The status of the last wake (exchange 0) `update_goal_report` that the
 /// production [GoalAgentStrategy] accepts, or null when none is accepted.

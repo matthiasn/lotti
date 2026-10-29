@@ -110,6 +110,41 @@ class GoalCheckInDigest {
   }
 }
 
+/// The system prompt a span digest is written under, by [weight].
+///
+/// Public because the compaction evaluation writes its digests under exactly
+/// this prompt: a copy there had already drifted from the one shipped here.
+String goalCheckInDigestSystemMessage(GoalCheckInWeight weight) =>
+    switch (weight) {
+      GoalCheckInWeight.context => _contextDigestSystemMessage,
+      GoalCheckInWeight.substance => _substanceDigestSystemMessage,
+    };
+
+const String _contextDigestSystemMessage =
+    "You condense a span of a person's spoken check-ins about one personal "
+    'goal into a faithful digest that a coach will read months or years '
+    'later instead of the originals. Preserve, with dates where they were '
+    'given: what actually happened to the numbers over the span; every '
+    'commitment made and whether it was kept; setbacks, injuries, medical '
+    'advice, and life changes; anything that changed about the goal itself; '
+    "how the person's mood related to their results. Drop routine "
+    'repetition. Write in plain prose within the word limit given, in the '
+    'language the person spoke. Never infer, advise or judge — record.';
+
+/// For a goal whose check-ins are its substance, where there are no
+/// numbers to follow and what was said is the record worth keeping.
+const String _substanceDigestSystemMessage =
+    "You condense a span of a person's check-ins on a goal whose check-ins "
+    'ARE its substance — a journal, a reflective practice — into a faithful '
+    'digest that a coach will read months or years later instead of the '
+    'originals. Preserve, with dates where they were given: the themes they '
+    'kept returning to; insights, decisions and questions they raised; how '
+    'their thinking or mood moved over the span; every commitment made and '
+    'whether it was kept; setbacks and life changes; anything that changed '
+    'about the goal itself. Drop routine repetition. Write in plain prose '
+    'within the word limit given, in the language the person used. Never '
+    'infer, advise or judge — record.';
+
 /// Writes and stores the span digests the hierarchical compaction reads.
 ///
 /// One row per calendar span, keyed by `(agentId, periodLabel)`; the
@@ -139,31 +174,6 @@ class GoalCheckInDigestService {
   final int maxDigestTokens;
 
   static const double _temperature = 0.3;
-
-  static const String _systemMessage =
-      "You condense a span of a person's spoken check-ins about one personal "
-      'goal into a faithful digest that a coach will read months or years '
-      'later instead of the originals. Preserve, with dates where they were '
-      'given: what actually happened to the numbers over the span; every '
-      'commitment made and whether it was kept; setbacks, injuries, medical '
-      'advice, and life changes; anything that changed about the goal itself; '
-      "how the person's mood related to their results. Drop routine "
-      'repetition. Write in plain prose within the word limit given, in the '
-      'language the person spoke. Never infer, advise or judge — record.';
-
-  /// For a goal whose check-ins are its substance, where there are no
-  /// numbers to follow and what was said is the record worth keeping.
-  static const String _substanceSystemMessage =
-      "You condense a span of a person's check-ins on a goal whose check-ins "
-      'ARE its substance — a journal, a reflective practice — into a faithful '
-      'digest that a coach will read months or years later instead of the '
-      'originals. Preserve, with dates where they were given: the themes they '
-      'kept returning to; insights, decisions and questions they raised; how '
-      'their thinking or mood moved over the span; every commitment made and '
-      'whether it was kept; setbacks and life changes; anything that changed '
-      'about the goal itself. Drop routine repetition. Write in plain prose '
-      'within the word limit given, in the language the person used. Never '
-      'infer, advise or judge — record.';
 
   /// The writer for one wake of [agentId].
   GoalCheckInDigestWriter forWake({
@@ -239,10 +249,7 @@ class GoalCheckInDigestService {
     final prompt = _prompt(goalStatement, request);
     return _inference.generateText(
       prompt: prompt,
-      systemMessage: switch (weight) {
-        GoalCheckInWeight.context => _systemMessage,
-        GoalCheckInWeight.substance => _substanceSystemMessage,
-      },
+      systemMessage: goalCheckInDigestSystemMessage(weight),
       model: model,
       provider: provider,
       temperature: _temperature,

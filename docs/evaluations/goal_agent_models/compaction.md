@@ -12,6 +12,13 @@ this evaluation measures what.
 
 ## Arms
 
+Five arms since ADR 0143: the three below, plus the hierarchical arm at two
+wider verbatim tails (`hierarchical_2400`, `hierarchical_3600`). Each
+hierarchical arm digests with the prompt production uses for the fixture
+goal's `GoalCheckInWeight` — `goalCheckInDigestSystemMessage`, shared rather
+than copied, since the copy here had drifted — so a journal is digested for its
+themes and a step goal for its numbers.
+
 The seam is `GoalCheckInCompactionStrategy`
 (`lib/features/goals/logic/goal_checkin_compaction_strategy.dart`): every
 strategy reads the same `GoalCheckInSummary` list and fills the same
@@ -47,6 +54,21 @@ Each is a case where the present alone misleads:
 | `redefined` | 10k steps → 8k + gym in month 6 on doctor's advice | onTrack | 10k is not the target, and why going back would be wrong |
 | `abandoned_revived` | five silent months on night shift, restart with a treadmill habit | atRisk | the user has reached the target before; the gap explains the trend |
 | `completed` | deadline met in month 18, maintenance since | achieved | the user has said, repeatedly, not to raise the target |
+
+Two **journal** fixtures (`goal_compaction_journal_fixtures.dart`) join
+them: goals measured by the time spent checking in, five evenings a week for
+about eleven months (~230 check-ins), each entry four or five sentences — the
+length a substance-weight summary keeps — so the 1,200-token tail reaches back
+only about a month (asserted offline). Their probes ask what the user *wrote*,
+not what the numbers did.
+
+| Fixture | Shape | Status at reference | What the full history changes |
+| --- | --- | --- | --- |
+| `journal_colony_move` | whether, then where, to move a colony before winter | onTrack | why the seal rocks are ruled out (leopard seals), the promise of an elders' vote, the scouted wind gap on the ridge |
+| `journal_night_shift` | a station cook's night shifts | onTrack | the settled conflict (the Thursday swap), the doctor's advice, that baking before shifts is what helps sleep |
+
+They answer the question ADR 0143 left open: how large a verbatim tail a goal
+whose check-ins are its substance needs before old facts survive compaction.
 
 Every fixture carries an answer key: the status the deterministic tier
 derives (asserted against the real evaluator and policy in
