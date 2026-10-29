@@ -17,8 +17,8 @@ void main() {
 
   test('foldDiacritics drops Latin accents and keeps other scripts', () {
     expect(
-      foldDiacritics('pingüine úkol șase žluť ærø'),
-      'pinguine ukol sase zlut æro',
+      foldDiacritics('pingüine úkol șase žluť ærø łódź'),
+      'pinguine ukol sase zlut ærø łodz',
     );
     expect(foldDiacritics('u\u0308ber'), 'uber', reason: 'a combining accent');
     expect(foldDiacritics('पेंगुइन'), 'पेंगुइन', reason: 'vowel signs stay');

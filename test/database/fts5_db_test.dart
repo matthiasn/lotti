@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/title_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -256,6 +258,33 @@ void main() {
       );
     });
 
+    test(
+      'every letter the ranking folds, the index folds the same way',
+      () async {
+        await fts.customStatement(
+          'CREATE VIRTUAL TABLE fold_probe USING fts5(title, '
+          "tokenize = 'trigram remove_diacritics 1')",
+        );
+        final disagree = <String>[];
+        for (final MapEntry(key: letter, value: base)
+            in foldedLetters.entries) {
+          await fts.customStatement('DELETE FROM fold_probe');
+          await fts.customStatement(
+            'INSERT INTO fold_probe(title) VALUES (?)',
+            ['q${letter}q'],
+          );
+          final hits = await fts
+              .customSelect(
+                'SELECT title FROM fold_probe WHERE fold_probe MATCH ?',
+                variables: [Variable.withString('"q${base}q"')],
+              )
+              .get();
+          if (hits.isEmpty) disagree.add(letter);
+        }
+        expect(disagree, isEmpty, reason: 'the index keeps these as they are');
+      },
+    );
+
     test('accents and case do not matter, and do not make a match '
         'fuzzy', () async {
       await fts.indexEntities([
@@ -268,6 +297,9 @@ void main() {
       expect(matches.single.fuzzy, isFalse);
       expect(await titles('ZÄHL'), ['task-1']);
       expect(await titles('ukol'), ['task-2']);
+      await fts.indexEntities([_task('task-3', 'Søren')]);
+      expect(await titles('søren'), ['task-3'], reason: 'kept as stored');
+      expect(await titles('sø'), ['task-3']);
     });
 
     test('the whole candidate pool is ranked before the limit: an exact '

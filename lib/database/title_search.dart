@@ -36,6 +36,10 @@ final _word = RegExp(r'[\p{L}\p{M}\p{N}]+', unicode: true);
 /// to their base letter, combining accents (U+0300–U+036F) dropped. Other
 /// combining marks — the vowel signs Indic scripts write words with — stay.
 /// [searchWords] lower-cases before it folds.
+///
+/// Only letters the index's tokenizer folds too are mapped: `ø`, `ł`, `đ`,
+/// `ħ`, `ŧ`, `ı`, `ŀ` and `ŉ` decompose to no base letter, so SQLite keeps
+/// them, and folding them here would make a query miss the title it stored.
 String foldDiacritics(String text) {
   final folded = StringBuffer();
   for (final rune in text.runes) {
@@ -46,23 +50,29 @@ String foldDiacritics(String text) {
   return folded.toString();
 }
 
+/// The precomposed letters [foldDiacritics] maps, each to its base letter.
+/// Every one must be a letter the index's tokenizer folds the same way, or a
+/// query folded here would no longer match the title the index stored.
+@visibleForTesting
+Map<String, String> get foldedLetters => _baseLetters;
+
 final Map<String, String> _baseLetters = {
   for (final MapEntry(key: base, value: accented) in const {
     'a': 'àáâãäåāăąǎȁȃạảấầẩẫậắằẳẵặ',
     'c': 'çćĉċč',
-    'd': 'ďđ',
+    'd': 'ď',
     'e': 'èéêëēĕėęěȅȇẹẻẽếềểễệ',
     'g': 'ĝğġģ',
-    'h': 'ĥħ',
-    'i': 'ìíîïĩīĭįıǐȉȋịỉ',
+    'h': 'ĥ',
+    'i': 'ìíîïĩīĭįǐȉȋịỉ',
     'j': 'ĵ',
     'k': 'ķ',
-    'l': 'ĺļľŀł',
-    'n': 'ñńņňŉ',
-    'o': 'òóôõöøōŏőǒȍȏọỏốồổỗộớờởỡợ',
+    'l': 'ĺļľ',
+    'n': 'ñńņň',
+    'o': 'òóôõöōŏőǒȍȏọỏốồổỗộớờởỡợ',
     'r': 'ŕŗř',
     's': 'śŝşšș',
-    't': 'ţťŧț',
+    't': 'ţťț',
     'u': 'ùúûüũūŭůűųǔưụủứừửữự',
     'w': 'ŵ',
     'y': 'ýÿŷỳỵỷỹ',
