@@ -17496,7 +17496,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get tasksSearchNoLinkedTasks =>
-      'Ingen opgaver er knyttet til denne pull request.';
+      'Ingen tilknyttede opgaver fundet for denne pull request.';
 
   @override
   String get tasksShowCreationDate => 'Vis oprettelsesdato på kortene';

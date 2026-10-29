@@ -17515,7 +17515,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get tasksSearchNoLinkedTasks =>
-      'Inga uppgifter är kopplade till den här pull requesten.';
+      'Inga kopplade uppgifter hittades för den här pull requesten.';
 
   @override
   String get tasksShowCreationDate => 'Showens skapandedatum på korten';

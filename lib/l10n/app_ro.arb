@@ -6650,7 +6650,7 @@
     }
   },
   "tasksSearchModeLabel": "Mod de căutare",
-  "tasksSearchNoLinkedTasks": "Nu există sarcini legate de acest pull request.",
+  "tasksSearchNoLinkedTasks": "Nu s-au găsit sarcini legate de acest pull request.",
   "tasksShowCreationDate": "Afișați data creării pe carduri",
   "tasksShowDueDate": "Afișați data scadenței pe carduri",
   "tasksSortByCreationDate": "Creație",
