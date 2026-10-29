@@ -3760,7 +3760,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Søg i kommandoer, opgaver, projekter og personer';
+      'Søg i kommandoer, opgaver, noter, projekter, begivenheder og personer';
 
   @override
   String get commandPaletteSearchHint => 'Søgekommandoer...';

@@ -64,9 +64,12 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
   var _query = '';
   var _selectedIndex = 0;
   List<PaletteJumpTarget> _jumps = const [];
-  List<GlobalKey> _jumpKeys = const [];
+  // By entity, so a result still listed after the next answer keeps its row
+  // (and the row's hover and focus) instead of being rebuilt.
+  Map<String, GlobalKey> _jumpKeys = const {};
   Timer? _jumpDebounce;
   var _jumpGeneration = 0;
+  var _jumpSearchPending = false;
 
   bool get _searchesJumps => widget.paletteMode && widget.jumpSearch != null;
 
@@ -92,13 +95,13 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     final search = widget.jumpSearch;
     if (!_searchesJumps || search == null) return;
     final query = value.trim();
+    final generation = ++_jumpGeneration;
     if (query.length < CommandCatalogView.minJumpQueryLength) {
-      _jumpGeneration++;
       _showJumps(const []);
       return;
     }
+    setState(() => _jumpSearchPending = true);
     _jumpDebounce = Timer(CommandCatalogView.jumpSearchDebounce, () async {
-      final generation = ++_jumpGeneration;
       List<PaletteJumpTarget> found;
       try {
         found = await search(query);
@@ -112,14 +115,20 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
 
   void _showJumps(List<PaletteJumpTarget> jumps) {
     setState(() {
+      _jumpSearchPending = false;
       _jumps = jumps;
-      _jumpKeys = [
+      _jumpKeys = {
         for (final jump in jumps)
-          GlobalKey(debugLabel: 'jump-row-${jump.entityId}'),
-      ];
+          _jumpKey(jump):
+              _jumpKeys[_jumpKey(jump)] ??
+              GlobalKey(debugLabel: 'jump-row-${_jumpKey(jump)}'),
+      };
       _clampIndex();
     });
   }
+
+  static String _jumpKey(PaletteJumpTarget jump) =>
+      '${jump.kind.name}-${jump.entityId}';
 
   @override
   void didChangeDependencies() {
@@ -271,9 +280,12 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
       final selected = definitions.elementAtOrNull(_selectedIndex);
       final selectedContext = selected != null
           ? _rowKeys[selected.id]?.currentContext
-          : _jumpKeys
-                .elementAtOrNull(_selectedIndex - definitions.length)
-                ?.currentContext;
+          : switch (_jumps.elementAtOrNull(
+              _selectedIndex - definitions.length,
+            )) {
+              final jump? => _jumpKeys[_jumpKey(jump)]?.currentContext,
+              null => null,
+            };
       if (selectedContext == null) return;
       Scrollable.ensureVisible(
         selectedContext,
@@ -325,7 +337,7 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
           ),
           SizedBox(height: tokens.spacing.step4),
           Expanded(
-            child: definitions.isEmpty && _jumps.isEmpty
+            child: definitions.isEmpty && _jumps.isEmpty && !_jumpSearchPending
                 ? Center(
                     child: Text(
                       _searchesJumps
@@ -435,7 +447,7 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
         children: [
           for (final (index, jump) in _jumps.indexed)
             KeyedSubtree(
-              key: _jumpKeys[index],
+              key: _jumpKeys[_jumpKey(jump)],
               child: DesignSystemListItem(
                 key: ValueKey('jump-${jump.kind.name}-${jump.entityId}'),
                 title: jump.title,

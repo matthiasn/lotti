@@ -1823,7 +1823,7 @@
   "commandPaletteGoTo": "Vai a",
   "commandPaletteNoResults": "Nessun comando disponibile corrisponde alla tua ricerca",
   "commandPaletteNothingFound": "Niente corrisponde alla tua ricerca",
-  "commandPaletteSearchEverythingHint": "Cerca comandi, attività, progetti e persone",
+  "commandPaletteSearchEverythingHint": "Cerca comandi, attività, voci, progetti, eventi e persone",
   "commandPaletteSearchHint": "Comandi di ricerca...",
   "commandPaletteSimilarTitles": "Titoli simili",
   "commandPaletteTitle": "tavolozza dei comandi",

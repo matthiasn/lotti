@@ -1823,7 +1823,7 @@
   "commandPaletteGoTo": "Gå till",
   "commandPaletteNoResults": "Inga tillgängliga kommandon matchar din sökning",
   "commandPaletteNothingFound": "Inget matchar din sökning",
-  "commandPaletteSearchEverythingHint": "Sök kommandon, uppgifter, projekt och personer",
+  "commandPaletteSearchEverythingHint": "Sök kommandon, uppgifter, anteckningar, projekt, evenemang och personer",
   "commandPaletteSearchHint": "Sökkommandon...",
   "commandPaletteSimilarTitles": "Liknande titlar",
   "commandPaletteTitle": "Kommandopalett",

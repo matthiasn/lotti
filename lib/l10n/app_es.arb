@@ -1601,7 +1601,7 @@
   "commandPaletteGoTo": "Ir a",
   "commandPaletteNoResults": "No hay comandos disponibles que coincidan con tu búsqueda",
   "commandPaletteNothingFound": "Nada coincide con tu búsqueda",
-  "commandPaletteSearchEverythingHint": "Busca comandos, tareas, proyectos y personas",
+  "commandPaletteSearchEverythingHint": "Busca comandos, tareas, entradas, proyectos, eventos y personas",
   "commandPaletteSearchHint": "Buscar comandos…",
   "commandPaletteSimilarTitles": "Títulos similares",
   "commandPaletteTitle": "Paleta de comandos",

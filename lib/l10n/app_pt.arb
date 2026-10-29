@@ -1822,7 +1822,7 @@
   "commandPaletteGoTo": "Ir para",
   "commandPaletteNoResults": "Nenhum comando disponível corresponde à sua pesquisa",
   "commandPaletteNothingFound": "Nada corresponde à sua pesquisa",
-  "commandPaletteSearchEverythingHint": "Pesquise comandos, tarefas, projetos e pessoas",
+  "commandPaletteSearchEverythingHint": "Pesquise comandos, tarefas, entradas, projetos, eventos e pessoas",
   "commandPaletteSearchHint": "Comandos de pesquisa…",
   "commandPaletteSimilarTitles": "Títulos semelhantes",
   "commandPaletteTitle": "Paleta de comandos",

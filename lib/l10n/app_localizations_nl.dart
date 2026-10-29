@@ -3780,7 +3780,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Zoek opdrachten, taken, projecten en personen';
+      'Zoek opdrachten, taken, notities, projecten, gebeurtenissen en personen';
 
   @override
   String get commandPaletteSearchHint => 'Zoeken op commando\'s...';

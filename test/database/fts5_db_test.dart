@@ -256,11 +256,35 @@ void main() {
       );
     });
 
-    test('accents and case do not matter', () async {
-      await fts.indexEntities([_task('task-1', 'Pingüine zählen')]);
+    test('accents and case do not matter, and do not make a match '
+        'fuzzy', () async {
+      await fts.indexEntities([
+        _task('task-1', 'Pingüine zählen'),
+        _task('task-2', 'Úkol'),
+      ]);
 
-      expect(await titles('pinguine'), ['task-1']);
+      final matches = await fts.searchTitles('pinguine');
+      expect(matches.map((m) => m.entityId), ['task-1']);
+      expect(matches.single.fuzzy, isFalse);
       expect(await titles('ZÄHL'), ['task-1']);
+      expect(await titles('ukol'), ['task-2']);
+    });
+
+    test('the whole candidate pool is ranked before the limit: an exact '
+        'title, and a short word, are not crowded out by BM25', () async {
+      await fts.indexEntities([
+        for (var i = 0; i < 40; i++) _task('repeat-$i', 'launch launch'),
+        _task('exact', 'Launch'),
+        for (var i = 0; i < 40; i++) _task('plan-$i', 'Plan'),
+        _task('john', 'Plan John'),
+      ]);
+
+      final launch = await fts.searchTitles('launch', limit: 8);
+      expect(launch.first.entityId, 'exact');
+
+      final plan = await fts.searchTitles('plan jo', limit: 8);
+      expect(plan.map((m) => m.entityId), ['john']);
+      expect(plan.single.fuzzy, isFalse);
     });
 
     test(

@@ -3808,7 +3808,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Hledej příkazy, úkoly, projekty a lidi';
+      'Hledej příkazy, úkoly, záznamy, projekty, události a lidi';
 
   @override
   String get commandPaletteSearchHint => 'Hledat příkazy…';

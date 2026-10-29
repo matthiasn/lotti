@@ -345,15 +345,13 @@ class Fts5Db extends _$Fts5Db {
     final candidates = long.isEmpty
         ? await _titleCandidates(
             'search_fts',
-            '{title} : ${words.map((word) => '"$word"*').join(' ')}',
+            '{title} : (${words.map((word) => '"$word"*').join(' ')})',
             filter,
-            limit * _candidateFactor,
           )
         : await _titleCandidates(
             'title_trigram',
             long.map((word) => '"$word"').join(' '),
             filter,
-            limit * _candidateFactor,
           );
     final ranked = rankTitleMatches(query, candidates);
     if (ranked.isNotEmpty) return ranked.take(limit).toList();
@@ -364,20 +362,21 @@ class Fts5Db extends _$Fts5Db {
       'title_trigram',
       trigrams.map((trigram) => '"$trigram"').join(' OR '),
       filter,
-      limit * _candidateFactor,
     );
     return nearestTitles(query, near).take(limit).toList();
   }
 
-  /// Candidates read per result kept, since [rankTitleMatches] and
-  /// [nearestTitles] drop the ones that do not hold every word.
-  static const _candidateFactor = 4;
+  /// Candidates ranked before the limit applies. The index's BM25 order is
+  /// not the quick-open order — it favours a word repeated over the title
+  /// that is the query, and it cannot check a short word's place — so the
+  /// whole pool is ranked ([rankTitleMatches], [nearestTitles]) and only then
+  /// cut. Titles are short; a pool this size costs a millisecond or two.
+  static const titleCandidatePool = 500;
 
   Future<List<TitleMatch>> _titleCandidates(
     String table,
     String expression,
     _DocFilter filter,
-    int limit,
   ) async {
     final rows = await customSelect(
       'SELECT d.entity_id AS entity_id, d.type AS type, $table.title AS title '
@@ -387,7 +386,7 @@ class Fts5Db extends _$Fts5Db {
       variables: [
         Variable.withString(expression),
         ...filter.variables,
-        Variable.withInt(limit),
+        Variable.withInt(titleCandidatePool),
       ],
       readsFrom: {searchFts, titleTrigram, searchDoc},
     ).get();

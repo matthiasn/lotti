@@ -3810,7 +3810,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Cerca comandi, attività, progetti e persone';
+      'Cerca comandi, attività, voci, progetti, eventi e persone';
 
   @override
   String get commandPaletteSearchHint => 'Comandi di ricerca...';

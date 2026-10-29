@@ -6351,7 +6351,7 @@ abstract class AppLocalizations {
   /// Search field hint of the command palette, which finds titles too.
   ///
   /// In en, this message translates to:
-  /// **'Search commands, tasks, projects and people'**
+  /// **'Search commands, tasks, entries, projects, events and people'**
   String get commandPaletteSearchEverythingHint;
 
   /// No description provided for @commandPaletteSearchHint.

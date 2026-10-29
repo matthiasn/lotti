@@ -3768,7 +3768,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Sök kommandon, uppgifter, projekt och personer';
+      'Sök kommandon, uppgifter, anteckningar, projekt, evenemang och personer';
 
   @override
   String get commandPaletteSearchHint => 'Sökkommandon...';

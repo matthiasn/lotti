@@ -15,6 +15,16 @@ void main() {
     expect(searchWords('  '), isEmpty);
   });
 
+  test('foldDiacritics drops Latin accents and keeps other scripts', () {
+    expect(
+      foldDiacritics('pingüine úkol șase žluť ærø'),
+      'pinguine ukol sase zlut æro',
+    );
+    expect(foldDiacritics('u\u0308ber'), 'uber', reason: 'a combining accent');
+    expect(foldDiacritics('पेंगुइन'), 'पेंगुइन', reason: 'vowel signs stay');
+    expect(searchWords('Café ÚKOL'), ['cafe', 'ukol']);
+  });
+
   test('titleTrigrams are the letter triples within each word', () {
     expect(titleTrigrams('Roll call'), {'rol', 'oll', 'cal', 'all'});
     expect(titleTrigrams('ab'), isEmpty);
@@ -49,6 +59,15 @@ void main() {
       ]);
 
       expect(ranked.map((m) => m.entityId), ['both']);
+    });
+
+    test('accents do not decide what matches or how it ranks', () {
+      final ranked = rankTitleMatches('cafe', [
+        _match('later', 'Ice café supplies'),
+        _match('exact', 'Café'),
+      ]);
+
+      expect(ranked.map((m) => m.entityId), ['exact', 'later']);
     });
 
     test('a query with nothing to match keeps nothing', () {

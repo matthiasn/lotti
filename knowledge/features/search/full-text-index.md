@@ -182,6 +182,12 @@ match over the title column. `rankTitleMatches` then keeps the titles holding
 every word — a short word only as the start of a title word — and orders them:
 the title that is the query, titles starting with it, titles with a word
 starting with its first word, then the rest, each tier in the index's order.
+It compares words with their accents folded (`foldDiacritics`) the way the
+index's tokenizers fold them, so an unaccented query holds an accented title
+in Dart as it does in SQLite. The whole pool of up to 500 candidates
+(`Fts5Db.titleCandidatePool`) is ranked before the limit is cut: the index's
+BM25 order favours a repeated word over the title that is the query and cannot
+check a short word, so cutting by it first would crowd real matches out.
 
 When no title holds every word, `nearestTitles` takes the titles sharing at
 least half of the query's letter triples (and two or more) from an any-trigram

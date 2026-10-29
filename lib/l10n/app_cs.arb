@@ -1608,7 +1608,7 @@
   "commandPaletteGoTo": "Přejít na",
   "commandPaletteNoResults": "Tvému hledání neodpovídají žádné dostupné příkazy",
   "commandPaletteNothingFound": "Tvému hledání nic neodpovídá",
-  "commandPaletteSearchEverythingHint": "Hledej příkazy, úkoly, projekty a lidi",
+  "commandPaletteSearchEverythingHint": "Hledej příkazy, úkoly, záznamy, projekty, události a lidi",
   "commandPaletteSearchHint": "Hledat příkazy…",
   "commandPaletteSimilarTitles": "Podobné názvy",
   "commandPaletteTitle": "Paleta příkazů",

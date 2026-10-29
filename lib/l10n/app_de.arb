@@ -1601,7 +1601,7 @@
   "commandPaletteGoTo": "Gehe zu",
   "commandPaletteNoResults": "Keine verfügbaren Befehle passen zu deiner Suche",
   "commandPaletteNothingFound": "Nichts passt zu deiner Suche",
-  "commandPaletteSearchEverythingHint": "Befehle, Aufgaben, Projekte und Personen suchen",
+  "commandPaletteSearchEverythingHint": "Befehle, Aufgaben, Einträge, Projekte, Ereignisse und Personen suchen",
   "commandPaletteSearchHint": "Befehle suchen…",
   "commandPaletteSimilarTitles": "Ähnliche Titel",
   "commandPaletteTitle": "Befehlspalette",

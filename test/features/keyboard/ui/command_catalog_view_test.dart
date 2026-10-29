@@ -542,16 +542,43 @@ void main() {
     });
 
     testWidgets('nothing matching, or a failed search, says nothing '
-        'matches', (tester) async {
+        'matches — once the search has answered', (tester) async {
       await pumpPalette(
         tester,
         search: (_) async => throw Exception('index closed'),
       );
       final messages = tester.element(find.byType(CommandCatalogView)).messages;
 
-      await typeAndSettle(tester, 'zzz');
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump();
+      expect(
+        find.text(messages.commandPaletteNothingFound),
+        findsNothing,
+        reason: 'the title search is still pending',
+      );
 
+      await tester.pump(CommandCatalogView.jumpSearchDebounce);
+      await tester.pump();
       expect(find.text(messages.commandPaletteNothingFound), findsOneWidget);
+    });
+
+    testWidgets('a result still listed after the next answer keeps its '
+        'row', (tester) async {
+      await pumpPalette(
+        tester,
+        search: (query) async => query == 'fe' ? [chicks] : [chicks, pip],
+      );
+      await typeAndSettle(tester, 'fe');
+      final before = tester.element(find.text('Feed the chicks'));
+
+      await typeAndSettle(tester, 'fee');
+
+      expect(find.text('Pip'), findsOneWidget);
+      expect(
+        identical(tester.element(find.text('Feed the chicks')), before),
+        isTrue,
+        reason: 'the same element, updated in place',
+      );
     });
   });
 }

@@ -3826,7 +3826,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commandPaletteSearchEverythingHint =>
-      'Căutați comenzi, sarcini, proiecte și persoane';
+      'Căutați comenzi, sarcini, intrări, proiecte, evenimente și persoane';
 
   @override
   String get commandPaletteSearchHint => 'Căutați comenzi…';
