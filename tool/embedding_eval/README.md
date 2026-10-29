@@ -13,11 +13,12 @@ Two query sets, both over the penguin demo world's tasks:
 
 Each model is scored alone, beside BM25 (SQLite FTS5 with the app index's
 tokenizer) and fused with it (reciprocal rank fusion), with a split for the
-queries that share no distinctive word with their task. Cost is file size,
-load time and per-text latency at one and four threads. ONNX Runtime is
-pinned to 1.24.2, the oldest the app ships (iOS; Linux and Android ship
-1.27.0), so a variant needing a newer operator fails here rather than on a
-phone.
+queries that share no distinctive word with their task. The BM25 baseline
+searches task text alone with any query word matching — not the app's own
+search path. Cost is file size, load time and per-text latency at one and
+four threads. ONNX Runtime is pinned to 1.22.0, the oldest the app ships (the
+plugin's Windows fallback; iOS ships 1.24.2, Linux and Android 1.27.0), so a
+variant needing a newer operator fails here rather than on a device.
 
 ## Running it
 

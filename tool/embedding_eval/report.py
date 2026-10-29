@@ -20,7 +20,7 @@ def quality_table(summary: dict, suite: str, key: str) -> list[str]:
         (f'| Model | R@1 | R@5 | MRR | No shared words (n={hard_n}): R@1 | '
         'No shared words: MRR | Hybrid RRF: MRR |'),
         '|---|---|---|---|---|---|---|',
-        (f"| BM25 (FTS5) | {pct(bm25['overall']['recall@1'])} | "
+        (f"| BM25, task text, any word (FTS5) | {pct(bm25['overall']['recall@1'])} | "
         f"{pct(bm25['overall']['recall@5'])} | {bm25['overall']['mrr']:.2f} | "
         f"{pct(bm25['no_shared_words']['recall@1'])} | "
         f"{bm25['no_shared_words']['mrr']:.2f} | — |"),
@@ -44,7 +44,7 @@ def language_table(summary: dict, suite: str, key: str) -> list[str]:
     codes = list(summary[suite]['bm25']['languages'])
     lines = ['| Model (MRR) | ' + ' | '.join(codes) + ' |',
              '|---|' + '---|' * len(codes),
-             '| BM25 (FTS5) | ' + ' | '.join(
+             '| BM25, task text, any word (FTS5) | ' + ' | '.join(
                  f"{summary[suite]['bm25']['languages'][c]['mrr']:.2f}"
                  for c in codes) + ' |']
     for name, entry in summary['models'].items():

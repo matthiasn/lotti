@@ -4,12 +4,14 @@ The corpus is the penguin demo world in every language the demo seed speaks
 (`export_corpus_test.dart` writes it). Each checklist item and linked note is
 a query whose right answer is the task it belongs to, among all the world's
 tasks — the semantic step task search needs: a note phrased unlike its task
-should still find it. A BM25 run over the same corpus, through SQLite FTS5
-with the tokenizer the app's index uses, is the keyword baseline.
+should still find it. The keyword baseline is BM25 over the task text alone,
+any query word matching (OR), through SQLite FTS5 with the tokenizer the app's
+index uses — not the app's own search, which requires every word, weights
+titles and also searches what belongs to a task.
 
-Usage (ONNX Runtime pinned to the oldest version the app ships — 1.24.2,
-iOS; Linux and Android ship 1.27.0 — so a variant that needs a newer operator
-fails here rather than on a phone):
+Usage (ONNX Runtime pinned to the oldest version the app ships — 1.22.0, the
+plugin's Windows fallback; iOS ships 1.24.2, Linux and Android 1.27.0 — so a
+variant that needs a newer operator fails here rather than on a device):
 
     python tool/embedding_eval/evaluate.py --models-dir DIR [--corpus PATH]
 

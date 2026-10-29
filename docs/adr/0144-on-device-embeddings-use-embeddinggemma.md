@@ -18,17 +18,20 @@ embedding model has to run inside the app.
 The app already bundles ONNX Runtime on every platform — the patched
 `flutter_onnxruntime` that runs the on-device voice, and `sherpa_onnx` for
 speech — at 1.27.0 on Linux and Android (`linux/CMakeLists.txt` forces it over
-the plugin's 1.22 default; sherpa's Android packages pin it) and 1.24.2 on iOS
-(the `onnxruntime-objc` pod). A model exported to ONNX needs no new native
+the plugin's default; sherpa's Android packages pin it), 1.24.2 on iOS (the
+`onnxruntime-objc` pod) and 1.22.0 on Windows, where the app sets no version
+and the plugin's fallback applies. A model exported to ONNX needs no new native
 dependency, only its tokenizer in Dart.
 
 The candidates that run on a phone and speak the app's languages were
 measured on Lotti's own retrieval task with `tool/embedding_eval`:
 EmbeddingGemma-300m (Google, 2025) and multilingual-e5-small, each in its
-published ONNX variants, on ONNX Runtime 1.24.2 — the oldest the app ships —
-on a desktop CPU. Qwen3-Embedding-0.6B was a candidate too; its ONNX export is a
-decoder that takes past key/value inputs, not an embedder the runtime can run
-as it is, and it is too large for a phone at 570 MB or more.
+published ONNX variants, on ONNX Runtime 1.22.0 — the oldest the app ships,
+on Windows — and again on 1.24.2, with identical quality and speeds within
+6 % (the table shows the 1.24.2 run), on a desktop CPU.
+Qwen3-Embedding-0.6B was a candidate too; its ONNX export is a decoder that
+takes past key/value inputs, not an embedder the runtime can run as it is,
+and it is too large for a phone at 570 MB or more.
 
 Two query sets over the penguin demo world's 28 tasks:
 
@@ -40,7 +43,7 @@ Two query sets over the penguin demo world's 28 tasks:
 
 | Paraphrase queries | R@1 | MRR | No shared word: R@1 | ms/text (1 thread) | File |
 |---|---|---|---|---|---|
-| BM25 (the app's FTS5 index) | 41% | 0.49 | 4% | — | — |
+| BM25 over task text, any word (FTS5) | 41% | 0.49 | 4% | — | — |
 | **EmbeddingGemma-300m q4** | **79%** | **0.85** | **68%** | 16.8 | 197 MB |
 | EmbeddingGemma-300m q4, cut to 256 dims | 72% | 0.81 | 62% | 16.8 | 197 MB |
 | EmbeddingGemma-300m int8 | 79% | 0.85 | 71% | 103.5 | 310 MB |
@@ -55,18 +58,26 @@ its task by circumstance more than by meaning, which keyword overlap already
 captures. A task BM25 does not match counts as missed — no reciprocal-rank
 credit.
 
-Fusing a model with BM25 by plain reciprocal rank fusion — BM25 contributing
-only the tasks it actually matches — raised the membership MRR (0.64 → 0.68)
-but cut the paraphrase MRR from 0.85 to 0.67: a keyword match on an
-incidental word outweighs the semantic ranking that found the task.
+The keyword baseline is BM25 over task text alone, any query word matching
+(OR) — not the app's own search, which requires every word, weights titles
+and also matches what belongs to a task; its numbers are a lower bar than the
+app's path, not a measurement of it.
+
+Fusing a model with that baseline by plain reciprocal rank fusion — BM25
+contributing only the tasks it actually matches — raised the membership MRR
+(0.64 → 0.68) but cut the paraphrase MRR from 0.85 to 0.67: a keyword match on
+an incidental word outweighs the semantic ranking that found the task. The
+app's stricter all-words search may match less often and hurt less; that is
+measured against the app's own path before the hybrid ranking ships.
 
 ## Decision
 
 1. **The on-device embedding model is EmbeddingGemma-300m, `model_q4.onnx`**
    from `onnx-community/embeddinggemma-300m-ONNX`, pinned to revision
-   `5090578d9565bb06545b4552f76e6bc2c93e4a66`. It is the most accurate
-   candidate that runs on ONNX Runtime 1.24.2, and the fastest EmbeddingGemma
-   variant there (the int8 export is six times slower on CPU; the
+   `5090578d9565bb06545b4552f76e6bc2c93e4a66`. It is the best trade of
+   accuracy against size and speed: fp32 is a point better (R@1 81 % against
+   79 %, MRR 0.86 against 0.85) at six times the file and twice the time, and
+   q4 is the fastest EmbeddingGemma variant on every runtime the app ships (the int8 export is six times slower on CPU; the
    `no_gather` q4 three times). Queries are prefixed
    `task: search result | query: `, documents `title: none | text: `; the
    export's `sentence_embedding` output is the vector.
@@ -80,9 +91,10 @@ incidental word outweighs the semantic ranking that found the task.
    fallback, whose normaliser only maps spaces — and must produce the
    reference tokenizer's ids for the whole evaluation corpus.
 5. **Hybrid ranking must not fuse BM25 and semantic rankings with equal
-   weight.** The fusion step weights the semantic ranking or uses keyword
-   matches to break ties, and is tuned on `tool/embedding_eval` before it
-   ships.
+   weight until measured otherwise.** Against this baseline, equal weight
+   costs paraphrase search; the fusion step weights the semantic ranking or
+   uses keyword matches to break ties, and is tuned on `tool/embedding_eval`
+   against the app's own search path before it ships.
 6. **`tool/embedding_eval` decides model changes.** A new candidate or variant
    is run through it on the pinned runtime before it can replace this one.
 
