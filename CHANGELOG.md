@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.69]
+
+### Added
+
+- **Paste a pull request link into the task search to find its tasks.** A
+  GitHub pull request link in the Tasks search now lists the task, or tasks,
+  that pull request is linked to — done ones included, since a merged pull
+  request's task usually is — instead of searching for the link as text. It
+  works offline, from what is already on the device. When no task is linked
+  to it, the list says so.
+
 ## [1.1.68]
 
 ### Added
