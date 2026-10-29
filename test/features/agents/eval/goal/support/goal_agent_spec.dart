@@ -136,4 +136,32 @@ const goalAgentPolicyMatrix = [
         'medication habit as behind; do not invent which day was missed; no '
         'repeat-reading nudge or ad',
   ),
+  GoalAgentPolicyRule(
+    id: 'P18',
+    given:
+        'a goal measured by its check-ins, with userVoice entries marked '
+        'sinceLastReport (check-ins the standing report never answered)',
+    expected:
+        'update_goal_report whose reflection engages the specific content '
+        'of the new check-ins, not only that they happened (ADR 0143)',
+  ),
+  GoalAgentPolicyRule(
+    id: 'P19',
+    given: 'daily briefing with a commitment the user made in a check-in',
+    expected:
+        'reflection on what the user said, and next steps that follow up '
+        'the commitment in their terms',
+  ),
+  GoalAgentPolicyRule(
+    id: 'P20',
+    given: 'user states a durable fact about themselves in chat',
+    expected:
+        'reply + remember_goal_fact(source userStated) in their own words; '
+        'no goal revision',
+  ),
+  GoalAgentPolicyRule(
+    id: 'P21',
+    given: 'user asks about something older than userVoice carries',
+    expected: 'search_goal_memory before answering; never invent the past',
+  ),
 ];

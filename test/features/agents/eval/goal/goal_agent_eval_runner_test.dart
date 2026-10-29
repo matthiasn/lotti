@@ -54,6 +54,110 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.none);
     });
 
+    test('a journal report is scored on its reflection: a count of minutes '
+        'fails, an answer to what the user said passes', () {
+      GoalAgentEvalFailureCategory classify(String reflection) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('journal_new_checkins_reflected'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                jsonEncode({
+                  'status': 'onTrack',
+                  'oneLiner': 'Seven days of journaling.',
+                  'report': {
+                    'tldr': '84 minutes this week, above the 70 target.',
+                    'reflection': reflection,
+                    'currentPeriod': "Today's 12 minutes are in.",
+                    'rollingWindow': '84 of 70 minutes over 7 days.',
+                    'latestChange': '',
+                    'coverage': '',
+                    'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+                  },
+                }),
+              ),
+            ],
+            assistantContent: '',
+          );
+
+      expect(
+        classify('You journaled every day this week.'),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      expect(
+        classify(
+          'The question has moved from whether to where: the north ridge, '
+          'maybe with a halfway camp at the seal rocks.',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
+    test('a briefing follows up a commitment in its next steps — naming it '
+        'in the reflection alone fails', () {
+      GoalAgentEvalFailureCategory classify({
+        List<String> later = const [],
+        List<Map<String, String>> now = const [],
+      }) => classifyGoalAgentResult(
+        scenario: scenarioById('journal_briefing_follows_commitment'),
+        toolCalls: [
+          call(
+            GoalAgentToolNames.updateGoalReport,
+            jsonEncode({
+              'status': 'onTrack',
+              'oneLiner': 'The ridge is the question now.',
+              'report': {
+                'tldr': 'Another full week of journaling.',
+                'reflection':
+                    'You committed to scout the north ridge on Saturday '
+                    'and keep weighing the colony move.',
+                'currentPeriod': "Today's entry is in.",
+                'rollingWindow': '84 of 70 minutes over 7 days.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': {'now': now, 'later': later},
+              },
+            }),
+          ),
+        ],
+        assistantContent: '',
+      );
+
+      expect(
+        classify(later: const ['Keep journaling every evening.']),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      // Parked in `now`, where production keeps only actions FACTS
+      // authorize — a journal authorizes none, so the user never sees it.
+      expect(
+        classify(
+          now: const [
+            {
+              'criterionId': 'journal-minutes',
+              'action': 'Scout the north ridge on Saturday.',
+            },
+          ],
+        ),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      // The wrong destination is not the commitment; other words for the
+      // right one are.
+      expect(
+        classify(later: const ['Scout the valley on Saturday.']),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      expect(
+        classify(later: const ['Explore the north ridge with the elders.']),
+        GoalAgentEvalFailureCategory.none,
+      );
+      expect(
+        classify(
+          later: const ['Scout the north ridge with the two elders Saturday.'],
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('a remembered fact is held to the parser production runs', () {
       GoalAgentEvalFailureCategory classifyFact(String arguments) =>
           classifyGoalAgentResult(

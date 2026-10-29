@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -16,6 +17,7 @@ import 'package:openai_dart/openai_dart.dart';
 import 'support/goal_compaction_eval.dart';
 import 'support/goal_compaction_facts.dart';
 import 'support/goal_compaction_fixtures.dart';
+import 'support/goal_compaction_journal_fixtures.dart';
 
 /// The first fixture's deterministic rolling aggregates, which a report must
 /// quote for the production strategy to accept it.
@@ -242,6 +244,30 @@ class _ScriptedInference extends InferenceRepositoryInterface {
   );
 }
 
+/// Records the weight each digest was asked for.
+class _WeightRecordingDigestWriter
+    implements GoalCompactionWeightedDigestWriter {
+  final weights = <GoalCheckInWeight>{};
+
+  @override
+  Future<String> write(GoalCheckInDigestRequest request) =>
+      forWeight(GoalCheckInWeight.context).write(request);
+
+  @override
+  GoalCheckInDigestWriter forWeight(GoalCheckInWeight weight) =>
+      _CallbackDigestWriter((request) async {
+        weights.add(weight);
+        return 'digest ${request.periodLabel}';
+      });
+}
+
+class _CallbackDigestWriter implements GoalCheckInDigestWriter {
+  _CallbackDigestWriter(this._write);
+  final Future<String> Function(GoalCheckInDigestRequest) _write;
+  @override
+  Future<String> write(GoalCheckInDigestRequest request) => _write(request);
+}
+
 class _FixedDigestWriter implements GoalCheckInDigestWriter {
   int writes = 0;
   @override
@@ -424,6 +450,46 @@ void main() {
   });
 
   group('GoalCompactionEvalRunner', () {
+    test('a journal is digested as a journal, a step goal as before — and '
+        'every budget arm keeps its own name', () async {
+      final runner = GoalCompactionEvalRunner(
+        provider: provider,
+        modelId: 'm',
+        conversationRepository: conversations,
+        inferenceRepository: _ScriptedInference(),
+      );
+
+      Future<(Set<GoalCheckInWeight>, List<String>)> run(
+        GoalCompactionFixture fixture,
+      ) async {
+        final writer = _WeightRecordingDigestWriter();
+        final packet = await runner.run(
+          fixtures: [fixture],
+          strategies: goalCompactionEvalArms(writer),
+          samples: 1,
+          horizons: const [24],
+        );
+        return (
+          writer.weights,
+          [for (final c in packet.cases) c.strategyId],
+        );
+      }
+
+      final (journalWeights, arms) = await run(
+        goalCompactionJournalFixtures.first,
+      );
+      expect(journalWeights, {GoalCheckInWeight.substance});
+      expect(arms, [
+        'full',
+        'truncate',
+        'hierarchical',
+        'hierarchical_2400',
+        'hierarchical_3600',
+      ]);
+      final (stepWeights, _) = await run(fixture);
+      expect(stepWeights, {GoalCheckInWeight.context});
+    });
+
     test(
       'produces one case per fixture × arm × sample with the growth curve',
       () async {
@@ -443,11 +509,31 @@ void main() {
           digestUsage: () => {'calls': writer.writes},
         );
 
-        expect(packet.cases.length, 3 * 2);
-        expect(packet.strategyIds, ['full', 'truncate', 'hierarchical']);
+        expect(packet.cases.length, 5 * 2);
+        expect(packet.strategyIds, [
+          'full',
+          'truncate',
+          'hierarchical',
+          'hierarchical_2400',
+          'hierarchical_3600',
+        ]);
         expect(
           packet.growthCurve.length,
-          3 * goalCompactionEvalHorizons.length,
+          5 * goalCompactionEvalHorizons.length,
+        );
+        // A wider tail keeps more of the user's words verbatim at every
+        // horizon long enough to fold anything.
+        int verbatimAt24(String id) => packet.growthCurve
+            .singleWhere((g) => g.strategyId == id && g.months == 24)
+            .context
+            .verbatimCount;
+        expect(
+          verbatimAt24('hierarchical_2400'),
+          greaterThan(verbatimAt24('hierarchical')),
+        );
+        expect(
+          verbatimAt24('hierarchical_3600'),
+          greaterThan(verbatimAt24('hierarchical_2400')),
         );
         final fullCurve = packet.growthCurve
             .where((g) => g.strategyId == 'full')

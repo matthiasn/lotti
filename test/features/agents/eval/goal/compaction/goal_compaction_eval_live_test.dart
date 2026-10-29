@@ -17,6 +17,7 @@ import '../../../../../helpers/fallbacks.dart';
 import '../../../../ai_consumption/test_utils.dart';
 import 'support/goal_compaction_eval.dart';
 import 'support/goal_compaction_fixtures.dart';
+import 'support/goal_compaction_journal_fixtures.dart';
 
 /// Live check-in compaction eval: writes the judging packet.
 ///
@@ -34,7 +35,8 @@ import 'support/goal_compaction_fixtures.dart';
 /// - `GOAL_COMPACTION_EVAL_MODEL` — the agent model (default `glm-5.2`).
 /// - `GOAL_COMPACTION_EVAL_DIGEST_MODEL` — the digest writer (default: same).
 /// - `GOAL_COMPACTION_EVAL_FIXTURES` — comma-separated fixture ids.
-/// - `GOAL_COMPACTION_EVAL_STRATEGIES` — subset of `full,truncate,hierarchical`.
+/// - `GOAL_COMPACTION_EVAL_STRATEGIES` — subset of `full,truncate,hierarchical,
+///   hierarchical_2400,hierarchical_3600`.
 /// - `GOAL_COMPACTION_EVAL_SAMPLES` — runs per (fixture × strategy), default 1.
 /// - `GOAL_COMPACTION_EVAL_PACKET` — where the packet JSON goes.
 /// - `GOAL_COMPACTION_EVAL_DIGEST_CACHE` — digest cache directory.
@@ -105,9 +107,14 @@ void main() {
       );
 
       final requestedFixtures = _envList('GOAL_COMPACTION_EVAL_FIXTURES');
+      // The step goals and the journals (ADR 0143) in one catalog.
+      final catalog = [
+        ...goalCompactionFixtures,
+        ...goalCompactionJournalFixtures,
+      ];
       final fixtures = requestedFixtures.isEmpty
-          ? goalCompactionFixtures
-          : goalCompactionFixtures
+          ? catalog
+          : catalog
                 .where((f) => requestedFixtures.contains(f.id))
                 .toList(growable: false);
       expect(fixtures, isNotEmpty, reason: 'no fixture matched');
