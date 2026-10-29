@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/domain/palette_jump.dart';
 import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -379,6 +382,177 @@ void main() {
     await tester.pump();
 
     expect(updated.invoked, [AppCommandId.openShortcutHelp]);
+  });
+
+  group('jumping by title', () {
+    const chicks = PaletteJumpTarget(
+      entityId: 'task-1',
+      kind: PaletteJumpKind.task,
+      title: 'Feed the chicks',
+    );
+    const pip = PaletteJumpTarget(
+      entityId: 'person-1',
+      kind: PaletteJumpKind.person,
+      title: 'Pip',
+    );
+
+    Future<List<String>> pumpPalette(
+      WidgetTester tester, {
+      required PaletteJumpSearch search,
+      Set<AppCommandId> available = const {},
+      List<PaletteJumpTarget>? opened,
+    }) async {
+      final searched = <String>[];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: CommandCatalogView(
+              paletteMode: true,
+              snapshot: _Snapshot(available),
+              platform: TargetPlatform.windows,
+              jumpSearch: (query) {
+                searched.add(query);
+                return search(query);
+              },
+              onJumpSelected: opened?.add,
+            ),
+          ),
+          mediaQueryData: const MediaQueryData(size: Size(800, 800)),
+        ),
+      );
+      return searched;
+    }
+
+    Future<void> typeAndSettle(WidgetTester tester, String text) async {
+      await tester.enterText(find.byType(TextField), text);
+      await tester.pump(CommandCatalogView.jumpSearchDebounce);
+      await tester.pump();
+    }
+
+    testWidgets('typing searches titles once it pauses, and lists them under '
+        'Go to, below the commands, with their kind', (tester) async {
+      final searched = await pumpPalette(
+        tester,
+        available: {AppCommandId.refresh},
+        search: (_) async => [chicks],
+      );
+      final messages = tester.element(find.byType(CommandCatalogView)).messages;
+      expect(
+        find.text(messages.commandPaletteSearchEverythingHint),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField), 're');
+      await tester.pump();
+      expect(searched, isEmpty, reason: 'still typing');
+
+      await tester.pump(CommandCatalogView.jumpSearchDebounce);
+      await tester.pump();
+
+      expect(searched, ['re']);
+      expect(find.text(messages.commandPaletteGoTo), findsOneWidget);
+      expect(find.text('Feed the chicks'), findsOneWidget);
+      expect(find.text(messages.navTabTitleTasks), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Feed the chicks')).dy,
+        greaterThan(
+          tester.getTopLeft(find.text(messages.keyboardCommandRefresh)).dy,
+        ),
+      );
+    });
+
+    testWidgets('arrow keys run on from the commands into the titles, and '
+        'Enter opens the selected one', (tester) async {
+      final opened = <PaletteJumpTarget>[];
+      await pumpPalette(
+        tester,
+        available: {AppCommandId.refresh},
+        search: (_) async => [chicks, pip],
+        opened: opened,
+      );
+      await typeAndSettle(tester, 're');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, [pip]);
+    });
+
+    testWidgets('a tap opens a title', (tester) async {
+      final opened = <PaletteJumpTarget>[];
+      await pumpPalette(tester, search: (_) async => [chicks], opened: opened);
+      await typeAndSettle(tester, 'chicks');
+
+      await tester.tap(find.text('Feed the chicks'));
+      await tester.pump();
+
+      expect(opened, [chicks]);
+    });
+
+    testWidgets('near matches for a misspelling say so', (tester) async {
+      await pumpPalette(
+        tester,
+        search: (_) async => [
+          const PaletteJumpTarget(
+            entityId: 'task-1',
+            kind: PaletteJumpKind.task,
+            title: 'Feed the chicks',
+            fuzzy: true,
+          ),
+        ],
+      );
+      final messages = tester.element(find.byType(CommandCatalogView)).messages;
+
+      await typeAndSettle(tester, 'chikcs');
+
+      expect(find.text(messages.commandPaletteSimilarTitles), findsOneWidget);
+      expect(find.text(messages.commandPaletteGoTo), findsNothing);
+    });
+
+    testWidgets('a single letter searches no titles and clears the last '
+        'ones', (tester) async {
+      final searched = await pumpPalette(tester, search: (_) async => [chicks]);
+      await typeAndSettle(tester, 'ch');
+      expect(find.text('Feed the chicks'), findsOneWidget);
+
+      await typeAndSettle(tester, 'c');
+
+      expect(searched, ['ch']);
+      expect(find.text('Feed the chicks'), findsNothing);
+    });
+
+    testWidgets('an answer for an older query never replaces a newer '
+        'one', (tester) async {
+      final slow = Completer<List<PaletteJumpTarget>>();
+      await pumpPalette(
+        tester,
+        search: (query) => query == 'chi' ? slow.future : Future.value([pip]),
+      );
+
+      await typeAndSettle(tester, 'chi');
+      await typeAndSettle(tester, 'pip');
+      slow.complete([chicks]);
+      await tester.pump();
+
+      expect(find.text('Pip'), findsOneWidget);
+      expect(find.text('Feed the chicks'), findsNothing);
+    });
+
+    testWidgets('nothing matching, or a failed search, says nothing '
+        'matches', (tester) async {
+      await pumpPalette(
+        tester,
+        search: (_) async => throw Exception('index closed'),
+      );
+      final messages = tester.element(find.byType(CommandCatalogView)).messages;
+
+      await typeAndSettle(tester, 'zzz');
+
+      expect(find.text(messages.commandPaletteNothingFound), findsOneWidget);
+    });
   });
 }
 

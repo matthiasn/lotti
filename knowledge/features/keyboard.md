@@ -11,7 +11,11 @@ sources:
   - id: src
     resource: ../../lib/features/keyboard
     title: Desktop keyboard commands source
-    last_modified: 2026-10-28
+    last_modified: 2026-10-29
+  - id: palette-jumps
+    resource: ../../lib/features/keyboard/service/palette_jumps.dart
+    title: The palette's title search and where a result opens
+    last_modified: 2026-10-29
 ---
 
 The keyboard feature is Lotti's **desktop command layer**. It turns platform key
@@ -29,6 +33,34 @@ predicate are declared **once**. The shortcut handler, the menu-bar item, the
 palette row and the help sheet all read the same entry — so a command cannot show
 in the palette with one binding and fire with another, and a disabled command
 renders disabled everywhere.
+
+# The palette jumps to things too
+
+Typed into, the command palette also lists the tasks, journal entries,
+projects, events and people whose **title** matches, under *Go to*, below the
+matching commands; arrow keys and Enter run through both as one list. The
+search waits for typing to pause (`CommandCatalogView.jumpSearchDebounce`),
+starts at two characters, keeps the last results listed until the new ones
+arrive and drops an answer to an older query. When no title holds every word,
+the nearest titles to a misspelling are listed under *Similar titles*.
+
+```mermaid
+flowchart LR
+  Typed["Typed query"] --> Commands["Matching commands"]
+  Typed -->|"paused, 2+ characters"| Search["paletteJumpSearch"]
+  Search --> Index[("Fts5Db.searchTitles")]
+  Index --> Jumps["Go to / Similar titles"]
+  Commands --> List["One keyboard list"]
+  Jumps --> List
+  List -->|"Enter on a title"| Open["openPaletteJump"]
+```
+
+The keyboard feature ranks below the features it opens, so the app root wires
+the search (`paletteJumpSearch`: the index, private mode, and lockdown's
+categories while lockdown is on) and the opening (`openPaletteJump`, through
+`NavService` — a task by its id, everything else by route). Goals are left
+out: their route is keyed by their agent, not their entity. How titles match
+and rank is the [search index](search/full-text-index.md#title-search).
 
 # Bindings can differ by platform
 

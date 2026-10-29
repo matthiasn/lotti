@@ -10,16 +10,25 @@ import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_catalog.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/domain/app_command_text.dart';
+import 'package:lotti/features/keyboard/domain/palette_jump.dart';
 import 'package:lotti/features/keyboard/ui/shortcut_label_formatter.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Searchable catalog shared by the command palette and persistent help page.
+///
+/// In the palette, a [jumpSearch] also lists the tasks, entries, projects,
+/// events and people whose title matches what was typed, below the
+/// commands; arrow keys and Enter move through both as one list, and
+/// choosing one calls [onJumpSelected].
 class CommandCatalogView extends StatefulWidget {
   const CommandCatalogView({
     required this.paletteMode,
     this.snapshot,
     this.onCommandSelected,
+    this.jumpSearch,
+    this.onJumpSelected,
     this.platform,
     super.key,
   });
@@ -27,7 +36,16 @@ class CommandCatalogView extends StatefulWidget {
   final bool paletteMode;
   final AppCommandContextSnapshot? snapshot;
   final ValueChanged<AppCommandId>? onCommandSelected;
+  final PaletteJumpSearch? jumpSearch;
+  final ValueChanged<PaletteJumpTarget>? onJumpSelected;
   final TargetPlatform? platform;
+
+  /// How long typing must pause before the palette searches titles.
+  static const jumpSearchDebounce = Duration(milliseconds: 120);
+
+  /// Characters typed before titles are searched: a single letter matches
+  /// too much to help.
+  static const minJumpQueryLength = 2;
 
   @override
   State<CommandCatalogView> createState() => _CommandCatalogViewState();
@@ -45,6 +63,12 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
   };
   var _query = '';
   var _selectedIndex = 0;
+  List<PaletteJumpTarget> _jumps = const [];
+  List<GlobalKey> _jumpKeys = const [];
+  Timer? _jumpDebounce;
+  var _jumpGeneration = 0;
+
+  bool get _searchesJumps => widget.paletteMode && widget.jumpSearch != null;
 
   @override
   void initState() {
@@ -56,9 +80,45 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
 
   void _clampIndex() {
     final definitions = _definitions(context);
-    if (_selectedIndex >= definitions.length) {
+    if (_selectedIndex >= definitions.length + _jumps.length) {
       _selectedIndex = 0;
     }
+  }
+
+  /// Searches titles once typing pauses. Results arriving for an older query
+  /// are dropped, and the last results stay listed until the new ones come.
+  void _scheduleJumpSearch(String value) {
+    _jumpDebounce?.cancel();
+    final search = widget.jumpSearch;
+    if (!_searchesJumps || search == null) return;
+    final query = value.trim();
+    if (query.length < CommandCatalogView.minJumpQueryLength) {
+      _jumpGeneration++;
+      _showJumps(const []);
+      return;
+    }
+    _jumpDebounce = Timer(CommandCatalogView.jumpSearchDebounce, () async {
+      final generation = ++_jumpGeneration;
+      List<PaletteJumpTarget> found;
+      try {
+        found = await search(query);
+      } on Exception {
+        found = const [];
+      }
+      if (!mounted || generation != _jumpGeneration) return;
+      _showJumps(found);
+    });
+  }
+
+  void _showJumps(List<PaletteJumpTarget> jumps) {
+    setState(() {
+      _jumps = jumps;
+      _jumpKeys = [
+        for (final jump in jumps)
+          GlobalKey(debugLabel: 'jump-row-${jump.entityId}'),
+      ];
+      _clampIndex();
+    });
   }
 
   @override
@@ -75,6 +135,7 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
 
   @override
   void dispose() {
+    _jumpDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -136,25 +197,30 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
       final result = _handleHelpNavigation(event.logicalKey);
       if (result == KeyEventResult.handled) return result;
     }
+    final count = definitions.length + _jumps.length;
     if (widget.paletteMode &&
         event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      _moveSelection(definitions, 1);
+      _moveSelection(count, 1);
       return KeyEventResult.handled;
     }
     if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      _moveSelection(definitions, -1);
+      _moveSelection(count, -1);
       return KeyEventResult.handled;
     }
     if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.home) {
-      _selectIndex(definitions, 0);
+      _selectIndex(count, 0);
       return KeyEventResult.handled;
     }
     if (widget.paletteMode && event.logicalKey == LogicalKeyboardKey.end) {
-      _selectIndex(definitions, definitions.length - 1);
+      _selectIndex(count, count - 1);
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.enter && widget.paletteMode) {
-      _invoke(context, definitions.elementAtOrNull(_selectedIndex));
+      if (_selectedIndex < definitions.length) {
+        _invoke(context, definitions.elementAtOrNull(_selectedIndex));
+      } else {
+        _openJump(_jumps.elementAtOrNull(_selectedIndex - definitions.length));
+      }
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.escape &&
@@ -185,15 +251,15 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     return KeyEventResult.handled;
   }
 
-  void _moveSelection(List<AppCommandDefinition> definitions, int delta) {
-    if (definitions.isEmpty) return;
-    var nextIndex = (_selectedIndex + delta) % definitions.length;
-    if (nextIndex < 0) nextIndex += definitions.length;
-    _selectIndex(definitions, nextIndex);
+  void _moveSelection(int count, int delta) {
+    if (count == 0) return;
+    var nextIndex = (_selectedIndex + delta) % count;
+    if (nextIndex < 0) nextIndex += count;
+    _selectIndex(count, nextIndex);
   }
 
-  void _selectIndex(List<AppCommandDefinition> definitions, int index) {
-    if (definitions.isEmpty) return;
+  void _selectIndex(int count, int index) {
+    if (count == 0) return;
     setState(() => _selectedIndex = index);
     _scheduleEnsureSelectedVisible();
   }
@@ -203,9 +269,11 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
       if (!mounted) return;
       final definitions = _definitions(context);
       final selected = definitions.elementAtOrNull(_selectedIndex);
-      final selectedContext = selected == null
-          ? null
-          : _rowKeys[selected.id]?.currentContext;
+      final selectedContext = selected != null
+          ? _rowKeys[selected.id]?.currentContext
+          : _jumpKeys
+                .elementAtOrNull(_selectedIndex - definitions.length)
+                ?.currentContext;
       if (selectedContext == null) return;
       Scrollable.ensureVisible(
         selectedContext,
@@ -225,6 +293,10 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
     }
   }
 
+  void _openJump(PaletteJumpTarget? target) {
+    if (target != null) widget.onJumpSelected?.call(target);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -240,26 +312,25 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
           DesignSystemSearch(
             controller: _searchController,
             focusNode: _searchFocusNode,
-            hintText: widget.paletteMode
-                ? messages.commandPaletteSearchHint
-                : messages.keyboardShortcutsSearchHint,
-            semanticsLabel: widget.paletteMode
-                ? messages.commandPaletteSearchHint
-                : messages.keyboardShortcutsSearchHint,
+            hintText: _searchHint(messages),
+            semanticsLabel: _searchHint(messages),
             onChanged: (value) {
               setState(() {
                 _query = value;
                 _selectedIndex = 0;
               });
+              _scheduleJumpSearch(value);
               _scheduleEnsureSelectedVisible();
             },
           ),
           SizedBox(height: tokens.spacing.step4),
           Expanded(
-            child: definitions.isEmpty
+            child: definitions.isEmpty && _jumps.isEmpty
                 ? Center(
                     child: Text(
-                      widget.paletteMode
+                      _searchesJumps
+                          ? messages.commandPaletteNothingFound
+                          : widget.paletteMode
                           ? messages.commandPaletteNoResults
                           : messages.keyboardShortcutsNoResults,
                       style: tokens.typography.styles.body.bodyMedium.copyWith(
@@ -272,7 +343,10 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
                     controller: _scrollController,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _buildGroups(context, definitions),
+                      children: [
+                        ..._buildGroups(context, definitions),
+                        ..._buildJumps(context, definitions.length),
+                      ],
                     ),
                   ),
           ),
@@ -329,6 +403,58 @@ class _CommandCatalogViewState extends State<CommandCatalogView> {
         );
     }
     return widgets;
+  }
+
+  String _searchHint(AppLocalizations messages) => _searchesJumps
+      ? messages.commandPaletteSearchEverythingHint
+      : widget.paletteMode
+      ? messages.commandPaletteSearchHint
+      : messages.keyboardShortcutsSearchHint;
+
+  /// The titles matching the query, after the commands: under "Go to", or
+  /// "Similar titles" when none held every word and the nearest are shown.
+  List<Widget> _buildJumps(BuildContext context, int commandCount) {
+    if (_jumps.isEmpty) return const [];
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return [
+      if (commandCount > 0) SizedBox(height: tokens.spacing.sectionGap),
+      Padding(
+        padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+        child: Text(
+          _jumps.first.fuzzy
+              ? messages.commandPaletteSimilarTitles
+              : messages.commandPaletteGoTo,
+          style: tokens.typography.styles.others.overline.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ),
+      DesignSystemGroupedList(
+        padding: EdgeInsets.zero,
+        children: [
+          for (final (index, jump) in _jumps.indexed)
+            KeyedSubtree(
+              key: _jumpKeys[index],
+              child: DesignSystemListItem(
+                key: ValueKey('jump-${jump.kind.name}-${jump.entityId}'),
+                title: jump.title,
+                subtitle: _jumpKindLabel(messages, jump.kind),
+                leading: Icon(
+                  _jumpKindIcon(jump.kind),
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                selected: commandCount + index == _selectedIndex,
+                activated: commandCount + index == _selectedIndex,
+                showDivider: index < _jumps.length - 1,
+                semanticsLabel:
+                    '${jump.title}, ${_jumpKindLabel(messages, jump.kind)}',
+                onTap: () => _openJump(jump),
+              ),
+            ),
+        ],
+      ),
+    ];
   }
 
   Widget _commandRow(
@@ -393,3 +519,20 @@ class _ShortcutBadge extends StatelessWidget {
     );
   }
 }
+
+String _jumpKindLabel(AppLocalizations messages, PaletteJumpKind kind) =>
+    switch (kind) {
+      PaletteJumpKind.task => messages.navTabTitleTasks,
+      PaletteJumpKind.entry => messages.navTabTitleJournal,
+      PaletteJumpKind.project => messages.navTabTitleProjects,
+      PaletteJumpKind.event => messages.navTabTitleEvents,
+      PaletteJumpKind.person => messages.navTabTitlePeople,
+    };
+
+IconData _jumpKindIcon(PaletteJumpKind kind) => switch (kind) {
+  PaletteJumpKind.task => LottiIcons.list,
+  PaletteJumpKind.entry => LottiIcons.book,
+  PaletteJumpKind.project => LottiIcons.folder,
+  PaletteJumpKind.event => LottiIcons.calendar,
+  PaletteJumpKind.person => LottiIcons.people,
+};

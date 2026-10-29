@@ -13,6 +13,9 @@ like a real desktop application rather than a phone app on a big screen.
 - **One list of everything available.** The command palette, the macOS menu bar,
   and the in-app help all show the same commands with the same bindings and the
   same enabled state.
+- **Jump to anything by name.** Typed into, the palette also finds tasks,
+  entries, projects, events and people by any part of their title — a
+  misspelt one too — and Enter opens the one selected.
 - **Nothing hijacked globally.** Shortcuts only exist while Lotti is in front —
   the app never claims a system-wide hotkey.
 

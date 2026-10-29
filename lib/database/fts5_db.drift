@@ -24,6 +24,15 @@ CREATE VIRTUAL TABLE search_fts USING fts5(
   prefix = '2 3'
 );
 
+-- Titles alone, in trigrams: a title matches on any three letters of it, in
+-- the middle of a word too, and a misspelt one by the trigrams it shares —
+-- what jumping to a task by a fragment of its name needs. Keyed by
+-- `search_doc.id`, like `search_fts`; only entities with a title have a row.
+CREATE VIRTUAL TABLE title_trigram USING fts5(
+  title,
+  tokenize = 'trigram remove_diacritics 1'
+);
+
 -- Progress of a full rebuild: the journal rowid the next batch starts after,
 -- or no row once the index has caught up with the journal.
 CREATE TABLE search_index_state (
@@ -53,3 +62,9 @@ INSERT OR REPLACE INTO search_index_state(name, int_value)
 
 clearIndexStateValue:
 DELETE FROM search_index_state WHERE name = :name;
+
+deleteTitleTrigram:
+DELETE FROM title_trigram WHERE rowid = :rowId;
+
+insertTitleTrigram:
+INSERT INTO title_trigram(rowid, title) VALUES(:rowId, :title);

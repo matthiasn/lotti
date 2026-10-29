@@ -3807,11 +3807,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get colorLabel => 'Couleur';
 
   @override
+  String get commandPaletteGoTo => 'Aller à';
+
+  @override
   String get commandPaletteNoResults =>
       'Aucune commande disponible ne correspond à ta recherche';
 
   @override
+  String get commandPaletteNothingFound => 'Rien ne correspond à ta recherche';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Rechercher des commandes, tâches, projets et personnes';
+
+  @override
   String get commandPaletteSearchHint => 'Rechercher des commandes…';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Titres similaires';
 
   @override
   String get commandPaletteTitle => 'Palette de commandes';

@@ -59,6 +59,8 @@ SearchDocument searchDocumentFor(
         SearchDocument(title: task.data.title, body: text, extra: ''),
     project: (project) =>
         SearchDocument(title: project.data.title, body: text, extra: ''),
+    relationship: (person) =>
+        SearchDocument(title: person.data.title, body: text, extra: ''),
     // A spec snapshot is a version of its goal, which is found instead.
     goal: (goal) => goal.data.snapshotOf != null
         ? const SearchDocument(title: '', body: '', extra: '')

@@ -225,6 +225,89 @@ void main() {
     });
   });
 
+  group('searchTitles', () {
+    setUp(() => fts.catchUp(journalDb));
+
+    Future<List<String>> titles(
+      String query, {
+      Set<String>? types,
+      bool includePrivate = true,
+    }) async => [
+      for (final match in await fts.searchTitles(
+        query,
+        types: types,
+        includePrivate: includePrivate,
+      ))
+        match.entityId,
+    ];
+
+    test('a fragment of a word finds the title, best placed first', () async {
+      await fts.indexEntities([
+        _task('inside', 'Pre-launch checks'),
+        _task('starts', 'Launch day rehearsal'),
+        _entry('text-only', 'the launch went well'),
+      ]);
+
+      expect(await titles('launch'), ['starts', 'inside']);
+      expect(
+        (await titles('aunc')).toSet(),
+        {'starts', 'inside'},
+        reason: 'inside a word, neither starts with it',
+      );
+    });
+
+    test('accents and case do not matter', () async {
+      await fts.indexEntities([_task('task-1', 'Pingüine zählen')]);
+
+      expect(await titles('pinguine'), ['task-1']);
+      expect(await titles('ZÄHL'), ['task-1']);
+    });
+
+    test(
+      'a one- or two-letter query matches the start of a title word',
+      () async {
+        await fts.indexEntities([
+          _task('roll', 'Emperor penguin roll call'),
+          _task('other', 'Sardine futures'),
+        ]);
+
+        expect(await titles('ro'), ['roll']);
+        expect(await titles('pe ro'), ['roll']);
+      },
+    );
+
+    test('a misspelt title finds its nearest titles, marked fuzzy', () async {
+      await fts.indexEntities([
+        _task('roll', 'Emperor penguin roll call'),
+        _task('other', 'Sardine futures'),
+      ]);
+
+      final near = await fts.searchTitles('pengiun rolcall');
+      expect(near.map((m) => m.entityId), ['roll']);
+      expect(near.single.fuzzy, isTrue);
+    });
+
+    test(
+      'filters apply, and an edit or delete takes the old title out',
+      () async {
+        await fts.indexEntities([
+          _task('task-1', 'Feed the chicks'),
+          _entry('entry-1', 'Feed the chicks', private: true),
+        ]);
+        expect(await titles('chicks', types: {'Task'}), ['task-1']);
+
+        await fts.indexEntities([
+          _task('task-1', 'Count the chicks'),
+          _task('task-2', 'Feed the chicks').copyWith(
+            meta: _meta('task-2', deleted: true),
+          ),
+        ]);
+        expect(await titles('feed'), isEmpty);
+        expect(await titles('count'), ['task-1']);
+      },
+    );
+  });
+
   group('matching', () {
     setUp(() => fts.catchUp(journalDb));
 
@@ -376,6 +459,43 @@ void main() {
         )
         .get();
     expect(tables, isEmpty);
-    expect(upgraded.schemaVersion, 2);
+    expect(upgraded.schemaVersion, 3);
+  });
+
+  test('upgrading a version 2 index adds the title trigrams and starts a '
+      'rebuild that fills them', () async {
+    final directory = setupTestDirectory();
+    addTearDown(() => directory.deleteSync(recursive: true));
+    sqlite3.open(p.join(directory.path, fts5DbFileName))
+      ..execute(
+        'CREATE TABLE search_doc (id INTEGER NOT NULL PRIMARY KEY '
+        'AUTOINCREMENT, entity_id TEXT NOT NULL UNIQUE, type TEXT NOT NULL, '
+        "category_id TEXT NOT NULL DEFAULT '', private INTEGER NOT NULL "
+        'DEFAULT 0, date_from INTEGER NOT NULL)',
+      )
+      ..execute(
+        'CREATE VIRTUAL TABLE search_fts USING fts5(title, body, extra, '
+        "tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')",
+      )
+      ..execute(
+        'CREATE TABLE search_index_state (name TEXT NOT NULL PRIMARY KEY, '
+        'int_value INTEGER NOT NULL)',
+      )
+      ..execute('PRAGMA user_version = 2')
+      ..close();
+    await store([_task('task-1', 'Emperor penguin roll call')]);
+
+    final upgraded = Fts5Db(
+      documentsDirectoryProvider: () async => directory,
+      tempDirectoryProvider: () async => directory,
+    );
+    addTearDown(upgraded.close);
+
+    expect(await upgraded.needsCatchUp(), isTrue);
+    await upgraded.catchUp(journalDb);
+    expect(
+      (await upgraded.searchTitles('guin')).map((m) => m.entityId),
+      ['task-1'],
+    );
   });
 }

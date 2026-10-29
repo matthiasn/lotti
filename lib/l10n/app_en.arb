@@ -2444,8 +2444,24 @@
   "clearButton": "Clear",
   "colorCustomLabel": "Custom",
   "colorLabel": "Color",
+  "commandPaletteGoTo": "Go to",
+  "@commandPaletteGoTo": {
+    "description": "Command palette group header above the titles matching the search."
+  },
   "commandPaletteNoResults": "No available commands match your search",
+  "commandPaletteNothingFound": "Nothing matches your search",
+  "@commandPaletteNothingFound": {
+    "description": "Command palette empty state when neither a command nor a title matches."
+  },
+  "commandPaletteSearchEverythingHint": "Search commands, tasks, projects and people",
+  "@commandPaletteSearchEverythingHint": {
+    "description": "Search field hint of the command palette, which finds titles too."
+  },
   "commandPaletteSearchHint": "Search commands…",
+  "commandPaletteSimilarTitles": "Similar titles",
+  "@commandPaletteSimilarTitles": {
+    "description": "Command palette group header above near matches for a misspelt search."
+  },
   "commandPaletteTitle": "Command palette",
   "commonError": "Error",
   "commonLoading": "Loading...",

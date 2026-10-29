@@ -3815,11 +3815,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get colorLabel => 'Culoare';
 
   @override
+  String get commandPaletteGoTo => 'Mergeți la';
+
+  @override
   String get commandPaletteNoResults =>
       'Nicio comandă disponibilă nu corespunde căutării dvs.';
 
   @override
+  String get commandPaletteNothingFound => 'Nimic nu corespunde căutării dvs.';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Căutați comenzi, sarcini, proiecte și persoane';
+
+  @override
   String get commandPaletteSearchHint => 'Căutați comenzi…';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Titluri similare';
 
   @override
   String get commandPaletteTitle => 'Paletă de comenzi';

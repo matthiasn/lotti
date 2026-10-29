@@ -78,6 +78,10 @@ void main() {
     );
   });
 
+  test('a person is found by their name', () {
+    expect(documentOf(testRelationship).title, testRelationship.data.title);
+  });
+
   test('a goal spec snapshot contributes nothing: its goal is found '
       'instead', () {
     final snapshot = goal(snapshotOf: 'goal-1');

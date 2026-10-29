@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/services/search_index_service.dart
     title: SearchIndexService — indexing every journal write
     last_modified: 2026-10-29
+  - id: title-search
+    resource: ../../../lib/database/title_search.dart
+    title: Title match ranking and the misspelling fallback
+    last_modified: 2026-10-29
   - id: runner
     resource: ../../../lib/features/journal/state/journal_query_runner.dart
     title: JournalQueryRunner.fts5Search and taskFullTextMatches
@@ -48,6 +52,11 @@ Two tables carry it:
 |-------|-------|
 | `search_doc` | One row per indexed entity: its id, journal `type`, category (`''` for none), `private` flag and `date_from` — the filters a search applies before ranking — and the integer key of its text |
 | `search_fts` | FTS5 over `title`, `body` and `extra`, keyed by `search_doc.id`; `unicode61 remove_diacritics 2` tokenizer, two- and three-character prefix indexes, text stored so a result can show a snippet |
+
+`title_trigram` holds titles alone, tokenized into letter triples
+(`trigram remove_diacritics 1`) and keyed the same way, so a title matches on
+any three letters of it, inside a word too; only entities with a title have a
+row there.
 
 `search_index_state` holds one value: the journal rowid a pending rebuild
 continues after.
@@ -103,14 +112,15 @@ live edit cannot be written after the edit and overwrite it with what it read.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Owed: created, upgraded from v1, or reset
+  [*] --> Owed: created, upgraded from v1 or v2, or reset
   Owed --> Owed: catchUp writes a batch and its last rowid
   Owed --> CaughtUp: catchUp reads a short batch
   CaughtUp --> Owed: recreateFts5 (file deleted, new index)
 ```
 
 A new index — first launch, the version 1 upgrade (whose single `journal_fts`
-table cannot be converted, so it is dropped), or the maintenance rebuild —
+table cannot be converted, so it is dropped), the version 2 upgrade (which
+adds `title_trigram` for the rebuild to fill), or the maintenance rebuild —
 starts **owed** a rebuild. `SearchIndexService.start`, tracked as startup work,
 runs `catchUp`: it walks the journal's live rows by rowid
 (`JournalDb.liveEntitiesAfterRowId`), 500 at a time, and writes each batch in one
@@ -161,6 +171,23 @@ read: hits resolve through the private-filtered reads
 The task and journal lists still order by their own sort (priority, date, due
 date); the index's order decides which matches survive its limit, and agents
 read it as relevance.
+
+# Title search
+
+`Fts5Db.searchTitles` finds entities by their title, for jumping to one by
+name (the [command palette](../keyboard.md#the-palette-jumps-to-things-too)).
+Its words of three letters or more match anywhere in a title through
+`title_trigram`; a query of only shorter words uses the main index's prefix
+match over the title column. `rankTitleMatches` then keeps the titles holding
+every word — a short word only as the start of a title word — and orders them:
+the title that is the query, titles starting with it, titles with a word
+starting with its first word, then the rest, each tier in the index's order.
+
+When no title holds every word, `nearestTitles` takes the titles sharing at
+least half of the query's letter triples (and two or more) from an any-trigram
+match, most shared first, and marks them `fuzzy`: a misspelt name still finds
+its task. The same type, category and privacy filters as `matchIds` apply
+before the limit.
 
 # Gotchas
 

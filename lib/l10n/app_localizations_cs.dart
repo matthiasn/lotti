@@ -3797,11 +3797,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get colorLabel => 'Barva';
 
   @override
+  String get commandPaletteGoTo => 'Přejít na';
+
+  @override
   String get commandPaletteNoResults =>
       'Tvému hledání neodpovídají žádné dostupné příkazy';
 
   @override
+  String get commandPaletteNothingFound => 'Tvému hledání nic neodpovídá';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Hledej příkazy, úkoly, projekty a lidi';
+
+  @override
   String get commandPaletteSearchHint => 'Hledat příkazy…';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Podobné názvy';
 
   @override
   String get commandPaletteTitle => 'Paleta příkazů';

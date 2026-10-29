@@ -3768,11 +3768,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get colorLabel => 'Kleur';
 
   @override
+  String get commandPaletteGoTo => 'Ga naar';
+
+  @override
   String get commandPaletteNoResults =>
       'Geen beschikbare commando\'s die overeenkomen met uw zoekopdracht';
 
   @override
+  String get commandPaletteNothingFound =>
+      'Niets komt overeen met je zoekopdracht';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Zoek opdrachten, taken, projecten en personen';
+
+  @override
   String get commandPaletteSearchHint => 'Zoeken op commando\'s...';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Vergelijkbare titels';
 
   @override
   String get commandPaletteTitle => 'Opdrachtpalet';
