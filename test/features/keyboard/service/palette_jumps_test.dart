@@ -94,6 +94,38 @@ void main() {
     expect(await search('feed'), isEmpty);
   });
 
+  test('targets compare by value', () {
+    const a = PaletteJumpTarget(
+      entityId: 'id-1',
+      kind: PaletteJumpKind.task,
+      title: 'x',
+    );
+    const near = PaletteJumpTarget(
+      entityId: 'id-1',
+      kind: PaletteJumpKind.task,
+      title: 'x',
+      fuzzy: true,
+    );
+
+    expect(
+      a,
+      const PaletteJumpTarget(
+        entityId: 'id-1',
+        kind: PaletteJumpKind.task,
+        title: 'x',
+      ),
+    );
+    expect(
+      a.hashCode,
+      const PaletteJumpTarget(
+        entityId: 'id-1',
+        kind: PaletteJumpKind.task,
+        title: 'x',
+      ).hashCode,
+    );
+    expect(a, isNot(near));
+  });
+
   test('each kind opens where it lives; a task by its id', () {
     final nav = MockNavService();
     PaletteJumpTarget target(PaletteJumpKind kind) =>

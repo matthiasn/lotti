@@ -32,9 +32,6 @@ class PaletteJumpTarget {
 
   @override
   int get hashCode => Object.hash(entityId, kind, title, fuzzy);
-
-  @override
-  String toString() => 'PaletteJumpTarget($kind $entityId "$title")';
 }
 
 /// Finds what the palette can jump to for what was typed, best first.

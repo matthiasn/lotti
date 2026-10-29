@@ -19,20 +19,6 @@ class TitleMatch {
   /// True when no title held every word and this one shares most of the
   /// query's letter triples instead — a misspelling's nearest titles.
   final bool fuzzy;
-
-  @override
-  bool operator ==(Object other) =>
-      other is TitleMatch &&
-      other.entityId == entityId &&
-      other.type == type &&
-      other.title == title &&
-      other.fuzzy == fuzzy;
-
-  @override
-  int get hashCode => Object.hash(entityId, type, title, fuzzy);
-
-  @override
-  String toString() => 'TitleMatch($entityId, $type, $title, fuzzy: $fuzzy)';
 }
 
 /// The lower-cased words of [text], split the way the index's tokenizers
