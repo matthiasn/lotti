@@ -37,9 +37,12 @@ final _word = RegExp(r'[\p{L}\p{M}\p{N}]+', unicode: true);
 /// combining marks — the vowel signs Indic scripts write words with — stay.
 /// [searchWords] lower-cases before it folds.
 ///
-/// Only letters the index's tokenizer folds too are mapped: `ø`, `ł`, `đ`,
-/// `ħ`, `ŧ`, `ı`, `ŀ` and `ŉ` decompose to no base letter, so SQLite keeps
-/// them, and folding them here would make a query miss the title it stored.
+/// The table is the index's own: every lower-case letter of Latin-1
+/// Supplement, Latin Extended-A/B and Latin Extended Additional that SQLite's
+/// `remove_diacritics` tokenizer folds to a base letter, and no other — a
+/// letter it keeps (`ø`, `ł`, `đ`) folded here would make a query miss the
+/// title the index stored. `fts5_db_test` asks SQLite for the table and fails
+/// when the two differ.
 String foldDiacritics(String text) {
   final folded = StringBuffer();
   for (final rune in text.runes) {
@@ -58,25 +61,31 @@ Map<String, String> get foldedLetters => _baseLetters;
 
 final Map<String, String> _baseLetters = {
   for (final MapEntry(key: base, value: accented) in const {
-    'a': 'àáâãäåāăąǎȁȃạảấầẩẫậắằẳẵặ',
-    'c': 'çćĉċč',
-    'd': 'ď',
-    'e': 'èéêëēĕėęěȅȇẹẻẽếềểễệ',
-    'g': 'ĝğġģ',
-    'h': 'ĥ',
-    'i': 'ìíîïĩīĭįǐȉȋịỉ',
+    'a': 'àáâãäåāăąǎǟǻȁȃȧḁạảấầẩẫậắằẳẵặ',
+    'b': 'ḃḅḇ',
+    'c': 'çćĉċčḉ',
+    'd': 'ďḋḍḏḑḓ',
+    'e': 'èéêëēĕėęěȅȇȩḕḗḙḛḝẹẻẽếềểễệ',
+    'f': 'ḟ',
+    'g': 'ĝğġģǧǵḡ',
+    'h': 'ĥȟḣḥḧḩḫ',
+    'i': 'ìíîïĩīĭįǐȉȋḭḯỉị',
     'j': 'ĵ',
-    'k': 'ķ',
-    'l': 'ĺļľ',
-    'n': 'ñńņň',
-    'o': 'òóôõöōŏőǒȍȏọỏốồổỗộớờởỡợ',
-    'r': 'ŕŗř',
-    's': 'śŝşšș',
-    't': 'ţťț',
-    'u': 'ùúûüũūŭůűųǔưụủứừửữự',
-    'w': 'ŵ',
-    'y': 'ýÿŷỳỵỷỹ',
-    'z': 'źżž',
+    'k': 'ķǩḱḳḵ',
+    'l': 'ĺļľḷḹḻḽ',
+    'm': 'ḿṁṃ',
+    'n': 'ñńņňǹṅṇṉṋ',
+    'o': 'òóôõöōŏőơǒǫǭȍȏȫȭȯȱṍṏṑṓọỏốồổỗộớờởỡợ',
+    'p': 'ṕṗ',
+    'r': 'ŕŗřȑȓṙṛṝṟ',
+    's': 'śŝşšſșṡṣṥṧṩẛ',
+    't': 'ţťțṫṭṯṱ',
+    'u': 'ùúûüũūŭůűųưǔǖǘǚǜȕȗṳṵṷṹṻụủứừửữự',
+    'v': 'ṽṿ',
+    'w': 'ŵẁẃẅẇẉ',
+    'x': 'ẋẍ',
+    'y': 'ýÿŷȳẏỳỵỷỹ',
+    'z': 'źżžẑẓẕ',
   }.entries)
     for (final letter in accented.runes) String.fromCharCode(letter): base,
 };

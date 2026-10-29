@@ -258,32 +258,41 @@ void main() {
       );
     });
 
-    test(
-      'every letter the ranking folds, the index folds the same way',
-      () async {
-        await fts.customStatement(
-          'CREATE VIRTUAL TABLE fold_probe USING fts5(title, '
-          "tokenize = 'trigram remove_diacritics 1')",
-        );
-        final disagree = <String>[];
-        for (final MapEntry(key: letter, value: base)
-            in foldedLetters.entries) {
-          await fts.customStatement('DELETE FROM fold_probe');
-          await fts.customStatement(
-            'INSERT INTO fold_probe(title) VALUES (?)',
-            ['q${letter}q'],
-          );
-          final hits = await fts
-              .customSelect(
-                'SELECT title FROM fold_probe WHERE fold_probe MATCH ?',
-                variables: [Variable.withString('"q${base}q"')],
-              )
-              .get();
-          if (hits.isEmpty) disagree.add(letter);
+    test('the ranking folds exactly the letters the index folds, to the same '
+        'base', () async {
+      await fts.customStatement(
+        'CREATE VIRTUAL TABLE fold_probe USING fts5(title, '
+        "tokenize = 'trigram remove_diacritics 1')",
+      );
+      for (final rune in [
+        for (var c = 0xC0; c <= 0x24F; c++) c,
+        for (var c = 0x1E00; c <= 0x1EFF; c++) c,
+      ]) {
+        final letter = String.fromCharCode(rune);
+        if (letter.toLowerCase() != letter || letter.toUpperCase() == letter) {
+          continue;
         }
-        expect(disagree, isEmpty, reason: 'the index keeps these as they are');
-      },
-    );
+        await fts.customStatement(
+          'INSERT INTO fold_probe(rowid, title) VALUES (?, ?)',
+          [rune, 'q${letter}q'],
+        );
+      }
+      final indexFolds = <String, String>{};
+      for (var b = 0x61; b <= 0x7A; b++) {
+        final base = String.fromCharCode(b);
+        final rows = await fts
+            .customSelect(
+              'SELECT rowid AS rune FROM fold_probe WHERE fold_probe MATCH ?',
+              variables: [Variable.withString('"q${base}q"')],
+            )
+            .get();
+        for (final row in rows) {
+          indexFolds[String.fromCharCode(row.read<int>('rune'))] = base;
+        }
+      }
+
+      expect(foldedLetters, indexFolds);
+    });
 
     test('accents and case do not matter, and do not make a match '
         'fuzzy', () async {
