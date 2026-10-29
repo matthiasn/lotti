@@ -8421,6 +8421,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalReportSectionNext => 'Hvad nu';
 
   @override
+  String get goalReportSectionReflection => 'Fra dine check-ins';
+
+  @override
   String get goalReportSectionStanding => 'Sådan står det';
 
   @override

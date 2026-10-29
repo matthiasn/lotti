@@ -3644,6 +3644,7 @@
   "goalReportSectionChange": "Última alteração",
   "goalReportSectionCoverage": "Cobertura de dados",
   "goalReportSectionNext": "Próximos passos",
+  "goalReportSectionReflection": "Dos teus registos",
   "goalReportSectionStanding": "Como estás",
   "goalReportSectionWindow": "A janela mais ampla",
   "goalTodayBriefingNext": "A seguir: {step}",

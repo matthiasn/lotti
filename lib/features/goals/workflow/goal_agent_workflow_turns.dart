@@ -108,12 +108,20 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
   /// retried compaction overwrites rather than appends. Individually
   /// contained — one unreadable recording must not cost the wake the rest of
   /// what the user said.
+  ///
+  /// Newest first, and a summary that exists but is stale — its words
+  /// changed, or the goal's [weight] did — is redone at most
+  /// [goalCheckInRecompactionsPerWake] times per wake. A check-in with no
+  /// summary at all is always compacted. A journal goal re-reading a year of
+  /// entries for substance therefore pays for its recent ones first and the
+  /// rest over the following wakes, reading the old summaries meanwhile.
   Future<List<GoalCheckInSummary>> _reconcileCheckIns({
     required String agentId,
     required String goalStatement,
     required String model,
     required AiConfigInferenceProvider provider,
     required bool compactMissing,
+    required GoalCheckInWeight weight,
   }) async {
     final compactor = _checkInCompactor;
     final reader = _checkInSourceReader;
@@ -139,20 +147,30 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
 
     if (compactMissing) {
       var compacted = false;
-      for (final source in sources) {
+      var recompactions = 0;
+      final newestFirst = [...sources]
+        ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+      for (final source in newestFirst) {
         final existing = byEntryId[source.entryId];
         // Recompact when the words changed. A transcript is not final when it
         // first lands — it can be re-transcribed with a better model or edited —
         // and without this the first summary stood forever while the agent
         // coached from words that no longer existed. A summary predating the
         // digest has none, so it is refreshed once and then carries one.
-        final digest = goalCheckInSourceDigest(source.text);
+        final digest = goalCheckInSourceDigest(source.text, weight: weight);
         if (existing != null && existing.sourceDigest == digest) continue;
         if (state.failuresByEntryId[source.entryId]?.blocks(
               digest,
               clock.now(),
             ) ??
             false) {
+          continue;
+        }
+        // Only a check-in that can actually be compacted spends the budget:
+        // one held back by its failure backoff would otherwise take a slot
+        // on every wake and strand the older history behind it.
+        if (existing != null &&
+            recompactions++ >= goalCheckInRecompactionsPerWake) {
           continue;
         }
         await compactor.compact(
@@ -163,6 +181,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
           goalStatement: goalStatement,
           model: model,
           provider: provider,
+          weight: weight,
         );
         compacted = true;
       }
@@ -195,6 +214,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
     required AiConfigInferenceProvider provider,
     required bool allowInference,
     required DateTime reference,
+    required GoalCheckInWeight weight,
   }) async {
     final digestService = _checkInDigestService;
     if (digestService == null || summaries.isEmpty) {
@@ -208,6 +228,7 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
           model: model,
           provider: provider,
           allowInference: allowInference,
+          weight: weight,
         ),
       ).build(summaries, reference: reference);
       return context.entries;

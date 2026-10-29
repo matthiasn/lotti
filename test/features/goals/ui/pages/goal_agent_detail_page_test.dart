@@ -1529,6 +1529,8 @@ void main() {
                   '## Full report\n\nThe current routine needs three walks.',
               provenance: const {
                 GoalReportProvenanceKeys.sections: {
+                  GoalReportSectionKeys.reflection:
+                      'You said the stairs feel easier on cool mornings.',
                   GoalReportSectionKeys.currentPeriod: 'One walk logged today.',
                   GoalReportSectionKeys.rollingWindow: 'Two of three so far.',
                   GoalReportSectionKeys.coverage: '',
@@ -1628,6 +1630,27 @@ void main() {
       find.byKey(const ValueKey('goal-report-next-heading')),
       findsOneWidget,
     );
+    // What the user said, answered, is on screen unexpanded too — under its
+    // own heading, between the summary and what comes next.
+    final reflectionHeading = find.byKey(
+      const ValueKey('goal-report-reflection-heading'),
+    );
+    expect(reflectionHeading, findsOneWidget);
+    expect(tester.widget<Text>(reflectionHeading).data, 'From your check-ins');
+    final reflection = find.textContaining('stairs feel easier on cool');
+    expect(reflection, findsOneWidget);
+    expect(
+      tester.getTopLeft(find.textContaining('Three walks')).dy,
+      lessThan(tester.getTopLeft(reflectionHeading).dy),
+    );
+    expect(
+      tester.getTopLeft(reflection).dy,
+      lessThan(
+        tester
+            .getTopLeft(find.byKey(const ValueKey('goal-report-next-heading')))
+            .dy,
+      ),
+    );
     await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
     // Sections, under headings the APP supplies — the sentences are authored
@@ -1641,6 +1664,8 @@ void main() {
     // "Show more" is one most readers never see. Expanding adds no second
     // "What's next" heading of its own.
     expect(find.text("What's next"), findsOneWidget);
+    // Nor is the reflection repeated among the expanded sections.
+    expect(find.textContaining('stairs feel easier on cool'), findsOneWidget);
     // A slot the model left empty gets no heading rather than an empty one.
     expect(find.text('Data coverage'), findsNothing);
     // ...and it closes again, easing shut rather than snapping.

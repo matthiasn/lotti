@@ -10,8 +10,17 @@ void main() {
     // the same bound; this pins it for the production import path. The
     // ceiling is a discipline rather than a model limit — moved to 3.6k with
     // the standing-report rule, which has to hold in every language and so
-    // cannot live in the per-wake FACTS block.
-    expect(goalAgentSystemPrompt.length, lessThan(3600));
+    // cannot live in the per-wake FACTS block, and to 3.9k with the
+    // user-voice rule, for the same reason.
+    expect(goalAgentSystemPrompt.length, lessThan(3900));
+    expect(
+      goalAgentSystemPrompt,
+      contains("The\nreport's reflection engages with them"),
+    );
+    expect(
+      goalAgentSystemPrompt,
+      contains('when materialChangeSinceLastReport=true'),
+    );
     expect(
       goalAgentSystemPrompt,
       contains('explicitly asks for another ad'),
@@ -244,6 +253,84 @@ void main() {
       // than no heading.
       expect(sections.containsKey(GoalReportSectionKeys.latestChange), isFalse);
       expect(sections.containsKey(GoalReportSectionKeys.coverage), isFalse);
+    });
+
+    test('a reflection leads the body and the persisted sections; an absent '
+        'or blank one parses as empty and is dropped', () {
+      final withReflection = GoalStructuredReport.tryParse({
+        ...validReport(),
+        GoalReportSectionKeys.reflection:
+            '  You said the ice shelf feels exposed.  ',
+      })!;
+      expect(
+        withReflection.reflection,
+        'You said the ice shelf feels exposed.',
+      );
+      expect(
+        withReflection.visibleSummary(allowedCurrentActionCriterionIds: {}),
+        startsWith(
+          'You said the ice shelf feels exposed.\n\n'
+          'Logging is complete today.',
+        ),
+      );
+      final sections = withReflection.toProvenance(
+        allowedCurrentActionCriterionIds: const {},
+      );
+      expect(sections.keys.first, GoalReportSectionKeys.reflection);
+      expect(
+        sections[GoalReportSectionKeys.reflection],
+        'You said the ice shelf feels exposed.',
+      );
+
+      // A report written before the slot existed still parses — it is the
+      // strategy, which knows what is new, that demands a reflection.
+      for (final report in [
+        validReport(),
+        {...validReport(), GoalReportSectionKeys.reflection: '   '},
+      ]) {
+        final parsed = GoalStructuredReport.tryParse(report)!;
+        expect(parsed.reflection, isEmpty);
+        expect(
+          parsed
+              .toProvenance(allowedCurrentActionCriterionIds: const {})
+              .containsKey(GoalReportSectionKeys.reflection),
+          isFalse,
+        );
+      }
+      expect(
+        GoalStructuredReport.lenient({
+          GoalReportSectionKeys.reflection: 'Only this.',
+        })!.reflection,
+        'Only this.',
+      );
+    });
+
+    test('the reflection slot is in the schema, asked of every report and '
+        'described as engagement, not a count', () {
+      final reportTool = goalAgentTools.singleWhere(
+        (tool) => tool.name == GoalAgentToolNames.updateGoalReport,
+      );
+      final report =
+          (reportTool.parameters['properties']
+                  as Map<String, dynamic>)['report']
+              as Map<String, dynamic>;
+      expect(report['required'], contains(GoalReportSectionKeys.reflection));
+      final slot =
+          (report['properties']
+                  as Map<String, dynamic>)[GoalReportSectionKeys.reflection]
+              as Map<String, dynamic>;
+      expect(
+        slot['description'],
+        allOf(
+          contains('userVoice'),
+          contains('sinceLastReport'),
+          contains('Never only that a check-in happened'),
+        ),
+      );
+      expect(
+        report['description'],
+        contains('Prose slots other than reflection are facts only'),
+      );
     });
 
     test('the current-action gate applies to the persisted sections too', () {

@@ -1,6 +1,7 @@
 /// Deterministic design-review captures of the goal agent's page, framed on
 /// its hero "Agent's read" card: a goal at risk with a stale report, at phone
-/// and desktop widths, dark and light, with the companion on and off.
+/// and desktop widths, dark and light, with the companion on and off — and a
+/// journaling goal whose structured report answers what the user said.
 ///
 /// PNGs are written to `LOTTI_SCREENSHOT_DIR`, or
 /// `screenshots/goal_agent_detail` when only `LOTTI_CAPTURE_SCREENSHOTS=true`
@@ -23,6 +24,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/knowledge/agent_knowledge_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -30,6 +32,7 @@ import 'package:lotti/features/companion/state/spoken_track.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
@@ -88,21 +91,72 @@ final _spec =
         )
         as GoalSpecVersionEntity;
 
+/// A goal measured by the time spent checking in — a journal — and the
+/// report a wake writes once it has read what the check-ins said.
+final _journalSpec =
+    AgentDomainEntity.goalSpecVersion(
+          id: '$_agentId:spec-v1',
+          agentId: _agentId,
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Journal about the colony move',
+          statement: 'Journal ten minutes a day about the colony move.',
+          criteria: const GoalCriterion.checkInTime(
+            criterionId: 'c1',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            targetMinutes: 70,
+          ),
+          createdAt: DateTime(2026),
+          vectorClock: null,
+        )
+        as GoalSpecVersionEntity;
+
+const _journalTldr =
+    'Five check-ins this week, all about the move to the north ridge — the '
+    'question has shifted from whether to go to when.';
+
+final _journalSections = <String, Object?>{
+  GoalReportSectionKeys.reflection:
+      'On Monday you said the new ice shelf feels too exposed for the '
+      'chicks; by Thursday you were weighing the north ridge instead and '
+      'asked what the colony would lose by waiting. You promised to scout '
+      'the ridge on Saturday — that is the thread worth following.',
+  GoalReportSectionKeys.currentPeriod: "Today's check-in is in: 12 minutes.",
+  GoalReportSectionKeys.rollingWindow:
+      '73 minutes over the last 7 days, against a 70-minute target.',
+  GoalReportSectionKeys.nextActions: [
+    'Scout the north ridge on Saturday, as you planned.',
+    "Say what you found there in Saturday's check-in.",
+  ],
+};
+
 Future<void> _capture(
   WidgetTester tester, {
   required ScreenshotDevice device,
   required Brightness brightness,
   required bool companion,
+  bool journal = false,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump();
   applyScreenshotDevice(tester, device);
-  final report = makeTestReport(
-    agentId: _agentId,
-    createdAt: _now.subtract(const Duration(hours: 3)),
-    tldr: _tldr,
-    content: '$_tldr\n\n## Next step\n\nA short session on Saturday morning.',
-  );
+  final report = journal
+      ? makeTestReport(
+          agentId: _agentId,
+          createdAt: _now.subtract(const Duration(hours: 3)),
+          tldr: _journalTldr,
+          content: _journalTldr,
+          provenance: {GoalReportProvenanceKeys.sections: _journalSections},
+        )
+      : makeTestReport(
+          agentId: _agentId,
+          createdAt: _now.subtract(const Duration(hours: 3)),
+          tldr: _tldr,
+          content:
+              '$_tldr\n\n## Next step\n\nA short session on Saturday morning.',
+        );
   final state = makeTestState(
     agentId: _agentId,
     updatedAt: _now,
@@ -137,16 +191,22 @@ Future<void> _capture(
                 HabitsState.initial(now: DateTime(2026, 8, 16)),
               ),
             ),
-            agentIdentityProvider(
-              _agentId,
-            ).overrideWith((ref) async => _identity),
+            agentIdentityProvider(_agentId).overrideWith(
+              (ref) async => journal
+                  ? _identity.copyWith(displayName: 'Journal coach')
+                  : _identity,
+            ),
             goalAgentHealthProvider(_agentId).overrideWith(
               (ref) async => (
-                trackStatus: GoalTrackStatus.atRisk,
-                attainment: 0.66,
-                reportOneLiner: 'Two of three sessions so far.',
+                trackStatus: journal
+                    ? GoalTrackStatus.onTrack
+                    : GoalTrackStatus.atRisk,
+                attainment: journal ? 1.0 : 0.66,
+                reportOneLiner: journal
+                    ? 'The north ridge is now the question.'
+                    : 'Two of three sessions so far.',
                 pendingProposals: 0,
-                spec: _spec,
+                spec: journal ? _journalSpec : _spec,
                 direction: null,
                 deficit: 1,
                 buffer: null,
@@ -159,6 +219,12 @@ Future<void> _capture(
               _agentId,
             ).overrideWith((ref) async => {}),
             agentReportProvider(_agentId).overrideWith((ref) async => report),
+            // Nothing learned yet — without this the panel has no store to
+            // read and the capture shows its load error.
+            agentKnowledgeProvider(_agentId).overrideWith(
+              (ref) async =>
+                  const AgentKnowledgeView(confirmed: [], proposed: []),
+            ),
             agentStateProvider(_agentId).overrideWith((ref) async => state),
           ],
         ),
@@ -171,7 +237,9 @@ Future<void> _capture(
   final theme = brightness == Brightness.dark ? 'dark' : 'light';
   await captureScreenshot(
     tester,
-    '${device.name}_${companion ? 'companion' : 'badge'}_$theme',
+    journal
+        ? 'journal_report_${device.name}_$theme'
+        : '${device.name}_${companion ? 'companion' : 'badge'}_$theme',
     subdir: _subdir,
   );
 }
@@ -204,6 +272,16 @@ void main() {
           );
         });
       }
+      final theme = brightness == Brightness.dark ? 'dark' : 'light';
+      testWidgets('${device.name} journal report $theme', (tester) async {
+        await _capture(
+          tester,
+          device: device,
+          brightness: brightness,
+          companion: false,
+          journal: true,
+        );
+      });
     }
   }
 }

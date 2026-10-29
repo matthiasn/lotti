@@ -8,6 +8,7 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,6 +34,7 @@ void main() {
   late MockAgentSyncService sync;
   late MockDomainLogger logger;
   late List<String> prompts;
+  late List<String?> systemMessages;
   late List<String> scripted;
   late List<AgentDomainEntity> written;
 
@@ -77,6 +79,7 @@ void main() {
     sync = MockAgentSyncService();
     logger = MockDomainLogger();
     prompts = [];
+    systemMessages = [];
     scripted = [];
     written = [];
 
@@ -96,6 +99,9 @@ void main() {
       ),
     ).thenAnswer((invocation) {
       prompts.add(invocation.positionalArguments.first as String);
+      systemMessages.add(
+        invocation.namedArguments[#systemMessage] as String?,
+      );
       return streamOf(scripted.removeAt(0));
     });
 
@@ -112,18 +118,21 @@ void main() {
     domainLogger: logger,
   );
 
-  Future<GoalCheckInSummary?> compact({String entryId = 'audio-1'}) =>
-      compactor().compact(
-        agentId: 'goal-1',
-        entryId: entryId,
-        recordedAt: recordedAt,
-        transcript:
-            'Skipped the lunch walk, calls ran over. I will take the long '
-            'route home instead.',
-        goalStatement: 'Walk on five days a week.',
-        model: 'test-model',
-        provider: provider,
-      );
+  Future<GoalCheckInSummary?> compact({
+    String entryId = 'audio-1',
+    GoalCheckInWeight weight = GoalCheckInWeight.context,
+  }) => compactor().compact(
+    weight: weight,
+    agentId: 'goal-1',
+    entryId: entryId,
+    recordedAt: recordedAt,
+    transcript:
+        'Skipped the lunch walk, calls ran over. I will take the long '
+        'route home instead.',
+    goalStatement: 'Walk on five days a week.',
+    model: 'test-model',
+    provider: provider,
+  );
 
   test('distills the structured slots the coaching turns on', () async {
     scripted = [
@@ -141,6 +150,36 @@ void main() {
     // should keep different things.
     expect(prompts.single, contains('Walk on five days a week.'));
     expect(prompts.single, contains('Skipped the lunch walk'));
+  });
+
+  test('a goal whose check-ins are its substance keeps what was said, and '
+      'fingerprints its summaries apart from the context reading', () async {
+    const transcript =
+        'Skipped the lunch walk, calls ran over. I will take the long '
+        'route home instead.';
+    scripted = [_fullSlotResponse, _fullSlotResponse];
+
+    final context = await compact();
+    final substance = await compact(weight: GoalCheckInWeight.substance);
+
+    expect(systemMessages.first, contains('Keep only what matters to THIS'));
+    expect(
+      systemMessages.last,
+      allOf(
+        contains('ARE its substance'),
+        contains('up to five sentences'),
+        contains('themes, insights, decisions'),
+        isNot(contains('Keep only what matters to THIS')),
+      ),
+    );
+    // The context reading hashes the bare words, as every summary stored
+    // before weights existed did, so no other goal recompacts.
+    expect(context!.sourceDigest, goalCheckInSourceDigest(transcript));
+    expect(
+      substance!.sourceDigest,
+      goalCheckInSourceDigest(transcript, weight: GoalCheckInWeight.substance),
+    );
+    expect(substance.sourceDigest, isNot(context.sourceDigest));
   });
 
   test('is keyed by (agent, entry) so a retry converges', () async {

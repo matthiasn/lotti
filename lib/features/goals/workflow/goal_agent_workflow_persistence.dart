@@ -15,6 +15,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
     bool userRequestedAd = false,
     String? adCreationDiscriminator,
     String? replyToMessageId,
+    List<String> checkInsReflected = const [],
   }) async {
     final factsReference = evaluationReference ?? now;
     final reportId = strategy.hasReport ? GoalAgentWorkflow._uuid.v4() : null;
@@ -190,6 +191,10 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
               GoalReportProvenanceKeys.sections: ?_sanitizeReportSections(
                 strategy.reportSections,
               ),
+              // What the reflection had in front of it, so the next wake can
+              // tell which of the user's words this report never answered.
+              if (checkInsReflected.isNotEmpty)
+                GoalReportProvenanceKeys.checkInsReflected: checkInsReflected,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },

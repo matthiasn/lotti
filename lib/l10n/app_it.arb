@@ -3645,6 +3645,7 @@
   "goalReportSectionChange": "Ultimo cambiamento",
   "goalReportSectionCoverage": "Copertura dei dati",
   "goalReportSectionNext": "Prossimi passi",
+  "goalReportSectionReflection": "Dai tuoi check-in",
   "goalReportSectionStanding": "A che punto sei",
   "goalReportSectionWindow": "La finestra più ampia",
   "goalTodayBriefingNext": "Prossimo: {step}",

@@ -10,7 +10,9 @@ import 'package:lotti/services/db_notification.dart';
 /// **Stale, not a wake.** Three check-ins in one morning would otherwise be
 /// three inference runs. Marking the report stale lets the existing cadence —
 /// or an explicit "Update now" — consume everything the user said at once,
-/// which is both cheaper and a better read.
+/// which is both cheaper and a better read. A goal measured by its check-ins
+/// is woken anyway, by its signal subscription rather than by this: Phase A
+/// queues one coalesced refresh for a write to its goal row (ADR 0143).
 ///
 /// Listens to the journal's update stream rather than owning a poll: a
 /// recording arrives, and later its transcript lands as a second update to the

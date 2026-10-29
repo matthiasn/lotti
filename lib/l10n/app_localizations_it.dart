@@ -8525,6 +8525,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalReportSectionNext => 'Prossimi passi';
 
   @override
+  String get goalReportSectionReflection => 'Dai tuoi check-in';
+
+  @override
   String get goalReportSectionStanding => 'A che punto sei';
 
   @override

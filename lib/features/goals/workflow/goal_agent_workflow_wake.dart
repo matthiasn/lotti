@@ -180,6 +180,42 @@ extension _GoalWakePhases on GoalAgentWorkflow {
 
   /// The FACTS block this wake sends: the rendered facts, then the pending
   /// message and a note for each explicit request the user made.
+  /// The `charter` FACTS section, or null for a goal without one.
+  ///
+  /// Contained like user voice: the charter shapes coaching, but the wake is
+  /// accountable to the measured FACTS, so a charter that cannot be read
+  /// costs this wake its charter and is logged — never the wake itself.
+  Future<Map<String, Object?>?> _charterFacts(String agentId) async {
+    final reader = _charterReader;
+    if (reader == null) return null;
+    try {
+      return goalCharterFacts(await reader(agentId));
+    } catch (error, stackTrace) {
+      logError(
+        'goal charter unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// The `knowledge` FACTS section, or null for a goal with no confirmed
+  /// facts. Contained like the charter: unreadable knowledge costs this wake
+  /// its knowledge and is logged, never the wake.
+  Future<Map<String, Object?>?> _knowledgeFacts(String agentId) async {
+    try {
+      return goalKnowledgeFacts(await _knowledge.activeFor(agentId));
+    } catch (error, stackTrace) {
+      logError(
+        'goal knowledge unavailable for this wake',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   Future<String> _composeFactsBlock({
     required GoalSpecVersionEntity version,
     required GoalWakeFacts facts,
@@ -190,10 +226,11 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required String? pendingUserMessage,
     required List<GoalChatHistoryEntry> recentDialogue,
     required List<Map<String, Object?>> userVoice,
-    required bool reportRefresh,
+    required GoalReportRefreshCause refreshCause,
     required bool userRequestedReport,
     required bool userRequestedAd,
     bool dailyBriefing = false,
+    int newCheckInsSinceLastReport = 0,
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
     Map<String, Object?>? knowledge,
@@ -213,6 +250,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       userVoice: userVoice,
       criterionNames: await _criterionNames(version.criteria),
       dailyBriefing: dailyBriefing,
+      newCheckInsSinceLastReport: newCheckInsSinceLastReport,
       previousBriefing: previousBriefing,
       charter: charter,
       knowledge: knowledge,
@@ -223,18 +261,18 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     if (dailyBriefing) {
       factsBlock = '$factsBlock\n\n$goalDailyBriefingInstruction';
     }
-    if (reportRefresh) {
-      factsBlock =
-          '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER WATCHED '
-          'EVIDENCE CHANGED. Update the standing report from the '
-          'authoritative FACTS.';
+    // Only the cause that applies: a wake Phase A armed is not a request
+    // from the user, and the briefing already says why it reports.
+    switch (refreshCause) {
+      case GoalReportRefreshCause.userRequested:
+        factsBlock = '$factsBlock\n\n$goalUserRefreshInstruction';
+      case GoalReportRefreshCause.automatic when !dailyBriefing:
+        factsBlock = '$factsBlock\n\n$goalAutomaticRefreshInstruction';
+      case GoalReportRefreshCause.automatic || GoalReportRefreshCause.none:
+        break;
     }
     if (userRequestedReport) {
-      factsBlock =
-          '$factsBlock\n\nUSER EXPLICITLY ASKED FOR THE STANDING REPORT TO '
-          'CHANGE. Call update_goal_report in this turn with the full '
-          'rewritten report honouring their instruction; replying without it '
-          'leaves the report they complained about untouched.';
+      factsBlock = '$factsBlock\n\n$goalUserReportRequestInstruction';
     }
     if (userRequestedAd) {
       factsBlock =
@@ -257,6 +295,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required DateTime reference,
     required bool overdueEscalation,
     required String? userMessage,
+    bool requireReflection = false,
   }) {
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
@@ -291,6 +330,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       ),
       memorySearcher: _memorySearch.forAgent(agentId),
       userMessage: userMessage,
+      requireReflection: requireReflection,
     );
   }
 

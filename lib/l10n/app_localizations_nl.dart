@@ -8447,6 +8447,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalReportSectionNext => 'Wat nu';
 
   @override
+  String get goalReportSectionReflection => 'Uit je check-ins';
+
+  @override
   String get goalReportSectionStanding => 'Hoe het ervoor staat';
 
   @override

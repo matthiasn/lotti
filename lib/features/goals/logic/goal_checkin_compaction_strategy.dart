@@ -12,9 +12,10 @@ import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 /// The seam the compaction evaluation measures across: every strategy reads
 /// the same [GoalCheckInSummary] list and emits entries for the same FACTS
 /// slot, so swapping the mechanism changes nothing else about a wake. The
-/// production wake uses [TruncatingCheckInCompaction]; the other two exist so
-/// the evaluation can hold the uncompacted history up as the oracle and
-/// measure a hierarchical candidate against it.
+/// production wake uses [HierarchicalCheckInCompaction] when a digest service
+/// is wired and falls back to [TruncatingCheckInCompaction] without one or
+/// when digesting fails; [FullContextCheckInCompaction] exists so the
+/// evaluation can hold the uncompacted history up as the oracle.
 abstract interface class GoalCheckInCompactionStrategy {
   /// Stable identifier, used as the arm name in evaluation reports.
   String get id;

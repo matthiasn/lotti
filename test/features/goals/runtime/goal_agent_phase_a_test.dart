@@ -805,6 +805,124 @@ void main() {
     expect(staleCalls, isEmpty);
   });
 
+  group("a write to the goal's own row", () {
+    const goalRow = 'goal-row';
+    final journalVersion = (specVersion as GoalSpecVersionEntity).copyWith(
+      criteria: const GoalCriterion.checkInTime(
+        criterionId: 'journal',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetMinutes: 70,
+      ),
+    );
+    final journalSignals = GoalSignalWindow(
+      checkInDailyMinutes: {
+        for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 12,
+      },
+    );
+
+    /// Runs one tick over a register that already states exactly what this
+    /// tick derives — nothing numeric changed, as when a transcript lands
+    /// after the recording's minutes were counted.
+    Future<({List<String> refreshes, List<String> stale})> tick({
+      required GoalSpecVersionEntity version,
+      required Set<String> triggerTokens,
+    }) async {
+      when(
+        () => repository.getEntity(goalSpecHeadId(agentId)),
+      ).thenAnswer((_) async => specHead);
+      when(
+        () => repository.getEntity('$agentId:spec-v1'),
+      ).thenAnswer((_) async => version);
+      final tier = GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeSignalReader(journalSignals),
+        goalEntryIdFor: (_) => goalRow,
+        onReportRefreshNeeded: (id) async => refreshRequests.add(id),
+        onReportStale: (id) async => events.add('stale:$id'),
+      );
+      final derivation = await withClock(
+        fixedClock,
+        () => tier.deriveWakeFacts(
+          agentId: agentId,
+          version: version,
+          now: now,
+          includeTimeEntryEvidence: false,
+        ),
+      );
+      final facts = derivation.facts;
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-08'),
+          agentId: agentId,
+          periodKey: '2026-08-08',
+          trackStatus: facts.trackStatus,
+          attainment: facts.evaluation.attainment,
+          dataCoverage: facts.evaluation.dataCoverage,
+          satisfied: facts.evaluation.satisfied,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: DateTime(2026, 8, 8, 6),
+          updatedAt: DateTime(2026, 8, 8, 6),
+          vectorClock: null,
+          criterionResults: [
+            for (final result in facts.evaluation.results.values)
+              GoalCriterionProgress(
+                criterionId: result.criterionId,
+                actual: result.actual,
+                target: result.target,
+                ratio: result.ratio,
+                satisfied: result.satisfied,
+                sampleCount: result.sampleCount,
+                paceFeasible: result.paceFeasible,
+              ),
+          ],
+        ),
+      );
+      await withClock(
+        fixedClock,
+        () => tier.execute(
+          agentIdentity: identity,
+          runKey: 'run-1',
+          triggerTokens: triggerTokens,
+          threadId: 'thread-1',
+        ),
+      );
+      return (
+        refreshes: [...refreshRequests],
+        stale: [
+          for (final event in events)
+            if (event.startsWith('stale:')) event,
+        ],
+      );
+    }
+
+    test('on a goal measured by its check-ins refreshes the report even when '
+        'no number moved — the words are the substance', () async {
+      final result = await tick(
+        version: journalVersion,
+        triggerTokens: const {goalRow},
+      );
+
+      expect(result.refreshes, [agentId]);
+      expect(result.stale, ['stale:$agentId']);
+    });
+
+    test('is the €0 no-op it always was without the row in the trigger, or '
+        'on a goal not measured by check-ins', () async {
+      for (final (version, tokens) in [
+        (journalVersion, const {'other'}),
+        (specVersion, const {goalRow}),
+      ]) {
+        final result = await tick(version: version, triggerTokens: tokens);
+        expect(result.refreshes, isEmpty);
+        expect(result.stale, isEmpty);
+      }
+    });
+  });
+
   test('a revision landing mid-wake fences the register AND the '
       'escalation — no v1 row overwrites the day under v2', () async {
     stubSpec();

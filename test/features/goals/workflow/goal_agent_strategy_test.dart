@@ -1981,4 +1981,105 @@ void main() {
       expect(strategy.unresolvedRejectedTools, isEmpty);
     });
   });
+
+  group('the reflection on unreflected check-ins', () {
+    GoalAgentStrategy reflecting({required bool required}) => GoalAgentStrategy(
+      domainLogger: domainLogger,
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      requireReflection: required,
+    );
+
+    Map<String, dynamic> report({String reflection = ''}) => {
+      'status': 'onTrack',
+      'oneLiner': 'Five check-ins this week.',
+      'report': {
+        'tldr': 'The question moved from whether to go to when.',
+        'reflection': reflection,
+        'currentPeriod': "Today's check-in is in.",
+        'rollingWindow': '73 minutes over the last 7 days.',
+        'latestChange': '',
+        'coverage': '',
+        'nextActions': {'now': <Object>[], 'later': <Object>[]},
+      },
+    };
+
+    Future<GoalAgentStrategy> submit(
+      GoalAgentStrategy target,
+      Map<String, dynamic> args,
+    ) async {
+      await target.processToolCalls(
+        toolCalls: [
+          _call(name: GoalAgentToolNames.updateGoalReport, args: args),
+        ],
+        manager: manager,
+      );
+      return target;
+    }
+
+    test('is refused empty when FACTS carry check-ins the report has not '
+        'answered, and the rejection says why', () async {
+      final target = await submit(reflecting(required: true), report());
+
+      expect(target.hasReport, isFalse);
+      expect(
+        rejection(),
+        allOf(contains('sinceLastReport'), contains('reflection')),
+      );
+    });
+
+    test('is accepted when it engages, and leads the composed body', () async {
+      final target = await submit(
+        reflecting(required: true),
+        report(reflection: 'You said the ice shelf feels exposed.'),
+      );
+
+      expect(target.hasReport, isTrue);
+      expect(
+        target.reportContent,
+        startsWith('You said the ice shelf feels exposed.'),
+      );
+      expect(
+        target.reportSections?['reflection'],
+        'You said the ice shelf feels exposed.',
+      );
+    });
+
+    test('may stay empty on a wake with nothing new to answer', () async {
+      final target = await submit(reflecting(required: false), report());
+
+      expect(target.hasReport, isTrue);
+      expect(target.reportSections?.containsKey('reflection'), isFalse);
+    });
+
+    test('is judged with the other rules in one rejection, even when the '
+        'strict parser refused the report', () async {
+      final incomplete = report();
+      (incomplete['report'] as Map<String, dynamic>).remove('rollingWindow');
+      final target = await submit(reflecting(required: true), incomplete);
+
+      expect(target.hasReport, isFalse);
+      final error = rejection();
+      expect(error, contains('broke 2 rules'));
+      expect(error, contains('sinceLastReport'));
+    });
+
+    test(
+      'is prose like any other slot: a status token in it is refused',
+      () async {
+        final target = await submit(
+          reflecting(required: false),
+          report(reflection: 'Your check-ins read as onTrack to me.'),
+        );
+
+        // `onTrack` is lower camel case but not all lowercase, so it counts as
+        // an unmistakable field value.
+        expect(target.hasReport, isFalse);
+        expect(rejection(), contains('Your check-ins read as onTrack to me.'));
+      },
+    );
+  });
 }

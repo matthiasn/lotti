@@ -129,6 +129,12 @@ instead of sitting under it.
 Asking the agent in chat to change its report — shorter, sectioned, less
 repetitive — rewrites the standing report itself rather than only answering in
 chat, and an explicit refusal to change it is respected.
+The report answers what the user said: a "From your check-ins" reflection
+sits with the summary, and a wake that has check-ins the report never
+answered must fill it. For a goal measured by its check-ins — a journal —
+they are compacted for what they say rather than that they happened, and a
+transcript landing after its recording refreshes the report minutes later
+(ADR 0143).
 Signal charts carry one legend entry per mark drawn, each with its threshold
 as a quiet annotation, and tooltips name the day once above their values.
 A dimension with no readings shows no plot rather than an empty frame, and the

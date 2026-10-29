@@ -71,6 +71,7 @@ class GoalFactsRenderer {
     List<Map<String, Object?>> userVoice = const [],
     Map<String, String> criterionNames = const {},
     bool dailyBriefing = false,
+    int newCheckInsSinceLastReport = 0,
     Map<String, Object?>? previousBriefing,
     Map<String, Object?>? charter,
     Map<String, Object?>? knowledge,
@@ -221,10 +222,16 @@ class GoalFactsRenderer {
         },
       'reporting': {
         // A new period without its report is a material change on its own:
-        // the day's briefing is due even when the status held.
+        // the day's briefing is due even when the status held. So is the
+        // user saying something the report has not answered: for a goal whose
+        // check-ins are its substance, that is the whole point of a report.
         'materialChangeSinceLastReport':
-            facts.statusTransitioned || dailyBriefing,
+            facts.statusTransitioned ||
+            dailyBriefing ||
+            newCheckInsSinceLastReport > 0,
         'lastReportStatus': facts.previousStatus?.name,
+        if (newCheckInsSinceLastReport > 0)
+          'newCheckInsSinceLastReport': newCheckInsSinceLastReport,
         if (dailyBriefing) 'dailyBriefing': true,
         'previousBriefing': ?previousBriefing,
       },

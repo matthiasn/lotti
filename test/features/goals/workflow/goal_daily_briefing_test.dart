@@ -197,4 +197,17 @@ void main() {
     expect(goalDailyBriefingInstruction, contains('nextSteps'));
     expect(goalDailyBriefingReportInstruction, contains('update_goal_report'));
   });
+
+  test("the briefing grounds next steps in the user's own words too, and "
+      'answers them in the reflection', () {
+    expect(
+      goalDailyBriefingInstruction,
+      allOf(
+        contains('charter'),
+        contains('knowledge'),
+        contains('In reflection, engage with what the user said'),
+      ),
+    );
+    expect(goalDailyBriefingReportInstruction, contains('reflection'));
+  });
 }

@@ -3645,6 +3645,7 @@
   "goalReportSectionChange": "Senaste förändringen",
   "goalReportSectionCoverage": "Datatäckning",
   "goalReportSectionNext": "Nästa steg",
+  "goalReportSectionReflection": "Från dina avstämningar",
   "goalReportSectionStanding": "Hur det ligger till",
   "goalReportSectionWindow": "Det bredare fönstret",
   "goalTodayBriefingNext": "Nästa: {step}",

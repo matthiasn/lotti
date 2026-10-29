@@ -3300,6 +3300,7 @@
   "goalReportSectionChange": "Último cambio",
   "goalReportSectionCoverage": "Cobertura de datos",
   "goalReportSectionNext": "Lo siguiente",
+  "goalReportSectionReflection": "De tus registros",
   "goalReportSectionStanding": "Cómo va",
   "goalReportSectionWindow": "La ventana más amplia",
   "goalTodayBriefingNext": "Siguiente: {step}",

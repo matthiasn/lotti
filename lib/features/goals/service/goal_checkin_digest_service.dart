@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -33,9 +34,18 @@ String goalCheckInDigestId(String agentId, String periodLabel) =>
 /// Fingerprint of what a span digest was written from: its layer and every
 /// member summary's identity and words. A check-in that syncs in late, a
 /// re-transcription, or a span ageing from monthly to quarterly all change
-/// it, and the digest is rewritten instead of standing stale.
-String goalCheckInDigestSourceKey(GoalCheckInDigestRequest request) {
-  final buffer = StringBuffer(request.layer.name);
+/// it, and the digest is rewritten instead of standing stale. So does the
+/// [weight] the digest is written for: it decides what the digest keeps.
+/// [GoalCheckInWeight.context] leaves the key as it always was, so no other
+/// goal's stored digests are rewritten.
+String goalCheckInDigestSourceKey(
+  GoalCheckInDigestRequest request, {
+  GoalCheckInWeight weight = GoalCheckInWeight.context,
+}) {
+  final buffer = StringBuffer(switch (weight) {
+    GoalCheckInWeight.context => request.layer.name,
+    GoalCheckInWeight.substance => '${weight.name}:${request.layer.name}',
+  });
   for (final c in request.checkIns) {
     buffer
       ..write('\n')
@@ -141,6 +151,20 @@ class GoalCheckInDigestService {
       'repetition. Write in plain prose within the word limit given, in the '
       'language the person spoke. Never infer, advise or judge — record.';
 
+  /// For a goal whose check-ins are its substance, where there are no
+  /// numbers to follow and what was said is the record worth keeping.
+  static const String _substanceSystemMessage =
+      "You condense a span of a person's check-ins on a goal whose check-ins "
+      'ARE its substance — a journal, a reflective practice — into a faithful '
+      'digest that a coach will read months or years later instead of the '
+      'originals. Preserve, with dates where they were given: the themes they '
+      'kept returning to; insights, decisions and questions they raised; how '
+      'their thinking or mood moved over the span; every commitment made and '
+      'whether it was kept; setbacks and life changes; anything that changed '
+      'about the goal itself. Drop routine repetition. Write in plain prose '
+      'within the word limit given, in the language the person used. Never '
+      'infer, advise or judge — record.';
+
   /// The writer for one wake of [agentId].
   GoalCheckInDigestWriter forWake({
     required String agentId,
@@ -148,6 +172,7 @@ class GoalCheckInDigestService {
     required String model,
     required AiConfigInferenceProvider provider,
     required bool allowInference,
+    GoalCheckInWeight weight = GoalCheckInWeight.context,
   }) => _WakeDigestWriter(
     service: this,
     agentId: agentId,
@@ -155,6 +180,7 @@ class GoalCheckInDigestService {
     model: model,
     provider: provider,
     allowInference: allowInference,
+    weight: weight,
   );
 
   Future<GoalCheckInDigest?> _stored(String agentId, String periodLabel) async {
@@ -208,11 +234,15 @@ class GoalCheckInDigestService {
     required String model,
     required AiConfigInferenceProvider provider,
     required GoalCheckInDigestRequest request,
+    required GoalCheckInWeight weight,
   }) async {
     final prompt = _prompt(goalStatement, request);
     return _inference.generateText(
       prompt: prompt,
-      systemMessage: _systemMessage,
+      systemMessage: switch (weight) {
+        GoalCheckInWeight.context => _systemMessage,
+        GoalCheckInWeight.substance => _substanceSystemMessage,
+      },
       model: model,
       provider: provider,
       temperature: _temperature,
@@ -270,6 +300,7 @@ class _WakeDigestWriter implements GoalCheckInDigestWriter {
     required this.model,
     required this.provider,
     required this.allowInference,
+    required this.weight,
   });
 
   final GoalCheckInDigestService service;
@@ -278,11 +309,12 @@ class _WakeDigestWriter implements GoalCheckInDigestWriter {
   final String model;
   final AiConfigInferenceProvider provider;
   final bool allowInference;
+  final GoalCheckInWeight weight;
   int _written = 0;
 
   @override
   Future<String> write(GoalCheckInDigestRequest request) async {
-    final sourceKey = goalCheckInDigestSourceKey(request);
+    final sourceKey = goalCheckInDigestSourceKey(request, weight: weight);
     GoalCheckInDigest? stored;
     try {
       stored = await service._stored(agentId, request.periodLabel);
@@ -311,6 +343,7 @@ class _WakeDigestWriter implements GoalCheckInDigestWriter {
         model: model,
         provider: provider,
         request: request,
+        weight: weight,
       );
       if (text.isEmpty) {
         throw const FormatException('check-in digest returned no text');

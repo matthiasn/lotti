@@ -3645,6 +3645,7 @@
   "goalReportSectionChange": "Seneste ændring",
   "goalReportSectionCoverage": "Datadækning",
   "goalReportSectionNext": "Hvad nu",
+  "goalReportSectionReflection": "Fra dine check-ins",
   "goalReportSectionStanding": "Sådan står det",
   "goalReportSectionWindow": "Det bredere vindue",
   "goalTodayBriefingNext": "Næste: {step}",

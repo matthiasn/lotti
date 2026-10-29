@@ -89,6 +89,29 @@ class _GoalReportCardState extends State<_GoalReportCard>
             ),
           ),
         ),
+        // What the user said, answered: with the summary rather than behind
+        // Show more, and above what comes next. It is the one part of the
+        // report written about the person's own words instead of the
+        // numbers — on a journal goal, the part they came for.
+        if (_reflectionOf(sections) case final reflection?) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.goalReportSectionReflection,
+            key: const ValueKey('goal-report-reflection-heading'),
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
+          SelectionArea(
+            child: AgentMarkdownView(
+              reflection,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+          ),
+        ],
         // The actions sit with the summary, not behind Show more. Inside
         // the expanded body they were reachable only by a tap most readers
         // never make — the one part of a standing report that asks
@@ -347,6 +370,18 @@ List<String>? _actionsOf(Map<String, Object?>? sections) {
           text.trim(),
   ];
   return actions.isEmpty ? null : actions;
+}
+
+/// The report's reflection on what the user said, or null when it has none.
+///
+/// Read by the card directly, like the actions, so it sits with the summary;
+/// [_GoalReportSections] never lists it, so it is not repeated below.
+String? _reflectionOf(Map<String, Object?>? sections) {
+  if (sections?[GoalReportSectionKeys.reflection] case final String text
+      when text.trim().isNotEmpty) {
+    return text.trim();
+  }
+  return null;
 }
 
 /// The structured sections a report carries, or null when it has none —
