@@ -65,11 +65,12 @@ Five behaviours, one scenario catalog
    calls. This is the cheapest discriminator between models that follow
    policy and models that churn; the task-agent evals found 4/5 models
    churn without it being tested.
-5. **The user's own words** (ADR 0143) — a journal goal's report must engage
+5. **The user's own words** (ADRs 0141 and 0143) — a journal goal's report must engage
    with check-ins the standing report never answered, in its `reflection`
    slot (`journal_new_checkins_reflected`, P18); the morning briefing must
-   follow up a commitment the user made (`journal_briefing_follows_commitment`,
-   P19); a fact stated in chat is remembered in the user's words
+   follow up a commitment the user made in its next steps, not merely name it
+   in the reflection (`journal_briefing_follows_commitment`, P19); a fact
+   stated in chat (ADR 0141) is remembered in the user's words
    (`journal_remember_from_chat`, P20); a question about the past beyond
    `userVoice` is a recall, not a guess (`journal_recall_older_entry`, P21);
    and a wake with nothing new stays quiet even with the user's words in

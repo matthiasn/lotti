@@ -93,6 +93,46 @@ void main() {
       );
     });
 
+    test('a briefing follows up a commitment in its next steps — naming it '
+        'in the reflection alone fails', () {
+      GoalAgentEvalFailureCategory classify({required List<String> later}) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('journal_briefing_follows_commitment'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                jsonEncode({
+                  'status': 'onTrack',
+                  'oneLiner': 'The ridge is the question now.',
+                  'report': {
+                    'tldr': 'Another full week of journaling.',
+                    'reflection':
+                        'You committed to scout the north ridge on Saturday '
+                        'and keep weighing the colony move.',
+                    'currentPeriod': "Today's entry is in.",
+                    'rollingWindow': '84 of 70 minutes over 7 days.',
+                    'latestChange': '',
+                    'coverage': '',
+                    'nextActions': {'now': <Object?>[], 'later': later},
+                  },
+                }),
+              ),
+            ],
+            assistantContent: '',
+          );
+
+      expect(
+        classify(later: const ['Keep journaling every evening.']),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      expect(
+        classify(
+          later: const ['Scout the north ridge with the two elders Saturday.'],
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('a remembered fact is held to the parser production runs', () {
       GoalAgentEvalFailureCategory classifyFact(String arguments) =>
           classifyGoalAgentResult(

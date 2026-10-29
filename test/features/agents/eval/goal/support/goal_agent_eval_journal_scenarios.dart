@@ -292,11 +292,13 @@ final List<GoalAgentEvalScenario> goalAgentJournalEvalScenarios = [
       GoalReportSectionKeys.reflection: [
         ['ridge', 'move', 'colony'],
       ],
+      // In the next steps themselves: naming the commitment in the
+      // reflection alone is not following it up.
+      GoalReportSectionKeys.nextActions: [
+        ['scout'],
+        ['saturday', 'ridge'],
+      ],
     },
-    requiredReportTermGroups: const [
-      ['scout'],
-      ['saturday'],
-    ],
   ),
   GoalAgentEvalScenario(
     id: 'journal_quiet_wake_stays_quiet',

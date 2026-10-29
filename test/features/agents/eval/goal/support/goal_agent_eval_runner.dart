@@ -653,6 +653,12 @@ String? _structuredReportSectionText(
     value.latestChange,
   (final GoalStructuredReport value, GoalReportSectionKeys.coverage) =>
     value.coverage,
+  // Every next step the model wrote, current and later alike — the slot a
+  // follow-up is scored in, whatever the deterministic gate later keeps.
+  (final GoalStructuredReport value, GoalReportSectionKeys.nextActions) => [
+    for (final item in value.now) item.action,
+    ...value.later,
+  ].join('\n'),
   _ => null,
 };
 
