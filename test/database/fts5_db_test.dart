@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/search_hit.dart';
 import 'package:lotti/database/title_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -385,6 +386,27 @@ void main() {
       ]);
 
       expect(await search('krill run'), ['title', 'newer-text', 'older-text']);
+    });
+
+    test('a hit carries its type and a snippet of its best column, the '
+        'matched words marked', () async {
+      await fts.indexEntities([
+        _task('task-1', 'Feeder rota', body: 'refill the krill tubs at dawn'),
+      ]);
+
+      final hit = (await fts.matchHits('krill')).single;
+
+      expect(hit.entityId, 'task-1');
+      expect(hit.type, 'Task');
+      expect(
+        snippetSpans(hit.snippet),
+        [
+          (text: 'refill the ', matched: false),
+          (text: 'krill', matched: true),
+          (text: ' tubs at dawn', matched: false),
+        ],
+        reason: 'the body matched, so the snippet is from the body',
+      );
     });
 
     test('the last word matches as a prefix while it is typed', () async {

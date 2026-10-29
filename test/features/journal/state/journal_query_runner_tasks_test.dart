@@ -286,6 +286,112 @@ void main() {
     });
   });
 
+  group('runQuery - best match while searching', () {
+    final first = hMakeTask(id: 'first', createdAt: hTestDate);
+    final second = hMakeTask(id: 'second', createdAt: hTestDate);
+    final third = hMakeTask(id: 'third', createdAt: hTestDate);
+
+    void taskQueryAnswers(List<JournalEntity> rows) =>
+        when(
+          () => mockJournalDb.getTasks(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          // Like the database: rows from the offset on, none past the end.
+          (invocation) async =>
+              rows.skip(invocation.namedArguments[#offset] as int).toList(),
+        );
+
+    test('the matches come back in the order the search ranked them, from '
+        'one task query with room for all of them', () async {
+      // The task query answers in its own (priority) order.
+      taskQueryAnswers([third, first, second]);
+
+      final page = await runner.runQuery(
+        hDefaultParams(showTasks: true, query: 'krill'),
+        0,
+        fullTextMatches: {'first', 'second', 'third'},
+      );
+
+      expect(page.map((t) => t.meta.id), ['first', 'second', 'third']);
+      final asked = verify(
+        () => mockJournalDb.getTasks(
+          ids: captureAny(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+          sortByDate: any(named: 'sortByDate'),
+          limit: captureAny(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).captured;
+      expect(asked, hasLength(2));
+      expect(asked, contains(3));
+      expect(
+        asked,
+        contains(equals(['first', 'second', 'third'])),
+        reason: 'the matches, in their order',
+      );
+    });
+
+    test('the results are one page: the next asks for nothing', () async {
+      taskQueryAnswers([first]);
+
+      final next = await runner.runQuery(
+        hDefaultParams(showTasks: true, query: 'krill'),
+        50,
+        fullTextMatches: {'first'},
+      );
+
+      expect(next, isEmpty);
+      verifyNever(
+        () => mockJournalDb.getTasks(
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+          sortByDate: any(named: 'sortByDate'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      );
+    });
+
+    test(
+      'a project filter still applies, and the ranking survives it',
+      () async {
+        taskQueryAnswers([third, first, second]);
+        when(
+          () => mockJournalDb.getTaskIdsForProjects(any()),
+        ).thenAnswer((_) async => {'first', 'third'});
+
+        final page = await runner.runQuery(
+          hDefaultParams(
+            showTasks: true,
+            query: 'krill',
+            selectedProjectIds: const {'project-1'},
+          ),
+          0,
+          fullTextMatches: {'third', 'second', 'first'},
+        );
+
+        expect(page.map((t) => t.meta.id), ['third', 'first']);
+      },
+    );
+  });
+
   group('runPullRequestSearch', () {
     const link = 'https://github.com/MatthiasN/Lotti/pull/42/files';
     const key = 'matthiasn/lotti#42';
@@ -421,6 +527,7 @@ void main() {
         isEmpty,
       );
       verifyNever(() => anyMatchIds(mockFts5Db));
+      verifyNever(() => anyMatchHits(mockFts5Db));
     });
   });
 

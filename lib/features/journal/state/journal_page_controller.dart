@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
@@ -475,6 +476,7 @@ class JournalPageController extends Notifier<JournalPageState>
     if (pullRequestTasks != null) {
       applyOffset(null);
       _fullTextMatches = {for (final task in pullRequestTasks) task.meta.id};
+      _showTaskSearchHits(const {});
       return pageKey == 0 ? pullRequestTasks : const <JournalEntity>[];
     }
 
@@ -482,16 +484,27 @@ class JournalPageController extends Notifier<JournalPageState>
         params.searchMode == SearchMode.vector &&
         params.query.isNotEmpty &&
         pageKey == 0) {
+      _showTaskSearchHits(const {});
       return _runVectorSearchWithTelemetry(params);
     }
 
-    _fullTextMatches = await _queryRunner.fts5Search(params);
+    final matches = await _queryRunner.fts5Search(params);
+    _fullTextMatches = matches.ids;
+    _showTaskSearchHits(matches.taskHits);
     return _queryRunner.runQuery(
       params,
       pageKey,
       fullTextMatches: _fullTextMatches,
       setPostFilterNextRawOffset: applyOffset,
     );
+  }
+
+  /// Publishes where the live full-text search found each task — the
+  /// snippets the result cards show — and drops them for a lookup or a
+  /// semantic search, which have none.
+  void _showTaskSearchHits(Map<String, TaskSearchHit> hits) {
+    if (mapEquals(state.taskSearchHits, hits)) return;
+    state = state.copyWith(taskSearchHits: hits);
   }
 
   Future<List<JournalEntity>> _runVectorSearchWithTelemetry(

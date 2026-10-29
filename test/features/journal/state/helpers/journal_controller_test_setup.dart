@@ -87,9 +87,7 @@ class JournalControllerTestSetup {
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
 
-    when(
-      () => anyMatchIds(mockFts5Db),
-    ).thenAnswer((_) async => <String>[]);
+    stubFts5Db(mockFts5Db);
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 

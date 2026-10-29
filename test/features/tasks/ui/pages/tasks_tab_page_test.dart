@@ -13,6 +13,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -1817,6 +1819,78 @@ void main() {
       expect(find.byType(ActiveFilterChip), findsNWidgets(2));
       expect(find.text('Custom'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('search results', () {
+    Task withPriority(String id, String title, TaskPriority priority) {
+      final task = TestTaskFactory.create(
+        id: id,
+        title: title,
+        categoryId: 'cat-1',
+        dateFrom: DateTime(2026, 4, 8, 9),
+        dateTo: DateTime(2026, 4, 8, 10),
+      );
+      return task.copyWith(data: task.data.copyWith(priority: priority));
+    }
+
+    setUp(() {
+      pagingController.value = PagingState<int, JournalEntity>(
+        pages: [
+          [
+            withPriority(
+              'low',
+              'Negotiate sardine futures',
+              TaskPriority.p3Low,
+            ),
+            withPriority('high', 'Krill run', TaskPriority.p1High),
+          ],
+        ],
+        keys: const [0],
+        hasNextPage: false,
+      );
+    });
+
+    testWidgets('while a query is typed, the results stand in one section, '
+        'best match first, each with where it matched', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(match: 'krill').copyWith(
+            taskSearchHits: const {
+              'low': TaskSearchHit(
+                taskId: 'low',
+                snippet: 'unlike \uE000krill\uE001, sardines',
+                matchedType: 'JournalEntry',
+              ),
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Results'), findsOneWidget);
+      expect(find.text('P3 Low'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Negotiate sardine futures')).dy,
+        lessThan(tester.getTopLeft(find.text('Krill run')).dy),
+        reason: 'the order the search gave, not the priority order',
+      );
+      expect(
+        find.text('unlike krill, sardines', findRichText: true),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('without a query the chosen sort groups them again', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Results'), findsNothing);
+      expect(find.text('P3 Low'), findsOneWidget);
     });
   });
 

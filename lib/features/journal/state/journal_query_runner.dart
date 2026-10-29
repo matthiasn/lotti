@@ -2,12 +2,13 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
-import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/database/task_search.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
@@ -105,20 +106,29 @@ class JournalQueryRunner {
   // ---------------------------------------------------------------
 
   /// The ids of the entities the full-text query of [params] matches, best
-  /// match first, or none for a blank query.
+  /// match first, or none for a blank query; on the tasks page also where
+  /// each task matched ([taskFullTextHits]).
   ///
   /// The index applies the page's entity types, its category selection and
   /// private mode before its limit, so the matches it keeps are ones the
   /// page can list; the page's other clauses narrow them further.
-  Future<Set<String>> fts5Search(JournalQueryParams params) async {
-    if (params.query.trim().isEmpty) return {};
+  Future<({Set<String> ids, Map<String, TaskSearchHit> taskHits})> fts5Search(
+    JournalQueryParams params,
+  ) async {
+    if (params.query.trim().isEmpty) {
+      return (ids: <String>{}, taskHits: const <String, TaskSearchHit>{});
+    }
     if (params.showTasks) {
-      return (await taskFullTextMatches(
+      final hits = await taskFullTextHits(
         fts5Db: _fts5Db(),
         journalDb: _db,
         query: params.query,
         selectedCategoryIds: params.selectedCategoryIds,
-      )).toSet();
+      );
+      return (
+        ids: {for (final hit in hits) hit.taskId},
+        taskHits: {for (final hit in hits) hit.taskId: hit},
+      );
     }
     final matches = await _fts5Db().matchIds(
       params.query,
@@ -128,7 +138,10 @@ class JournalQueryRunner {
           : params.selectedCategoryIds,
       includePrivate: await _db.getConfigFlag(privateFlag),
     );
-    return matches.toSet();
+    return (
+      ids: matches.toSet(),
+      taskHits: const <String, TaskSearchHit>{},
+    );
   }
 
   /// The entry types [params] selects that the feature flags allow.
@@ -216,6 +229,15 @@ class JournalQueryRunner {
         setPostFilterNextRawOffset?.call(null);
         return const <JournalEntity>[];
       }
+      if (taskIds != null && params.query.trim().isNotEmpty) {
+        return _runBestMatchTaskQuery(
+          params,
+          pageKey,
+          rankedIds: taskIds,
+          starredEntriesOnly: starredEntriesOnly,
+          setPostFilterNextRawOffset: setPostFilterNextRawOffset,
+        );
+      }
       return _runTaskQuery(
         params,
         pageKey,
@@ -261,12 +283,39 @@ class JournalQueryRunner {
     return ids.where(dueIds.contains).toList();
   }
 
+  /// The tasks a search found, best match first, as one page: every list
+  /// clause still applies, through the same task query, but with room for
+  /// all of [rankedIds] (the index's limit bounds them), and the result is
+  /// put back into the index's order — the page's own sort and its sections
+  /// give way to relevance while a search is typed.
+  Future<List<JournalEntity>> _runBestMatchTaskQuery(
+    JournalQueryParams params,
+    int pageKey, {
+    required List<String> rankedIds,
+    required bool starredEntriesOnly,
+    void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
+  }) async {
+    setPostFilterNextRawOffset?.call(null);
+    if (pageKey > 0) return const <JournalEntity>[];
+    final rank = {for (final (index, id) in rankedIds.indexed) id: index};
+    final tasks = await _runTaskQuery(
+      params,
+      0,
+      ids: rankedIds,
+      starredEntriesOnly: starredEntriesOnly,
+      limit: rankedIds.length,
+    );
+    return [...tasks]
+      ..sort((a, b) => rank[a.meta.id]!.compareTo(rank[b.meta.id]!));
+  }
+
   Future<List<JournalEntity>> _runTaskQuery(
     JournalQueryParams params,
     int pageKey, {
     required List<String>? ids,
     required bool starredEntriesOnly,
     void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
+    int limit = pageSize,
   }) async {
     final allCategoryIds = _entitiesCacheService.sortedCategories
         .map((e) => e.id)
@@ -301,7 +350,7 @@ class JournalQueryRunner {
           categoryIds: categoryIds.toList(),
           labelIds: params.selectedLabelIds.toList(),
           priorities: params.selectedPriorities.toList(),
-          limit: pageSize,
+          limit: limit,
           offset: pageKey,
         );
       }
@@ -314,7 +363,7 @@ class JournalQueryRunner {
         labelIds: params.selectedLabelIds.toList(),
         priorities: params.selectedPriorities.toList(),
         sortByDate: sortByDateInDb,
-        limit: pageSize,
+        limit: limit,
         offset: pageKey,
       );
     }
@@ -329,6 +378,7 @@ class JournalQueryRunner {
       agentFilterActive: agentFilterActive,
       projectFilterActive: projectFilterActive,
       setPostFilterNextRawOffset: setPostFilterNextRawOffset,
+      limit: limit,
     );
   }
 
@@ -342,6 +392,7 @@ class JournalQueryRunner {
     required bool agentFilterActive,
     required bool projectFilterActive,
     void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
+    int limit = pageSize,
   }) async {
     final useDueDateSort = params.sortOption == TaskSortOption.byDueDate;
 
@@ -355,10 +406,10 @@ class JournalQueryRunner {
 
     final filtered = <JournalEntity>[];
     var currentOffset = pageKey;
-    const fetchChunk = pageSize;
+    final fetchChunk = limit;
 
     var pageFilled = false;
-    while (!pageFilled && filtered.length < pageSize) {
+    while (!pageFilled && filtered.length < limit) {
       final raw = useDueDateSort
           ? await _db.getTasksSortedByDueDate(
               ids: ids,
@@ -397,7 +448,7 @@ class JournalQueryRunner {
               : !hasLink;
         }
         if (keep) filtered.add(entity);
-        if (filtered.length == pageSize) {
+        if (filtered.length == limit) {
           currentOffset += consumedInChunk;
           pageFilled = true;
           break;
@@ -505,19 +556,21 @@ class JournalQueryRunner {
   // ---------------------------------------------------------------
 }
 
-/// The tasks a full-text [query] matches, best match first, in the categories
+/// The tasks a full-text [query] finds ([searchTasks]: through their own
+/// text or anything belonging to them), best match first, in the categories
 /// [selectedCategoryIds] names (every category when empty) and with private
-/// tasks only while private mode shows them — the restriction the task list
-/// and its due-view counts share, so a count never covers a task the list
+/// ones only while private mode shows them — the search the task list and
+/// its due-view counts share, so a count never covers a task the list
 /// leaves out.
-Future<List<String>> taskFullTextMatches({
+Future<List<TaskSearchHit>> taskFullTextHits({
   required Fts5Db fts5Db,
   required JournalDb journalDb,
   required String query,
   required Set<String> selectedCategoryIds,
-}) async => fts5Db.matchIds(
-  query,
-  types: const {taskEntityTypeName},
+}) async => searchTasks(
+  fts5Db: fts5Db,
+  journalDb: journalDb,
+  query: query,
   categoryIds: selectedCategoryIds.isEmpty ? null : selectedCategoryIds,
   includePrivate: await journalDb.getConfigFlag(privateFlag),
 );

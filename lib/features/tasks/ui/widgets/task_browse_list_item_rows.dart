@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_row_interactions.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_search_snippet.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
@@ -149,6 +151,8 @@ class TaskRowContent extends ConsumerWidget {
     required this.showDueDate,
     required this.showCoverArt,
     required this.showStatus,
+    this.groupedBySort = true,
+    this.searchHit,
     this.vectorDistance,
     this.categoryNameOverride,
     this.categoryIconOverride,
@@ -163,6 +167,14 @@ class TaskRowContent extends ConsumerWidget {
   final bool showDueDate;
   final bool showCoverArt;
   final bool showStatus;
+
+  /// Whether the row sits in a section of [sortOption] (a priority, a date),
+  /// which then states what the row's own chip would. False in search
+  /// results, whose one section states nothing, so every chip shows.
+  final bool groupedBySort;
+
+  /// Where a search found the task, shown under its title.
+  final TaskSearchHit? searchHit;
   final double? vectorDistance;
   final String? categoryNameOverride;
   final IconData? categoryIconOverride;
@@ -205,7 +217,7 @@ class TaskRowContent extends ConsumerWidget {
         categoryIconOverride ?? category?.icon?.iconData ?? LottiIcons.label;
     final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
     final metadata = <Widget>[
-      if (sortOption != TaskSortOption.byPriority)
+      if (!groupedBySort || sortOption != TaskSortOption.byPriority)
         _PriorityMeta(priority: liveTask.data.priority),
       _TrackedDurationMeta(
         taskId: liveTask.meta.id,
@@ -256,6 +268,10 @@ class TaskRowContent extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (searchHit case final hit?) ...[
+                SizedBox(height: tokens.spacing.step2),
+                TaskSearchSnippet(hit: hit),
+              ],
               SizedBox(height: tokens.spacing.step3),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,7 +310,8 @@ class TaskRowContent extends ConsumerWidget {
     final localizations = MaterialLocalizations.of(context);
     final widgets = <Widget>[];
 
-    if (showCreationDate && sortOption != TaskSortOption.byDate) {
+    if (showCreationDate &&
+        (!groupedBySort || sortOption != TaskSortOption.byDate)) {
       widgets.add(
         TaskShowcaseMetaChip(
           icon: LottiIcons.today,
@@ -307,7 +324,7 @@ class TaskRowContent extends ConsumerWidget {
     // date (or its absence), so the footer stays quiet there.
     final showDueFooter =
         showDueDate &&
-        sortOption != TaskSortOption.byDueDate &&
+        (!groupedBySort || sortOption != TaskSortOption.byDueDate) &&
         liveTask.data.status is! TaskDone &&
         liveTask.data.status is! TaskRejected;
     if (showDueFooter) {
@@ -516,6 +533,7 @@ String _sectionTitle(BuildContext context, TaskBrowseSectionKey sectionKey) {
   final materialLocalizations = MaterialLocalizations.of(context);
 
   return switch (sectionKey.kind) {
+    TaskBrowseSectionKind.results => context.messages.tasksSearchResultsSection,
     TaskBrowseSectionKind.createdDate => materialLocalizations.formatMediumDate(
       sectionKey.date!,
     ),

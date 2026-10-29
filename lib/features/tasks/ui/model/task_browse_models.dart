@@ -6,8 +6,10 @@ import 'package:lotti/utils/date_utils_extension.dart';
 /// The category of a section header in the browsable task list. Which kind a
 /// task falls into is determined by the active [TaskSortOption]: created-date
 /// buckets, due-date buckets (today/tomorrow/yesterday/dated/none), or
-/// priority buckets.
+/// priority buckets — or, while a search is typed, the one section of its
+/// results, in the order the search ranked them.
 enum TaskBrowseSectionKind {
+  results,
   createdDate,
   dueDate,
   dueToday,
@@ -54,6 +56,9 @@ class TaskBrowseSectionKey {
   const TaskBrowseSectionKey.noDueDate()
     : this._(kind: TaskBrowseSectionKind.noDueDate);
 
+  const TaskBrowseSectionKey.results()
+    : this._(kind: TaskBrowseSectionKind.results);
+
   const TaskBrowseSectionKey.priority(TaskPriority priority)
     : this._(
         kind: TaskBrowseSectionKind.priority,
@@ -65,6 +70,7 @@ class TaskBrowseSectionKey {
   final TaskPriority? priority;
 
   String get stableKey => switch (kind) {
+    TaskBrowseSectionKind.results => 'results',
     TaskBrowseSectionKind.createdDate => 'created:${date!.ymd}',
     TaskBrowseSectionKind.dueDate => 'due:${date!.ymd}',
     TaskBrowseSectionKind.dueToday => 'due:today',
@@ -99,7 +105,8 @@ class TaskBrowseEntry {
 }
 
 /// Turns a flat, already-sorted [items] list into [TaskBrowseEntry]s annotated
-/// with section boundaries and per-section counts for [sortOption].
+/// with section boundaries and per-section counts for [sortOption] — or, for
+/// [searchResults], all in one results section, kept in their search order.
 ///
 /// Non-task entities are dropped. Section headers are emitted at each boundary;
 /// the count is suppressed for the trailing section when [hasNextPage] is true,
@@ -109,6 +116,7 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
   required TaskSortOption sortOption,
   required DateTime now,
   required bool hasNextPage,
+  bool searchResults = false,
 }) {
   final tasks = items.whereType<Task>().toList(growable: false);
   if (tasks.isEmpty) {
@@ -116,7 +124,11 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
   }
 
   final sectionKeys = tasks
-      .map((task) => _sectionKeyForTask(task, sortOption: sortOption, now: now))
+      .map(
+        (task) => searchResults
+            ? const TaskBrowseSectionKey.results()
+            : _sectionKeyForTask(task, sortOption: sortOption, now: now),
+      )
       .toList(growable: false);
   final counts = <String, int>{};
   for (final sectionKey in sectionKeys) {

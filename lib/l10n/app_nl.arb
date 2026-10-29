@@ -7380,6 +7380,7 @@
   },
   "tasksSearchModeLabel": "Zoeken",
   "tasksSearchNoLinkedTasks": "Geen gekoppelde taken gevonden voor deze pull request.",
+  "tasksSearchResultsSection": "Resultaten",
   "tasksShowCreationDate": "Aanmaakdatum op kaarten tonen",
   "tasksShowDueDate": "Vervallen datum op kaarten tonen",
   "tasksSortByCreationDate": "Aangemaakt",

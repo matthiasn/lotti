@@ -17725,6 +17725,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna attività collegata a questa pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Risultati';
+
+  @override
   String get tasksShowCreationDate => 'Mostra la data di creazione su carte';
 
   @override

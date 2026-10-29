@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 
 part 'journal_page_state.freezed.dart';
 part 'journal_page_state.g.dart';
@@ -119,6 +120,11 @@ abstract class JournalPageState with _$JournalPageState {
     Duration? vectorSearchElapsed,
     @Default(0) int vectorSearchResultCount,
     @Default(<String, double>{}) Map<String, double> vectorSearchDistances,
+
+    /// The tasks the live full-text search found, by task id, with where
+    /// each matched — the snippet its result card shows.
+    @Default(<String, TaskSearchHit>{})
+    Map<String, TaskSearchHit> taskSearchHits,
   }) = _JournalPageState;
 }
 

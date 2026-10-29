@@ -234,9 +234,52 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
           expect(state.pagingController?.value.items, [feed, count]);
           expect(state.pagingController?.value.hasNextPage, isFalse);
           verifyNever(() => anyMatchIds(setup.mockFts5Db, link));
+          verifyNever(() => anyMatchHits(setup.mockFts5Db, link));
         });
       });
     }
+
+    test('a task search publishes where each task matched, and a lookup '
+        'clears it', () {
+      fakeAsync((async) {
+        when(() => anyMatchHits(setup.mockFts5Db, 'krill')).thenAnswer(
+          (_) async => [
+            taskHit('task-feed', snippet: 'the \uE000krill\uE001 tubs'),
+          ],
+        );
+        when(
+          () => setup.mockJournalDb.taskIdsHoldingPullRequest(any()),
+        ).thenAnswer((_) async => <String>{});
+        when(
+          () => setup.mockJournalDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => <JournalEntity>[]);
+        final controller = setup.container.read(
+          journalPageControllerProvider(true).notifier,
+        );
+        settle(async);
+
+        controller.setSearchString('krill');
+        settle(async);
+        expect(
+          setup.container.read(journalPageControllerProvider(true)).taskSearchHits,
+          {
+            'task-feed': const TaskSearchHit(
+              taskId: 'task-feed',
+              snippet: 'the \uE000krill\uE001 tubs',
+              matchedType: 'Task',
+            ),
+          },
+        );
+
+        controller.setSearchString('https://github.com/matthiasn/lotti/pull/1');
+        settle(async);
+        expect(
+          setup.container.read(journalPageControllerProvider(true)).taskSearchHits,
+          isEmpty,
+          reason: 'a pull request lookup has no snippets',
+        );
+      });
+    });
 
     test('empty search string clears match and fullTextMatches', () {
       fakeAsync((async) {

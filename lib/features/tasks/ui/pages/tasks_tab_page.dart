@@ -621,6 +621,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                   sortOption: state.sortOption,
                                   now: clock.now(),
                                   hasNextPage: pagingState.hasNextPage,
+                                  // While a search is typed its results
+                                  // stand in one section, best match first.
+                                  searchResults: state.match.trim().isNotEmpty,
                                 );
                                 final entryIndexByTaskId = <String, int>{
                                   for (var i = 0; i < entries.length; i++)
@@ -704,6 +707,8 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                         child: DetailContentWidth(
                                           child: TaskBrowseListItem(
                                             entry: entry,
+                                            searchHit: state
+                                                .taskSearchHits[item.meta.id],
                                             sortOption: state.sortOption,
                                             showCreationDate:
                                                 state.showCreationDate,

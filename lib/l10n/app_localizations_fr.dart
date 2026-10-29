@@ -17794,6 +17794,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucune tâche liée à cette pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Résultats';
+
+  @override
   String get tasksShowCreationDate =>
       'Afficher la date de création sur les cartes';
 

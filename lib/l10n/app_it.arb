@@ -7381,6 +7381,7 @@
   },
   "tasksSearchModeLabel": "Modalità di ricerca",
   "tasksSearchNoLinkedTasks": "Nessuna attività collegata a questa pull request.",
+  "tasksSearchResultsSection": "Risultati",
   "tasksShowCreationDate": "Mostra la data di creazione su carte",
   "tasksShowDueDate": "Mostrare la data di scadenza sulle carte",
   "tasksSortByCreationDate": "Creato",

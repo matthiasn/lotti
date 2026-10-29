@@ -7380,6 +7380,7 @@
   },
   "tasksSearchModeLabel": "Modo de pesquisa",
   "tasksSearchNoLinkedTasks": "Nenhuma tarefa vinculada a esta pull request.",
+  "tasksSearchResultsSection": "Resultados",
   "tasksShowCreationDate": "Mostrar data de criação nos cartões",
   "tasksShowDueDate": "Mostrar data de vencimento nos cartões",
   "tasksSortByCreationDate": "Criado",

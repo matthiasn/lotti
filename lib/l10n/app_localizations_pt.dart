@@ -17670,6 +17670,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhuma tarefa vinculada a esta pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Resultados';
+
+  @override
   String get tasksShowCreationDate => 'Mostrar data de criação nos cartões';
 
   @override

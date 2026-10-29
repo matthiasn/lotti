@@ -31,6 +31,48 @@ JournalEntity _taskWithDue({
 
 void main() {
   group('buildTaskBrowseEntries', () {
+    test('search results stand in one section, in the order given', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = <JournalEntity>[
+        for (final (index, priority) in [
+          TaskPriority.p3Low,
+          TaskPriority.p0Urgent,
+          TaskPriority.p2Medium,
+        ].indexed)
+          TestTaskFactory.create(
+            id: 'task-$index',
+            title: 'Task $index',
+            dateFrom: now,
+          ).copyWith(
+            data: TestTaskDataFactory.create(
+              title: 'Task $index',
+              dateFrom: now,
+              dateTo: now,
+            ).copyWith(priority: priority),
+          ),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: false,
+        searchResults: true,
+      );
+
+      expect(entries.map((e) => e.task.meta.id), [
+        'task-0',
+        'task-1',
+        'task-2',
+      ]);
+      expect(
+        entries.map((e) => e.sectionKey.kind).toSet(),
+        {TaskBrowseSectionKind.results},
+      );
+      expect(entries.map((e) => e.showSectionHeader), [true, false, false]);
+      expect(entries.first.sectionCount, 3);
+    });
+
     test(
       'groups due-date sort into due buckets and hides partial trailing count',
       () {

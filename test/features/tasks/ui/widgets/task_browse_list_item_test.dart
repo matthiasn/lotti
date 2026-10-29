@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_search_snippet.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -25,6 +27,47 @@ import 'task_browse_list_item_test_helpers.dart';
 void main() {
   setUp(setUpTaskBrowse);
   tearDown(tearDownTestGetIt);
+
+  testWidgets('a search result shows where it matched, and the priority '
+      'chip its section no longer states', (tester) async {
+    final task = TestTaskFactory.create(id: 'krill-run', title: 'Krill run')
+        .copyWith(
+          data: TestTaskDataFactory.create(
+            title: 'Krill run',
+          ).copyWith(priority: TaskPriority.p1High),
+        );
+
+    await pumpTaskBrowseItem(
+      tester,
+      task,
+      sectionKey: const TaskBrowseSectionKey.results(),
+      searchHit: const TaskSearchHit(
+        taskId: 'krill-run',
+        snippet: 'refill the \uE000krill\uE001 tubs',
+        matchedType: 'ChecklistItem',
+      ),
+    );
+
+    expect(find.byType(TaskSearchSnippet), findsOneWidget);
+    expect(
+      find.text('refill the krill tubs', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('P1'), findsOneWidget);
+
+    await pumpTaskBrowseItem(
+      tester,
+      task,
+      sectionKey: const TaskBrowseSectionKey.priority(TaskPriority.p1High),
+    );
+
+    expect(find.byType(TaskSearchSnippet), findsNothing);
+    expect(
+      find.text('P1'),
+      findsNothing,
+      reason: 'a priority section states it already',
+    );
+  });
 
   testWidgets('Right opens the focused task and enters the detail pane', (
     tester,
