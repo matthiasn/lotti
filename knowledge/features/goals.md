@@ -1887,8 +1887,8 @@ that, each keyed on `GoalCheckInWeight.of(criteria)`:
 - **The tail is not widened.** Longer summaries fit fewer check-ins in the
   1,200-token verbatim tail, but the substance digests carry what it drops:
   measured on two journals, the shipped tail recalls 99% of what the full
-  history holds and 2,400- or 3,600-token tails add nothing
-  ([compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md),
+  history holds, and 2,400- or 3,600-token tails show no material gain at
+  three samples per fixture ([compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md),
   fifth run). `goalUserVoiceTokenBudget` stays one value for every weight.
 
 ```mermaid

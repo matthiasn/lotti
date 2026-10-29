@@ -371,11 +371,40 @@ class GoalAgentEvalStrategy extends ConversationStrategy {
     if (request == null) return memorySearchMissingTermsError;
     return formatMemorySearchResult(
       request,
-      memoryHits,
-      hitTokenBudget: goalMemoryHitTokenBudget,
+      goalAgentEvalMemoryMatches(memoryHits, request),
+      // By id gets the recall's whole budget, as in `GoalMemorySearch`.
+      hitTokenBudget: request.ids.isNotEmpty
+          ? goalMemoryResultTokenBudget - goalMemoryRenderReserveTokens
+          : goalMemoryHitTokenBudget,
       totalTokenBudget: goalMemoryResultTokenBudget,
     );
   }
+}
+
+/// The hits production's recall would return for [request]: by id when ids
+/// are given, otherwise every entry whose words contain each query term
+/// (case-insensitive) — `AgentLogCompactor.searchLog`'s rule, which matches
+/// the entry's text only, never its date — newest first, at most the limit.
+///
+/// Without this a search for anything found the scenario's entry, so a query
+/// production answers with "No memory entries match" scored as a recall.
+List<MemoryLogHit> goalAgentEvalMemoryMatches(
+  List<MemoryLogHit> corpus,
+  MemorySearchRequest request,
+) {
+  final terms = request.query
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((term) => term.isNotEmpty)
+      .toList();
+  final matching = [
+    for (final hit in corpus)
+      if (request.ids.isNotEmpty
+          ? request.ids.contains(hit.contentEntryId)
+          : terms.isNotEmpty && terms.every(hit.text.toLowerCase().contains))
+        hit,
+  ]..sort((a, b) => b.at.compareTo(a.at));
+  return matching.take(request.limit).toList();
 }
 
 /// Deterministic classifier — first violated check names the failure.

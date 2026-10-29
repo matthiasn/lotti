@@ -1198,7 +1198,7 @@ void main() {
         ],
       );
 
-      await search(strategy, {'query': 'ice shelf March'});
+      await search(strategy, {'query': 'equinox SHELF'});
 
       expect(responses.single, startsWith('Found 1 memory match(es)'));
       expect(responses.single, contains('The equinox storm cracked'));
@@ -1207,6 +1207,43 @@ void main() {
         goalMemoryContinuationPrompt,
       );
       expect(strategy.getContinuationPrompt(manager), isNull);
+    });
+
+    test('matches the way production does: every keyword in the words, '
+        'never the date; ids by entry; newest first within the limit', () {
+      final march = MemoryLogHit(
+        contentEntryId: 'entry-march',
+        at: DateTime(2026, 3, 14, 21),
+        type: 'capture',
+        text: 'The equinox storm cracked the old ice shelf.',
+        edited: false,
+      );
+      final june = MemoryLogHit(
+        contentEntryId: 'entry-june',
+        at: DateTime(2026, 6, 9, 21),
+        type: 'capture',
+        text: 'Scouted the ridge; the ice shelf looked calmer.',
+        edited: false,
+      );
+      List<String> ids(Map<String, dynamic> args) => [
+        for (final hit in goalAgentEvalMemoryMatches(
+          [march, june],
+          parseMemorySearchRequest(args)!,
+        ))
+          hit.contentEntryId,
+      ];
+
+      expect(ids({'query': 'ice SHELF'}), ['entry-june', 'entry-march']);
+      expect(ids({'query': 'equinox shelf'}), ['entry-march']);
+      // The month is when it was written, not a word in it.
+      expect(ids({'query': 'March ice shelf'}), isEmpty);
+      expect(
+        ids({
+          'ids': ['entry-march', 'nope'],
+        }),
+        ['entry-march'],
+      );
+      expect(ids({'query': 'shelf', 'limit': 1}), ['entry-june']);
     });
 
     test('says plainly when nothing matches, and refuses an empty search as '

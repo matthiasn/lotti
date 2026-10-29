@@ -918,7 +918,8 @@ identically. Artifacts: `goal_agent_20260827-184951` (run 1) and
 The first live run since ADR 0141 (`remember_goal_fact`) and ADR 0143 (the
 `reflection` slot) changed the contract, and the first with the journal
 scenarios. Model `glm-5.3` on Melious, tier 1, all 32 scenarios, three samples
-(`eval_artifacts/goal_agent_20261029-230956`, `…-231653`, `…-232046`).
+(`eval_artifacts/goal_agent_20261029-230956`, `…-231653`, `…-232046`,
+`…-235342`).
 
 | | Cases | Pass | Rate |
 | --- | ---: | ---: | ---: |
@@ -937,8 +938,18 @@ answered every `search_goal_memory` with `{"status":"ok"}` — no entries, and
 not "nothing matches" either — and gave no continuation turn. glm-5.3 searched
 correctly, read an empty acknowledgement, and ended the wake silent. Production
 answers in `formatMemorySearchResult`'s format and takes one more turn after a
-recall (`goalMemoryContinuationPrompt`). The strategy now does both, and a
-scenario carries the hits its search would find; re-run, P21 passed 3/3.
+recall (`goalMemoryContinuationPrompt`). The strategy now does both, a scenario
+carries the entries its memory holds, and they are matched by production's
+rule — every query term in the entry's words, never its date
+(`AgentLogCompactor.searchLog`) — so a search production would answer with
+"No memory entries match" gets exactly that. Re-run (`…-235342`), P21 passed
+3/3, and the transcripts show how: every sample's first query was
+`"March ice shelf move"`, which cannot match — the month is when the entry was
+written, not a word in it — and every sample searched again with `"ice
+shelf"` or `"old ice shelf"`, found the 14 March entry and quoted it. Recall
+works, at the price of one wasted search each time. A line in the
+`search_goal_memory` description saying dates are not searchable words would
+likely save it; that is a contract change to measure, not assume.
 
 **The four P1–P17 failures are the model's.** Three omitted a call the
 scenario requires — `reply_to_user` on `evo_replace_metric` and
@@ -951,7 +962,8 @@ would see no report; the pinned forced-report retry is the only recovery, and
 it runs only on a wake that owes one. Worth watching if glm-5.3 becomes a
 default.
 
-Cost: about 0.17 credits per 64 cases, mean latency 6–12 s per case.
+Cost: about 0.38 credits for the 96 cases (0.20 for sample 1, 0.17 for
+samples 2–3), mean latency 6–12 s per case.
 
 ## Cost and latency
 

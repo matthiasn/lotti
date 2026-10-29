@@ -3,7 +3,7 @@
 **Four-model catalog, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 **Judged run, 2026-09-16:** hierarchical passes the bar (96% recall, zero hallucinations, 15/15 same recommendation) — [full results](../lotti-gym-2026-09-16.md).
 **Qwen 3.8 27B rejected, 2026-09-21:** 27/30 status decisions — [full results](../lotti-gym-2026-09-21.md).
-**Journals on glm-5.3, 2026-10-29:** the shipped 1,200-token tail recalls 99% of journal facts; wider tails add nothing — [fifth run](#fifth-run--2026-10-29-journals-on-glm-53-how-much-tail-a-journal-needs).
+**Journals on glm-5.3, 2026-10-29:** the shipped 1,200-token tail recalls 99% of journal facts; wider tails show no material gain at this sample size — [fifth run](#fifth-run--2026-10-29-journals-on-glm-53-how-much-tail-a-journal-needs).
 
 Does the goal agent draw the same conclusions from a **compacted** check-in
 history as from the **full** one? A goal runs for years; three check-ins a
@@ -469,9 +469,10 @@ under `eval_artifacts/goal_compaction_20261029-231653/`.
 **The answer is no: the shipped tail is enough.** The substance digests carry
 what the tail drops — the December storm, the leopard seals at the seal rocks,
 the Pip conflict and the Thursday swap, the doctor's advice — so the 1,200-token
-arm recalls 99% of what the full history holds and the wider tails add nothing
-measurable while costing up to twice the wake input and breaking the
-2,500-token `userVoice` ceiling. Every arm reports the derived status in every
+arm recalls 99% of what the full history holds. The wider tails measured
+100% (2,400) and 99% (3,600): one half-graded probe apart out of 36, which is
+no material difference at three samples per fixture — while they cost up to
+twice the wake input and break the 2,500-token `userVoice` ceiling. Every arm reports the derived status in every
 wake. **The journal tail stays at `goalUserVoiceTokenBudget` for every goal
 kind.**
 
