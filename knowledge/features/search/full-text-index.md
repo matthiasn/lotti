@@ -191,7 +191,11 @@ non-task hit to the tasks it belongs to in three batched reads — the links to
 it (`linksForIds`), and for checklists and their items the tasks their
 checklist names (`ChecklistItemData.linkedChecklists`,
 `ChecklistData.linkedTasks`) — and keeps each task's best hit, with its
-snippet and the kind it was in (`TaskSearchHit`).
+snippet and the kind it was in (`TaskSearchHit`). It reads the ranking a page
+at a time (`matchHits` with an `offset`) until it has its limit of tasks, for
+at most ten pages: a page can be all entries that belong to no task, or many
+children of one task, and cutting the ranking before resolving them would
+hide tasks that match further down.
 
 # Title search
 

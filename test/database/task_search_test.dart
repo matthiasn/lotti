@@ -182,6 +182,40 @@ void main() {
     expect(await found('krill'), ['task-1']);
   });
 
+  test('loose entries outranking a task do not crowd it out: the ranking is '
+      'read page by page until enough tasks are found', () async {
+    await store([
+      for (var i = 0; i < 12; i++) _entry('loose-$i', 'krill'),
+      _task('task-1', 'Colony'),
+      _entry('long-note', 'a long diary of the colony, the shelf, and krill'),
+    ]);
+    await link('task-1', 'long-note');
+
+    final hits = await searchTasks(
+      fts5Db: fts,
+      journalDb: journalDb,
+      query: 'krill',
+      includePrivate: true,
+      limit: 5,
+    );
+
+    expect(hits.map((h) => h.taskId), ['task-1']);
+  });
+
+  test('at most limit tasks come back', () async {
+    await store([for (var i = 0; i < 8; i++) _task('task-$i', 'Krill $i')]);
+
+    final hits = await searchTasks(
+      fts5Db: fts,
+      journalDb: journalDb,
+      query: 'krill',
+      includePrivate: true,
+      limit: 3,
+    );
+
+    expect(hits, hasLength(3));
+  });
+
   test('nothing matching finds no task', () async {
     await store([_task('task-1', 'Morning')]);
     expect(await found('krill'), isEmpty);

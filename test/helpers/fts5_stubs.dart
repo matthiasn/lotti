@@ -20,10 +20,11 @@ void stubFts5Db(
   when(() => fts.indexByIds(any(), any())).thenAnswer((_) async {});
   when(() => fts.reindexMeasurements(any(), any())).thenAnswer((_) async {});
   when(() => anyMatchIds(fts)).thenAnswer((invocation) async => idsFor(invocation));
+  // Every hit on the first page, none after it.
   when(() => anyMatchHits(fts)).thenAnswer(
-    (invocation) async => [
-      for (final id in idsFor(invocation)) taskHit(id),
-    ],
+    (invocation) async => invocation.namedArguments[#offset] == 0
+        ? [for (final id in idsFor(invocation)) taskHit(id)]
+        : const <SearchHit>[],
   );
 }
 
@@ -54,4 +55,5 @@ Future<List<SearchHit>> anyMatchHits(Fts5Db fts, [String? query]) =>
       categoryIds: any(named: 'categoryIds'),
       includePrivate: any(named: 'includePrivate'),
       limit: any(named: 'limit'),
+      offset: any(named: 'offset'),
     );

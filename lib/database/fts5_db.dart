@@ -299,7 +299,8 @@ class Fts5Db extends _$Fts5Db {
   /// uncategorised) restrict when given, and [includePrivate] false leaves
   /// private entities out. With [anyTerm], one matching word is enough;
   /// [prefixLastWord] false matches the last word whole too, for a caller
-  /// passing finished words rather than what is being typed.
+  /// passing finished words rather than what is being typed. [offset] skips
+  /// that many of the best, for a caller reading the ranking page by page.
   /// Input with nothing to match returns no hits; it never throws
   /// ([ftsMatchExpression]).
   Future<List<SearchHit>> matchHits(
@@ -310,6 +311,7 @@ class Fts5Db extends _$Fts5Db {
     Set<String>? categoryIds,
     bool includePrivate = true,
     int limit = defaultMatchLimit,
+    int offset = 0,
   }) async {
     final expression = ftsMatchExpression(
       query,
@@ -329,7 +331,7 @@ class Fts5Db extends _$Fts5Db {
       'INNER JOIN search_doc AS d ON d.id = search_fts.rowid '
       'WHERE search_fts MATCH ?${filter.sql} '
       'ORDER BY bm25(search_fts, 10.0, 1.0, 2.0), d.date_from DESC '
-      'LIMIT ?',
+      'LIMIT ? OFFSET ?',
       variables: [
         Variable.withString(snippetMatchStart),
         Variable.withString(snippetMatchEnd),
@@ -337,6 +339,7 @@ class Fts5Db extends _$Fts5Db {
         Variable.withString(expression),
         ...filter.variables,
         Variable.withInt(limit),
+        Variable.withInt(offset),
       ],
       readsFrom: {searchFts, searchDoc},
     ).get();

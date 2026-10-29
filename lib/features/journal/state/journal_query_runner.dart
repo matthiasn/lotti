@@ -462,7 +462,7 @@ class JournalQueryRunner {
     }
 
     setPostFilterNextRawOffset?.call(currentOffset);
-    return filtered.take(pageSize).toList();
+    return filtered.take(limit).toList();
   }
 
   // ---------------------------------------------------------------

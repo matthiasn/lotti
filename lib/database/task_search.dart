@@ -24,9 +24,9 @@ const taskSearchTypes = <String>{
 ///
 /// The index ranks every match together ([Fts5Db.matchHits]), so a task
 /// whose checklist item matches better than another task's description
-/// comes first. The ids may include parents that are not tasks; the task
-/// query the caller runs on them leaves those out, along with deleted and
-/// hidden ones.
+/// comes first; at most [limit] tasks come back. The ids may include parents
+/// that are not tasks; the task query the caller runs on them leaves those
+/// out, along with deleted and hidden ones.
 Future<List<TaskSearchHit>> searchTasks({
   required Fts5Db fts5Db,
   required JournalDb journalDb,
@@ -35,29 +35,46 @@ Future<List<TaskSearchHit>> searchTasks({
   Set<String>? categoryIds,
   int limit = Fts5Db.defaultMatchLimit,
 }) async {
-  final hits = await fts5Db.matchHits(
-    query,
-    types: taskSearchTypes,
-    categoryIds: categoryIds,
-    includePrivate: includePrivate,
-    limit: limit,
-  );
-  final parents = await _taskParents(journalDb, hits);
+  final found = <TaskSearchHit>[];
   final seen = <String>{};
-  return [
-    for (final hit in hits)
-      for (final taskId
-          in hit.type == taskEntityTypeName
-              ? [hit.entityId]
-              : parents[hit.entityId] ?? const <String>[])
-        if (seen.add(taskId))
+  // The ranking is read a page at a time until [limit] tasks are found: a
+  // page can be all entries that belong to no task, or many children of one,
+  // and cutting the ranking before resolving them would hide tasks that
+  // match further down. Bounded, so a query matching mostly loose entries
+  // stops after ten pages.
+  for (var offset = 0; offset < limit * _maxPages; offset += limit) {
+    final hits = await fts5Db.matchHits(
+      query,
+      types: taskSearchTypes,
+      categoryIds: categoryIds,
+      includePrivate: includePrivate,
+      limit: limit,
+      offset: offset,
+    );
+    final parents = await _taskParents(journalDb, hits);
+    for (final hit in hits) {
+      final taskIds = hit.type == taskEntityTypeName
+          ? [hit.entityId]
+          : parents[hit.entityId] ?? const <String>[];
+      for (final taskId in taskIds) {
+        if (!seen.add(taskId)) continue;
+        found.add(
           TaskSearchHit(
             taskId: taskId,
             snippet: hit.snippet,
             matchedType: hit.type,
           ),
-  ];
+        );
+        if (found.length == limit) return found;
+      }
+    }
+    if (hits.length < limit) break;
+  }
+  return found;
 }
+
+/// Pages of the ranking [searchTasks] reads at most.
+const _maxPages = 10;
 
 /// The ids each non-task hit belongs to: what links to it, and for a
 /// checklist or checklist item the tasks its checklist names. Read in three

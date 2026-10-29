@@ -369,6 +369,30 @@ void main() {
       );
     });
 
+    test('a filtered search keeps every match past a page of rows', () async {
+      final many = [
+        for (var i = 0; i < 60; i++)
+          hMakeTask(id: 'task-$i', createdAt: hTestDate),
+      ];
+      taskQueryAnswers(many);
+      when(
+        () => mockJournalDb.getTaskIdsForProjects(any()),
+      ).thenAnswer((_) async => {for (final task in many) task.meta.id});
+
+      final page = await runner.runQuery(
+        hDefaultParams(
+          showTasks: true,
+          query: 'krill',
+          selectedProjectIds: const {'project-1'},
+        ),
+        0,
+        fullTextMatches: {for (final task in many.reversed) task.meta.id},
+      );
+
+      expect(page, hasLength(60));
+      expect(page.first.meta.id, 'task-59', reason: 'in rank order');
+    });
+
     test(
       'a project filter still applies, and the ranking survives it',
       () async {
