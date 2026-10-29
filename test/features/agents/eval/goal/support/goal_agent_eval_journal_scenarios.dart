@@ -294,9 +294,10 @@ final List<GoalAgentEvalScenario> goalAgentJournalEvalScenarios = [
       ],
       // In the next steps themselves: naming the commitment in the
       // reflection alone is not following it up.
+      // The destination is the commitment; the verb may vary.
       GoalReportSectionKeys.nextActions: [
-        ['scout'],
-        ['saturday', 'ridge'],
+        ['scout', 'explore', 'visit', 'survey', 'check out', 'walk'],
+        ['ridge'],
       ],
     },
   ),

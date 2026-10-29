@@ -30,7 +30,7 @@ are **not comparable** — do not put them in one table.
 | | Tier 1 — inference | Tier 2 — outcome |
 | --- | --- | --- |
 | Runner | `goal_agent_eval_runner.dart` | `goal_agent_outcome_eval.dart` |
-| Input | authored FACTS block | domain entities → real `GoalFactsRenderer` |
+| Input | authored FACTS block; journal scenarios via the real `GoalFactsRenderer` | domain entities → real `GoalFactsRenderer` |
 | Under test | the model + the prompt/tool contract | the whole `GoalAgentWorkflow` |
 | Scored | tool calls attempted | entities persisted |
 | Strategy | records, accepts everything | the real `GoalAgentStrategy`, which rejects |
@@ -40,8 +40,9 @@ are **not comparable** — do not put them in one table.
 
 Tier 1 is the workhorse: cheap, broad, and every scenario is legible. But
 three production layers sit between a tool call and the user, and tier 1 is
-structurally blind to all of them — the FACTS are authored rather than
-rendered, nothing rejects a bad call, and nothing repairs a missing output.
+structurally blind to all of them — the FACTS are (journal scenarios aside)
+authored rather than rendered, nothing rejects a bad call, and nothing repairs
+a missing output.
 So a tier-1 failure can be a production success, and a tier-1 pass can
 persist nothing at all.
 

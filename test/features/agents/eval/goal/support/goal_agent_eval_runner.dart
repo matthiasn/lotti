@@ -505,6 +505,9 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     final sectionText = _structuredReportSectionText(
       structuredReport,
       entry.key,
+      allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds(
+        scenario,
+      ),
     );
     if (sectionText == null ||
         entry.value.any((group) => !containsAnyEvalTerm(sectionText, group))) {
@@ -638,10 +641,27 @@ GoalStructuredReport? _latestStructuredReport(
   return null;
 }
 
+/// The criterion ids whose `nextActions.now` items production keeps: the
+/// FACTS' `healthLoggingNeededCriterionIds`, the same list the workflow's
+/// gate is computed from. Hand-written FACTS without the field keep none.
+Set<String> _allowedCurrentActionCriterionIds(GoalAgentEvalScenario scenario) {
+  final evaluation = scenario.factsJson?['evaluation'];
+  final guidance = evaluation is Map ? evaluation['todayGuidance'] : null;
+  final ids = guidance is Map
+      ? guidance['healthLoggingNeededCriterionIds']
+      : null;
+  return {
+    if (ids is List)
+      for (final id in ids)
+        if (id is String) id,
+  };
+}
+
 String? _structuredReportSectionText(
   GoalStructuredReport? report,
-  String key,
-) => switch ((report, key)) {
+  String key, {
+  Set<String> allowedCurrentActionCriterionIds = const {},
+}) => switch ((report, key)) {
   (final GoalStructuredReport value, GoalReportSectionKeys.tldr) => value.tldr,
   (final GoalStructuredReport value, GoalReportSectionKeys.reflection) =>
     value.reflection,
@@ -653,10 +673,13 @@ String? _structuredReportSectionText(
     value.latestChange,
   (final GoalStructuredReport value, GoalReportSectionKeys.coverage) =>
     value.coverage,
-  // Every next step the model wrote, current and later alike — the slot a
-  // follow-up is scored in, whatever the deterministic gate later keeps.
+  // The next steps the user would see: a current action survives only when
+  // the deterministic gate authorizes its criterion, as in production, so
+  // a step parked in `now` that the card would drop cannot score.
   (final GoalStructuredReport value, GoalReportSectionKeys.nextActions) => [
-    for (final item in value.now) item.action,
+    for (final item in value.now)
+      if (allowedCurrentActionCriterionIds.contains(item.criterionId))
+        item.action,
     ...value.later,
   ].join('\n'),
   _ => null,
