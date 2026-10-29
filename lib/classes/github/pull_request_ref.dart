@@ -58,6 +58,7 @@ final class PullRequestRefRejected extends PullRequestRefParse {
 final _number = RegExp(r'^[1-9][0-9]{0,9}$');
 final _shorthand = RegExp(r'^([^/\s#]+)/([^/\s#]+)#([0-9]+)$');
 final _scheme = RegExp('^[A-Za-z][A-Za-z0-9+.-]*://');
+final _whitespace = RegExp(r'\s');
 
 /// Reads a pull request from what a user pastes.
 ///
@@ -97,6 +98,28 @@ PullRequestRefParse parsePullRequestRef(String input) {
       return const PullRequestRefRejected(PullRequestRefRejection.notGitHub);
   }
   return const PullRequestRefRejected(PullRequestRefRejection.notAPullRequest);
+}
+
+/// The pull request a search query names, or null when the query is anything
+/// else and should be searched as text.
+///
+/// Only a whole pasted link counts: the query, trimmed, must be one of the
+/// URLs [parsePullRequestRef] accepts —
+/// `https://github.com/{owner}/{repo}/pull/{number}` (scheme and `www.`
+/// optional, any `/files`, query or fragment after the number) or its
+/// `api.github.com/repos/…/pulls/…` twin. The `owner/repo#12`
+/// shorthand, a link to an issue or a repository, a partial link and a link
+/// inside other words are all text: a search must not turn into a lookup the
+/// user did not paste. GitLab merge requests are not matched, because linked
+/// pull requests are GitHub's only and nothing would ever be found for one;
+/// such a link stays a full-text search.
+PullRequestRef? pullRequestSearchRef(String query) {
+  final text = query.trim();
+  if (text.contains(_whitespace) || _shorthand.hasMatch(text)) return null;
+  return switch (parsePullRequestRef(text)) {
+    PullRequestRefParsed(:final ref) => ref,
+    PullRequestRefRejected() => null,
+  };
 }
 
 PullRequestRefParse _validated(String owner, String repo, String number) {

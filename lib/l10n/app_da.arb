@@ -7376,6 +7376,7 @@
     }
   },
   "tasksSearchModeLabel": "Søgefunktion",
+  "tasksSearchNoLinkedTasks": "Ingen opgaver er knyttet til denne pull request.",
   "tasksShowCreationDate": "Vis oprettelsesdato på kortene",
   "tasksShowDueDate": "Vis afleveringsdato på kortene",
   "tasksSortByCreationDate": "Oprettet",

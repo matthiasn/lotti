@@ -17707,6 +17707,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tasksSearchModeLabel => 'Modalità di ricerca';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Nessuna attività collegata a questa pull request.';
+
+  @override
   String get tasksShowCreationDate => 'Mostra la data di creazione su carte';
 
   @override

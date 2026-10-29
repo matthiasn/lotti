@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
@@ -664,9 +665,17 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                           ),
                                           child: DesignSystemEmptyState(
                                             icon: LottiIcons.list,
-                                            title: context
-                                                .messages
-                                                .taskShowcaseNoResults,
+                                            title:
+                                                pullRequestSearchRef(
+                                                      state.match,
+                                                    ) !=
+                                                    null
+                                                ? context
+                                                      .messages
+                                                      .tasksSearchNoLinkedTasks
+                                                : context
+                                                      .messages
+                                                      .taskShowcaseNoResults,
                                             // Self-gating: only outside demo
                                             // mode AND with a truly empty
                                             // journal (never a filter miss).

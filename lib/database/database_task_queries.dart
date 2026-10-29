@@ -212,6 +212,19 @@ mixin _JournalDbTaskQueries
     return res.map(fromDbEntity).toList();
   }
 
+  /// The live tasks a live pull request entry keyed [pullRequestKey]
+  /// (`owner/repo#number`, lower-cased) is linked from — usually one, more
+  /// when it was linked to another task too.
+  ///
+  /// Private tasks are included, as in every pull request assignment read:
+  /// a caller that shows them reads them back through a private-filtered
+  /// read. Indexed end to end (`pullRequestAssignments`): the pull request
+  /// row by `idx_journal_type_subtype`, its links by `to_id`, the task by id.
+  Future<Set<String>> taskIdsHoldingPullRequest(String pullRequestKey) async {
+    final rows = await pullRequestAssignments([pullRequestKey]).get();
+    return {for (final row in rows) row.taskId};
+  }
+
   Future<int> getWipCount() async {
     final privateStatuses = await _visiblePrivateStatuses();
     return countInProgressTasks(

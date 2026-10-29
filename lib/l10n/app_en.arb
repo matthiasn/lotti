@@ -10770,6 +10770,10 @@
     }
   },
   "tasksSearchModeLabel": "Search mode",
+  "tasksSearchNoLinkedTasks": "No linked tasks found for this pull request.",
+  "@tasksSearchNoLinkedTasks": {
+    "description": "Empty state of the task list when the search is a pasted pull request link that no task is linked to."
+  },
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "tasksSortByCreationDate": "Created",

@@ -6650,6 +6650,7 @@
     }
   },
   "tasksSearchModeLabel": "Mode de recherche",
+  "tasksSearchNoLinkedTasks": "Aucune tâche liée à cette pull request.",
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
   "tasksShowDueDate": "Afficher la date d'échéance sur les cartes",
   "tasksSortByCreationDate": "Création",

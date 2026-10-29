@@ -89,6 +89,36 @@ void main() {
     });
   });
 
+  group('pullRequestSearchRef', () {
+    test('reads a pasted pull request link, however it was copied', () {
+      for (final input in [
+        'https://github.com/matthiasn/lotti/pull/42',
+        '  https://github.com/MatthiasN/Lotti/pull/42/files#diff  \n',
+        'github.com/matthiasn/lotti/pull/42',
+        'https://api.github.com/repos/matthiasn/lotti/pulls/42',
+      ]) {
+        expect(pullRequestSearchRef(input)?.key, lotti42.key, reason: input);
+      }
+    });
+
+    test('leaves everything that is not a whole link to text search', () {
+      for (final input in [
+        '',
+        'lotti',
+        'matthiasn/lotti#42',
+        'fix https://github.com/matthiasn/lotti/pull/42',
+        'https://github.com/matthiasn/lotti/pull/42 follow-up',
+        'https://github.com/matthiasn/lotti/pull/',
+        'https://github.com/matthiasn/lotti/issues/42',
+        'https://github.com/matthiasn/lotti',
+        'https://gitlab.com/matthiasn/lotti/-/merge_requests/42',
+        'https://example.com/matthiasn/lotti/pull/42',
+      ]) {
+        expect(pullRequestSearchRef(input), isNull, reason: input);
+      }
+    });
+  });
+
   test('refs compare by key, so case does not make a second link', () {
     expect(
       const PullRequestRef(owner: 'MatthiasN', repo: 'Lotti', number: 42),
@@ -127,6 +157,17 @@ void main() {
       ]) {
         expect(parsed(input), expected, reason: input);
       }
+      // A search finds the same pull request from every link, and none from
+      // the shorthand or a link with words around it.
+      for (final link in [
+        'https://github.com/$owner/$repo/pull/$number',
+        'github.com/$owner/$repo/pull/$number/files',
+        'https://api.github.com/repos/$owner/$repo/pulls/$number',
+      ]) {
+        expect(pullRequestSearchRef(link), expected, reason: link);
+        expect(pullRequestSearchRef('see $link'), isNull, reason: link);
+      }
+      expect(pullRequestSearchRef('$owner/$repo#$number'), isNull);
     },
     tags: 'glados',
   );

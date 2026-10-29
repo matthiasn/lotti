@@ -17653,6 +17653,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tasksSearchModeLabel => 'Modo de pesquisa';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Nenhuma tarefa vinculada a esta pull request.';
+
+  @override
   String get tasksShowCreationDate => 'Mostrar data de criação nos cartões';
 
   @override

@@ -1834,9 +1834,13 @@ void main() {
     Future<void> pumpEmpty(
       WidgetTester tester, {
       MediaQueryData? mediaQueryData,
+      String match = '',
     }) async {
       await tester.pumpWidget(
-        buildSubject(state: state(), mediaQueryData: mediaQueryData),
+        buildSubject(
+          state: state(match: match),
+          mediaQueryData: mediaQueryData,
+        ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -1859,6 +1863,27 @@ void main() {
         );
       },
     );
+
+    for (final (match, shown) in [
+      (
+        'https://github.com/matthiasn/lotti/pull/42',
+        'No linked tasks found for this pull request.',
+      ),
+      ('matthiasn/lotti#42', message),
+      ('penguin census', message),
+    ]) {
+      testWidgets('a search for "$match" that finds nothing says "$shown"', (
+        tester,
+      ) async {
+        await pumpEmpty(tester, match: match);
+
+        final emptyState = find.byType(DesignSystemEmptyState);
+        expect(
+          tester.widget<DesignSystemEmptyState>(emptyState).title,
+          shown,
+        );
+      });
+    }
 
     testWidgets(
       'the message is never laid out edge to edge on a phone-width pane',

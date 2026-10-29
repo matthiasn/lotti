@@ -29027,6 +29027,12 @@ abstract class AppLocalizations {
   /// **'Search mode'**
   String get tasksSearchModeLabel;
 
+  /// Empty state of the task list when the search is a pasted pull request link that no task is linked to.
+  ///
+  /// In en, this message translates to:
+  /// **'No linked tasks found for this pull request.'**
+  String get tasksSearchNoLinkedTasks;
+
   /// No description provided for @tasksShowCreationDate.
   ///
   /// In en, this message translates to:

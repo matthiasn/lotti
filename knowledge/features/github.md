@@ -336,8 +336,11 @@ on purpose (`specs/tla/PullRequestAssignment.tla`).
 `PullRequestRepository.holdersOf` answers which tasks hold a pull request,
 from one indexed query (`pullRequestAssignments`: the live `PullRequest` rows
 by `owner/repo#number`, joined to the live links from live tasks, private ones
-included). The picker leaves held pull requests out, so it never suggests
-one. A paste, or a pick whose list went stale, of a pull request another task
+included). The same query answers the tasks tab's search when a pull
+request link is pasted into it, through `JournalDb.taskIdsHoldingPullRequest`
+(see [browse and linking](journal/browse-and-linking.md)), so finding the
+tasks a pull request serves needs neither a token nor the network. The picker
+leaves held pull requests out, so it never suggests one. A paste, or a pick whose list went stale, of a pull request another task
 holds is not refused and not linked silently: the service answers
 `PullRequestLinkedElsewhere`, and the modal asks whether to link it to this
 task as well, naming the other task when the viewer may see it. "Link here
