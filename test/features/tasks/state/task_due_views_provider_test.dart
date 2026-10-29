@@ -181,6 +181,12 @@ void main() {
           enableVectorSearch: true,
           searchMode: mode,
           vectorSearchDistances: const {'v1': 0.1},
+          selectedCategoryIds: const {'colony'},
+          selectedTaskStatuses: const {'OPEN'},
+          selectedLabelIds: const {'urgent'},
+          selectedPriorities: const {'P1'},
+          selectedProjectIds: const {'census'},
+          agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
         ),
         repo,
         fts: fts,
@@ -188,6 +194,15 @@ void main() {
 
       expect(repo.restrictions.first, {'feed', 'count'});
       verifyNever(() => fts.watchFullTextMatches(any()));
+      // Counted with the clauses the lookup keeps, and only those: the pill
+      // must count every linked task the list shows.
+      final counted = repo.asked.single;
+      expect(counted.selectedCategoryIds, {'colony'});
+      expect(counted.selectedTaskStatuses, {...allTaskStatuses});
+      expect(counted.selectedLabelIds, isEmpty);
+      expect(counted.selectedPriorities, isEmpty);
+      expect(counted.selectedProjectIds, isEmpty);
+      expect(counted.agentAssignmentFilter, AgentAssignmentFilter.all);
     });
   }
 }

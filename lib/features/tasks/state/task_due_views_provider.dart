@@ -36,7 +36,17 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
   final pageState = ref.watch(journalPageControllerProvider(true));
   ref.watch(taskDueDayProvider);
   final live = liveTasksFilterFor(pageState);
-  final effective = live.selectedTaskStatuses.isEmpty
+  // A pull request lookup keeps only the category and due clauses
+  // (`JournalQueryRunner.runPullRequestSearch`), so its counts drop the rest.
+  final effective = pullRequestSearchRef(pageState.match) != null
+      ? live.copyWith(
+          selectedTaskStatuses: {...allTaskStatuses},
+          selectedLabelIds: const {},
+          selectedPriorities: const {},
+          selectedProjectIds: const {},
+          agentAssignmentFilter: AgentAssignmentFilter.all,
+        )
+      : live.selectedTaskStatuses.isEmpty
       ? live.copyWith(selectedTaskStatuses: {...allTaskStatuses})
       : live;
 
