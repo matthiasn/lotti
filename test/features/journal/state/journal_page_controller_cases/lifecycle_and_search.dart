@@ -179,7 +179,7 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
         async.flushMicrotasks();
 
         verify(
-          () => setup.mockFts5Db.watchFullTextMatches('test query'),
+          () => anyMatchIds(setup.mockFts5Db, 'test query'),
         ).called(greaterThan(0));
       });
     });
@@ -233,7 +233,7 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
           settle(async);
           expect(state.pagingController?.value.items, [feed, count]);
           expect(state.pagingController?.value.hasNextPage, isFalse);
-          verifyNever(() => setup.mockFts5Db.watchFullTextMatches(link));
+          verifyNever(() => anyMatchIds(setup.mockFts5Db, link));
         });
       });
     }
@@ -241,8 +241,8 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
     test('empty search string clears match and fullTextMatches', () {
       fakeAsync((async) {
         when(
-          () => setup.mockFts5Db.watchFullTextMatches('test'),
-        ).thenAnswer((_) => Stream.value(['id1', 'id2']));
+          () => anyMatchIds(setup.mockFts5Db, 'test'),
+        ).thenAnswer((_) async => ['id1', 'id2']);
 
         final controller = setup.container.read(
           journalPageControllerProvider(false).notifier,

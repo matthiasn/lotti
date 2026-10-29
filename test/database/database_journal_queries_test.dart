@@ -779,6 +779,48 @@ void main() {
 
         expect(await db!.getJournalCount(), 2);
       });
+
+      test('liveEntitiesAfterRowId walks the live rows in rowid order, a page '
+          'at a time, skipping deleted ones', () async {
+        for (final (index, id) in [
+          'first',
+          'deleted',
+          'second',
+          'third',
+        ].indexed) {
+          final entry = buildJournalEntry(
+            id: id,
+            timestamp: DateTime(2024, 11, index + 1),
+            text: 'Entry $id',
+          );
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              id == 'deleted'
+                  ? entry.copyWith(
+                      meta: entry.meta.copyWith(deletedAt: DateTime(2024, 12)),
+                    )
+                  : entry,
+            ),
+          );
+        }
+
+        final firstPage = await db!.liveEntitiesAfterRowId(0, 2);
+        expect(firstPage.entities.map((e) => e.meta.id), ['first', 'second']);
+
+        final secondPage = await db!.liveEntitiesAfterRowId(
+          firstPage.lastRowId,
+          2,
+        );
+        expect(secondPage.entities.map((e) => e.meta.id), ['third']);
+
+        final done = await db!.liveEntitiesAfterRowId(secondPage.lastRowId, 2);
+        expect(done.entities, isEmpty);
+        expect(
+          done.lastRowId,
+          secondPage.lastRowId,
+          reason: 'an empty page keeps the cursor where it was',
+        );
+      });
     });
 
     group('Calendar entries -', () {

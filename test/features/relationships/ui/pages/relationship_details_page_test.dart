@@ -54,6 +54,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -2016,8 +2017,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [task('task-2', title: 'Send the photos')]);
       when(
-        () => mockFts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(const <String>[]));
+        () => anyMatchIds(mockFts5Db),
+      ).thenAnswer((_) async => const <String>[]);
 
       getIt.registerSingleton<Fts5Db>(mockFts5Db);
 
@@ -2134,7 +2135,6 @@ void main() {
           () => mockDb.journalEntityById('rel-1'),
         ).thenAnswer((_) async => relationship(categoryId: 'cat-1'));
         when(() => mockCache.getCategoryById(any())).thenReturn(null);
-        when(() => mockFts5Db.insertText(any())).thenAnswer((_) async {});
         // A person holds no project, so the inheritance the shared create
         // path attempts finds nothing. Stubbed rather than left to throw
         // inside a catch that would hide a real failure here.

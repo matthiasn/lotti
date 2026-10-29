@@ -12,6 +12,7 @@ import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fts5_stubs.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/fake_journal_page_controller.dart';
@@ -132,8 +133,8 @@ void main() {
     final repo = _RecordingRepo(overdue: 1, dueToday: 0);
     final fts = MockFts5Db();
     when(
-      () => fts.watchFullTextMatches('habitat'),
-    ).thenAnswer((_) => Stream.value(const ['t1', 't2']));
+      () => anyMatchIds(fts, 'habitat'),
+    ).thenAnswer((_) async => const ['t1', 't2']);
 
     await countsFor(
       const JournalPageState(match: 'habitat'),
@@ -162,7 +163,7 @@ void main() {
     );
 
     expect(repo.restrictions.first, {'v1', 'v2'});
-    verifyNever(() => fts.watchFullTextMatches(any()));
+    verifyNever(() => anyMatchIds(fts));
   });
 
   for (final mode in SearchMode.values) {
@@ -193,7 +194,7 @@ void main() {
       );
 
       expect(repo.restrictions.first, {'feed', 'count'});
-      verifyNever(() => fts.watchFullTextMatches(any()));
+      verifyNever(() => anyMatchIds(fts));
       // Counted with the clauses the lookup keeps, and only those: the pill
       // must count every linked task the list shows.
       final counted = repo.asked.single;

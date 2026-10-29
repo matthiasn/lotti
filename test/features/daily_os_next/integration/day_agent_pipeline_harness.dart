@@ -40,6 +40,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_job_wiring.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/sync/in_memory_agent_repository.dart';
 import '../../agents/test_data/template_factories.dart';
@@ -248,8 +249,8 @@ class DayAgentPipelineHarness {
     // unstubbed stream getter yields null, and the tool call comes back to the
     // model as a Dart type error rather than "nothing matched".
     when(
-      () => fts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(const <String>[]));
+      () => anyMatchIds(fts5Db),
+    ).thenAnswer((_) async => const <String>[]);
     when(
       () => journalDb.getJournalEntitiesForIdsUnordered(any()),
     ).thenAnswer((_) async => const []);

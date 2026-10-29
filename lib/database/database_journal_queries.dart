@@ -553,6 +553,25 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return (await countJournalEntries().get()).first;
   }
 
+  /// Up to [limit] live journal entities after [afterRowId], in rowid order,
+  /// with the last one's rowid ([afterRowId] when there are none) — the
+  /// keyset the search index rebuild walks. Rowid rather than OFFSET: an
+  /// OFFSET page re-scans every row before it, which makes a full walk
+  /// quadratic in the journal's size.
+  Future<({List<JournalEntity> entities, int lastRowId})>
+  liveEntitiesAfterRowId(int afterRowId, int limit) async {
+    final rows = await customSelect(
+      'SELECT rowid AS rid, * FROM journal '
+      'WHERE deleted = 0 AND rowid > ? ORDER BY rowid LIMIT ?',
+      variables: [Variable.withInt(afterRowId), Variable.withInt(limit)],
+      readsFrom: {journal},
+    ).get();
+    return (
+      entities: [for (final row in rows) fromDbEntity(journal.map(row.data))],
+      lastRowId: rows.isEmpty ? afterRowId : rows.last.read<int>('rid'),
+    );
+  }
+
   Future<int> getCountImportFlagEntries() async {
     final res = await countImportFlagEntries().get();
     return res.first;

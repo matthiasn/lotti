@@ -1,14 +1,55 @@
--- `tags` is vestigial (always bound as ''); dropping a column from an
--- FTS5 virtual table requires a full rebuild, so the column stays.
-CREATE VIRTUAL TABLE
-  journal_fts USING fts5(plain_text, title, summary, tags, uuid);
+-- One row per indexed journal entity: the filters a search applies before
+-- ranking (so a LIMIT keeps the best matches the caller can show), and the
+-- rowid that keys the entity's text in `search_fts`.
+CREATE TABLE search_doc (
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  entity_id TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL,
+  category_id TEXT NOT NULL DEFAULT '',
+  private BOOLEAN NOT NULL DEFAULT FALSE,
+  date_from INTEGER NOT NULL
+) AS SearchDocRow;
 
-insertJournalEntry:
-INSERT INTO journal_fts(plain_text, title, summary, tags, uuid)
-  VALUES(:plain_text, :title, :summary, :tags, :uuid);
+CREATE INDEX idx_search_doc_type_category ON search_doc(type, category_id);
 
-findMatching:
-SELECT uuid FROM journal_fts WHERE journal_fts MATCH :query;
+-- The searchable text, keyed by `search_doc.id`. Diacritics fold in both
+-- directions (`remove_diacritics 2`), and two- and three-character prefix
+-- indexes keep the as-you-type prefix match the query builder emits cheap.
+-- The text is stored, not contentless, so a result can show a snippet.
+CREATE VIRTUAL TABLE search_fts USING fts5(
+  title,
+  body,
+  extra,
+  tokenize = 'unicode61 remove_diacritics 2',
+  prefix = '2 3'
+);
 
-deleteEntry:
-DELETE FROM journal_fts WHERE journal_fts MATCH :uuid;
+-- Progress of a full rebuild: the journal rowid the next batch starts after,
+-- or no row once the index has caught up with the journal.
+CREATE TABLE search_index_state (
+  name TEXT NOT NULL PRIMARY KEY,
+  int_value INTEGER NOT NULL
+);
+
+searchDocByEntityId:
+SELECT * FROM search_doc WHERE entity_id = :entityId;
+
+deleteSearchText:
+DELETE FROM search_fts WHERE rowid = :rowId;
+
+deleteSearchDoc:
+DELETE FROM search_doc WHERE id = :rowId;
+
+insertSearchText:
+INSERT INTO search_fts(rowid, title, body, extra)
+  VALUES(:rowId, :title, :body, :extra);
+
+indexStateValue:
+SELECT int_value FROM search_index_state WHERE name = :name;
+
+setIndexStateValue:
+INSERT OR REPLACE INTO search_index_state(name, int_value)
+  VALUES(:name, :intValue);
+
+clearIndexStateValue:
+DELETE FROM search_index_state WHERE name = :name;

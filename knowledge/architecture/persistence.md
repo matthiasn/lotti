@@ -107,7 +107,7 @@ migration work has to cover both, and embeddings are a third store again (below)
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 4 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |
-| `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
+| `Fts5Db` | `fts5_db.sqlite` | 2 | Full-text search index, rebuildable from the journal ([Search index](../features/search/full-text-index.md)) |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |
 | `OnboardingMetricsDb` | `onboarding_metrics.sqlite` | 1 | First-run and activation measurement |
 | `HistoryDb` | `history.sqlite` | 1 | Append-only log of opened entities, never synced ([History](../features/history.md)) |
@@ -951,10 +951,13 @@ read it**, so a row restored or replaced by a newer version since the read
 cannot be overwritten with a tombstone of the stale one. Only after the chunk
 commits does it delete the media of the rows it compacted, and any JSON file
 an older build wrote beside them: an entry restored meanwhile keeps its files.
-`recreateFts5` reads live rows the same way to feed the index (order is
-irrelevant to FTS) and takes no transaction: a row inserted or deleted
-concurrently is simply seen or not by the next chunk, and a new live entry
-gets indexed by the app's own write path. An `OFFSET` page re-scans every
+The search index rebuild (`Fts5Db.catchUp`, which `recreateFts5` drives)
+reads live rows the same way, 500 at a time through
+`JournalDb.liveEntitiesAfterRowId`, and writes each batch in one index
+transaction together with the rowid it reached, so a rebuild cut short
+resumes there. A row inserted or deleted concurrently is seen or not by the
+next batch, and its change notification indexes it either way
+([Search index](../features/search/full-text-index.md)). An `OFFSET` page re-scans every
 earlier row, which made a rebuild quadratic in the journal's size. Counts
 come from `COUNT(*)`, progress is reported once the journal is compacted
 (purge) or after each percent (rebuild), and nothing sleeps to make it

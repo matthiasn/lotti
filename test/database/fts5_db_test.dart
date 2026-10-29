@@ -2,523 +2,380 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/check_in_data.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:research_package/model.dart';
+import 'package:sqlite3/sqlite3.dart';
 
+import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import 'test_utils.dart';
 
-Metadata _buildMetadata(String id) {
-  final timestamp = DateTime(2024, 1, 1, 12);
+final _base = DateTime(2024, 3, 15, 9);
+
+Metadata _meta(
+  String id, {
+  int minutes = 0,
+  String? categoryId,
+  bool private = false,
+  bool deleted = false,
+}) {
+  final at = _base.add(Duration(minutes: minutes));
   return Metadata(
     id: id,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    dateFrom: timestamp,
-    dateTo: timestamp,
+    createdAt: at,
+    updatedAt: at,
+    dateFrom: at,
+    dateTo: at,
+    categoryId: categoryId,
+    private: private,
+    deletedAt: deleted ? at : null,
   );
 }
 
+JournalEntity _entry(
+  String id,
+  String text, {
+  int minutes = 0,
+  String? categoryId,
+  bool private = false,
+  bool deleted = false,
+}) => JournalEntity.journalEntry(
+  meta: _meta(
+    id,
+    minutes: minutes,
+    categoryId: categoryId,
+    private: private,
+    deleted: deleted,
+  ),
+  entryText: EntryText(plainText: text),
+);
+
+JournalEntity _task(String id, String title, {String body = ''}) =>
+    testTask.copyWith(
+      meta: _meta(id),
+      data: testTask.data.copyWith(title: title),
+      entryText: EntryText(plainText: body),
+    );
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  late JournalDb journalDb;
+  late Fts5Db fts;
+  late Directory documents;
+  final updateNotifications = MockUpdateNotifications();
+  final logger = MockDomainLogger();
 
-  group('Fts5Db Tests', () {
-    test(
-      'initializes in-memory database and exposes schema version 1',
-      () async {
-        final db = Fts5Db(inMemoryDatabase: true);
+  setUpAll(() {
+    registerJournalDbTestFallbacks();
+    registerFts5Fallbacks();
+  });
 
-        expect(db.schemaVersion, equals(1));
-
-        await db.insertJournalEntry(
-          'plain text',
-          'title',
-          'summary',
-          '',
-          'uuid-1',
-        );
-
-        final results = await db.watchFullTextMatches('"uuid-1"').first;
-        expect(results, contains('uuid-1'));
-
-        await db.close();
-      },
+  setUp(() async {
+    documents = setupTestDirectory();
+    registerJournalDbTestServices(
+      updateNotifications: updateNotifications,
+      loggingService: logger,
+      documentsDirectory: documents,
     );
-    test(
-      'creates file-based database at expected location when inMemoryDatabase is false',
-      () async {
-        final tempDir = Directory.systemTemp.createTempSync('fts5_db_test_');
-        final originalPathProvider = PathProviderPlatform.instance;
-        final mockPathProvider = MockPathProviderPlatform();
+    final cache = MockEntitiesCacheService();
+    when(() => cache.getDataTypeById(any())).thenReturn(null);
+    getIt.registerSingleton<EntitiesCacheService>(cache);
+    journalDb = JournalDb(inMemoryDatabase: true);
+    fts = Fts5Db(inMemoryDatabase: true, rebuildBatchSize: 2);
+  });
 
-        PathProviderPlatform.instance = mockPathProvider;
-        addTearDown(
-          () => PathProviderPlatform.instance = originalPathProvider,
-        );
-        addTearDown(() async {
-          if (tempDir.existsSync()) {
-            await tempDir.delete(recursive: true);
-          }
-        });
+  tearDown(() async {
+    await fts.close();
+    await journalDb.close();
+    await getIt.reset();
+    if (documents.existsSync()) documents.deleteSync(recursive: true);
+  });
 
-        when(
-          mockPathProvider.getApplicationDocumentsPath,
-        ).thenAnswer((_) async => tempDir.path);
-        when(
-          mockPathProvider.getApplicationSupportPath,
-        ).thenAnswer((_) async => tempDir.path);
-        when(
-          mockPathProvider.getTemporaryPath,
-        ).thenAnswer((_) async => tempDir.path);
+  Future<void> store(Iterable<JournalEntity> entities) async {
+    for (final entity in entities) {
+      await journalDb.upsertJournalDbEntity(toDbEntity(entity));
+    }
+  }
 
-        final db = Fts5Db();
-        addTearDown(() async => db.close());
+  Future<List<String>> search(
+    String query, {
+    Set<String>? types,
+    Set<String>? categoryIds,
+    bool includePrivate = true,
+    int limit = Fts5Db.defaultMatchLimit,
+    bool anyTerm = false,
+  }) => fts.matchIds(
+    query,
+    types: types,
+    categoryIds: categoryIds,
+    includePrivate: includePrivate,
+    limit: limit,
+    anyTerm: anyTerm,
+  );
 
-        await db.insertJournalEntry(
-          'file plain text',
-          'file title',
-          'file summary',
-          '',
-          'uuid-file',
-        );
+  group('catching up with the journal', () {
+    test('a new index owes the journal a rebuild, and indexes every live '
+        'row in batches', () async {
+      await store([
+        for (var i = 0; i < 5; i++) _entry('entry-$i', 'krill haul $i'),
+        _entry('gone', 'krill haul', deleted: true),
+      ]);
+      expect(await fts.needsCatchUp(), isTrue);
 
-        final dbFile = File(p.join(tempDir.path, fts5DbFileName));
-        expect(dbFile.existsSync(), isTrue);
-      },
-    );
+      final progress = <int>[];
+      final indexed = await fts.catchUp(journalDb, onProgress: progress.add);
 
-    group('insertText', () {
-      late Fts5Db db;
-      late MockEntitiesCacheService entitiesCacheService;
-
-      setUpAll(() {
-        db = Fts5Db(inMemoryDatabase: true);
-      });
-
-      tearDownAll(() async {
-        await db.close();
-      });
-
-      setUp(() async {
-        await getIt.reset();
-
-        entitiesCacheService = MockEntitiesCacheService();
-
-        when(
-          () => entitiesCacheService.getDataTypeById(any()),
-        ).thenReturn(null);
-
-        getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
-      });
-
-      tearDown(() async {
-        // Fts5Db keeps no in-memory cache; truncating the single `journal_fts`
-        // virtual table fully resets state between tests. The per-test getIt
-        // registration is reset here (it is never registered in setUpAll, so
-        // nothing leaks).
-        await db.customStatement('DELETE FROM journal_fts');
-        await getIt.reset();
-      });
-
-      test('insertText with basic journal entry indexes plain text', () async {
-        await db.insertText(testTextEntry);
-
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, hasLength(1));
-
-        final matches = await db.watchFullTextMatches('test entry text').first;
-        expect(matches, contains(testTextEntry.meta.id));
-      });
-
-      // ADR 0139: a check-in is found by its topics and its notes for next
-      // time, not only by the note it was logged with.
-      test('insertText with a check-in indexes its topics and next-time '
-          'notes', () async {
-        final checkIn = JournalEntity.checkIn(
-          meta: testTextEntry.meta.copyWith(id: 'check-in-1'),
-          entryText: const EntryText(plainText: 'Walked the launch window.'),
-          data: const CheckInData(
-            relationshipId: 'pip',
-            interactionType: CheckInInteractionType.call,
-            topics: ['krill logistics'],
-            payAttentionTo: 'The contract deadline',
-            avoid: 'Pad three',
-          ),
-        );
-        await db.insertText(checkIn);
-
-        for (final query in [
-          'launch window',
-          'krill logistics',
-          'contract deadline',
-          'Pad three',
-        ]) {
-          expect(
-            await db.watchFullTextMatches(query).first,
-            contains('check-in-1'),
-            reason: query,
-          );
-        }
-      });
-
-      test('insertText with task entry indexes the task title', () async {
-        await db.insertText(testTask);
-
-        final matches = await db.watchFullTextMatches('Add tests').first;
-        expect(matches, contains(testTask.meta.id));
-      });
-
-      test(
-        'insertText with survey entry indexes identifier and scores',
-        () async {
-          final surveyEntry = SurveyEntry(
-            meta: _buildMetadata('survey-id'),
-            data: SurveyData(
-              taskResult: RPTaskResult(identifier: 'panasSurveyTask'),
-              scoreDefinitions: {
-                'Positive Affect': {'q1', 'q2'},
-                'Negative Affect': {'q3'},
-              },
-              calculatedScores: const {
-                'Positive Affect': 10,
-                'Negative Affect': 2,
-              },
-            ),
-          );
-
-          await db.insertText(surveyEntry);
-
-          final identifierMatches = await db
-              .watchFullTextMatches('panasSurveyTask')
-              .first;
-          expect(identifierMatches, contains('survey-id'));
-
-          final scoreMatches = await db
-              .watchFullTextMatches('"Positive Affect: 10"')
-              .first;
-          expect(scoreMatches, contains('survey-id'));
-        },
+      expect(indexed, 5);
+      expect(progress, [2, 4, 5], reason: 'one report per batch of two');
+      expect(await fts.needsCatchUp(), isFalse);
+      expect(
+        (await search('krill')).toSet(),
+        {for (var i = 0; i < 5; i++) 'entry-$i'},
       );
-
-      test(
-        'insertText with measurement entry indexes measurement summary',
-        () async {
-          when(
-            () => entitiesCacheService.getDataTypeById(measurableChocolate.id),
-          ).thenReturn(measurableChocolate);
-
-          await db.insertText(testMeasurementChocolateEntry);
-
-          final matches = await db
-              .watchFullTextMatches('"Chocolate 100 g"')
-              .first;
-          expect(matches, contains(testMeasurementChocolateEntry.meta.id));
-        },
-      );
-
-      test(
-        'insertText with a choice recording indexes the choice title, not '
-        'the occurrence count',
-        () async {
-          when(
-            () => entitiesCacheService.getDataTypeById(measurableHydration.id),
-          ).thenReturn(measurableHydration);
-
-          await db.insertText(testMeasurementHydrationEntry);
-
-          final byTitle = await db
-              .watchFullTextMatches('"Hydration Clear"')
-              .first;
-          expect(byTitle, contains(testMeasurementHydrationEntry.meta.id));
-
-          final byCount = await db.watchFullTextMatches('"Hydration 1"').first;
-          expect(
-            byCount,
-            isNot(contains(testMeasurementHydrationEntry.meta.id)),
-          );
-        },
-      );
-
-      test(
-        'reindexing replaces an old choice title with its current one',
-        () async {
-          when(
-            () => entitiesCacheService.getDataTypeById(measurableHydration.id),
-          ).thenReturn(measurableHydration);
-          await db.insertText(testMeasurementHydrationEntry);
-          final renamed = measurableHydration.copyWith(
-            choices: [
-              for (final choice in measurableHydration.choices!)
-                if (choice.id == hydrationClear.id)
-                  choice.copyWith(title: 'Transparent')
-                else
-                  choice,
-            ],
-          );
-
-          await db.reindexMeasurements(renamed, [
-            testMeasurementHydrationEntry,
-          ]);
-
-          final byNewTitle = await db
-              .watchFullTextMatches('"Hydration Transparent"')
-              .first;
-          expect(byNewTitle, contains(testMeasurementHydrationEntry.meta.id));
-          final byOldTitle = await db
-              .watchFullTextMatches('"Hydration Clear"')
-              .first;
-          expect(
-            byOldTitle,
-            isNot(contains(testMeasurementHydrationEntry.meta.id)),
-          );
-        },
-      );
-
-      test(
-        'a measurement whose definition is gone still indexes its number',
-        () async {
-          when(
-            () => entitiesCacheService.getDataTypeById(measurableChocolate.id),
-          ).thenReturn(null);
-
-          await db.insertText(testMeasurementChocolateEntry);
-
-          final matches = await db.watchFullTextMatches('100').first;
-          expect(matches, contains(testMeasurementChocolateEntry.meta.id));
-        },
-      );
-
-      test('insertText with quantitative entry indexes health data', () async {
-        await db.insertText(testWeightEntry);
-
-        final weightMatches = await db.watchFullTextMatches('Weight').first;
-        expect(weightMatches, contains(testWeightEntry.meta.id));
-
-        final valueMatches = await db
-            .watchFullTextMatches('"94.49400329589844"')
-            .first;
-        expect(valueMatches, contains(testWeightEntry.meta.id));
-      });
-
-      test(
-        'insertText removes previous entry when removePrevious is true',
-        () async {
-          await db.insertText(testTextEntry);
-
-          final updatedEntry = testTextEntry.copyWith(
-            entryText: const EntryText(plainText: 'updated content'),
-          );
-
-          await db.insertText(updatedEntry, removePrevious: true);
-
-          final rows = await db.select(db.journalFts).get();
-          expect(rows, hasLength(1));
-
-          final newMatches = await db
-              .watchFullTextMatches('updated content')
-              .first;
-          expect(newMatches, contains(testTextEntry.meta.id));
-
-          final oldMatches = await db
-              .watchFullTextMatches('test entry text')
-              .first;
-          expect(oldMatches, isEmpty);
-        },
-      );
-
-      test(
-        'insertText keeps previous entry when removePrevious is false',
-        () async {
-          await db.insertText(testTextEntry);
-
-          final duplicateEntry = testTextEntry.copyWith(
-            entryText: const EntryText(plainText: 'duplicate content'),
-          );
-
-          await db.insertText(duplicateEntry);
-
-          final rows = await db.select(db.journalFts).get();
-          expect(rows, hasLength(2));
-          expect(
-            rows.every((row) => row.uuid == testTextEntry.meta.id),
-            isTrue,
-          );
-
-          final originalMatches = await db
-              .watchFullTextMatches('test entry text')
-              .first;
-          expect(originalMatches, isNotEmpty);
-
-          final duplicateMatches = await db
-              .watchFullTextMatches('duplicate content')
-              .first;
-          expect(duplicateMatches, isNotEmpty);
-        },
-      );
-
-      test('insertText skips empty entries', () async {
-        final emptyEntry = JournalEntry(
-          meta: _buildMetadata('empty-entry'),
-          entryText: const EntryText(plainText: ''),
-        );
-
-        await db.insertText(emptyEntry);
-
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, isEmpty);
-      });
-
-      test('insertText skips whitespace-only content', () async {
-        final whitespaceEntry = JournalEntry(
-          meta: _buildMetadata('whitespace-entry'),
-          entryText: const EntryText(plainText: '   \n\t  '),
-        );
-
-        await db.insertText(whitespaceEntry);
-
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, isEmpty);
-      });
-
-      test('insertText with null entryText stores empty plain text', () async {
-        final taskWithoutText = testTask.copyWith(entryText: null);
-
-        await db.insertText(taskWithoutText);
-
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, hasLength(1));
-        expect(rows.first.plainText, isEmpty);
-
-        final titleMatches = await db.watchFullTextMatches('Add tests').first;
-        expect(titleMatches, contains(taskWithoutText.meta.id));
-      });
     });
 
-    group('watchFullTextMatches', () {
-      late Fts5Db db;
-      late MockEntitiesCacheService entitiesCacheService;
+    test(
+      'a catch-up stopped between batches resumes where it stopped',
+      () async {
+        await store([for (var i = 0; i < 5; i++) _entry('entry-$i', 'squid')]);
 
-      setUpAll(() {
-        db = Fts5Db(inMemoryDatabase: true);
-      });
-
-      tearDownAll(() async {
-        await db.close();
-      });
-
-      setUp(() async {
-        await getIt.reset();
-
-        entitiesCacheService = MockEntitiesCacheService();
-
-        when(
-          () => entitiesCacheService.getDataTypeById(any()),
-        ).thenReturn(null);
-
-        getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
-      });
-
-      tearDown(() async {
-        // Fts5Db keeps no in-memory cache; truncating the single `journal_fts`
-        // virtual table fully resets state between tests. The per-test getIt
-        // registration is reset here (it is never registered in setUpAll, so
-        // nothing leaks).
-        await db.customStatement('DELETE FROM journal_fts');
-        await getIt.reset();
-      });
-
-      test('returns matching entry ids for query', () async {
-        await db.insertText(testTextEntry);
-        await db.insertText(testTask);
-
-        final matches = await db.watchFullTextMatches('test entry text').first;
-        expect(matches, equals([testTextEntry.meta.id]));
-      });
-
-      test('returns empty list when no entries match', () async {
-        await db.insertText(testTask);
-
-        final matches = await db.watchFullTextMatches('nothing here').first;
-        expect(matches, isEmpty);
-      });
-
-      test('match queries are case insensitive', () async {
-        final mixedEntry = JournalEntry(
-          meta: _buildMetadata('mixed-entry'),
-          entryText: const EntryText(plainText: 'MiXeD CaSe Content'),
+        var batches = 0;
+        final first = await fts.catchUp(
+          journalDb,
+          shouldContinue: () => batches++ < 1,
         );
+        expect(first, 2);
+        expect(await fts.needsCatchUp(), isTrue);
 
-        await db.insertText(mixedEntry);
+        final rest = await fts.catchUp(journalDb);
+        expect(rest, 3, reason: 'the first batch is not read again');
+        expect(await search('squid'), hasLength(5));
+      },
+    );
 
-        final lower = await db.watchFullTextMatches('mixed').first;
-        final upper = await db.watchFullTextMatches('MIXED').first;
-        final camel = await db.watchFullTextMatches('Mixed').first;
+    test('a live edit queued behind a rebuild batch is written after it, so '
+        'the batch cannot overwrite it with what it read before', () async {
+      final journal = MockJournalDb();
+      final batchRead =
+          Completer<({List<JournalEntity> entities, int lastRowId})>();
+      when(
+        () => journal.liveEntitiesAfterRowId(any(), any()),
+      ).thenAnswer((_) => batchRead.future);
+      when(
+        () => journal.getJournalEntitiesForIdsIncludingDeleted(any()),
+      ).thenAnswer((_) async => [_entry('entry-1', 'fresh words')]);
 
-        expect(lower, contains(mixedEntry.meta.id));
-        expect(upper, contains(mixedEntry.meta.id));
-        expect(camel, contains(mixedEntry.meta.id));
-      });
+      final rebuilding = fts.catchUp(journal);
+      await pumpEventQueue();
+      final edit = fts.indexByIds(journal, {'entry-1'});
+      batchRead.complete((
+        entities: [_entry('entry-1', 'stale words')],
+        lastRowId: 1,
+      ));
+      await rebuilding;
+      await edit;
 
-      test('handles special characters safely', () async {
-        final specialEntry = JournalEntry(
-          meta: _buildMetadata('special-entry'),
-          entryText: const EntryText(plainText: 'Learning C++ (2024)!'),
-        );
-
-        await db.insertText(specialEntry);
-
-        final matches = await db.watchFullTextMatches('"C++"').first;
-        expect(matches, contains(specialEntry.meta.id));
-      });
-
-      test('emits updates when new matching entry is inserted', () async {
-        final stream = db.watchFullTextMatches('update');
-        final firstEmission = Completer<List<String>>();
-        final secondEmission = Completer<List<String>>();
-        var count = 0;
-
-        late final StreamSubscription<List<String>> sub;
-        sub = stream.listen((event) {
-          count += 1;
-          if (count == 1 && !firstEmission.isCompleted) {
-            firstEmission.complete(event);
-          } else if (count == 2 && !secondEmission.isCompleted) {
-            secondEmission.complete(event);
-            sub.cancel();
-          }
-        });
-
-        addTearDown(() async {
-          if (!firstEmission.isCompleted) {
-            firstEmission.complete(const <String>[]);
-          }
-          if (!secondEmission.isCompleted) {
-            secondEmission.complete(const <String>[]);
-          }
-          await sub.cancel();
-        });
-
-        final initial = await firstEmission.future;
-        expect(initial, isEmpty);
-
-        final entry = JournalEntry(
-          meta: _buildMetadata('update-entry'),
-          entryText: const EntryText(plainText: 'needs update soon'),
-        );
-
-        await db.insertText(entry);
-
-        final updated = await secondEmission.future;
-        expect(updated, contains('update-entry'));
-      });
+      expect(await search('fresh'), ['entry-1']);
+      expect(await search('stale'), isEmpty);
     });
+  });
+
+  group('indexing by id', () {
+    setUp(() => fts.catchUp(journalDb));
+
+    test('a new entry becomes searchable, and an edit replaces what it '
+        'said', () async {
+      await store([_entry('entry-1', 'emperor colony')]);
+      await fts.indexByIds(journalDb, {'entry-1'});
+      expect(await search('emperor'), ['entry-1']);
+
+      await store([_entry('entry-1', 'adelie colony')]);
+      await fts.indexByIds(journalDb, {'entry-1', 'TEXT_ENTRY'});
+
+      expect(await search('adelie'), ['entry-1']);
+      expect(await search('emperor'), isEmpty);
+    });
+
+    test('a deleted entry, and an id with no row, leave the index', () async {
+      await store([_entry('kept', 'ice'), _entry('deleted', 'ice')]);
+      await fts.indexByIds(journalDb, {'kept', 'deleted'});
+      await fts.indexEntities([_entry('purged', 'ice')]);
+      expect(await search('ice'), hasLength(3));
+
+      await store([_entry('deleted', 'ice', deleted: true)]);
+      await fts.indexByIds(journalDb, {'deleted', 'purged'});
+
+      expect(await search('ice'), ['kept']);
+    });
+
+    test('an entry whose text is blank is not indexed', () async {
+      await store([_entry('blank', '   ')]);
+      await fts.indexByIds(journalDb, {'blank'});
+
+      final docs = await fts.select(fts.searchDoc).get();
+      expect(docs, isEmpty);
+    });
+  });
+
+  group('matching', () {
+    setUp(() => fts.catchUp(journalDb));
+
+    test('a title match ranks above a match in the text, and newer above '
+        'older among equals', () async {
+      await fts.indexEntities([
+        _entry('older-text', 'about the krill run', minutes: 1),
+        _entry('newer-text', 'about the krill run', minutes: 2),
+        _task('title', 'Krill run'),
+      ]);
+
+      expect(await search('krill run'), ['title', 'newer-text', 'older-text']);
+    });
+
+    test('the last word matches as a prefix while it is typed', () async {
+      await fts.indexEntities([_entry('entry-1', 'penguin census')]);
+
+      expect(await search('pengu'), ['entry-1']);
+      expect(await search('penguin cen'), ['entry-1']);
+      expect(await search('cen penguin'), isEmpty);
+    });
+
+    test('diacritics match either way', () async {
+      await fts.indexEntities([
+        _entry('accented', 'Pingüine am Südpol'),
+        _entry('plain', 'Pinguine am Sudpol'),
+      ]);
+
+      expect((await search('pinguine sudpol')).toSet(), {'accented', 'plain'});
+      expect((await search('Pingüine Südpol')).toSet(), {'accented', 'plain'});
+    });
+
+    test('filters apply before the limit', () async {
+      await fts.indexEntities([
+        _entry('colony-entry', 'krill', categoryId: 'colony', minutes: 3),
+        _entry('loose-entry', 'krill', minutes: 2),
+        _entry('private-entry', 'krill', private: true, minutes: 4),
+        _task('task', 'krill'),
+      ]);
+
+      expect(await search('krill', types: {'Task'}), ['task']);
+      expect(await search('krill', categoryIds: {'colony'}), ['colony-entry']);
+      expect(
+        (await search('krill', categoryIds: {''})).toSet(),
+        {'loose-entry', 'private-entry', 'task'},
+        reason: 'the empty id stands for uncategorised',
+      );
+      expect(
+        await search('krill', includePrivate: false),
+        isNot(contains('private-entry')),
+      );
+      expect(
+        await search('krill', categoryIds: {}),
+        isEmpty,
+        reason: 'an empty selection matches nothing',
+      );
+      expect(
+        await search('krill', types: {'JournalEntry'}, limit: 1),
+        ['private-entry'],
+        reason: 'the newest entry, the task being filtered out first',
+      );
+    });
+
+    test('anyTerm is satisfied by one of the words', () async {
+      await fts.indexEntities([
+        _entry('krill', 'krill only'),
+        _entry('squid', 'squid only'),
+      ]);
+
+      expect(await search('krill squid'), isEmpty);
+      expect(
+        (await search('krill squid', anyTerm: true)).toSet(),
+        {'krill', 'squid'},
+      );
+    });
+
+    test('input with nothing to match finds nothing', () async {
+      await fts.indexEntities([_entry('entry-1', 'krill')]);
+      expect(await search('  "" ** '), isEmpty);
+    });
+
+    glados.Glados(
+      glados.any.list(
+        glados.any.choose([
+          'krill',
+          'OR',
+          'NEAR',
+          'NOT',
+          '"',
+          "'",
+          '-',
+          '*',
+          ':',
+          '(',
+          ')',
+          '^',
+          '{',
+          ' ',
+          'ü',
+          'x',
+        ]),
+      ),
+    ).test('whatever a user types, matching never throws', (parts) async {
+      await fts.indexEntities([_entry('entry-1', 'krill and squid')]);
+      final query = parts.join();
+      final matches = await search(query);
+      expect(matches, anyOf(isEmpty, ['entry-1']), reason: query);
+    }, tags: 'glados');
+  });
+
+  test('reindexing measurements applies the definition given, not the '
+      'cached one', () async {
+    await fts.catchUp(journalDb);
+    await fts.reindexMeasurements(measurableChocolate, [
+      testMeasurementChocolateEntry,
+      testTextEntry,
+    ]);
+
+    expect(
+      await search('Chocolate'),
+      [testMeasurementChocolateEntry.meta.id],
+      reason: 'only measurements of that definition are written',
+    );
+  });
+
+  test('upgrading a version 1 index drops its table and starts a '
+      'rebuild', () async {
+    final directory = setupTestDirectory();
+    addTearDown(() => directory.deleteSync(recursive: true));
+    sqlite3.open(p.join(directory.path, fts5DbFileName))
+      ..execute(
+        'CREATE VIRTUAL TABLE journal_fts USING '
+        'fts5(plain_text, title, summary, tags, uuid)',
+      )
+      ..execute("INSERT INTO journal_fts VALUES ('krill', '', '', '', 'old')")
+      ..execute('PRAGMA user_version = 1')
+      ..close();
+
+    final upgraded = Fts5Db(
+      documentsDirectoryProvider: () async => directory,
+      tempDirectoryProvider: () async => directory,
+    );
+    addTearDown(upgraded.close);
+
+    expect(await upgraded.needsCatchUp(), isTrue);
+    final tables = await upgraded
+        .customSelect(
+          "SELECT name FROM sqlite_master WHERE name = 'journal_fts'",
+        )
+        .get();
+    expect(tables, isEmpty);
+    expect(upgraded.schemaVersion, 2);
   });
 }

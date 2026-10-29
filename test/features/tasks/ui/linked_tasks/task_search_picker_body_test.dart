@@ -12,6 +12,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -50,8 +51,8 @@ void main() {
   /// window a task can hide in on a backlog larger than 200 rows.
   void stubFullTextHitsOutsideWindow(List<Task> tasks) {
     when(
-      () => fts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(tasks.map((t) => t.meta.id).toList()));
+      () => anyMatchIds(fts5Db),
+    ).thenAnswer((_) async => tasks.map((t) => t.meta.id).toList());
     when(
       () => journalDb.getJournalEntitiesForIds(any()),
     ).thenAnswer((_) async => tasks);
@@ -63,8 +64,8 @@ void main() {
 
     stubTasks([]);
     when(
-      () => fts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(<String>[]));
+      () => anyMatchIds(fts5Db),
+    ).thenAnswer((_) async => <String>[]);
     when(
       () => journalDb.getJournalEntitiesForIds(any()),
     ).thenAnswer((_) async => <JournalEntity>[]);
@@ -203,8 +204,8 @@ void main() {
   ) async {
     stubTasks([]);
     when(
-      () => fts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.error(Exception('fts unavailable')));
+      () => anyMatchIds(fts5Db),
+    ).thenAnswer((_) async => throw Exception('fts unavailable'));
 
     await pumpBody(tester, onCreateTask: (_) async => null);
     await search(tester, 'Write the guide');
@@ -326,14 +327,14 @@ void main() {
         await tester.enterText(find.byType(TextField), query);
         await tester.pump(const Duration(milliseconds: 40));
       }
-      verifyNever(() => fts5Db.watchFullTextMatches(any()));
+      verifyNever(() => anyMatchIds(fts5Db));
 
       await tester.pump(entityPickerSearchDebounce);
       await tester.pump();
 
       // One query hits the index, not one per character. Typing used to open a
       // fresh Drift subscription per keystroke.
-      verify(() => fts5Db.watchFullTextMatches('Appl')).called(1);
+      verify(() => anyMatchIds(fts5Db, 'Appl')).called(1);
       verifyNoMoreInteractions(fts5Db);
     });
 
@@ -345,7 +346,7 @@ void main() {
 
       // Surrounding whitespace is not part of what the user searched for, and
       // the exact-title check downstream compares trimmed titles.
-      verify(() => fts5Db.watchFullTextMatches('apple')).called(1);
+      verify(() => anyMatchIds(fts5Db, 'apple')).called(1);
     });
 
     testWidgets(
@@ -381,11 +382,11 @@ void main() {
       // another zone and never resolves inside the test's fake async.
       final stale = Completer<List<String>>();
       when(
-        () => fts5Db.watchFullTextMatches('stale'),
-      ).thenAnswer((_) => Stream.fromFuture(stale.future));
+        () => anyMatchIds(fts5Db, 'stale'),
+      ).thenAnswer((_) => stale.future);
       when(
-        () => fts5Db.watchFullTextMatches('fresh'),
-      ).thenAnswer((_) => Stream.value(<String>['banana']));
+        () => anyMatchIds(fts5Db, 'fresh'),
+      ).thenAnswer((_) async => <String>['banana']);
 
       await pumpBody(tester);
 
@@ -423,11 +424,11 @@ void main() {
 
       final stale = Completer<List<String>>();
       when(
-        () => fts5Db.watchFullTextMatches('stale'),
-      ).thenAnswer((_) => Stream.fromFuture(stale.future));
+        () => anyMatchIds(fts5Db, 'stale'),
+      ).thenAnswer((_) => stale.future);
       when(
-        () => fts5Db.watchFullTextMatches('fresh'),
-      ).thenAnswer((_) => Stream.value(<String>['banana']));
+        () => anyMatchIds(fts5Db, 'fresh'),
+      ).thenAnswer((_) async => <String>['banana']);
 
       await pumpBody(tester);
       await search(tester, 'stale');
@@ -454,11 +455,11 @@ void main() {
         final second = buildTask(id: 'second', title: 'Past the window two');
         stubTasks([]);
         when(
-          () => fts5Db.watchFullTextMatches('one'),
-        ).thenAnswer((_) => Stream.value(<String>['first']));
+          () => anyMatchIds(fts5Db, 'one'),
+        ).thenAnswer((_) async => <String>['first']);
         when(
-          () => fts5Db.watchFullTextMatches('two'),
-        ).thenAnswer((_) => Stream.value(<String>['second']));
+          () => anyMatchIds(fts5Db, 'two'),
+        ).thenAnswer((_) async => <String>['second']);
         when(() => journalDb.getJournalEntitiesForIds({'first'})).thenAnswer(
           (_) async => [first],
         );

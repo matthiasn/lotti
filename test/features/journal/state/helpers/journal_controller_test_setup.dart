@@ -14,6 +14,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 
@@ -87,8 +88,8 @@ class JournalControllerTestSetup {
     ).thenAnswer((_) async => 1);
 
     when(
-      () => mockFts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(<String>[]));
+      () => anyMatchIds(mockFts5Db),
+    ).thenAnswer((_) async => <String>[]);
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 

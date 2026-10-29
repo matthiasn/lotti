@@ -86,9 +86,6 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
       when(
-        () => mockFts5Db.insertText(any(), removePrevious: true),
-      ).thenAnswer((_) async {});
-      when(
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
       when(

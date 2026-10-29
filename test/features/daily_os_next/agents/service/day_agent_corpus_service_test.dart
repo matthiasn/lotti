@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_corpus_ser
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
@@ -401,8 +402,8 @@ void main() {
       'returns ranked matches in FTS order, dropping closed tasks',
       () async {
         when(
-          () => fts5Db.watchFullTextMatches('demo'),
-        ).thenAnswer((_) => Stream.value(['t-a', 't-closed', 't-b']));
+          () => anyMatchIds(fts5Db, 'demo'),
+        ).thenAnswer((_) async => ['t-a', 't-closed', 't-b']);
         when(
           () => journalDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer(
@@ -432,7 +433,7 @@ void main() {
       );
 
       expect(matches, isEmpty);
-      verifyNever(() => fts5Db.watchFullTextMatches(any()));
+      verifyNever(() => anyMatchIds(fts5Db));
     });
   });
 }

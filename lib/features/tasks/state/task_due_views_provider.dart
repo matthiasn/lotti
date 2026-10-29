@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/task_due_day_provider.dart';
@@ -80,6 +81,11 @@ Future<Set<String>?> _searchRestriction(
   }
   final fts = ref.read(fts5DbProvider);
   if (fts == null) return null;
-  final matches = await fts.watchFullTextMatches(pageState.match).first;
+  final matches = await taskFullTextMatches(
+    fts5Db: fts,
+    journalDb: ref.read(journalDbProvider),
+    query: pageState.match,
+    selectedCategoryIds: pageState.selectedCategoryIds,
+  );
   return matches.toSet();
 }

@@ -74,13 +74,6 @@ void main() {
       );
 
       when(
-        () => mockFts5Db.insertText(
-          any(),
-          removePrevious: true,
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
 

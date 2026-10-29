@@ -1,8 +1,9 @@
 # Services
 
 Process-wide services registered in GetIt before any widget exists: logging,
-change notification, time tracking, navigation, notifications, entity caching,
-vector clocks, geolocation and window management.
+change notification, search indexing, time tracking, navigation,
+notifications, entity caching, vector clocks, geolocation and window
+management.
 
 These are the things that must exist for the whole life of the process and cannot
 be scoped to a widget tree.
@@ -19,3 +20,6 @@ be scoped to a widget tree.
   [knowledge/architecture/device-location.md](../../knowledge/architecture/device-location.md)
 - **Change notification** and the three update streams —
   [knowledge/architecture/persistence.md](../../knowledge/architecture/persistence.md)
+- **Search indexing**: how every journal write, synced ones included, reaches
+  the full-text index, and how it catches up after a rebuild —
+  [knowledge/features/search/full-text-index.md](../../knowledge/features/search/full-text-index.md)

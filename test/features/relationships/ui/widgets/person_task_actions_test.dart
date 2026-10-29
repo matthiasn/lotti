@@ -12,6 +12,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -105,8 +106,8 @@ void main() {
         (_) async => [task('t1'), task('t9', title: 'Send photos')],
       );
       when(
-        () => fts.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(const <String>[]));
+        () => anyMatchIds(fts),
+      ).thenAnswer((_) async => const <String>[]);
       getIt
         ..registerSingleton<JournalDb>(db)
         ..registerSingleton<Fts5Db>(fts)

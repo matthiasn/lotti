@@ -72,6 +72,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/manual_demo_world.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
@@ -375,8 +376,8 @@ void main() {
       () => editorStateService.getUnsavedStream(any(), any()),
     ).thenAnswer((_) => const Stream.empty());
     when(
-      () => fts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(<String>[]));
+      () => anyMatchIds(fts5Db),
+    ).thenAnswer((_) async => <String>[]);
     when(
       () => journalRepository.getLinkedImagesForTask(any()),
     ).thenAnswer((_) async => world.coverImages.take(5).toList());

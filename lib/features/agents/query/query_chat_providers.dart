@@ -248,7 +248,11 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
       crawler: QueryJournalCrawler(
         journal: journal,
         access: access,
-        search: (terms) => getIt<Fts5Db>().findMatching(terms).get(),
+        search: (words) => getIt<Fts5Db>().matchIds(
+          words,
+          anyTerm: true,
+          prefixLastWord: false,
+        ),
       ),
       access: access,
       inference: QueryTextInference.forProfile(

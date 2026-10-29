@@ -91,28 +91,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     category: entity.meta.categoryId ?? '',
     dateTo: entity.meta.dateTo,
     plainText: entity.entryText?.plainText,
-    type: entity.map(
-      journalEntry: (_) => 'JournalEntry',
-      journalImage: (_) => 'JournalImage',
-      journalAudio: (_) => 'JournalAudio',
-      task: (_) => 'Task',
-      event: (_) => 'JournalEvent',
-      aiResponse: (_) => 'AiResponse',
-      checklist: (_) => 'Checklist',
-      checklistItem: (_) => 'ChecklistItem',
-      quantitative: (_) => 'QuantitativeEntry',
-      measurement: (_) => 'MeasurementEntry',
-      workout: (_) => 'WorkoutEntry',
-      habitCompletion: (_) => 'HabitCompletionEntry',
-      survey: (_) => 'SurveyEntry',
-      dayPlan: (_) => 'DayPlanEntry',
-      rating: (_) => 'RatingEntry',
-      project: (_) => 'Project',
-      relationship: (_) => 'Relationship',
-      checkIn: (_) => 'CheckIn',
-      goal: (_) => 'Goal',
-      pullRequest: (_) => 'PullRequest',
-    ),
+    type: entityTypeName(entity),
     subtype: subtype,
     serialized: json.encode(entity),
     schemaVersion: 0,
@@ -403,3 +382,31 @@ List<CategoryDefinition> categoryDefinitionsStreamMapper(
 ) {
   return dbEntities.map(fromCategoryDefinitionDbEntity).toList();
 }
+
+/// The `type` column of a task's journal row.
+const taskEntityTypeName = 'Task';
+
+/// The journal row's `type` column for [entity], which the search index
+/// stores too so the two filter by the same names.
+String entityTypeName(JournalEntity entity) => entity.map(
+  journalEntry: (_) => 'JournalEntry',
+  journalImage: (_) => 'JournalImage',
+  journalAudio: (_) => 'JournalAudio',
+  task: (_) => taskEntityTypeName,
+  event: (_) => 'JournalEvent',
+  aiResponse: (_) => 'AiResponse',
+  checklist: (_) => 'Checklist',
+  checklistItem: (_) => 'ChecklistItem',
+  quantitative: (_) => 'QuantitativeEntry',
+  measurement: (_) => 'MeasurementEntry',
+  workout: (_) => 'WorkoutEntry',
+  habitCompletion: (_) => 'HabitCompletionEntry',
+  survey: (_) => 'SurveyEntry',
+  dayPlan: (_) => 'DayPlanEntry',
+  rating: (_) => 'RatingEntry',
+  project: (_) => 'Project',
+  relationship: (_) => 'Relationship',
+  checkIn: (_) => 'CheckIn',
+  goal: (_) => 'Goal',
+  pullRequest: (_) => 'PullRequest',
+);

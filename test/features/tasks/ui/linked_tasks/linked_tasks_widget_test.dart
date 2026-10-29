@@ -33,6 +33,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -269,8 +270,8 @@ void main() {
     mockVectorClockService = MockVectorClockService();
 
     when(
-      () => mockFts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(<String>[]));
+      () => anyMatchIds(mockFts5Db),
+    ).thenAnswer((_) async => <String>[]);
 
     getItMocks = await setUpTestGetIt(
       additionalSetup: () {

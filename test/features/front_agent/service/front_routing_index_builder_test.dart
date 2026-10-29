@@ -16,6 +16,7 @@ import 'package:lotti/features/front_agent/service/front_routing_index_builder.d
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_data/entity_factories.dart';
 
@@ -392,8 +393,8 @@ void main() {
       'matches open tasks inside the scope and attaches their reports',
       () async {
         when(
-          () => fts5Db.watchFullTextMatches('shed'),
-        ).thenAnswer((_) => Stream.value(['t9', 'out']));
+          () => anyMatchIds(fts5Db, 'shed'),
+        ).thenAnswer((_) async => ['t9', 'out']);
         when(
           () => journalDb.getJournalEntitiesForIdsUnordered({'t9', 'out'}),
         ).thenAnswer(

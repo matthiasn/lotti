@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:lotti/classes/dashboard_health_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/conversions.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts_query.dart';
+import 'package:lotti/database/search_document.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/entry_tools.dart';
 
 part 'fts5_db.g.dart';
 
@@ -34,12 +37,18 @@ String _choiceTitleSignature(MeasurableDataType dataType) {
   return titles.join('\u0001');
 }
 
+/// The search index: a derived, rebuildable copy of the journal's text.
+///
+/// Every write runs through one serial queue, and the writes that read the
+/// journal ([indexByIds], [catchUp]) read it inside that queue, so a rebuild
+/// batch read before a live edit can never be written after it.
 @DriftDatabase(include: {'fts5_db.drift'})
 class Fts5Db extends _$Fts5Db {
   Fts5Db({
     this.inMemoryDatabase = false,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
+    this.rebuildBatchSize = 500,
   }) : super(
          openDbConnection(
            fts5DbFileName,
@@ -51,83 +60,122 @@ class Fts5Db extends _$Fts5Db {
 
   final bool inMemoryDatabase;
 
+  /// Version 2 replaced the single `journal_fts` table with `search_doc` and
+  /// `search_fts`; its rows cannot be converted, so the upgrade starts a
+  /// rebuild ([catchUp]).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
-  Stream<List<String>> watchFullTextMatches(String query) {
-    return findMatching(query).watch();
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+      await _startRebuild();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await customStatement('DROP TABLE IF EXISTS journal_fts');
+        await m.createAll();
+        await _startRebuild();
+      }
+    },
+  );
+
+  /// Rows read from the journal per rebuild batch, each written in one
+  /// transaction; also the ids [indexByIds] writes per transaction.
+  final int rebuildBatchSize;
+
+  /// Matches returned when a caller does not ask for fewer.
+  static const defaultMatchLimit = 500;
+
+  static const _rebuildCursorKey = 'rebuild_after_rowid';
+
+  Future<void> _queue = Future<void>.value();
+
+  Future<T> _serially<T>(Future<T> Function() write) {
+    final result = _queue.then((_) => write());
+    _queue = result.then<void>((_) {}, onError: (_) {});
+    return result;
   }
 
-  Future<void> insertText(
-    JournalEntity entry, {
-    bool removePrevious = false,
-    MeasurableDataType? measurementDataType,
+  Future<void> _startRebuild() => setIndexStateValue(_rebuildCursorKey, 0);
+
+  /// Whether the index is still catching up with the journal after it was
+  /// created, upgraded or reset — [catchUp] finishes it.
+  Future<bool> needsCatchUp() async =>
+      await indexStateValue(_rebuildCursorKey).getSingleOrNull() != null;
+
+  /// Indexes every live journal row the index has not caught up with, a
+  /// batch at a time, and records each batch's last rowid with it, so a
+  /// rebuild cut short by the app closing resumes where it stopped.
+  ///
+  /// Returns the number of entities indexed; [onProgress] gets that count
+  /// after every batch. [shouldContinue] returning false stops it between
+  /// batches, for a caller being disposed.
+  Future<int> catchUp(
+    JournalDb journalDb, {
+    void Function(int indexed)? onProgress,
+    bool Function()? shouldContinue,
   }) async {
-    final uuid = entry.meta.id;
-
-    if (removePrevious) {
-      await deleteEntry('"$uuid"');
-    }
-
-    final plainText = entry.entryText?.plainText ?? '';
-    final title = entry.maybeMap(
-      task: (task) => task.data.title,
-      survey: (survey) => survey.data.taskResult.identifier,
-      // A check-in is found by what it was about and what to bring up next
-      // time, not only by its note (ADR 0139).
-      checkIn: (checkIn) => [
-        ...checkIn.data.topics,
-        ?checkIn.data.payAttentionTo,
-        ?checkIn.data.avoid,
-      ].join(' '),
-      orElse: () => '',
-    );
-
-    final summary = entry.maybeMap(
-      measurement: (m) {
-        // Resolved lazily so non-measurement indexing (incl. seeding a
-        // non-active world through WorldHandle) never touches the active
-        // generation's cache.
-        final dataType =
-            measurementDataType ??
-            getIt<EntitiesCacheService>().getDataTypeById(m.data.dataTypeId);
-        // A choice recording indexes the choice's title, so searching for
-        // "clear" finds the hydration entry; a number keeps value and unit.
-        final value = dataType == null
-            ? '${m.data.value}'
-            : measurementValueLabel(m.data, dataType);
-        return '${dataType?.displayName} $value';
-      },
-      survey: (survey) {
-        final scores = survey.data.calculatedScores.entries.map(
-          (mapEntry) => '${mapEntry.key}: ${mapEntry.value}',
+    var indexed = 0;
+    while (shouldContinue?.call() ?? true) {
+      final done = await _serially(() async {
+        final after = await indexStateValue(
+          _rebuildCursorKey,
+        ).getSingleOrNull();
+        if (after == null) return true;
+        final batch = await journalDb.liveEntitiesAfterRowId(
+          after,
+          rebuildBatchSize,
         );
-        return scores.join('\n');
-      },
-      quantitative: (q) {
-        final healthType = healthTypes[q.data.dataType];
-        final unit = healthType?.unit ?? q.data.unit;
-        final displayName = healthType?.displayName ?? q.data.dataType;
+        await transaction(() async {
+          await _write(batch.entities);
+          if (batch.entities.length < rebuildBatchSize) {
+            await clearIndexStateValue(_rebuildCursorKey);
+          } else {
+            await setIndexStateValue(_rebuildCursorKey, batch.lastRowId);
+          }
+        });
+        indexed += batch.entities.length;
+        return batch.entities.length < rebuildBatchSize;
+      });
+      onProgress?.call(indexed);
+      if (done) break;
+    }
+    return indexed;
+  }
 
-        return '${q.data.value} $unit $displayName';
-      },
-      orElse: () => '',
-    );
-
-    if (plainText.trim().isNotEmpty ||
-        title.trim().isNotEmpty ||
-        summary.trim().isNotEmpty) {
-      await insertJournalEntry(
-        plainText,
-        title,
-        summary,
-        '',
-        uuid,
-      );
+  /// Brings the entities among [ids] up to date with the journal: indexes
+  /// the live ones, and drops the deleted ones and ids with no row. Ids that
+  /// name no entity — notification tokens — cost a lookup and nothing else.
+  Future<void> indexByIds(JournalDb journalDb, Set<String> ids) async {
+    if (ids.isEmpty) return;
+    final idList = ids.toList(growable: false);
+    for (var start = 0; start < idList.length; start += rebuildBatchSize) {
+      final chunk = idList
+          .sublist(start, (start + rebuildBatchSize).clamp(0, idList.length))
+          .toSet();
+      await _serially(() async {
+        final entities = await journalDb
+            .getJournalEntitiesForIdsIncludingDeleted(chunk);
+        final found = {for (final entity in entities) entity.meta.id};
+        await transaction(() async {
+          await _write(entities);
+          for (final id in chunk.difference(found)) {
+            await _remove(id);
+          }
+        });
+      });
     }
   }
 
-  /// Rebuilds the derived FTS rows for every measurement of [dataType].
+  /// Indexes [entities] as they are, without reading the journal — for a
+  /// caller writing to a journal this index is not the live one for (a
+  /// world being seeded, a demo copy).
+  Future<void> indexEntities(Iterable<JournalEntity> entities) =>
+      _serially(() => transaction(() => _write(entities)));
+
+  /// Rebuilds the derived text of every measurement of [dataType].
   ///
   /// Choice titles, measurable names, and numeric units live on the
   /// definition rather than the journal entry. When one changes, historical
@@ -137,16 +185,130 @@ class Fts5Db extends _$Fts5Db {
   Future<void> reindexMeasurements(
     MeasurableDataType dataType,
     Iterable<JournalEntity> entries,
-  ) async {
-    for (final entry in entries) {
-      if (entry is! MeasurementEntry || entry.data.dataTypeId != dataType.id) {
+  ) => _serially(
+    () => transaction(
+      () => _write(
+        [
+          for (final entry in entries)
+            if (entry is MeasurementEntry &&
+                entry.data.dataTypeId == dataType.id)
+              entry,
+        ],
+        measurableDataType: (id) => id == dataType.id ? dataType : null,
+      ),
+    ),
+  );
+
+  Future<void> _write(
+    Iterable<JournalEntity> entities, {
+    MeasurableDataType? Function(String dataTypeId)? measurableDataType,
+  }) async {
+    for (final entity in entities) {
+      final document = entity.meta.deletedAt != null
+          ? null
+          : searchDocumentFor(
+              entity,
+              measurableDataType: measurableDataType ?? _cachedDataType,
+            );
+      if (document == null || document.isEmpty) {
+        await _remove(entity.meta.id);
         continue;
       }
-      await insertText(
-        entry,
-        removePrevious: true,
-        measurementDataType: dataType,
+      final rowId = await into(searchDoc).insertReturning(
+        SearchDocCompanion.insert(
+          entityId: entity.meta.id,
+          type: entityTypeName(entity),
+          categoryId: Value(entity.meta.categoryId ?? ''),
+          private: Value(entity.meta.private ?? false),
+          dateFrom: entity.meta.dateFrom.millisecondsSinceEpoch,
+        ),
+        onConflict: DoUpdate.withExcluded(
+          (old, excluded) => SearchDocCompanion.custom(
+            type: excluded.type,
+            categoryId: excluded.categoryId,
+            private: excluded.private,
+            dateFrom: excluded.dateFrom,
+          ),
+          target: [searchDoc.entityId],
+        ),
+      );
+      await deleteSearchText(rowId.id);
+      await insertSearchText(
+        rowId.id,
+        document.title,
+        document.body,
+        document.extra,
       );
     }
+  }
+
+  Future<void> _remove(String entityId) async {
+    final doc = await searchDocByEntityId(entityId).getSingleOrNull();
+    if (doc == null) return;
+    await deleteSearchText(doc.id);
+    await deleteSearchDoc(doc.id);
+  }
+
+  // Resolved lazily so indexing a non-active world (WorldHandle) never
+  // touches the active generation's cache unless it holds measurements.
+  static MeasurableDataType? _cachedDataType(String dataTypeId) =>
+      getIt<EntitiesCacheService>().getDataTypeById(dataTypeId);
+
+  /// The ids of the entities matching what a user typed in [query], best
+  /// match first: by BM25 with a title match worth ten times one in the
+  /// text and an `extra` match twice, newer first among equals.
+  ///
+  /// The filters apply before [limit], so the limit keeps the best matches
+  /// the caller can show: [types] and [categoryIds] (the empty id for
+  /// uncategorised) restrict when given, and [includePrivate] false leaves
+  /// private entities out. With [anyTerm], one matching word is enough;
+  /// [prefixLastWord] false matches the last word whole too, for a caller
+  /// passing finished words rather than what is being typed.
+  /// Input with nothing to match returns no ids; it never throws
+  /// ([ftsMatchExpression]).
+  Future<List<String>> matchIds(
+    String query, {
+    bool anyTerm = false,
+    bool prefixLastWord = true,
+    Set<String>? types,
+    Set<String>? categoryIds,
+    bool includePrivate = true,
+    int limit = defaultMatchLimit,
+  }) async {
+    final expression = ftsMatchExpression(
+      query,
+      anyTerm: anyTerm,
+      prefixLastWord: prefixLastWord,
+    );
+    if (expression == null) return const [];
+    final where = StringBuffer('search_fts MATCH ?');
+    final variables = <Variable<Object>>[Variable.withString(expression)];
+    void inSet(String column, Set<String>? values) {
+      if (values == null) return;
+      if (values.isEmpty) {
+        where.write(' AND 0');
+        return;
+      }
+      where.write(
+        ' AND d.$column IN (${List.filled(values.length, '?').join(', ')})',
+      );
+      variables.addAll(values.map(Variable.withString));
+    }
+
+    inSet('type', types);
+    inSet('category_id', categoryIds);
+    if (!includePrivate) where.write(' AND d.private = 0');
+    variables.add(Variable.withInt(limit));
+
+    final rows = await customSelect(
+      'SELECT d.entity_id AS entity_id FROM search_fts '
+      'INNER JOIN search_doc AS d ON d.id = search_fts.rowid '
+      'WHERE $where '
+      'ORDER BY bm25(search_fts, 10.0, 1.0, 2.0), d.date_from DESC '
+      'LIMIT ?',
+      variables: variables,
+      readsFrom: {searchFts, searchDoc},
+    ).get();
+    return [for (final row in rows) row.read<String>('entity_id')];
   }
 }

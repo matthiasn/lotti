@@ -136,7 +136,10 @@ class QueryJournalCrawler {
 
   final JournalDb journal;
   final QuerySourceAccess access;
-  final Future<List<String>> Function(String query) search;
+
+  /// The ids of the entries that hold any of the space-separated words in
+  /// its argument, best match first.
+  final Future<List<String>> Function(String words) search;
   final int maxDocuments;
 
   static const sourceTypes = [
@@ -206,7 +209,7 @@ class QueryJournalCrawler {
           .take(8)
           .toList();
       if (terms.isNotEmpty) {
-        final ids = await search(terms.map((term) => '"$term"').join(' OR '));
+        final ids = await search(terms.join(' '));
         // The journal query applies scope and privacy BEFORE its limit.
         for (var offset = 0; offset < ids.length; offset += 400) {
           final end = (offset + 400).clamp(0, ids.length);
