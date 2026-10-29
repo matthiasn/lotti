@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -29,9 +30,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/saved_task_filter.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/history_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/database/title_search.dart';
 import 'package:lotti/features/agents/query/query_chat_providers.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -66,6 +69,7 @@ import 'package:lotti/features/history/ui/history_page.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
+import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/features/lockdown/state/lockdown_category_options.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -6936,6 +6940,86 @@ void main() {
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
+    });
+
+    testWidgets('the palette finds a task by title and opens it by id', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isEventsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+      final journalDb = getIt<JournalDb>() as MockJournalDb;
+      when(
+        () => journalDb.getConfigFlag(privateFlag),
+      ).thenAnswer((_) async => false);
+      final fts = MockFts5Db();
+      when(
+        () => fts.searchTitles(
+          any(),
+          types: any(named: 'types'),
+          categoryIds: any(named: 'categoryIds'),
+          includePrivate: any(named: 'includePrivate'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => const [
+          TitleMatch(
+            entityId: 'task-1',
+            type: 'Task',
+            title: 'Feed the chicks',
+          ),
+        ],
+      );
+      final userActivityService = _SpyUserActivityService();
+      addTearDown(userActivityService.dispose);
+
+      await _pumpReadyMyBeamerApp(
+        tester,
+        app: MyBeamerApp(
+          navService: mockNavService,
+          userActivityService: userActivityService,
+        ),
+        extraOverrides: [fts5DbProvider.overrideWithValue(fts)],
+      );
+      final commandContext = tester.element(find.byType(ZoomWrapper));
+      unawaited(
+        AppCommandControllerProvider.of(
+          commandContext,
+        ).invoke(commandContext, AppCommandId.openCommandPalette),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.enterText(find.byType(EditableText).last, 'chicks');
+      await tester.pump(CommandCatalogView.jumpSearchDebounce);
+      await tester.pump();
+      expect(find.text('Feed the chicks'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => mockNavService.openTask('task-1')).called(1);
+      final asked = verify(
+        () => fts.searchTitles(
+          'chicks',
+          types: any(named: 'types'),
+          categoryIds: captureAny(named: 'categoryIds'),
+          includePrivate: captureAny(named: 'includePrivate'),
+          limit: any(named: 'limit'),
+        ),
+      ).captured;
+      expect(asked, contains(false), reason: 'private mode is off');
+      expect(asked, contains(null), reason: 'no lockdown, every category');
     });
   });
 

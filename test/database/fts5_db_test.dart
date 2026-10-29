@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/title_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -225,6 +227,152 @@ void main() {
     });
   });
 
+  group('searchTitles', () {
+    setUp(() => fts.catchUp(journalDb));
+
+    Future<List<String>> titles(
+      String query, {
+      Set<String>? types,
+      bool includePrivate = true,
+    }) async => [
+      for (final match in await fts.searchTitles(
+        query,
+        types: types,
+        includePrivate: includePrivate,
+      ))
+        match.entityId,
+    ];
+
+    test('a fragment of a word finds the title, best placed first', () async {
+      await fts.indexEntities([
+        _task('inside', 'Pre-launch checks'),
+        _task('starts', 'Launch day rehearsal'),
+        _entry('text-only', 'the launch went well'),
+      ]);
+
+      expect(await titles('launch'), ['starts', 'inside']);
+      expect(
+        (await titles('aunc')).toSet(),
+        {'starts', 'inside'},
+        reason: 'inside a word, neither starts with it',
+      );
+    });
+
+    test('the ranking folds exactly the letters the index folds, to the same '
+        'base', () async {
+      await fts.customStatement(
+        'CREATE VIRTUAL TABLE fold_probe USING fts5(title, '
+        "tokenize = 'trigram remove_diacritics 1')",
+      );
+      for (final rune in [
+        for (var c = 0xC0; c <= 0x24F; c++) c,
+        for (var c = 0x1E00; c <= 0x1EFF; c++) c,
+      ]) {
+        final letter = String.fromCharCode(rune);
+        if (letter.toLowerCase() != letter || letter.toUpperCase() == letter) {
+          continue;
+        }
+        await fts.customStatement(
+          'INSERT INTO fold_probe(rowid, title) VALUES (?, ?)',
+          [rune, 'q${letter}q'],
+        );
+      }
+      final indexFolds = <String, String>{};
+      for (var b = 0x61; b <= 0x7A; b++) {
+        final base = String.fromCharCode(b);
+        final rows = await fts
+            .customSelect(
+              'SELECT rowid AS rune FROM fold_probe WHERE fold_probe MATCH ?',
+              variables: [Variable.withString('"q${base}q"')],
+            )
+            .get();
+        for (final row in rows) {
+          indexFolds[String.fromCharCode(row.read<int>('rune'))] = base;
+        }
+      }
+
+      expect(foldedLetters, indexFolds);
+    });
+
+    test('accents and case do not matter, and do not make a match '
+        'fuzzy', () async {
+      await fts.indexEntities([
+        _task('task-1', 'Pingüine zählen'),
+        _task('task-2', 'Úkol'),
+      ]);
+
+      final matches = await fts.searchTitles('pinguine');
+      expect(matches.map((m) => m.entityId), ['task-1']);
+      expect(matches.single.fuzzy, isFalse);
+      expect(await titles('ZÄHL'), ['task-1']);
+      expect(await titles('ukol'), ['task-2']);
+      await fts.indexEntities([_task('task-3', 'Søren')]);
+      expect(await titles('søren'), ['task-3'], reason: 'kept as stored');
+      expect(await titles('sø'), ['task-3']);
+    });
+
+    test('the whole candidate pool is ranked before the limit: an exact '
+        'title, and a short word, are not crowded out by BM25', () async {
+      await fts.indexEntities([
+        for (var i = 0; i < 40; i++) _task('repeat-$i', 'launch launch'),
+        _task('exact', 'Launch'),
+        for (var i = 0; i < 40; i++) _task('plan-$i', 'Plan'),
+        _task('john', 'Plan John'),
+      ]);
+
+      final launch = await fts.searchTitles('launch', limit: 8);
+      expect(launch.first.entityId, 'exact');
+
+      final plan = await fts.searchTitles('plan jo', limit: 8);
+      expect(plan.map((m) => m.entityId), ['john']);
+      expect(plan.single.fuzzy, isFalse);
+    });
+
+    test(
+      'a one- or two-letter query matches the start of a title word',
+      () async {
+        await fts.indexEntities([
+          _task('roll', 'Emperor penguin roll call'),
+          _task('other', 'Sardine futures'),
+        ]);
+
+        expect(await titles('ro'), ['roll']);
+        expect(await titles('pe ro'), ['roll']);
+      },
+    );
+
+    test('a misspelt title finds its nearest titles, marked fuzzy', () async {
+      await fts.indexEntities([
+        _task('roll', 'Emperor penguin roll call'),
+        _task('other', 'Sardine futures'),
+      ]);
+
+      final near = await fts.searchTitles('pengiun rolcall');
+      expect(near.map((m) => m.entityId), ['roll']);
+      expect(near.single.fuzzy, isTrue);
+    });
+
+    test(
+      'filters apply, and an edit or delete takes the old title out',
+      () async {
+        await fts.indexEntities([
+          _task('task-1', 'Feed the chicks'),
+          _entry('entry-1', 'Feed the chicks', private: true),
+        ]);
+        expect(await titles('chicks', types: {'Task'}), ['task-1']);
+
+        await fts.indexEntities([
+          _task('task-1', 'Count the chicks'),
+          _task('task-2', 'Feed the chicks').copyWith(
+            meta: _meta('task-2', deleted: true),
+          ),
+        ]);
+        expect(await titles('feed'), isEmpty);
+        expect(await titles('count'), ['task-1']);
+      },
+    );
+  });
+
   group('matching', () {
     setUp(() => fts.catchUp(journalDb));
 
@@ -376,6 +524,43 @@ void main() {
         )
         .get();
     expect(tables, isEmpty);
-    expect(upgraded.schemaVersion, 2);
+    expect(upgraded.schemaVersion, 3);
+  });
+
+  test('upgrading a version 2 index adds the title trigrams and starts a '
+      'rebuild that fills them', () async {
+    final directory = setupTestDirectory();
+    addTearDown(() => directory.deleteSync(recursive: true));
+    sqlite3.open(p.join(directory.path, fts5DbFileName))
+      ..execute(
+        'CREATE TABLE search_doc (id INTEGER NOT NULL PRIMARY KEY '
+        'AUTOINCREMENT, entity_id TEXT NOT NULL UNIQUE, type TEXT NOT NULL, '
+        "category_id TEXT NOT NULL DEFAULT '', private INTEGER NOT NULL "
+        'DEFAULT 0, date_from INTEGER NOT NULL)',
+      )
+      ..execute(
+        'CREATE VIRTUAL TABLE search_fts USING fts5(title, body, extra, '
+        "tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3')",
+      )
+      ..execute(
+        'CREATE TABLE search_index_state (name TEXT NOT NULL PRIMARY KEY, '
+        'int_value INTEGER NOT NULL)',
+      )
+      ..execute('PRAGMA user_version = 2')
+      ..close();
+    await store([_task('task-1', 'Emperor penguin roll call')]);
+
+    final upgraded = Fts5Db(
+      documentsDirectoryProvider: () async => directory,
+      tempDirectoryProvider: () async => directory,
+    );
+    addTearDown(upgraded.close);
+
+    expect(await upgraded.needsCatchUp(), isTrue);
+    await upgraded.catchUp(journalDb);
+    expect(
+      (await upgraded.searchTitles('guin')).map((m) => m.entityId),
+      ['task-1'],
+    );
   });
 }

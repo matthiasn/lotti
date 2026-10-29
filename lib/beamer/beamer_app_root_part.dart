@@ -214,7 +214,19 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
         invoke: (invocation) {
           final modalContext =
               routerDelegate.navigatorKey.currentContext ?? invocation.context;
-          return showAppCommandPalette(modalContext, invocation.snapshot);
+          return showAppCommandPalette(
+            modalContext,
+            invocation.snapshot,
+            jumpSearch: paletteJumpSearch(
+              fts5Db: () => ref.read(fts5DbProvider),
+              journalDb: ref.read(journalDbProvider),
+              categoryIds: () {
+                final lockdown = ref.read(lockdownControllerProvider);
+                return lockdown.isActive ? lockdown.categoryIds : null;
+              },
+            ),
+            onJump: (target) => openPaletteJump(navService, target),
+          );
         },
       ),
       AppCommandId.openShortcutHelp: AppCommandHandler(

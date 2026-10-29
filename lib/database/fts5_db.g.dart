@@ -663,6 +663,175 @@ class SearchFtsCompanion extends UpdateCompanion<SearchFt> {
   }
 }
 
+class TitleTrigram extends Table
+    with
+        TableInfo<TitleTrigram, TitleTrigramData>,
+        VirtualTableInfo<TitleTrigram, TitleTrigramData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  TitleTrigram(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: '',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [title];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'title_trigram';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TitleTrigramData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  TitleTrigramData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TitleTrigramData(
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+    );
+  }
+
+  @override
+  TitleTrigram createAlias(String alias) {
+    return TitleTrigram(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+  @override
+  String get moduleAndArgs =>
+      'fts5(title, tokenize = \'trigram remove_diacritics 1\')';
+}
+
+class TitleTrigramData extends DataClass
+    implements Insertable<TitleTrigramData> {
+  final String title;
+  const TitleTrigramData({required this.title});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['title'] = Variable<String>(title);
+    return map;
+  }
+
+  TitleTrigramCompanion toCompanion(bool nullToAbsent) {
+    return TitleTrigramCompanion(title: Value(title));
+  }
+
+  factory TitleTrigramData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TitleTrigramData(title: serializer.fromJson<String>(json['title']));
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{'title': serializer.toJson<String>(title)};
+  }
+
+  TitleTrigramData copyWith({String? title}) =>
+      TitleTrigramData(title: title ?? this.title);
+  TitleTrigramData copyWithCompanion(TitleTrigramCompanion data) {
+    return TitleTrigramData(
+      title: data.title.present ? data.title.value : this.title,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TitleTrigramData(')
+          ..write('title: $title')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => title.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TitleTrigramData && other.title == this.title);
+}
+
+class TitleTrigramCompanion extends UpdateCompanion<TitleTrigramData> {
+  final Value<String> title;
+  final Value<int> rowid;
+  const TitleTrigramCompanion({
+    this.title = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TitleTrigramCompanion.insert({
+    required String title,
+    this.rowid = const Value.absent(),
+  }) : title = Value(title);
+  static Insertable<TitleTrigramData> custom({
+    Expression<String>? title,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (title != null) 'title': title,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TitleTrigramCompanion copyWith({Value<String>? title, Value<int>? rowid}) {
+    return TitleTrigramCompanion(
+      title: title ?? this.title,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TitleTrigramCompanion(')
+          ..write('title: $title, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class SearchIndexState extends Table
     with TableInfo<SearchIndexState, SearchIndexStateData> {
   @override
@@ -893,6 +1062,7 @@ abstract class _$Fts5Db extends GeneratedDatabase {
     'CREATE INDEX idx_search_doc_type_category ON search_doc (type, category_id)',
   );
   late final SearchFts searchFts = SearchFts(this);
+  late final TitleTrigram titleTrigram = TitleTrigram(this);
   late final SearchIndexState searchIndexState = SearchIndexState(this);
   Selectable<SearchDocRow> searchDocByEntityId(String entityId) {
     return customSelect(
@@ -963,6 +1133,23 @@ abstract class _$Fts5Db extends GeneratedDatabase {
     );
   }
 
+  Future<int> deleteTitleTrigram(int rowId) {
+    return customUpdate(
+      'DELETE FROM title_trigram WHERE "rowid" = ?1',
+      variables: [Variable<int>(rowId)],
+      updates: {titleTrigram},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  Future<int> insertTitleTrigram(int rowId, String title) {
+    return customInsert(
+      'INSERT INTO title_trigram ("rowid", title) VALUES (?1, ?2)',
+      variables: [Variable<int>(rowId), Variable<String>(title)],
+      updates: {titleTrigram},
+    );
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -971,6 +1158,7 @@ abstract class _$Fts5Db extends GeneratedDatabase {
     searchDoc,
     idxSearchDocTypeCategory,
     searchFts,
+    titleTrigram,
     searchIndexState,
   ];
 }
@@ -1334,6 +1522,115 @@ typedef $SearchFtsProcessedTableManager =
       SearchFt,
       PrefetchHooks Function()
     >;
+typedef $TitleTrigramCreateCompanionBuilder =
+    TitleTrigramCompanion Function({required String title, Value<int> rowid});
+typedef $TitleTrigramUpdateCompanionBuilder =
+    TitleTrigramCompanion Function({Value<String> title, Value<int> rowid});
+
+class $TitleTrigramFilterComposer extends Composer<_$Fts5Db, TitleTrigram> {
+  $TitleTrigramFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $TitleTrigramOrderingComposer extends Composer<_$Fts5Db, TitleTrigram> {
+  $TitleTrigramOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $TitleTrigramAnnotationComposer extends Composer<_$Fts5Db, TitleTrigram> {
+  $TitleTrigramAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+}
+
+class $TitleTrigramTableManager
+    extends
+        RootTableManager<
+          _$Fts5Db,
+          TitleTrigram,
+          TitleTrigramData,
+          $TitleTrigramFilterComposer,
+          $TitleTrigramOrderingComposer,
+          $TitleTrigramAnnotationComposer,
+          $TitleTrigramCreateCompanionBuilder,
+          $TitleTrigramUpdateCompanionBuilder,
+          (
+            TitleTrigramData,
+            BaseReferences<_$Fts5Db, TitleTrigram, TitleTrigramData>,
+          ),
+          TitleTrigramData,
+          PrefetchHooks Function()
+        > {
+  $TitleTrigramTableManager(_$Fts5Db db, TitleTrigram table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $TitleTrigramFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $TitleTrigramOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $TitleTrigramAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> title = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TitleTrigramCompanion(title: title, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String title,
+                Value<int> rowid = const Value.absent(),
+              }) => TitleTrigramCompanion.insert(title: title, rowid: rowid),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $TitleTrigramProcessedTableManager =
+    ProcessedTableManager<
+      _$Fts5Db,
+      TitleTrigram,
+      TitleTrigramData,
+      $TitleTrigramFilterComposer,
+      $TitleTrigramOrderingComposer,
+      $TitleTrigramAnnotationComposer,
+      $TitleTrigramCreateCompanionBuilder,
+      $TitleTrigramUpdateCompanionBuilder,
+      (
+        TitleTrigramData,
+        BaseReferences<_$Fts5Db, TitleTrigram, TitleTrigramData>,
+      ),
+      TitleTrigramData,
+      PrefetchHooks Function()
+    >;
 typedef $SearchIndexStateCreateCompanionBuilder =
     SearchIndexStateCompanion Function({
       required String name,
@@ -1485,6 +1782,8 @@ class $Fts5DbManager {
       $SearchDocTableManager(_db, _db.searchDoc);
   $SearchFtsTableManager get searchFts =>
       $SearchFtsTableManager(_db, _db.searchFts);
+  $TitleTrigramTableManager get titleTrigram =>
+      $TitleTrigramTableManager(_db, _db.titleTrigram);
   $SearchIndexStateTableManager get searchIndexState =>
       $SearchIndexStateTableManager(_db, _db.searchIndexState);
 }

@@ -3798,11 +3798,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String get colorLabel => 'Colore';
 
   @override
+  String get commandPaletteGoTo => 'Vai a';
+
+  @override
   String get commandPaletteNoResults =>
       'Nessun comando disponibile corrisponde alla tua ricerca';
 
   @override
+  String get commandPaletteNothingFound =>
+      'Niente corrisponde alla tua ricerca';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Cerca comandi, attività, voci, progetti, eventi e persone';
+
+  @override
   String get commandPaletteSearchHint => 'Comandi di ricerca...';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Titoli simili';
 
   @override
   String get commandPaletteTitle => 'tavolozza dei comandi';

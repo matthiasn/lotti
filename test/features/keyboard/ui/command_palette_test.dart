@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
+import 'package:lotti/features/keyboard/domain/palette_jump.dart';
+import 'package:lotti/features/keyboard/ui/command_catalog_view.dart';
 import 'package:lotti/features/keyboard/ui/command_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -72,6 +74,54 @@ void main() {
 
     expect(focusNode.hasFocus, isTrue);
     expect(snapshot.invoked, [AppCommandId.openShortcutHelp]);
+  });
+
+  testWidgets('a chosen title closes the palette, gives focus back, then '
+      'opens', (tester) async {
+    const chicks = PaletteJumpTarget(
+      entityId: 'task-1',
+      kind: PaletteJumpKind.task,
+      title: 'Feed the chicks',
+    );
+    final focusNode = FocusNode();
+    addTearDown(focusNode.dispose);
+    final opened = <PaletteJumpTarget>[];
+    final snapshot = _Snapshot();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) => TextButton(
+            focusNode: focusNode,
+            onPressed: () => showAppCommandPalette(
+              context,
+              snapshot,
+              jumpSearch: (_) async => [chicks],
+              onJump: (target) {
+                expect(focusNode.hasFocus, isTrue);
+                opened.add(target);
+              },
+            ),
+            child: const Text('Open'),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1000, 800)),
+      ),
+    );
+    final messages = tester.element(find.text('Open')).messages;
+    focusNode.requestFocus();
+    await tester.pump();
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'chicks');
+    await tester.pump(CommandCatalogView.jumpSearchDebounce);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(find.text(messages.commandPaletteTitle), findsNothing);
+    expect(opened, [chicks]);
+    expect(snapshot.invoked, isEmpty);
   });
 }
 

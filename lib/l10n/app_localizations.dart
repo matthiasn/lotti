@@ -6330,17 +6330,41 @@ abstract class AppLocalizations {
   /// **'Color'**
   String get colorLabel;
 
+  /// Command palette group header above the titles matching the search.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get commandPaletteGoTo;
+
   /// No description provided for @commandPaletteNoResults.
   ///
   /// In en, this message translates to:
   /// **'No available commands match your search'**
   String get commandPaletteNoResults;
 
+  /// Command palette empty state when neither a command nor a title matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches your search'**
+  String get commandPaletteNothingFound;
+
+  /// Search field hint of the command palette, which finds titles too.
+  ///
+  /// In en, this message translates to:
+  /// **'Search commands, tasks, entries, projects, events and people'**
+  String get commandPaletteSearchEverythingHint;
+
   /// No description provided for @commandPaletteSearchHint.
   ///
   /// In en, this message translates to:
   /// **'Search commands…'**
   String get commandPaletteSearchHint;
+
+  /// Command palette group header above near matches for a misspelt search.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar titles'**
+  String get commandPaletteSimilarTitles;
 
   /// No description provided for @commandPaletteTitle.
   ///

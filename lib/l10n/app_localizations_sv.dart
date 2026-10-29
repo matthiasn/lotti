@@ -3757,11 +3757,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get colorLabel => 'Färg';
 
   @override
+  String get commandPaletteGoTo => 'Gå till';
+
+  @override
   String get commandPaletteNoResults =>
       'Inga tillgängliga kommandon matchar din sökning';
 
   @override
+  String get commandPaletteNothingFound => 'Inget matchar din sökning';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Sök kommandon, uppgifter, anteckningar, projekt, evenemang och personer';
+
+  @override
   String get commandPaletteSearchHint => 'Sökkommandon...';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Liknande titlar';
 
   @override
   String get commandPaletteTitle => 'Kommandopalett';

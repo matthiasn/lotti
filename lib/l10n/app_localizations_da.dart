@@ -3749,11 +3749,24 @@ class AppLocalizationsDa extends AppLocalizations {
   String get colorLabel => 'Farve';
 
   @override
+  String get commandPaletteGoTo => 'Gå til';
+
+  @override
   String get commandPaletteNoResults =>
       'Ingen tilgængelige kommandoer matcher din søgning';
 
   @override
+  String get commandPaletteNothingFound => 'Intet matcher din søgning';
+
+  @override
+  String get commandPaletteSearchEverythingHint =>
+      'Søg i kommandoer, opgaver, noter, projekter, begivenheder og personer';
+
+  @override
   String get commandPaletteSearchHint => 'Søgekommandoer...';
+
+  @override
+  String get commandPaletteSimilarTitles => 'Lignende titler';
 
   @override
   String get commandPaletteTitle => 'Kommando-palette';

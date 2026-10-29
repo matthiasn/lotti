@@ -9,6 +9,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts_query.dart';
 import 'package:lotti/database/search_document.dart';
+import 'package:lotti/database/title_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
@@ -62,9 +63,10 @@ class Fts5Db extends _$Fts5Db {
 
   /// Version 2 replaced the single `journal_fts` table with `search_doc` and
   /// `search_fts`; its rows cannot be converted, so the upgrade starts a
-  /// rebuild ([catchUp]).
+  /// rebuild ([catchUp]). Version 3 added `title_trigram`, which the same
+  /// rebuild fills.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -76,6 +78,9 @@ class Fts5Db extends _$Fts5Db {
       if (from < 2) {
         await customStatement('DROP TABLE IF EXISTS journal_fts');
         await m.createAll();
+        await _startRebuild();
+      } else if (from < 3) {
+        await m.create(titleTrigram);
         await _startRebuild();
       }
     },
@@ -239,6 +244,10 @@ class Fts5Db extends _$Fts5Db {
         document.body,
         document.extra,
       );
+      await deleteTitleTrigram(rowId.id);
+      if (document.title.trim().isNotEmpty) {
+        await insertTitleTrigram(rowId.id, document.title);
+      }
     }
   }
 
@@ -246,6 +255,7 @@ class Fts5Db extends _$Fts5Db {
     final doc = await searchDocByEntityId(entityId).getSingleOrNull();
     if (doc == null) return;
     await deleteSearchText(doc.id);
+    await deleteTitleTrigram(doc.id);
     await deleteSearchDoc(doc.id);
   }
 
@@ -281,34 +291,143 @@ class Fts5Db extends _$Fts5Db {
       prefixLastWord: prefixLastWord,
     );
     if (expression == null) return const [];
-    final where = StringBuffer('search_fts MATCH ?');
-    final variables = <Variable<Object>>[Variable.withString(expression)];
-    void inSet(String column, Set<String>? values) {
-      if (values == null) return;
-      if (values.isEmpty) {
-        where.write(' AND 0');
-        return;
-      }
-      where.write(
-        ' AND d.$column IN (${List.filled(values.length, '?').join(', ')})',
-      );
-      variables.addAll(values.map(Variable.withString));
-    }
-
-    inSet('type', types);
-    inSet('category_id', categoryIds);
-    if (!includePrivate) where.write(' AND d.private = 0');
-    variables.add(Variable.withInt(limit));
-
+    final filter = _DocFilter(
+      types,
+      categoryIds,
+      includePrivate: includePrivate,
+    );
     final rows = await customSelect(
       'SELECT d.entity_id AS entity_id FROM search_fts '
       'INNER JOIN search_doc AS d ON d.id = search_fts.rowid '
-      'WHERE $where '
+      'WHERE search_fts MATCH ?${filter.sql} '
       'ORDER BY bm25(search_fts, 10.0, 1.0, 2.0), d.date_from DESC '
       'LIMIT ?',
-      variables: variables,
+      variables: [
+        Variable.withString(expression),
+        ...filter.variables,
+        Variable.withInt(limit),
+      ],
       readsFrom: {searchFts, searchDoc},
     ).get();
     return [for (final row in rows) row.read<String>('entity_id')];
+  }
+
+  /// The entities whose title matches [query], for jumping to one by name:
+  /// the title that is the query first, then titles starting with it, then
+  /// titles with a word starting with it, then any title holding every word
+  /// — a word of three letters or more anywhere, in the middle of a word too
+  /// (`title_trigram`), a shorter one as the start of a word.
+  ///
+  /// When no title holds every word, the titles sharing most of the
+  /// query's letter triples come back instead, marked [TitleMatch.fuzzy],
+  /// so a misspelt name still finds its task. [types], [categoryIds] and
+  /// [includePrivate] filter as in [matchIds].
+  Future<List<TitleMatch>> searchTitles(
+    String query, {
+    Set<String>? types,
+    Set<String>? categoryIds,
+    bool includePrivate = true,
+    int limit = 20,
+  }) async {
+    final words = searchWords(query);
+    if (words.isEmpty) return const [];
+    final filter = _DocFilter(
+      types,
+      categoryIds,
+      includePrivate: includePrivate,
+    );
+    final long = [
+      for (final word in words)
+        if (word.length >= minTrigramWordLength) word,
+    ];
+    // Without a word the trigram index can match, the main index's prefix
+    // match over the title column finds the candidates.
+    final candidates = long.isEmpty
+        ? await _titleCandidates(
+            'search_fts',
+            '{title} : (${words.map((word) => '"$word"*').join(' ')})',
+            filter,
+          )
+        : await _titleCandidates(
+            'title_trigram',
+            long.map((word) => '"$word"').join(' '),
+            filter,
+          );
+    final ranked = rankTitleMatches(query, candidates);
+    if (ranked.isNotEmpty) return ranked.take(limit).toList();
+
+    final trigrams = titleTrigrams(query);
+    if (trigrams.length < 2) return const [];
+    final near = await _titleCandidates(
+      'title_trigram',
+      trigrams.map((trigram) => '"$trigram"').join(' OR '),
+      filter,
+    );
+    return nearestTitles(query, near).take(limit).toList();
+  }
+
+  /// Candidates ranked before the limit applies. The index's BM25 order is
+  /// not the quick-open order — it favours a word repeated over the title
+  /// that is the query, and it cannot check a short word's place — so the
+  /// whole pool is ranked ([rankTitleMatches], [nearestTitles]) and only then
+  /// cut. Titles are short; a pool this size costs a millisecond or two.
+  static const titleCandidatePool = 500;
+
+  Future<List<TitleMatch>> _titleCandidates(
+    String table,
+    String expression,
+    _DocFilter filter,
+  ) async {
+    final rows = await customSelect(
+      'SELECT d.entity_id AS entity_id, d.type AS type, $table.title AS title '
+      'FROM $table INNER JOIN search_doc AS d ON d.id = $table.rowid '
+      'WHERE $table MATCH ?${filter.sql} '
+      'ORDER BY rank, d.date_from DESC LIMIT ?',
+      variables: [
+        Variable.withString(expression),
+        ...filter.variables,
+        Variable.withInt(titleCandidatePool),
+      ],
+      readsFrom: {searchFts, titleTrigram, searchDoc},
+    ).get();
+    return [
+      for (final row in rows)
+        TitleMatch(
+          entityId: row.read<String>('entity_id'),
+          type: row.read<String>('type'),
+          title: row.read<String>('title'),
+        ),
+    ];
+  }
+}
+
+/// The `search_doc` clauses every search applies before its limit, as SQL
+/// appended to a `WHERE` and the values it binds, in order.
+class _DocFilter {
+  _DocFilter(
+    Set<String>? types,
+    Set<String>? categoryIds, {
+    required bool includePrivate,
+  }) {
+    _inSet('type', types);
+    _inSet('category_id', categoryIds);
+    if (!includePrivate) _sql.write(' AND d.private = 0');
+  }
+
+  final _sql = StringBuffer();
+  final variables = <Variable<Object>>[];
+
+  String get sql => _sql.toString();
+
+  void _inSet(String column, Set<String>? values) {
+    if (values == null) return;
+    if (values.isEmpty) {
+      _sql.write(' AND 0');
+      return;
+    }
+    _sql.write(
+      ' AND d.$column IN (${List.filled(values.length, '?').join(', ')})',
+    );
+    variables.addAll(values.map(Variable.withString));
   }
 }
