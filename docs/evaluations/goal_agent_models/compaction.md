@@ -3,6 +3,7 @@
 **Four-model catalog, 2026-09-17:** [LottiGym, four models](../lotti-gym-2026-09-17.md).
 **Judged run, 2026-09-16:** hierarchical passes the bar (96% recall, zero hallucinations, 15/15 same recommendation) — [full results](../lotti-gym-2026-09-16.md).
 **Qwen 3.8 27B rejected, 2026-09-21:** 27/30 status decisions — [full results](../lotti-gym-2026-09-21.md).
+**Journals on glm-5.3, 2026-10-29:** the shipped 1,200-token tail recalls 99% of journal facts; wider tails add nothing — [fifth run](#fifth-run--2026-10-29-journals-on-glm-53-how-much-tail-a-journal-needs).
 
 Does the goal agent draw the same conclusions from a **compacted** check-in
 history as from the **full** one? A goal runs for years; three check-ins a
@@ -447,3 +448,48 @@ old facts, no hallucination, no contradiction (12 same + 3 compatible),
 no forbidden direction, 10.5k input tokens per wake; truncation 9% old
 recall, 11/15 contradictions, four hallucinations. This is the baseline to
 re-run against after any change to the digest prompt or the horizons.
+
+### Fifth run — 2026-10-29, journals on `glm-5.3`: how much tail a journal needs
+
+ADR 0143 compacts a goal measured by its check-ins for substance, which makes
+each summary four or five sentences, and left open whether such a goal needs
+a wider verbatim tail. The two journal fixtures, five arms (`hierarchical` at
+1,200, 2,400 and 3,600 verbatim tokens), three samples, agent and digest model
+`glm-5.3`, judged in-session by Claude against the rubric above. Artifacts
+under `eval_artifacts/goal_compaction_20261029-231653/`.
+
+| Arm | Wake input tokens | userVoice tokens | Verbatim | Old recall | All recall | Hallucination | Same / compatible / contradictory |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `full` | 33,828 | 14,820 | 235 | 100% | 100% | 0/36 | 6 / 0 / 0 |
+| `truncate` | 13,449 | 1,162 | 19 | 0% | 25% | 3/36 | 4 / 1 / 1 |
+| `hierarchical` (1,200) | 9,541 | 2,393 | 19 | 96% | 99% | 0/36 | 5 / 0 / 1 |
+| `hierarchical_2400` | 19,169 | 3,453 | 40 | 100% | 100% | 0/36 | 5 / 1 / 0 |
+| `hierarchical_3600` | 16,883 | 4,503 | 60 | 96% | 99% | 0/36 | 6 / 0 / 0 |
+
+**The answer is no: the shipped tail is enough.** The substance digests carry
+what the tail drops — the December storm, the leopard seals at the seal rocks,
+the Pip conflict and the Thursday swap, the doctor's advice — so the 1,200-token
+arm recalls 99% of what the full history holds and the wider tails add nothing
+measurable while costing up to twice the wake input and breaking the
+2,500-token `userVoice` ceiling. Every arm reports the derived status in every
+wake. **The journal tail stays at `goalUserVoiceTokenBudget` for every goal
+kind.**
+
+The bar's verdict marks `hierarchical` FAIL on one contradictory recommendation
+in six — on `journal_colony_move` sample 3 it advised presenting "stages" rather
+than the four-hour walk the user had committed to presenting honestly. That
+entry (18 August) was in its verbatim tail, so the contradiction is sampling
+variance at n = 6, not compaction; `truncate` made the same call in sample 1.
+Read with that, the hierarchical arm meets every recall and hallucination bar.
+
+Truncation, again, is the failure the layering exists to prevent: it answers
+"not in the history" to every old needle, and three times answers the colony's
+"what did you promise about any move" with a real but different promise ("we
+will walk in stages") — graded `wrong` with `basis: history`, so counted as a
+hallucination although nothing was invented.
+
+Two model-level slips worth knowing about `glm-5.3`, neither a compaction
+effect: one probe turn (`hierarchical_2400`, colony, sample 2) answered every
+probe correctly but without the `id` fields the harness maps by, graded by
+position; and one (`truncate`, night shift, sample 3) returned an empty probe
+turn, graded as a miss.

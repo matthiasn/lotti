@@ -11,11 +11,14 @@ import 'dart:convert';
 
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
+import 'package:lotti/features/agents/memory/memory_search.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../ai/eval/support/eval_text_matchers.dart';
@@ -274,8 +277,17 @@ class GoalAgentEvalReport {
 /// back as recoverable errors (confirming a fabricated tool would make the
 /// harness measure something the app never does).
 class GoalAgentEvalStrategy extends ConversationStrategy {
+  GoalAgentEvalStrategy({this.memoryHits = const []});
+
+  /// What `search_goal_memory` finds on this wake, answered in production's
+  /// format and budgets (`formatMemorySearchResult`). Empty answers as
+  /// production does when nothing matches — never a bare acknowledgement,
+  /// which left a model that recalled nothing with nothing to say.
+  final List<MemoryLogHit> memoryHits;
+
   final _toolCalls = <GoalAgentEvalToolCall>[];
   var _exchangeIndex = 0;
+  var _recalledThisBatch = false;
 
   List<GoalAgentEvalToolCall> get toolCalls => List.unmodifiable(_toolCalls);
 
@@ -321,6 +333,10 @@ class GoalAgentEvalStrategy extends ConversationStrategy {
         'error': 'Invalid JSON arguments for ${call.name}.',
       });
     }
+    if (call.name == GoalAgentToolNames.searchGoalMemory) {
+      _recalledThisBatch = true;
+      return _recall(call.jsonObjectArguments!);
+    }
     return switch (call.name) {
       GoalAgentToolNames.createGoalAd => jsonEncode({
         'status': 'draft',
@@ -341,8 +357,25 @@ class GoalAgentEvalStrategy extends ConversationStrategy {
   bool shouldContinue(ConversationManager manager) => manager.canContinue();
   // coverage:ignore-end
 
+  /// Mirrors `GoalAgentStrategy`: never nags, except that a batch which
+  /// recalled memory takes one more turn to read what it recalled.
   @override
-  String? getContinuationPrompt(ConversationManager manager) => null;
+  String? getContinuationPrompt(ConversationManager manager) {
+    if (!_recalledThisBatch) return null;
+    _recalledThisBatch = false;
+    return goalMemoryContinuationPrompt;
+  }
+
+  String _recall(Map<String, dynamic> arguments) {
+    final request = parseMemorySearchRequest(arguments);
+    if (request == null) return memorySearchMissingTermsError;
+    return formatMemorySearchResult(
+      request,
+      memoryHits,
+      hitTokenBudget: goalMemoryHitTokenBudget,
+      totalTokenBudget: goalMemoryResultTokenBudget,
+    );
+  }
 }
 
 /// Deterministic classifier — first violated check names the failure.
@@ -764,7 +797,7 @@ class GoalAgentInferenceEvalRunner {
     GoalAgentEvalScenario scenario,
   ) async {
     final stopwatch = Stopwatch()..start();
-    final strategy = GoalAgentEvalStrategy();
+    final strategy = GoalAgentEvalStrategy(memoryHits: scenario.memoryHits);
     final wakeRunKey = goalAgentEvalWakeRunKey(modelId, scenario.id);
     final conversationId = conversationRepository.createConversation(
       systemMessage: goalAgentSystemPrompt,

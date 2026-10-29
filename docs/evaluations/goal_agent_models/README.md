@@ -913,6 +913,46 @@ parity, cost wins" criterion that decided the pro ruling decides this one
 identically. Artifacts: `goal_agent_20260827-184951` (run 1) and
 `goal_agent_20260827-194724` (run 2).
 
+## The user-voice contract on glm-5.3 — 2026-10-29
+
+The first live run since ADR 0141 (`remember_goal_fact`) and ADR 0143 (the
+`reflection` slot) changed the contract, and the first with the journal
+scenarios. Model `glm-5.3` on Melious, tier 1, all 32 scenarios, three samples
+(`eval_artifacts/goal_agent_20261029-230956`, `…-231653`, `…-232046`).
+
+| | Cases | Pass | Rate |
+| --- | ---: | ---: | ---: |
+| P1–P17 (27 scenarios) | 81 | 77 | 0.95 |
+| Journal scenarios, P18–P21 + P2 (5) | 15 | 15 | 1.00 |
+
+Every journal scenario passed every sample: the reflection engaged the two
+unanswered check-ins (P18), the briefing followed up "scout the north ridge on
+Saturday" in its next steps (P19), the quiet wake stayed quiet with the user's
+words in FACTS (P2), the chat fact was remembered as `userStated` in the
+user's words (P20), and the question about March was a recall whose reply
+quoted what it found (P21).
+
+**P21 first failed 0/3 on a harness defect.** Tier 1's recording strategy
+answered every `search_goal_memory` with `{"status":"ok"}` — no entries, and
+not "nothing matches" either — and gave no continuation turn. glm-5.3 searched
+correctly, read an empty acknowledgement, and ended the wake silent. Production
+answers in `formatMemorySearchResult`'s format and takes one more turn after a
+recall (`goalMemoryContinuationPrompt`). The strategy now does both, and a
+scenario carries the hits its search would find; re-run, P21 passed 3/3.
+
+**The four P1–P17 failures are the model's.** Three omitted a call the
+scenario requires — `reply_to_user` on `evo_replace_metric` and
+`tone_roast_request`, the retire-then-create pair on
+`cx_gym_done_steps_collapse` — once each in three samples; production's forced
+reply and forced ad retries exist for exactly this. One (`gh_gym_pace`, sample
+1) wrote GLM's native tool-call markup — `<tool_call>update_goal_report
+<arg_key>…` — as plain assistant text instead of a structured call. Production
+would see no report; the pinned forced-report retry is the only recovery, and
+it runs only on a wake that owes one. Worth watching if glm-5.3 becomes a
+default.
+
+Cost: about 0.17 credits per 64 cases, mean latency 6–12 s per case.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
@@ -1094,11 +1134,9 @@ population of failures the matcher fix has since removed. Re-running it now
 would price a small residual, which is not worth a matrix run — but nothing
 here should be quoted as the batching change's effect size.
 
-**The user-voice contract has not been measured live.** ADR 0141's
-`remember_goal_fact` and ADR 0143's reflection slot reached production on
-offline scenario tests alone. The journal scenarios above and the journal
-fixtures of the [compaction evaluation](compaction.md) are the instruments;
-neither has had a live run yet.
+**The user-voice contract is measured on one model only.** The 2026-10-29
+run below is `glm-5.3`; the default `glm-5.2` and the rest of the catalog have
+not run the journal scenarios yet.
 
 ## Methodology caveats
 

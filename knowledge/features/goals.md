@@ -1884,6 +1884,12 @@ that, each keyed on `GoalCheckInWeight.of(criteria)`:
 - **The wake.** Phase A sees the goal row among its trigger tokens and queues
   the coalesced refresh even when the register is unchanged — the transcript
   that lands after a recording moves no number.
+- **The tail is not widened.** Longer summaries fit fewer check-ins in the
+  1,200-token verbatim tail, but the substance digests carry what it drops:
+  measured on two journals, the shipped tail recalls 99% of what the full
+  history holds and 2,400- or 3,600-token tails add nothing
+  ([compaction evaluation](../../docs/evaluations/goal_agent_models/compaction.md),
+  fifth run). `goalUserVoiceTokenBudget` stays one value for every weight.
 
 ```mermaid
 flowchart LR

@@ -15,6 +15,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
@@ -356,6 +357,25 @@ final List<GoalAgentEvalScenario> goalAgentJournalEvalScenarios = [
       GoalAgentExpectedToolCall(GoalAgentToolNames.searchGoalMemory),
       GoalAgentExpectedToolCall(GoalAgentToolNames.replyToUser),
     ],
+    memoryHits: [
+      MemoryLogHit(
+        contentEntryId: 'journal-entry-march-14',
+        at: DateTime(2026, 3, 14, 21),
+        type: 'capture',
+        text:
+            'Journal: the equinox storm cracked the old ice shelf along its '
+            'north lip, and meltwater pooled right up to the nests. First '
+            'time I wrote that we might have to leave — not because the '
+            'shelf is bad, but because the chicks cannot nest in water.',
+        edited: false,
+      ),
+    ],
+    // The answer comes from what the recall returned, not from invention.
+    requiredToolArgumentTermGroups: const {
+      GoalAgentToolNames.replyToUser: [
+        ['meltwater', 'water', 'crack', 'equinox'],
+      ],
+    },
     forbiddenToolNames: [
       ..._noAds,
       GoalAgentToolNames.proposeGoalRevision,
