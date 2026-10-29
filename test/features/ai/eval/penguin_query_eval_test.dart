@@ -348,7 +348,7 @@ void main() {
         wider.documents.any((d) => d.entry.meta.id == demoHumiditySpikeTaskId),
         isFalse,
       );
-      expect(database.searches, ['"rehearsal"']);
+      expect(database.searches, ['rehearsal']);
     },
   );
 
