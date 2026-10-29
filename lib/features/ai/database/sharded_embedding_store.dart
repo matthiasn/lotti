@@ -299,6 +299,11 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   }
 
   @override
+  Future<Set<String>> agentReportIdsForTask(String taskId) async => {
+    ...?_reverseTaskIndex[taskId],
+  };
+
+  @override
   Future<bool> hasEmbedding(String entityId) async {
     return _primaryIndex.containsKey(entityId);
   }

@@ -7,7 +7,8 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
   /// Non-fatal: failures are logged but do not abort the wake.
 
   /// Embeds an agent report for vector search, in its task's category, and
-  /// supersedes the previous report's embedding if one exists.
+  /// makes it the task's only report there
+  /// (see [EmbeddingProcessor.processAgentReport]).
   ///
   /// Non-fatal: failures are logged but do not affect the wake cycle.
   /// Called as fire-and-forget via [unawaited] after report persistence.
@@ -15,7 +16,6 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     required String reportId,
     required String reportContent,
     required String taskId,
-    String? previousReportId,
   }) async {
     final store = embeddingStore;
     final repo = embeddingRepository;
@@ -25,7 +25,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
       final baseUrl = await this.aiConfigRepository.resolveOllamaBaseUrl();
       if (baseUrl == null) return;
 
-      final didEmbed = await EmbeddingProcessor.processAgentReport(
+      await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
         reportContent: reportContent,
         taskId: taskId,
@@ -35,13 +35,6 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         embeddingRepository: repo,
         baseUrl: baseUrl,
       );
-
-      // Delete the old report's embedding only after the new one succeeds,
-      // so we don't lose search coverage if the embedding call fails or
-      // the content is too short.
-      if (didEmbed && previousReportId != null) {
-        await store.deleteEntityEmbeddings(previousReportId);
-      }
     } catch (e, s) {
       logError('failed to embed agent report', error: e, stackTrace: s);
     }

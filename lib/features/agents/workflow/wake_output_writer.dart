@@ -25,7 +25,6 @@ typedef WakeReportToEmbed = ({
   String reportId,
   String reportContent,
   String taskId,
-  String? previousReportId,
 });
 
 /// Transactional persistence of a wake cycle's outputs (thought, report,
@@ -192,7 +191,6 @@ class WakeOutputWriter {
           reportId: persistedReportId,
           reportContent: sanitizedContent,
           taskId: taskId,
-          previousReportId: existingHead?.reportId,
         );
       }
 

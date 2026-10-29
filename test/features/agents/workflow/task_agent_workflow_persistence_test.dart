@@ -2312,7 +2312,8 @@ not describe task configuration or tool activity as progress.
       });
 
       test(
-        'embeds a new report and deletes the previous report embedding',
+        'embeds a new report and deletes every other report embedding of the task, '
+        'one whose own embed was skipped included',
         () async {
           final existingHead =
               AgentDomainEntity.agentReportHead(
@@ -2416,15 +2417,45 @@ not describe task configuration or tool activity as progress.
               };
           when(() => mockConversationManager.messages).thenReturn([]);
 
-          // The old-report deletion is the last side effect of the
+          // The task's index holds the report this one replaces, one whose
+          // own embedding was skipped long ago and so was never superseded,
+          // and the new report itself once it is embedded.
+          String? newReportId;
+          when(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).thenAnswer((invocation) async {
+            newReportId = invocation.namedArguments[#entityId] as String;
+          });
+          when(
+            () => mockEmbeddingStore.agentReportIdsForTask(taskId),
+          ).thenAnswer(
+            // The new report listed first: deleting it by mistake would
+            // happen before the stale ones, so before the signal below.
+            (_) async => {?newReportId, 'old-report', 'orphan-report'},
+          );
+
+          // Deleting the stale reports is the last side effect of the
           // fire-and-forget _embedAgentReport future; completing a
-          // Completer from its stub lets the test await the pipeline
+          // Completer once both are gone lets the test await the pipeline
           // deterministically instead of draining the event queue.
           final embedPipelineDone = Completer<void>();
+          final deleted = <String>{};
           when(
-            () => mockEmbeddingStore.deleteEntityEmbeddings('old-report'),
-          ).thenAnswer((_) async {
-            if (!embedPipelineDone.isCompleted) embedPipelineDone.complete();
+            () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+          ).thenAnswer((invocation) async {
+            deleted.add(invocation.positionalArguments.single as String);
+            if (deleted.length == 2 && !embedPipelineDone.isCompleted) {
+              embedPipelineDone.complete();
+            }
           });
 
           final result = await workflowWithEmbeddings.execute(
@@ -2438,7 +2469,7 @@ not describe task configuration or tool activity as progress.
           await embedPipelineDone.future.timeout(
             const Duration(seconds: 5),
             onTimeout: () => throw TimeoutException(
-              'embedding pipeline never deleted the old report embedding',
+              'embedding pipeline never deleted the stale report embeddings',
             ),
           );
 
@@ -2448,9 +2479,12 @@ not describe task configuration or tool activity as progress.
               baseUrl: 'http://localhost:11434',
             ),
           ).called(1);
-          verify(
-            () => mockEmbeddingStore.deleteEntityEmbeddings('old-report'),
-          ).called(1);
+          expect(newReportId, isNotNull);
+          expect(
+            deleted,
+            {'old-report', 'orphan-report'},
+            reason: 'every other report of the task goes, the new one stays',
+          );
         },
       );
 

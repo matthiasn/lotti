@@ -375,6 +375,10 @@ void _stubNoCategoryId(MockEmbeddingStore db) {
   when(() => db.getCategoryId(any())).thenReturn(null);
 }
 
+void _stubNoTaskReports(MockEmbeddingStore db) {
+  when(() => db.agentReportIdsForTask(any())).thenAnswer((_) async => {});
+}
+
 void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   when(
     () => db.replaceEntityEmbeddings(
@@ -431,6 +435,12 @@ void _backWithRows(MockEmbeddingStore store, Map<String, _StoredRow> rows) {
   when(() => store.deleteEntityEmbeddings(any())).thenAnswer((i) {
     rows.remove(idOf(i));
   });
+  when(() => store.agentReportIdsForTask(any())).thenAnswer(
+    (i) async => {
+      for (final MapEntry(:key, :value) in rows.entries)
+        if (value.taskId == idOf(i)) key,
+    },
+  );
   when(() => store.moveEntityToShard(any(), any())).thenAnswer((i) {
     rows[idOf(i)]?.categoryId = i.positionalArguments[1] as String;
   });
@@ -497,6 +507,7 @@ void main() {
 
     _stubNoExistingHash(mockEmbeddingStore);
     _stubNoCategoryId(mockEmbeddingStore);
+    _stubNoTaskReports(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
   });
@@ -1365,6 +1376,7 @@ void main() {
       (scenario) async {
         final localEmbeddingStore = MockEmbeddingStore();
         final localEmbeddingRepo = MockOllamaEmbeddingRepository();
+        _stubNoTaskReports(localEmbeddingStore);
         final actualEmbedInputs = <String>[];
         final writes = <_CapturedAgentReportWrite>[];
         var embedCallIndex = 0;
@@ -1557,6 +1569,120 @@ void main() {
       expect(result, isFalse);
       expect(rows['report-1']!.categoryId, 'cat-new');
     });
+
+    _StoredRow reportOf(String taskId) =>
+        _StoredRow(hash: 'report-hash', categoryId: 'cat-1', taskId: taskId);
+
+    test('a stored report is the only one its task keeps', () async {
+      final rows = {
+        'report-old': reportOf('task-1'),
+        // Its own embed was skipped, so nothing ever replaced it.
+        'report-orphan': reportOf('task-1'),
+        'report-other-task': reportOf('task-2'),
+      };
+      _backWithRows(mockEmbeddingStore, rows);
+
+      final result = await processAgentReport(
+        reportId: 'report-new',
+        reportContent: 'The latest agent report, with plenty of content.',
+        taskId: 'task-1',
+        categoryId: 'cat-1',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+      );
+
+      expect(result, isTrue);
+      expect(rows.keys, unorderedEquals(['report-new', 'report-other-task']));
+    });
+
+    test('a skipped or failed report deletes nothing', () async {
+      final rows = {'report-old': reportOf('task-1')};
+      _backWithRows(mockEmbeddingStore, rows);
+
+      final skipped = await processAgentReport(
+        reportId: 'report-short',
+        reportContent: 'Too short.',
+        taskId: 'task-1',
+        categoryId: 'cat-1',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+      );
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenThrow(StateError('offline'));
+      final failed = processAgentReport(
+        reportId: 'report-failed',
+        reportContent: 'A long enough report whose embedding call fails.',
+        taskId: 'task-1',
+        categoryId: 'cat-1',
+        subtype: 'current',
+        embeddingStore: mockEmbeddingStore,
+        embeddingRepository: mockEmbeddingRepo,
+        baseUrl: _baseUrl,
+      );
+
+      expect(skipped, isFalse);
+      await expectLater(failed, throwsStateError);
+      expect(rows.keys, ['report-old']);
+    });
+
+    test(
+      "an earlier report's cleanup never deletes a newer report",
+      () async {
+        final rows = <String, _StoredRow>{};
+        _backWithRows(mockEmbeddingStore, rows);
+        // The first run's cleanup is held between storing its report and
+        // listing the task's reports, the window a later run must not use.
+        final firstListing = Completer<void>();
+        var listings = 0;
+        when(
+          () => mockEmbeddingStore.agentReportIdsForTask('task-1'),
+        ).thenAnswer((_) async {
+          if (listings++ == 0) await firstListing.future;
+          return {
+            for (final MapEntry(:key, :value) in rows.entries)
+              if (value.taskId == 'task-1') key,
+          };
+        });
+
+        // Two wakes write reports one after the other; both embeds are
+        // fire-and-forget.
+        final first = processAgentReport(
+          reportId: 'report-1',
+          reportContent: 'The first wake report, with plenty of content.',
+          taskId: 'task-1',
+          categoryId: 'cat-1',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+        await pumpEventQueue();
+        final second = processAgentReport(
+          reportId: 'report-2',
+          reportContent: 'The second wake report, with plenty of content.',
+          taskId: 'task-1',
+          categoryId: 'cat-1',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+        await pumpEventQueue();
+        firstListing.complete();
+        await Future.wait([first, second]);
+
+        expect(rows.keys, ['report-2']);
+      },
+    );
 
     test(
       'a report embedded while its task moves category follows the task',

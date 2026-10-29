@@ -65,15 +65,16 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
 
   @override
   void moveRelatedReportEmbeddings(String taskId, String newCategoryId) {
-    final reportEntityIds = _ops
-        .queryAllEntityMetadata()
-        .where((row) => row.taskId == taskId)
-        .map((row) => row.entityId)
-        .toSet();
-    for (final reportId in reportEntityIds) {
+    for (final reportId in agentReportIdsForTask(taskId)) {
       moveEntityToShard(reportId, newCategoryId);
     }
   }
+
+  @override
+  Set<String> agentReportIdsForTask(String taskId) => {
+    for (final row in _ops.queryAllEntityMetadata())
+      if (row.taskId == taskId) row.entityId,
+  };
 
   @override
   bool hasEmbedding(String entityId) {
