@@ -3,7 +3,13 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/features/agents/memory/memory_search.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
+import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../ai_consumption/test_utils.dart';
 import 'support/goal_agent_eval_fixtures.dart';
 import 'support/goal_agent_eval_runner.dart';
@@ -1143,6 +1149,114 @@ void main() {
             'trend direction, daily-status meaning, and tone are reviewed '
             'semantically from captured artifacts',
       );
+    });
+  });
+
+  group('GoalAgentEvalStrategy recall', () {
+    late MockConversationManager manager;
+    late List<String> responses;
+
+    setUp(() {
+      manager = MockConversationManager();
+      responses = [];
+      when(
+        () => manager.addToolResponse(
+          toolCallId: any(named: 'toolCallId'),
+          response: any(named: 'response'),
+        ),
+      ).thenAnswer((invocation) {
+        responses.add(invocation.namedArguments[#response] as String);
+      });
+    });
+
+    Future<void> search(GoalAgentEvalStrategy strategy, Object? args) =>
+        strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-search',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: GoalAgentToolNames.searchGoalMemory,
+                arguments: jsonEncode(args),
+              ),
+            ),
+          ],
+          manager: manager,
+        );
+
+    test('answers with the hits in production format, then takes exactly '
+        'one turn to read them', () async {
+      final strategy = GoalAgentEvalStrategy(
+        memoryHits: [
+          MemoryLogHit(
+            contentEntryId: 'entry-march',
+            at: DateTime(2026, 3, 14, 21),
+            type: 'capture',
+            text: 'The equinox storm cracked the shelf.',
+            edited: false,
+          ),
+        ],
+      );
+
+      await search(strategy, {'query': 'equinox SHELF'});
+
+      expect(responses.single, startsWith('Found 1 memory match(es)'));
+      expect(responses.single, contains('The equinox storm cracked'));
+      expect(
+        strategy.getContinuationPrompt(manager),
+        goalMemoryContinuationPrompt,
+      );
+      expect(strategy.getContinuationPrompt(manager), isNull);
+    });
+
+    test('matches the way production does: every keyword in the words, '
+        'never the date; ids by entry; newest first within the limit', () {
+      final march = MemoryLogHit(
+        contentEntryId: 'entry-march',
+        at: DateTime(2026, 3, 14, 21),
+        type: 'capture',
+        text: 'The equinox storm cracked the old ice shelf.',
+        edited: false,
+      );
+      final june = MemoryLogHit(
+        contentEntryId: 'entry-june',
+        at: DateTime(2026, 6, 9, 21),
+        type: 'capture',
+        text: 'Scouted the ridge; the ice shelf looked calmer.',
+        edited: false,
+      );
+      List<String> ids(Map<String, dynamic> args) => [
+        for (final hit in goalAgentEvalMemoryMatches(
+          [march, june],
+          parseMemorySearchRequest(args)!,
+        ))
+          hit.contentEntryId,
+      ];
+
+      expect(ids({'query': 'ice SHELF'}), ['entry-june', 'entry-march']);
+      expect(ids({'query': 'equinox shelf'}), ['entry-march']);
+      // The month is when it was written, not a word in it.
+      expect(ids({'query': 'March ice shelf'}), isEmpty);
+      expect(
+        ids({
+          'ids': ['entry-march', 'nope'],
+        }),
+        ['entry-march'],
+      );
+      expect(ids({'query': 'shelf', 'limit': 1}), ['entry-june']);
+    });
+
+    test('says plainly when nothing matches, and refuses an empty search as '
+        'production does', () async {
+      final strategy = GoalAgentEvalStrategy();
+
+      await search(strategy, {'query': 'ridge'});
+      await search(strategy, {'limit': 3});
+
+      expect(responses, [
+        'No memory entries match "ridge".',
+        memorySearchMissingTermsError,
+      ]);
     });
   });
 

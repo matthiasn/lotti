@@ -5,6 +5,7 @@ library;
 import 'dart:convert';
 
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 
 import 'goal_agent_eval_fixtures.dart';
@@ -51,6 +52,7 @@ class GoalAgentEvalScenario {
     this.requiredAssistantContentPatterns = const [],
     this.forbiddenAssistantContentClaims = const [],
     this.maxToolCallCounts = const {},
+    this.memoryHits = const [],
   });
 
   final String id;
@@ -157,6 +159,9 @@ class GoalAgentEvalScenario {
 
   final List<GoalAgentExpectedToolCall> expectedToolCalls;
   final List<String> forbiddenToolNames;
+
+  /// What `search_goal_memory` finds on this wake (production format).
+  final List<MemoryLogHit> memoryHits;
 
   /// The no-op discriminator: the model must end the wake without any tool
   /// call at all.
