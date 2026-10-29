@@ -192,7 +192,8 @@ stateDiagram-v2
 
 The model that will run on the device instead of Ollama is chosen in
 [ADR 0144](../../../docs/adr/0144-on-device-embeddings-use-embeddinggemma.md):
-EmbeddingGemma-300m q4 on the bundled ONNX Runtime, measured against
+EmbeddingGemma-300m q4 on the bundled ONNX Runtime (1.27.0 on Linux and
+Android, 1.24.2 on iOS), measured against
 multilingual-e5-small and keyword search by
 [`tool/embedding_eval`](../../../tool/embedding_eval/README.md), which any
 later model change runs through first.

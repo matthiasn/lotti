@@ -7,8 +7,9 @@ tasks — the semantic step task search needs: a note phrased unlike its task
 should still find it. A BM25 run over the same corpus, through SQLite FTS5
 with the tokenizer the app's index uses, is the keyword baseline.
 
-Usage (ONNX Runtime pinned to the oldest version the app ships, 1.22, so a
-variant that needs a newer operator fails here rather than on a phone):
+Usage (ONNX Runtime pinned to the oldest version the app ships — 1.24.2,
+iOS; Linux and Android ship 1.27.0 — so a variant that needs a newer operator
+fails here rather than on a phone):
 
     python tool/embedding_eval/evaluate.py --models-dir DIR [--corpus PATH]
 
@@ -111,11 +112,13 @@ def normalise(matrix: np.ndarray, dims: int) -> np.ndarray:
     return cut / np.linalg.norm(cut, axis=1, keepdims=True)
 
 
-def rank_metrics(ranks: list[int]) -> dict[str, float]:
+def rank_metrics(ranks: list[int | None]) -> dict[str, float]:
+    """Recall and mean reciprocal rank; a rank of None is an answer the
+    ranking never retrieved, which earns nothing."""
     return {
         'recall@1': sum(r == 1 for r in ranks) / len(ranks),
-        'recall@5': sum(r <= 5 for r in ranks) / len(ranks),
-        'mrr': sum(1 / r for r in ranks) / len(ranks),
+        'recall@5': sum(r is not None and r <= 5 for r in ranks) / len(ranks),
+        'mrr': sum(1 / r for r in ranks if r is not None) / len(ranks),
     }
 
 
@@ -148,7 +151,8 @@ def disjoint(language: dict, query: dict) -> bool:
 
 
 def bm25_orders(language: dict) -> list[list[str]]:
-    """Each query's tasks in BM25 order; unmatched tasks after, in corpus order."""
+    """Each query's matching tasks in BM25 order — only those: a task the
+    keywords do not match has no keyword rank, so fusing earns it nothing."""
     db = sqlite3.connect(':memory:')
     db.execute("CREATE VIRTUAL TABLE t USING fts5(id UNINDEXED, text, "
                "tokenize = 'unicode61 remove_diacritics 2')")
@@ -161,7 +165,7 @@ def bm25_orders(language: dict) -> list[list[str]]:
         expression = ' OR '.join(f'"{w}"' for w in terms) or '""'
         found = [row[0] for row in db.execute(
             'SELECT id FROM t WHERE t MATCH ? ORDER BY rank', (expression,))]
-        orders.append(found + [t['id'] for t in language['tasks'] if t['id'] not in found])
+        orders.append(found)
     return orders
 
 
@@ -174,22 +178,10 @@ def rrf(*orders: list[str], k: int = 60) -> list[str]:
     return sorted(scores, key=lambda item: -scores[item])
 
 
-def bm25_ranks(language: dict) -> list[int]:
-    db = sqlite3.connect(':memory:')
-    db.execute("CREATE VIRTUAL TABLE t USING fts5(id UNINDEXED, text, "
-               "tokenize = 'unicode61 remove_diacritics 2')")
-    db.executemany('INSERT INTO t VALUES (?, ?)',
-                   [(task['id'], task['text']) for task in language['tasks']])
-    ranks = []
-    for query in language['queries']:
-        words = [w for w in ''.join(
-            c if c.isalnum() else ' ' for c in query['text']).split() if len(w) > 1]
-        expression = ' OR '.join(f'"{w}"' for w in words) or '""'
-        found = [row[0] for row in db.execute(
-            'SELECT id FROM t WHERE t MATCH ? ORDER BY rank', (expression,))]
-        ranks.append(found.index(query['task']) + 1 if query['task'] in found
-                     else len(language['tasks']))
-    return ranks
+def bm25_ranks(language: dict) -> list[int | None]:
+    """Each query's answer's BM25 rank, or None when BM25 does not match it."""
+    return [order.index(query['task']) + 1 if query['task'] in order else None
+            for order, query in zip(bm25_orders(language), language['queries'])]
 
 
 def score(embedder: Embedder, corpus: dict) -> dict:

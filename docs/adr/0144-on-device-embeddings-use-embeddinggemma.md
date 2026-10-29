@@ -17,14 +17,16 @@ embedding model has to run inside the app.
 
 The app already bundles ONNX Runtime on every platform — the patched
 `flutter_onnxruntime` that runs the on-device voice, and `sherpa_onnx` for
-speech — at 1.22 (Linux), 1.24.2 (iOS) and 1.27.0 (Android). A model exported
-to ONNX needs no new native dependency, only its tokenizer in Dart.
+speech — at 1.27.0 on Linux and Android (`linux/CMakeLists.txt` forces it over
+the plugin's 1.22 default; sherpa's Android packages pin it) and 1.24.2 on iOS
+(the `onnxruntime-objc` pod). A model exported to ONNX needs no new native
+dependency, only its tokenizer in Dart.
 
 The candidates that run on a phone and speak the app's languages were
 measured on Lotti's own retrieval task with `tool/embedding_eval`:
 EmbeddingGemma-300m (Google, 2025) and multilingual-e5-small, each in its
-published ONNX variants, on ONNX Runtime 1.22 — the oldest the app ships — on
-a desktop CPU. Qwen3-Embedding-0.6B was a candidate too; its ONNX export is a
+published ONNX variants, on ONNX Runtime 1.24.2 — the oldest the app ships —
+on a desktop CPU. Qwen3-Embedding-0.6B was a candidate too; its ONNX export is a
 decoder that takes past key/value inputs, not an embedder the runtime can run
 as it is, and it is too large for a phone at 570 MB or more.
 
@@ -38,31 +40,32 @@ Two query sets over the penguin demo world's 28 tasks:
 
 | Paraphrase queries | R@1 | MRR | No shared word: R@1 | ms/text (1 thread) | File |
 |---|---|---|---|---|---|
-| BM25 (the app's FTS5 index) | 41% | 0.50 | 4% | — | — |
+| BM25 (the app's FTS5 index) | 41% | 0.49 | 4% | — | — |
 | **EmbeddingGemma-300m q4** | **79%** | **0.85** | **68%** | 16.8 | 197 MB |
 | EmbeddingGemma-300m q4, cut to 256 dims | 72% | 0.81 | 62% | 16.8 | 197 MB |
-| EmbeddingGemma-300m int8 | 79% | 0.85 | 71% | 97.4 | 310 MB |
-| EmbeddingGemma-300m fp32 | 81% | 0.86 | 73% | 29.8 | 1,235 MB |
+| EmbeddingGemma-300m int8 | 79% | 0.85 | 71% | 103.5 | 310 MB |
+| EmbeddingGemma-300m fp32 | 81% | 0.86 | 73% | 32.6 | 1,235 MB |
 | multilingual-e5-small int8 | 63% | 0.74 | 47% | 2.1 | 118 MB |
 | multilingual-e5-small fp32 | 68% | 0.78 | 51% | 5.6 | 470 MB |
 
 Per language, EmbeddingGemma q4 reaches MRR 0.92 (en), 0.91 (de), 0.90 (fr)
 and 0.66 (cs); every model is weakest in Czech. On membership queries all
-models sit near BM25 (MRR 0.63–0.65 against 0.67): a checklist item belongs to
+models sit near BM25 (MRR 0.63–0.65 against 0.66): a checklist item belongs to
 its task by circumstance more than by meaning, which keyword overlap already
-captures.
+captures. A task BM25 does not match counts as missed — no reciprocal-rank
+credit.
 
-Fusing a model with BM25 by plain reciprocal rank fusion raised the
-membership MRR (0.64 → 0.68) but cut the paraphrase MRR from 0.85 to 0.66:
-equal weight lets a keyword ranking that has nothing to go on drown out the
-semantic one.
+Fusing a model with BM25 by plain reciprocal rank fusion — BM25 contributing
+only the tasks it actually matches — raised the membership MRR (0.64 → 0.68)
+but cut the paraphrase MRR from 0.85 to 0.67: a keyword match on an
+incidental word outweighs the semantic ranking that found the task.
 
 ## Decision
 
 1. **The on-device embedding model is EmbeddingGemma-300m, `model_q4.onnx`**
    from `onnx-community/embeddinggemma-300m-ONNX`, pinned to revision
    `5090578d9565bb06545b4552f76e6bc2c93e4a66`. It is the most accurate
-   candidate that runs on ONNX Runtime 1.22, and the fastest EmbeddingGemma
+   candidate that runs on ONNX Runtime 1.24.2, and the fastest EmbeddingGemma
    variant there (the int8 export is six times slower on CPU; the
    `no_gather` q4 three times). Queries are prefixed
    `task: search result | query: `, documents `title: none | text: `; the
@@ -86,9 +89,21 @@ semantic one.
 ## Consequences
 
 - Semantic search can run on every device, offline, without Ollama; the
-  Ollama path can remain as an optional provider. Changing the model means
-  re-embedding, which the stored model id has to trigger (today it is
-  stored but never compared).
+  Ollama path can remain as an optional provider.
+- **One vector index per embedding model.** Vectors from two models are not
+  comparable, and the HNSW index fixes its width when it is built: today
+  `kEmbeddingDimensions` is 1024 (mxbai) in the ObjectBox entity's
+  `@HnswIndex` annotation, which code generation bakes in. So each model gets
+  its own store directory — still sharded by category, as now — and each
+  distinct width its own generated entity class (768 for EmbeddingGemma,
+  1024 for Ollama's mxbai if that provider stays). The active model selects
+  the store, which gives the per-chunk model id, stored but never compared
+  today, its job: a query can only meet vectors of its own model.
+- **Switching models is a backfill, then a swap.** Searches keep using the
+  previous model's store (or full text alone when there is none) until the
+  new store covers the journal; only then is the old one deleted. Disk use
+  doubles during that overlap — about 0.9 GB per 300k chunks at 768
+  float32 dimensions — and agent-report embeddings move with the rest.
 - Embedding costs about 17 ms per text on one desktop core. Phone latency is
   not measured here; the provider work measures it on a mid-range Android
   device before the default changes, and a full backfill there is expected to
