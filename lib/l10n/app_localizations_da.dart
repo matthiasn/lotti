@@ -17495,6 +17495,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksSearchModeLabel => 'Søgefunktion';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Ingen tilknyttede opgaver fundet for denne pull request.';
+
+  @override
   String get tasksShowCreationDate => 'Vis oprettelsesdato på kortene';
 
   @override

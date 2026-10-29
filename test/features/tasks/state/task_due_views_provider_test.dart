@@ -47,8 +47,10 @@ class _RecordingRepo implements SavedTaskFilterCountRepository {
 }
 
 void main() {
+  late TestGetItMocks mocks;
+
   setUp(() async {
-    final mocks = await setUpTestGetIt();
+    mocks = await setUpTestGetIt();
     when(
       () => mocks.updateNotifications.updateStream,
     ).thenAnswer((_) => const Stream.empty());
@@ -162,4 +164,45 @@ void main() {
     expect(repo.restrictions.first, {'v1', 'v2'});
     verifyNever(() => fts.watchFullTextMatches(any()));
   });
+
+  for (final mode in SearchMode.values) {
+    test('a pasted pull request link restricts to the tasks linked to it '
+        '(${mode.name} mode)', () async {
+      const link = 'https://github.com/matthiasn/lotti/pull/42';
+      final repo = _RecordingRepo(overdue: 1, dueToday: 0);
+      final fts = MockFts5Db();
+      when(
+        () => mocks.journalDb.taskIdsHoldingPullRequest('matthiasn/lotti#42'),
+      ).thenAnswer((_) async => {'feed', 'count'});
+
+      await countsFor(
+        JournalPageState(
+          match: link,
+          enableVectorSearch: true,
+          searchMode: mode,
+          vectorSearchDistances: const {'v1': 0.1},
+          selectedCategoryIds: const {'colony'},
+          selectedTaskStatuses: const {'OPEN'},
+          selectedLabelIds: const {'urgent'},
+          selectedPriorities: const {'P1'},
+          selectedProjectIds: const {'census'},
+          agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+        ),
+        repo,
+        fts: fts,
+      );
+
+      expect(repo.restrictions.first, {'feed', 'count'});
+      verifyNever(() => fts.watchFullTextMatches(any()));
+      // Counted with the clauses the lookup keeps, and only those: the pill
+      // must count every linked task the list shows.
+      final counted = repo.asked.single;
+      expect(counted.selectedCategoryIds, {'colony'});
+      expect(counted.selectedTaskStatuses, {...allTaskStatuses});
+      expect(counted.selectedLabelIds, isEmpty);
+      expect(counted.selectedPriorities, isEmpty);
+      expect(counted.selectedProjectIds, isEmpty);
+      expect(counted.agentAssignmentFilter, AgentAssignmentFilter.all);
+    });
+  }
 }

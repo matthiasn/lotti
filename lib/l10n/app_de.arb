@@ -6650,6 +6650,7 @@
     }
   },
   "tasksSearchModeLabel": "Suchmodus",
+  "tasksSearchNoLinkedTasks": "Keine verknüpften Aufgaben für diesen Pull-Request gefunden.",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",
   "tasksShowDueDate": "Fälligkeitsdatum auf Karten anzeigen",
   "tasksSortByCreationDate": "Erstellt",

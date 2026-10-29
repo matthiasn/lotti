@@ -7376,6 +7376,7 @@
     }
   },
   "tasksSearchModeLabel": "Sökläge",
+  "tasksSearchNoLinkedTasks": "Inga kopplade uppgifter hittades för den här pull requesten.",
   "tasksShowCreationDate": "Showens skapandedatum på korten",
   "tasksShowDueDate": "Visa inlämningsdatum på korten",
   "tasksSortByCreationDate": "Skapad",

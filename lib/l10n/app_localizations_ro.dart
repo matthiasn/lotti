@@ -17819,6 +17819,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSearchModeLabel => 'Mod de căutare';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Nu s-au găsit sarcini legate de acest pull request.';
+
+  @override
   String get tasksShowCreationDate => 'Afișați data creării pe carduri';
 
   @override

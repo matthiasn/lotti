@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Browse, search and linking
-description: One page controller shared by two tabs, two search modes, post-filter pagination, SQL due-date sorting, and the linked-entry machinery.
+description: One page controller shared by two tabs, two search modes and a pull request lookup, post-filter pagination, SQL due-date sorting, and the linked-entry machinery.
 resource: ../../../lib/features/journal/state/journal_page_controller.dart
 tags: [journal, search, pagination, linked-entries, focus]
 status: stable
@@ -11,7 +11,15 @@ sources:
   - id: page-controller
     resource: ../../../lib/features/journal/state/journal_page_controller.dart
     title: JournalPageController
-    last_modified: 2026-08-01
+    last_modified: 2026-10-29
+  - id: query-runner
+    resource: ../../../lib/features/journal/state/journal_query_runner.dart
+    title: JournalQueryRunner — full-text, semantic and pull request lookups
+    last_modified: 2026-10-29
+  - id: pull-request-ref
+    resource: ../../../lib/classes/github/pull_request_ref.dart
+    title: pullRequestSearchRef — which queries are a pasted pull request link
+    last_modified: 2026-10-29
   - id: linked
     resource: ../../../lib/features/journal/state/linked_entries_controller.dart
     title: LinkedEntriesController
@@ -19,7 +27,7 @@ sources:
   - id: db-queries
     resource: ../../../lib/database/database_task_queries.dart
     title: Task query paths
-    last_modified: 2026-06-13
+    last_modified: 2026-10-29
 ---
 
 # One controller, two tabs
@@ -78,6 +86,44 @@ Vector search behaves differently from normal paging:
 - It **only runs on the first page**.
 - It stores elapsed time, result count and per-entry distance values in
   `JournalPageState`.
+
+# A pasted pull request link is a lookup
+
+On the tasks tab, a query that is a whole pasted GitHub pull request link —
+`https://github.com/{owner}/{repo}/pull/{number}`, with or without the scheme,
+`www.` or anything after the number, or the `api.github.com` twin — is not
+searched at all, in either mode. `pullRequestSearchRef` decides; the
+`owner/repo#12` shorthand, a link with other words around it, an issue or
+repository link and a GitLab merge request link stay ordinary searches (linked
+pull requests are GitHub's only, so a GitLab link would never find a task).
+The journal tab searches every query as text.
+
+`JournalQueryRunner.runPullRequestSearch` reads the holders through
+`JournalDb.taskIdsHoldingPullRequest` — the `pullRequestAssignments` query that
+linking already uses, indexed end to end (`idx_journal_type_subtype` on the
+pull request row's `PullRequest` type and lower-cased `owner/repo#number`
+subtype, then `idx_linked_entries_to_id_type`, then the task's primary key), so
+no JSON is searched and no table is scanned, and nothing leaves the device.
+Like a semantic result, the tasks come back **whole, on the first page**,
+newest first, through the private-filtered id read. The category selection
+(and lockdown with it) and the due view still scope them; the **status
+selection does not** — a merged pull request's task is usually done, and the
+default selection hides done tasks. One task or several, every live holder is
+listed; when none is, the empty state says "No linked tasks found for this
+pull request." instead of the no-results message.
+
+```mermaid
+flowchart LR
+  Q["query"] --> Tab{"tasks tab?"}
+  Tab -->|"no"| Text["full-text / semantic search"]
+  Tab -->|"yes"| Link{"whole pull request link?"}
+  Link -->|"no"| Text
+  Link -->|"yes"| Holders["taskIdsHoldingPullRequest<br/>(indexed)"]
+  Holders --> Scope["due view, category, private mode"]
+  Scope --> Some{"any?"}
+  Some -->|"yes"| List["linked tasks, one page"]
+  Some -->|"no"| Empty["No linked tasks found"]
+```
 
 # Post-filter pagination
 

@@ -6650,6 +6650,7 @@
     }
   },
   "tasksSearchModeLabel": "Modo de búsqueda",
+  "tasksSearchNoLinkedTasks": "No se encontraron tareas vinculadas a esta pull request.",
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
   "tasksShowDueDate": "Mostrar fecha de vencimiento en tarjetas",
   "tasksSortByCreationDate": "Creación",

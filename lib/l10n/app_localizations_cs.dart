@@ -17704,6 +17704,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSearchModeLabel => 'Režim hledání';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Nenašly se žádné úkoly propojené s tímto pull requestem.';
+
+  @override
   String get tasksShowCreationDate => 'Zobrazit datum vytvoření na kartách';
 
   @override

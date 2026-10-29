@@ -17514,6 +17514,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksSearchModeLabel => 'Sökläge';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Inga kopplade uppgifter hittades för den här pull requesten.';
+
+  @override
   String get tasksShowCreationDate => 'Showens skapandedatum på korten';
 
   @override

@@ -29,6 +29,9 @@ items are done.
   detail.
 - **Shows each pull request's details** on a tap: its status and size, the
   summary, its own description, and the way to GitHub.
+- **Finds the tasks a pull request serves**: a pull request link pasted into
+  the task search lists the tasks it is linked to, offline, from the journal.
+  The tasks tab does the lookup; this feature only owns the link and its key.
 
 ## What it owns, and what it delegates
 

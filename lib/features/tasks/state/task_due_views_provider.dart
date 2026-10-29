@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
@@ -16,8 +17,9 @@ import 'package:lotti/providers/service_providers.dart';
 /// one is active, since switching between them keeps every other clause.
 ///
 /// An active search narrows the counts the way it narrows the list: to the
-/// full-text matches, or in semantic mode to the vector result set, so a pill
-/// never counts tasks that tapping it would not show.
+/// tasks a pasted pull request link is linked to, the full-text matches, or
+/// in semantic mode the vector result set, so a pill never counts tasks that
+/// tapping it would not show.
 ///
 /// Both views come from one `dueViewCounts` call — one due-window read and
 /// one id list.
@@ -34,7 +36,17 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
   final pageState = ref.watch(journalPageControllerProvider(true));
   ref.watch(taskDueDayProvider);
   final live = liveTasksFilterFor(pageState);
-  final effective = live.selectedTaskStatuses.isEmpty
+  // A pull request lookup keeps only the category and due clauses
+  // (`JournalQueryRunner.runPullRequestSearch`), so its counts drop the rest.
+  final effective = pullRequestSearchRef(pageState.match) != null
+      ? live.copyWith(
+          selectedTaskStatuses: {...allTaskStatuses},
+          selectedLabelIds: const {},
+          selectedPriorities: const {},
+          selectedProjectIds: const {},
+          agentAssignmentFilter: AgentAssignmentFilter.all,
+        )
+      : live.selectedTaskStatuses.isEmpty
       ? live.copyWith(selectedTaskStatuses: {...allTaskStatuses})
       : live;
 
@@ -47,14 +59,21 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
 
 /// The task ids the live search admits, or null when no search is active.
 ///
-/// Follows `JournalPageController`'s own branch: semantic mode with vector
-/// search enabled reads the vector result set the page already holds; any
-/// other query runs the same FTS5 match the list ran.
+/// Follows `JournalPageController`'s own branch: a pasted pull request link
+/// reads the tasks linked to it; semantic mode with vector search enabled
+/// reads the vector result set the page already holds; any other query runs
+/// the same FTS5 match the list ran.
 Future<Set<String>?> _searchRestriction(
   Ref ref,
   JournalPageState pageState,
 ) async {
   if (pageState.match.isEmpty) return null;
+  final pullRequest = pullRequestSearchRef(pageState.match);
+  if (pullRequest != null) {
+    return ref
+        .read(journalDbProvider)
+        .taskIdsHoldingPullRequest(pullRequest.key);
+  }
   if (pageState.enableVectorSearch &&
       pageState.searchMode == SearchMode.vector) {
     return pageState.vectorSearchDistances.keys.toSet();

@@ -184,6 +184,60 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
       });
     });
 
+    for (final mode in SearchMode.values) {
+      test('a pasted pull request link lists its linked tasks instead of '
+          'searching (${mode.name} mode)', () {
+        fakeAsync((async) {
+          const link = 'https://github.com/matthiasn/lotti/pull/42';
+          final feed = _buildTestTaskRefresh(
+            id: 'task-feed',
+            title: 'Feed the chicks',
+            createdAt: _testDateRefresh,
+          );
+          final count = _buildTestTaskRefresh(
+            id: 'task-count',
+            title: 'Count the colony',
+            createdAt: _testDateRefresh,
+          );
+          when(
+            () => setup.mockJournalDb.taskIdsHoldingPullRequest(
+              'matthiasn/lotti#42',
+            ),
+          ).thenAnswer((_) async => {'task-feed', 'task-count'});
+          when(
+            () => setup.mockJournalDb.getJournalEntitiesForIds({
+              'task-feed',
+              'task-count',
+            }),
+          ).thenAnswer((_) async => [feed, count]);
+
+          final controller = setup.container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+          settle(async);
+          setup.configFlagsController.add({enableVectorSearchFlag});
+          settle(async);
+          controller.setSearchMode(mode);
+          settle(async);
+
+          controller.setSearchString(link);
+          settle(async);
+
+          final state = setup.container.read(
+            journalPageControllerProvider(true),
+          );
+          expect(state.pagingController?.value.items, [feed, count]);
+
+          // The lookup is one page: scrolling on repeats nothing.
+          state.pagingController!.fetchNextPage();
+          settle(async);
+          expect(state.pagingController?.value.items, [feed, count]);
+          expect(state.pagingController?.value.hasNextPage, isFalse);
+          verifyNever(() => setup.mockFts5Db.watchFullTextMatches(link));
+        });
+      });
+    }
+
     test('empty search string clears match and fullTextMatches', () {
       fakeAsync((async) {
         when(

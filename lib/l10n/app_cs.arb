@@ -6657,6 +6657,7 @@
     }
   },
   "tasksSearchModeLabel": "Režim hledání",
+  "tasksSearchNoLinkedTasks": "Nenašly se žádné úkoly propojené s tímto pull requestem.",
   "tasksShowCreationDate": "Zobrazit datum vytvoření na kartách",
   "tasksShowDueDate": "Zobrazit datum splnění na kartách",
   "tasksSortByCreationDate": "Vytvořeno",

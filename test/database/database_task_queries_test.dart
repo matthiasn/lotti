@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../features/github/pull_request_fixtures.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
 import 'test_utils.dart';
@@ -1821,6 +1823,78 @@ void main() {
         );
         expect(results3, isEmpty);
       });
+    });
+
+    group('taskIdsHoldingPullRequest -', () {
+      final base = DateTime(2024, 7, 1, 8);
+      final open = TaskStatus.open(
+        id: 'status-open',
+        createdAt: base,
+        utcOffset: 0,
+      );
+
+      Future<void> holds(
+        String taskId,
+        PullRequestEntry entry, {
+        bool privateTask = false,
+      }) async {
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildTaskEntry(
+              id: taskId,
+              timestamp: base,
+              status: open,
+              privateFlag: privateTask,
+            ),
+          ),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(entry));
+        await db!.upsertEntryLink(
+          EntryLink.basic(
+            id: 'link-$taskId-${entry.meta.id}',
+            fromId: taskId,
+            toId: entry.meta.id,
+            createdAt: base,
+            updatedAt: base,
+            vectorClock: null,
+          ),
+        );
+      }
+
+      test(
+        'every live task linked to the pull request, private ones too, and '
+        'no other',
+        () async {
+          await holds('task-a', prEntry(clock: {'a': 1}, id: 'pr-a'));
+          await holds(
+            'task-private',
+            prEntry(clock: {'b': 1}, id: 'pr-b'),
+            privateTask: true,
+          );
+          await holds(
+            'task-unlinked',
+            prEntry(clock: {'c': 1}, id: 'pr-c', deleted: true),
+          );
+          final other = prEntry(clock: {'d': 1}, id: 'pr-d');
+          await holds(
+            'task-other',
+            other.copyWith(data: other.data.copyWith(number: 7)),
+          );
+
+          expect(
+            await db!.taskIdsHoldingPullRequest('matthiasn/lotti#42'),
+            {'task-a', 'task-private'},
+          );
+          expect(
+            await db!.taskIdsHoldingPullRequest('matthiasn/lotti#7'),
+            {'task-other'},
+          );
+          expect(
+            await db!.taskIdsHoldingPullRequest('matthiasn/lotti#8'),
+            isEmpty,
+          );
+        },
+      );
     });
 
     group('getTaskEstimatesByIds -', () {

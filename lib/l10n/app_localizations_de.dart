@@ -17620,6 +17620,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSearchModeLabel => 'Suchmodus';
 
   @override
+  String get tasksSearchNoLinkedTasks =>
+      'Keine verknüpften Aufgaben für diesen Pull-Request gefunden.';
+
+  @override
   String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
 
   @override

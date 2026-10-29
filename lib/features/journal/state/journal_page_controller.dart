@@ -471,6 +471,14 @@ class JournalPageController extends Notifier<JournalPageState>
 
     final params = _buildQueryParams();
 
+    // A pasted pull request link is a lookup, not a search, in either mode.
+    final pullRequestTasks = await _queryRunner.runPullRequestSearch(params);
+    if (pullRequestTasks != null) {
+      applyOffset(null);
+      _fullTextMatches = {for (final task in pullRequestTasks) task.meta.id};
+      return pageKey == 0 ? pullRequestTasks : const <JournalEntity>[];
+    }
+
     if (params.enableVectorSearch &&
         params.searchMode == SearchMode.vector &&
         params.query.isNotEmpty &&

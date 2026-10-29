@@ -285,6 +285,144 @@ void main() {
     });
   });
 
+  group('runPullRequestSearch', () {
+    const link = 'https://github.com/MatthiasN/Lotti/pull/42/files';
+    const key = 'matthiasn/lotti#42';
+    final tasks = {
+      for (final task in [
+        hMakeTask(id: 'feed', createdAt: hTestDate, categoryId: 'colony'),
+        hMakeTask(id: 'count', createdAt: hTestDate, categoryId: 'survey'),
+        hMakeTask(id: 'loose', createdAt: hTestDate),
+      ])
+        task.meta.id: task,
+    };
+
+    void linkedTo(Set<String> taskIds) {
+      when(
+        () => mockJournalDb.taskIdsHoldingPullRequest(key),
+      ).thenAnswer((_) async => taskIds);
+      when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
+        (invocation) async => [
+          for (final id in invocation.positionalArguments.single as Set<String>)
+            ?tasks[id],
+        ],
+      );
+    }
+
+    Future<List<String>?> search(JournalQueryParams params) async =>
+        (await runner.runPullRequestSearch(
+          params,
+        ))?.map((task) => task.meta.id).toList();
+
+    test('anything but a pasted link on the tasks page is no lookup', () async {
+      for (final params in [
+        hDefaultParams(showTasks: true),
+        hDefaultParams(showTasks: true, query: 'penguin census'),
+        hDefaultParams(showTasks: true, query: 'matthiasn/lotti#42'),
+        hDefaultParams(
+          showTasks: true,
+          query: 'https://gitlab.com/matthiasn/lotti/-/merge_requests/42',
+        ),
+        hDefaultParams(query: link),
+      ]) {
+        expect(await search(params), isNull, reason: params.query);
+      }
+      verifyNever(() => mockJournalDb.taskIdsHoldingPullRequest(any()));
+    });
+
+    test('a pull request linked to one task finds that task', () async {
+      linkedTo({'feed'});
+
+      expect(await search(hDefaultParams(showTasks: true, query: link)), [
+        'feed',
+      ]);
+    });
+
+    test(
+      'a pull request linked to several tasks finds them all, whatever the '
+      'status selection',
+      () async {
+        linkedTo({'feed', 'count', 'loose'});
+
+        expect(
+          await search(
+            hDefaultParams(
+              showTasks: true,
+              query: link,
+              selectedTaskStatuses: const {'IN PROGRESS'},
+            ),
+          ),
+          unorderedEquals(['feed', 'count', 'loose']),
+        );
+        verifyNever(
+          () => mockJournalDb.getTasks(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        );
+      },
+    );
+
+    test('the category selection still scopes what is shown, the empty id '
+        'standing for uncategorised', () async {
+      linkedTo({'feed', 'count', 'loose'});
+
+      expect(
+        await search(
+          hDefaultParams(
+            showTasks: true,
+            query: link,
+            selectedCategoryIds: const {'colony', ''},
+          ),
+        ),
+        unorderedEquals(['feed', 'loose']),
+      );
+    });
+
+    test('a due view narrows the linked tasks before they are read', () async {
+      final now = DateTime(2024, 7, 3, 15);
+      linkedTo({'feed', 'count'});
+      when(
+        () => mockJournalDb.getOpenTaskIdsForDueFilter(
+          TaskDueFilter.overdue,
+          now: now,
+        ),
+      ).thenAnswer((_) async => {'count', 'elsewhere'});
+
+      final found = await withClock(
+        Clock.fixed(now),
+        () => search(
+          hDefaultParams(
+            showTasks: true,
+            query: link,
+            dueFilter: TaskDueFilter.overdue,
+          ),
+        ),
+      );
+
+      expect(found, ['count']);
+      verify(() => mockJournalDb.getJournalEntitiesForIds({'count'})).called(1);
+    });
+
+    test('a pull request no task holds finds nothing rather than falling back '
+        'to text search', () async {
+      linkedTo({});
+
+      expect(
+        await search(hDefaultParams(showTasks: true, query: link)),
+        isEmpty,
+      );
+      verifyNever(() => mockFts5Db.watchFullTextMatches(any()));
+    });
+  });
+
   group('runQuery - tasks with post-filter', () {
     test('post-filters by project IDs', () {
       fakeAsync((async) {

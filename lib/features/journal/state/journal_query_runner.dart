@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_database.dart';
@@ -105,6 +106,36 @@ class JournalQueryRunner {
     if (query.isEmpty) return {};
     final res = await _fts5Db.watchFullTextMatches(query).first;
     return res.toSet();
+  }
+
+  /// The tasks linked to the pull request a pasted link in the query of
+  /// [params] names, or null when the query is not one ([pullRequestSearchRef]) or
+  /// the page lists entries rather than tasks — then the query is searched
+  /// as text.
+  ///
+  /// An exact lookup like semantic search, it returns every linked task in
+  /// one page, newest first, and keeps the clauses that scope what may be
+  /// shown — the category selection (and with it lockdown), the due view
+  /// and private mode — but not the status selection: a merged pull
+  /// request's task is usually done, and the default view hides done tasks.
+  Future<List<JournalEntity>?> runPullRequestSearch(
+    JournalQueryParams params,
+  ) async {
+    if (!params.showTasks) return null;
+    final pullRequest = pullRequestSearchRef(params.query);
+    if (pullRequest == null) return null;
+
+    final holders = await _db.taskIdsHoldingPullRequest(pullRequest.key);
+    final ids = await _narrowByDueFilter(holders.toList(), params.dueFilter);
+    final categoryIds = params.selectedCategoryIds;
+    final tasks = await _db.getJournalEntitiesForIds({...?ids});
+    return [
+      for (final task in tasks)
+        if (task is Task &&
+            (categoryIds.isEmpty ||
+                categoryIds.contains(task.meta.categoryId ?? '')))
+          task,
+    ];
   }
 
   // ---------------------------------------------------------------
