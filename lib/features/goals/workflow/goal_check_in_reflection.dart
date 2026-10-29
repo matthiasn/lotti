@@ -3,11 +3,13 @@ import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 /// The key a report records for one check-in it had in front of it: the
-/// digest of the words the summary was distilled from, so a re-transcription
-/// or an edit reads as something the report has not seen. A summary written
-/// before digests existed falls back to its id.
+/// check-in's entry and the digest of the words its summary was distilled
+/// from. The digest makes a re-transcription or an edit read as something the
+/// report has not seen; the entry keeps two check-ins that say the same thing
+/// apart — a concern repeated word for word is still said twice. A summary
+/// written before digests existed falls back to its id.
 String goalCheckInReflectionKey(GoalCheckInSummary summary) =>
-    summary.sourceDigest ?? summary.id;
+    '${summary.sourceEntryId}:${summary.sourceDigest ?? summary.id}';
 
 /// Which of the check-ins one wake shows verbatim the standing report has
 /// already reflected, and which it has not.

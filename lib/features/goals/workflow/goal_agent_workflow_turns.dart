@@ -159,15 +159,18 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
         // digest has none, so it is refreshed once and then carries one.
         final digest = goalCheckInSourceDigest(source.text, weight: weight);
         if (existing != null && existing.sourceDigest == digest) continue;
-        if (existing != null &&
-            recompactions++ >= goalCheckInRecompactionsPerWake) {
-          continue;
-        }
         if (state.failuresByEntryId[source.entryId]?.blocks(
               digest,
               clock.now(),
             ) ??
             false) {
+          continue;
+        }
+        // Only a check-in that can actually be compacted spends the budget:
+        // one held back by its failure backoff would otherwise take a slot
+        // on every wake and strand the older history behind it.
+        if (existing != null &&
+            recompactions++ >= goalCheckInRecompactionsPerWake) {
           continue;
         }
         await compactor.compact(

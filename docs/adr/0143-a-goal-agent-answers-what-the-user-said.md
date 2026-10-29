@@ -40,13 +40,14 @@ outcome rather than a model failure:
    goal page shows the reflection with the summary, above what comes next,
    not behind "Show more".
 2. **A report records what it was shown; the next wake asks what is new.** A
-   report persists the source digests of the check-ins its wake showed
-   verbatim (`goal_report_check_ins_reflected`). A later automatic wake
-   compares its own verbatim check-ins against that record, marks the new
-   ones `sinceLastReport`, counts them in `reporting`, and treats any count
-   above zero as a material change. Comparison is by digest, not by time: a
-   transcript recorded before the report but read after it is new, and so is
-   a re-transcription. On such a wake the strategy refuses a report whose
+   report persists, for each check-in its wake showed verbatim, the entry id
+   and the digest of its words (`goal_report_check_ins_reflected`). A later
+   automatic wake compares its own verbatim check-ins against that record,
+   marks the new ones `sinceLastReport`, counts them in `reporting`, and
+   treats any count above zero as a material change. Comparison is by entry
+   and digest, not by time: a transcript recorded before the report but read
+   after it is new, and so is a re-transcription — and two check-ins saying
+   the same thing word for word are two. On such a wake the strategy refuses a report whose
    reflection is empty.
 3. **A goal measured by its check-ins compacts them for substance.**
    `GoalCheckInWeight` is `substance` for a goal with a `checkInTime` leaf

@@ -26,10 +26,10 @@ void main() {
     for (final summary in summaries) goalUserVoiceEntry(summary),
   ];
 
-  test('the key is the source digest, or the id for a summary written before '
-      'digests existed', () {
-    expect(goalCheckInReflectionKey(monday), 'digest-monday');
-    expect(goalCheckInReflectionKey(legacy), 'summary-legacy');
+  test('the key is the entry and its source digest, or its id for a summary '
+      'written before digests existed', () {
+    expect(goalCheckInReflectionKey(monday), 'monday:digest-monday');
+    expect(goalCheckInReflectionKey(legacy), 'legacy:summary-legacy');
   });
 
   test('a report from before the record counts as having reflected nothing: '
@@ -45,9 +45,9 @@ void main() {
       );
 
       expect(reflection.shown, [
-        'digest-monday',
-        'digest-tuesday',
-        'summary-legacy',
+        'monday:digest-monday',
+        'tuesday:digest-tuesday',
+        'legacy:summary-legacy',
       ]);
       expect(reflection.unreflectedEntryIds, {'monday', 'tuesday', 'legacy'});
     }
@@ -61,10 +61,10 @@ void main() {
       standingReport: makeTestReport(
         provenance: const {
           GoalReportProvenanceKeys.checkInsReflected: [
-            'digest-monday',
+            'monday:digest-monday',
             // Tuesday was re-transcribed after this report: its old digest.
-            'digest-tuesday-first-transcript',
-            'summary-legacy',
+            'tuesday:digest-tuesday-first-transcript',
+            'legacy:summary-legacy',
             42,
           ],
         },
@@ -75,6 +75,24 @@ void main() {
     expect(reflection.shown, hasLength(3));
   });
 
+  test('two check-ins that say the same thing word for word are two things '
+      'to answer', () {
+    final again = _summary('wednesday', digest: 'digest-monday', day: 3);
+    final reflection = goalCheckInReflection(
+      userVoice: [goalUserVoiceEntry(monday), goalUserVoiceEntry(again)],
+      summaries: [monday, again],
+      standingReport: makeTestReport(
+        provenance: {
+          GoalReportProvenanceKeys.checkInsReflected: [
+            goalCheckInReflectionKey(monday),
+          ],
+        },
+      ),
+    );
+
+    expect(reflection.unreflectedEntryIds, {'wednesday'});
+  });
+
   test('marks exactly the unreflected verbatim entries and leaves the rest '
       'as they were', () {
     final reflection = goalCheckInReflection(
@@ -83,8 +101,8 @@ void main() {
       standingReport: makeTestReport(
         provenance: const {
           GoalReportProvenanceKeys.checkInsReflected: [
-            'digest-monday',
-            'summary-legacy',
+            'monday:digest-monday',
+            'legacy:summary-legacy',
           ],
         },
       ),

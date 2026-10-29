@@ -1955,11 +1955,48 @@ void main() {
       required int count,
       required GoalCheckInWeight weight,
       int unsummarised = 0,
+      int blocked = 0,
     }) {
       final sources = <GoalCheckInSource>[];
       final messages = <AgentDomainEntity>[];
       for (var i = 0; i < count + unsummarised; i++) {
         final at = DateTime.utc(2026, 8, 8, 20).subtract(Duration(days: i));
+        // The newest [blocked] check-ins failed to compact for substance
+        // often enough that only new words would retry them.
+        if (i < blocked) {
+          final failureId = 'failure-$i';
+          messages.add(
+            AgentDomainEntity.agentMessage(
+              id: failureId,
+              agentId: agentId,
+              threadId: failureId,
+              kind: AgentMessageKind.action,
+              createdAt: at,
+              vectorClock: null,
+              metadata: const AgentMessageMetadata(
+                toolName: goalCheckInCompactionFailureToolName,
+              ),
+              contentEntryId: '$failureId:payload',
+            ),
+          );
+          when(() => repository.getEntity('$failureId:payload')).thenAnswer(
+            (_) async => AgentDomainEntity.agentMessagePayload(
+              id: '$failureId:payload',
+              agentId: agentId,
+              createdAt: at,
+              vectorClock: null,
+              content: GoalCheckInCompactionFailure(
+                sourceEntryId: 'entry-$i',
+                sourceDigest: goalCheckInSourceDigest(
+                  'Wrote about the ridge, day $i.',
+                  weight: GoalCheckInWeight.substance,
+                ),
+                attempts: goalCheckInCompactionMaxAttempts,
+                retryAfter: DateTime.utc(2026),
+              ).toContent(),
+            ),
+          );
+        }
         sources.add(
           GoalCheckInSource(
             entryId: 'entry-$i',
@@ -2126,6 +2163,25 @@ void main() {
       },
     );
 
+    test('a check-in held back by its failure backoff does not spend the '
+        'budget, so it cannot strand the history behind it', () async {
+      wire(
+        stubJournal(
+          count: 12,
+          weight: GoalCheckInWeight.context,
+          blocked: 3,
+        ),
+      );
+      converse();
+
+      await run();
+
+      expect(compacted, [
+        for (var i = 3; i < 3 + goalCheckInRecompactionsPerWake; i++)
+          ('entry-$i', GoalCheckInWeight.substance),
+      ]);
+    });
+
     test(
       'marks the check-ins the standing report never answered, requires '
       'the reflection to answer them, and records what it was shown',
@@ -2163,10 +2219,7 @@ void main() {
           written.provenance[GoalReportProvenanceKeys.checkInsReflected],
           [
             for (final day in [1, 0])
-              goalCheckInSourceDigest(
-                'Wrote about the ridge, day $day.',
-                weight: GoalCheckInWeight.substance,
-              ),
+              'entry-$day:${goalCheckInSourceDigest('Wrote about the ridge, day $day.', weight: GoalCheckInWeight.substance)}',
           ],
         );
       },
@@ -2187,10 +2240,7 @@ void main() {
               'specVersionId': '$agentId:spec-v1',
               GoalReportProvenanceKeys.checkInsReflected: [
                 for (final day in [1, 0])
-                  goalCheckInSourceDigest(
-                    'Wrote about the ridge, day $day.',
-                    weight: GoalCheckInWeight.substance,
-                  ),
+                  'entry-$day:${goalCheckInSourceDigest('Wrote about the ridge, day $day.', weight: GoalCheckInWeight.substance)}',
               ],
             },
           ),
