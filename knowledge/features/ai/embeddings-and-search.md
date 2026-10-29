@@ -40,6 +40,10 @@ sources:
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: The task agent's report embedding
     last_modified: 2026-09-26
+  - id: gemma-tokenizer
+    resource: ../../../lib/features/ai/on_device_embedding/gemma_tokenizer.dart
+    title: GemmaTokenizer, EmbeddingGemma's tokenizer in Dart
+    last_modified: 2026-10-30
   - id: spec
     resource: ../../../specs/tla/EmbeddingFreshness.tla
     title: EmbeddingFreshness TLA+ model
@@ -205,7 +209,10 @@ EmbeddingGemma-300m q4 on the bundled ONNX Runtime (1.27.0 on Linux and
 Android, 1.24.2 on iOS, 1.22.0 on Windows), measured against
 multilingual-e5-small and keyword search by
 [`tool/embedding_eval`](../../../tool/embedding_eval/README.md), which any
-later model change runs through first.
+later model change runs through first. Its tokenizer is ported to Dart
+(`GemmaTokenizer`), so the app needs no native tokenizer library; the same
+tool checks the port token for token against Hugging Face `tokenizers` on
+every corpus text and paraphrase, with the prompts the app will add.
 
 Open questions the model leaves as residuals:
 
