@@ -136,10 +136,11 @@ composes with every other clause and both sort paths without new SQL; an empty
 intersection returns no rows without a query. Semantic search returns its
 results whole, so `runVectorSearch` narrows them to the view itself, keeping
 the distance map whole as the search's result set. The counts restrict to the
-same search: the tasks a pasted pull request link is linked to (see
+same search: the FTS5 matches, or in semantic mode the vector result ids
+(`SavedTaskFilterCountRepository.count(…, restrictToIds:)`). A pasted pull
+request link restricts them to the tasks it is linked to (see
 [browse and linking](../journal/browse-and-linking.md#a-pasted-pull-request-link-is-a-lookup)),
-the FTS5 matches, or in semantic mode the vector result ids
-(`SavedTaskFilterCountRepository.count(…, restrictToIds:)`). The filter modal
+counted with only the category clause that lookup keeps. The filter modal
 has no due control, so saving or updating from it carries the live due clause
 unchanged. Because the strip's number for a
 view is the live filter with that view's clause swapped in, **the pill counts
