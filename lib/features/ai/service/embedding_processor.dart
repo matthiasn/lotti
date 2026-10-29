@@ -198,10 +198,18 @@ abstract final class EmbeddingProcessor {
   /// The report is stored in the category of its task [taskId], read from
   /// [journalDb] (the default shard when the task is gone).
   ///
+  /// Once stored, the report is the task's only one in the index: every
+  /// other report embedded for [taskId] is deleted, not just the one it
+  /// replaced. A report whose own embedding was skipped (endpoint down, text
+  /// too short) would otherwise leave the one before it searchable for good.
+  /// A skipped or failed run deletes nothing, so the task stays findable by
+  /// its last embedded report.
+  ///
   /// Runs under the task's lock, the one [processEntity] holds while it
   /// moves the task's reports: a recategorisation of the task either lands
   /// before this run reads the category, or is processed after the report
-  /// is stored and moves it along.
+  /// is stored and moves it along. The cleanup runs under the same lock, so
+  /// an earlier report's run can never delete a newer report's vector.
   ///
   /// Returns `true` if an embedding was generated and stored, `false` if
   /// skipped (too short, unchanged content hash, etc.).
@@ -237,6 +245,12 @@ abstract final class EmbeddingProcessor {
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
     );
+
+    for (final staleId in await embeddingStore.agentReportIdsForTask(taskId)) {
+      if (staleId != reportId) {
+        await embeddingStore.deleteEntityEmbeddings(staleId);
+      }
+    }
 
     return true;
   });

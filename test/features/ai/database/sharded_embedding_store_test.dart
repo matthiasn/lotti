@@ -1069,6 +1069,31 @@ void main() {
       });
     });
 
+    group('agentReportIdsForTask', () {
+      test('lists the reports of a task across shards, and none once they '
+          'are deleted', () async {
+        await openStoreWithShards(
+          ['cat-a', 'cat-b'],
+          metadata: {
+            'cat-a': [(entityId: 'report-1', taskId: 'task-1')],
+            'cat-b': [
+              (entityId: 'report-2', taskId: 'task-1'),
+              (entityId: 'other-report', taskId: 'task-2'),
+            ],
+          },
+        );
+
+        expect(await store.agentReportIdsForTask('task-1'), {
+          'report-1',
+          'report-2',
+        });
+
+        await store.deleteEntityEmbeddings('report-1');
+        expect(await store.agentReportIdsForTask('task-1'), {'report-2'});
+        expect(await store.agentReportIdsForTask('task-3'), isEmpty);
+      });
+    });
+
     group('moveRelatedReportEmbeddings', () {
       test('cascades to all reports for a task', () async {
         await openStoreWithShards(

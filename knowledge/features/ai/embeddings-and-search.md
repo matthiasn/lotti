@@ -86,6 +86,15 @@ flowchart LR
   [Keeping up with the journal](#keeping-up-with-the-journal).
 - Tasks can be embedded with **label-enriched** text, not just raw title and
   body.
+- **A task has at most one report in the index.** Once a new report is
+  embedded, every other report embedded for its task is deleted
+  (`EmbeddingStore.agentReportIdsForTask`), not just the one it replaced: a
+  report whose own embedding was skipped — endpoint down, text too short —
+  would otherwise leave the one before it searchable for good. A failed or
+  skipped embed deletes nothing, so the task stays findable by its last
+  embedded report. The cleanup runs in `EmbeddingProcessor.processAgentReport`
+  under the task's lock, so an earlier report's run cannot delete a newer
+  report's vector.
 - Agent reports are stored with `taskId` metadata, so a search hit can resolve
   back to the owning task.
 

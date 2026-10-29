@@ -396,12 +396,11 @@ void main() {
       expect(head.id, 'head-existing');
       expect(head.reportId, 'report-new');
 
-      // Result carries the new report id and the superseded one.
+      // Result carries what the embedding needs: the new report and its task.
       expect(result, isNotNull);
       expect(result!.reportId, 'report-new');
       expect(result.reportContent, '# Status\nAll good.');
       expect(result.taskId, _taskId);
-      expect(result.previousReportId, 'report-previous');
     });
 
     test('notifies task tagline providers after the report commits', () async {
@@ -530,7 +529,7 @@ void main() {
           .whereType<AgentReportHeadEntity>()
           .single;
       expect(head.id, 'head-id');
-      expect(result!.previousReportId, isNull);
+      expect(result, isNotNull);
     });
 
     test('empty content writes no report and persist returns null', () async {

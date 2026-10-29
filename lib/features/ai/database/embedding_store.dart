@@ -57,6 +57,9 @@ abstract class EmbeddingStore {
     String newCategoryId,
   );
 
+  /// The agent reports embedded for [taskId], by entity id.
+  FutureOr<Set<String>> agentReportIdsForTask(String taskId);
+
   /// Whether any embedding chunk exists for [entityId].
   FutureOr<bool> hasEmbedding(String entityId);
 

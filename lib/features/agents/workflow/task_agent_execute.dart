@@ -554,7 +554,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             reportId: embed.reportId,
             reportContent: embed.reportContent,
             taskId: embed.taskId,
-            previousReportId: embed.previousReportId,
           ),
         );
       }

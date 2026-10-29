@@ -521,6 +521,18 @@ void main() {
       });
     });
 
+    test('agentReportIdsForTask lists the reports embedded for a task', () {
+      when(mockOps.queryAllEntityMetadata).thenReturn([
+        (entityId: 'report-1', taskId: 'task-1'),
+        (entityId: 'report-2', taskId: 'task-1'),
+        (entityId: 'other-report', taskId: 'task-2'),
+        (entityId: 'entry-1', taskId: ''),
+      ]);
+
+      expect(store.agentReportIdsForTask('task-1'), {'report-1', 'report-2'});
+      expect(store.agentReportIdsForTask('task-3'), isEmpty);
+    });
+
     group('getContentHash uses embedding key format', () {
       test('looks up entityId:0 for the content hash', () {
         when(
