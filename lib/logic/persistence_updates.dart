@@ -225,11 +225,6 @@ class PersistenceUpdates extends PersistenceCollaboratorBase {
             updateNotifications.notify(ids);
           }
 
-          await fts5Db.insertText(
-            journalEntity,
-            removePrevious: true,
-          );
-
           if (enqueueSync) {
             try {
               await outboxService.enqueueMessage(

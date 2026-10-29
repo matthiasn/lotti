@@ -195,7 +195,7 @@ class PenguinQueryDatabase {
     access: access,
     search: (query) async {
       searches.add(query);
-      return fts.findMatching(query).get();
+      return fts.matchIds(query, anyTerm: true, prefixLastWord: false);
     },
   );
 
@@ -212,7 +212,7 @@ class PenguinQueryDatabase {
     }
     for (final entry in corpus.world.journalEntities) {
       await journal.upsertJournalDbEntity(toDbEntity(entry));
-      await fts.insertText(entry);
+      await fts.indexEntities([entry]);
     }
     for (final link in corpus.world.links) {
       await journal.upsertEntryLink(link);

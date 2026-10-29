@@ -28,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -158,8 +159,8 @@ void main() {
 
       // Default: FTS returns empty
       when(
-        () => mockFts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(<String>[]));
+        () => anyMatchIds(mockFts5Db),
+      ).thenAnswer((_) async => <String>[]);
 
       when(
         () => mockJournalDb.getJournalEntitiesForIds(any()),
@@ -210,8 +211,8 @@ void main() {
         // The prefetch window holds one task; the match is a different one.
         stubTasks([buildTask(id: 'in-window', title: 'Prefetched task')]);
         when(
-          () => mockFts5Db.watchFullTextMatches(any()),
-        ).thenAnswer((_) => Stream.value(<String>['beyond-window']));
+          () => anyMatchIds(mockFts5Db),
+        ).thenAnswer((_) async => <String>['beyond-window']);
         when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
           (_) async => [
             buildTask(id: 'beyond-window', title: 'Task past the 200th row'),
@@ -254,8 +255,8 @@ void main() {
       (tester) async {
         stubTasks([]);
         when(
-          () => mockFts5Db.watchFullTextMatches(any()),
-        ).thenAnswer((_) => Stream.value(<String>['done-task']));
+          () => anyMatchIds(mockFts5Db),
+        ).thenAnswer((_) async => <String>['done-task']);
         when(() => mockJournalDb.getJournalEntitiesForIds(any())).thenAnswer(
           (_) async => [
             TestTaskFactory.create(
@@ -1445,8 +1446,8 @@ void main() {
 
       // FTS5 returns task-2 as a match
       when(
-        () => mockFts5Db.watchFullTextMatches('special'),
-      ).thenAnswer((_) => Stream.value(['task-2']));
+        () => anyMatchIds(mockFts5Db, 'special'),
+      ).thenAnswer((_) async => ['task-2']);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -1498,8 +1499,8 @@ void main() {
 
       // FTS5 throws an error
       when(
-        () => mockFts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.error(Exception('FTS5 error')));
+        () => anyMatchIds(mockFts5Db),
+      ).thenAnswer((_) async => throw Exception('FTS5 error'));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -1551,11 +1552,11 @@ void main() {
 
         final staleController = StreamController<List<String>>();
         when(
-          () => mockFts5Db.watchFullTextMatches('stale'),
-        ).thenAnswer((_) => staleController.stream);
+          () => anyMatchIds(mockFts5Db, 'stale'),
+        ).thenAnswer((_) => staleController.stream.first);
         when(
-          () => mockFts5Db.watchFullTextMatches('fresh'),
-        ).thenAnswer((_) => Stream.value(['task-2']));
+          () => anyMatchIds(mockFts5Db, 'fresh'),
+        ).thenAnswer((_) async => ['task-2']);
 
         await openModal(tester);
 

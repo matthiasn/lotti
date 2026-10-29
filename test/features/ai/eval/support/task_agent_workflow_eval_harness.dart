@@ -127,9 +127,6 @@ class TaskAgentWorkflowEvalHarness {
     when(
       () => updateNotifications.updateStream,
     ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-    when(
-      () => fts5Db.insertText(any(), removePrevious: true),
-    ).thenAnswer((_) async {});
     when(() => outboxService.enqueueMessage(any())).thenAnswer((_) async {});
 
     final documentsDirectory = await getApplicationDocumentsDirectory();

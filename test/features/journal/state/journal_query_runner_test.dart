@@ -6,8 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 import 'journal_query_runner_test_helpers.dart';
 
@@ -72,7 +74,7 @@ void main() {
 
     runner = JournalQueryRunner(
       db: mockJournalDb,
-      fts5Db: mockFts5Db,
+      fts5Db: () => mockFts5Db,
       entitiesCacheService: mockEntitiesCacheService,
       domainLogger: mockDomainLogger,
     );
@@ -83,30 +85,81 @@ void main() {
   });
 
   group('fts5Search', () {
-    test('returns empty set for empty query', () {
-      fakeAsync((async) {
-        late Set<String> result;
-        runner.fts5Search('').then((r) => result = r);
-        async.flushMicrotasks();
+    late Invocation asked;
 
-        expect(result, isEmpty);
-        verifyNever(() => mockFts5Db.watchFullTextMatches(any()));
-      });
+    void recordMatchIds() => when(() => anyMatchIds(mockFts5Db)).thenAnswer((
+      invocation,
+    ) async {
+      asked = invocation;
+      return const <String>[];
     });
 
-    test('returns matching IDs for non-empty query', () {
-      fakeAsync((async) {
-        when(
-          () => mockFts5Db.watchFullTextMatches('flutter'),
-        ).thenAnswer((_) => Stream.value(['id-1', 'id-2', 'id-1']));
+    ({Set<String>? types, Set<String>? categoryIds, bool includePrivate})
+    askedFilters() => (
+      types: asked.namedArguments[#types] as Set<String>?,
+      categoryIds: asked.namedArguments[#categoryIds] as Set<String>?,
+      includePrivate: asked.namedArguments[#includePrivate] as bool,
+    );
 
-        late Set<String> result;
-        runner.fts5Search('flutter').then((r) => result = r);
-        async.flushMicrotasks();
+    void showsPrivate({required bool shows}) => when(
+      () => mockJournalDb.getConfigFlag(privateFlag),
+    ).thenAnswer((_) async => shows);
 
-        expect(result, equals({'id-1', 'id-2'}));
-        verify(() => mockFts5Db.watchFullTextMatches('flutter')).called(1);
-      });
+    test('a blank query asks the index nothing', () async {
+      expect(await runner.fts5Search(hDefaultParams(query: '  ')), isEmpty);
+      verifyNever(() => anyMatchIds(mockFts5Db));
+    });
+
+    test('keeps the index order, best match first', () async {
+      showsPrivate(shows: true);
+      when(
+        () => anyMatchIds(mockFts5Db, 'penguin'),
+      ).thenAnswer((_) async => ['best', 'next', 'best']);
+
+      final matches = await runner.fts5Search(
+        hDefaultParams(showTasks: true, query: 'penguin'),
+      );
+
+      expect(matches.toList(), ['best', 'next']);
+    });
+
+    test('the tasks page asks for tasks in its categories, private ones only '
+        'while private mode shows them', () async {
+      for (final shows in [true, false]) {
+        showsPrivate(shows: shows);
+        recordMatchIds();
+
+        await runner.fts5Search(
+          hDefaultParams(
+            showTasks: true,
+            query: 'penguin',
+            selectedCategoryIds: const {'colony', ''},
+          ),
+        );
+
+        final asked = askedFilters();
+        expect(asked.types, {'Task'});
+        expect(asked.categoryIds, {'colony', ''});
+        expect(asked.includePrivate, shows);
+      }
+    });
+
+    test('the logbook asks for the entry types it lists, in every category '
+        'when none is selected', () async {
+      showsPrivate(shows: true);
+      recordMatchIds();
+
+      await runner.fts5Search(
+        hDefaultParams(
+          query: 'penguin',
+          selectedEntryTypes: const {'JournalEntry', 'JournalEvent'},
+          enableEvents: false,
+        ),
+      );
+
+      final asked = askedFilters();
+      expect(asked.types, {'JournalEntry'}, reason: 'events are flagged off');
+      expect(asked.categoryIds, isNull);
     });
   });
 

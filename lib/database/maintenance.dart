@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/common.dart';
-import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -244,48 +243,28 @@ class Maintenance {
 
     final fts5Db = _replaceFts5Db();
 
+    // A fresh index starts its own rebuild (`Fts5Db.migration`); catching up
+    // here reports its progress to the maintenance sheet. The batches walk
+    // the journal by rowid, and the search index service may run the same
+    // catch-up meanwhile: the index serialises both.
     final entryCount = await _db.getJournalCount();
-    var completed = 0;
-    var lastReportedProgress = 0;
-
-    // Walk the journal by rowid rather than OFFSET: an OFFSET page re-scans
-    // every row before it, which makes a full rebuild quadratic in the
-    // journal's size. The order does not matter to the index.
-    var lastRowId = 0;
-    while (true) {
-      final rows = await _db
-          .customSelect(
-            'SELECT rowid AS rid, * FROM journal '
-            'WHERE deleted = 0 AND rowid > ? ORDER BY rowid LIMIT ?',
-            variables: [
-              Variable.withInt(lastRowId),
-              Variable.withInt(_ftsRebuildChunk),
-            ],
-            readsFrom: {_db.journal},
-          )
-          .get();
-      if (rows.isEmpty) break;
-
-      for (final row in rows) {
-        lastRowId = row.read<int>('rid');
-        await fts5Db.insertText(fromDbEntity(_db.journal.map(row.data)));
-        completed++;
-
-        final currentProgress = entryCount > 0 ? completed / entryCount : 0.0;
-        final currentPercentage = (currentProgress * 100).round();
-        if (currentPercentage > lastReportedProgress) {
-          lastReportedProgress = currentPercentage;
-          onProgress?.call(currentProgress);
-          _logger.log(
-            LogDomain.database,
-            'Progress: $currentPercentage%, $completed/$entryCount',
-            subDomain: 'recreateFts5',
-          );
-        }
-      }
-    }
+    var lastReportedPercentage = 0;
+    await fts5Db.catchUp(
+      _db,
+      onProgress: (indexed) {
+        final progress = entryCount > 0
+            ? (indexed / entryCount).clamp(0.0, 1.0)
+            : 1.0;
+        final percentage = (progress * 100).round();
+        if (percentage <= lastReportedPercentage) return;
+        lastReportedPercentage = percentage;
+        onProgress?.call(progress);
+        _logger.log(
+          LogDomain.database,
+          'Progress: $percentage%, $indexed/$entryCount',
+          subDomain: 'recreateFts5',
+        );
+      },
+    );
   }
-
-  /// Rows read per round trip while rebuilding the search index.
-  static const int _ftsRebuildChunk = 500;
 }

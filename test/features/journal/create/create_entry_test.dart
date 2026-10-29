@@ -108,13 +108,6 @@ void main() {
       );
 
       when(
-        () => mockFts5Db.insertText(
-          any(),
-          removePrevious: true,
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
 
@@ -276,15 +269,16 @@ void main() {
         );
         expect(stored?.meta.private, isTrue);
 
-        // createDbEntity does not touch FTS5, so a titled task that is never
-        // edited would stay permanently unsearchable — and the link picker
-        // would offer to create it again once it left the prefetch window.
-        verify(
-          () => mockFts5Db.insertText(
-            any(that: isA<Task>()),
-            removePrevious: any(named: 'removePrevious'),
-          ),
-        ).called(greaterThanOrEqualTo(1));
+        // Indexed at once rather than from the change notification a moment
+        // later: the link picker's duplicate check may run before that, and
+        // would offer to create the task again.
+        final indexed = verify(
+          () => mockFts5Db.indexEntities(captureAny()),
+        ).captured.expand((batch) => batch as List<JournalEntity>);
+        expect(
+          indexed.map((entity) => entity.meta.id),
+          contains(child.meta.id),
+        );
       },
     );
 

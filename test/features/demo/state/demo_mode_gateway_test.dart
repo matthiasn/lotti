@@ -29,6 +29,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/fts5_stubs.dart';
 import '../../../helpers/service_overrides.dart';
 import '../../../mocks/mocks.dart';
 
@@ -992,6 +993,7 @@ void main() {
 
       final persistence = MockPersistenceLogic();
       final fts = MockFts5Db();
+      stubFts5Db(fts);
       when(() => persistence.updateMetadata(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments.first as Metadata,
       );
@@ -1001,7 +1003,6 @@ void main() {
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
         ),
       ).thenAnswer((_) async => true);
-      when(() => fts.insertText(any())).thenAnswer((_) async {});
 
       // The DEMO generation is live until the switch.
       final demoAiConfigs = AiConfigRepository(demoHandle.aiConfigDb);
@@ -1047,7 +1048,10 @@ void main() {
         isNot('user-task'),
         reason: 'copies must arrive under fresh real-world ids',
       );
-      verify(() => fts.insertText(any())).called(1);
+      final indexed =
+          verify(() => fts.indexEntities(captureAny())).captured.single
+              as List<JournalEntity>;
+      expect(indexed.single.meta.id, written.meta.id);
     });
   });
 

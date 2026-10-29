@@ -628,6 +628,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(<int>[]);
   registerFallbackValue(<String>[]);
   registerFallbackValue(<RecentSearch>[]);
+  registerFts5Fallbacks();
 
   // AI response data fallback
   registerFallbackValue(
@@ -662,4 +663,13 @@ void registerAllFallbackValues() {
   registerFallbackValue(
     const SyncEntitlement(id: 'fallback', authSecret: 'fallback'),
   );
+}
+
+/// The fallbacks `test/helpers/fts5_stubs.dart` matches `Fts5Db` calls with.
+/// [registerAllFallbackValues] includes them; `stubFts5Db` registers them
+/// itself, for a file that registers nothing else.
+void registerFts5Fallbacks() {
+  registerFallbackValue(<JournalEntity>[]);
+  registerFallbackValue(MockJournalDb());
+  registerFallbackValue(measurableWater);
 }

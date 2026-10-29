@@ -102,13 +102,13 @@ class WorldHandle {
   /// constructor binding is what keeps it out of the active world), and —
   /// for searchable kinds — the FTS index.
   ///
-  /// Note: `Fts5Db.insertText` resolves the ACTIVE generation's
+  /// Note: `Fts5Db.indexEntities` resolves the ACTIVE generation's
   /// EntitiesCacheService, but only consults it for measurement entries;
   /// seeding writes tasks, entries, images and checklists, which never touch
   /// that path.
   Future<void> writeJournalEntity(JournalEntity entity) async {
     await journalDb.updateJournalEntity(entity);
-    await fts5Db.insertText(entity);
+    await fts5Db.indexEntities([entity]);
   }
 
   Future<void> writeEntityDefinition(EntityDefinition definition) =>

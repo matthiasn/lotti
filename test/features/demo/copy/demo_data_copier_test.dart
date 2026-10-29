@@ -767,9 +767,11 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
         // The task's index write fails; everything else succeeds.
-        when(() => targetFts.insertText(any())).thenAnswer((invocation) async {
-          final entity = invocation.positionalArguments.first as JournalEntity;
-          if (entity is Task) throw StateError('fts locked');
+        when(() => targetFts.indexEntities(any())).thenAnswer((
+          invocation,
+        ) async {
+          final batch = invocation.positionalArguments.first as List;
+          if (batch.single is Task) throw StateError('fts locked');
         });
 
         final copied = await copier.apply(
@@ -782,8 +784,8 @@ void main() {
 
         expect(copied, 5, reason: 'the FTS failure must not abort the copy');
         final indexed = verify(
-          () => targetFts.insertText(captureAny()),
-        ).captured.cast<JournalEntity>();
+          () => targetFts.indexEntities(captureAny()),
+        ).captured.expand((batch) => batch as List<JournalEntity>);
         expect(
           indexed.map((entity) => entity.meta.id).toSet(),
           plan.entities.map((entity) => entity.meta.id).toSet(),

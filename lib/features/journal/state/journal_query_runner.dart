@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Bundles all filter/search state needed to execute a single query.
 class JournalQueryParams {
@@ -83,7 +85,8 @@ class JournalQueryRunner {
 
   final JournalDb _db;
   final DomainLogger _domainLogger;
-  final Fts5Db _fts5Db;
+  // Resolved on every search: the maintenance rebuild replaces the index.
+  final Fts5Db Function() _fts5Db;
   final EntitiesCacheService _entitiesCacheService;
 
   /// Page size used for database pagination.
@@ -101,11 +104,47 @@ class JournalQueryRunner {
   // Full-text search
   // ---------------------------------------------------------------
 
-  /// Returns the set of IDs matching [query] via FTS5, or empty for blank query.
-  Future<Set<String>> fts5Search(String query) async {
-    if (query.isEmpty) return {};
-    final res = await _fts5Db.watchFullTextMatches(query).first;
-    return res.toSet();
+  /// The ids of the entities the full-text query of [params] matches, best
+  /// match first, or none for a blank query.
+  ///
+  /// The index applies the page's entity types, its category selection and
+  /// private mode before its limit, so the matches it keeps are ones the
+  /// page can list; the page's other clauses narrow them further.
+  Future<Set<String>> fts5Search(JournalQueryParams params) async {
+    if (params.query.trim().isEmpty) return {};
+    if (params.showTasks) {
+      return (await taskFullTextMatches(
+        fts5Db: _fts5Db(),
+        journalDb: _db,
+        query: params.query,
+        selectedCategoryIds: params.selectedCategoryIds,
+      )).toSet();
+    }
+    final matches = await _fts5Db().matchIds(
+      params.query,
+      types: _entryTypes(params).toSet(),
+      categoryIds: params.selectedCategoryIds.isEmpty
+          ? null
+          : params.selectedCategoryIds,
+      includePrivate: await _db.getConfigFlag(privateFlag),
+    );
+    return matches.toSet();
+  }
+
+  /// The entry types [params] selects that the feature flags allow.
+  ///
+  /// A check-in is a search result like any entry (ADR 0139, superseding
+  /// ADR 0064 decision 3): search runs on the device, only for its user,
+  /// and the `private` flag a check-in inherits from its person hides it
+  /// here as it hides it in the feed.
+  List<String> _entryTypes(JournalQueryParams params) {
+    final allowed = computeAllowedEntryTypes(
+      events: params.enableEvents,
+      habits: params.enableHabits,
+      dashboards: params.enableDashboards,
+      relationships: params.enableRelationships,
+    );
+    return params.selectedEntryTypes.where(allowed.contains).toList();
   }
 
   /// The tasks linked to the pull request a pasted link in the query of
@@ -156,18 +195,7 @@ class JournalQueryRunner {
     required Set<String> fullTextMatches,
     void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
   }) async {
-    // Intersect selected types with allowed based on feature flags.
-    final allowed = computeAllowedEntryTypes(
-      events: params.enableEvents,
-      habits: params.enableHabits,
-      dashboards: params.enableDashboards,
-      relationships: params.enableRelationships,
-    );
-    // A check-in is a search result like any entry (ADR 0139, superseding
-    // ADR 0064 decision 3): search runs on the device, only for its user,
-    // and the `private` flag a check-in inherits from its person hides it
-    // here as it hides it in the feed.
-    final types = params.selectedEntryTypes.where(allowed.contains).toList();
+    final types = _entryTypes(params);
     final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;
 
     final starredEntriesOnly = params.filters.contains(
@@ -476,3 +504,20 @@ class JournalQueryRunner {
   // Sorting
   // ---------------------------------------------------------------
 }
+
+/// The tasks a full-text [query] matches, best match first, in the categories
+/// [selectedCategoryIds] names (every category when empty) and with private
+/// tasks only while private mode shows them — the restriction the task list
+/// and its due-view counts share, so a count never covers a task the list
+/// leaves out.
+Future<List<String>> taskFullTextMatches({
+  required Fts5Db fts5Db,
+  required JournalDb journalDb,
+  required String query,
+  required Set<String> selectedCategoryIds,
+}) async => fts5Db.matchIds(
+  query,
+  types: const {taskEntityTypeName},
+  categoryIds: selectedCategoryIds.isEmpty ? null : selectedCategoryIds,
+  includePrivate: await journalDb.getConfigFlag(privateFlag),
+);

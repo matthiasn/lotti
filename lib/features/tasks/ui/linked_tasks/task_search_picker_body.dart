@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -187,8 +188,10 @@ class _TaskSearchPickerBodyState extends State<TaskSearchPickerBody> {
     final trimmed = query.trim();
 
     try {
-      final matches = (await _fts5Db.watchFullTextMatches(trimmed).first)
-          .toSet();
+      final matches = (await _fts5Db.matchIds(
+        trimmed,
+        types: const {taskEntityTypeName},
+      )).toSet();
 
       // Resolve the hits the prefetch never loaded. Intersecting matches
       // against the preloaded window instead meant that on a backlog larger

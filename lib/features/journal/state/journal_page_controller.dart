@@ -139,7 +139,6 @@ class JournalPageController extends Notifier<JournalPageState>
     // Initialize services
     final db = ref.read(journalDbProvider);
     final settingsDb = ref.read(settingsDbProvider);
-    final fts5Db = getIt<Fts5Db>();
     final updateNotifications = ref.read(updateNotificationsProvider);
     final entitiesCacheService = getIt<EntitiesCacheService>();
     _domainLogger = ref.read(domainLoggerProvider);
@@ -151,7 +150,7 @@ class JournalPageController extends Notifier<JournalPageState>
     );
     _queryRunner = JournalQueryRunner(
       db: db,
-      fts5Db: fts5Db,
+      fts5Db: getIt.get<Fts5Db>,
       entitiesCacheService: entitiesCacheService,
       domainLogger: _domainLogger,
     );
@@ -486,7 +485,7 @@ class JournalPageController extends Notifier<JournalPageState>
       return _runVectorSearchWithTelemetry(params);
     }
 
-    _fullTextMatches = await _queryRunner.fts5Search(params.query);
+    _fullTextMatches = await _queryRunner.fts5Search(params);
     return _queryRunner.runQuery(
       params,
       pageKey,

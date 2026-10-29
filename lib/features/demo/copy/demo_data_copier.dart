@@ -560,7 +560,7 @@ class DemoDataCopier {
         copied++;
         if (targetFts != null) {
           try {
-            await targetFts.insertText(withStampedMeta);
+            await targetFts.indexEntities([withStampedMeta]);
           } catch (_) {
             // Search indexing is recoverable via the maintenance FTS
             // rebuild; the copy itself must not fail on it.

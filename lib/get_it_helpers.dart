@@ -79,6 +79,10 @@ Future<void> _registerLateAndOptionalServices({
 
   getIt<StartupTasks>().track(_migrateSpeechDictionary());
 
+  // Indexes every journal change from here on and resumes a rebuild the
+  // index still owes the journal; see SearchIndexService.
+  getIt<StartupTasks>().track(getIt<SearchIndexService>().start());
+
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(
     LabelValidator.new,

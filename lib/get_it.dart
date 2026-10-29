@@ -135,6 +135,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/notification_tap_handler.dart';
 import 'package:lotti/services/outbox_service.dart';
+import 'package:lotti/services/search_index_service.dart';
 import 'package:lotti/services/secure_storage.dart';
 import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
@@ -208,6 +209,16 @@ Future<void> registerSingletons({
   }
   final domainLogger = getIt<DomainLogger>();
   await domainLogger.listenToDomainFlags(getIt<JournalDb>().watchConfigFlag);
+
+  getIt.registerSingleton<SearchIndexService>(
+    SearchIndexService(
+      journalDb: getIt<JournalDb>(),
+      fts5Db: getIt.get<Fts5Db>,
+      updateNotifications: getIt<UpdateNotifications>(),
+      domainLogger: domainLogger,
+    ),
+    dispose: (service) => service.dispose(),
+  );
 
   _registerLazyServiceSafely<NotificationService>(
     () => NotificationService(

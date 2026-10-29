@@ -80,6 +80,16 @@ and consumed unseen. An unchanged launch writes nothing.
 disabled while the controller is in vector mode it **falls back to full-text
 rather than leaving the UI in a dead state.**
 
+Full-text mode asks the search index (`JournalQueryRunner.fts5Search`) for
+the best matches **the page can list**: the tasks tab asks for tasks only, the
+journal tab for the entry types it shows, both in the selected categories and
+with private entities only while private mode shows them, so the index's
+limit keeps matches the page can show. `taskFullTextMatches` is that request
+for tasks, shared with the due-view counts. The ids then ride the paged
+query's `ids` restriction, which applies the remaining clauses and the page's
+own sort. What the index holds, how a query is built from what was typed and
+how matches rank is the [search index](../search/full-text-index.md).
+
 Vector search behaves differently from normal paging:
 
 - It **bypasses the DB paging pipeline**.

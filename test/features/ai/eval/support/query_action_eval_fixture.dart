@@ -162,7 +162,7 @@ class QueryActionEvalFixture {
     await database.journal.upsertEntityDefinition(label);
     for (final entry in entries) {
       await database.journal.upsertJournalDbEntity(toDbEntity(entry));
-      await database.fts.insertText(entry);
+      await database.fts.indexEntities([entry]);
     }
     for (final link in links) {
       await database.journal.upsertEntryLink(link);

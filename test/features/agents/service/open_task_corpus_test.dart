@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/service/open_task_corpus.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 
 final _day = DateTime(2026, 5, 25, 14, 30);
@@ -131,9 +132,9 @@ void main() {
   group('matchOpenTasksByPhrase', () {
     test('returns open tasks in FTS order with their original rank', () async {
       when(
-        () => fts5Db.watchFullTextMatches('hose'),
+        () => anyMatchIds(fts5Db, 'hose'),
       ).thenAnswer(
-        (_) => Stream.value(['note-1', 'closed', 'open-a', 'open-b']),
+        (_) async => ['note-1', 'closed', 'open-a', 'open-b'],
       );
       when(
         () => journalDb.getJournalEntitiesForIdsUnordered(any()),
@@ -162,8 +163,8 @@ void main() {
 
     test('applies the category filter and the limit', () async {
       when(
-        () => fts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(['t1', 't2', 't3']));
+        () => anyMatchIds(fts5Db),
+      ).thenAnswer((_) async => ['t1', 't2', 't3']);
       when(
         () => journalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer(
@@ -186,8 +187,8 @@ void main() {
 
     test('an empty FTS result reads nothing from the journal', () async {
       when(
-        () => fts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(const []));
+        () => anyMatchIds(fts5Db),
+      ).thenAnswer((_) async => const []);
 
       final matches = await matchOpenTasksByPhrase(
         fts5Db: fts5Db,

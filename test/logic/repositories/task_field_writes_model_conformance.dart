@@ -672,9 +672,6 @@ void registerTaskFieldWritesConformance() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => const Stream<Set<String>>.empty());
       when(
-        () => mockFts5Db.insertText(any(), removePrevious: true),
-      ).thenAnswer((_) async {});
-      when(
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
 

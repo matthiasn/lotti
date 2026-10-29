@@ -283,9 +283,6 @@ void _registerRunningTimerConformance() {
           () => updateNotifications.updateStream,
         ).thenAnswer((_) => const Stream<Set<String>>.empty());
         final fts5Db = MockFts5Db();
-        when(
-          () => fts5Db.insertText(any(), removePrevious: true),
-        ).thenAnswer((_) async {});
         final outbox = MockOutboxService();
         when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
         final notifications = MockNotificationService();

@@ -13,6 +13,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fts5_stubs.dart';
 import '../../../mocks/mocks.dart';
 import 'journal_query_runner_test_helpers.dart';
 
@@ -77,7 +78,7 @@ void main() {
 
     runner = JournalQueryRunner(
       db: mockJournalDb,
-      fts5Db: mockFts5Db,
+      fts5Db: () => mockFts5Db,
       entitiesCacheService: mockEntitiesCacheService,
       domainLogger: mockDomainLogger,
     );
@@ -419,7 +420,7 @@ void main() {
         await search(hDefaultParams(showTasks: true, query: link)),
         isEmpty,
       );
-      verifyNever(() => mockFts5Db.watchFullTextMatches(any()));
+      verifyNever(() => anyMatchIds(mockFts5Db));
     });
   });
 

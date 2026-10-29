@@ -216,15 +216,14 @@ Future<Task?> createTask({
     );
   }
 
-  // Index the initial title. `createDbEntity` does not touch FTS5 — only the
-  // update path and the manual rebuild do — so a task created *with* a title
-  // and never edited stayed permanently unsearchable. That is load-bearing
-  // here: the link picker's duplicate check falls back to full text once a
-  // task drops out of the 200-row prefetch, and an unindexed title reads as
+  // Index the initial title now. `SearchIndexService` indexes every write,
+  // but from the change notification a moment later — and the link picker's
+  // duplicate check, which falls back to full text once a task drops out of
+  // the 200-row prefetch, may run before that: an unindexed title reads as
   // "does not exist" and offers to create it again.
   if (task != null && title.isNotEmpty) {
     try {
-      await getIt<Fts5Db>().insertText(task);
+      await getIt<Fts5Db>().indexEntities([task]);
     } catch (error, stackTrace) {
       domainLogger.error(
         LogDomain.persistence,

@@ -98,9 +98,9 @@ const _ungatedDeclarations = <String, String>{
       'ids only, for the demo reseed guard',
   'lib/database/database_entity_ops.dart:_unpurgedDeletedChunk':
       'the purge walks over deleted rows, private ones included',
-  'lib/database/maintenance.dart:recreateFts5':
-      'reindexes every row; search hits resolve through the gated id-batch '
-      'read',
+  'lib/database/database_journal_queries.dart:liveEntitiesAfterRowId':
+      'the search index rebuild reads every live row, private ones '
+      'included; search hits resolve through the gated id-batch read',
   'lib/database/database_relationship_queries.dart:'
           'getAllCheckInsForRelationship':
       "the delete cascade's view of a person's check-ins, private ones "

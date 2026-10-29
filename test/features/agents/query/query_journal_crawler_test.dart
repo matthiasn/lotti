@@ -145,7 +145,7 @@ void main() {
       });
       expect(corpus.homeIds.contains('unlinked'), isFalse);
       expect(corpus.coverage.expanded, isTrue);
-      expect(bench.searches, ['"feeder"']);
+      expect(bench.searches, ['feeder']);
     },
   );
 

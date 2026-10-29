@@ -1,5 +1,6 @@
 import 'package:lotti/classes/day_plan.dart' show localDay;
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/utils/day_agent_capture_helpers.dart';
@@ -41,7 +42,7 @@ Future<List<Task>> readOpenTaskCorpus({
 /// ranked behind, so a caller scoring by rank sees the index's own order.
 typedef OpenTaskPhraseMatch = ({int rank, Task task});
 
-/// Open tasks whose text matches [phrase], in the FTS index's order.
+/// Open tasks whose text matches [phrase], best match first.
 ///
 /// Closed tasks and non-task entries are skipped but still occupy a rank;
 /// [categoryFilter] of `null` or empty is unrestricted. At most [limit]
@@ -53,7 +54,13 @@ Future<List<OpenTaskPhraseMatch>> matchOpenTasksByPhrase({
   required Set<String>? categoryFilter,
   required int limit,
 }) async {
-  final ids = await fts5Db.watchFullTextMatches(phrase).first;
+  final ids = await fts5Db.matchIds(
+    phrase,
+    types: const {taskEntityTypeName},
+    categoryIds: categoryFilter == null || categoryFilter.isEmpty
+        ? null
+        : categoryFilter,
+  );
   if (ids.isEmpty) return const <OpenTaskPhraseMatch>[];
 
   final entities = await journalDb.getJournalEntitiesForIdsUnordered(

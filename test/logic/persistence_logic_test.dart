@@ -513,10 +513,6 @@ void main() {
       ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
 
       when(
-        () => mockFts5Db.insertText(any(), removePrevious: true),
-      ).thenAnswer((_) async {});
-
-      when(
         () => mockNotificationService.scheduleHabitNotification(
           any(),
           daysToAdd: any(named: 'daysToAdd'),
@@ -637,13 +633,6 @@ void main() {
         updatedTestText,
       );
 
-      final indexedEntries = verify(
-        () => mockFts5Db.insertText(captureAny(), removePrevious: true),
-      ).captured.cast<JournalEntity>();
-      expect(
-        indexedEntries.map((entry) => entry.entryText?.plainText),
-        contains(updatedTestText),
-      );
       _verifyAndResetBadge(mockNotificationService);
     });
 
@@ -2038,12 +2027,6 @@ void main() {
       notificationService = MockNotificationService();
       vectorClockService = MockVectorClockService();
 
-      when(
-        () => fts5Db.insertText(
-          any<JournalEntity>(),
-          removePrevious: any<bool>(named: 'removePrevious'),
-        ),
-      ).thenAnswer((_) async {});
       when(notificationService.updateBadge).thenAnswer((_) async {});
       when(
         () => updateNotifications.notify(any<Set<String>>()),
@@ -2880,12 +2863,6 @@ void main() {
       notificationService = MockNotificationService();
       vectorClockService = MockVectorClockService();
 
-      when(
-        () => fts5Db.insertText(
-          any<JournalEntity>(),
-          removePrevious: any<bool>(named: 'removePrevious'),
-        ),
-      ).thenAnswer((_) async {});
       when(notificationService.updateBadge).thenAnswer((_) async {});
       when(
         () => updateNotifications.notify(any<Set<String>>()),
@@ -2979,9 +2956,6 @@ void main() {
         verify(
           () => outboxService.enqueueMessage(any<SyncMessage>()),
         ).called(1);
-        verify(
-          () => fts5Db.insertText(any<JournalEntity>(), removePrevious: true),
-        ).called(1);
         verify(notificationService.updateBadge).called(1);
       },
     );
@@ -3029,7 +3003,6 @@ void main() {
         expect(notified, isFalse);
         verifyNever(() => updateNotifications.notify(any()));
         verifyNever(() => updateNotifications.notifyUiOnly(any()));
-        verifyNever(() => fts5Db.insertText(any(), removePrevious: true));
         verifyNever(notificationService.updateBadge);
         verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
       },
@@ -3141,7 +3114,6 @@ void main() {
 
         if (!scenario.applied) {
           verifyNever(() => updateNotifications.notify(any()));
-          verifyNever(() => fts5Db.insertText(any(), removePrevious: true));
           verifyNever(notificationService.updateBadge);
           verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
           return;
@@ -3154,9 +3126,6 @@ void main() {
                 as Set<String>;
         expect(notificationIds, scenario.expectedNotificationIds);
 
-        verify(
-          () => fts5Db.insertText(scenario.entity, removePrevious: true),
-        ).called(1);
         verify(notificationService.updateBadge).called(1);
 
         if (scenario.shouldEnqueueSync) {

@@ -25,6 +25,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/material_ui_finders.dart';
@@ -209,8 +210,8 @@ void main() {
       ),
     ).thenAnswer((_) async => <JournalEntity>[]);
     when(
-      () => mockFts5Db.watchFullTextMatches(any()),
-    ).thenAnswer((_) => Stream.value(<String>[]));
+      () => anyMatchIds(mockFts5Db),
+    ).thenAnswer((_) async => <String>[]);
     getIt.registerSingleton<Fts5Db>(mockFts5Db);
 
     final tracker = ToggleCallTracker();

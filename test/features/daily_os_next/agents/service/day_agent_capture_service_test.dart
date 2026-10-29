@@ -22,6 +22,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
@@ -327,8 +328,8 @@ void main() {
       journalEntities[id] = updated;
       return updated;
     });
-    when(() => fts5Db.watchFullTextMatches(any())).thenAnswer(
-      (_) => Stream.value(const <String>[]),
+    when(() => anyMatchIds(fts5Db)).thenAnswer(
+      (_) async => const <String>[],
     );
   });
 
@@ -1211,8 +1212,8 @@ void main() {
         status: _openStatus(),
         categoryId: 'home',
       );
-      when(() => fts5Db.watchFullTextMatches('demo')).thenAnswer(
-        (_) => Stream.value(['task-2', 'task-1', 'task-3']),
+      when(() => anyMatchIds(fts5Db, 'demo')).thenAnswer(
+        (_) async => ['task-2', 'task-1', 'task-3'],
       );
 
       final matches = await createService().matchToCorpus(
@@ -1234,7 +1235,7 @@ void main() {
         );
 
         expect(matches, isEmpty);
-        verifyNever(() => fts5Db.watchFullTextMatches(any()));
+        verifyNever(() => anyMatchIds(fts5Db));
       },
     );
 
@@ -1395,8 +1396,8 @@ void main() {
         title: 'Prep demo',
         status: _openStatus(),
       );
-      when(() => fts5Db.watchFullTextMatches('prep')).thenAnswer(
-        (_) => Stream.value(['task-1']),
+      when(() => anyMatchIds(fts5Db, 'prep')).thenAnswer(
+        (_) async => ['task-1'],
       );
 
       final result = await createService().executeTool(
@@ -1962,8 +1963,8 @@ void main() {
     });
 
     test('matchToCorpus returns empty when FTS has no results', () async {
-      when(() => fts5Db.watchFullTextMatches('demo')).thenAnswer(
-        (_) => Stream.value(const <String>[]),
+      when(() => anyMatchIds(fts5Db, 'demo')).thenAnswer(
+        (_) async => const <String>[],
       );
 
       final matches = await createService().matchToCorpus(
@@ -2742,8 +2743,8 @@ void main() {
           title: 'Write report',
           status: _openStatus(),
         );
-        when(() => fts5Db.watchFullTextMatches('report')).thenAnswer(
-          (_) => Stream.value(['task-1']),
+        when(() => anyMatchIds(fts5Db, 'report')).thenAnswer(
+          (_) async => ['task-1'],
         );
 
         final matches = await createService().matchToCorpus(
@@ -2753,7 +2754,7 @@ void main() {
         );
 
         expect(matches.map((m) => m.taskId), ['task-1']);
-        verify(() => fts5Db.watchFullTextMatches('report')).called(1);
+        verify(() => anyMatchIds(fts5Db, 'report')).called(1);
       },
     );
 
@@ -2776,8 +2777,8 @@ void main() {
           status: _openStatus(),
           categoryId: 'other',
         );
-        when(() => fts5Db.watchFullTextMatches('any')).thenAnswer(
-          (_) => Stream.value(['task-any']),
+        when(() => anyMatchIds(fts5Db, 'any')).thenAnswer(
+          (_) async => ['task-any'],
         );
 
         final matches = await createService().matchToCorpus(

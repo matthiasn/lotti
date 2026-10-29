@@ -17,6 +17,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fts5_stubs.dart';
 import '../../../../helpers/service_overrides.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -127,8 +128,8 @@ void main() {
       ).thenAnswer((_) async => <JournalEntity>[]);
 
       when(
-        () => mockFts5Db.watchFullTextMatches(any()),
-      ).thenAnswer((_) => Stream.value(<String>[]));
+        () => anyMatchIds(mockFts5Db),
+      ).thenAnswer((_) async => <String>[]);
 
       final cache = MockEntitiesCacheService();
       when(() => cache.sortedCategories).thenReturn([

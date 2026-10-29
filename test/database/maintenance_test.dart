@@ -559,15 +559,9 @@ void main() {
         expect(progress, isNotEmpty);
         expect(progress.last, closeTo(1.0, 1e-6));
 
-        final textMatches = await newFtsDb
-            .watchFullTextMatches('FTS text entry')
-            .first;
-        final measurementMatches = await newFtsDb
-            .watchFullTextMatches('"Chocolate 123 g"')
-            .first;
-        final quantMatches = await newFtsDb
-            .watchFullTextMatches('Weight')
-            .first;
+        final textMatches = await newFtsDb.matchIds('FTS text entry');
+        final measurementMatches = await newFtsDb.matchIds('"Chocolate 123 g"');
+        final quantMatches = await newFtsDb.matchIds('Weight');
 
         expect(textMatches, contains('fts-text'));
         expect(measurementMatches, contains('fts-measurement'));
@@ -595,9 +589,7 @@ void main() {
         // The first, the chunk boundary on both sides, and the last: a
         // keyset walk that skipped or repeated a row would miss one of them.
         for (final index in [0, 499, 500, 519]) {
-          final matches = await newFtsDb
-              .watchFullTextMatches('"Bulk entry $index"')
-              .first;
+          final matches = await newFtsDb.matchIds('"Bulk entry $index"');
           expect(matches, contains('bulk-$index'), reason: 'bulk-$index');
         }
       });
@@ -621,9 +613,7 @@ void main() {
         expect(loggedExceptions.last, isA<FileSystemException>());
 
         final newFtsDb = getIt<Fts5Db>();
-        final matches = await newFtsDb
-            .watchFullTextMatches('Should index')
-            .first;
+        final matches = await newFtsDb.matchIds('Should index');
         expect(matches, contains('fts-error'));
       });
     });
