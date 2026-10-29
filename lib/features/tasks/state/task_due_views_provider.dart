@@ -81,11 +81,11 @@ Future<Set<String>?> _searchRestriction(
   }
   final fts = ref.read(fts5DbProvider);
   if (fts == null) return null;
-  final matches = await taskFullTextMatches(
+  final hits = await taskFullTextHits(
     fts5Db: fts,
     journalDb: ref.read(journalDbProvider),
     query: pageState.match,
     selectedCategoryIds: pageState.selectedCategoryIds,
   );
-  return matches.toSet();
+  return {for (final hit in hits) hit.taskId};
 }

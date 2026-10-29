@@ -133,8 +133,8 @@ void main() {
     final repo = _RecordingRepo(overdue: 1, dueToday: 0);
     final fts = MockFts5Db();
     when(
-      () => anyMatchIds(fts, 'habitat'),
-    ).thenAnswer((_) async => const ['t1', 't2']);
+      () => anyMatchHits(fts, 'habitat'),
+    ).thenAnswer((_) async => [taskHit('t1'), taskHit('t2')]);
 
     await countsFor(
       const JournalPageState(match: 'habitat'),
@@ -163,7 +163,7 @@ void main() {
     );
 
     expect(repo.restrictions.first, {'v1', 'v2'});
-    verifyNever(() => anyMatchIds(fts));
+    verifyNever(() => anyMatchHits(fts));
   });
 
   for (final mode in SearchMode.values) {
@@ -194,7 +194,7 @@ void main() {
       );
 
       expect(repo.restrictions.first, {'feed', 'count'});
-      verifyNever(() => anyMatchIds(fts));
+      verifyNever(() => anyMatchHits(fts));
       // Counted with the clauses the lookup keeps, and only those: the pill
       // must count every linked task the list shows.
       final counted = repo.asked.single;

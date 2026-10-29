@@ -17577,6 +17577,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen gekoppelde taken gevonden voor deze pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Resultaten';
+
+  @override
   String get tasksShowCreationDate => 'Aanmaakdatum op kaarten tonen';
 
   @override

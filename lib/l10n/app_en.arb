@@ -10794,6 +10794,10 @@
   "@tasksSearchNoLinkedTasks": {
     "description": "Empty state of the task list when the search is a pasted pull request link that no task is linked to."
   },
+  "tasksSearchResultsSection": "Results",
+  "@tasksSearchResultsSection": {
+    "description": "Header of the task list while a search is typed: its results, best match first, in one section."
+  },
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
   "tasksSortByCreationDate": "Created",

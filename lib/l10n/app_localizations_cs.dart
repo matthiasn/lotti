@@ -17724,6 +17724,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nenašly se žádné úkoly propojené s tímto pull requestem.';
 
   @override
+  String get tasksSearchResultsSection => 'Výsledky';
+
+  @override
   String get tasksShowCreationDate => 'Zobrazit datum vytvoření na kartách';
 
   @override

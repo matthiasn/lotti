@@ -17417,6 +17417,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No linked tasks found for this pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Results';
+
+  @override
   String get tasksShowCreationDate => 'Show creation date on cards';
 
   @override

@@ -17839,6 +17839,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-au găsit sarcini legate de acest pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Rezultate';
+
+  @override
   String get tasksShowCreationDate => 'Afișați data creării pe carduri';
 
   @override

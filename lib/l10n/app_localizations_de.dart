@@ -17640,6 +17640,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine verknüpften Aufgaben für diesen Pull-Request gefunden.';
 
   @override
+  String get tasksSearchResultsSection => 'Ergebnisse';
+
+  @override
   String get tasksShowCreationDate => 'Erstellungsdatum auf Karten anzeigen';
 
   @override

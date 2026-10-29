@@ -29063,6 +29063,12 @@ abstract class AppLocalizations {
   /// **'No linked tasks found for this pull request.'**
   String get tasksSearchNoLinkedTasks;
 
+  /// Header of the task list while a search is typed: its results, best match first, in one section.
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get tasksSearchResultsSection;
+
   /// No description provided for @tasksShowCreationDate.
   ///
   /// In en, this message translates to:

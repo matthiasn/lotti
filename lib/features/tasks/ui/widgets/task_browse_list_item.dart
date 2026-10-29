@@ -1,4 +1,5 @@
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
@@ -20,6 +21,7 @@ class TaskBrowseListItem extends StatelessWidget {
     required this.showCoverArt,
     required this.onTap,
     this.vectorDistance,
+    this.searchHit,
     this.categoryNameOverride,
     this.categoryIconOverride,
     this.categoryColorHexOverride,
@@ -41,6 +43,9 @@ class TaskBrowseListItem extends StatelessWidget {
   final bool showDueDate;
   final bool showCoverArt;
   final double? vectorDistance;
+
+  /// Where a search found the task, when it is a search result.
+  final TaskSearchHit? searchHit;
   final String? categoryNameOverride;
   final IconData? categoryIconOverride;
   final String? categoryColorHexOverride;
@@ -188,6 +193,8 @@ class TaskBrowseListItem extends StatelessWidget {
       showDueDate: showDueDate,
       showCoverArt: showCoverArt,
       showStatus: showStatus,
+      groupedBySort: entry.sectionKey.kind != TaskBrowseSectionKind.results,
+      searchHit: searchHit,
       vectorDistance: vectorDistance,
       categoryNameOverride: categoryNameOverride,
       categoryIconOverride: categoryIconOverride,

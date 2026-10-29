@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task_progress_state.dart';
+import 'package:lotti/classes/task_search_hit.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item.dart';
 import 'package:lotti/get_it.dart';
@@ -59,6 +60,7 @@ Future<void> pumpTaskBrowseItem(
   bool showDueDate = false,
   bool showCoverArt = false,
   double? vectorDistance,
+  TaskSearchHit? searchHit,
   String? trackedDurationLabelOverride = '0h 0m',
   String? sectionHeaderTitleOverride,
   bool isFirstInSection = true,
@@ -82,6 +84,7 @@ Future<void> pumpTaskBrowseItem(
         showDueDate: showDueDate,
         showCoverArt: showCoverArt,
         vectorDistance: vectorDistance,
+        searchHit: searchHit,
         trackedDurationLabelOverride: trackedDurationLabelOverride,
         sectionHeaderTitleOverride: sectionHeaderTitleOverride,
         isFirstInSection: isFirstInSection,
@@ -108,6 +111,7 @@ TaskBrowseListItem makeTaskBrowseWidget(
   bool showDueDate = false,
   bool showCoverArt = false,
   double? vectorDistance,
+  TaskSearchHit? searchHit,
   String? trackedDurationLabelOverride = '0h 0m',
   String? sectionHeaderTitleOverride,
   bool isFirstInSection = true,
@@ -132,6 +136,7 @@ TaskBrowseListItem makeTaskBrowseWidget(
     showDueDate: showDueDate,
     showCoverArt: showCoverArt,
     vectorDistance: vectorDistance,
+    searchHit: searchHit,
     trackedDurationLabelOverride: trackedDurationLabelOverride,
     sectionHeaderTitleOverride: sectionHeaderTitleOverride,
     previousTaskIdInSection: previousTaskIdInSection,

@@ -9,6 +9,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts_query.dart';
 import 'package:lotti/database/search_document.dart';
+import 'package:lotti/database/search_hit.dart';
 import 'package:lotti/database/title_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -265,17 +266,7 @@ class Fts5Db extends _$Fts5Db {
       getIt<EntitiesCacheService>().getDataTypeById(dataTypeId);
 
   /// The ids of the entities matching what a user typed in [query], best
-  /// match first: by BM25 with a title match worth ten times one in the
-  /// text and an `extra` match twice, newer first among equals.
-  ///
-  /// The filters apply before [limit], so the limit keeps the best matches
-  /// the caller can show: [types] and [categoryIds] (the empty id for
-  /// uncategorised) restrict when given, and [includePrivate] false leaves
-  /// private entities out. With [anyTerm], one matching word is enough;
-  /// [prefixLastWord] false matches the last word whole too, for a caller
-  /// passing finished words rather than what is being typed.
-  /// Input with nothing to match returns no ids; it never throws
-  /// ([ftsMatchExpression]).
+  /// match first — [matchHits] without the snippets.
   Future<List<String>> matchIds(
     String query, {
     bool anyTerm = false,
@@ -284,6 +275,43 @@ class Fts5Db extends _$Fts5Db {
     Set<String>? categoryIds,
     bool includePrivate = true,
     int limit = defaultMatchLimit,
+  }) async => [
+    for (final hit in await matchHits(
+      query,
+      anyTerm: anyTerm,
+      prefixLastWord: prefixLastWord,
+      types: types,
+      categoryIds: categoryIds,
+      includePrivate: includePrivate,
+      limit: limit,
+    ))
+      hit.entityId,
+  ];
+
+  /// The entities matching what a user typed in [query], best match first:
+  /// by BM25 with a title match worth ten times one in the text and an
+  /// `extra` match twice, newer first among equals. Each comes with a
+  /// snippet of its best-matching column, the matched words marked
+  /// ([SearchHit.snippet]).
+  ///
+  /// The filters apply before [limit], so the limit keeps the best matches
+  /// the caller can show: [types] and [categoryIds] (the empty id for
+  /// uncategorised) restrict when given, and [includePrivate] false leaves
+  /// private entities out. With [anyTerm], one matching word is enough;
+  /// [prefixLastWord] false matches the last word whole too, for a caller
+  /// passing finished words rather than what is being typed. [offset] skips
+  /// that many of the best, for a caller reading the ranking page by page.
+  /// Input with nothing to match returns no hits; it never throws
+  /// ([ftsMatchExpression]).
+  Future<List<SearchHit>> matchHits(
+    String query, {
+    bool anyTerm = false,
+    bool prefixLastWord = true,
+    Set<String>? types,
+    Set<String>? categoryIds,
+    bool includePrivate = true,
+    int limit = defaultMatchLimit,
+    int offset = 0,
   }) async {
     final expression = ftsMatchExpression(
       query,
@@ -297,20 +325,36 @@ class Fts5Db extends _$Fts5Db {
       includePrivate: includePrivate,
     );
     final rows = await customSelect(
-      'SELECT d.entity_id AS entity_id FROM search_fts '
+      'SELECT d.entity_id AS entity_id, d.type AS type, '
+      'snippet(search_fts, -1, ?, ?, ?, $_snippetTokens) AS snippet '
+      'FROM search_fts '
       'INNER JOIN search_doc AS d ON d.id = search_fts.rowid '
       'WHERE search_fts MATCH ?${filter.sql} '
       'ORDER BY bm25(search_fts, 10.0, 1.0, 2.0), d.date_from DESC '
-      'LIMIT ?',
+      'LIMIT ? OFFSET ?',
       variables: [
+        Variable.withString(snippetMatchStart),
+        Variable.withString(snippetMatchEnd),
+        Variable.withString('…'),
         Variable.withString(expression),
         ...filter.variables,
         Variable.withInt(limit),
+        Variable.withInt(offset),
       ],
       readsFrom: {searchFts, searchDoc},
     ).get();
-    return [for (final row in rows) row.read<String>('entity_id')];
+    return [
+      for (final row in rows)
+        SearchHit(
+          entityId: row.read<String>('entity_id'),
+          type: row.read<String>('type'),
+          snippet: row.read<String>('snippet'),
+        ),
+    ];
   }
+
+  /// Words a snippet holds: enough to read the match in context on one line.
+  static const _snippetTokens = 12;
 
   /// The entities whose title matches [query], for jumping to one by name:
   /// the title that is the query first, then titles starting with it, then

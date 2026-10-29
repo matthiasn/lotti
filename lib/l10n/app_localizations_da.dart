@@ -17515,6 +17515,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen tilknyttede opgaver fundet for denne pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Resultater';
+
+  @override
   String get tasksShowCreationDate => 'Vis oprettelsesdato på kortene';
 
   @override

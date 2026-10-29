@@ -4,6 +4,9 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
+import 'package:lotti/classes/task_search_hit.dart';
+import 'package:lotti/database/search_hit.dart';
+import 'package:lotti/database/task_search.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
@@ -87,12 +90,16 @@ void main() {
   group('fts5Search', () {
     late Invocation asked;
 
-    void recordMatchIds() => when(() => anyMatchIds(mockFts5Db)).thenAnswer((
-      invocation,
-    ) async {
-      asked = invocation;
-      return const <String>[];
-    });
+    void recordMatches() {
+      when(() => anyMatchIds(mockFts5Db)).thenAnswer((invocation) async {
+        asked = invocation;
+        return const <String>[];
+      });
+      when(() => anyMatchHits(mockFts5Db)).thenAnswer((invocation) async {
+        asked = invocation;
+        return const <SearchHit>[];
+      });
+    }
 
     ({Set<String>? types, Set<String>? categoryIds, bool includePrivate})
     askedFilters() => (
@@ -106,50 +113,69 @@ void main() {
     ).thenAnswer((_) async => shows);
 
     test('a blank query asks the index nothing', () async {
-      expect(await runner.fts5Search(hDefaultParams(query: '  ')), isEmpty);
+      final matches = await runner.fts5Search(hDefaultParams(query: '  '));
+      expect(matches.ids, isEmpty);
+      expect(matches.taskHits, isEmpty);
       verifyNever(() => anyMatchIds(mockFts5Db));
+      verifyNever(() => anyMatchHits(mockFts5Db));
     });
 
-    test('keeps the index order, best match first', () async {
+    test('tasks keep the index order, best match first, each with where it '
+        'matched', () async {
       showsPrivate(shows: true);
-      when(
-        () => anyMatchIds(mockFts5Db, 'penguin'),
-      ).thenAnswer((_) async => ['best', 'next', 'best']);
+      when(() => anyMatchHits(mockFts5Db, 'penguin')).thenAnswer(
+        (_) async => [
+          taskHit('best', snippet: 'the \uE000penguin\uE001 census'),
+          taskHit('next'),
+          taskHit('best', snippet: 'a weaker match'),
+        ],
+      );
 
       final matches = await runner.fts5Search(
         hDefaultParams(showTasks: true, query: 'penguin'),
       );
 
-      expect(matches.toList(), ['best', 'next']);
+      expect(matches.ids.toList(), ['best', 'next']);
+      expect(
+        matches.taskHits['best'],
+        const TaskSearchHit(
+          taskId: 'best',
+          snippet: 'the \uE000penguin\uE001 census',
+          matchedType: 'Task',
+        ),
+      );
     });
 
-    test('the tasks page asks for tasks in its categories, private ones only '
-        'while private mode shows them', () async {
-      for (final shows in [true, false]) {
-        showsPrivate(shows: shows);
-        recordMatchIds();
+    test(
+      'the tasks page asks for tasks and what belongs to them, in its '
+      'categories, private ones only while private mode shows them',
+      () async {
+        for (final shows in [true, false]) {
+          showsPrivate(shows: shows);
+          recordMatches();
 
-        await runner.fts5Search(
-          hDefaultParams(
-            showTasks: true,
-            query: 'penguin',
-            selectedCategoryIds: const {'colony', ''},
-          ),
-        );
+          await runner.fts5Search(
+            hDefaultParams(
+              showTasks: true,
+              query: 'penguin',
+              selectedCategoryIds: const {'colony', ''},
+            ),
+          );
 
-        final asked = askedFilters();
-        expect(asked.types, {'Task'});
-        expect(asked.categoryIds, {'colony', ''});
-        expect(asked.includePrivate, shows);
-      }
-    });
+          final asked = askedFilters();
+          expect(asked.types, taskSearchTypes);
+          expect(asked.categoryIds, {'colony', ''});
+          expect(asked.includePrivate, shows);
+        }
+      },
+    );
 
     test('the logbook asks for the entry types it lists, in every category '
         'when none is selected', () async {
       showsPrivate(shows: true);
-      recordMatchIds();
+      recordMatches();
 
-      await runner.fts5Search(
+      final matches = await runner.fts5Search(
         hDefaultParams(
           query: 'penguin',
           selectedEntryTypes: const {'JournalEntry', 'JournalEvent'},
@@ -160,6 +186,7 @@ void main() {
       final asked = askedFilters();
       expect(asked.types, {'JournalEntry'}, reason: 'events are flagged off');
       expect(asked.categoryIds, isNull);
+      expect(matches.taskHits, isEmpty);
     });
   });
 

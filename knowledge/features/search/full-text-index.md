@@ -34,7 +34,11 @@ sources:
     last_modified: 2026-10-29
   - id: runner
     resource: ../../../lib/features/journal/state/journal_query_runner.dart
-    title: JournalQueryRunner.fts5Search and taskFullTextMatches
+    title: JournalQueryRunner.fts5Search and taskFullTextHits
+    last_modified: 2026-10-29
+  - id: task-search
+    resource: ../../../lib/database/task_search.dart
+    title: searchTasks — a task found through what belongs to it
     last_modified: 2026-10-29
 ---
 
@@ -152,8 +156,12 @@ throw**; a property test feeds it FTS5 syntax at random.
 
 # Ranking and filters
 
-`Fts5Db.matchIds` returns entity ids best match first: BM25 with the column
-weights above, newer `date_from` first among equals. Types, categories and
+`Fts5Db.matchHits` returns hits best match first: BM25 with the column
+weights above, newer `date_from` first among equals. Each carries its type and
+an FTS5 `snippet()` of its best-matching column, twelve words around the
+match, each matched word wrapped in private-use markers (`snippetMatchStart`,
+`snippetMatchEnd`; `snippetSpans` splits them back out). `matchIds` is the
+same without the snippets. Types, categories and
 private visibility are applied **before** its limit (500 by default), so the
 limit keeps the best matches the caller can show rather than spending it on
 rows the caller then drops. The privacy gate still applies where results are
@@ -162,15 +170,32 @@ read: hits resolve through the private-filtered reads
 
 | Caller | Asks for |
 |--------|----------|
-| Tasks tab and its due-view counts (`taskFullTextMatches`) | Tasks in the selected categories, private ones while private mode shows them |
+| Tasks tab and its due-view counts (`taskFullTextHits`) | Tasks and what belongs to them (`searchTasks`), in the selected categories, private ones while private mode shows them |
 | Journal tab (`JournalQueryRunner.fts5Search`) | The entry types it lists, in the selected categories, same privacy |
 | Link-task picker | Tasks |
 | Front agent and day agent open-task matching (`matchOpenTasksByPhrase`) | Tasks in the allowed categories |
 | Query chat crawler | Any of its keywords, whole words only (`anyTerm`, no prefix) |
 
-The task and journal lists still order by their own sort (priority, date, due
-date); the index's order decides which matches survive its limit, and agents
-read it as relevance.
+The tasks tab lists its matches in the index's order
+([browse and linking](../journal/browse-and-linking.md)); the journal list
+still orders by its own sort, the index's order deciding which matches
+survive its limit; agents read it as relevance.
+
+## A task is found through what belongs to it
+
+`searchTasks` searches tasks together with the kinds that hang off them
+(`taskSearchTypes`: entries, recordings, photos, AI responses, checklists and
+checklist items) in one ranked match, so a checklist item that matches better
+than another task's description puts its task first. It resolves every
+non-task hit to the tasks it belongs to in three batched reads — the links to
+it (`linksForIds`), and for checklists and their items the tasks their
+checklist names (`ChecklistItemData.linkedChecklists`,
+`ChecklistData.linkedTasks`) — and keeps each task's best hit, with its
+snippet and the kind it was in (`TaskSearchHit`). It reads the ranking a page
+at a time (`matchHits` with an `offset`) until it has its limit of tasks, for
+at most ten pages: a page can be all entries that belong to no task, or many
+children of one task, and cutting the ranking before resolving them would
+hide tasks that match further down.
 
 # Title search
 

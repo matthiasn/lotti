@@ -81,14 +81,26 @@ disabled while the controller is in vector mode it **falls back to full-text
 rather than leaving the UI in a dead state.**
 
 Full-text mode asks the search index (`JournalQueryRunner.fts5Search`) for
-the best matches **the page can list**: the tasks tab asks for tasks only, the
+the best matches **the page can list**: the tasks tab asks for tasks and what
+belongs to them (`taskFullTextHits`, shared with the due-view counts), the
 journal tab for the entry types it shows, both in the selected categories and
 with private entities only while private mode shows them, so the index's
-limit keeps matches the page can show. `taskFullTextMatches` is that request
-for tasks, shared with the due-view counts. The ids then ride the paged
-query's `ids` restriction, which applies the remaining clauses and the page's
-own sort. What the index holds, how a query is built from what was typed and
-how matches rank is the [search index](../search/full-text-index.md).
+limit keeps matches the page can show. On the journal tab the ids then ride
+the paged query's `ids` restriction, which applies the remaining clauses and
+the page's own sort.
+
+**On the tasks tab, a search lists its results best match first.**
+`_runBestMatchTaskQuery` runs the same task query — every list clause still
+applies — once, with room for all the matches the index kept, and puts the
+rows back in the index's order: one page, no paging. While a query is typed
+the list shows them in one **Results** section (`buildTaskBrowseEntries`
+with `searchResults`) instead of the sort's priority or date sections, each
+card carrying the priority and due chips a section would otherwise state and
+a snippet of where it matched (`TaskSearchSnippet`, from
+`JournalPageState.taskSearchHits`). Clearing the query brings the chosen sort
+and its sections back. A pull request lookup and semantic search publish no
+snippets. What the index holds, how a query is built and how matches rank is
+the [search index](../search/full-text-index.md).
 
 Vector search behaves differently from normal paging:
 

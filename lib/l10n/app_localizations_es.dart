@@ -17731,6 +17731,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se encontraron tareas vinculadas a esta pull request.';
 
   @override
+  String get tasksSearchResultsSection => 'Resultados';
+
+  @override
   String get tasksShowCreationDate => 'Mostrar fecha de creación en tarjetas';
 
   @override

@@ -60,6 +60,13 @@ void main() {
       expect(find.byType(TaskShowcasePriorityGlyph), findsNothing);
     });
 
+    testWidgets('the search results section reads "Results"', (tester) async {
+      await pumpTitle(tester, const TaskBrowseSectionKey.results());
+
+      expect(find.text('Results'), findsOneWidget);
+      expect(find.byType(TaskShowcasePriorityGlyph), findsNothing);
+    });
+
     testWidgets('a no-due-date section shows its label without a glyph', (
       tester,
     ) async {
