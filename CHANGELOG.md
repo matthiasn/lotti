@@ -4,6 +4,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.70]
+
+### Added
+
+- **Jump to a task, entry, project, event or person from the command
+  palette.** Type into the palette (Ctrl+K, or ⌘K on a Mac) and below the
+  matching commands it lists everything whose title matches, under "Go to";
+  the arrow keys and Enter open one without touching the mouse. Any part of
+  a title is enough — "aunch" finds "Pre-launch checks" — accents don't
+  matter, and a misspelt name lists the nearest titles under "Similar
+  titles". People can now be found by name in search, too.
+
+### Changed
+
+- **Search keeps up while you type and ignores accents.** The word you are
+  typing matches as soon as it starts — "pengu" finds "penguin" — and
+  "Sudpol" finds "Südpol". Checklist items, projects, goals, events, pull
+  requests and recording transcripts are searchable too, and the task picker
+  and the assistants get the best matches first, with title matches ahead of
+  matches in the text.
+- **Task search lists the best match first and shows where each task
+  matched.** While you search in Tasks, the results stand in one "Results"
+  list, the closest match on top, instead of being scattered across the
+  priority or date sections. Each task shows a line of the text that matched,
+  with the words you searched for in bold. A task is found through what
+  belongs to it too — a checklist item, a linked note, a recording or a photo
+  — with an icon saying which. Clear the search and your chosen sort and
+  sections come back.
+
+### Fixed
+
+- **A goal's agent now answers what you tell it, not just whether you
+  checked in.** Its report has a new "From your check-ins" section, shown with
+  the summary, that picks up what you actually said — a recurring theme, a
+  question you raised, something you promised yourself — and the agent has to
+  fill it whenever there are check-ins it has not answered yet. For a goal
+  measured by the time you spend checking in, such as a journal, your check-ins
+  are now summarised for what they say rather than shrunk to a line, and a voice
+  check-in's transcript updates the report a few minutes after it lands instead
+  of waiting for the next morning.
+- **Search now finds what arrived from your other devices.** Entries, tasks
+  and recordings that came in by sync were never added to the search index,
+  so on a phone that mostly receives its journal, search came up empty until
+  the index was rebuilt by hand. Everything is indexed as it arrives now,
+  whichever device wrote it, and after this update the index rebuilds itself
+  once in the background.
+- **Typing an apostrophe, a hyphen or a quote no longer breaks search.**
+  Searching for something like "don't" or "self-care" could fail and show
+  nothing at all. Every search is read as plain words now.
+- **Semantic search no longer finds a task by an agent report it outgrew.**
+  When a task agent's report could not be indexed for semantic search — the
+  local embedding server was unreachable, or the report was very short — the
+  report before it stayed in the index for good, so a task could turn up for
+  what its agent said months ago. Each task now keeps only its latest
+  indexed report there.
+
 ## [1.1.69]
 
 ### Added
