@@ -8568,6 +8568,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalReportSectionNext => 'Pașii următori';
 
   @override
+  String get goalReportSectionReflection => 'Din raportările dumneavoastră';
+
+  @override
   String get goalReportSectionStanding => 'Cum stați';
 
   @override

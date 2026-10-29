@@ -8546,6 +8546,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalReportSectionNext => 'Et maintenant';
 
   @override
+  String get goalReportSectionReflection => 'D\'après tes points';
+
+  @override
   String get goalReportSectionStanding => 'Où tu en es';
 
   @override

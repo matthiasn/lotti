@@ -5430,6 +5430,10 @@
   "@goalReportSectionNext": {
     "description": "Heading above the goal report's next steps, which lead the briefing."
   },
+  "goalReportSectionReflection": "From your check-ins",
+  "@goalReportSectionReflection": {
+    "description": "Heading above the goal report's reflection on what the user said in their check-ins, shown with the summary."
+  },
   "goalReportSectionStanding": "Where things stand",
   "goalReportSectionWindow": "The wider window",
   "goalTodayBriefingNext": "Next: {step}",

@@ -197,6 +197,17 @@ class GoalAgentPhaseA {
 
     await _rearmCadence(agentId, now);
 
+    // A write to the goal's own journal row: a check-in recorded, its
+    // transcript landing, an edit. On a goal measured by its check-ins those
+    // words are the substance, and the minutes they add are the least of it —
+    // a transcript that lands after the recording moves no number at all, so
+    // without this the agent first read it on the next morning's briefing.
+    final goalEntryId = _goalEntryIdFor?.call(agentId);
+    final checkInWritten =
+        goalEntryId != null &&
+        triggerTokens.contains(goalEntryId) &&
+        goalCriteriaMeasureCheckInTime(version.criteria);
+
     final startDate = version.startDate;
     if (startDate != null &&
         GoalWindow.dayUtc(now).isBefore(GoalWindow.dayUtc(startDate))) {
@@ -270,7 +281,8 @@ class GoalAgentPhaseA {
           goalRegisterDigest(derivation.existingToday!) !=
               goalAggregateFactsDigest(facts);
 
-      shouldRefreshReport = needsEscalation || registerChanged;
+      shouldRefreshReport =
+          needsEscalation || registerChanged || checkInWritten;
       // A status the standing report does not state is armed with the
       // register, in one transaction: the lease-elected wake is synced, so a
       // device that dies after this commit cannot take the escalation with

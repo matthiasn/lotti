@@ -8393,6 +8393,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalReportSectionNext => 'What\'s next';
 
   @override
+  String get goalReportSectionReflection => 'From your check-ins';
+
+  @override
   String get goalReportSectionStanding => 'Where things stand';
 
   @override

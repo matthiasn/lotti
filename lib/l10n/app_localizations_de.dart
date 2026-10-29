@@ -8477,6 +8477,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalReportSectionNext => 'Wie es weitergeht';
 
   @override
+  String get goalReportSectionReflection => 'Aus deinen Check-ins';
+
+  @override
   String get goalReportSectionStanding => 'Wie es steht';
 
   @override

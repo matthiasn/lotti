@@ -60,6 +60,11 @@ abstract final class GoalReportSectionKeys {
   /// part of the full narrative. Everything below composes into the expanded
   /// body; this one has to stand alone above it.
   static const tldr = 'tldr';
+
+  /// What the user's own words say — check-ins, charter, remembered facts —
+  /// engaged with rather than counted. The one prose slot that is not a
+  /// restatement of deterministic FACTS, and the first section of the body.
+  static const reflection = 'reflection';
   static const currentPeriod = 'currentPeriod';
   static const rollingWindow = 'rollingWindow';
   static const latestChange = 'latestChange';
@@ -68,6 +73,7 @@ abstract final class GoalReportSectionKeys {
 
   static const List<String> values = [
     tldr,
+    reflection,
     currentPeriod,
     rollingWindow,
     latestChange,
@@ -89,6 +95,11 @@ abstract final class GoalReportSectionKeys {
 /// facts ride on the report as provenance so the UI never reparses markdown.
 abstract final class GoalReportProvenanceKeys {
   static const sections = 'goal_report_sections';
+
+  /// Source digests of the check-ins the report's wake showed verbatim — the
+  /// ones its reflection had in front of it. The next wake compares against
+  /// this to find what the standing report has not yet reflected.
+  static const checkInsReflected = 'goal_report_check_ins_reflected';
 }
 
 /// Keys that separate actions proven due in the evaluated period from later
@@ -125,10 +136,18 @@ class GoalStructuredReport {
     required this.coverage,
     required this.now,
     required this.later,
+    this.reflection = '',
   });
 
   /// One or two sentences summarising the whole report, shown collapsed.
   final String tldr;
+
+  /// The model's engagement with what the user said. Empty is legal here —
+  /// a goal nobody has checked in on has nothing to reflect — and whether a
+  /// given wake may leave it empty is the strategy's call, which knows what
+  /// the report has not reflected yet. An absent slot parses as empty for the
+  /// same reason, so a report written before the slot existed still reads.
+  final String reflection;
   final String currentPeriod;
   final String rollingWindow;
   final String latestChange;
@@ -183,6 +202,8 @@ class GoalStructuredReport {
 
     return GoalStructuredReport(
       tldr: tldr,
+      reflection:
+          _optionalReportString(value[GoalReportSectionKeys.reflection]) ?? '',
       currentPeriod: currentPeriod,
       rollingWindow: rollingWindow,
       latestChange: latestChange,
@@ -217,6 +238,8 @@ class GoalStructuredReport {
         : null;
     return GoalStructuredReport(
       tldr: _optionalReportString(value[GoalReportSectionKeys.tldr]) ?? '',
+      reflection:
+          _optionalReportString(value[GoalReportSectionKeys.reflection]) ?? '',
       currentPeriod:
           _optionalReportString(value[GoalReportSectionKeys.currentPeriod]) ??
           '',
@@ -258,6 +281,7 @@ class GoalStructuredReport {
   Map<String, Object?> toProvenance({
     required Set<String> allowedCurrentActionCriterionIds,
   }) => {
+    if (reflection.isNotEmpty) GoalReportSectionKeys.reflection: reflection,
     GoalReportSectionKeys.currentPeriod: currentPeriod,
     GoalReportSectionKeys.rollingWindow: rollingWindow,
     if (latestChange.isNotEmpty)
@@ -274,6 +298,7 @@ class GoalStructuredReport {
   String visibleSummary({
     required Set<String> allowedCurrentActionCriterionIds,
   }) => [
+    if (reflection.isNotEmpty) reflection,
     currentPeriod,
     rollingWindow,
     if (latestChange.isNotEmpty) latestChange,
@@ -293,7 +318,7 @@ String? _requiredReportString(Object? value) {
 String? _optionalReportString(Object? value) =>
     value is String ? value.trim() : null;
 
-/// The system prompt. Deliberately lean (hard-capped at 3.6k chars by
+/// The system prompt. Deliberately lean (hard-capped at 3.9k chars by
 /// the offline test): the payload lesson from task-agent evals is that long
 /// prompts get skimmed, and every number the model needs arrives in the
 /// wake FACTS block, not here.
@@ -302,7 +327,9 @@ String? _optionalReportString(Object? value) =>
 /// argued rather than accreted. It moved from 3.2k when the standing-report
 /// rule was added: the FACTS block can only carry a rule to the turns whose
 /// English heuristic fires, so a rule that must hold in every language and
-/// every turn belongs here.
+/// every turn belongs here. It moved to 3.9k with the user-voice rule: every
+/// other rule here is about measured evidence, and a prompt that never said
+/// what the user's own words are for produced reports that only counted them.
 const goalAgentSystemPrompt = '''
 You coach a user goal, not a general assistant.
 Handle only its evidence, progress, criteria, banners, and changes.
@@ -326,6 +353,10 @@ Health:
   latestChange, and sample counts in coverage. Never use vague references.
 - Put current instructions only in authorized nextActions.now;
   nextActions.later never says today/now.
+User voice: charter, knowledge and userVoice are the user talking. The
+report's reflection engages with them: a specific thing they said, a pattern,
+an open question, a commitment to follow up. Never only that a check-in
+happened or how long it took.
 
 Act in this order of precedence:
 1. Unanswered message: call reply_to_user exactly once first. Answer direct
@@ -353,8 +384,8 @@ Act in this order of precedence:
    Ads are TEXT BANNERS with preset animation/accent.
    Never copy FACTS values into banner copy or include names, locations, health,
    or other private context.
-4. Status reporting: when FACTS say the track status or period changed
-   materially, call update_goal_report with the FACTS status.
+4. Status reporting: when materialChangeSinceLastReport=true, call
+   update_goal_report with the FACTS status.
    The report is STORED: reply_to_user never changes it. A request to change the
    report itself requires update_goal_report in the SAME turn with a full rewrite.
 5. If materialChangeSinceLastReport=false and no earlier action applies, call no
@@ -440,8 +471,9 @@ final List<AgentToolDefinition> goalAgentTools = [
           'additionalProperties': false,
           'description':
               'Structured facts that the app assembles into the visible '
-              'standing summary. Prose slots are facts only; put every '
-              'instruction in nextActions. Keep each slot concise and do '
+              'standing summary. Prose slots other than reflection are facts '
+              'only; put every instruction in nextActions. Keep each slot '
+              'concise and do '
               'not repeat the same fact across slots. Return a JSON object, '
               'never an encoded JSON string.',
           'properties': {
@@ -450,8 +482,20 @@ final List<AgentToolDefinition> goalAgentTools = [
               'description':
                   'One or two sentences summarising the whole report, shown '
                   'on its own before the reader expands the rest. Lead with '
-                  'where the goal stands. Do not repeat it verbatim in any '
-                  'other slot.',
+                  'where the goal stands — for a goal measured by check-in '
+                  'time, by what the user said rather than how long they '
+                  'spoke. Do not repeat it verbatim in any other slot.',
+            },
+            GoalReportSectionKeys.reflection: {
+              'type': 'string',
+              'description':
+                  "Two to four sentences engaging with the user's own words "
+                  'in userVoice, charter and knowledge: a specific thing they '
+                  'said, a pattern across check-ins, a question they raised, '
+                  'a commitment to follow up. Address entries marked '
+                  'sinceLastReport first. Never only that a check-in happened '
+                  'or its length. Empty only when FACTS carry none of the '
+                  "three. In the user's language.",
             },
             GoalReportSectionKeys.currentPeriod: {
               'type': 'string',

@@ -136,6 +136,7 @@ void main() {
     List<Map<String, Object>> recentDialogue = const [],
     Map<String, String> criterionNames = const {},
     Map<String, Object?>? charter,
+    int newCheckIns = 0,
   }) {
     final text = withClock(
       fixedClock,
@@ -150,6 +151,7 @@ void main() {
         recentDialogue: recentDialogue,
         criterionNames: criterionNames,
         charter: charter,
+        newCheckInsSinceLastReport: newCheckIns,
       ),
     );
     expect(
@@ -199,6 +201,26 @@ void main() {
       (goal['criteria'] as Map<String, dynamic>)['window'],
       'rolling 7 days',
     );
+  });
+
+  test('check-ins the report has not answered are a material change on their '
+      'own, and say how many there are', () {
+    // The status held, it is not the briefing: before, this wake was told
+    // nothing had changed and to write nothing.
+    final held = facts(
+      status: GoalTrackStatus.onTrack,
+      previous: GoalTrackStatus.onTrack,
+    );
+    final quiet =
+        renderedJson(wakeFacts: held)['reporting'] as Map<String, dynamic>;
+    expect(quiet['materialChangeSinceLastReport'], isFalse);
+    expect(quiet.containsKey('newCheckInsSinceLastReport'), isFalse);
+
+    final spoken =
+        renderedJson(wakeFacts: held, newCheckIns: 2)['reporting']
+            as Map<String, dynamic>;
+    expect(spoken['materialChangeSinceLastReport'], isTrue);
+    expect(spoken['newCheckInsSinceLastReport'], 2);
   });
 
   test('marks a delayed evaluation reference as historical', () {

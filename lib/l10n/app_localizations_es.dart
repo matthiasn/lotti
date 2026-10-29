@@ -8522,6 +8522,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalReportSectionNext => 'Lo siguiente';
 
   @override
+  String get goalReportSectionReflection => 'De tus registros';
+
+  @override
   String get goalReportSectionStanding => 'Cómo va';
 
   @override

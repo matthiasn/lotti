@@ -66,12 +66,14 @@ const goalDailyBriefingInstruction =
     'update_goal_report. Keep tldr to one or two sentences on where the goal '
     'stands. Put the weight on what comes next: nextActions.later leads with '
     'one to three concrete, specific next steps grounded in the FACTS — a '
-    'lagging criterion, a commitment or blocker in userVoice, a trend. When '
+    'lagging criterion, a commitment or blocker in userVoice, something the '
+    'charter says the goal is for, a fact in knowledge, a trend. In '
+    'reflection, engage with what the user said since the last briefing. When '
     'reporting.previousBriefing is present, follow up on its nextSteps: say '
     'which the evidence shows happened, and carry forward what did not.';
 
 /// The pinned retry when a briefing wake answered without a report.
 const goalDailyBriefingReportInstruction =
     'This wake is the daily briefing. Call update_goal_report now: a short '
-    'read of where the goal stands from the FACTS block, and concrete next '
-    'steps in nextActions.later.';
+    'read of where the goal stands from the FACTS block, a reflection on what '
+    'the user said, and concrete next steps in nextActions.later.';

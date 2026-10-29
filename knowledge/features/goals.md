@@ -127,6 +127,18 @@ sources:
   - id: checkin-compactor
     resource: ../../lib/features/goals/service/goal_checkin_compactor.dart
     title: GoalCheckInCompactor — bounded user-voice distillation
+  - id: checkin-weight
+    resource: ../../lib/features/goals/model/goal_checkin_weight.dart
+    title: GoalCheckInWeight — check-ins as context or as the goal's substance
+  - id: checkin-reflection
+    resource: ../../lib/features/goals/workflow/goal_check_in_reflection.dart
+    title: Which shown check-ins the standing report has not reflected
+  - id: report-instructions
+    resource: ../../lib/features/goals/workflow/goal_report_instructions.dart
+    title: Why a wake must report — refresh cause, appended text, forced retry
+  - id: adr-0143
+    resource: ../../docs/adr/0143-a-goal-agent-answers-what-the-user-said.md
+    title: ADR 0143 — A goal agent answers what the user said
     last_modified: 2026-08-18
   - id: checkin-compaction-strategy
     resource: ../../lib/features/goals/logic/goal_checkin_compaction_strategy.dart
@@ -252,7 +264,7 @@ flowchart TD
     REG --> ALERT{persisted status\ntransition?}
     ALERT -- "into a slip" --> ARM[GoalOffTrackSink.arm\nafter the transaction — one\nalert per slip, next 09:00]
     ALERT -- "out of one" --> CLEAR[GoalOffTrackSink.clearFor\nretracts the open alert]
-    REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\neligible banner expiry, or the\ncadence tick with no report\nfor the day — the daily briefing?}
+    REG --> MATERIAL{a status the standing report\ndoes not state, a register change,\neligible banner expiry, a write to\nthe goal row of a check-in-time goal,\nor the cadence tick with no report\nfor the day — the daily briefing?}
     MATERIAL -- no --> DONE[return — the €0 no-op]
     MATERIAL -- yes --> STALE2[advance report-stale watermark]
     STALE2 --> AUTO{automatic report\nupdates enabled?}
@@ -267,10 +279,10 @@ flowchart TD
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
     REFREG --> PB
-    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — never a wake,\nconsumed by the next cadence tick]
-    CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token" --> ORCH
+    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — a wake only\nfor a check-in-time goal, below]
+    CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token;\nPhase A refreshes the report even\nwhen no number moved (ADR 0143)" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
-    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice\ntarget ≤6k tokens, never transcripts]
+    COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice, new\ncheck-ins marked sinceLastReport\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 10-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> REWORD[AgentAlertCopy.restate — after the txn,\nonly for a banner this wake created:\nthe armed alert in the banner's words,\nopt-in, ADR 0074]
@@ -1820,7 +1832,7 @@ Key pieces:
 - `lib/features/goals/logic/goal_checkin_compaction_strategy.dart` — the
   seam above that selection: a `GoalCheckInCompactionStrategy` turns the
   summary list into `userVoice` entries. `TruncatingCheckInCompaction` wraps
-  the shipped selection; `FullContextCheckInCompaction` is the unbounded
+  the token-bounded selection, the wake's fallback; `FullContextCheckInCompaction` is the unbounded
   oracle; `HierarchicalCheckInCompaction` keeps the same verbatim tail and
   folds older check-ins into calendar-aligned digests — monthly inside six
   months, quarterly inside eighteen, yearly inside thirty-six, one
@@ -1841,6 +1853,56 @@ Key pieces:
   The full-context strategy exists for the evaluation only.
 - `lib/features/goals/service/goal_mirror_service.dart` — keeps the
   journal-side `GoalEntry` in step with the agent-side spec chain.
+
+### Check-ins as the goal's substance (ADR 0143)
+
+For most goals a check-in is commentary on progress measured elsewhere. For a
+goal measured by the time spent checking in — a journal — the check-ins are
+the substance, and the agent's job is to answer them. Four mechanisms carry
+that, each keyed on `GoalCheckInWeight.of(criteria)`:
+
+- **Compaction.** `GoalCheckInCompactor` and `GoalCheckInDigestService` pick
+  their prompt by weight. A `substance` summary keeps up to five sentences of
+  themes, insights, decisions and questions; a `substance` digest keeps themes
+  and their movement rather than numbers. The weight is folded into
+  `goalCheckInSourceDigest` and `goalCheckInDigestSourceKey`, so a goal that
+  becomes measured by its check-ins re-reads them once; `context` hashes the
+  bare text, leaving every other goal's stored summaries current.
+  `_reconcileCheckIns` redoes at most `goalCheckInRecompactionsPerWake` stale
+  summaries per wake, newest first; a check-in with no summary is always read.
+- **The reflection.** `update_goal_report` has a `reflection` slot — the one
+  prose slot that is not a restatement of FACTS — rendered under the summary
+  with its own heading, above what comes next.
+- **What is new.** A report persists, under
+  `GoalReportProvenanceKeys.checkInsReflected`, the reflection keys of the
+  check-ins its wake showed verbatim. `goalCheckInReflection` compares the
+  next wake's verbatim check-ins against the standing report's record; on an
+  automatic wake the new ones are marked `sinceLastReport`, counted in
+  `reporting.newCheckInsSinceLastReport`, make
+  `materialChangeSinceLastReport` true, and make the strategy refuse an empty
+  reflection. A chat turn records what it was shown but is not held to it.
+- **The wake.** Phase A sees the goal row among its trigger tokens and queues
+  the coalesced refresh even when the register is unchanged — the transcript
+  that lands after a recording moves no number.
+
+```mermaid
+flowchart LR
+  W["check-in recorded,<br/>transcribed or edited"] --> PA["Phase A: goal row in<br/>the trigger tokens"]
+  PA -- "check-in-time goal" --> R["coalesced report refresh"]
+  R --> PB["Phase B: compact for substance<br/>(newest first, ≤8 redone a wake)"]
+  PB --> C{"verbatim check-ins absent from<br/>the standing report's record?"}
+  C -- yes --> M["mark sinceLastReport,<br/>material change,<br/>reflection required"]
+  C -- no --> N["reflection optional"]
+  M --> REP["report persists the<br/>reflection keys it was shown"]
+  N --> REP
+```
+
+**A wake names its own reason.** `GoalReportRefreshCause.of` reads the refresh
+token against the escalation period: none means the user asked from the goal
+page, one means Phase A armed the wake. The appended text and
+`goalForcedReportInstruction` follow that cause, so an armed wake is never told
+the user requested it, and its retry names the transition, the briefing, or an
+out-of-date report — never a habit-day edit nobody made.
 
 ### Compaction layers and their evaluation
 
@@ -1872,8 +1934,11 @@ Invariants worth not breaking:
 - **User voice never outranks measurement.** The `userVoice` block ships with
   an interpretation policy saying so. A cheerful check-in cannot turn a missed
   week into on-track.
-- **A check-in marks the report stale; it does not wake the agent.** Three
-  check-ins in a morning are one refresh, not three inference runs.
+- **A check-in marks the report stale; on most goals it does not wake the
+  agent.** Three check-ins in a morning are one refresh, not three inference
+  runs. The exception is a goal measured by its check-ins (below): a write to
+  its goal row queues the same coalesced refresh, because the words are what
+  that goal is about.
 - **The date survives compaction.** "You said on Tuesday you would walk after
   lunch" is only sayable because `recordedAt` is the moment the user spoke,
   not the moment the summary was written.

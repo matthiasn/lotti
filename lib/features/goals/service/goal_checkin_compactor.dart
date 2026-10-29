@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/one_shot_text_generation.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -22,13 +23,26 @@ const goalCheckInCompactionFailureToolName = 'goal_compact_check_in_failure';
 const goalCheckInCompactionMaxAttempts = 3;
 const goalCheckInCompactionRetryBaseDelay = Duration(hours: 6);
 
-/// Fingerprint of the words a summary was distilled from.
+/// Fingerprint of the words a summary was distilled from, and of how.
 ///
 /// Cheap and stable: it only has to change when the text does, so a
 /// re-transcription or an edit is recognised as new words rather than as the
-/// same check-in already handled.
-String goalCheckInSourceDigest(String text) =>
-    sha256.convert(utf8.encode(text.trim())).toString();
+/// same check-in already handled. The [weight] is part of it because it
+/// decides what the summary keeps: a goal that becomes measured by its
+/// check-ins re-reads them for substance once. [GoalCheckInWeight.context]
+/// hashes the bare text, so the summaries of every other goal keep the
+/// fingerprint they were stored with.
+String goalCheckInSourceDigest(
+  String text, {
+  GoalCheckInWeight weight = GoalCheckInWeight.context,
+}) => sha256
+    .convert(
+      utf8.encode(switch (weight) {
+        GoalCheckInWeight.context => text.trim(),
+        GoalCheckInWeight.substance => '${weight.name}\n${text.trim()}',
+      }),
+    )
+    .toString();
 
 /// Deterministic id for the summary of one check-in.
 ///
@@ -124,17 +138,38 @@ class GoalCheckInCompactor {
 
   static const double _temperature = 0.3;
 
-  static const String _systemMessage =
+  static const String _keys =
+      'Return ONLY a JSON object with the keys "whatHappened", "committedTo", '
+      '"blockers", "mood" and "asks". ';
+
+  static const String _slots =
+      'committedTo is what the person said they WILL do, in their own terms, '
+      'or null if they committed to nothing. blockers is what they said is in '
+      'the way, or null. mood is a short energy/mood signal, or null. asks is '
+      'anything they asked of you, or null. ';
+
+  static const String _contextSystemMessage =
       'You compact one spoken check-in about a personal goal into a short, '
-      'faithful record. Return ONLY a JSON object with the keys '
-      '"whatHappened", "committedTo", "blockers", "mood" and "asks". '
-      'whatHappened is required, one or two sentences. committedTo is what '
-      'the person said they WILL do, in their own terms, or null if they '
-      'committed to nothing. blockers is what they said is in the way, or '
-      'null. mood is a short energy/mood signal, or null. asks is anything '
-      'they asked of you, or null. Keep only what matters to THIS goal and '
-      'drop the rest. Write in the language the person spoke. Never infer, '
-      'never advise, never judge — record.';
+      'faithful record. $_keys'
+      'whatHappened is required, one or two sentences. $_slots'
+      'Keep only what matters to THIS goal and drop the rest. Write in the '
+      'language the person spoke. Never infer, never advise, never judge — '
+      'record.';
+
+  /// For a goal whose check-ins are its substance. "Keep only what matters
+  /// to THIS goal" against a goal like "journal ten minutes a day" keeps
+  /// that a journal entry happened and drops everything in it — which left
+  /// the coach of a journal nothing to say but whether the user wrote.
+  static const String _substanceSystemMessage =
+      'You compact one check-in on a goal whose check-ins ARE its substance — '
+      'a journal, a reflective practice — into a faithful record the '
+      "person's coach reads instead of the original. $_keys"
+      'whatHappened is required: up to five sentences carrying what they '
+      'actually wrote or talked about — the themes, insights, decisions, '
+      'feelings and open questions — in their own terms where you can. '
+      '$_slots'
+      'Drop only filler and repetition. Write in the language the person '
+      'used. Never infer, never advise, never judge — record.';
 
   /// Compacts [transcript] for [agentId] and persists the result.
   ///
@@ -150,9 +185,11 @@ class GoalCheckInCompactor {
     required String goalStatement,
     required String model,
     required AiConfigInferenceProvider provider,
+    GoalCheckInWeight weight = GoalCheckInWeight.context,
   }) async {
     final text = transcript.trim();
     if (text.isEmpty) return null;
+    final sourceDigest = goalCheckInSourceDigest(text, weight: weight);
     try {
       final decoded = await _distill(
         agentId: agentId,
@@ -161,6 +198,7 @@ class GoalCheckInCompactor {
         goalStatement: goalStatement,
         model: model,
         provider: provider,
+        weight: weight,
       );
       if (decoded == null) {
         throw const FormatException('check-in compaction returned no record');
@@ -175,7 +213,7 @@ class GoalCheckInCompactor {
         blockers: decoded.blockers,
         mood: decoded.mood,
         asks: decoded.asks,
-        sourceDigest: goalCheckInSourceDigest(text),
+        sourceDigest: sourceDigest,
       );
       await _persist(agentId: agentId, summary: summary);
       return summary;
@@ -191,7 +229,7 @@ class GoalCheckInCompactor {
         final failure = await _persistFailure(
           agentId: agentId,
           entryId: entryId,
-          sourceDigest: goalCheckInSourceDigest(text),
+          sourceDigest: sourceDigest,
         );
         if (failure.attempts == goalCheckInCompactionMaxAttempts) {
           _domainLogger?.error(
@@ -320,6 +358,7 @@ class GoalCheckInCompactor {
     required String goalStatement,
     required String model,
     required AiConfigInferenceProvider provider,
+    required GoalCheckInWeight weight,
   }) async {
     final prompt =
         'Goal: $goalStatement\n\n'
@@ -329,7 +368,10 @@ class GoalCheckInCompactor {
     // the goal's lifetime cost pills rather than being invisible spend.
     final text = await _inference.generateText(
       prompt: prompt,
-      systemMessage: _systemMessage,
+      systemMessage: switch (weight) {
+        GoalCheckInWeight.context => _contextSystemMessage,
+        GoalCheckInWeight.substance => _substanceSystemMessage,
+      },
       model: model,
       provider: provider,
       temperature: _temperature,

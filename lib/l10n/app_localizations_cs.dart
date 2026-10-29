@@ -8512,6 +8512,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalReportSectionNext => 'Co dál';
 
   @override
+  String get goalReportSectionReflection => 'Z tvých hlášení';
+
+  @override
   String get goalReportSectionStanding => 'Jak to vypadá';
 
   @override

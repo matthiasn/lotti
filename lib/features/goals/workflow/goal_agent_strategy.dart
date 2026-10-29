@@ -60,6 +60,7 @@ class GoalAgentStrategy extends ConversationStrategy
     this.expectedRollingAggregates = const [],
     this._memorySearcher,
     this.userMessage,
+    this.requireReflection = false,
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -99,6 +100,12 @@ class GoalAgentStrategy extends ConversationStrategy
   /// Deterministic aggregate values, pre-rounded exactly as FACTS render them,
   /// that the report's rolling standing must quote. Empty disables the check.
   final List<String> expectedRollingAggregates;
+
+  /// Whether FACTS carry check-ins the standing report has not reflected yet
+  /// (`reporting.newCheckInsSinceLastReport`). A report that leaves its
+  /// reflection empty then is the failure this exists to refuse: the agent
+  /// counted the user's words and said nothing about them.
+  final bool requireReflection;
 
   GoalTrackStatus? _reportStatus;
   String? _reportOneLiner;
@@ -382,6 +389,7 @@ class GoalAgentStrategy extends ConversationStrategy
       tldr,
       if (checkable != null) ...[
         checkable.tldr,
+        checkable.reflection,
         checkable.currentPeriod,
         checkable.rollingWindow,
         checkable.latestChange,
@@ -435,6 +443,17 @@ class GoalAgentStrategy extends ConversationStrategy
           'aggregate, never the latest reading, and never recompute it.',
         );
       }
+    }
+    // Judged on `checkable` like the aggregate rule, so a report the strict
+    // parser refused learns about its empty reflection in the same rejection.
+    if (requireReflection &&
+        hasStructuredReport &&
+        (checkable == null || checkable.reflection.isEmpty)) {
+      problems.add(
+        'userVoice carries check-ins marked sinceLastReport that the '
+        'standing report has not reflected — the reflection slot must engage '
+        'with what the user said in them, not only that they checked in.',
+      );
     }
     if (problems.isNotEmpty) {
       await _reject(

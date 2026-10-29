@@ -14100,6 +14100,12 @@ abstract class AppLocalizations {
   /// **'What\'s next'**
   String get goalReportSectionNext;
 
+  /// Heading above the goal report's reflection on what the user said in their check-ins, shown with the summary.
+  ///
+  /// In en, this message translates to:
+  /// **'From your check-ins'**
+  String get goalReportSectionReflection;
+
   /// No description provided for @goalReportSectionStanding.
   ///
   /// In en, this message translates to:

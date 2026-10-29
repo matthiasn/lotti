@@ -49,6 +49,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_job.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/history/domain/history_entry.dart';
 import 'package:lotti/features/recent_searches/domain/recent_search.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
@@ -321,6 +322,7 @@ void registerAllFallbackValues() {
     ),
   );
   registerFallbackValue(fallbackRelationshipData);
+  registerFallbackValue(GoalCheckInWeight.context);
   registerFallbackValue(fallbackCheckInEntry);
   registerFallbackValue(fallbackCheckInData);
   registerFallbackValue(fallbackSyncMessage);

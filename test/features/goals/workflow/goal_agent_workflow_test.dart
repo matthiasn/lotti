@@ -26,6 +26,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/logic/goal_charter.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
@@ -37,6 +38,7 @@ import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:lotti/features/goals/workflow/goal_report_instructions.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1937,6 +1939,308 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('a goal measured by its check-ins', () {
+    const journal = GoalCriterion.checkInTime(
+      criterionId: 'journal',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 70,
+    );
+
+    /// [count] stored summaries, one a day up to yesterday, each fingerprinted
+    /// under [weight] — so a weight that differs from the goal's is stale.
+    List<GoalCheckInSource> stubJournal({
+      required int count,
+      required GoalCheckInWeight weight,
+      int unsummarised = 0,
+    }) {
+      final sources = <GoalCheckInSource>[];
+      final messages = <AgentDomainEntity>[];
+      for (var i = 0; i < count + unsummarised; i++) {
+        final at = DateTime.utc(2026, 8, 8, 20).subtract(Duration(days: i));
+        sources.add(
+          GoalCheckInSource(
+            entryId: 'entry-$i',
+            recordedAt: at,
+            text: 'Wrote about the ridge, day $i.',
+          ),
+        );
+        if (i >= count) continue;
+        final id = 'summary-$i';
+        messages.add(
+          AgentDomainEntity.agentMessage(
+            id: id,
+            agentId: agentId,
+            threadId: id,
+            kind: AgentMessageKind.action,
+            createdAt: at,
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(
+              toolName: goalCheckInSummaryToolName,
+            ),
+            contentEntryId: '$id:payload',
+          ),
+        );
+        when(() => repository.getEntity('$id:payload')).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: '$id:payload',
+            agentId: agentId,
+            createdAt: at,
+            vectorClock: null,
+            content: <String, Object?>{
+              'sourceEntryId': 'entry-$i',
+              'recordedAt': at.toIso8601String(),
+              'whatHappened': 'Weighed the north ridge, day $i.',
+              'sourceDigest': goalCheckInSourceDigest(
+                'Wrote about the ridge, day $i.',
+                weight: weight,
+              ),
+            },
+          ),
+        );
+      }
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => messages);
+      return sources;
+    }
+
+    late List<(String, GoalCheckInWeight)> compacted;
+
+    void wire(List<GoalCheckInSource> sources) {
+      stubSpec(criteria: journal);
+      stubGlmResolution();
+      final compactor = MockGoalCheckInCompactor();
+      compacted = [];
+      when(
+        () => compactor.compact(
+          agentId: any(named: 'agentId'),
+          entryId: any(named: 'entryId'),
+          recordedAt: any(named: 'recordedAt'),
+          transcript: any(named: 'transcript'),
+          goalStatement: any(named: 'goalStatement'),
+          model: any(named: 'model'),
+          provider: any(named: 'provider'),
+          weight: any(named: 'weight'),
+        ),
+      ).thenAnswer((invocation) async {
+        compacted.add((
+          invocation.namedArguments[#entryId] as String,
+          invocation.namedArguments[#weight] as GoalCheckInWeight,
+        ));
+        return null;
+      });
+      workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        checkInCompactor: compactor,
+        checkInSourceReader: (_) async => sources,
+      );
+    }
+
+    /// Records every message the wake sends, answering the first with
+    /// [onFirst] (a report call, say) and the rest with nothing.
+    List<String> converse({
+      Future<void> Function(GoalAgentStrategy strategy)? onFirst,
+    }) {
+      final messages = <String>[];
+      conversationRepository
+        ..maxDelegateCalls = 2
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              messages.add(message);
+              if (messages.length == 1) {
+                await onFirst?.call(strategy! as GoalAgentStrategy);
+              }
+              return null;
+            };
+      return messages;
+    }
+
+    Future<void> report(GoalAgentStrategy strategy, {String reflection = ''}) =>
+        strategy.processToolCalls(
+          toolCalls: [
+            toolCall(GoalAgentToolNames.updateGoalReport, {
+              'status': strategy.expectedStatus!.name,
+              'oneLiner': 'The ridge is the question now.',
+              'report': {
+                'tldr': 'The question moved from whether to go to when.',
+                'reflection': reflection,
+                'currentPeriod': "Today's check-in is in.",
+                'rollingWindow': 'Over the last 7 days.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': {'now': <Object>[], 'later': <Object>[]},
+              },
+            }),
+          ],
+          manager: conversationManager,
+        );
+
+    test(
+      're-reads its check-ins for substance, newest first and at most '
+      '$goalCheckInRecompactionsPerWake a wake — a new one is always read',
+      () async {
+        wire(
+          stubJournal(
+            count: 10,
+            weight: GoalCheckInWeight.context,
+            unsummarised: 1,
+          ),
+        );
+        converse();
+
+        await run();
+
+        expect(compacted, [
+          for (var i = 0; i < goalCheckInRecompactionsPerWake; i++)
+            ('entry-$i', GoalCheckInWeight.substance),
+          // The oldest source has no summary at all: never capped.
+          ('entry-10', GoalCheckInWeight.substance),
+        ]);
+      },
+    );
+
+    test(
+      'marks the check-ins the standing report never answered, requires '
+      'the reflection to answer them, and records what it was shown',
+      () async {
+        wire(stubJournal(count: 2, weight: GoalCheckInWeight.substance));
+        final messages = converse(
+          onFirst: (strategy) async {
+            await report(strategy);
+            // The empty reflection was refused in-conversation.
+            expect(strategy.hasReport, isFalse);
+            await report(strategy, reflection: 'You keep coming back to it.');
+          },
+        );
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        expect(compacted, isEmpty, reason: 'every summary is current');
+        expect(messages.first, contains('"newCheckInsSinceLastReport": 2'));
+        expect(
+          messages.first,
+          contains('"materialChangeSinceLastReport": true'),
+        );
+        expect(
+          RegExp('"sinceLastReport": true').allMatches(messages.first),
+          hasLength(2),
+        );
+        final written = upserts.whereType<AgentReportEntity>().single;
+        expect(
+          (written.provenance[GoalReportProvenanceKeys.sections]!
+              as Map<String, Object?>)[GoalReportSectionKeys.reflection],
+          'You keep coming back to it.',
+        );
+        expect(
+          written.provenance[GoalReportProvenanceKeys.checkInsReflected],
+          [
+            for (final day in [1, 0])
+              goalCheckInSourceDigest(
+                'Wrote about the ridge, day $day.',
+                weight: GoalCheckInWeight.substance,
+              ),
+          ],
+        );
+      },
+    );
+
+    test(
+      'marks nothing once the standing report recorded those check-ins',
+      () async {
+        wire(stubJournal(count: 2, weight: GoalCheckInWeight.substance));
+        when(
+          () => repository.getLatestReport(agentId, AgentReportScopes.current),
+        ).thenAnswer(
+          (_) async => makeTestReport(
+            agentId: agentId,
+            createdAt: now,
+            provenance: {
+              'periodKey': '2026-08-09',
+              'specVersionId': '$agentId:spec-v1',
+              GoalReportProvenanceKeys.checkInsReflected: [
+                for (final day in [1, 0])
+                  goalCheckInSourceDigest(
+                    'Wrote about the ridge, day $day.',
+                    weight: GoalCheckInWeight.substance,
+                  ),
+              ],
+            },
+          ),
+        );
+        final messages = converse();
+
+        await run();
+
+        expect(messages.first, isNot(contains('sinceLastReport')));
+        expect(messages.first, contains('userVoice'));
+      },
+    );
+
+    test(
+      'a wake Phase A armed asks for the out-of-date report without '
+      'claiming the user asked, and its retry gives the real reason',
+      () async {
+        wire(stubJournal(count: 1, weight: GoalCheckInWeight.substance));
+        when(
+          () => repository.getLatestReport(agentId, AgentReportScopes.current),
+        ).thenAnswer(
+          (_) async => makeTestReport(
+            agentId: agentId,
+            createdAt: now,
+            // Today's report already exists: this wake is not the briefing.
+            provenance: {
+              'periodKey': '2026-08-09',
+              'specVersionId': '$agentId:spec-v1',
+              'trackStatus': GoalTrackStatus.insufficientData.name,
+            },
+          ),
+        );
+        final messages = converse();
+
+        await run(
+          triggerTokens: const {
+            'goal-escalation:2026-08-09',
+            goalReportRefreshTriggerToken,
+          },
+        );
+
+        expect(messages.first, contains(goalAutomaticRefreshInstruction));
+        expect(messages.first, isNot(contains('USER REQUESTED')));
+        // With no register yet the status transitioned, and that is the
+        // reason the retry gives — never an edit the user did not make.
+        expect(messages, hasLength(2));
+        expect(messages.last, goalStatusTransitionReportInstruction);
+        expect(messages.last, isNot(contains('habit day')));
+      },
+    );
   });
 
   group('hierarchical user voice', () {

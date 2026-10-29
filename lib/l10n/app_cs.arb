@@ -3307,6 +3307,7 @@
   "goalReportSectionChange": "Poslední změna",
   "goalReportSectionCoverage": "Pokrytí dat",
   "goalReportSectionNext": "Co dál",
+  "goalReportSectionReflection": "Z tvých hlášení",
   "goalReportSectionStanding": "Jak to vypadá",
   "goalReportSectionWindow": "Širší okno",
   "goalTodayBriefingNext": "Dál: {step}",

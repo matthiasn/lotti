@@ -44,6 +44,7 @@ import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart
 import 'package:lotti/features/goals/logic/goal_user_voice.dart';
 import 'package:lotti/features/goals/model/goal_checkin_source.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
@@ -51,11 +52,13 @@ import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/features/goals/workflow/goal_check_in_reflection.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:lotti/features/goals/workflow/goal_report_instructions.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
@@ -90,6 +93,11 @@ String _goalAgentReplyPayloadId(String agentId, String runKey) =>
 
 /// How many recent observations feed the FACTS block.
 const goalObservationLookback = 12;
+
+/// How many stale check-in summaries one wake redoes — see
+/// `_reconcileCheckIns`. Bounds the wake a change of compaction weight
+/// triggers, like `goalCheckInDigestsPerWake` bounds digesting.
+const goalCheckInRecompactionsPerWake = 8;
 
 typedef _GoalCheckInCompactionState = ({
   List<GoalCheckInSummary> summaries,
@@ -339,12 +347,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // in — and return the summaries whose sources are still live. Non-fatal: a
     // check-in that fails to compact simply is not in this wake's context, and
     // the next wake retries.
+    final checkInWeight = GoalCheckInWeight.of(version.criteria);
     final checkInSummaries = await _reconcileCheckIns(
       agentId: agentId,
       goalStatement: version.statement,
       model: resolved.modelId,
       provider: resolved.provider,
       compactMissing: pendingUserMessage == null,
+      weight: checkInWeight,
     );
 
     final observations = await _recentObservationFacts(agentId);
@@ -371,6 +381,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       provider: resolved.provider,
       allowInference: pendingUserMessage == null,
       reference: reference,
+      weight: checkInWeight,
     );
 
     // The day's first report is its briefing; it reads yesterday's to
@@ -379,21 +390,38 @@ class GoalAgentWorkflow with AgentErrorLogging {
       facts,
       interactive: pendingUserMessage != null,
     );
+    final standingReport = await _repository.getLatestReport(
+      agentId,
+      AgentReportScopes.current,
+    );
     final previousBriefing = dailyBriefing
         ? goalPreviousBriefingFacts(
-            await _repository.getLatestReport(
-              agentId,
-              AgentReportScopes.current,
-            ),
+            standingReport,
             periodKey: derivation.periodKey,
             specVersionId: version.id,
             specCreatedAt: version.createdAt,
           )
         : null;
+    // What the user said that the standing report has not answered. Computed
+    // on a chat turn too, so a report it rewrites records what it was shown,
+    // but only an automatic wake is held to reflecting it.
+    final reflection = goalCheckInReflection(
+      userVoice: userVoice,
+      summaries: checkInSummaries,
+      standingReport: standingReport,
+    );
+    final unreflected = pendingUserMessage == null
+        ? reflection.unreflectedEntryIds.length
+        : 0;
+    final refreshCause = GoalReportRefreshCause.of(
+      reportRefresh: reportRefresh,
+      escalationPeriod: escalationPeriod,
+    );
     final factsBlock = await _composeFactsBlock(
       version: version,
       facts: facts,
       dailyBriefing: dailyBriefing,
+      newCheckInsSinceLastReport: unreflected,
       previousBriefing: previousBriefing,
       charter: await _charterFacts(agentId),
       knowledge: await _knowledgeFacts(agentId),
@@ -403,8 +431,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
       observations: observations,
       pendingUserMessage: pendingUserMessage,
       recentDialogue: recentDialogue,
-      userVoice: userVoice,
-      reportRefresh: reportRefresh,
+      userVoice: unreflected > 0 ? reflection.mark(userVoice) : userVoice,
+      refreshCause: refreshCause,
       userRequestedReport: userRequestedReport,
       userRequestedAd: userRequestedAd,
     );
@@ -429,6 +457,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reference: reference,
       overdueEscalation: overdueEscalation,
       userMessage: pendingUserMessage,
+      requireReflection: unreflected > 0,
     );
 
     final allTools = [
@@ -510,21 +539,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId: recordConsumption ? agentId : null,
           runKey: recordConsumption ? runKey : null,
           threadId: recordConsumption ? threadId : null,
-          // Say which of the three reasons forced this, so the retry cannot
-          // describe a habit-day edit the user never made.
-          instruction: userRequestedReport
-              ? 'The user asked in chat for the standing report itself to '
-                    'change. Call update_goal_report now with the full '
-                    'rewritten report honouring their instruction, keeping '
-                    'every value faithful to the FACTS block.'
-              : reportRefresh
-              ? 'The user explicitly requested a standing-report refresh '
-                    'after editing a habit day. Call update_goal_report now '
-                    'with the status and current evidence from the FACTS '
-                    'block.'
-              : facts.statusTransitioned
-              ? goalStatusTransitionReportInstruction
-              : goalDailyBriefingReportInstruction,
+          // Say which reason forced this, so the retry cannot describe a
+          // habit-day edit the user never made.
+          instruction: goalForcedReportInstruction(
+            userRequestedReport: userRequestedReport,
+            refreshCause: refreshCause,
+            statusTransitioned: facts.statusTransitioned,
+            dailyBriefing: dailyBriefing,
+          ),
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -630,6 +652,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
               ? null
               : 'chat:$chatMessageId',
           replyToMessageId: chatMessageId,
+          checkInsReflected: reflection.shown,
         );
         attributionFinalized = persistence.attributionFinalized;
         reportHeadAdvanced = persistence.reportHeadAdvanced;
@@ -903,42 +926,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  /// The `charter` FACTS section, or null for a goal without one.
-  ///
-  /// Contained like user voice: the charter shapes coaching, but the wake is
-  /// accountable to the measured FACTS, so a charter that cannot be read
-  /// costs this wake its charter and is logged — never the wake itself.
-  Future<Map<String, Object?>?> _charterFacts(String agentId) async {
-    final reader = _charterReader;
-    if (reader == null) return null;
-    try {
-      return goalCharterFacts(await reader(agentId));
-    } catch (error, stackTrace) {
-      logError(
-        'goal charter unavailable for this wake',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
-  /// The `knowledge` FACTS section, or null for a goal with no confirmed
-  /// facts. Contained like the charter: unreadable knowledge costs this wake
-  /// its knowledge and is logged, never the wake.
-  Future<Map<String, Object?>?> _knowledgeFacts(String agentId) async {
-    try {
-      return goalKnowledgeFacts(await _knowledge.activeFor(agentId));
-    } catch (error, stackTrace) {
-      logError(
-        'goal knowledge unavailable for this wake',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
   Future<List<GoalObservationFact>> _recentObservationFacts(
     String agentId,
   ) async => [
@@ -971,6 +958,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     bool userRequestedAd = false,
     String? adCreationDiscriminator,
     String? replyToMessageId,
+    List<String> checkInsReflected = const [],
   }) => _persistOutputs(
     agentId: agentId,
     runKey: runKey,
@@ -984,5 +972,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
     userRequestedAd: userRequestedAd,
     adCreationDiscriminator: adCreationDiscriminator,
     replyToMessageId: replyToMessageId,
+    checkInsReflected: checkInsReflected,
   );
 }

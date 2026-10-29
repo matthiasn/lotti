@@ -3300,6 +3300,7 @@
   "goalReportSectionChange": "Ultima schimbare",
   "goalReportSectionCoverage": "Acoperirea datelor",
   "goalReportSectionNext": "Pașii următori",
+  "goalReportSectionReflection": "Din raportările dumneavoastră",
   "goalReportSectionStanding": "Cum stați",
   "goalReportSectionWindow": "Fereastra mai largă",
   "goalTodayBriefingNext": "Următorul pas: {step}",

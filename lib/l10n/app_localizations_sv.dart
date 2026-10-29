@@ -8434,6 +8434,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalReportSectionNext => 'Nästa steg';
 
   @override
+  String get goalReportSectionReflection => 'Från dina avstämningar';
+
+  @override
   String get goalReportSectionStanding => 'Hur det ligger till';
 
   @override

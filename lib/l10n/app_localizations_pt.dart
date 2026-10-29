@@ -8503,6 +8503,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalReportSectionNext => 'Próximos passos';
 
   @override
+  String get goalReportSectionReflection => 'Dos teus registos';
+
+  @override
   String get goalReportSectionStanding => 'Como estás';
 
   @override

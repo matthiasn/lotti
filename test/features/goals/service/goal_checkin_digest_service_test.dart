@@ -9,6 +9,7 @@ import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_summary.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +29,7 @@ void main() {
   late MockDomainLogger logger;
   late List<String> prompts;
   late List<String> scripted;
+  late List<String?> systemMessages;
   late List<AgentDomainEntity> written;
 
   final provider = testInferenceProvider(apiKey: 'k-123');
@@ -90,6 +92,7 @@ void main() {
     logger = MockDomainLogger();
     prompts = [];
     scripted = [];
+    systemMessages = [];
     written = [];
     when(
       () => inference.generate(
@@ -107,6 +110,9 @@ void main() {
       ),
     ).thenAnswer((invocation) {
       prompts.add(invocation.positionalArguments.first as String);
+      systemMessages.add(
+        invocation.namedArguments[#systemMessage] as String?,
+      );
       return streamOf(scripted.removeAt(0));
     });
     when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
@@ -122,14 +128,17 @@ void main() {
     domainLogger: logger,
   );
 
-  GoalCheckInDigestWriter writer({bool allowInference = true}) =>
-      service().forWake(
-        agentId: agentId,
-        goalStatement: 'Average 10,000 steps a day.',
-        model: 'glm-5.2',
-        provider: provider,
-        allowInference: allowInference,
-      );
+  GoalCheckInDigestWriter writer({
+    bool allowInference = true,
+    GoalCheckInWeight weight = GoalCheckInWeight.context,
+  }) => service().forWake(
+    agentId: agentId,
+    goalStatement: 'Average 10,000 steps a day.',
+    model: 'glm-5.2',
+    provider: provider,
+    allowInference: allowInference,
+    weight: weight,
+  );
 
   void stubStored(GoalCheckInDigest digest) {
     final id = goalCheckInDigestId(agentId, digest.periodLabel);
@@ -218,6 +227,37 @@ void main() {
       expect(written, isEmpty);
     },
   );
+
+  test('a goal whose check-ins are its substance is digested for what was '
+      'said, under its own source key', () async {
+    scripted = ['They kept returning to the ridge.'];
+
+    final text = await writer(weight: GoalCheckInWeight.substance).write(
+      request(),
+    );
+
+    expect(text, 'They kept returning to the ridge.');
+    expect(
+      systemMessages.single,
+      allOf(
+        contains('ARE its substance'),
+        contains('themes they kept returning to'),
+        isNot(contains('happened to the numbers')),
+      ),
+    );
+    final stored = GoalCheckInDigest.fromContent(
+      written.whereType<AgentMessagePayloadEntity>().single.content,
+    )!;
+    expect(
+      stored.sourceKey,
+      goalCheckInDigestSourceKey(
+        request(),
+        weight: GoalCheckInWeight.substance,
+      ),
+    );
+    // A digest written for the numbers is not reused for the words.
+    expect(stored.sourceKey, isNot(goalCheckInDigestSourceKey(request())));
+  });
 
   test('a span whose members changed is rewritten', () async {
     stubStored(

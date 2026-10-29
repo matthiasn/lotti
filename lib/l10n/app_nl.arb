@@ -3644,6 +3644,7 @@
   "goalReportSectionChange": "Laatste verandering",
   "goalReportSectionCoverage": "Datadekking",
   "goalReportSectionNext": "Wat nu",
+  "goalReportSectionReflection": "Uit je check-ins",
   "goalReportSectionStanding": "Hoe het ervoor staat",
   "goalReportSectionWindow": "Het bredere venster",
   "goalTodayBriefingNext": "Volgende: {step}",
