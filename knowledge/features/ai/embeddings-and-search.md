@@ -190,6 +190,13 @@ stateDiagram-v2
   Settled --> Pending: next local change
 ```
 
+The model that will run on the device instead of Ollama is chosen in
+[ADR 0144](../../../docs/adr/0144-on-device-embeddings-use-embeddinggemma.md):
+EmbeddingGemma-300m q4 on the bundled ONNX Runtime, measured against
+multilingual-e5-small and keyword search by
+[`tool/embedding_eval`](../../../tool/embedding_eval/README.md), which any
+later model change runs through first.
+
 Open questions the model leaves as residuals:
 
 - **Synced edits are not embedded on the receiving device.** The design says

@@ -1,0 +1,6 @@
+# The oldest ONNX Runtime the app ships (Linux, via flutter_onnxruntime), so a
+# model variant needing a newer operator fails the evaluation, not a phone.
+onnxruntime==1.22.0
+tokenizers
+numpy
+huggingface_hub
