@@ -15750,7 +15750,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language använder nu $voice';
+    return 'Röst för $language: $voice';
   }
 
   @override

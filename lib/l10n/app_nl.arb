@@ -6602,7 +6602,7 @@
   "speechSettingsAutoPrepareChatAudio": "Chataudio automatisch voorbereiden",
   "speechSettingsChatAudioDescription": "Bereid nieuwe chatantwoorden op dit apparaat voor, zodat het afspelen sneller begint. Audio speelt pas af als je op afspelen tikt.",
   "speechSettingsChatAudioLabel": "Chataudio",
-  "speechSettingsCloudVoiceChanged": "{language} gebruikt nu {voice}",
+  "speechSettingsCloudVoiceChanged": "Stem voor {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Jouw keuze",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 stem} other{{count} stemmen}}",
   "speechSettingsCloudVoiceDefaultTag": "Standaard",

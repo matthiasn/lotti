@@ -5946,7 +5946,7 @@
   "speechSettingsAutoPrepareChatAudio": "Chat-Audio automatisch vorbereiten",
   "speechSettingsChatAudioDescription": "Bereite neue Chat-Antworten auf diesem Gerät vor, damit die Wiedergabe früher startet. Audio wird erst abgespielt, wenn du auf Wiedergabe tippst.",
   "speechSettingsChatAudioLabel": "Chat-Audio",
-  "speechSettingsCloudVoiceChanged": "{language} nutzt jetzt {voice}",
+  "speechSettingsCloudVoiceChanged": "Stimme für {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Deine Wahl",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 Stimme} other{{count} Stimmen}}",
   "speechSettingsCloudVoiceDefaultTag": "Standard",

@@ -16028,7 +16028,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language folosește acum $voice';
+    return 'Vocea pentru $language: $voice';
   }
 
   @override

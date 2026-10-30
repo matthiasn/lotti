@@ -15841,7 +15841,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language nutzt jetzt $voice';
+    return 'Stimme für $language: $voice';
   }
 
   @override

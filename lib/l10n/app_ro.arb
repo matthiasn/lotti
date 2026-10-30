@@ -5946,7 +5946,7 @@
   "speechSettingsAutoPrepareChatAudio": "Pregătiți automat sunetul pentru chat",
   "speechSettingsChatAudioDescription": "Pregătiți noile răspunsuri din chat pe acest dispozitiv pentru ca redarea să înceapă mai repede. Sunetul este redat doar când apăsați pe redare.",
   "speechSettingsChatAudioLabel": "Audio pentru chat",
-  "speechSettingsCloudVoiceChanged": "{language} folosește acum {voice}",
+  "speechSettingsCloudVoiceChanged": "Vocea pentru {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Alegerea dumneavoastră",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 voce} few{{count} voci} other{{count} de voci}}",
   "speechSettingsCloudVoiceDefaultTag": "Implicită",

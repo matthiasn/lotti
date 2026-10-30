@@ -321,6 +321,28 @@ void main() {
     expect(cloud.calls, isEmpty);
   });
 
+  testWidgets('a refreshed catalog that drops the app language drops its '
+      'row instead of failing the list', (tester) async {
+    var current = catalog;
+    await pump(tester, services: services, loadCatalog: () => current);
+    expect(find.text('English'), findsOneWidget);
+
+    current = VoxtralVoiceCatalog(
+      fetchedAt: catalog.fetchedAt,
+      voices: [
+        for (final voice in catalog.voices)
+          if (!voice.languages.contains('en_us')) voice,
+      ],
+    );
+    container.invalidate(voxtralVoiceCatalogProvider);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('English'), findsNothing);
+    // With none of the user's languages left, every language shows.
+    expect(find.text('German'), findsOneWidget);
+  });
+
   testWidgets('a catalog that cannot load says so and can be retried', (
     tester,
   ) async {
