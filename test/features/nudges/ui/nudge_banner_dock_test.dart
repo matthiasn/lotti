@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_dock.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -185,6 +188,58 @@ void main() {
     for (var i = 0; i < 5; i++) {
       await tester.pump(const Duration(milliseconds: 150));
     }
+  }
+
+  for (final showPrivate in [true, false]) {
+    testWidgets(
+      'the dock shows the private words of a banner only while private '
+      'entries are shown (showPrivate: $showPrivate)',
+      (tester) async {
+        final base = entry(id: 'q', headline: 'Your agent has a question');
+        final private = (
+          nudge: NudgeEntityView.of(
+            base.nudge.copyWith(
+              provenance: const {
+                nudgePrivateHeadlineKey: 'Did the physio clear the ridge?',
+              },
+            ),
+          )!,
+          subjectTitle: base.subjectTitle,
+          kind: base.kind,
+          tapRoute: base.tapRoute,
+        );
+        _TestEntries.initial = [private];
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const Scaffold(
+              bottomNavigationBar: NudgeBannerDock(
+                compact: false,
+                surface: NudgeBannerSurface.tasks,
+              ),
+            ),
+            overrides: [
+              ...overrides(),
+              configFlagProvider.overrideWith(
+                (ref, flag) => Stream.value(flag == privateFlag && showPrivate),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        String shown(String text) => find
+            .byWidgetPredicate(
+              (w) => w is NudgeBannerAnimatedText && w.text == text,
+            )
+            .evaluate()
+            .isNotEmpty
+            .toString();
+        expect(shown('Did the physio clear the ridge?'), '$showPrivate');
+        expect(shown('Your agent has a question'), '${!showPrivate}');
+      },
+    );
   }
 
   test('visibility filtering is shared by the dock and its reserved lane', () {

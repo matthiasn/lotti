@@ -146,6 +146,9 @@ sources:
   - id: adr-0146
     resource: ../../docs/adr/0146-a-goal-agent-asks-and-keeps-what-matters.md
     title: ADR 0146 — A goal agent asks, and keeps what matters
+  - id: adr-0147
+    resource: ../../docs/adr/0147-a-question-banner-names-its-subject-behind-the-private-switch.md
+    title: ADR 0147 — A question banner names its subject behind the private switch
   - id: goal-question
     resource: ../../lib/features/goals/workflow/goal_question.dart
     title: The agent's own question — when it may ask, and how it lands
@@ -2324,11 +2327,13 @@ id `goal-question:<runKey>`. A reply without an operation id is paired with
 the nearest unanswered user turn, so the marker is what keeps a question from
 being read as an answer.
 
-It may raise a banner. Its words are the app's — a localised headline and
-call to action from `deviceMessages()` — because the banner is seen outside
-the goal; the model chooses only tone (never roast), animation and accent. It
-is a `goalNudge` whose tap route is the goal chat, and its lifecycle is its
-own:
+It may raise a banner, in the model's words — which may name what the user
+wrote — and shown only while private entries are (ADR 0147). The stored
+brief holds the localised generic headline and call to action from
+`deviceMessages()`; the model's headline and tagline ride in provenance and
+`nudgeDisplayBrief` shows them while the `private` config flag is on. Tone is
+never roast. It is a `goalNudge` whose tap route is the goal chat, and its
+lifecycle is its own:
 
 ```mermaid
 stateDiagram-v2

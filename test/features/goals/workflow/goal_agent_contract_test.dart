@@ -170,7 +170,7 @@ void main() {
         contains('ONE short question'),
         contains('sinceLastReport'),
         contains('never about numbers'),
-        contains('the app writes its words'),
+        contains('only while the user shows private entries'),
       ),
     );
     final banner =
@@ -180,12 +180,7 @@ void main() {
         (banner['properties'] as Map<String, dynamic>)['tone']
             as Map<String, dynamic>;
     expect(tone['enum'], isNot(contains('roast')));
-    // Free text is not on offer: a banner seen outside the goal cannot leak
-    // what the model never writes.
-    expect(
-      (banner['properties'] as Map<String, dynamic>).keys,
-      unorderedEquals(['tone', 'animation', 'accent']),
-    );
+    expect(banner['required'], ['headline', 'tone', 'animation']);
     expect(tone['enum'], containsAll(['encourage', 'nudge', 'celebrate']));
     expect(tool.parameters['required'], ['question']);
   });

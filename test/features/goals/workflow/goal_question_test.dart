@@ -4,6 +4,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/goals/workflow/goal_question.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -21,13 +22,14 @@ void main() {
       final withBanner = parseGoalQuestion({
         'question': 'Did you get to scout the ridge?',
         'banner': {
-          'headline': 'A question about your week',
+          'headline': '  Did the physio clear the ridge walk?  ',
           'tone': 'encourage',
           'animation': 'steady',
         },
       });
-      // The model's words are not taken: only how the banner looks.
       expect(withBanner.request?.banner, (
+        headline: 'Did the physio clear the ridge walk?',
+        tagline: null,
         tone: NudgeTone.encourage,
         animation: NudgeBannerAnimation.steady,
         accent: NudgeBannerAccent.calm,
@@ -50,9 +52,9 @@ void main() {
       expect(
         parseGoalQuestion({
           'question': 'Hi?',
-          'banner': {'tone': 'nudge'},
+          'banner': {'headline': ' ', 'tone': 'nudge', 'animation': 'steady'},
         }).error,
-        contains('needs a tone'),
+        contains('non-empty headline'),
       );
       expect(
         parseGoalQuestion({
@@ -119,7 +121,7 @@ void main() {
     });
 
     Future<void> persist({
-      GoalQuestionBannerStyle? banner,
+      GoalQuestionBanner? banner,
       bool raiseBanner = true,
       Set<String> existing = const {},
     }) => persistGoalQuestion(
@@ -142,7 +144,9 @@ void main() {
           (headline: 'Your agent has a question', cta: 'Answer in chat'),
     );
 
-    const banner = (
+    const GoalQuestionBanner banner = (
+      headline: 'Did the physio clear the ridge walk?',
+      tagline: 'You wanted to know before Saturday.',
       tone: NudgeTone.encourage,
       animation: NudgeBannerAnimation.steady,
       accent: NudgeBannerAccent.aurora,
@@ -165,10 +169,19 @@ void main() {
 
       final nudge = written.whereType<GoalNudgeEntity>().single;
       expect(nudge.status, NudgeStatus.active);
-      // The app's words, the model's look.
+      // The brief holds words safe anywhere; the model's ride beside it,
+      // shown only while private entries are.
       expect(nudge.brief.headline, 'Your agent has a question');
       expect(nudge.brief.cta, 'Answer in chat');
       expect(nudge.brief.tagline, isNull);
+      expect(
+        nudge.provenance[nudgePrivateHeadlineKey],
+        'Did the physio clear the ridge walk?',
+      );
+      expect(
+        nudge.provenance[nudgePrivateTaglineKey],
+        'You wanted to know before Saturday.',
+      );
       expect(nudge.brief.tone, NudgeTone.encourage);
       expect(nudge.brief.accent, NudgeBannerAccent.aurora);
       expect(isGoalQuestionNudge(nudge), isTrue);

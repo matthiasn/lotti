@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_actions.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// One goal banner — the agent's standing voice, rendered per the design
@@ -47,7 +50,10 @@ class GoalBannerCard extends ConsumerWidget {
       'GoalBannerCard renders goal entries only',
     );
     final tokens = context.designTokens;
-    final brief = entry.nudge.brief;
+    final brief = nudgeDisplayBrief(
+      entry.nudge,
+      showPrivate: ref.watch(configFlagProvider(privateFlag)).value ?? false,
+    );
     final style = nudgeBannerStyle(
       tone: brief.tone,
       accent: brief.accent,

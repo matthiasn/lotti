@@ -17,6 +17,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:uuid/uuid.dart';
 
 /// `operationId` prefix marking a chat message as the agent's own question.
@@ -43,16 +44,18 @@ const goalNudgeQuestionTrigger = 'question';
 /// Provenance key linking a question banner to the chat message it points at.
 const goalNudgeQuestionMessageKey = 'questionMessageId';
 
-/// How a question's banner looks — the only part of it the model chooses.
-typedef GoalQuestionBannerStyle = ({
+/// The banner the model asked for with its question: its words, which may
+/// name what the user wrote, and how it looks.
+typedef GoalQuestionBanner = ({
+  String headline,
+  String? tagline,
   NudgeTone tone,
   NudgeBannerAnimation animation,
   NudgeBannerAccent accent,
 });
 
-/// What a question's banner says. Code-owned and localised: the banner is
-/// seen outside the goal (ADR 0056), and model copy told to stay generic
-/// still named the day it was about, so it never writes a word of it.
+/// The words a question's banner shows while the user hides private entries:
+/// code-owned and localised, safe wherever the banner is seen (ADR 0147).
 typedef GoalQuestionBannerCopy = ({String headline, String cta});
 
 /// One validated `ask_goal_question` call.
@@ -62,12 +65,12 @@ class GoalQuestionRequest {
   final String question;
 
   /// The banner raised with the question, when the model asked for one.
-  final GoalQuestionBannerStyle? banner;
+  final GoalQuestionBanner? banner;
 }
 
 /// A banner's copy and presets from `create_goal_ad`'s arguments, or the
-/// reason it is not one. A question's banner takes no copy from the model at
-/// all — see [GoalQuestionBannerCopy].
+/// reason it is not one. A question's banner keeps its words apart from its
+/// brief — see [persistGoalQuestion].
 ({NudgeBrief? brief, String? error}) parseGoalNudgeBrief(
   Map<String, dynamic> args, {
   required String toolName,
@@ -137,19 +140,21 @@ class GoalQuestionRequest {
       error: 'Error: banner must be an object, or omitted.',
     );
   }
+  final headline = _trimmed(rawBanner['headline']);
   final tone = NudgeTone.values
       .where((value) => value.name == rawBanner['tone'])
       .firstOrNull;
   final animation = NudgeBannerAnimation.values
       .where((value) => value.name == rawBanner['animation'])
       .firstOrNull;
-  if (tone == null || animation == null) {
+  if (headline.isEmpty || tone == null || animation == null) {
     return (
       request: null,
       error:
-          'Error: ${GoalAgentToolNames.askGoalQuestion}.banner needs a tone '
-          '(one of ${goalQuestionBannerToneNames.join('|')}) and an '
-          'animation (one of ${goalBannerAnimationNames.join('|')}).',
+          'Error: ${GoalAgentToolNames.askGoalQuestion}.banner needs a '
+          'non-empty headline, a tone (one of '
+          '${goalQuestionBannerToneNames.join('|')}) and an animation (one of '
+          '${goalBannerAnimationNames.join('|')}).',
     );
   }
   if (tone == NudgeTone.roast) {
@@ -164,10 +169,17 @@ class GoalQuestionRequest {
           .where((value) => value.name == rawBanner['accent'])
           .firstOrNull ??
       NudgeBannerAccent.calm;
+  final tagline = _trimmed(rawBanner['tagline']);
   return (
     request: GoalQuestionRequest(
       question: question,
-      banner: (tone: tone, animation: animation, accent: accent),
+      banner: (
+        headline: headline,
+        tagline: tagline.isEmpty ? null : tagline,
+        tone: tone,
+        animation: animation,
+        accent: accent,
+      ),
     ),
     error: null,
   );
@@ -276,22 +288,27 @@ Future<void> persistGoalQuestion(
     ),
   );
 
-  final style = request.banner;
-  if (style == null || !raiseBanner) return;
+  final banner = request.banner;
+  if (banner == null || !raiseBanner) return;
   final nudgeId = goalQuestionNudgeId(
     agentId: agentId,
     periodKey: periodKey,
     specVersionId: specVersionId,
   );
   if (existingNudgeIds.contains(nudgeId)) return;
+  // The brief holds words safe anywhere; the model's, which may name what
+  // the user wrote, ride in provenance and are shown only while the user
+  // shows private entries (`nudgeDisplayBrief`). Whatever reads the brief
+  // without knowing that — history, ratings, an alert — shows the safe ones.
   final copy = bannerCopy();
   final brief = NudgeBrief(
     headline: copy.headline,
     cta: copy.cta,
-    tone: style.tone,
-    animation: style.animation,
-    accent: style.accent,
+    tone: banner.tone,
+    animation: banner.animation,
+    accent: banner.accent,
   );
+  final privateTagline = banner.tagline;
   await syncService.upsertEntity(
     AgentDomainEntity.goalNudge(
       id: nudgeId,
@@ -313,6 +330,15 @@ Future<void> persistGoalQuestion(
         'specVersionId': specVersionId,
         goalNudgeTriggerKey: goalNudgeQuestionTrigger,
         goalNudgeQuestionMessageKey: messageId,
+        nudgePrivateHeadlineKey: sanitizeAgentReportText(
+          banner.headline,
+          stripBareIds: true,
+        ),
+        if (privateTagline != null)
+          nudgePrivateTaglineKey: sanitizeAgentReportText(
+            privateTagline,
+            stripBareIds: true,
+          ),
       },
     ),
   );
