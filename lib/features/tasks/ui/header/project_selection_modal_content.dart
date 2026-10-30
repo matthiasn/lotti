@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/project_lookup_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:lotti/widgets/projects/project_status_attributes.dart';
 import 'package:lotti/widgets/projects/project_status_chip.dart';
@@ -17,7 +21,11 @@ const String _kProjectPickerNoneSentinel = '__project_picker_none__';
 ///
 /// Watches the category's projects and keeps only those whose privacy matches
 /// the task's, so the picker never offers a link
-/// `ProjectRepository.linkTaskToProject` would refuse.
+/// `ProjectRepository.linkTaskToProject` would refuse. While the Projects tab
+/// can be reached — its page flag is on and wide lockdown does not hide it —
+/// every project row also offers to open that project's page. Otherwise a beam
+/// to it would land on another tab or be refused, so the action is not
+/// offered.
 class ProjectSelectionModalContent extends ConsumerWidget {
   const ProjectSelectionModalContent({
     required this.categoryId,
@@ -54,10 +62,17 @@ class ProjectSelectionModalContent extends ConsumerWidget {
           error: AsyncError.new,
           loading: AsyncLoading.new,
         );
+    final navService = ref.watch(navServiceProvider);
+    final projectsReachable =
+        (ref.watch(configFlagProvider(enableProjectsFlag)).value ?? false) &&
+        navService.isDelegateAllowed(navService.projectsDelegate);
     return ProjectSelectionModalBody(
       projectsAsync: projectsAsync,
       onProjectSelected: onProjectSelected,
       currentProjectId: currentProjectId,
+      onOpenProject: projectsReachable
+          ? (project) => navService.beamToNamed('/projects/${project.meta.id}')
+          : null,
     );
   }
 }
@@ -73,11 +88,16 @@ class ProjectSelectionModalContent extends ConsumerWidget {
 /// to [onProjectSelected] and closes the picker when the write is accepted;
 /// a rejected or failed write keeps the picker open and explains itself in an
 /// inline callout above the search field.
+///
+/// With [onOpenProject] set, each project row carries an open action at its
+/// trailing edge: it closes the picker without writing a link, then hands the
+/// project to [onOpenProject].
 class ProjectSelectionModalBody extends StatefulWidget {
   const ProjectSelectionModalBody({
     required this.projectsAsync,
     required this.onProjectSelected,
     this.currentProjectId,
+    this.onOpenProject,
     super.key,
   });
 
@@ -89,6 +109,10 @@ class ProjectSelectionModalBody extends StatefulWidget {
 
   /// The project the task is linked to, pinned and ticked at the top.
   final String? currentProjectId;
+
+  /// Navigates to a project's page, after the picker has closed. Null hides
+  /// the open action.
+  final ValueChanged<ProjectEntry>? onOpenProject;
 
   @override
   State<ProjectSelectionModalBody> createState() =>
@@ -163,7 +187,22 @@ class _ProjectSelectionModalBodyState extends State<ProjectSelectionModalBody> {
       // row's accessible name.
       semanticLabel: '${project.data.title}, $statusLabel',
       badges: [ProjectStatusChip(status: project.data.status)],
+      action: switch (widget.onOpenProject) {
+        null => null,
+        final open => DesignSystemSelectionRowAction(
+          key: ValueKey('project-open-${project.meta.id}'),
+          label: context.messages.projectPickerOpenProject(project.data.title),
+          onPressed: () => _onOpen(project, open),
+        ),
+      },
     );
+  }
+
+  /// Closes the picker, then opens [project]. No link is written: opening a
+  /// project is not picking it.
+  void _onOpen(ProjectEntry project, ValueChanged<ProjectEntry> open) {
+    Navigator.pop(context);
+    open(project);
   }
 
   PickerItem _noneItem() => PickerItem(

@@ -304,6 +304,14 @@ repository refuses (category or privacy no longer agree) keeps the picker
 open with an inline error callout above the search field instead of closing
 on a link that did not happen. A category with no projects says so in the
 sheet's empty state rather than reporting a search that found nothing.
+While the Projects tab is reachable, every project row — the pinned current
+one included — also carries an open action at its trailing edge, named after
+its project: it closes the picker *without* writing a link and beams to
+`/projects/<id>`. Reachable means both gates a beam passes through: with
+`enable_projects` off, `NavService` resolves the path to the first enabled
+tab's root (Tasks) instead, and while wide lockdown hides Projects
+(`NavService.isDelegateAllowed`) it refuses the beam outright. Either way the
+arrow would not open the project, so it is not offered.
 
 **Metadata is set once and rarely changed, so it no longer wears
 always-visible button-styled chrome.** The summary lane is read-outs only:

@@ -1,18 +1,25 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/project_selection_modal_content.dart';
 import 'package:lotti/providers/project_lookup_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../projects/test_utils.dart';
 
@@ -49,12 +56,74 @@ void main() {
   final noneRow = row('project-none');
   final searchField = find.byType(TextField);
 
+  Finder openAction(String projectId) =>
+      find.byKey(ValueKey('project-open-$projectId'));
+
+  /// Pumps a base page that pushes [page], so a picker that closes is
+  /// observable as [page] leaving the tree.
+  Future<void> pumpPushed(
+    WidgetTester tester,
+    Widget page, {
+    List<Override> overrides = const [],
+  }) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(body: page),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+        overrides: overrides,
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectSelectionModalBody), findsOneWidget);
+  }
+
+  /// A [MockNavService] whose Projects tab lockdown does or does not hide.
+  MockNavService navService({bool projectsAllowed = true}) {
+    final nav = MockNavService();
+    final projects = MockBeamerDelegate();
+    when(() => nav.projectsDelegate).thenReturn(projects);
+    when(() => nav.isDelegateAllowed(projects)).thenReturn(projectsAllowed);
+    when(() => nav.beamToNamed(any())).thenReturn(null);
+    return nav;
+  }
+
+  /// Overrides for [ProjectSelectionModalContent]: the category provider
+  /// answering through [loadProjects], the Projects page flag, and [nav].
+  List<Override> contentOverrides({
+    required Future<List<ProjectEntry>> Function() loadProjects,
+    bool projectsPageEnabled = false,
+    NavService? nav,
+  }) => [
+    projectsForCategoryProvider(
+      categoryId,
+    ).overrideWith((ref) => loadProjects()),
+    configFlagProvider(
+      enableProjectsFlag,
+    ).overrideWith((ref) => Stream.value(projectsPageEnabled)),
+    navServiceProvider.overrideWithValue(nav ?? navService()),
+  ];
+
   /// Pumps [ProjectSelectionModalContent] with the category provider answering
   /// through [loadProjects].
   Future<void> pumpContent(
     WidgetTester tester, {
     required Future<List<ProjectEntry>> Function() loadProjects,
     bool taskIsPrivate = false,
+    bool projectsPageEnabled = false,
+    NavService? nav,
     String? currentProjectId,
     Future<bool> Function(ProjectEntry? project)? onProjectSelected,
   }) async {
@@ -68,11 +137,11 @@ void main() {
             currentProjectId: currentProjectId,
           ),
         ),
-        overrides: [
-          projectsForCategoryProvider(
-            categoryId,
-          ).overrideWith((ref) => loadProjects()),
-        ],
+        overrides: contentOverrides(
+          loadProjects: loadProjects,
+          projectsPageEnabled: projectsPageEnabled,
+          nav: nav,
+        ),
       ),
     );
     await tester.pump();
@@ -107,35 +176,16 @@ void main() {
     required List<ProjectEntry> projects,
     required Future<bool> Function(ProjectEntry? project) onProjectSelected,
     String? currentProjectId,
-  }) async {
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Builder(
-          builder: (context) => Scaffold(
-            body: Center(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => Scaffold(
-                      body: ProjectSelectionModalBody(
-                        projectsAsync: AsyncData(projects),
-                        onProjectSelected: onProjectSelected,
-                        currentProjectId: currentProjectId,
-                      ),
-                    ),
-                  ),
-                ),
-                child: const Text('open'),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
-    expect(find.byType(ProjectSelectionModalBody), findsOneWidget);
-  }
+    ValueChanged<ProjectEntry>? onOpenProject,
+  }) => pumpPushed(
+    tester,
+    ProjectSelectionModalBody(
+      projectsAsync: AsyncData(projects),
+      onProjectSelected: onProjectSelected,
+      currentProjectId: currentProjectId,
+      onOpenProject: onOpenProject,
+    ),
+  );
 
   Future<void> search(WidgetTester tester, String query) async {
     await tester.enterText(searchField, query);
@@ -209,6 +259,10 @@ void main() {
                 ? Future.value([alpha, beta])
                 : Completer<List<ProjectEntry>>().future;
           }),
+          configFlagProvider(
+            enableProjectsFlag,
+          ).overrideWith((ref) => Stream.value(false)),
+          navServiceProvider.overrideWithValue(navService()),
         ],
       );
       addTearDown(host.container.dispose);
@@ -270,6 +324,82 @@ void main() {
 
       expect(rowWidget(tester, 'project-p-alpha').selected, isTrue);
       expect(rowWidget(tester, 'project-p-beta').selected, isFalse);
+    });
+
+    testWidgets('with the Projects page off, no row offers to open its '
+        'project', (tester) async {
+      await pumpContent(
+        tester,
+        loadProjects: () async => [alpha, beta],
+        currentProjectId: alpha.meta.id,
+      );
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+
+    testWidgets('with the Projects page on, every project row offers to open '
+        'it, the pinned current one too, and No project does not', (
+      tester,
+    ) async {
+      await pumpContent(
+        tester,
+        loadProjects: () async => [alpha, beta],
+        currentProjectId: alpha.meta.id,
+        projectsPageEnabled: true,
+      );
+
+      expect(openAction(alpha.meta.id), findsOneWidget);
+      expect(openAction(beta.meta.id), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+      expect(rowWidget(tester, 'project-none').secondaryAction, isNull);
+      // Each arrow is its own button, so its name says which project.
+      expect(
+        rowWidget(tester, 'project-p-beta').secondaryAction?.label,
+        'Open Beta',
+      );
+    });
+
+    testWidgets('while lockdown hides the Projects tab, no row offers to '
+        'open its project', (tester) async {
+      await pumpContent(
+        tester,
+        loadProjects: () async => [alpha, beta],
+        projectsPageEnabled: true,
+        nav: navService(projectsAllowed: false),
+      );
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+    });
+
+    testWidgets('opening a project closes the picker and beams to the '
+        "project's page", (tester) async {
+      final nav = navService();
+      var writes = 0;
+      await pumpPushed(
+        tester,
+        ProjectSelectionModalContent(
+          categoryId: categoryId,
+          taskIsPrivate: false,
+          onProjectSelected: (_) async {
+            writes++;
+            return true;
+          },
+        ),
+        overrides: contentOverrides(
+          loadProjects: () async => [alpha, beta],
+          projectsPageEnabled: true,
+          nav: nav,
+        ),
+      );
+
+      await tester.tap(openAction(beta.meta.id));
+      await tester.pumpAndSettle();
+
+      verify(() => nav.beamToNamed('/projects/${beta.meta.id}')).called(1);
+      expect(writes, 0);
+      expect(find.byType(ProjectSelectionModalBody), findsNothing);
     });
   });
 
@@ -500,6 +630,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(picked?.meta.id, beta.meta.id);
+      expect(find.byType(ProjectSelectionModalBody), findsNothing);
+    });
+
+    testWidgets('the open action closes the picker and hands over its project '
+        'without a write', (tester) async {
+      var writes = 0;
+      final opened = <String>[];
+      await pumpPushedBody(
+        tester,
+        projects: [alpha, beta],
+        currentProjectId: alpha.meta.id,
+        onProjectSelected: (_) async {
+          writes++;
+          return true;
+        },
+        onOpenProject: (p) => opened.add(p.meta.id),
+      );
+
+      await tester.tap(openAction(alpha.meta.id));
+      await tester.pumpAndSettle();
+
+      expect(opened, [alpha.meta.id]);
+      expect(writes, 0);
       expect(find.byType(ProjectSelectionModalBody), findsNothing);
     });
 

@@ -368,6 +368,7 @@ void main() {
       addTearDown(() => navService.allowedTabDelegates = null);
       final journalIndex = navService.journalIndex;
       final settingsIndex = navService.settingsIndex;
+      expect(navService.isDelegateAllowed(navService.projectsDelegate), isTrue);
 
       navService.allowedTabDelegates = {
         navService.tasksDelegate,
@@ -375,6 +376,12 @@ void main() {
       };
       expect(navService.isTabAllowed(settingsIndex), isFalse);
       expect(navService.isTabAllowed(journalIndex), isTrue);
+      // By delegate too — Projects is flag-off here, so it has no index.
+      expect(
+        navService.isDelegateAllowed(navService.projectsDelegate),
+        isFalse,
+      );
+      expect(navService.isDelegateAllowed(navService.journalDelegate), isTrue);
 
       // Sidebar / keyboard / palette all end in tapIndex or setIndex.
       navService.tapIndex(settingsIndex);

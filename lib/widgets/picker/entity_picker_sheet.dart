@@ -36,6 +36,7 @@ class PickerItem {
     this.semanticLabel,
     this.enabled = true,
     this.rowKey,
+    this.action,
   });
 
   final String id;
@@ -55,6 +56,10 @@ class PickerItem {
 
   final bool enabled;
   final Key? rowKey;
+
+  /// A command beside the pick — opening the entity, say; see
+  /// [DesignSystemSelectionRow.secondaryAction].
+  final DesignSystemSelectionRowAction? action;
 }
 
 /// The shared, feature-agnostic picker body: a [DesignSystemSearch] field, a
@@ -551,6 +556,7 @@ class _PickerItemRow extends StatelessWidget {
           : DesignSystemSelectionRowType.singleSelect,
       selected: selected,
       semanticLabel: item.semanticLabel,
+      secondaryAction: item.action,
       onTap: onTap,
     );
   }

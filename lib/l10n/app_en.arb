@@ -7529,6 +7529,14 @@
   "projectNoProjects": "No projects yet",
   "projectNotFound": "Project not found",
   "projectPickerLabel": "Project",
+  "projectPickerOpenProject": "Open {project}",
+  "@projectPickerOpenProject": {
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
   "projectPickerUnassigned": "No project",
   "projectPickerUpdateFailed": "Could not change this task's project. Check its category and privacy, then try again.",
   "@projectPickerUpdateFailed": {

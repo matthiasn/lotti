@@ -20155,6 +20155,12 @@ abstract class AppLocalizations {
   /// **'Project'**
   String get projectPickerLabel;
 
+  /// No description provided for @projectPickerOpenProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {project}'**
+  String projectPickerOpenProject(String project);
+
   /// No description provided for @projectPickerUnassigned.
   ///
   /// In en, this message translates to:

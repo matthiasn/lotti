@@ -4570,6 +4570,7 @@
   "projectNoProjects": "Niciun proiect încă",
   "projectNotFound": "Proiectul nu a fost găsit",
   "projectPickerLabel": "Proiect",
+  "projectPickerOpenProject": "Deschideți {project}",
   "projectPickerUnassigned": "Fără proiect",
   "projectPickerUpdateFailed": "Proiectul sarcinii nu a putut fi schimbat. Verificați categoria și confidențialitatea, apoi încercați din nou.",
   "projectRecommendationsTitle": "Pași următori recomandați",

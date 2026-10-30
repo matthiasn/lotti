@@ -4570,6 +4570,7 @@
   "projectNoProjects": "Aún no hay proyectos",
   "projectNotFound": "Proyecto no encontrado",
   "projectPickerLabel": "Proyecto",
+  "projectPickerOpenProject": "Abrir {project}",
   "projectPickerUnassigned": "Sin proyecto",
   "projectPickerUpdateFailed": "No se pudo cambiar el proyecto de la tarea. Comprueba la categoría y la privacidad e inténtalo de nuevo.",
   "projectRecommendationsTitle": "Siguientes pasos recomendados",

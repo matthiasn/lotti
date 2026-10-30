@@ -5150,6 +5150,7 @@
   "projectNoProjects": "Ainda não há projetos",
   "projectNotFound": "Projeto não encontrado",
   "projectPickerLabel": "Projeto",
+  "projectPickerOpenProject": "Abrir {project}",
   "projectPickerUnassigned": "Nenhum projeto",
   "projectPickerUpdateFailed": "Não foi possível alterar o projeto da tarefa. Verifica a categoria e a privacidade e tenta novamente.",
   "projectRecommendationsTitle": "Próximas etapas recomendadas",

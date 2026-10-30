@@ -5150,6 +5150,7 @@
   "projectNoProjects": "Nog geen projecten",
   "projectNotFound": "Project niet gevonden",
   "projectPickerLabel": "Project",
+  "projectPickerOpenProject": "{project} openen",
   "projectPickerUnassigned": "Geen project",
   "projectPickerUpdateFailed": "Het project van de taak kon niet worden gewijzigd. Controleer de categorie en privacy en probeer het opnieuw.",
   "projectRecommendationsTitle": "Aanbevolen volgende stappen",

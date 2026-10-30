@@ -12197,6 +12197,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectPickerLabel => 'Projekt';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return 'Otevřít $project';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Žádný projekt';
 
   @override

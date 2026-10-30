@@ -5151,6 +5151,7 @@
   "projectNoProjects": "Inga projekt än",
   "projectNotFound": "Projekt ej hittat",
   "projectPickerLabel": "Projekt",
+  "projectPickerOpenProject": "Öppna {project}",
   "projectPickerUnassigned": "Inget projekt",
   "projectPickerUpdateFailed": "Det gick inte att ändra uppgiftens projekt. Kontrollera kategori och sekretess och försök igen.",
   "projectRecommendationsTitle": "Rekommenderade nästa steg",
