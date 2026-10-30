@@ -570,6 +570,33 @@ void main() {
     );
 
     test(
+      'a report vector whose task has not arrived is held, then stored in '
+      "the task's category when the task applies",
+      () async {
+        final d = await device();
+        const content = 'The agent report about the task progress';
+        d.reports['r1'] = content;
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: content,
+            vc: {'a': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+        expect(d.store.chunks, isEmpty);
+
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []).copyWith(
+          meta: _meta('t1', categoryId: 'work'),
+        );
+        await d.receiver.onJournalEntityApplied('t1');
+
+        expect(d.store.chunks['r1']!.categoryId, 'work');
+      },
+    );
+
+    test(
       "a task vector before its label's definition is held, then stored when "
       'the definition applies',
       () async {
@@ -795,6 +822,7 @@ void main() {
           ],
         ]) {
           final d = await device();
+          d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
           d.reports
             ..['r1'] = r1Text
             ..['r2'] = r2Text;

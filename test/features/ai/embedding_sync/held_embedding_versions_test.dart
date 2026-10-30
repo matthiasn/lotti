@@ -83,4 +83,22 @@ void main() {
       expect((await HeldEmbeddingVersions.open(path)).all, hasLength(1));
     },
   );
+
+  test('writes asked for at once all land, the newest last', () async {
+    final held = await HeldEmbeddingVersions.open(path);
+
+    await Future.wait([
+      held.put(_held('e1', 1)),
+      held.put(_held('e2', 1)),
+      held.put(_held('e1', 2)),
+      held.remove('e2|m'),
+    ]);
+
+    final reopened = await HeldEmbeddingVersions.open(path);
+    expect(reopened.all.map((h) => h.register.id), ['e1|m']);
+    expect(
+      reopened['e1|m']!.register.vectorClock,
+      const VectorClock({'a': 2}),
+    );
+  });
 }

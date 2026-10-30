@@ -6,7 +6,7 @@ resource: ../../../lib/features/ai/embedding_sync
 tags: [ai, embeddings, sync, vector-clock, register, tombstone, tla]
 status: draft
 generated: { by: claude-code/opus-5.5, at: 2026-10-30T21:00:00Z }
-stale_after: 2027-01-30
+stale_after: 2027-04-30
 sources:
   - id: register
     resource: ../../../lib/features/ai/database/embedding_register.dart

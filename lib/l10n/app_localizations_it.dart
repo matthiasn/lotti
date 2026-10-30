@@ -3033,7 +3033,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definizioni delle impostazioni';
 
   @override
-  String get backfillRecordsEmbeddingVectors => 'Embedding';
+  String get backfillRecordsEmbeddingVectors => 'Vettori di embedding';
 
   @override
   String get backfillRecordsEntryLinks => 'Collegamenti tra voci';
@@ -4123,7 +4123,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Se lo attivi, gli embedding generati da questo dispositivo vengono condivisi con gli altri tuoi dispositivi e qui si usano i loro, così puoi cercare le voci per significato senza rigenerarli. Richiede Genera embedding.';
+      'Se lo attivi, gli embedding generati da questo dispositivo vengono condivisi con gli altri tuoi dispositivi e qui si usano i loro, così puoi cercare le voci per significato senza rigenerarli. Richiede che l’opzione «Generare Embeddings» sia attiva.';
 
   @override
   String get configFlagUseIsolateSync =>

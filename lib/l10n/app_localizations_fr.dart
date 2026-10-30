@@ -4132,7 +4132,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Si tu l’actives, les embeddings que cet appareil génère sont partagés avec tes autres appareils, et les leurs sont utilisés ici : tu peux chercher tes entrées par leur sens sans les recalculer. Nécessite Générer les embeddings.';
+      'Si tu l’actives, les embeddings que cet appareil génère sont partagés avec tes autres appareils, et les leurs sont utilisés ici : tu peux chercher tes entrées par leur sens sans les recalculer. Nécessite l’option « Générer des embeddings ».';
 
   @override
   String get configFlagUseIsolateSync =>

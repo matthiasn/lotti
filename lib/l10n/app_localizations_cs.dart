@@ -3026,7 +3026,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definice nastavení';
 
   @override
-  String get backfillRecordsEmbeddingVectors => 'Embeddingy';
+  String get backfillRecordsEmbeddingVectors => 'Vektory';
 
   @override
   String get backfillRecordsEntryLinks => 'Odkazy mezi záznamy';
@@ -4114,11 +4114,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
-  String get configFlagSyncEmbeddings => 'Synchronizovat embeddingy';
+  String get configFlagSyncEmbeddings => 'Synchronizovat vektory';
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Když je zapnuto, embeddingy, které toto zařízení vytvoří, se sdílejí s tvými ostatními zařízeními a jejich embeddingy se používají tady, takže záznamy můžeš hledat podle významu, aniž by se znovu vytvářely. Vyžaduje Generovat embeddingy.';
+      'Když je zapnuto, vektory, které toto zařízení vytvoří, se sdílejí s tvými ostatními zařízeními a jejich vektory se používají tady, takže záznamy můžeš hledat podle významu, aniž by se vytvářely znovu. Vyžaduje zapnuté „Generovat vektory“.';
 
   @override
   String get configFlagUseIsolateSync => 'Synchronizační proces na pozadí';
@@ -16597,7 +16597,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadDeepBackfillRequest => 'Žádost o hloubkové doplnění';
 
   @override
-  String get syncPayloadEmbeddingVectors => 'Vektory embeddingů';
+  String get syncPayloadEmbeddingVectors => 'Vektory';
 
   @override
   String get syncPayloadEntityDefinition => 'Definice entity';

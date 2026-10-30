@@ -3022,7 +3022,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definiciones de ajustes';
 
   @override
-  String get backfillRecordsEmbeddingVectors => 'Embeddings';
+  String get backfillRecordsEmbeddingVectors => 'Incrustaciones';
 
   @override
   String get backfillRecordsEntryLinks => 'Enlaces entre entradas';
@@ -4118,11 +4118,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
-  String get configFlagSyncEmbeddings => 'Sincronizar embeddings';
+  String get configFlagSyncEmbeddings => 'Sincronizar incrustaciones';
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Si lo activas, los embeddings que genera este dispositivo se comparten con tus otros dispositivos y aquí se usan los suyos, así puedes buscar entradas por su significado sin volver a generarlos. Requiere Generar embeddings.';
+      'Si lo activas, las incrustaciones que genera este dispositivo se comparten con tus otros dispositivos y aquí se usan las suyas, así puedes buscar entradas por su significado sin volver a generarlas. Requiere que «Generar incrustaciones» esté activado.';
 
   @override
   String get configFlagUseIsolateSync =>
@@ -16591,7 +16591,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadDeepBackfillRequest => 'Solicitud de relleno profundo';
 
   @override
-  String get syncPayloadEmbeddingVectors => 'Vectores de embeddings';
+  String get syncPayloadEmbeddingVectors => 'Vectores de incrustaciones';
 
   @override
   String get syncPayloadEntityDefinition => 'Definición de entidad';

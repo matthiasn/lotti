@@ -27,7 +27,8 @@ abstract interface class SyncedEmbeddingSink {
   /// device's own text, and holds the rest until it does.
   Future<void> apply(IncomingEmbeddingVersion version);
 
-  /// A journal entity was applied: re-check versions held for it.
+  /// A journal entity was applied: re-check versions held for it, and the
+  /// report versions held until their task arrived.
   Future<void> onJournalEntityApplied(String entityId);
 
   /// An agent entity (a report among them) was applied: re-check versions

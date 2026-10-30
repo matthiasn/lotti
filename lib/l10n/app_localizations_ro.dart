@@ -3038,7 +3038,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definiții de setări';
 
   @override
-  String get backfillRecordsEmbeddingVectors => 'Embeddinguri';
+  String get backfillRecordsEmbeddingVectors => 'Încorporări';
 
   @override
   String get backfillRecordsEntryLinks => 'Legături între intrări';
@@ -4134,11 +4134,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
-  String get configFlagSyncEmbeddings => 'Sincronizați embeddingurile';
+  String get configFlagSyncEmbeddings => 'Sincronizați încorporările';
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Când este activată, embeddingurile generate de acest dispozitiv sunt partajate cu celelalte dispozitive ale dumneavoastră, iar ale lor sunt folosite aici, astfel încât puteți căuta intrările după sens fără a le genera din nou. Necesită Generare embeddinguri.';
+      'Când este activată, încorporările generate de acest dispozitiv sunt partajate cu celelalte dispozitive ale dumneavoastră, iar ale lor sunt folosite aici, astfel încât puteți căuta intrările după sens fără a le genera din nou. Necesită activarea opțiunii „Generare încorporări”.';
 
   @override
   String get configFlagUseIsolateSync => 'Proces de sincronizare în fundal';
@@ -16702,7 +16702,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cerere de completare aprofundată';
 
   @override
-  String get syncPayloadEmbeddingVectors => 'Vectori de embedding';
+  String get syncPayloadEmbeddingVectors => 'Vectori de încorporare';
 
   @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';

@@ -543,6 +543,48 @@ void main() {
       expect(settings[embeddingVectorsCaughtUpKey(_model)], 'true');
     });
 
+    test(
+      'calls while a round runs join it instead of starting another',
+      () async {
+        await attach();
+        final release = Completer<void>();
+        var rounds = 0;
+        vectors.catchUpRound = () async {
+          rounds++;
+          await release.future;
+        };
+
+        final first = vectors.catchUp();
+        final second = vectors.catchUp();
+        release.complete();
+        await Future.wait([first, second]);
+
+        expect(rounds, 1);
+        expect(settings[embeddingVectorsCaughtUpKey(_model)], 'true');
+      },
+    );
+
+    test('a call while a failing round runs runs it once more', () async {
+      await attach();
+      final release = Completer<void>();
+      var rounds = 0;
+      vectors.catchUpRound = () async {
+        rounds++;
+        if (rounds == 1) {
+          await release.future;
+          throw StateError('not connected');
+        }
+      };
+
+      final first = vectors.catchUp();
+      final second = vectors.catchUp();
+      release.complete();
+      await Future.wait([first, second]);
+
+      expect(rounds, 2);
+      expect(settings[embeddingVectorsCaughtUpKey(_model)], 'true');
+    });
+
     test('does nothing without a round to run', () async {
       await attach();
       expect(settings, isEmpty);

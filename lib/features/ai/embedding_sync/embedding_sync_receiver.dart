@@ -88,8 +88,10 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
   }
 
   @override
-  Future<void> onJournalEntityApplied(String entityId) =>
-      _recheck((held) => held.register.entityId == entityId);
+  Future<void> onJournalEntityApplied(String entityId) => _recheck(
+    (held) =>
+        held.register.entityId == entityId || held.register.taskId == entityId,
+  );
 
   @override
   Future<void> onAgentEntityApplied(String entityId) =>
@@ -262,14 +264,17 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
       final content = await _reportContent(candidate.entityId);
       if (content == null) return _missing;
       final text = content.trim();
+      // Its task decides the shard; stored before the task arrives, the
+      // report would stay in the default one.
       final task = await _journalDb.journalEntityById(candidate.taskId);
+      if (task == null) return _missing;
       return (
         exists: true,
         contentHash: text.length < kMinEmbeddingTextLength
             ? null
             : EmbeddingContentExtractor.contentHash(text),
         vectorClock: null,
-        categoryId: task?.meta.categoryId ?? '',
+        categoryId: task.meta.categoryId ?? '',
         labelIds: const <String>[],
       );
     }

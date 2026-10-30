@@ -70,6 +70,11 @@ class HeldEmbeddingVersions {
   final File _file;
   final Map<String, HeldEmbeddingVersion> _held;
 
+  /// The last write, so writes land one after another, each with the
+  /// snapshot taken when it was asked for: two writes never share the
+  /// temporary file, and an older snapshot never replaces a newer one.
+  Future<void> _writes = Future.value();
+
   /// Every held version.
   List<HeldEmbeddingVersion> get all => List.unmodifiable(_held.values);
 
@@ -88,15 +93,20 @@ class HeldEmbeddingVersions {
     await _persist();
   }
 
-  Future<void> _persist() async {
+  Future<void> _persist() {
+    final snapshot = jsonEncode({
+      for (final entry in _held.entries) entry.key: entry.value.toJson(),
+    });
+    final write = _writes.then((_) => _write(snapshot));
+    // A failed write fails its caller; the next one still runs.
+    _writes = write.then((_) {}, onError: (Object _) {});
+    return write;
+  }
+
+  Future<void> _write(String snapshot) async {
     await _file.parent.create(recursive: true);
     final temp = File('${_file.path}.tmp');
-    await temp.writeAsString(
-      jsonEncode({
-        for (final entry in _held.entries) entry.key: entry.value.toJson(),
-      }),
-      flush: true,
-    );
+    await temp.writeAsString(snapshot, flush: true);
     await temp.rename(_file.path);
   }
 }

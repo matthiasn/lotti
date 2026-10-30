@@ -79,6 +79,11 @@ class EmbeddingVectorsSync implements EmbeddingShare {
 
   StreamSubscription<void>? _flagSubscription;
 
+  /// The catch-up running now, which a concurrent call joins, and whether
+  /// one was asked for meanwhile — run once more if this one failed.
+  Future<void>? _catchUpRun;
+  bool _catchUpAgain = false;
+
   EmbeddingStore? _store;
   String? _modelId;
   SyncedEmbeddingSink? _sink;
@@ -156,8 +161,27 @@ class EmbeddingVectorsSync implements EmbeddingShare {
   /// A round that fails — no host yet, sync not connected — is tried again
   /// at the next attach or flag change. The marker records that the round
   /// went out, not that every peer answered; a manual deep backfill covers
-  /// a peer that was offline.
-  Future<void> catchUp() async {
+  /// a peer that was offline. Calls while one runs join it, and it runs
+  /// once more — finding the marker set unless the first failed.
+  Future<void> catchUp() {
+    final running = _catchUpRun;
+    if (running != null) {
+      _catchUpAgain = true;
+      return running;
+    }
+    final run = _catchUpUntilSettled().whenComplete(() => _catchUpRun = null);
+    _catchUpRun = run;
+    return run;
+  }
+
+  Future<void> _catchUpUntilSettled() async {
+    do {
+      _catchUpAgain = false;
+      await _catchUpOnce();
+    } while (_catchUpAgain);
+  }
+
+  Future<void> _catchUpOnce() async {
     final run = catchUpRound;
     final modelId = _modelId;
     if (run == null || modelId == null || !await isSharing) return;

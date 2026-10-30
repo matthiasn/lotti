@@ -2993,7 +2993,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';
 
   @override
-  String get backfillRecordsEmbeddingVectors => 'Embeddings';
+  String get backfillRecordsEmbeddingVectors => 'Indlejringer';
 
   @override
   String get backfillRecordsEntryLinks => 'Links mellem poster';
@@ -4066,11 +4066,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.';
 
   @override
-  String get configFlagSyncEmbeddings => 'Synkroniser embeddings';
+  String get configFlagSyncEmbeddings => 'Synkroniser indlejringer';
 
   @override
   String get configFlagSyncEmbeddingsDescription =>
-      'Når det er slået til, deles de embeddings, som denne enhed laver, med dine andre enheder, og deres bruges her, så du kan søge i indlæg efter betydning uden at lave embeddings igen. Kræver Generér embeddings.';
+      'Når det er slået til, deles de indlejringer, som denne enhed laver, med dine andre enheder, og deres bruges her, så du kan søge i indlæg efter betydning uden at lave dem igen. Kræver, at \"Generer indlejringer\" er slået til.';
 
   @override
   String get configFlagUseIsolateSync => 'Synkroniseringsproces i baggrunden';
@@ -16389,7 +16389,7 @@ class AppLocalizationsDa extends AppLocalizations {
       'Anmodning om dyb tilbagefyldning';
 
   @override
-  String get syncPayloadEmbeddingVectors => 'Embedding-vektorer';
+  String get syncPayloadEmbeddingVectors => 'Indlejringsvektorer';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitetsdefinition';
