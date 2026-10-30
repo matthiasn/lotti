@@ -15929,7 +15929,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language ora usa $voice';
+    return 'Voce per $language: $voice';
   }
 
   @override

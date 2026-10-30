@@ -5953,7 +5953,7 @@
   "speechSettingsAutoPrepareChatAudio": "Automaticky připravovat zvuk chatu",
   "speechSettingsChatAudioDescription": "Připrav nové odpovědi chatu v tomto zařízení, aby přehrávání začalo dříve. Zvuk se přehraje až po klepnutí na přehrát.",
   "speechSettingsChatAudioLabel": "Zvuk chatu",
-  "speechSettingsCloudVoiceChanged": "{language} teď používá hlas {voice}",
+  "speechSettingsCloudVoiceChanged": "Hlas – {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Tvoje volba",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 hlas} few{{count} hlasy} other{{count} hlasů}}",
   "speechSettingsCloudVoiceDefaultTag": "Výchozí",

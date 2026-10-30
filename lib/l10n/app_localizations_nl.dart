@@ -15782,7 +15782,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language gebruikt nu $voice';
+    return 'Stem voor $language: $voice';
   }
 
   @override

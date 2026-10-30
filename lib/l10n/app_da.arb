@@ -6603,7 +6603,7 @@
   "speechSettingsAutoPrepareChatAudio": "Klargør chatlyd automatisk",
   "speechSettingsChatAudioDescription": "Klargør nye chatsvar på denne enhed, så afspilningen starter hurtigere. Lyden afspilles først, når du trykker på afspil.",
   "speechSettingsChatAudioLabel": "Chatlyd",
-  "speechSettingsCloudVoiceChanged": "{language} bruger nu {voice}",
+  "speechSettingsCloudVoiceChanged": "Stemme til {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Dit valg",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 stemme} other{{count} stemmer}}",
   "speechSettingsCloudVoiceDefaultTag": "Standard",

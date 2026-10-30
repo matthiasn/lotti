@@ -6603,7 +6603,7 @@
   "speechSettingsAutoPrepareChatAudio": "Prepara automaticamente l’audio della chat",
   "speechSettingsChatAudioDescription": "Prepara le nuove risposte della chat su questo dispositivo per avviare prima la riproduzione. L’audio parte solo quando tocchi riproduci.",
   "speechSettingsChatAudioLabel": "Audio della chat",
-  "speechSettingsCloudVoiceChanged": "{language} ora usa {voice}",
+  "speechSettingsCloudVoiceChanged": "Voce per {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "La tua scelta",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 voce} other{{count} voci}}",
   "speechSettingsCloudVoiceDefaultTag": "Predefinita",

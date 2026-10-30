@@ -195,7 +195,10 @@ class _LanguageListState extends ConsumerState<_LanguageList> {
       ),
     ]);
     final own = [
-      if (_sticky.contains(appLanguage)) appLanguage,
+      // Sticky only while the catalog still has it: a refresh that drops a
+      // language must drop its row, not fail the list.
+      if (_sticky.contains(appLanguage) && names.containsKey(appLanguage))
+        appLanguage,
       ...(_sticky
           .where((l) => l != appLanguage && names.containsKey(l))
           .toList()

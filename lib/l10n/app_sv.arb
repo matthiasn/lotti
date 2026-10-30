@@ -6603,7 +6603,7 @@
   "speechSettingsAutoPrepareChatAudio": "Förbered chattljud automatiskt",
   "speechSettingsChatAudioDescription": "Förbered nya chattsvar på den här enheten så att uppspelningen börjar snabbare. Ljudet spelas bara upp när du trycker på spela upp.",
   "speechSettingsChatAudioLabel": "Chattljud",
-  "speechSettingsCloudVoiceChanged": "{language} använder nu {voice}",
+  "speechSettingsCloudVoiceChanged": "Röst för {language}: {voice}",
   "speechSettingsCloudVoiceChosenTag": "Ditt val",
   "speechSettingsCloudVoiceCount": "{count, plural, =1{1 röst} other{{count} röster}}",
   "speechSettingsCloudVoiceDefaultTag": "Standard",

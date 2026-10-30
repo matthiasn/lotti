@@ -15879,7 +15879,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String speechSettingsCloudVoiceChanged(String language, String voice) {
-    return '$language usa agora $voice';
+    return 'Voz para $language: $voice';
   }
 
   @override
