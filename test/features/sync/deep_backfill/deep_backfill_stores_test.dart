@@ -686,6 +686,11 @@ void main() {
       (s) => s.payloadType != SyncSequencePayloadType.embeddingVectors,
     )) {
       expect(await store.count(), 0, reason: '${store.payloadType} reads');
+      expect(
+        await store.participates(),
+        isTrue,
+        reason: '${store.payloadType}',
+      );
     }
   });
 }

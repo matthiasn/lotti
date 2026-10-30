@@ -431,6 +431,35 @@ void main() {
     );
 
     test(
+      "a report's unshared version is versioned under its task, and one the "
+      'store refuses releases its reservation',
+      () async {
+        await attach();
+        store.replaceEntityEmbeddings(
+          entityId: 'r1',
+          entityType: 'agent_report',
+          modelId: _model,
+          contentHash: 'h',
+          embeddings: [_vector(0.5)],
+          taskId: 't1',
+          register: _register('r1', taskId: 't1'),
+        );
+        final refusing = _RefusingStore()..registers.addAll(store.registers);
+        await vectors.detach();
+        await vectors.attach(
+          store: refusing,
+          modelId: _model,
+          sink: MockSyncedEmbeddingSink(),
+        );
+
+        await expectLater(vectors.sendCurrent('r1|$_model'), throwsStateError);
+
+        verify(reservation.release).called(1);
+        expect(enqueued, isEmpty);
+      },
+    );
+
+    test(
       'nothing is sent for a version stored unshared while sharing is off',
       () async {
         await attach();
@@ -615,4 +644,10 @@ void main() {
     expect(journal.taskId, isNull);
     expect(journal.subtype, isNull);
   });
+}
+
+/// A store that refuses register writes.
+class _RefusingStore extends InMemoryEmbeddingStore {
+  @override
+  void putRegister(EmbeddingRegister register) => throw StateError('closed');
 }

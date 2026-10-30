@@ -74,4 +74,11 @@ void main() {
       });
     }
   });
+
+  test('a refusal names its reason', () {
+    expect(
+      const InvalidEmbeddingVectorsException('dims 4').toString(),
+      'InvalidEmbeddingVectorsException: dims 4',
+    );
+  });
 }

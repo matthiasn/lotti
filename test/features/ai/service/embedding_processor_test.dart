@@ -1944,6 +1944,30 @@ void main() {
       },
     );
 
+    test('a tombstone that cannot be written releases its ticket', () async {
+      final failing = MockEmbeddingStore();
+      when(() => failing.getRegister(any())).thenReturn(null);
+      when(() => failing.hasEmbedding(any())).thenReturn(true);
+      when(() => failing.writeTombstone(any())).thenThrow(StateError('closed'));
+      EmbeddingProcessor.share = share;
+      when(
+        () => mockJournalDb.journalEntityById('entry-1'),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        EmbeddingProcessor.processEntity(
+          entityId: 'entry-1',
+          journalDb: mockJournalDb,
+          embeddingStore: failing,
+          embeddingRepository: mockEmbeddingRepo,
+        ),
+        throwsStateError,
+      );
+
+      verify(ticket.release).called(1);
+      verifyNever(() => ticket.send(any(), any()));
+    });
+
     test('a removal with no share deletes the register along', () async {
       await process(entry);
       when(

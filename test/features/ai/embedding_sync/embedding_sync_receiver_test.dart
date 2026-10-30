@@ -374,6 +374,127 @@ void main() {
     });
   });
 
+  group('concurrent pairs', () {
+    test('of two versions of the same text, the lower host wins', () async {
+      final d = await device();
+      const text = 'A long enough journal entry text';
+      d.journal['e1'] = _entry('e1', text);
+
+      await d.receive(
+        _version(
+          entityId: 'e1',
+          text: text,
+          vc: {'b': 1},
+          source: {'a': 1},
+          host: 'b',
+        ),
+        payload: _payload([0.2]),
+      );
+      await d.receive(
+        _version(
+          entityId: 'e1',
+          text: text,
+          vc: {'a': 1},
+          source: {'a': 1},
+          host: 'a',
+        ),
+        payload: _payload([0.1]),
+      );
+
+      expect(d.storedValues('e1'), [closeTo(0.1, 1e-6)]);
+      expect(d.store.registers['e1']!.originatingHostId, 'a');
+    });
+
+    test('a version that beats a concurrent held one replaces it', () async {
+      final d = await device();
+      await d.receive(
+        _version(
+          entityId: 'e1',
+          text: 'Older text not here',
+          vc: {'a': 1},
+          source: {'a': 1},
+          host: 'a',
+        ),
+      );
+      await d.receive(
+        _version(
+          entityId: 'e1',
+          text: 'Newer text not here',
+          vc: {'b': 1},
+          source: {'a': 1, 'b': 1},
+          host: 'b',
+        ),
+      );
+
+      final held = d.held['e1|$_model']!.register;
+      expect(held.originatingHostId, 'b');
+      expect(held.vectorClock, const VectorClock({'a': 1, 'b': 1}));
+    });
+
+    test(
+      'a stored winner that takes the merged clock drops a held version it '
+      'now covers',
+      () async {
+        final d = await device();
+        const text = 'A long enough journal entry text';
+        d.journal['e1'] = _entry('e1', text);
+        await d.receive(
+          _version(
+            entityId: 'e1',
+            text: text,
+            vc: {'a': 1},
+            source: {'a': 5},
+            host: 'a',
+          ),
+        );
+        await d.held.put(
+          HeldEmbeddingVersion(
+            register: _version(
+              entityId: 'e1',
+              text: 'x',
+              vc: {'b': 1},
+              host: 'b',
+            ),
+            payload: _payload([0.3]),
+          ),
+        );
+
+        await d.receive(
+          _version(
+            entityId: 'e1',
+            text: 'Other text',
+            vc: {'b': 1},
+            source: {'a': 1},
+            host: 'b',
+          ),
+        );
+
+        expect(d.held.all, isEmpty);
+        expect(d.store.registers['e1']!.originatingHostId, 'a');
+      },
+    );
+  });
+
+  test('a re-check whose store write fails keeps the version held', () async {
+    final failing = _Device(p.join(tempDir.path, 'failing.json'));
+    await failing.open();
+    const text = 'An entry that has not synced yet';
+    await failing.receive(_version(entityId: 'e1', text: text, vc: {'a': 1}));
+    failing.journal['e1'] = _entry('e1', text);
+    final receiver = EmbeddingSyncReceiver(
+      store: _ThrowingStore(),
+      modelId: _model,
+      journalDb: failing.journalDb,
+      held: failing.held,
+      reportContent: (_) async => null,
+      readFlag: (_) async => true,
+    );
+
+    await expectLater(receiver.recheckAll(), throwsStateError);
+
+    expect(failing.held.all, hasLength(1));
+  });
+
   group('holding', () {
     test(
       'a version ahead of its entry is held, then stored when it applies',
@@ -773,4 +894,20 @@ void main() {
       },
     );
   });
+}
+
+/// A store whose writes fail.
+class _ThrowingStore extends InMemoryEmbeddingStore {
+  @override
+  void replaceEntityEmbeddings({
+    required String entityId,
+    required String entityType,
+    required String modelId,
+    required String contentHash,
+    required List<Float32List> embeddings,
+    String categoryId = '',
+    String taskId = '',
+    String subtype = '',
+    EmbeddingRegister? register,
+  }) => throw StateError('store closed');
 }

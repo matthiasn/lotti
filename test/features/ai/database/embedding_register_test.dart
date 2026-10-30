@@ -60,4 +60,27 @@ void main() {
     expect(versioned.taskId, full.taskId);
     expect(versioned, isNot(full));
   });
+
+  test('equal versions hash alike and print their register and clock', () {
+    const same = EmbeddingRegister(
+      entityId: 'report-1',
+      modelId: 'embeddinggemma-300m-q4',
+      entityType: 'agent_report',
+      contentHash: 'abc',
+      vectorClock: VectorClock({'a': 3, 'b': 1}),
+      sourceVectorClock: VectorClock({'a': 2}),
+      taskId: 'task-1',
+      subtype: 'current',
+      originatingHostId: 'a',
+    );
+
+    expect(same.hashCode, full.hashCode);
+    expect(<EmbeddingRegister>{full}..add(same), hasLength(1));
+    expect(full.copyWith(originatingHostId: 'b').vectorClock, full.vectorClock);
+    expect(
+      full.toString(),
+      contains('report-1|embeddinggemma-300m-q4'),
+    );
+    expect(full.toString(), contains('deleted: false'));
+  });
 }

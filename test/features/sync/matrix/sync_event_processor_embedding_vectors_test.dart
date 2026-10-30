@@ -253,4 +253,65 @@ void main() {
       verifyReceipt();
     },
   );
+
+  test(
+    'a version whose path leaves the documents directory is skipped',
+    () async {
+      receive(
+        _message().copyWith(jsonPath: '../outside.json'),
+      );
+
+      await process();
+
+      verifyNever(() => sink.apply(any()));
+      verifyNoReceipt();
+    },
+  );
+
+  test('gaps the receipt reveals are traced', () async {
+    when(
+      () => sequenceLog.recordReceivedEntry(
+        entryId: any(named: 'entryId'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+        coveredVectorClocks: any(named: 'coveredVectorClocks'),
+        payloadType: any(named: 'payloadType'),
+      ),
+    ).thenAnswer((_) async => const [(hostId: 'host-a', counter: 2)]);
+    receive(_message(deleted: true));
+
+    await process();
+
+    verify(
+      () => loggingService.log(
+        any(),
+        any(that: contains('apply.embeddingVectors.gapsDetected count=1')),
+        subDomain: 'processor.gapDetection',
+      ),
+    ).called(1);
+  });
+
+  test('a receipt that cannot be recorded is logged and retried', () async {
+    when(
+      () => sequenceLog.recordReceivedEntry(
+        entryId: any(named: 'entryId'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+        coveredVectorClocks: any(named: 'coveredVectorClocks'),
+        payloadType: any(named: 'payloadType'),
+      ),
+    ).thenThrow(StateError('sync db closed'));
+    receive(_message(deleted: true));
+
+    await expectLater(process(), throwsStateError);
+
+    verify(
+      () => loggingService.error(
+        any(),
+        any(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'processor.recordReceivedEmbeddingVectors',
+      ),
+    ).called(1);
+  });
 }

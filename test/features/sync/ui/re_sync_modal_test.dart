@@ -586,6 +586,59 @@ void main() {
     },
   );
 
+  testWidgets('the vectors step shows its own progress row while it runs', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(() => onboarding.beginOutbound(target)).thenAnswer((_) async => round);
+    when(() => onboarding.completeOutbound(round)).thenAnswer((_) async {});
+    final release = Completer<ReSyncResult>();
+    when(
+      () => mockHistoricalSyncService.sendEmbeddingVectors(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((invocation) {
+      (invocation.namedArguments[#onProgress] as ReSyncProgressCallback)(
+        const ReSyncProgress(
+          phase: ReSyncPhase.embeddingVectors,
+          processed: 2,
+          total: 5,
+          isComplete: false,
+        ),
+      );
+      return release.future;
+    });
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    final context = tester.element(find.byKey(const Key('reSyncProgress')));
+    expect(
+      find.text(context.messages.syncPayloadEmbeddingVectors),
+      findsOneWidget,
+    );
+    expect(find.text('2 / 5'), findsOneWidget);
+
+    release.complete(ReSyncResult.empty);
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
+
   testWidgets('a run that is not a full onboarding sends no vectors', (
     tester,
   ) async {

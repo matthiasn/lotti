@@ -24,6 +24,8 @@ import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart'
+    show embeddingRegisterOf;
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
@@ -4689,6 +4691,79 @@ void main() {
     });
   });
 
+  group('embedding vectors (ADR 0150)', () {
+    const registerId = 'entry-1|m';
+    late MockEmbeddingVectorsSync vectors;
+
+    setUp(() {
+      vectors = MockEmbeddingVectorsSync();
+      handler.embeddingVectors = vectors;
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 30),
+      ).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          30,
+          entryId: registerId,
+          originatingHostId: bobHostId,
+          payloadType: SyncSequencePayloadType.embeddingVectors,
+        ),
+      );
+    });
+
+    const request = SyncBackfillRequest(
+      entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 30)],
+      requesterId: requesterId,
+    );
+
+    test(
+      'a request is answered with the version held now, its attachment '
+      'written afresh, and a hint when its clock moved past the counter',
+      () async {
+        final message = EmbeddingVectorsSync.messageFor(
+          const EmbeddingRegister(
+            entityId: 'entry-1',
+            modelId: 'm',
+            entityType: 'task',
+            contentHash: 'h',
+            vectorClock: VectorClock({'alice-host-uuid': 35}),
+            originatingHostId: 'alice-host-uuid',
+          ),
+          jsonPath: '/embedding_vectors/entry-1/m/alice-host-uuid-35.json',
+        );
+        when(
+          () => vectors.prepareResend(registerId),
+        ).thenAnswer((_) async => message);
+        when(() => vectors.heldVersion(registerId)).thenAnswer(
+          (_) async => embeddingRegisterOf(message),
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        expect(captured.first, message);
+        expect(
+          captured.whereType<SyncBackfillResponse>().single.payloadType,
+          SyncSequencePayloadType.embeddingVectors,
+        );
+        expect(handler.embeddingVectors, vectors);
+      },
+    );
+
+    test('without the vectors register nothing is answered', () async {
+      handler.embeddingVectors = null;
+
+      await handler.handleBackfillRequest(request);
+
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
   group('AI configurations (ADR 0136)', () {
     const configId = 'profile-id';
     late MockAiConfigRepository mockAiConfigRepository;
@@ -5664,6 +5739,7 @@ void main() {
       (SyncSequencePayloadType.notification, 'notification'),
       (SyncSequencePayloadType.notificationStateUpdate, 'notification state'),
       (SyncSequencePayloadType.consumptionEvent, 'consumption'),
+      (SyncSequencePayloadType.embeddingVectors, 'embedding vectors'),
     ]) {
       test(
         'a $name payload is deferred while its store is not wired',
