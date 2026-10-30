@@ -59,3 +59,24 @@ EMBEDDING_MODELS_DIR=/tmp/models fvm flutter test tool/embedding_eval/tokenizer_
 Run it whenever the tokenizer or the model revision changes. The unit tests
 in `test/` cover each rule of the port on a small vocabulary, but only this
 check runs the real one.
+
+## Embedder parity
+
+`GemmaEmbedder` runs the model through the app's own ONNX Runtime plugin. To
+check it against Python, write vectors for a sample of the corpus (every demo
+language, the empty query, and a document long enough to be truncated), then
+embed the same texts in the app on a desktop:
+
+```sh
+(cd tool/embedding_eval && /tmp/embed-venv/bin/python embedder_parity.py \
+  --models-dir /tmp/models --corpus ../../build/embedding_eval/corpus.json \
+  --out ../../build/embedding_eval/vectors.json)
+fvm flutter test integration_test/embedder_parity_test.dart -d linux \
+  --dart-define=EMBEDDING_MODELS_DIR=/tmp/models \
+  --dart-define=EMBEDDING_EVAL_VECTORS=$PWD/build/embedding_eval/vectors.json
+```
+
+It prints the load time, the time per text, the lowest cosine against Python
+(it fails below 0.999) and the longest the app's isolate went without running
+while it embedded, which is how the Linux plugin's threading patch is measured
+(`third_party/flutter_onnxruntime/LOTTI_PATCHES.md`).

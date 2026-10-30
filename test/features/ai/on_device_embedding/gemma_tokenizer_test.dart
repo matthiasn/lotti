@@ -1,97 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/on_device_embedding/gemma_tokenizer.dart';
 
-const Map<String, Object> _bosEosTemplate = {
-  'type': 'TemplateProcessing',
-  'single': [
-    {
-      'SpecialToken': {'id': '<bos>', 'type_id': 0},
-    },
-    {
-      'Sequence': {'id': 'A', 'type_id': 0},
-    },
-    {
-      'SpecialToken': {'id': '<eos>', 'type_id': 0},
-    },
-  ],
-  'special_tokens': {
-    '<bos>': {
-      'id': '<bos>',
-      'ids': [2],
-      'tokens': ['<bos>'],
-    },
-    '<eos>': {
-      'id': '<eos>',
-      'ids': [1],
-      'tokens': ['<eos>'],
-    },
-  },
-};
-
-/// A `tokenizer.json` shaped like EmbeddingGemma's, over a small vocabulary:
-/// the specials, the 256 byte tokens, then [tokens] in order.
-Map<String, dynamic> _tokenizerJson({
-  List<String> tokens = const [],
-  List<Object> merges = const [],
-  List<String> addedTokens = const [],
-  Map<String, Object?> modelOverrides = const {},
-  Map<String, Object?> addedTokenOverrides = const {},
-  Object? normalizer = const {
-    'type': 'Replace',
-    'pattern': {'String': ' '},
-    'content': '▁',
-  },
-  Object? preTokenizer = const {
-    'type': 'Split',
-    'pattern': {'String': ' '},
-    'behavior': 'MergedWithPrevious',
-    'invert': false,
-  },
-  Object? postProcessor = _bosEosTemplate,
-  bool withBytes = true,
-}) {
-  final vocab = <String, int>{};
-  void add(String token) => vocab.putIfAbsent(token, () => vocab.length);
-  ['<pad>', '<eos>', '<bos>', '<unk>'].forEach(add);
-  if (withBytes) {
-    for (var byte = 0; byte < 256; byte++) {
-      add('<0x${byte.toRadixString(16).toUpperCase().padLeft(2, '0')}>');
-    }
-  }
-  tokens.forEach(add);
-  addedTokens.forEach(add);
-  return {
-    'normalizer': normalizer,
-    'pre_tokenizer': preTokenizer,
-    'post_processor': postProcessor,
-    'model': {
-      'type': 'BPE',
-      'dropout': null,
-      'unk_token': '<unk>',
-      'continuing_subword_prefix': null,
-      'end_of_word_suffix': null,
-      'fuse_unk': true,
-      'byte_fallback': true,
-      'ignore_merges': false,
-      'vocab': vocab,
-      'merges': merges,
-      ...modelOverrides,
-    },
-    'added_tokens': [
-      for (final content in ['<pad>', '<eos>', '<bos>', ...addedTokens])
-        {
-          'id': vocab[content],
-          'content': content,
-          'single_word': false,
-          'lstrip': false,
-          'rstrip': false,
-          'normalized': false,
-          'special': content.startsWith('<'),
-          ...addedTokenOverrides,
-        },
-    ],
-  };
-}
+import 'tokenizer_json.dart';
 
 void main() {
   /// Encodes [text] and spells the ids back as their tokens, `<bos>` and
@@ -108,18 +18,43 @@ void main() {
   }
 
   test('wraps every encoding in <bos> and <eos>, the empty text too', () {
-    final tokenizer = GemmaTokenizer.fromTokenizerJson(_tokenizerJson());
+    final tokenizer = GemmaTokenizer.fromTokenizerJson(tokenizerJson());
 
     expect(tokenizer.bosId, 2);
     expect(tokenizer.eosId, 1);
     expect(tokenizer.encode(''), [2, 1]);
   });
 
+  group('maxLength', () {
+    final json = tokenizerJson(tokens: ['a', 'b', 'c']);
+    final tokenizer = GemmaTokenizer.fromTokenizerJson(json);
+    final a = tokenizer.encode('a')[1];
+    final b = tokenizer.encode('b')[1];
+    final c = tokenizer.encode('c')[1];
+
+    test('cuts the text from the end, keeping <bos> and <eos>', () {
+      expect(tokenizer.encode('abc', maxLength: 4), [2, a, b, 1]);
+      expect(tokenizer.encode('abc', maxLength: 2), [2, 1]);
+    });
+
+    test('leaves an encoding that fits alone', () {
+      expect(tokenizer.encode('abc', maxLength: 5), [2, a, b, c, 1]);
+      expect(tokenizer.encode('abc', maxLength: 6), [2, a, b, c, 1]);
+    });
+
+    test('needs room for <bos> and <eos>', () {
+      expect(
+        () => tokenizer.encode('abc', maxLength: 1),
+        throwsArgumentError,
+      );
+    });
+  });
+
   test("takes <bos> and <eos> from the post-processor's own table", () {
     final tokenizer = GemmaTokenizer.fromTokenizerJson(
-      _tokenizerJson(
+      tokenizerJson(
         postProcessor: {
-          ..._bosEosTemplate,
+          ...bosEosTemplate,
           'special_tokens': {
             '<bos>': {
               'ids': [7],
@@ -136,7 +71,7 @@ void main() {
   });
 
   test('marks spaces with ▁ and merges across them into one word', () {
-    final json = _tokenizerJson(
+    final json = tokenizerJson(
       tokens: ['a', 'b', '▁', '▁b', 'a▁b'],
       merges: [
         ['▁', 'b'],
@@ -149,7 +84,7 @@ void main() {
   });
 
   test('merges the lowest rank first, wherever it sits', () {
-    final json = _tokenizerJson(
+    final json = tokenizerJson(
       tokens: ['a', 'b', 'c', 'ab', 'bc'],
       merges: [
         ['b', 'c'],
@@ -161,7 +96,7 @@ void main() {
   });
 
   test('merges the leftmost of equally ranked pairs first', () {
-    final json = _tokenizerJson(
+    final json = tokenizerJson(
       tokens: ['a', 'aa'],
       merges: [
         ['a', 'a'],
@@ -172,7 +107,7 @@ void main() {
   });
 
   test('keeps merging the pairs earlier merges create', () {
-    final json = _tokenizerJson(
+    final json = tokenizerJson(
       tokens: ['a', 'b', 'aa', 'aaaa', 'aab'],
       merges: [
         ['a', 'a'],
@@ -186,7 +121,7 @@ void main() {
   });
 
   test('accepts merges written as "left right" strings', () {
-    final json = _tokenizerJson(tokens: ['a', 'b', 'ab'], merges: ['a b']);
+    final json = tokenizerJson(tokens: ['a', 'b', 'ab'], merges: ['a b']);
 
     expect(tokensOf(json, 'ab'), ['ab']);
   });
@@ -194,7 +129,7 @@ void main() {
   test(
     'falls back to UTF-8 byte tokens for characters not in the vocabulary',
     () {
-      final json = _tokenizerJson(tokens: ['a']);
+      final json = tokenizerJson(tokens: ['a']);
 
       expect(tokensOf(json, 'aé🐧'), [
         'a',
@@ -209,7 +144,7 @@ void main() {
   );
 
   test('cuts added tokens out of the raw text, the longest at each place', () {
-    final json = _tokenizerJson(
+    final json = tokenizerJson(
       tokens: ['a', 'b', 'ab'],
       merges: [
         ['a', 'b'],
@@ -237,26 +172,26 @@ void main() {
     );
 
     test('another model type or flag', () {
-      expectRejected(_tokenizerJson(modelOverrides: {'type': 'WordPiece'}));
-      expectRejected(_tokenizerJson(modelOverrides: {'byte_fallback': false}));
-      expectRejected(_tokenizerJson(modelOverrides: {'dropout': 0.1}));
+      expectRejected(tokenizerJson(modelOverrides: {'type': 'WordPiece'}));
+      expectRejected(tokenizerJson(modelOverrides: {'byte_fallback': false}));
+      expectRejected(tokenizerJson(modelOverrides: {'dropout': 0.1}));
       expectRejected(
-        _tokenizerJson(modelOverrides: {'continuing_subword_prefix': '##'}),
+        tokenizerJson(modelOverrides: {'continuing_subword_prefix': '##'}),
       );
       expectRejected(
-        _tokenizerJson(modelOverrides: {'end_of_word_suffix': '</w>'}),
+        tokenizerJson(modelOverrides: {'end_of_word_suffix': '</w>'}),
       );
-      expectRejected(_tokenizerJson(modelOverrides: {'ignore_merges': true}));
+      expectRejected(tokenizerJson(modelOverrides: {'ignore_merges': true}));
     });
 
     test('another normalizer or pre-tokenizer', () {
-      expectRejected(_tokenizerJson(normalizer: null));
-      expectRejected(_tokenizerJson(normalizer: {'type': 'NFKC'}));
+      expectRejected(tokenizerJson(normalizer: null));
+      expectRejected(tokenizerJson(normalizer: {'type': 'NFKC'}));
       expectRejected(
-        _tokenizerJson(preTokenizer: {'type': 'Whitespace'}),
+        tokenizerJson(preTokenizer: {'type': 'Whitespace'}),
       );
       expectRejected(
-        _tokenizerJson(
+        tokenizerJson(
           preTokenizer: {
             'type': 'Split',
             'pattern': {'String': '-'},
@@ -266,7 +201,7 @@ void main() {
     });
 
     test('a post-processor other than <bos> … <eos>', () {
-      final single = _bosEosTemplate['single']! as List<Object>;
+      final single = bosEosTemplate['single']! as List<Object>;
       for (final processor in <Object?>[
         null,
         {'type': 'ByteLevel'},
@@ -295,23 +230,23 @@ void main() {
           'single': [single[0], 'A', single[2]],
         },
       ]) {
-        expectRejected(_tokenizerJson(postProcessor: processor));
+        expectRejected(tokenizerJson(postProcessor: processor));
       }
     });
 
     test('added tokens matched after normalization or with stripping', () {
       expectRejected(
-        _tokenizerJson(addedTokenOverrides: {'normalized': true}),
+        tokenizerJson(addedTokenOverrides: {'normalized': true}),
       );
-      expectRejected(_tokenizerJson(addedTokenOverrides: {'lstrip': true}));
-      expectRejected(_tokenizerJson(addedTokenOverrides: {'rstrip': true}));
+      expectRejected(tokenizerJson(addedTokenOverrides: {'lstrip': true}));
+      expectRejected(tokenizerJson(addedTokenOverrides: {'rstrip': true}));
       expectRejected(
-        _tokenizerJson(addedTokenOverrides: {'single_word': true}),
+        tokenizerJson(addedTokenOverrides: {'single_word': true}),
       );
     });
 
     test('ids too large to pack', () {
-      final json = _tokenizerJson();
+      final json = tokenizerJson();
       ((json['model'] as Map<String, dynamic>)['vocab']
               as Map<String, int>)['huge'] =
           1 << 18;
@@ -319,16 +254,16 @@ void main() {
     });
 
     test('a vocabulary missing byte tokens, or a merge outside it', () {
-      expectRejected(_tokenizerJson(withBytes: false));
+      expectRejected(tokenizerJson(withBytes: false));
       expectRejected(
-        _tokenizerJson(
+        tokenizerJson(
           tokens: ['a', 'b'],
           merges: [
             ['a', 'b'],
           ],
         ),
       );
-      expectRejected(_tokenizerJson(tokens: ['a', 'b', 'ab'], merges: ['ab']));
+      expectRejected(tokenizerJson(tokens: ['a', 'b', 'ab'], merges: ['ab']));
     });
 
     test('a post-processor without one id for <bos> and for <eos>', () {
@@ -360,9 +295,9 @@ void main() {
         },
       ]) {
         expectRejected(
-          _tokenizerJson(
+          tokenizerJson(
             postProcessor: {
-              ..._bosEosTemplate,
+              ...bosEosTemplate,
               'special_tokens': specialTokens,
             },
           ),
@@ -372,7 +307,7 @@ void main() {
 
     test('an inverted split', () {
       expectRejected(
-        _tokenizerJson(
+        tokenizerJson(
           preTokenizer: {
             'type': 'Split',
             'pattern': {'String': ' '},
@@ -385,7 +320,7 @@ void main() {
   });
 
   test('a pre-tokenizer may be absent', () {
-    final json = _tokenizerJson(preTokenizer: null, tokens: ['a']);
+    final json = tokenizerJson(preTokenizer: null, tokens: ['a']);
 
     expect(tokensOf(json, 'a a'), ['a', '<0xE2>', '<0x96>', '<0x81>', 'a']);
   });

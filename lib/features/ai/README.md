@@ -64,7 +64,7 @@ lib/features/ai/
 ├── helpers/        # prompt building and context injection
 ├── util/           # profile resolution, seeding, locality
 ├── database/       # AiConfigDb, embedding stores
-├── on_device_embedding/  # EmbeddingGemma's tokenizer, ported to Dart
+├── on_device_embedding/  # EmbeddingGemma: its tokenizer in Dart, the ONNX embedder
 └── ui/             # provider, model and profile editors
 ```
 

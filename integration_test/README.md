@@ -152,6 +152,15 @@ registered in `docs-site/metadata/screenshot-cases.json`; run it with
 `make manual_screenshots`. Both paths write generated media to the sibling
 `lotti-docs` checkout. See `test/README.md` for the four-variant contract.
 
+### 6. Embedder parity (`embedder_parity_test.dart`)
+
+An on-purpose check, not a CI suite: it needs EmbeddingGemma's 200 MB of
+weights. It runs `GemmaEmbedder` on the real ONNX Runtime plugin, compares its
+vectors with the ones ONNX Runtime in Python gives, and prints how long the
+app's isolate stalled while it embedded. The commands and the reference
+vectors are in
+[tool/embedding_eval/README.md](../tool/embedding_eval/README.md#embedder-parity).
+
 ## Infrastructure
 
 ### Docker Services

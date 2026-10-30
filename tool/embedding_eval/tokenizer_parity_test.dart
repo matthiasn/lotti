@@ -45,17 +45,23 @@ void main() {
     for (final entry in cases) {
       final text = (entry as Map<String, dynamic>)['text'] as String;
       final expected = (entry['ids'] as List<dynamic>).cast<int>();
-      final actual = tokenizer.encode(text);
+      final actual = tokenizer.encode(
+        text,
+        maxLength: entry['max_length'] as int?,
+      );
       tokens += actual.length;
       if (!const ListEquality<int>().equals(actual, expected)) {
-        mismatches.add('${jsonEncode(text)}\n  want $expected\n  got  $actual');
+        mismatches.add(
+          '${jsonEncode(text)} (max ${entry['max_length']})\n'
+          '  want $expected\n  got  $actual',
+        );
       }
     }
     encode.stop();
 
     // ignore: avoid_print
     print(
-      '${cases.length} texts, $tokens tokens: JSON decoded in '
+      '${cases.length} encodings, $tokens tokens: JSON decoded in '
       '${decode.elapsedMilliseconds} ms, tokenizer built in '
       '${load.elapsedMilliseconds} ms, encoded in '
       '${encode.elapsedMilliseconds} ms',

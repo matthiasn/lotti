@@ -149,7 +149,14 @@ class GemmaTokenizer {
   final int eosId;
 
   /// The model's input ids for [text], `<bos>` and `<eos>` included.
-  List<int> encode(String text) {
+  ///
+  /// With [maxLength], the text's ids are cut from the end so that the
+  /// whole encoding, `<bos>` and `<eos>` counted, fits; as `tokenizers`
+  /// truncates a single sequence.
+  List<int> encode(String text, {int? maxLength}) {
+    if (maxLength != null && maxLength < 2) {
+      throw ArgumentError.value(maxLength, 'maxLength', 'leaves no room');
+    }
     final ids = [bosId];
     var start = 0;
     for (final match in _addedTokens.matches(text)) {
@@ -158,6 +165,9 @@ class GemmaTokenizer {
       start = match.end;
     }
     _encodeSegment(text.substring(start), ids);
+    if (maxLength != null && ids.length >= maxLength) {
+      ids.length = maxLength - 1;
+    }
     return ids..add(eosId);
   }
 

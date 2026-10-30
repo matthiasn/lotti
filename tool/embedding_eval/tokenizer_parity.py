@@ -4,7 +4,8 @@ for `tokenizer_parity_test.dart` to compare the app's Dart port against.
 The texts are what the app will feed the model: every corpus text with the
 document prompt, every query and paraphrase with the query prompt, and edge
 cases the corpus does not reach (added tokens inside text, newline runs,
-characters outside the vocabulary, long input).
+characters outside the vocabulary, long input). Each text is also encoded
+truncated: at the 512 tokens the app allows, and at 16 and 2.
 
     python tool/embedding_eval/tokenizer_parity.py --models-dir DIR
 
@@ -77,11 +78,19 @@ def main() -> None:
               for queries in by_language.values()
               for query in queries]
 
+    texts = list(dict.fromkeys(texts))
     cases = [{'text': text, 'ids': tokenizer.encode(text).ids}
-             for text in dict.fromkeys(texts)]
+             for text in texts]
+    # Truncated as the app truncates its input: at the model's limit, and
+    # short enough that every text is cut.
+    for max_length, sample in ((512, texts), (16, texts), (2, EDGE_CASES)):
+        tokenizer.enable_truncation(max_length)
+        cases += [{'text': text, 'max_length': max_length,
+                   'ids': tokenizer.encode(text).ids} for text in sample]
+    tokenizer.no_truncation()
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(cases, ensure_ascii=False))
-    print(f'{len(cases)} texts, '
+    print(f'{len(cases)} encodings, '
           f'{sum(len(c["ids"]) for c in cases)} tokens -> {args.out}')
 
 

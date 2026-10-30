@@ -44,6 +44,10 @@ sources:
     resource: ../../../lib/features/ai/on_device_embedding/gemma_tokenizer.dart
     title: GemmaTokenizer, EmbeddingGemma's tokenizer in Dart
     last_modified: 2026-10-30
+  - id: gemma-embedder
+    resource: ../../../lib/features/ai/on_device_embedding/gemma_embedder.dart
+    title: GemmaEmbedder, EmbeddingGemma on the bundled ONNX Runtime
+    last_modified: 2026-10-30
   - id: spec
     resource: ../../../specs/tla/EmbeddingFreshness.tla
     title: EmbeddingFreshness TLA+ model
@@ -212,7 +216,17 @@ multilingual-e5-small and keyword search by
 later model change runs through first. Its tokenizer is ported to Dart
 (`GemmaTokenizer`), so the app needs no native tokenizer library; the same
 tool checks the port token for token against Hugging Face `tokenizers` on
-every corpus text and paraphrase, with the prompts the app will add.
+every corpus text and paraphrase, with the prompts the app will add, and cut
+at the 512 tokens the app allows.
+
+`GemmaEmbedder` runs the model on the bundled `flutter_onnxruntime`: it decodes
+the tokenizer in a background isolate, adds the query or document prompt, cuts
+the input at 512 tokens and returns the unit-length 768-dimensional
+`sentence_embedding`. The session uses half the cores, at most four. It has no
+caller yet. On Linux the plugin runs inference on a worker thread (a Lotti
+patch), because the GTK main thread also runs the app's UI isolate;
+`integration_test/embedder_parity_test.dart` checks its vectors against
+Python's and measures that stall.
 
 Open questions the model leaves as residuals:
 
