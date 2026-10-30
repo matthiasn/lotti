@@ -266,7 +266,7 @@ owns the rules once, for this lane *and* the planner's week-context lookback:
 It projects as a `TimeBlockType.cal` block whose id carries the `actual:`
 prefix, so it is read-only and never arrangeable like every tracked block, and
 a tap on it beams to `/events/<id>` — the event's one way in — where a tracked
-manual block would open its task. Its state follows the status
+manual block would open its task and a tracked check-in its own page. Its state follows the status
 (`eventBlockState`): `completed` earns the lane's check mark and a place in
 the time-spent card's "N done", `ongoing` the in-progress treatment, and an
 event still ahead — tentative, planned, rescheduled — is `committed`, filled
@@ -290,9 +290,13 @@ so `basicLinksForEntryIds` never returns it, and `createCheckIn` keeps a
 check-in whose link write failed. Both consumers append the derived links
 to the basic ones, with no extra query. `_actualBlockTitle` names the person rather than the
 first line of the narrative. A check-in block has no task and is not an
-event, so, like an unlinked recording, it has no tap destination; the
-planner's week-context lookback counts its minutes under the person's
-category.
+event, so the projection carries `CheckInData.relationshipId` on the block
+(`TimeBlock.relationshipId`), and a tap beams to
+`/people/<relationshipId>/check-ins/<id>` — the check-in's page on the People
+tab, the same destination the journal list opens. While the People flag
+(`enable_relationships`) is off the block stays inert, since `NavService`
+would drop a `/people` route onto another tab. The planner's week-context
+lookback counts its minutes under the person's category.
 
 ## Overlapping blocks
 

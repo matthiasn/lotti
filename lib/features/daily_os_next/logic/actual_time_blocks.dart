@@ -16,7 +16,8 @@ const _fallbackActualCategory = DayAgentCategory(
 ///
 /// A [JournalEvent] becomes a [TimeBlockType.cal] block so the timeline can
 /// route a tap to the event page, in the state its status implies; everything
-/// else is a [TimeBlockType.manual] recording, finished by definition.
+/// else is a [TimeBlockType.manual] recording, finished by definition. A
+/// [CheckInEntry] carries its person's id so a tap opens the check-in.
 /// [eventsEnabled] is the Events feature flag, forwarded to the shared core.
 List<TimeBlock> actualTimeBlocksForEntries({
   required List<JournalEntity> entries,
@@ -57,6 +58,9 @@ List<TimeBlock> actualTimeBlocksForEntries({
             : TimeBlockState.completed,
         category: category,
         taskId: pair.taskId,
+        relationshipId: entry is CheckInEntry
+            ? entry.data.relationshipId
+            : null,
       ),
     );
   }
