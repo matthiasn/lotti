@@ -180,6 +180,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: syncEmbeddingsFlag,
+    description: 'Sync embeddings between devices?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableVectorSearchFlag,
     description: 'Enable vector search UI?',
     status: false,
