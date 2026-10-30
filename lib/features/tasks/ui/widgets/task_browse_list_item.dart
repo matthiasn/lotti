@@ -74,6 +74,13 @@ class TaskBrowseListItem extends StatelessWidget {
   /// list-density toggle here for the FIRST entry only, so the control rides
   /// the "P2 Medium · 5 tasks" line instead of costing the header a row of
   /// its own. Ignored when [TaskBrowseEntry.showSectionHeader] is false.
+  ///
+  /// The control's glyph stands under the tab header's bell and funnel, a
+  /// [tabHeaderTrailingBleed] into the trailing gutter. So that its whole tap
+  /// target stays hit-testable, the host lays an item that carries one out
+  /// that much wider (`DetailContentWidth.endBleed`), and the item insets
+  /// everything but the header line by the same amount — the card keeps the
+  /// gutter every other card ends on.
   final Widget? sectionHeaderTrailing;
 
   @override
@@ -92,6 +99,9 @@ class TaskBrowseListItem extends StatelessWidget {
           : Radius.zero,
     );
     final borderSide = BorderSide(color: TaskShowcasePalette.border(context));
+    final cardInset = EdgeInsetsDirectional.only(
+      end: sectionHeaderTrailing == null ? 0 : tabHeaderTrailingBleed(tokens),
+    );
     final decoration = BoxDecoration(
       color: TaskShowcasePalette.surface(context),
       borderRadius: borderRadius,
@@ -141,57 +151,50 @@ class TaskBrowseListItem extends StatelessWidget {
                     ),
                   if (sectionHeaderTrailing case final trailing?) ...[
                     SizedBox(width: tokens.spacing.step3),
-                    // Shifted into the gutter by the tab header's bleed, so
-                    // its glyph stands under the header's bell and funnel
-                    // rather than a target's inset further in. The part past
-                    // the row is not hit-testable, leaving the glyph a
-                    // 36-wide target.
-                    Transform.translate(
-                      offset: Offset(
-                        Directionality.of(context) == TextDirection.rtl
-                            ? -tabHeaderTrailingBleed(tokens)
-                            : tabHeaderTrailingBleed(tokens),
-                        0,
-                      ),
-                      child: trailing,
-                    ),
+                    trailing,
                   ],
                 ],
               ),
             ),
           if (hoveredTaskIdNotifier case final notifier?)
-            ValueListenableBuilder<String?>(
-              valueListenable: notifier,
-              child: _rowContent(),
-              builder: (context, hoveredTaskId, child) {
-                return TaskBrowseRowShell(
-                  entry: entry,
-                  rowPadding: rowPadding,
-                  borderRadius: borderRadius,
-                  decoration: decoration,
-                  previousTaskIdInSection: previousTaskIdInSection,
-                  nextTaskIdInSection: nextTaskIdInSection,
-                  selectedTaskId: selectedTaskId,
-                  hoveredTaskId: hoveredTaskId,
-                  hoveredTaskIdNotifier: notifier,
-                  onTap: onTap,
-                  child: child!,
-                );
-              },
+            Padding(
+              padding: cardInset,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: notifier,
+                child: _rowContent(),
+                builder: (context, hoveredTaskId, child) {
+                  return TaskBrowseRowShell(
+                    entry: entry,
+                    rowPadding: rowPadding,
+                    borderRadius: borderRadius,
+                    decoration: decoration,
+                    previousTaskIdInSection: previousTaskIdInSection,
+                    nextTaskIdInSection: nextTaskIdInSection,
+                    selectedTaskId: selectedTaskId,
+                    hoveredTaskId: hoveredTaskId,
+                    hoveredTaskIdNotifier: notifier,
+                    onTap: onTap,
+                    child: child!,
+                  );
+                },
+              ),
             )
           else
-            TaskBrowseRowShell(
-              entry: entry,
-              rowPadding: rowPadding,
-              borderRadius: borderRadius,
-              decoration: decoration,
-              previousTaskIdInSection: previousTaskIdInSection,
-              nextTaskIdInSection: nextTaskIdInSection,
-              selectedTaskId: selectedTaskId,
-              hoveredTaskId: null,
-              hoveredTaskIdNotifier: null,
-              onTap: onTap,
-              child: _rowContent(),
+            Padding(
+              padding: cardInset,
+              child: TaskBrowseRowShell(
+                entry: entry,
+                rowPadding: rowPadding,
+                borderRadius: borderRadius,
+                decoration: decoration,
+                previousTaskIdInSection: previousTaskIdInSection,
+                nextTaskIdInSection: nextTaskIdInSection,
+                selectedTaskId: selectedTaskId,
+                hoveredTaskId: null,
+                hoveredTaskIdNotifier: null,
+                onTap: onTap,
+                child: _rowContent(),
+              ),
             ),
         ],
       ),

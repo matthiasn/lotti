@@ -820,8 +820,9 @@ void main() {
 
     for (final direction in TextDirection.values) {
       testWidgets(
-        'sectionHeaderTrailing reaches into the trailing gutter by the tab '
-        "header's bleed (${direction.name})",
+        'a sectionHeaderTrailing item insets its card by the tab header '
+        'bleed and keeps the whole control tappable, out to its trailing '
+        'edge (${direction.name})',
         (tester) async {
           final task = TestTaskFactory.create(
             id: 'task-header-bleed',
@@ -829,6 +830,7 @@ void main() {
             dateFrom: DateTime(2026, 4, 8),
           );
           const trailingKey = Key('test-header-bleed');
+          var taps = 0;
 
           await pumpTaskBrowseItem(
             tester,
@@ -836,9 +838,11 @@ void main() {
             showSectionHeader: true,
             sectionCount: 3,
             textDirection: direction,
-            sectionHeaderTrailing: const SizedBox.square(
-              dimension: 20,
+            sectionHeaderTrailing: GestureDetector(
               key: trailingKey,
+              behavior: HitTestBehavior.opaque,
+              onTap: () => taps++,
+              child: const SizedBox.square(dimension: TapTargets.minimum),
             ),
           );
 
@@ -847,18 +851,52 @@ void main() {
               .designTokens;
           final bleed = tabHeaderTrailingBleed(tokens);
           final item = tester.getRect(find.byType(TaskBrowseListItem));
+          final card = tester.getRect(find.byType(TaskBrowseRowShell));
           final trailing = tester.getRect(find.byKey(trailingKey));
-          // Its glyph lines up under the header's bell and funnel, which
-          // bleed by the same amount, rather than a target's inset further
-          // in.
-          if (direction == TextDirection.ltr) {
-            expect(trailing.right, item.right + bleed);
-          } else {
-            expect(trailing.left, item.left - bleed);
-          }
+          final ltr = direction == TextDirection.ltr;
+
+          // The host gave the item the bleed; the card hands it back, so it
+          // still ends on the gutter every other card ends on…
+          expect(ltr ? item.right - card.right : card.left - item.left, bleed);
+          // …while the control ends on the item's own edge, inside it.
+          expect(
+            ltr ? trailing.right : trailing.left,
+            ltr ? item.right : item.left,
+          );
+
+          // Its outermost pixel is still part of the target.
+          await tester.tapAt(
+            Offset(
+              ltr ? trailing.right - 1 : trailing.left + 1,
+              trailing.center.dy,
+            ),
+          );
+          expect(taps, 1);
         },
       );
     }
+
+    testWidgets('without a trailing control the card spans the whole item', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-no-trailing',
+        title: 'No trailing task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await pumpTaskBrowseItem(
+        tester,
+        task,
+        showSectionHeader: true,
+        sectionCount: 3,
+      );
+
+      expect(
+        tester.getRect(find.byType(TaskBrowseRowShell)).right,
+        tester.getRect(find.byType(TaskBrowseListItem)).right,
+      );
+    });
 
     testWidgets('compact rows use tighter vertical padding', (tester) async {
       final task = TestTaskFactory.create(
