@@ -359,6 +359,12 @@ Style: isometric digital art. --ar 16:9
         ),
       );
 
+      // The TLDR renders as markdown, so it is found by the view that holds
+      // it rather than by a plain `Text`.
+      Finder tldrView(String text) => find.byWidgetPredicate(
+        (w) => w is AgentMarkdownView && w.text == text,
+      );
+
       Future<void> pumpTiered(
         WidgetTester tester, {
         String? tldr = tldrText,
@@ -382,8 +388,8 @@ Style: isometric digital art. --ar 16:9
         (tester) async {
           await pumpTiered(tester);
 
-          expect(find.text(tldrText), findsOneWidget);
-          expect(find.byType(GptMarkdown), findsNothing);
+          expect(tldrView(tldrText), findsOneWidget);
+          expect(tldrView(bodyText), findsNothing);
           expect(find.text('Show more'), findsOneWidget);
         },
       );
@@ -396,8 +402,8 @@ Style: isometric digital art. --ar 16:9
         await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
         await tester.pump();
 
-        expect(find.byType(GptMarkdown), findsOneWidget);
-        expect(find.text(tldrText), findsNothing);
+        expect(tldrView(bodyText), findsOneWidget);
+        expect(tldrView(tldrText), findsNothing);
         expect(find.text('Show less'), findsOneWidget);
       });
 
@@ -411,7 +417,7 @@ Style: isometric digital art. --ar 16:9
             find.byKey(AiResponseSummary.collapseToggleKey),
             findsOneWidget,
           );
-          expect(find.text(tldrText), findsOneWidget);
+          expect(tldrView(tldrText), findsOneWidget);
         },
       );
 
@@ -435,14 +441,63 @@ Style: isometric digital art. --ar 16:9
         expect(find.byType(GptMarkdown), findsOneWidget);
       });
 
-      testWidgets(
-        'the TLDR is not rendered as markdown — it is prose, and a stray '
-        'hash or asterisk in it must not become a heading',
-        (tester) async {
-          await pumpTiered(tester, tldr: '# Not a heading *not italic*');
+      /// Every [TextSpan] the collapsed card painted, flattened.
+      List<TextSpan> paintedSpans(WidgetTester tester) {
+        final spans = <TextSpan>[];
+        for (final rich in tester.widgetList<RichText>(
+          find.descendant(
+            of: find.byType(AiResponseSummary),
+            matching: find.byType(RichText),
+          ),
+        )) {
+          rich.text.visitChildren((span) {
+            if (span is TextSpan) spans.add(span);
+            return true;
+          });
+        }
+        return spans;
+      }
 
-          expect(find.text('# Not a heading *not italic*'), findsOneWidget);
-          expect(find.byType(GptMarkdown), findsNothing);
+      testWidgets(
+        'the collapsed TLDR renders its markdown — bold and italic read as '
+        'emphasis, never as literal asterisks',
+        (tester) async {
+          await pumpTiered(
+            tester,
+            tldr: 'The **sardine pod** docks at *Bay 7* today.',
+          );
+
+          final spans = paintedSpans(tester);
+          final painted = spans.map((s) => s.text ?? '').join();
+          expect(painted, contains('sardine pod'));
+          expect(painted, isNot(contains('*')));
+
+          final bold = spans.firstWhere((s) => s.text == 'sardine pod');
+          expect(bold.style?.fontWeight, FontWeight.bold);
+          final italic = spans.firstWhere((s) => s.text == 'Bay 7');
+          expect(italic.style?.fontStyle, FontStyle.italic);
+        },
+      );
+
+      testWidgets(
+        'a stray hash in the TLDR stays at body size — two sentences must '
+        'not outrank the card they sit in',
+        (tester) async {
+          await pumpTiered(tester, tldr: '# Pod docked');
+
+          final view = tester.widget<AgentMarkdownView>(
+            tldrView('# Pod docked'),
+          );
+          expect(view.subordinateHeadings, isTrue);
+
+          final heading = paintedSpans(
+            tester,
+          ).firstWhere((s) => s.text?.contains('Pod docked') ?? false);
+          expect(
+            heading.style?.fontSize,
+            dsTokensLight.typography.styles.body.bodySmall.fontSize,
+          );
+          expect(find.textContaining('#', findRichText: true), findsNothing);
         },
       );
     });
@@ -546,7 +601,11 @@ Style: isometric digital art. --ar 16:9
           tldr: 'The short version.',
         );
 
-        final tldr = tester.widget<Text>(find.text('The short version.'));
+        final tldr = tester.widget<AgentMarkdownView>(
+          find.byWidgetPredicate(
+            (w) => w is AgentMarkdownView && w.text == 'The short version.',
+          ),
+        );
         expect(
           tldr.style?.fontSize,
           dsTokensLight.typography.styles.body.bodySmall.fontSize,

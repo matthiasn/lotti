@@ -5,8 +5,8 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
-stale_after: 2026-12-26
+generated: { by: claude-code/opus-5.5, at: 2026-10-30T14:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
@@ -624,7 +624,10 @@ The body goes through `AgentMarkdownView`, so an analysis nested in an image or
 audio entry card sits at the editor's own `body.bodySmall` measure with the
 editor's heading mapping, instead of inheriting whatever the ambient theme
 would hand raw `GptMarkdown` — a nested analysis must not read louder than the
-entry text it belongs to. The collapsed TLDR takes the same measure. The card's
+entry text it belongs to. The collapsed TLDR goes through the same view at the
+same measure — it is model-written markdown too, as on the agent report card —
+with `subordinateHeadings` set, so a stray `#` in two sentences renders at body
+size rather than as a heading. The card's
 inset is one spacing step tighter than a top-level card's for the same reason:
 it is a subordinate surface inside a card, not a page section.
 

@@ -34,7 +34,8 @@ const _fadeOutPreviewMaxHeight = 200.0;
 /// nested inside an entry card reads as recognizably AI-generated content
 /// without becoming a second elevated card.
 ///
-/// The body renders through [AgentMarkdownView], so an analysis sits at the
+/// The body and the collapsed TLDR both render through [AgentMarkdownView]
+/// (the TLDR with subordinate headings), so an analysis sits at the
 /// same `body.bodySmall` measure as the entry text it belongs to rather than
 /// shouting over it, and the card's inset is one step tighter than a top-level
 /// card's — it is a nested surface, not a page section.
@@ -219,7 +220,16 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     if (!isCollapsed) {
       body = responseContent;
     } else if (tldr != null) {
-      body = SelectionArea(child: Text(tldr, style: bodyStyle));
+      // The TLDR is model-written markdown just like the body — the agent
+      // report card renders its TLDR the same way. Headings stay at body size:
+      // a stray `#` in two sentences must not outrank the card it sits in.
+      body = SelectionArea(
+        child: AgentMarkdownView(
+          tldr,
+          style: bodyStyle,
+          subordinateHeadings: true,
+        ),
+      );
     } else {
       body = null;
     }
