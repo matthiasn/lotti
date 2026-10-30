@@ -5,8 +5,10 @@ import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -153,6 +155,7 @@ Widget _wrap(
   Size size = const Size(1280, 1200),
   ProviderContainer? container,
   bool use24Hour = true,
+  List<Override> overrides = const [],
 }) {
   // The timeline's blocks are ConsumerWidgets (they publish task-focus
   // intents on tap), so every render needs a ProviderScope. When a test
@@ -172,7 +175,10 @@ Widget _wrap(
   if (container != null) {
     return UncontrolledProviderScope(container: container, child: app);
   }
-  return ProviderScope(overrides: getItServiceOverrides(), child: app);
+  return ProviderScope(
+    overrides: [...getItServiceOverrides(), ...overrides],
+    child: app,
+  );
 }
 
 void main() {
@@ -376,47 +382,63 @@ void main() {
     });
 
     // A tracked check-in has no task; like the journal list, the block opens
-    // the check-in on its person's People page.
-    testWidgets('a tracked check-in block opens its check-in page', (
-      tester,
-    ) async {
-      _setView(tester, const Size(1280, 1200));
+    // the check-in on its person's People page — while People is on. Off,
+    // NavService would drop the route onto another tab, so it stays inert.
+    for (final (peopleEnabled, expected) in [
+      (true, '/people/person-1/check-ins/check-in-1'),
+      (false, null),
+    ]) {
+      testWidgets(
+        peopleEnabled
+            ? 'a tracked check-in block opens its check-in page'
+            : 'a tracked check-in block stays inert while People is off',
+        (tester) async {
+          _setView(tester, const Size(1280, 1200));
 
-      String? openedPath;
-      beamToNamedOverride = (path) => openedPath = path;
+          String? openedPath;
+          beamToNamedOverride = (path) => openedPath = path;
 
-      await tester.pumpWidget(
-        _wrap(
-          DayTimeline(
-            draft: _draftWithBlocks(
-              blocks: const [],
-              actualBlocks: [
-                _timeBlock(
-                  id: '${actualTimeBlockIdPrefix}check-in-1',
-                  title: 'Pemberton',
-                  startHour: 8,
-                  endHour: 9,
-                  type: TimeBlockType.manual,
-                  state: TimeBlockState.completed,
-                  relationshipId: 'person-1',
+          await tester.pumpWidget(
+            _wrap(
+              DayTimeline(
+                draft: _draftWithBlocks(
+                  blocks: const [],
+                  actualBlocks: [
+                    _timeBlock(
+                      id: '${actualTimeBlockIdPrefix}check-in-1',
+                      title: 'Pemberton',
+                      startHour: 8,
+                      endHour: 9,
+                      type: TimeBlockType.manual,
+                      state: TimeBlockState.completed,
+                      relationshipId: 'person-1',
+                    ),
+                  ],
                 ),
+                clock: () => DateTime(2026, 5, 25, 9, 15),
+              ),
+              overrides: [
+                configFlagProvider(
+                  enableRelationshipsFlag,
+                ).overrideWith((ref) => Stream.value(peopleEnabled)),
               ],
             ),
-            clock: () => DateTime(2026, 5, 25, 9, 15),
-          ),
-        ),
-      );
-      await tester.pump();
+          );
+          await tester.pump();
 
-      await tester.tap(
-        find.byKey(
-          const Key('daily_os_day_block_${actualTimeBlockIdPrefix}check-in-1'),
-        ),
-      );
-      await tester.pump();
+          await tester.tap(
+            find.byKey(
+              const Key(
+                'daily_os_day_block_${actualTimeBlockIdPrefix}check-in-1',
+              ),
+            ),
+          );
+          await tester.pump();
 
-      expect(openedPath, '/people/person-1/check-ins/check-in-1');
-    });
+          expect(openedPath, expected);
+        },
+      );
+    }
 
     testWidgets('a tracked recording with neither task nor event stays inert', (
       tester,

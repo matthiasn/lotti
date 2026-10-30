@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
@@ -449,11 +450,14 @@ class DayBlock extends ConsumerWidget {
         ? effectiveBlock.trackedEntryId
         : null;
     // A tracked check-in has no task; its page is its person's, on the
-    // People tab, as from the journal list.
+    // People tab, as from the journal list. With People off, NavService
+    // would drop that route onto another tab, so the block stays inert.
     final relationshipId = effectiveBlock.relationshipId;
-    final checkInId = tracked && relationshipId != null
-        ? effectiveBlock.trackedEntryId
-        : null;
+    final peopleEnabled =
+        tracked &&
+        relationshipId != null &&
+        (ref.watch(configFlagProvider(enableRelationshipsFlag)).value ?? false);
+    final checkInId = peopleEnabled ? effectiveBlock.trackedEntryId : null;
     final onTap = eventId != null
         ? () => beamToNamed('/events/$eventId')
         : checkInId != null

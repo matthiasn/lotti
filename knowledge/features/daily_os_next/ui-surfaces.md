@@ -293,7 +293,9 @@ first line of the narrative. A check-in block has no task and is not an
 event, so the projection carries `CheckInData.relationshipId` on the block
 (`TimeBlock.relationshipId`), and a tap beams to
 `/people/<relationshipId>/check-ins/<id>` — the check-in's page on the People
-tab, the same destination the journal list opens. The planner's week-context
+tab, the same destination the journal list opens. While the People flag
+(`enable_relationships`) is off the block stays inert, since `NavService`
+would drop a `/people` route onto another tab. The planner's week-context
 lookback counts its minutes under the person's category.
 
 ## Overlapping blocks
