@@ -498,6 +498,35 @@ void main() {
       expect(state.fileExists, isTrue);
       expect(find.text('exists'), findsOneWidget);
     });
+
+    testWidgets('a file landing while the watch is set up is noticed', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/photo.jpg';
+      final silentWatch = StreamController<FileSystemEvent>();
+      addTearDown(silentWatch.close);
+
+      await IOOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _TestWidget(path: path),
+            ),
+          );
+        },
+        // The file lands after the existence check but before the watch is
+        // registered, so the watch never reports it.
+        fsWatch: (_, _, _) {
+          File(path).writeAsStringSync('bytes');
+          return silentWatch.stream;
+        },
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      expect(state.fileExists, isTrue);
+      expect(find.text('exists'), findsOneWidget);
+    });
   });
 
   // ---------------------------------------------------------------------------

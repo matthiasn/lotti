@@ -123,6 +123,12 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
           );
         },
       );
+      // The watch is registered as it is listened to; a file that landed
+      // between the check above and that registration raises no event.
+      if (file.existsSync()) {
+        _disposeWatcher();
+        _fileExists = true;
+      }
     } on FileSystemException {
       _startPolling(
         path,
