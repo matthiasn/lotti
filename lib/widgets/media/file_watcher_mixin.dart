@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:path/path.dart' as p;
 
 /// Mixin that provides file watching functionality for widgets that need to
 /// display images that may not exist yet (e.g., still being written to disk,
@@ -16,10 +15,11 @@ import 'package:path/path.dart' as p;
 /// 4. Call [disposeFileWatcher] in dispose()
 ///
 /// Where the OS offers a directory watch (macOS, Linux, Windows, Android)
-/// the file's arrival is an event. Where it does not — iOS throws a
-/// [FileSystemException] from [Directory.watch] — or where the watch is
-/// refused (inotify exhausted on Linux, a directory removed under it), the
-/// mixin polls instead: one `stat` a second per mounted widget, for at most
+/// the file's arrival is an event — any event in the directory, after which
+/// the file itself is checked. Where it does not — iOS throws a
+/// [FileSystemException] from [Directory.watch] — where the watch is refused
+/// (inotify exhausted on Linux, a directory removed under it), or where the
+/// directory does not exist yet, the mixin polls instead: one `stat` a second per mounted widget, for at most
 /// [_maxPollAttempts]. Nothing that reaches `build` may throw here: a
 /// throwing watcher became a 100 000 px `ErrorWidget` in every cover slot.
 mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
@@ -85,11 +85,11 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
 
     _fileExists = false;
 
-    // Watch parent directory for file creation
+    // Watch parent directory for file creation. A parent that does not exist
+    // yet (the first photo synced into its date directory) cannot be watched;
+    // the writer creates it later, so look for the file the slow way.
     final dir = file.parent;
-    if (!dir.existsSync()) return;
-
-    if (!FileSystemEntity.isWatchSupported) {
+    if (!dir.existsSync() || !FileSystemEntity.isWatchSupported) {
       _startPolling(
         path,
         interval: _pollInterval,
@@ -100,7 +100,10 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
     try {
       _fileWatcher = dir.watch().listen(
         (event) {
-          if (pathsEqual(event.path, path) && mounted) {
+          // Ask the file system rather than match the event's path: an
+          // atomic write lands as a move whose `path` is the temporary
+          // sibling and whose destination is the file.
+          if (mounted && file.existsSync()) {
             _disposeWatcher();
             setState(() => _fileExists = true);
           }
@@ -167,18 +170,4 @@ mixin FileWatcherMixin<T extends StatefulWidget> on State<T> {
     _pollTimer?.cancel();
     _pollTimer = null;
   }
-}
-
-/// Compares two file paths for equality, handling platform differences.
-///
-/// On Windows, paths are compared case-insensitively and with normalized
-/// separators. On other platforms, paths are compared case-sensitively.
-bool pathsEqual(String path1, String path2) {
-  final normalized1 = p.normalize(p.absolute(path1));
-  final normalized2 = p.normalize(p.absolute(path2));
-
-  if (Platform.isWindows) {
-    return normalized1.toLowerCase() == normalized2.toLowerCase();
-  }
-  return normalized1 == normalized2;
 }

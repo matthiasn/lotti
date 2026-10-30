@@ -208,7 +208,8 @@ refreshes when a notification names one of them.
 The photo's bytes travel separately again: its entry can apply before the file
 lands, and nothing is notified when the file does. `EventCoverImage` therefore
 shows the fallback while a `FileImage`'s file is missing and watches for it
-(`FileWatcherMixin`); decoding early would leave the failed load in the image
+(`FileWatcherMixin`, which also covers a date directory that does not exist yet
+and the atomic rename sync writes with); decoding early would leave the failed load in the image
 cache under that key, where every later card for the photo would find it.
 
 Opening a timeline source preserves the event id as `linkedFromId`. Mobile
