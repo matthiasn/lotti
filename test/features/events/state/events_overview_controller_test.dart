@@ -612,6 +612,57 @@ void main() {
   );
 
   test(
+    'a photo that lands while a refresh is reading it still updates the cover',
+    () async {
+      final event = _event('e1');
+      final photo = _image('photo-1', DateTime(2026, 5, 13));
+      final images = <String, JournalImage>{};
+      final links = <LinkedDbEntry>[];
+      Completer<List<JournalEntity>>? heldRead;
+      stubPaged([event]);
+      when(() => db.linksFromIds(any())).thenAnswer(
+        (_) => MockSelectable<LinkedDbEntry>([...links]),
+      );
+      when(() => db.getJournalEntitiesForIds(any())).thenAnswer((invocation) {
+        final held = heldRead;
+        if (held != null) {
+          heldRead = null;
+          return held.future;
+        }
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return Future.value(
+          ids.map((id) => images[id]).whereType<JournalEntity>().toList(),
+        );
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+
+      // The link lands; the refresh it starts reads before the photo has.
+      final read = heldRead = Completer<List<JournalEntity>>();
+      links.add(_link(event.meta.id, photo.meta.id));
+      updates.add({event.meta.id, photo.meta.id, linkNotification});
+      await pumpEventQueue();
+
+      // The photo is applied while that read is in flight — judged against
+      // the older state, which was not yet waiting for it.
+      images[photo.meta.id] = photo;
+      updates.add({photo.meta.id, imageNotification});
+      await pumpEventQueue();
+      read.complete(<JournalEntity>[]);
+      await pumpEventQueue();
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(
+        (state.events.single.coverImage! as FileImage).file.path,
+        endsWith('photo-1.jpg'),
+      );
+      expect(state.events.single.pendingCoverIds, isEmpty);
+    },
+  );
+
+  test(
     'an image notification for an unrelated photo does not reload',
     () async {
       final event = _event('e1');

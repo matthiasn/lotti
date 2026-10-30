@@ -98,11 +98,15 @@ void main() {
     ) async {
       final dir = Directory.systemTemp.createTempSync('event_cover_');
       addTearDown(() => dir.deleteSync(recursive: true));
-      final file = File('${dir.path}/photo.jpg');
+      final file = File('${dir.path}/photo.png');
 
       await pumpEventComponent(
         tester,
-        EventCoverImage(image: FileImage(file), fallbackColor: Colors.blue),
+        EventCoverImage(
+          image: FileImage(file),
+          fallbackColor: Colors.blue,
+          decodeWidth: 100,
+        ),
         height: 120,
       );
 
@@ -111,14 +115,23 @@ void main() {
       expect(find.byType(Image), findsNothing);
       expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
 
-      file.writeAsBytesSync([1]);
+      file.writeAsBytesSync(testPng1x1);
+      // Decoding needs the real event loop, so decode under the cover's own
+      // cache key before the watcher notices the file; the cover then
+      // resolves to the decoded photo.
+      final context = tester.element(find.byType(EventCoverImage));
+      final provider = ResizeImage(
+        FileImage(file),
+        width: (100 * MediaQuery.devicePixelRatioOf(context)).round(),
+        policy: ResizeImagePolicy.fit,
+      );
+      await tester.runAsync(() => precacheImage(provider, context));
       await tester.pump(const Duration(milliseconds: 150));
 
       final shown = tester.widget<Image>(find.byType(Image));
-      expect(
-        ((shown.image as ResizeImage).imageProvider as FileImage).file.path,
-        file.path,
-      );
+      expect(shown.image, provider);
+      expect(tester.widget<RawImage>(find.byType(RawImage)).image, isNotNull);
+      expect(find.byIcon(LottiIcons.calendar), findsNothing);
     });
 
     testWidgets('hero scrim adds the global darken + two gradients', (
