@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/cloud/cloud_speech_synthesizer.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
+import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
@@ -289,8 +290,23 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         clip: (path: file.path, text: text),
       );
       await player.play(file, speed: settings.speed);
-    } catch (error) {
+    } catch (error, stackTrace) {
       if (!current()) return;
+      // The Voxtral client logs its own request failures with their detail;
+      // everything else — the on-device engine, the player, a language with
+      // no cloud voice — would otherwise surface only as the generic toast.
+      if (error is! VoxtralTtsException ||
+          error.failure == VoxtralTtsFailure.noVoice) {
+        _logger.error(
+          LogDomain.speech,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'ttsPlayback.speak',
+          message: cloudRoute == null
+              ? 'On-device speech failed'
+              : 'Cloud speech failed (${cloudRoute.cacheKey})',
+        );
+      }
       _cancelPlayerSubscriptions();
       final file = _file;
       _file = null;

@@ -44,18 +44,30 @@ class VoxtralTtsException implements Exception {
     this.message, {
     this.statusCode,
     this.retryAfter,
+    this.apiError,
+    this.requestId,
   });
 
   final VoxtralTtsFailure failure;
 
   /// Diagnostic text. Never contains the spoken text, the API key or the
-  /// response body, so it is safe to log.
+  /// response body, so it is safe to log; [apiError] carries what the server
+  /// said.
   final String message;
 
   final int? statusCode;
 
   /// The server's `Retry-After`, when it sent one with a 429.
   final Duration? retryAfter;
+
+  /// The server's own explanation of a non-200 answer — its `message`, or
+  /// each validation `detail` as `loc: msg` — so a 422 names the field it
+  /// rejected. The `input` a validation detail echoes is never kept: it can
+  /// quote the spoken text.
+  final String? apiError;
+
+  /// The server's request id for the failed call, for a support ticket.
+  final String? requestId;
 
   bool get isRetryable => switch (failure) {
     VoxtralTtsFailure.network ||
@@ -71,7 +83,9 @@ class VoxtralTtsException implements Exception {
   @override
   String toString() =>
       'VoxtralTtsException(${failure.name}'
-      '${statusCode == null ? '' : ', HTTP $statusCode'}): $message';
+      '${statusCode == null ? '' : ', HTTP $statusCode'}): $message'
+      '${apiError == null ? '' : ' — server: $apiError'}'
+      '${requestId == null ? '' : ' (request $requestId)'}';
 }
 
 /// Audio container returned by `POST /v1/audio/speech`.
@@ -117,9 +131,10 @@ class VoxtralTtsService {
 
   static const String defaultModel = 'voxtral-mini-tts-3-0';
 
-  /// The API pages voices; this is the page size the API itself answers with
-  /// by default, so one request normally fetches the whole catalog.
-  static const int voicesPageSize = 1000;
+  /// The API pages voices and rejects a `limit` above 100 with a 422 (checked
+  /// live 2026-10-30, 66 voices then), so one request normally fetches the
+  /// whole catalog and the loop below follows the rest.
+  static const int voicesPageSize = 100;
 
   /// Stops a misbehaving `total_pages` from looping forever.
   static const int _maxVoicePages = 20;
@@ -163,28 +178,32 @@ class VoxtralTtsService {
       });
 
     // Lengths and ids only: the text is the user's content.
-    _logger.log(
-      LogDomain.speech,
-      'Speech request: ${text.length} chars, voice $voiceId, '
-      'model $model, ${format.name}',
-      subDomain: _subDomain,
-    );
+    final description =
+        'Speech request (${request.url.path}): ${text.length} chars, '
+        'voice $voiceId, model $model, ${format.name}';
+    _logger.log(LogDomain.speech, description, subDomain: _subDomain);
     final stopwatch = Stopwatch()..start();
-    final decoded = await _send(request);
+    final decoded = await _send(request, description: description);
     final audio = decoded['audio_data'];
     if (audio is! String || audio.isEmpty) {
-      throw const VoxtralTtsException(
-        VoxtralTtsFailure.invalidResponse,
-        'Speech response has no audio_data',
+      throw _logged(
+        const VoxtralTtsException(
+          VoxtralTtsFailure.invalidResponse,
+          'Speech response has no audio_data',
+        ),
+        description: description,
       );
     }
     final Uint8List bytes;
     try {
       bytes = base64Decode(audio);
     } on FormatException {
-      throw const VoxtralTtsException(
-        VoxtralTtsFailure.invalidResponse,
-        'Speech response audio_data is not base64',
+      throw _logged(
+        const VoxtralTtsException(
+          VoxtralTtsFailure.invalidResponse,
+          'Speech response audio_data is not base64',
+        ),
+        description: description,
       );
     }
     _logger.log(
@@ -212,14 +231,20 @@ class VoxtralTtsService {
           'offset': '${page * voicesPageSize}',
         },
       );
+      final description =
+          'Voice catalog request (${uri.path}): page ${page + 1}';
       final decoded = await _send(
         http.Request('GET', uri)..headers.addAll(_headers(apiKey)),
+        description: description,
       );
       final items = decoded['items'];
       if (items is! List) {
-        throw const VoxtralTtsException(
-          VoxtralTtsFailure.invalidResponse,
-          'Voices response has no items list',
+        throw _logged(
+          const VoxtralTtsException(
+            VoxtralTtsFailure.invalidResponse,
+            'Voices response has no items list',
+          ),
+          description: description,
         );
       }
       for (final item in items) {
@@ -242,7 +267,12 @@ class VoxtralTtsService {
     return VoxtralVoiceCatalog(voices: voices, fetchedAt: clock.now());
   }
 
-  Future<Map<String, dynamic>> _send(http.Request request) async {
+  /// Sends [request]; every failure is logged with [description], which
+  /// names the call without its content.
+  Future<Map<String, dynamic>> _send(
+    http.Request request, {
+    required String description,
+  }) async {
     // A redirect would carry the bearer token to another host.
     request.followRedirects = false;
     final http.Response response;
@@ -256,23 +286,29 @@ class VoxtralTtsService {
           VoxtralTtsFailure.timeout,
           'No response within ${timeout.inSeconds} s',
         ),
+        description: description,
       );
     } on SocketException catch (error) {
       throw _logged(
         VoxtralTtsException(VoxtralTtsFailure.network, error.message),
+        description: description,
       );
     } on http.ClientException catch (error) {
       throw _logged(
         VoxtralTtsException(VoxtralTtsFailure.network, error.message),
+        description: description,
       );
     } on HandshakeException catch (error) {
       throw _logged(
         VoxtralTtsException(VoxtralTtsFailure.network, error.message),
+        description: description,
       );
     }
 
     final status = response.statusCode;
-    if (status != 200) throw _logged(_httpFailure(response));
+    if (status != 200) {
+      throw _logged(_httpFailure(response), description: description);
+    }
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) return decoded;
@@ -284,39 +320,96 @@ class VoxtralTtsService {
         VoxtralTtsFailure.invalidResponse,
         'Response is not a JSON object',
       ),
+      description: description,
     );
   }
 
   VoxtralTtsException _httpFailure(http.Response response) {
     final status = response.statusCode;
+    final apiError = _apiError(response.body);
+    final requestId =
+        response.headers['x-request-id'] ??
+        response.headers['mistral-correlation-id'];
     return switch (status) {
       401 || 403 => VoxtralTtsException(
         VoxtralTtsFailure.unauthorized,
         'The Mistral API key was rejected',
         statusCode: status,
+        apiError: apiError,
+        requestId: requestId,
       ),
       429 => VoxtralTtsException(
         VoxtralTtsFailure.rateLimited,
         'Rate limited by the Mistral API',
         statusCode: status,
         retryAfter: _retryAfter(response.headers['retry-after']),
+        apiError: apiError,
+        requestId: requestId,
       ),
       >= 500 => VoxtralTtsException(
         VoxtralTtsFailure.server,
         'Mistral API server error',
         statusCode: status,
+        apiError: apiError,
+        requestId: requestId,
       ),
       >= 300 && < 400 => VoxtralTtsException(
         VoxtralTtsFailure.invalidResponse,
         'Unexpected redirect, not followed',
         statusCode: status,
+        requestId: requestId,
       ),
       _ => VoxtralTtsException(
         VoxtralTtsFailure.rejected,
         'Request rejected by the Mistral API',
         statusCode: status,
+        apiError: apiError,
+        requestId: requestId,
       ),
     };
+  }
+
+  /// Longest [VoxtralTtsException.apiError] kept; a validation answer lists
+  /// one short detail per rejected field, well below this.
+  static const int _maxApiErrorLength = 500;
+
+  /// The server's explanation in a non-200 [body]: `{"message": ...}` (a
+  /// string, or an object nesting the next form) or a validation answer,
+  /// `{"detail": "..." | [{"loc": [...], "msg": "...", "input": ...}]}`.
+  /// Only `loc` and `msg` are kept from a detail: its `input` echoes the
+  /// rejected value, which for the speech body is the spoken text. A body
+  /// that is not JSON (a proxy's error page) is not kept, as it is unknown
+  /// what it quotes.
+  static String? _apiError(String body) {
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(body);
+    } on FormatException {
+      return null;
+    }
+    final text = _errorText(decoded)?.trim();
+    if (text == null || text.isEmpty) return null;
+    return text.length <= _maxApiErrorLength
+        ? text
+        : '${text.substring(0, _maxApiErrorLength)}…';
+  }
+
+  static String? _errorText(Object? node) => switch (node) {
+    final String text => text,
+    final List<Object?> details =>
+      details.map(_detailText).whereType<String>().join('; '),
+    final Map<String, dynamic> map =>
+      _errorText(map['message']) ?? _errorText(map['detail']),
+    _ => null,
+  };
+
+  /// One validation detail as `query.limit: Input should be …`.
+  static String? _detailText(Object? detail) {
+    if (detail is! Map<String, dynamic>) return null;
+    final msg = detail['msg'];
+    if (msg is! String) return null;
+    final loc = detail['loc'];
+    return loc is List && loc.isNotEmpty ? '${loc.join('.')}: $msg' : msg;
   }
 
   /// `Retry-After` as delta-seconds; the HTTP-date form is not used by
@@ -326,8 +419,18 @@ class VoxtralTtsService {
     return seconds == null || seconds < 0 ? null : Duration(seconds: seconds);
   }
 
-  VoxtralTtsException _logged(VoxtralTtsException error) {
-    _logger.error(LogDomain.speech, error, subDomain: _subDomain);
+  /// Logs [error] under the [description] of the call that failed: the full
+  /// log records both, the PII-safe log the description and the type.
+  VoxtralTtsException _logged(
+    VoxtralTtsException error, {
+    required String description,
+  }) {
+    _logger.error(
+      LogDomain.speech,
+      error,
+      subDomain: _subDomain,
+      message: '$description failed',
+    );
     return error;
   }
 

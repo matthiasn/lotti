@@ -224,8 +224,19 @@ void main() {
       for (final entry in cases.entries) {
         final error = await failure(
           service(
+            // A validation detail echoes the rejected value as `input`.
             (_) => http.Response.bytes(
-              utf8.encode(jsonEncode({'detail': _text})),
+              utf8.encode(
+                jsonEncode({
+                  'detail': [
+                    {
+                      'loc': ['body', 'input'],
+                      'msg': 'String too long',
+                      'input': _text,
+                    },
+                  ],
+                }),
+              ),
               entry.key,
             ),
           ).synthesize(
@@ -239,6 +250,102 @@ void main() {
         expect(error.statusCode, entry.key);
         // The body may echo the user's text; the message must not.
         expect(error.toString(), isNot(contains('Grüß')));
+        expect(
+          error.apiError,
+          entry.key == 302 ? isNull : 'body.input: String too long',
+        );
+      }
+    });
+
+    test('keeps the server message and request id, and logs both', () async {
+      final error = await failure(
+        service(
+          (_) => http.Response(
+            jsonEncode({
+              'object': 'error',
+              'message': 'Invalid model: voxtral-nope',
+              'type': 'invalid_request_error',
+            }),
+            400,
+            headers: {'x-request-id': 'req-7'},
+          ),
+        ).synthesize(
+          text: _text,
+          voiceId: 'v-de-1',
+          baseUrl: _baseUrl,
+          apiKey: _apiKey,
+          model: 'voxtral-nope',
+        ),
+      );
+      expect(error.apiError, 'Invalid model: voxtral-nope');
+      expect(error.requestId, 'req-7');
+      expect(
+        error.toString(),
+        'VoxtralTtsException(rejected, HTTP 400): Request rejected by the '
+        'Mistral API — server: Invalid model: voxtral-nope (request req-7)',
+      );
+      final message =
+          verify(
+                () => logger.error(
+                  LogDomain.speech,
+                  error,
+                  subDomain: 'VoxtralTts',
+                  message: captureAny(named: 'message'),
+                ),
+              ).captured.single
+              as String;
+      expect(
+        message,
+        'Speech request (/v1/audio/speech): ${_text.length} chars, '
+        'voice v-de-1, model voxtral-nope, wav failed',
+      );
+      expect(message, isNot(contains('Grüß')));
+    });
+
+    test('reads nested and plain-string server errors', () async {
+      Future<String?> apiErrorOf(String body) async => (await failure(
+        service((_) => http.Response(body, 422)).synthesize(
+          text: 'a',
+          voiceId: 'v',
+          baseUrl: _baseUrl,
+          apiKey: _apiKey,
+        ),
+      )).apiError;
+
+      expect(
+        await apiErrorOf(
+          jsonEncode({
+            'message': {
+              'detail': [
+                {
+                  'loc': ['body', 'voice_id'],
+                  'msg': 'Unknown voice',
+                },
+                {'msg': 'Second problem'},
+                'not a detail',
+              ],
+            },
+          }),
+        ),
+        'body.voice_id: Unknown voice; Second problem',
+      );
+      expect(
+        await apiErrorOf('{"detail": "Voice not found"}'),
+        'Voice not found',
+      );
+      expect(
+        await apiErrorOf(jsonEncode({'message': 'x' * 600})),
+        '${'x' * 500}…',
+      );
+      // Not JSON, or JSON without a message: unknown content, not kept.
+      for (final body in [
+        '<html>Bad gateway</html>',
+        '',
+        '{}',
+        '[]',
+        '{"message": " "}',
+      ]) {
+        expect(await apiErrorOf(body), isNull, reason: body);
       }
     });
 
@@ -294,6 +401,14 @@ void main() {
         expect(error.failure, VoxtralTtsFailure.invalidResponse, reason: body);
         expect(error.isRetryable, isFalse);
       }
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          any<Object>(that: isA<VoxtralTtsException>()),
+          subDomain: 'VoxtralTts',
+          message: any(named: 'message'),
+        ),
+      ).called(6);
     });
 
     test('maps transport errors to network failures and logs them', () async {
@@ -318,6 +433,7 @@ void main() {
           LogDomain.speech,
           any<Object>(that: isA<VoxtralTtsException>()),
           subDomain: 'VoxtralTts',
+          message: any(named: 'message'),
         ),
       ).called(3);
     });
@@ -365,7 +481,7 @@ void main() {
                 {'name': 'no id'},
               ],
               'page': '1',
-              'page_size': '1000',
+              'page_size': '100',
               'total': 3,
               'total_pages': '1',
             }),
@@ -382,7 +498,9 @@ void main() {
       expect(request.url.path, '/v1/audio/voices');
       expect(request.url.queryParameters, {
         'type': 'all',
-        'limit': '1000',
+        // The API's maximum: a larger limit is a 422, and was the cause of
+        // every cloud read-aloud failing before any text was sent.
+        'limit': '100',
         'offset': '0',
       });
       expect(request.headers['Authorization'], 'Bearer $_apiKey');
@@ -434,6 +552,39 @@ void main() {
       expect(error.failure, VoxtralTtsFailure.invalidResponse);
     });
 
+    test('logs a rejected page with the field the server named', () async {
+      final error = await failure(
+        service(
+          (_) => http.Response(
+            jsonEncode({
+              'detail': [
+                {
+                  'type': 'less_than_equal',
+                  'loc': ['query', 'limit'],
+                  'msg': 'Input should be less than or equal to 100',
+                  'input': '1000',
+                },
+              ],
+            }),
+            422,
+          ),
+        ).fetchVoices(baseUrl: _baseUrl, apiKey: _apiKey),
+      );
+      expect(error.failure, VoxtralTtsFailure.rejected);
+      expect(
+        error.apiError,
+        'query.limit: Input should be less than or equal to 100',
+      );
+      verify(
+        () => logger.error(
+          LogDomain.speech,
+          error,
+          subDomain: 'VoxtralTts',
+          message: 'Voice catalog request (/v1/audio/voices): page 1 failed',
+        ),
+      ).called(1);
+    });
+
     test('surfaces an auth failure', () async {
       final error = await failure(
         service(
@@ -469,6 +620,16 @@ void main() {
     expect(
       const VoxtralTtsException(VoxtralTtsFailure.timeout, 'x').toString(),
       'VoxtralTtsException(timeout): x',
+    );
+    expect(
+      const VoxtralTtsException(
+        VoxtralTtsFailure.invalidResponse,
+        'Unexpected redirect, not followed',
+        statusCode: 302,
+        requestId: 'r1',
+      ).toString(),
+      'VoxtralTtsException(invalidResponse, HTTP 302): '
+      'Unexpected redirect, not followed (request r1)',
     );
   });
 
