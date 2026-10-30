@@ -26099,11 +26099,53 @@ abstract class AppLocalizations {
   /// **'Chat audio'**
   String get speechSettingsChatAudioLabel;
 
-  /// Dropdown entry for a language's default cloud voice, naming the voice that will speak
+  /// Toast after the cloud voice picker closes with a different voice for a language; offers Undo
   ///
   /// In en, this message translates to:
-  /// **'Default · {name}'**
-  String speechSettingsCloudVoiceDefault(String name);
+  /// **'{language} now uses {voice}'**
+  String speechSettingsCloudVoiceChanged(String language, String voice);
+
+  /// Marks a language whose cloud voice the user picked, rather than the default
+  ///
+  /// In en, this message translates to:
+  /// **'Your pick'**
+  String get speechSettingsCloudVoiceChosenTag;
+
+  /// How many cloud voices a language has, under its row in Speech settings
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 voice} other{{count} voices}}'**
+  String speechSettingsCloudVoiceCount(int count);
+
+  /// Tag on the voice a language uses when the user has not picked one
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get speechSettingsCloudVoiceDefaultTag;
+
+  /// In the cloud voice picker, names the voice in use when the gender filter hides it
+  ///
+  /// In en, this message translates to:
+  /// **'In use: {voice}'**
+  String speechSettingsCloudVoiceInUse(String voice);
+
+  /// Tooltip and accessibility label of the button that plays a sample in one cloud voice
+  ///
+  /// In en, this message translates to:
+  /// **'Listen to {voice}'**
+  String speechSettingsCloudVoiceListen(String voice);
+
+  /// Line at the top of the cloud voice picker: a tap on a voice plays it and makes it the language's voice
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a voice to hear it and use it.'**
+  String get speechSettingsCloudVoicePickerHint;
+
+  /// Marks, in the cloud voice picker, the voice that was in use when the picker opened, so going back to it is easy to find
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get speechSettingsCloudVoicePreviousTag;
 
   /// Sample sentence a cloud voice speaks when tested in Speech settings; spoken in each language's own catalog
   ///
@@ -26114,8 +26156,20 @@ abstract class AppLocalizations {
   /// Description of the cloud voices section when a profile reads aloud with a cloud voice
   ///
   /// In en, this message translates to:
-  /// **'Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.'**
+  /// **'Each language is read aloud in the voice shown. Tap one to hear or change it.'**
   String get speechSettingsCloudVoicesDescription;
+
+  /// Row that hides the cloud-voice languages beyond the user's own again
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer languages'**
+  String get speechSettingsCloudVoicesFewerLanguages;
+
+  /// Title of the sheet that picks the cloud voice for one language
+  ///
+  /// In en, this message translates to:
+  /// **'{language} voice'**
+  String speechSettingsCloudVoiceSheetTitle(String language);
 
   /// Title of the Speech settings section listing the cloud voices per language
   ///
@@ -26135,11 +26189,29 @@ abstract class AppLocalizations {
   /// **'Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.'**
   String get speechSettingsCloudVoicesNone;
 
+  /// Header row of the cloud-voice languages beyond the user's own, with how many there are; tapping it opens or closes them
+  ///
+  /// In en, this message translates to:
+  /// **'Other languages ({count})'**
+  String speechSettingsCloudVoicesOtherLanguages(int count);
+
+  /// Button that retries loading a provider's cloud voices after it failed
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get speechSettingsCloudVoicesRetry;
+
   /// Shown when the cloud voice catalog could not be loaded and none is cached
   ///
   /// In en, this message translates to:
   /// **'The voices could not be loaded. Check the connection and the provider’s API key.'**
   String get speechSettingsCloudVoicesUnavailable;
+
+  /// Under the collapsed Other languages header: how many of the hidden languages offer more than one cloud voice
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 has a choice of voices} other{{count} have a choice of voices}}'**
+  String speechSettingsCloudVoicesWithChoice(int count);
 
   /// No description provided for @speechSettingsModelDescription.
   ///
@@ -26180,13 +26252,13 @@ abstract class AppLocalizations {
   /// Description of the on-device voice section in Speech settings
   ///
   /// In en, this message translates to:
-  /// **'The on-device voice, for profiles without a cloud voice'**
+  /// **'For profiles without a cloud voice'**
   String get speechSettingsVoiceDescription;
 
   /// No description provided for @speechSettingsVoiceLabel.
   ///
   /// In en, this message translates to:
-  /// **'Voice'**
+  /// **'On-device voice'**
   String get speechSettingsVoiceLabel;
 
   /// No description provided for @speechVoiceGenderFemale.
@@ -28198,6 +28270,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bulgarian'**
   String get taskLanguageBulgarian;
+
+  /// Language name: Catalan
+  ///
+  /// In en, this message translates to:
+  /// **'Catalan'**
+  String get taskLanguageCatalan;
 
   /// No description provided for @taskLanguageChinese.
   ///

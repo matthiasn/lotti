@@ -15734,9 +15734,43 @@ class AppLocalizationsDa extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chatlyd';
 
   @override
-  String speechSettingsCloudVoiceDefault(String name) {
-    return 'Standard · $name';
+  String speechSettingsCloudVoiceChanged(String language, String voice) {
+    return '$language bruger nu $voice';
   }
+
+  @override
+  String get speechSettingsCloudVoiceChosenTag => 'Dit valg';
+
+  @override
+  String speechSettingsCloudVoiceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stemmer',
+      one: '1 stemme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceDefaultTag => 'Standard';
+
+  @override
+  String speechSettingsCloudVoiceInUse(String voice) {
+    return 'I brug: $voice';
+  }
+
+  @override
+  String speechSettingsCloudVoiceListen(String voice) {
+    return 'Lyt til $voice';
+  }
+
+  @override
+  String get speechSettingsCloudVoicePickerHint =>
+      'Tryk på en stemme for at høre og bruge den.';
+
+  @override
+  String get speechSettingsCloudVoicePreviousTag => 'Forrige';
 
   @override
   String get speechSettingsCloudVoiceSample =>
@@ -15744,7 +15778,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesDescription =>
-      'Profiler med en oplæsningsmodel taler med disse stemmer. Hvert sprog bruger dit valg eller sin første kvindestemme.';
+      'Hvert sprog læses op med stemmen, der vises her. Tryk for at høre eller skifte den.';
+
+  @override
+  String get speechSettingsCloudVoicesFewerLanguages => 'Færre sprog';
+
+  @override
+  String speechSettingsCloudVoiceSheetTitle(String language) {
+    return 'Stemme: $language';
+  }
 
   @override
   String get speechSettingsCloudVoicesLabel => 'Cloud-stemmer';
@@ -15757,8 +15799,27 @@ class AppLocalizationsDa extends AppLocalizations {
       'Oplæsning bruger stemmen på enheden. Vælg en oplæsningsmodel i en inferensprofil for at bruge en cloud-stemme.';
 
   @override
+  String speechSettingsCloudVoicesOtherLanguages(int count) {
+    return 'Andre sprog ($count)';
+  }
+
+  @override
+  String get speechSettingsCloudVoicesRetry => 'Prøv igen';
+
+  @override
   String get speechSettingsCloudVoicesUnavailable =>
       'Stemmerne kunne ikke indlæses. Tjek forbindelsen og udbyderens API-nøgle.';
+
+  @override
+  String speechSettingsCloudVoicesWithChoice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count har flere stemmer at vælge mellem',
+      one: '1 har flere stemmer at vælge mellem',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get speechSettingsModelDescription => 'On-device talemodel';
@@ -15781,11 +15842,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get speechSettingsSpeedLabel => 'Læsehastighed';
 
   @override
-  String get speechSettingsVoiceDescription =>
-      'Stemmen på enheden til profiler uden cloud-stemme';
+  String get speechSettingsVoiceDescription => 'Til profiler uden cloud-stemme';
 
   @override
-  String get speechSettingsVoiceLabel => 'Stemme';
+  String get speechSettingsVoiceLabel => 'Stemme på enheden';
 
   @override
   String get speechVoiceGenderFemale => 'Kvinde';
@@ -17005,6 +17065,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskLanguageBulgarian => 'Bulgarsk';
+
+  @override
+  String get taskLanguageCatalan => 'Catalansk';
 
   @override
   String get taskLanguageChinese => 'Kinesisk';

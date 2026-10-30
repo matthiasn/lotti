@@ -15,6 +15,7 @@ class TtsCloudRoute {
     required this.provider,
     required this.model,
     required this.languageCode,
+    this.voiceId,
   });
 
   /// The route [profile]'s read-aloud slot names, or `null` — the on-device
@@ -50,16 +51,23 @@ class TtsCloudRoute {
   final AiConfigModel model;
   final String languageCode;
 
+  /// One voice to speak with, whatever the user chose for [languageCode]:
+  /// the picker's preview of a voice not yet chosen. `null` everywhere else.
+  final String? voiceId;
+
   /// Identity for prepared audio and playback keys; carries no credentials.
-  String get cacheKey => '${provider.id}/${model.id}/$languageCode';
+  String get cacheKey =>
+      '${provider.id}/${model.id}/$languageCode'
+      '${voiceId == null ? '' : '/$voiceId'}';
 
   @override
   bool operator ==(Object other) =>
       other is TtsCloudRoute &&
       other.provider == provider &&
       other.model == model &&
-      other.languageCode == languageCode;
+      other.languageCode == languageCode &&
+      other.voiceId == voiceId;
 
   @override
-  int get hashCode => Object.hash(provider, model, languageCode);
+  int get hashCode => Object.hash(provider, model, languageCode, voiceId);
 }

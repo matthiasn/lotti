@@ -49,6 +49,40 @@ void main() {
       // Non-string entries are dropped, strings kept verbatim.
       expect(voice.languages, ['de', 'de-AT']);
       expect(voice.type, VoxtralVoiceType.preset);
+      expect(voice.tags, isEmpty);
+    });
+
+    test('keeps the mood tags, and through the device cache', () {
+      final voice = VoxtralVoice.fromJson(const {
+        'id': 'v-en-1',
+        'name': 'Ada',
+        'languages': ['en_us'],
+        'tags': ['sunny', 3, 'easygoing'],
+      });
+      expect(voice.tags, ['sunny', 'easygoing']);
+      final restored = VoxtralVoice.fromJson(voice.toJson());
+      expect(restored, voice);
+      expect(restored.hashCode, voice.hashCode);
+      // Tags are part of a voice's identity: a catalog refresh that only
+      // changes them is a changed catalog.
+      expect(
+        voice,
+        isNot(
+          VoxtralVoice(
+            id: voice.id,
+            name: voice.name,
+            languages: voice.languages,
+          ),
+        ),
+      );
+      expect(
+        VoxtralVoice.fromJson(const {
+          'id': 'x',
+          'name': 'X',
+          'tags': 'sunny',
+        }).tags,
+        isEmpty,
+      );
     });
 
     test('tolerates missing optional fields and an unknown type', () {

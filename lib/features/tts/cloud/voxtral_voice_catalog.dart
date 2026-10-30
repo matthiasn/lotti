@@ -10,8 +10,8 @@ enum VoxtralVoiceType { preset, custom, unknown }
 /// One voice from Mistral's voice catalog.
 ///
 /// Only the fields the voice picker and the selection strategy need are kept.
-/// The API also returns `age`, `color`, `tags` and sample metadata; those stay
-/// on the server.
+/// The API also returns `age`, `color` and sample metadata; those stay on the
+/// server.
 @immutable
 class VoxtralVoice {
   const VoxtralVoice({
@@ -20,6 +20,7 @@ class VoxtralVoice {
     required this.languages,
     this.slug,
     this.gender,
+    this.tags = const [],
     this.type = VoxtralVoiceType.unknown,
   });
 
@@ -33,6 +34,7 @@ class VoxtralVoice {
       throw const FormatException('Voice entry lacks an id or a name');
     }
     final languages = json['languages'];
+    final tags = json['tags'];
     return VoxtralVoice(
       id: id,
       name: name,
@@ -40,6 +42,9 @@ class VoxtralVoice {
       gender: json['gender'] as String?,
       languages: languages is List
           ? languages.whereType<String>().toList(growable: false)
+          : const <String>[],
+      tags: tags is List
+          ? tags.whereType<String>().toList(growable: false)
           : const <String>[],
       type: switch (json['type']) {
         'preset' => VoxtralVoiceType.preset,
@@ -65,6 +70,11 @@ class VoxtralVoice {
 
   /// The languages the voice is advertised for, verbatim from the API.
   final List<String> languages;
+
+  /// How the voice sounds, as the API describes it (`sunny`, `easygoing`,
+  /// …); about half the presets carry some, the rest none. Shown in the
+  /// picker so voices of one language can be told apart before a preview.
+  final List<String> tags;
 
   final VoxtralVoiceType type;
 
@@ -93,6 +103,7 @@ class VoxtralVoice {
     if (slug != null) 'slug': slug,
     if (gender != null) 'gender': gender,
     'languages': languages,
+    if (tags.isNotEmpty) 'tags': tags,
     'type': type.name,
   };
 
@@ -104,11 +115,19 @@ class VoxtralVoice {
       other.slug == slug &&
       other.gender == gender &&
       listEquals(other.languages, languages) &&
+      listEquals(other.tags, tags) &&
       other.type == type;
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, slug, gender, Object.hashAll(languages), type);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    slug,
+    gender,
+    Object.hashAll(languages),
+    Object.hashAll(tags),
+    type,
+  );
 
   @override
   String toString() => 'VoxtralVoice($id, $name, $languages)';

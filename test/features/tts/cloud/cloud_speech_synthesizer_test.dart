@@ -121,6 +121,30 @@ void main() {
     ).called(2);
   });
 
+  test("a preview route's own voice wins over the user's choice", () async {
+    await synthesizer.synthesizeToFile(
+      route: TtsCloudRoute(
+        provider: route.provider,
+        model: route.model,
+        languageCode: 'de',
+        voiceId: 'v-de-m',
+      ),
+      text: 'Hallo',
+      voiceByLanguage: const {'de': 'v-de-f'},
+      canSend: allow,
+    );
+
+    verify(
+      () => service.synthesize(
+        text: 'Hallo',
+        voiceId: 'v-de-m',
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    ).called(1);
+  });
+
   test('withdrawn permission after the catalog loads sends nothing', () async {
     final loaded = <String>[];
     final file = await synthesizer.synthesizeToFile(

@@ -16027,9 +16027,44 @@ class AppLocalizationsRo extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Audio pentru chat';
 
   @override
-  String speechSettingsCloudVoiceDefault(String name) {
-    return 'Implicită · $name';
+  String speechSettingsCloudVoiceChanged(String language, String voice) {
+    return '$language folosește acum $voice';
   }
+
+  @override
+  String get speechSettingsCloudVoiceChosenTag => 'Alegerea dumneavoastră';
+
+  @override
+  String speechSettingsCloudVoiceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de voci',
+      few: '$count voci',
+      one: '1 voce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceDefaultTag => 'Implicită';
+
+  @override
+  String speechSettingsCloudVoiceInUse(String voice) {
+    return 'În uz: $voice';
+  }
+
+  @override
+  String speechSettingsCloudVoiceListen(String voice) {
+    return 'Ascultați vocea $voice';
+  }
+
+  @override
+  String get speechSettingsCloudVoicePickerHint =>
+      'Atingeți o voce pentru a o asculta și a o folosi.';
+
+  @override
+  String get speechSettingsCloudVoicePreviousTag => 'Anterioară';
 
   @override
   String get speechSettingsCloudVoiceSample =>
@@ -16037,7 +16072,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesDescription =>
-      'Profilurile cu un model de citire cu voce tare vorbesc cu aceste voci. Fiecare limbă folosește alegerea dumneavoastră sau prima sa voce feminină.';
+      'Fiecare limbă este citită cu vocea afișată. Atingeți pentru a o asculta sau schimba.';
+
+  @override
+  String get speechSettingsCloudVoicesFewerLanguages => 'Mai puține limbi';
+
+  @override
+  String speechSettingsCloudVoiceSheetTitle(String language) {
+    return 'Voce: $language';
+  }
 
   @override
   String get speechSettingsCloudVoicesLabel => 'Voci în cloud';
@@ -16050,8 +16093,28 @@ class AppLocalizationsRo extends AppLocalizations {
       'Citirea cu voce tare folosește vocea de pe dispozitiv. Pentru o voce în cloud, alegeți un model de citire cu voce tare într-un profil de inferență.';
 
   @override
+  String speechSettingsCloudVoicesOtherLanguages(int count) {
+    return 'Alte limbi ($count)';
+  }
+
+  @override
+  String get speechSettingsCloudVoicesRetry => 'Reîncercați';
+
+  @override
   String get speechSettingsCloudVoicesUnavailable =>
       'Vocile nu au putut fi încărcate. Verificați conexiunea și cheia API a furnizorului.';
+
+  @override
+  String speechSettingsCloudVoicesWithChoice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count au mai multe voci de ales',
+      few: '$count au mai multe voci de ales',
+      one: '1 are mai multe voci de ales',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';
@@ -16076,10 +16139,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Vocea de pe dispozitiv, pentru profilurile fără voce în cloud';
+      'Pentru profilurile fără voce în cloud';
 
   @override
-  String get speechSettingsVoiceLabel => 'Voce';
+  String get speechSettingsVoiceLabel => 'Voce pe dispozitiv';
 
   @override
   String get speechVoiceGenderFemale => 'Feminină';
@@ -17324,6 +17387,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskLanguageBulgarian => 'Bulgară';
+
+  @override
+  String get taskLanguageCatalan => 'Catalană';
 
   @override
   String get taskLanguageChinese => 'Chineză';

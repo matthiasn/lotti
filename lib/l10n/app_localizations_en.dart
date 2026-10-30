@@ -15648,9 +15648,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Chat audio';
 
   @override
-  String speechSettingsCloudVoiceDefault(String name) {
-    return 'Default · $name';
+  String speechSettingsCloudVoiceChanged(String language, String voice) {
+    return '$language now uses $voice';
   }
+
+  @override
+  String get speechSettingsCloudVoiceChosenTag => 'Your pick';
+
+  @override
+  String speechSettingsCloudVoiceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voices',
+      one: '1 voice',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceDefaultTag => 'Default';
+
+  @override
+  String speechSettingsCloudVoiceInUse(String voice) {
+    return 'In use: $voice';
+  }
+
+  @override
+  String speechSettingsCloudVoiceListen(String voice) {
+    return 'Listen to $voice';
+  }
+
+  @override
+  String get speechSettingsCloudVoicePickerHint =>
+      'Tap a voice to hear it and use it.';
+
+  @override
+  String get speechSettingsCloudVoicePreviousTag => 'Previous';
 
   @override
   String get speechSettingsCloudVoiceSample =>
@@ -15658,7 +15692,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesDescription =>
-      'Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.';
+      'Each language is read aloud in the voice shown. Tap one to hear or change it.';
+
+  @override
+  String get speechSettingsCloudVoicesFewerLanguages => 'Fewer languages';
+
+  @override
+  String speechSettingsCloudVoiceSheetTitle(String language) {
+    return '$language voice';
+  }
 
   @override
   String get speechSettingsCloudVoicesLabel => 'Cloud voices';
@@ -15671,8 +15713,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Read-aloud uses the on-device voice. To use a cloud voice, choose a read-aloud model in an inference profile.';
 
   @override
+  String speechSettingsCloudVoicesOtherLanguages(int count) {
+    return 'Other languages ($count)';
+  }
+
+  @override
+  String get speechSettingsCloudVoicesRetry => 'Try again';
+
+  @override
   String get speechSettingsCloudVoicesUnavailable =>
       'The voices could not be loaded. Check the connection and the provider’s API key.';
+
+  @override
+  String speechSettingsCloudVoicesWithChoice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count have a choice of voices',
+      one: '1 has a choice of voices',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get speechSettingsModelDescription => 'On-device speech model';
@@ -15696,10 +15757,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'The on-device voice, for profiles without a cloud voice';
+      'For profiles without a cloud voice';
 
   @override
-  String get speechSettingsVoiceLabel => 'Voice';
+  String get speechSettingsVoiceLabel => 'On-device voice';
 
   @override
   String get speechVoiceGenderFemale => 'Female';
@@ -16909,6 +16970,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskLanguageBulgarian => 'Bulgarian';
+
+  @override
+  String get taskLanguageCatalan => 'Catalan';
 
   @override
   String get taskLanguageChinese => 'Chinese';

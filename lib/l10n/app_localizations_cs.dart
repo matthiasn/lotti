@@ -15930,9 +15930,44 @@ class AppLocalizationsCs extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Zvuk chatu';
 
   @override
-  String speechSettingsCloudVoiceDefault(String name) {
-    return 'Výchozí · $name';
+  String speechSettingsCloudVoiceChanged(String language, String voice) {
+    return '$language teď používá hlas $voice';
   }
+
+  @override
+  String get speechSettingsCloudVoiceChosenTag => 'Tvoje volba';
+
+  @override
+  String speechSettingsCloudVoiceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hlasů',
+      few: '$count hlasy',
+      one: '1 hlas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceDefaultTag => 'Výchozí';
+
+  @override
+  String speechSettingsCloudVoiceInUse(String voice) {
+    return 'Používá se: $voice';
+  }
+
+  @override
+  String speechSettingsCloudVoiceListen(String voice) {
+    return 'Poslechnout hlas $voice';
+  }
+
+  @override
+  String get speechSettingsCloudVoicePickerHint =>
+      'Klepnutím na hlas si ho poslechneš a použiješ.';
+
+  @override
+  String get speechSettingsCloudVoicePreviousTag => 'Předchozí';
 
   @override
   String get speechSettingsCloudVoiceSample =>
@@ -15940,7 +15975,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesDescription =>
-      'Profily s modelem pro předčítání mluví těmito hlasy. Každý jazyk použije tvůj výběr, nebo svůj první ženský hlas.';
+      'Každý jazyk se čte hlasem, který je tu uvedený. Klepnutím si ho poslechneš nebo změníš.';
+
+  @override
+  String get speechSettingsCloudVoicesFewerLanguages => 'Méně jazyků';
+
+  @override
+  String speechSettingsCloudVoiceSheetTitle(String language) {
+    return 'Hlas: $language';
+  }
 
   @override
   String get speechSettingsCloudVoicesLabel => 'Cloudové hlasy';
@@ -15953,8 +15996,28 @@ class AppLocalizationsCs extends AppLocalizations {
       'Předčítání používá hlas v zařízení. Pro cloudový hlas vyber model pro předčítání v profilu inference.';
 
   @override
+  String speechSettingsCloudVoicesOtherLanguages(int count) {
+    return 'Ostatní jazyky ($count)';
+  }
+
+  @override
+  String get speechSettingsCloudVoicesRetry => 'Zkusit znovu';
+
+  @override
   String get speechSettingsCloudVoicesUnavailable =>
       'Hlasy se nepodařilo načíst. Zkontroluj připojení a klíč API poskytovatele.';
+
+  @override
+  String speechSettingsCloudVoicesWithChoice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count má na výběr více hlasů',
+      few: '$count mají na výběr více hlasů',
+      one: '1 má na výběr více hlasů',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get speechSettingsModelDescription => 'Hlasový model v zařízení';
@@ -15979,10 +16042,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechSettingsVoiceDescription =>
-      'Hlas v zařízení pro profily bez cloudového hlasu';
+      'Pro profily bez cloudového hlasu';
 
   @override
-  String get speechSettingsVoiceLabel => 'Hlas';
+  String get speechSettingsVoiceLabel => 'Hlas v zařízení';
 
   @override
   String get speechVoiceGenderFemale => 'Ženský';
@@ -17210,6 +17273,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskLanguageBulgarian => 'Bulharština';
+
+  @override
+  String get taskLanguageCatalan => 'Katalánština';
 
   @override
   String get taskLanguageChinese => 'Čínština';
