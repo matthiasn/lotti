@@ -184,13 +184,16 @@ is split instead, the way `DesignSystemSplitButton` splits a button: the
 content keeps the pick, and an inset hairline (`decorative.level01`) separates
 a full-height, 48dp-wide segment carrying the navigation chevron — the glyph,
 size and ink of a `navigation` row's, because it also opens another page. Each
-segment has its own ink, and the selected band runs under both and is the
-whole selected state: a single-select split row draws no check, which would
-only push that row's trailing metadata (a status chip, say) out of line with
-every other row's. The segment is its
+segment has its own ink, the selected band runs under both, and the segment is its
 own button node named by the action's label (which names the entity, "Open
 Garden"), and a disabled row disables it. `PickerItem.action` passes it through
 `EntityPickerSheet`.
+
+`showSelectedMarker: false` (also on `EntityPickerSheet`) drops a single-select
+row's check where the selected band alone is the selected state and the rows
+carry trailing metadata: a check would push the selected row's status chip out
+of line with every other row's. Selection semantics are unaffected. The project
+picker sets it, with or without its open segments.
 
 `ResizableDivider.layoutWidth` exposes its reserved row width for fit
 calculations; its wider pointer hit target overflows without consuming space.

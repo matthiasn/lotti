@@ -474,7 +474,7 @@ void main() {
       expect(rowWidget(tester, 'project-p-alpha').semanticLabel, 'Alpha, Open');
     });
 
-    testWidgets('without a current project nothing is ticked and there is '
+    testWidgets('without a current project nothing is selected and there is '
         'no No project row', (tester) async {
       await pumpBody(tester, projectsAsync: AsyncData([alpha, beta]));
 
@@ -485,8 +485,8 @@ void main() {
       expect(rowWidget(tester, 'project-p-beta').selected, isFalse);
     });
 
-    testWidgets('pins the current project first, ticked, with No project '
-        'under it', (tester) async {
+    testWidgets('pins the current project first, selected by its band alone, '
+        'with No project under it', (tester) async {
       await pumpBody(
         tester,
         projectsAsync: AsyncData([alpha, beta]),
@@ -496,7 +496,10 @@ void main() {
       expect(rowWidget(tester, 'project-p-beta').selected, isTrue);
       expect(rowWidget(tester, 'project-p-alpha').selected, isFalse);
       expect(rowWidget(tester, 'project-none').selected, isFalse);
-      expect(find.byIcon(LottiIcons.confirm), findsOneWidget);
+      // No check, with or without the open action, so the selected row's
+      // status chip stays in line with every other row's.
+      expect(rowWidget(tester, 'project-p-beta').showSelectedMarker, isFalse);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
 
       final betaTop = tester.getTopLeft(row('project-p-beta')).dy;
       final noneTop = tester.getTopLeft(noneRow).dy;
@@ -680,26 +683,29 @@ void main() {
       expect(find.byType(ProjectSelectionModalBody), findsNothing);
     });
 
-    testWidgets('a tap on the ticked current project closes without a write', (
-      tester,
-    ) async {
-      var calls = 0;
-      await pumpPushedBody(
+    testWidgets(
+      'a tap on the selected current project closes without a write',
+      (
         tester,
-        projects: [alpha, beta],
-        currentProjectId: alpha.meta.id,
-        onProjectSelected: (_) async {
-          calls++;
-          return true;
-        },
-      );
+      ) async {
+        var calls = 0;
+        await pumpPushedBody(
+          tester,
+          projects: [alpha, beta],
+          currentProjectId: alpha.meta.id,
+          onProjectSelected: (_) async {
+            calls++;
+            return true;
+          },
+        );
 
-      await tester.tap(find.text('Alpha'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Alpha'));
+        await tester.pumpAndSettle();
 
-      expect(calls, 0);
-      expect(find.byType(ProjectSelectionModalBody), findsNothing);
-    });
+        expect(calls, 0);
+        expect(find.byType(ProjectSelectionModalBody), findsNothing);
+      },
+    );
 
     testWidgets('keeps the picker open and explains a rejected selection', (
       tester,

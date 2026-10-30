@@ -295,7 +295,8 @@ category is set.
 behaves like the category and label pickers rather than being a bare row
 list: a design-system search field filters the category's
 privacy-compatible projects by title, the project the task is in is pinned
-first and ticked, and a "No project" row to unlink sits under it — offered
+first and marked by the selected band alone — no check, so its status chip
+lines up with every other row's — and a "No project" row to unlink sits under it — offered
 only while the task *has* a project, and suppressed when a search has
 filtered that project out, the same rule the category picker applies to its
 Clear row. Each project row carries its status chip, folded into the row's
