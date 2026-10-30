@@ -93,30 +93,90 @@ After this change:
 - Agent-report vectors are keyed by task, and their text lives in the agent
   database.
 
+**The template for a tracked, versioned register** is the AI configuration
+(ADR 0136).
+
+- It appends `SyncSequencePayloadType.aiConfig` (`lib/classes/sync_sequence_payload_type.dart`).
+- It has its own vector clock per row.
+- It enqueues through `outbox_enqueue_writer_simple.dart`.
+- It is answered by `backfill_response_builders.dart` /
+  `backfill_response_handler.dart`.
+- Deep backfill is `ai_config_deep_backfill_store.dart`, implementing
+  `DeepBackfillStore` (`lib/features/sync/deep_backfill/deep_backfill_store.dart`:
+  count, changes, page, range, enqueueCurrent).
+- It is applied and merged in `lib/features/ai/repository/ai_config_repository_sync.dart`.
+
+Follow that wiring end to end.
+
 **Ordering:** nothing guarantees that a vector arrives after the entity version
 it was made from. Claim order (priority, then `createdAt`) makes it likely but
 not certain.
 
 ## Design
 
-### 1. One message per embedded entity, untracked, as a file
+### 1. A tracked register per entry and model
 
-Add a variant:
+The vectors of one entry under one model form a **register**: id
+`<entityId>|<modelId>`, the way an AI configuration is one register per id. It
+is synced like any tracked kind, so no device silently misses one, and devices
+converge on the same vectors:
+
+- **its own vector clock**, bumped by the host that writes it (embeds, or
+  accepts and stores);
+- **a sequence entry per version**: a new `SyncSequencePayloadType.embeddingVectors`,
+  appended last (ordinals are persisted);
+- **a vector-clock reservation and a bind at enqueue**;
+- **receipts on arrival;**
+- **gap discovery and backfill**, like every other tracked kind
+  (`knowledge/features/sync/sequence-and-backfill.md`);
+- **deep backfill**, through a vectors `DeepBackfillStore`;
+- **sequence-log population after restore.**
 
 ```dart
 const factory SyncMessage.embeddingVectors({
+  required String id,                    // '<entityId>|<modelId>'
   required String entityId,
-  required String entityType,    // kEntityType* as stored
-  required String modelId,       // 'embeddinggemma-300m-q4'
-  required String contentHash,   // sha256 of the embedded text
-  required String jsonPath,      // the vectors, as an attachment
+  required String entityType,            // kEntityType* as stored
+  required String modelId,               // 'embeddinggemma-300m-q4'
+  required VectorClock vectorClock,      // the register's own clock
+  required VectorClock? sourceVectorClock, // the entry's clock when embedded
+  required String contentHash,           // sha256 of the embedded text
+  required String jsonPath,              // the vectors, as an attachment
   String? attachmentEventId,
   String? categoryId,
-  String? taskId,                // agent reports
-  String? subtype,               // agent reports
+  String? taskId,                        // agent reports
+  String? subtype,                       // agent reports
   String? originatingHostId,
+  List<VectorClock>? coveredVectorClocks,
 }) = SyncEmbeddingVectors;
 ```
+
+**Why two clocks.**
+
+- The register's own clock carries the sync guarantees: reservation, receipts,
+  dominance and backfill, exactly as for every other tracked row.
+- The source clock says which version of the entry the vectors describe, so a
+  receiver can tell vectors of an older text from vectors of the current one,
+  even when two devices embedded concurrently.
+
+**Merge on the receiver**, per register:
+
+| Incoming vs stored clock | Result |
+|---|---|
+| Dominated or equal | Stale or a duplicate: drop it, and record the receipt. |
+| Dominates | Candidate; it goes through the hash check in §3. |
+| Concurrent (two devices embedded the same entry) | The candidate whose `contentHash` matches the receiver's own text wins. If both or neither match, the larger `sourceVectorClock` wins, then the lower host id, so every device picks the same one. Merge the clocks, as AI configurations do. |
+
+**Persisting the clocks** is a schema change in ObjectBox. The register's
+clock, source clock and content hash must be stored per entry and model,
+because the backfill responder, deep backfill and restore read them.
+
+- Either add fields to `EmbeddingChunkEntity` (repeated on each chunk of an
+  entry), or add a small register entity per shard.
+- Prefer the register entity: one row per entry, and the chunk table stays
+  untouched.
+- Regenerate `objectbox.g.dart` with the full `make build_runner`. A filtered
+  build deletes other outputs.
 
 **The vectors travel as a gzipped JSON attachment**, the way `journalEntity`
 does:
@@ -127,20 +187,28 @@ does:
 
 - **Size:** a chunk is 3 072 bytes raw, so a typical entry of 1–3 chunks is
   about 4–12 KB.
-- **Why a file and not inline:** it removes the inline budget, and an attachment
-  already travels alone. A vector row is therefore never bundled, and an older
-  build replays only that row, never a bundle of journal rows. The implementer
-  must confirm in `claimNextBatch` that a JSON attachment row (not only a media
-  row) travels alone. If it doesn't, add that rule for this variant.
-
-**Untracked: no vector clock, no sequence log, no deep backfill.**
-
-- A vector is regenerable. If one is lost, the receiver embeds the entry itself
-  at its next local edit, or during a backfill. That costs a few hundred
-  milliseconds, so a sequence entry per embed isn't worth it.
-- This follows the precedent of `syncNodeProfile` and `gitHubAccount`.
-- Priority: low (`outbox_scheduling.dart`), behind journal entities, so the
+- **Why a file and not inline:** it removes the inline budget, and an
+  attachment travels alone. A vector row is therefore never bundled, and an
+  older build that can't decode it replays only that row, never a bundle of
+  journal rows. Confirm in `claimNextBatch` that a JSON attachment row, not only
+  a media row, travels alone, and add the rule if it doesn't.
+- **Priority:** low (`outbox_scheduling.dart`), behind journal entities, so the
   entry usually arrives first.
+
+**Backfill answers** (`backfill_response_builders.dart`), per requested
+`(host, counter)` whose register this device holds:
+
+- **The same clock:** resend exactly, with the attachment.
+- **A newer version:** a hint pointing at it, as other kinds answer.
+- **Removed** (the entry was deleted or fell under the length minimum, see
+  below): `deleted`.
+- **Never held:** `unresolvable`, from the originator only.
+
+**Removals are versions too.** When a device deletes an entry's vectors, it
+writes a tombstone version of the register: a bumped clock, no chunks. A
+receiver therefore removes them too, instead of keeping vectors for text that is
+gone. Deep backfill counts and pages tombstones like live rows, as its contract
+already says.
 
 **Float32, not quantized.** ADR 0144 measured float32 vectors. Quantizing to
 int8 would quarter the size, but it needs its own measurement on
@@ -157,14 +225,14 @@ The device that embedded the text, right after the store write:
 - The sync side (`get_it_sync.dart`) implements the callback and enqueues the
   message.
 - Nothing is sent when:
-  - the vectors came from sync (no echo: the sink stores without calling the
-    callback);
+  - the vectors came from sync. There's no echo: storing a received version
+    records its receipt and keeps its clock, and sends nothing;
   - sync is not set up (a guest profile, or no sync capability);
   - the new flag below is off.
 
-**Deletions do not sync as messages.** Every device already deletes vectors for
-an entry that is gone or too short when it processes that entry. A vector stored
-for a deleted entry is skipped by search, as it is today. Keep it that way.
+**Removals send a tombstone version** (§1): when processing deletes an entry's
+vectors (the entry is gone, or its text fell under the minimum), the register
+gets a new, empty version, sent like any other.
 
 A new config flag, `sync_embeddings`, off by default in the first release,
 gates sending and accepting. `enable_embeddings` must be on as well.
@@ -172,39 +240,48 @@ gates sending and accepting. `enable_embeddings` must be on as well.
 ### 3. Who stores: the receiver checks the hash
 
 The apply arm calls an injected `SyncedEmbeddingSink`, defined in sync and
-implemented in the AI feature, and returns `null`. It does not write the
-journal: `writesJournalDb → false`. The sink:
+implemented in the AI feature. It does not write the journal:
+`writesJournalDb → false`. The sink:
 
 1. Drops the message unless all of these hold:
    - `enable_embeddings` and `sync_embeddings` are on;
    - the pipeline is registered;
    - `modelId` equals the local `OnDeviceEmbeddingRepository.modelId`.
-   It needs the model files only for queries, not to store, so a device that
-   hasn't downloaded the model still stores vectors. Its index is ready the
+
+   A dropped message still records its receipt, so the sequence log never asks
+   for it again. A device that hasn't downloaded the model still stores
+   vectors: it needs the model only for queries, so its index is ready the
    moment it downloads.
-2. Reads the attachment and checks it (`dims == kEmbeddingDimensions`, every
+2. Merges clocks (§1). A dominated version is dropped here.
+3. Reads the attachment and checks it (`dims == kEmbeddingDimensions`, every
    value finite). It rejects anything else.
-3. Recomputes the content hash from its own copy:
+4. Recomputes the content hash from its own copy:
    - **A journal entity:** use `journalDb.journalEntityById` and the same text
      extraction `EmbeddingProcessor` uses, label enrichment included. Factor
      that extraction out so both sides call one function.
    - **An agent report:** use the report's content from the agent database.
-4. Compares:
+5. Compares:
    - **Hashes equal:** store under the entity's lock (`EmbeddingProcessor`'s
-     per-entity serialization), with the sender's chunks, model id and hash. An
-     agent report also runs the task's one-report cleanup (#4879).
-   - **Hashes differ, or the entity is missing:** hold the message, keeping only
-     the newest per `(entityId, modelId)`. Hold it in memory, bounded (for
-     example 2 000 entries). When `onJournalEntityApplied` fires for that
-     entity, run step 3 again.
-   - **A restart loses what was held.** That costs a local embed, nothing else.
-5. Is idempotent: a stored row whose hash already matches is a no-op. That
+     per-entity serialization), with the sender's chunks, the register's merged
+     clock, the source clock and the hash. An agent report also runs the task's
+     one-report cleanup (#4879).
+   - **Hashes differ, or the entity is missing:** the vectors describe a text
+     this device doesn't have yet. Hold the version, keeping the newest per
+     register, in a small persisted table (it must survive a restart now that
+     the receipt is recorded). Run step 4 again when `onJournalEntityApplied`
+     fires for that entity.
+   - **A held version whose source clock is dominated by the local entry's
+     clock** will never match, because the entry has moved on. It is
+     discarded, and the device's own next embed of that entry supersedes it.
+6. Is idempotent: a version already stored (equal clock) is a no-op. That
    covers lease redelivery.
 
-**Receivers still do not embed synced edits.** That's today's behaviour, and it
-stays: a missing vector is filled by the next local edit or the backfill.
-Whether a receiver should embed synced entries that never got vectors is a
-separate question; see Residuals.
+**Receivers still do not embed synced edits.** The vectors now come with them,
+and the writer is responsible for sending. If the writer never embeds (its flag
+is off, it runs Windows, or it has no model), a receiver that does embed keeps
+the local fallback: the next local edit or the backfill. Whether receivers
+should also embed synced entries that never got vectors is listed under
+Residuals.
 
 ### 4. A new device
 
@@ -212,8 +289,11 @@ Add a vectors phase to the Add Device history (`historical_sync_service.dart`,
 `ReSyncPhase`), after journal entities:
 
 - it walks the local store;
-- it sends one `embeddingVectors` per stored entity whose hash still matches the
-  local text.
+- it sends the current version of each register through `enqueueCurrent`, the
+  same path deep backfill uses.
+
+Because the vectors are tracked, a device that misses any of them later finds
+the gap and asks for them, like every other tracked row.
 
 Vectors staged before the onboarding End barrier would delay End, because they
 are low priority. Stage them after End, and the new device stores them as they
@@ -234,53 +314,71 @@ already: their hashes match.
 ## Implementation slices
 
 Each slice is one PR, green on CI with codecov ≥ 99 % on the patch, and covers
-the knowledge docs it touches.
+the knowledge docs it touches. Read ADR 0136 and its code before slice 1, and
+follow the AI-config wiring wherever this plan doesn't say otherwise.
 
-1. **Message and plumbing.**
-   - The variant, `priorityForMessage` (low), the enqueue path (untracked,
-     attachment), a `writesJournalDb → false` arm, an apply arm calling the
-     injected sink (null sink: drop).
+1. **Register storage.**
+   - The ObjectBox register entity (or fields), with the register's clock, the
+     source clock and the content hash. Generate it with the full
+     `make build_runner`.
+   - `EmbeddingStore` methods to read and write a register's version, and
+     tombstones.
+   - The processor writes a new version, bumping the local host's counter, on
+     each store and each removal.
+   - Tests on both stores and on the processor.
+2. **Message, sequence and outbox.**
+   - The variant.
+   - `SyncSequencePayloadType.embeddingVectors`, appended last.
+   - Reservation and bind at enqueue (through the simple enqueue writer, as
+     `aiConfig` does); priority low; the attachment writer; it travels alone.
+   - The `writesJournalDb → false` arm.
    - The `sync_embeddings` flag, seeded off.
    - Tests:
      - encoding and decoding;
+     - reservation and bind;
      - the row travels alone;
-     - an old-build decode failure stays one row, never a bundle.
-   - Docs: `message-model.md` (the variant list, and the untracked set),
-     `send-path.md`.
-2. **Sending.**
-   - The `EmbeddingShare` callback from `_embedChunks`, implemented in sync.
-   - The attachment writer: float32 to base64, gzipped.
-   - No echo for synced vectors; flag gating.
+     - an old build's decode failure stays one row.
+   - Docs: `message-model.md` (the variant list and the tracked set),
+     `send-path.md`, `sequence-and-backfill.md`.
+3. **Sending.**
+   - The `EmbeddingShare` callback from `_embedChunks` and from removals,
+     implemented in sync.
+   - No echo; flag gating.
+   - Tests: one message per new version; nothing when the flag is off or sync
+     is absent; the agent-report path; tombstones.
+4. **Receiving.**
+   - The `SyncedEmbeddingSink`: the merge table, the hash check against the
+     receiver's own text, the shared text extraction, the persisted hold and
+     its re-check on `onJournalEntityApplied`, discarding superseded holds,
+     agent reports, validation, and receipts recorded on every outcome.
    - Tests:
-     - one message per stored embed;
-     - nothing when the flag is off, when sync is absent, or when the vectors
-       arrived by sync;
-     - the agent-report path.
-3. **Storing.**
-   - The `SyncedEmbeddingSink`, with the hash check against the receiver's own
-     text, the shared text extraction, the held-message map and its re-check on
-     `onJournalEntityApplied`, the agent-report variant, and validation.
-   - Tests:
+     - dominated / dominating / concurrent;
      - match → stored;
-     - mismatch → held, then stored after the entity applies;
-     - a label difference keeps it held;
-     - a wrong model id or dims is dropped;
+     - mismatch → held → stored after the entity applies;
+     - a held version superseded by a newer entry is discarded;
+     - wrong model or dims → dropped, receipt recorded;
      - redelivery is a no-op;
-     - the bound holds the newest per entity.
-4. **Add Device phase.**
-   - The vectors phase after journal entities and after End.
-   - Tests on `historical_sync_service`.
-5. **TLA+ and docs.**
-   - Extend `specs/tla/EmbeddingFreshness.tla` with a `SyncVector` actor
-     (send after store, arrival in any order, the hash check, holding, and
-     loss), under the practice in `specs/tla/README.md`:
-     - fix switches;
-     - mutations, each with its counterexample;
-     - the ledger row.
+     - a held version survives a restart.
+5. **Backfill, deep backfill, restore, Add Device.**
+   - The backfill response builder: resend, hint, `deleted`, `unresolvable`.
+   - The vectors `DeepBackfillStore`.
+   - Sequence-log population after restore.
+   - The `ReSyncPhase` for vectors.
+   - Tests on each, following the `aiConfig` ones.
+6. **TLA+ and docs.**
+   - Add the vectors family to `specs/tla/SyncPipeline.tla` (`Family`), and
+     check it in `SyncSequence.tla` and `DeepBackfill.tla` as the other tracked
+     kinds are.
+   - Add a `SyncVector` actor to `specs/tla/EmbeddingFreshness.tla`: send after
+     store, arrival in any order, the merge, the hash check, holding, and
+     tombstones.
    - Properties:
+     - every device converges on the same register version once quiescent;
      - a stored vector always matches its entry's current text on the device
        that stored it;
      - nothing reaches the index from an unverified device.
+   - Follow the practice in `specs/tla/README.md`: fix switches, mutations with
+     their counterexamples, the ledger row.
    - Update `knowledge/features/ai/embeddings-and-search.md`: the residual
      "synced edits are not embedded" now reads "synced edits arrive with their
      vectors".
@@ -302,10 +400,10 @@ before.
 
 ## Residuals
 
-- **Synced entries that never got vectors** (sent before the flag, or lost)
-  stay unembedded on receivers until a local edit or a backfill. A later step
-  could let a receiver with the model embed those in the background, on a
-  charger.
+- **Synced entries their writer never embedded** (written with its flag off,
+  on Windows, or without the model) stay unembedded on receivers until a local
+  edit or a backfill. A later step could let a receiver with the model embed
+  those in the background, on a charger, and share them like any other version.
 - **Label renames** change task hashes on every device, so the next local
   edit's vectors replace the old ones everywhere. The task is unsearchable
   only in the window before that.
