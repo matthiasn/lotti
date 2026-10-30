@@ -658,6 +658,8 @@ class GoalSignalReader {
     ).subtract(Duration(days: shortTermDays - 1));
     void visit(GoalCriterion criterion) {
       switch (criterion) {
+        case GoalCriterionUnsupported():
+          break;
         case GoalCriterionMetric(:final window) ||
             GoalCriterionMeasurable(:final window) ||
             GoalCriterionHabit(:final window) ||
@@ -743,6 +745,8 @@ class _SignalNeeds {
 
   void collect(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionMetric(:final dataType):
         quantitativeTypes.add(dataType);
       case GoalCriterionHabit(:final habitId):

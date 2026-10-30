@@ -115,7 +115,11 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
   /// summary at all is always compacted. A journal goal re-reading a year of
   /// entries for substance therefore pays for its recent ones first and the
   /// rest over the following wakes, reading the old summaries meanwhile.
-  Future<List<GoalCheckInSummary>> _reconcileCheckIns({
+  ///
+  /// The user's substantive chat turns are sources too (ADR 0146), returned
+  /// as `chatEntryIds` so the wake can tell them apart. A failed chat read
+  /// costs the wake only those.
+  Future<_GoalReconciledCheckIns> _reconcileCheckIns({
     required String agentId,
     required String goalStatement,
     required String model,
@@ -125,18 +129,21 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
   }) async {
     final compactor = _checkInCompactor;
     final reader = _checkInSourceReader;
-    if (compactor == null || reader == null) return const [];
+    if (compactor == null || reader == null) return _noCheckIns;
 
     final List<GoalCheckInSource> sources;
+    final Set<String> chatEntryIds;
     _GoalCheckInCompactionState state;
     try {
       // ONE read of each side per wake. Reading the summaries again to render
       // user voice doubled an already-unbounded scan, which is exactly what
       // ADR 0057's bounded-read invariant forbids.
       state = await _checkInCompactionState(agentId);
-      sources = await reader(agentId);
+      final chat = await _chatCheckInSources(agentId);
+      chatEntryIds = {for (final source in chat) source.entryId};
+      sources = [...await reader(agentId), ...chat];
     } on Object {
-      return const [];
+      return _noCheckIns;
     }
 
     var stored = state.summaries;
@@ -190,20 +197,35 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
           state = await _checkInCompactionState(agentId);
           stored = state.summaries;
         } on Object {
-          return const [];
+          return _noCheckIns;
         }
       }
     }
 
-    if (live.isEmpty && stored.isEmpty) return const [];
+    if (live.isEmpty && stored.isEmpty) return _noCheckIns;
     // Only summaries whose source is still linked and live. A deleted or
     // unlinked check-in leaves its summary behind, and without this the agent
     // kept quoting words the user had removed — the timeline already hides
     // them, and the agent's view must not disagree with what the user sees.
-    return [
-      for (final summary in stored)
-        if (live.containsKey(summary.sourceEntryId)) summary,
-    ];
+    return (
+      summaries: [
+        for (final summary in stored)
+          if (live.containsKey(summary.sourceEntryId)) summary,
+      ],
+      chatEntryIds: chatEntryIds,
+    );
+  }
+
+  /// The user's substantive goal-chat turns as compaction sources, or none
+  /// when the chat cannot be read.
+  Future<List<GoalCheckInSource>> _chatCheckInSources(String agentId) async {
+    try {
+      return goalChatCheckInSources(
+        await _chatHistoryService.allDialogue(agentId),
+      );
+    } on Object {
+      return const [];
+    }
   }
 
   Future<List<Map<String, Object?>>> _userVoiceEntries({
@@ -425,3 +447,12 @@ extension _GoalAgentWorkflowTurns on GoalAgentWorkflow {
     }
   }
 }
+
+/// What `_reconcileCheckIns` hands the wake: the live summaries, and which of
+/// them were distilled from chat turns rather than check-ins.
+typedef _GoalReconciledCheckIns = ({
+  List<GoalCheckInSummary> summaries,
+  Set<String> chatEntryIds,
+});
+
+const _GoalReconciledCheckIns _noCheckIns = (summaries: [], chatEntryIds: {});

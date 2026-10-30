@@ -1746,9 +1746,10 @@ void main() {
               metric: GoalMetricProgressView(
                 criterionId: 'content',
                 name: 'Content Production',
-                kind: GoalDimensionKind.labelTime,
+                // Minutes, as check-in time is: a tracked-time dimension
+                // reads in hours, which a 45 here could not be.
+                kind: GoalDimensionKind.checkInTime,
                 target: 60,
-                unitName: 'min',
                 days: [
                   day(2, 0),
                   day(1, 45),
@@ -2204,6 +2205,37 @@ void main() {
     expect(find.text('Time spent checking in'), findsOneWidget);
     expect(find.text('2 of 3 min'), findsOneWidget);
     expect(find.byIcon(LottiIcons.mic), findsWidgets);
+  });
+
+  testWidgets('tracked-time dimensions read in hours, category and label '
+      'alike', (tester) async {
+    for (final kind in [
+      GoalDimensionKind.categoryTime,
+      GoalDimensionKind.labelTime,
+    ]) {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metric: GoalMetricProgressView(
+                criterionId: 'focus',
+                sourceId: 'focus',
+                name: 'Focus',
+                target: 4,
+                kind: kind,
+                aggregation: GoalAggregation.sum,
+                window: const GoalWindow.day(),
+                days: [day(0, 2.5)],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // A bare "2.5 of 4" read as anything at all; the unit says hours.
+      expect(find.text('2.5 of 4 h'), findsOneWidget, reason: kind.name);
+    }
   });
 
   testWidgets('renders an observed-pattern card for every category dimension', (

@@ -951,6 +951,28 @@ works, at the price of one wasted search each time. A line in the
 `search_goal_memory` description saying dates are not searchable words would
 likely save it; that is a contract change to measure, not assume.
 
+**The default model, glm-5.2, on the journal scenarios** (×3,
+`eval_artifacts/goal_agent_20261030-003244`): 14/15. Every reflection,
+briefing follow-up and remembered fact passed; the quiet wake posted one
+unprompted `reply_to_user` (1/3 — production withholds that tool on a wake
+with no message, so it cannot happen in the app); and one recall searched
+"March" twice, found nothing and said so honestly (scored a pass at the time
+on "meltwater" — see below).
+
+**A "dates are not searchable" hint made recall worse — measured, not
+shipped.** With one line added to the `search_goal_memory` description
+("search by subject, not by month"), P21 ×3 on each model
+(`eval_artifacts/goal_agent_20261030-004842`): glm-5.3 found the March entry
+2/3 (3/3 without the line), glm-5.2 1/3 (2/3 without, `…-003244`). The models
+did drop the month — and added subject words instead ("ice shelf **move**",
+"old ice shelf **wanted** to move") that the entry does not contain, which an
+all-keywords match misses just the same. The weakness is the match, not the
+date; the line was reverted. Every miss ended in an honest "I can't find
+anything from March", never an invented answer. The same run showed P21
+passing one of those misses on "meltwater", which the August entry in
+`userVoice` also holds; the scenario now requires words only the March entry
+has ("equinox", "north lip", "14 March").
+
 **The four P1–P17 failures are the model's.** Three omitted a call the
 scenario requires — `reply_to_user` on `evo_replace_metric` and
 `tone_roast_request`, the retire-then-create pair on
@@ -964,6 +986,44 @@ default.
 
 Cost: about 0.38 credits for the 96 cases (0.20 for sample 1, 0.17 for
 samples 2–3), mean latency 6–12 s per case.
+
+## Questions on the journal scenarios — 2026-10-30
+
+ADR 0146 gave an automatic wake `ask_goal_question`, offered only when
+`userVoice` holds check-ins the report has not answered. P22
+(`journal_question_keeps_banner_private`) offers it after check-ins that
+name an elder, a physio and a knee; the question may use them, its banner
+may not. Tier 1, the six journal scenarios, three samples each.
+
+| Run | glm-5.3 | glm-5.2 |
+| --- | ---: | ---: |
+| Question tool as first written (`…-010739`) | 16/18 | — |
+| "No such entry, no question" added (`…-011147`, `…-011309`) | 17/18 | 14/18 |
+
+**Every question followed up the open decision** — whether the ridge scout
+should wait for the physio — in the user's terms, and glm-5.3 kept all six
+banners generic ("A question about your week"). glm-5.2 leaked once: a
+banner headed "A question about your Saturday plan", which the grader rightly
+failed. Review of this PR drew the conclusion: a question banner's words are
+now the app's own localised copy, and the model chooses only how it looks —
+so P22's banner check can no longer fail in production, whatever the model
+writes.
+
+**The quiet wake asked anyway.** Restraint scenarios offer every tool, and
+on the first run glm-5.3 used `ask_goal_question` on a wake with nothing new
+in 2 of 3 samples — following up a check-in the report had already answered.
+Production never offers the tool on such a wake. The tool description now
+says so outright ("No such entry, no question: an entry the report already
+answered is not a reason to ask"), and the quiet wake went to 3/3 on glm-5.3;
+glm-5.2 still asked once in three.
+
+**The remaining glm-5.3 miss was the grader's.** `journal_new_checkins_reflected`
+required "ridge" in the reflection; one sample reflected on "the elders
+looking north" and "Saturday's scout with two elders" — the same thread
+without the word. The group now accepts `ridge`, `north` or `scout`.
+
+**glm-5.2's recall stays its weak spot:** P21 1/3 — one Melious request timed
+out at five minutes, one search found nothing and said so honestly.
 
 ## Cost and latency
 

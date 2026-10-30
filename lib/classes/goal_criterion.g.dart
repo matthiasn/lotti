@@ -258,3 +258,21 @@ Map<String, dynamic> _$GoalCriterionAtLeastCountToJson(
   'title': instance.title,
   'runtimeType': instance.$type,
 };
+
+GoalCriterionUnsupported _$GoalCriterionUnsupportedFromJson(
+  Map<String, dynamic> json,
+) => GoalCriterionUnsupported(
+  criterionId: json['criterionId'] as String,
+  title: json['title'] as String?,
+  source: _readSource(json, 'unsupportedSource') as Map<String, dynamic>?,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalCriterionUnsupportedToJson(
+  GoalCriterionUnsupported instance,
+) => <String, dynamic>{
+  'criterionId': instance.criterionId,
+  'title': instance.title,
+  'unsupportedSource': instance.source,
+  'runtimeType': instance.$type,
+};

@@ -5368,6 +5368,8 @@
     "description": "Screen-reader label for a compact week strip whose data has not resolved yet — a loading state, never a health verdict."
   },
   "goalProgressToday": "today",
+  "goalQuestionBannerCta": "Answer in chat",
+  "goalQuestionBannerHeadline": "Your agent has a question",
   "goalRecordOfferConflict": "You already logged this measurable on one of these days. Ask what should be kept before recording anything.",
   "goalRecordOfferDeselectRow": "Deselect row",
   "goalRecordOfferDismiss": "Dismiss",
@@ -5449,10 +5451,19 @@
   "@goalTodayBriefingTitle": {
     "description": "Title of the Goals page card that rolls up each goal's daily briefing."
   },
+  "goalUnitHours": "h",
+  "@goalUnitHours": {
+    "description": "Abbreviated unit after a tracked-time value on a goal dimension, e.g. 3.5 h."
+  },
   "goalUnitMinutes": "min",
   "@goalUnitMinutes": {
     "description": "Short unit for minutes beside a goal dimension's value."
   },
+  "goalUnsupportedCriterionBody": "This goal measures something this version of Lotti cannot read yet, so its progress is not updated here and it cannot be edited on this device. Your other devices keep it current.",
+  "@goalUnsupportedCriterionBody": {
+    "description": "Callout on a goal whose criteria include a kind this app version cannot read (synced from a newer device)."
+  },
+  "goalUnsupportedCriterionTitle": "Update to see this goal in full",
   "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
   "@goalWatchingMetric": {
     "placeholders": {

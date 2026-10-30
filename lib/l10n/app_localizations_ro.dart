@@ -8490,6 +8490,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalProgressToday => 'astăzi';
 
   @override
+  String get goalQuestionBannerCta => 'Răspundeți în chat';
+
+  @override
+  String get goalQuestionBannerHeadline =>
+      'Agentul dumneavoastră are o întrebare';
+
+  @override
   String get goalRecordOfferConflict =>
       'Ați înregistrat deja acest element măsurabil într-una dintre aceste zile. Întrebați ce ar trebui păstrat înainte de a înregistra ceva.';
 
@@ -8585,7 +8592,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalTodayBriefingTitle => 'Astăzi';
 
   @override
+  String get goalUnitHours => 'h';
+
+  @override
   String get goalUnitMinutes => 'min';
+
+  @override
+  String get goalUnsupportedCriterionBody =>
+      'Acest obiectiv măsoară ceva ce această versiune Lotti nu poate încă citi, așa că progresul său nu se actualizează aici și nu îl puteți edita pe acest dispozitiv. Celelalte dispozitive ale dumneavoastră îl mențin la zi.';
+
+  @override
+  String get goalUnsupportedCriterionTitle =>
+      'Actualizați aplicația pentru a vedea acest obiectiv complet';
 
   @override
   String goalWatchingMetric(String windowLabel) {

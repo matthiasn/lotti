@@ -135,7 +135,8 @@ Iterable<GoalCriterion> _criterionLeaves(GoalCriterion criterion) sync* {
         GoalCriterionMeasurable() ||
         GoalCriterionCategoryTime() ||
         GoalCriterionLabelTime() ||
-        GoalCriterionCheckInTime():
+        GoalCriterionCheckInTime() ||
+        GoalCriterionUnsupported():
       yield criterion;
     case GoalCriterionAllOf(criteria: final children) ||
         GoalCriterionAnyOf(criteria: final children) ||

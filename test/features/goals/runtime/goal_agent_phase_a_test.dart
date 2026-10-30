@@ -923,6 +923,30 @@ void main() {
     });
   });
 
+  test('a goal holding a criterion this build cannot read is never judged '
+      'here: no register, no escalation, no refresh (ADR 0145)', () async {
+    when(
+      () => repository.getEntity(goalSpecHeadId(agentId)),
+    ).thenAnswer((_) async => specHead);
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => (specVersion as GoalSpecVersionEntity).copyWith(
+        criteria: const GoalCriterion.allOf(
+          criterionId: 'root',
+          criteria: [
+            GoalCriterion.unsupported(criterionId: 'from-a-newer-build'),
+          ],
+        ),
+      ),
+    );
+
+    final result = await run(badWeek());
+
+    expect(result.success, isTrue);
+    expect(upserts.whereType<GoalProgressEntity>(), isEmpty);
+    expect(escalations(), isEmpty);
+    expect(refreshRequests, isEmpty);
+  });
+
   test('a revision landing mid-wake fences the register AND the '
       'escalation — no v1 row overwrites the day under v2', () async {
     stubSpec();

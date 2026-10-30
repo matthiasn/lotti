@@ -140,6 +140,18 @@ sources:
     resource: ../../docs/adr/0143-a-goal-agent-answers-what-the-user-said.md
     title: ADR 0143 — A goal agent answers what the user said
     last_modified: 2026-08-18
+  - id: adr-0145
+    resource: ../../docs/adr/0145-a-goal-holding-an-unknown-criterion-is-fenced-not-judged.md
+    title: ADR 0145 — A goal holding an unknown criterion is fenced, not judged
+  - id: adr-0146
+    resource: ../../docs/adr/0146-a-goal-agent-asks-and-keeps-what-matters.md
+    title: ADR 0146 — A goal agent asks, and keeps what matters
+  - id: goal-question
+    resource: ../../lib/features/goals/workflow/goal_question.dart
+    title: The agent's own question — when it may ask, and how it lands
+  - id: observation-recall
+    resource: ../../lib/features/goals/workflow/goal_observation_recall.dart
+    title: Which observations a wake reads — recent plus critical
   - id: checkin-compaction-strategy
     resource: ../../lib/features/goals/logic/goal_checkin_compaction_strategy.dart
     title: GoalCheckInCompactionStrategy — the seam the compaction eval measures across
@@ -2197,7 +2209,8 @@ flowchart LR
 ## Recall
 
 A wake carries a bounded slice of the past: the check-in summaries that fit
-`userVoice`, the long-range digests, twelve observations. `search_goal_memory`
+`userVoice`, the long-range digests, the twelve newest observations and the
+older ones the agent filed `critical` (ADR 0146). `search_goal_memory`
 reaches the rest (ADR 0057 decision 1): every check-in in the user's own
 words, the whole chat, and the agent's observations.
 
@@ -2292,6 +2305,72 @@ stateDiagram-v2
   with Edit and Forget behind its menu, and a fact past `reviewAfter` asks
   "Still true?" in place, where confirming renews it (clears `reviewAfter`).
   A wake's completion notifies the agent id, which refreshes it.
+
+## Questions
+
+An automatic wake may ask the user one question in the goal chat
+(`ask_goal_question`, ADR 0146) — the one way the agent opens a conversation.
+`goalQuestionAllowed` decides whether the tool is offered at all, so the
+model is never shown a tool it may not use:
+
+- never on a chat turn — the user is already talking;
+- only when `reporting.newCheckInsSinceLastReport` is above zero, the
+  question following up something in a `sinceLastReport` entry;
+- not while the agent's previous question is unanswered
+  (`GoalChatHistoryService.latestAgentQuestion`), and not twice on one day.
+
+The question is an agent message with tool name `reply_to_user` and operation
+id `goal-question:<runKey>`. A reply without an operation id is paired with
+the nearest unanswered user turn, so the marker is what keeps a question from
+being read as an answer.
+
+It may raise a banner. Its words are the app's — a localised headline and
+call to action from `deviceMessages()` — because the banner is seen outside
+the goal; the model chooses only tone (never roast), animation and accent. It
+is a `goalNudge` whose tap route is the goal chat, and its lifecycle is its
+own:
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: wake persists the question\n(dismissal cooldown off)
+    active --> retired: the user's next chat turn\n("answered in chat")
+    active --> dismissed: the user dismisses it
+    active --> expired: its lifetime runs out
+    retired --> [*]
+    dismissed --> [*]
+    expired --> [*]
+```
+
+The status sweep that retires ad banners a status no longer permits, and the
+48-hour freshness rule, both skip it. It is not an ad either:
+`_specScopedNudges` leaves an undismissed question banner out of everything
+ad-facing — the P5 requirement, the FACTS ad sections, the ids retire and
+rerun may name — so it never stands in for the status banner an off-track
+goal needs. With a dismissal cooldown running, the
+question is still asked; only its banner is withheld.
+
+## Unknown criterion kinds
+
+A criterion kind this build does not know decodes as
+`GoalCriterion.unsupported` instead of dropping the goal (ADR 0145). It keeps
+the node it arrived as under `unsupportedSource`, because the inbound sync
+persists what it decoded; `GoalCriterion.fromJson` reads that source rather
+than the stub, so an updated build recovers the criterion. `goalCriterionHasUnsupported` then fences the
+goal on this device:
+
+- Phase A re-arms the cadence and returns before the register write, so a
+  device that cannot evaluate a leaf never overwrites the register a newer
+  device wrote.
+- Phase B skips the automatic wake; a chat turn fails with "goal holds a
+  criterion this version cannot read".
+- `applyGoalRevisionChanges` rejects with a request to update the app, and
+  `GoalSpecValidator.authoringIssues` refuses the tree on every authoring
+  route.
+- The detail page hides editing and shows one callout at the top.
+
+Every other switch treats the leaf as unreadable rather than failed — no
+samples, no attainment, no validation issue — and FACTS render it as
+`{"criterionId", "unsupported": true}`.
 
 ## Gotchas
 

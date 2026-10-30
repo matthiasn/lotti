@@ -680,4 +680,26 @@ void main() {
     expect(parseGoalWindowPhrase('rolling 3650 days'), isNotNull);
     expect(parseGoalWindowPhrase('rolling 3651 days'), isNull);
   });
+
+  test('a tree holding a criterion this build cannot read is never revised — '
+      'the rebuilt tree would drop what it could not decode (ADR 0145)', () {
+    final result = applyGoalRevisionChanges(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.unsupported(criterionId: 'from-a-newer-build'),
+        ],
+      ),
+      changes: const {'targetValue': 5},
+    );
+
+    expect(
+      result,
+      isA<GoalRevisionRejected>().having(
+        (r) => r.reason,
+        'reason',
+        contains('update the app'),
+      ),
+    );
+  });
 }

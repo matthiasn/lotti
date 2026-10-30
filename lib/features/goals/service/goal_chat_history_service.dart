@@ -5,6 +5,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 
 /// Maximum durable dialogue context added to one goal wake.
 ///
@@ -67,6 +68,27 @@ class GoalChatHistoryService {
         .where((message) => !answered.contains(message.id))
         .map((message) => message.id)
         .toList(growable: false);
+  }
+
+  /// The agent's latest question in this chat (ADR 0146) and whether the
+  /// user has written since — the rationing input of
+  /// `goalQuestionAllowed`. Null when it never asked.
+  Future<GoalOpenQuestion?> latestAgentQuestion(String agentId) async {
+    final messages = await _visibleMessages(agentId, limit: 50);
+    final question = messages
+        .where(
+          (message) =>
+              _isAssistantReply(message) &&
+              isGoalQuestionOperationId(message.metadata.operationId),
+        )
+        .lastOrNull;
+    if (question == null) return null;
+    return (
+      askedAt: question.createdAt,
+      answered: messages.any(
+        (message) => _isUserTurn(message) && _comesBefore(question, message),
+      ),
+    );
   }
 
   /// Recent completed dialogue before the source turn selected for this wake.

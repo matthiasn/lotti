@@ -49,6 +49,15 @@ GoalRevisionResult applyGoalRevisionChanges({
   required GoalCriterion criteria,
   required Map<String, dynamic> changes,
 }) {
+  // A criterion this build cannot read (ADR 0145) survived decoding as its id
+  // and title only; a revision built from that tree would write the rest of
+  // it away for every device.
+  if (goalCriterionHasUnsupported(criteria)) {
+    return const GoalRevisionRejected(
+      'this goal holds a criterion this version of the app cannot read — '
+      'update the app on this device to change it',
+    );
+  }
   final summaries = <String>[];
   var revised = criteria;
 
@@ -201,6 +210,8 @@ GoalCriterion? _resolveQuantitativeLeaf(GoalCriterion root, Object? metric) {
   final leaves = <GoalCriterion>[];
   void visit(GoalCriterion c) {
     switch (c) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionMetric() ||
           GoalCriterionMeasurable() ||
           GoalCriterionCategoryTime() ||
@@ -254,6 +265,8 @@ List<GoalCriterionHabit> _habitLeaves(GoalCriterion root) {
   final leaves = <GoalCriterionHabit>[];
   void visit(GoalCriterion c) {
     switch (c) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionHabit():
         leaves.add(c);
       case GoalCriterionAllOf(:final criteria) ||

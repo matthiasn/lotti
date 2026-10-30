@@ -524,6 +524,8 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     // write would be wrong.
     GoalAgentToolNames.rememberGoalFact,
     if (scenario.hasPendingUserMessage) GoalAgentToolNames.replyToUser,
+    // A question is the agent's to ask wherever the runtime offers it.
+    if (scenario.questionToolOffered) GoalAgentToolNames.askGoalQuestion,
   }..removeAll(scenario.forbiddenToolNames);
   if (toolCalls.any((call) => !allowedNames.contains(call.name))) {
     return GoalAgentEvalFailureCategory.unexpectedToolCall;
@@ -603,6 +605,17 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     final arguments = _argumentsFor(toolCalls, entry.key);
     if (entry.value.any((group) => !containsAnyEvalTerm(arguments, group))) {
       return GoalAgentEvalFailureCategory.missingRequiredToolArguments;
+    }
+  }
+  for (final call in toolCalls) {
+    if (call.name != GoalAgentToolNames.askGoalQuestion) continue;
+    final banner = call.jsonObjectArguments?['banner'];
+    if (banner is! Map) continue;
+    final copy = jsonEncode(banner).toLowerCase();
+    if (scenario.forbiddenQuestionBannerTerms.any(
+      (term) => copy.contains(term.toLowerCase()),
+    )) {
+      return GoalAgentEvalFailureCategory.forbiddenToolArguments;
     }
   }
   for (final entry in scenario.forbiddenToolArgumentTerms.entries) {
@@ -854,7 +867,9 @@ class GoalAgentInferenceEvalRunner {
                       (tool.name != GoalAgentToolNames.createGoalAd &&
                           tool.name != GoalAgentToolNames.rerunGoalAd)) &&
                   (scenario.replyToolOffered ||
-                      tool.name != GoalAgentToolNames.replyToUser))
+                      tool.name != GoalAgentToolNames.replyToUser) &&
+                  (scenario.questionToolOffered ||
+                      tool.name != GoalAgentToolNames.askGoalQuestion))
                 ChatCompletionTool(
                   type: ChatCompletionToolType.function,
                   function: FunctionObject(

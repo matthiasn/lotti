@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart'
     show WakeRunCompletion;
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
@@ -668,7 +670,12 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
             _GoalActionsMenuButton(
               agentId: agentId,
               agentName: goalIdentity.displayName,
-              canEdit: isActive && spec != null,
+              // Editing rebuilds the criteria from what this build decoded;
+              // an unknown kind decoded as its id alone (ADR 0145).
+              canEdit:
+                  isActive &&
+                  spec != null &&
+                  !goalCriterionHasUnsupported(spec.criteria),
               onUpdateRead: isActive
                   ? () => ref
                         .read(goalHabitCompletionServiceProvider)

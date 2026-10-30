@@ -19,7 +19,9 @@ void stubFts5Db(
   when(() => fts.indexEntities(any())).thenAnswer((_) async {});
   when(() => fts.indexByIds(any(), any())).thenAnswer((_) async {});
   when(() => fts.reindexMeasurements(any(), any())).thenAnswer((_) async {});
-  when(() => anyMatchIds(fts)).thenAnswer((invocation) async => idsFor(invocation));
+  when(
+    () => anyMatchIds(fts),
+  ).thenAnswer((invocation) async => idsFor(invocation));
   // Every hit on the first page, none after it.
   when(() => anyMatchHits(fts)).thenAnswer(
     (invocation) async => invocation.namedArguments[#offset] == 0

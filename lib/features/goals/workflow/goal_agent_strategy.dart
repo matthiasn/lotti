@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -146,6 +148,11 @@ class GoalAgentStrategy extends ConversationStrategy
   List<({GoalFactRequest fact, bool confirmed})> get rememberedFacts =>
       List.unmodifiable(_rememberedFacts);
 
+  GoalQuestionRequest? _question;
+
+  /// The question this wake asks the user, if any (ADR 0146).
+  GoalQuestionRequest? get question => _question;
+
   GoalTrackStatus? get reportStatus => _reportStatus;
   String? get reportOneLiner => _reportOneLiner;
   String? get reportTldr => _reportTldr;
@@ -245,6 +252,8 @@ class GoalAgentStrategy extends ConversationStrategy
           await _handleMemorySearch(call, args, manager);
         case GoalAgentToolNames.rememberGoalFact:
           await _handleRememberFact(call, args, manager);
+        case GoalAgentToolNames.askGoalQuestion:
+          await _handleQuestion(call, args, manager);
         default:
           await _reject(
             call: call,
@@ -568,43 +577,44 @@ class GoalAgentStrategy extends ConversationStrategy
     Map<String, dynamic> args,
     ConversationManager manager,
   ) async {
-    final headline = _trimmed(args['headline']);
-    final tone = NudgeTone.values
-        .where((t) => t.name == args['tone'])
-        .firstOrNull;
-    final animation = NudgeBannerAnimation.values
-        .where((a) => a.name == args['animation'])
-        .firstOrNull;
-    if (headline.isEmpty || tone == null || animation == null) {
+    final (:brief, :error) = parseGoalNudgeBrief(
+      args,
+      toolName: GoalAgentToolNames.createGoalAd,
+    );
+    if (brief == null) {
+      await _reject(call: call, manager: manager, error: error!);
+      return;
+    }
+    _createdAds.add((brief: brief, reasonSummary: null));
+    await _accept(call, manager, 'Banner ad queued for rendering.');
+  }
+
+  /// `ask_goal_question`: one per wake, validated here; persistence decides
+  /// whether its banner may still be raised.
+  Future<void> _handleQuestion(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    if (_question != null) {
       await _reject(
         call: call,
         manager: manager,
-        error:
-            'Error: create_goal_ad needs a non-empty headline, tone (one '
-            'of ${goalNudgeToneNames.join('|')}) and animation (one of '
-            '${goalBannerAnimationNames.join('|')}).',
+        error: 'Error: ask_goal_question at most once per wake.',
       );
       return;
     }
-    final accent =
-        NudgeBannerAccent.values
-            .where((a) => a.name == args['accent'])
-            .firstOrNull ??
-        NudgeBannerAccent.calm;
-    final tagline = _trimmed(args['tagline']);
-    final cta = _trimmed(args['cta']);
-    _createdAds.add((
-      brief: NudgeBrief(
-        headline: headline,
-        tone: tone,
-        animation: animation,
-        accent: accent,
-        tagline: tagline.isEmpty ? null : tagline,
-        cta: cta.isEmpty ? null : cta,
-      ),
-      reasonSummary: null,
-    ));
-    await _accept(call, manager, 'Banner ad queued for rendering.');
+    final (:request, :error) = parseGoalQuestion(args);
+    if (request == null) {
+      await _reject(call: call, manager: manager, error: error!);
+      return;
+    }
+    _question = request;
+    await _accept(
+      call,
+      manager,
+      'Question posted to the goal chat; the user answers when they choose.',
+    );
   }
 
   Future<void> _handleAdAction(
@@ -801,7 +811,17 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    _observations.add(ObservationRecord(text: note));
+    final priority = args['priority'];
+    _observations.add(
+      ObservationRecord(
+        text: note,
+        // Only critical is a goal agent's to choose: it decides whether a
+        // note outlives the recent window (`goalObservationSelection`).
+        priority: priority == ObservationPriority.critical.name
+            ? ObservationPriority.critical
+            : ObservationPriority.routine,
+      ),
+    );
     await _accept(call, manager, 'Observation recorded.');
   }
 

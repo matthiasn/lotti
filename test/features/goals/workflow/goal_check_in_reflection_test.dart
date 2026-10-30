@@ -53,6 +53,19 @@ void main() {
     }
   });
 
+  test('a check-in distilled from a chat turn is shown but never new: the '
+      'chat already answered it', () {
+    final reflection = goalCheckInReflection(
+      userVoice: userVoice,
+      summaries: summaries,
+      standingReport: null,
+      answeredEntryIds: {'tuesday'},
+    );
+
+    expect(reflection.shown, contains('tuesday:digest-tuesday'));
+    expect(reflection.unreflectedEntryIds, {'monday', 'legacy'});
+  });
+
   test('only what the standing report did not record is new — including a '
       'check-in whose words changed since', () {
     final reflection = goalCheckInReflection(

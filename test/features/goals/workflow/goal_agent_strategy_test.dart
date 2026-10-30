@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -1703,6 +1704,31 @@ void main() {
     expect(rejection(), contains('unknown tool'));
   });
 
+  test('an observation is critical only when the agent says so', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'call-a',
+          name: GoalAgentToolNames.recordGoalObservation,
+          args: {
+            'note': 'Physio advised no steep routes.',
+            'priority': 'critical',
+          },
+        ),
+        _call(
+          id: 'call-b',
+          name: GoalAgentToolNames.recordGoalObservation,
+          args: {'note': 'Prefers evening check-ins.', 'priority': 'urgent'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.observations.map((o) => o.priority), [
+      ObservationPriority.critical,
+      ObservationPriority.routine,
+    ]);
+  });
+
   test('the continuation prompt never nags — a no-op wake stays legal '
       '(policy row P2)', () {
     expect(strategy.getContinuationPrompt(manager), isNull);
@@ -2081,5 +2107,44 @@ void main() {
         expect(rejection(), contains('Your check-ins read as onTrack to me.'));
       },
     );
+  });
+
+  group('ask_goal_question (ADR 0146)', () {
+    Future<void> ask(Map<String, dynamic> args, {String id = 'call-q'}) =>
+        strategy.processToolCalls(
+          toolCalls: [
+            _call(name: GoalAgentToolNames.askGoalQuestion, args: args, id: id),
+          ],
+          manager: manager,
+        );
+
+    test(
+      'keeps one validated question per wake and refuses a second',
+      () async {
+        await ask({
+          'question': 'Did you scout the ridge?',
+          'banner': {
+            'headline': 'A question about your week',
+            'tone': 'encourage',
+            'animation': 'steady',
+          },
+        });
+        expect(strategy.question?.question, 'Did you scout the ridge?');
+        expect(strategy.question?.banner?.tone, NudgeTone.encourage);
+
+        await ask({'question': 'And another?'}, id: 'call-q2');
+        expect(strategy.question?.question, 'Did you scout the ridge?');
+        expect(rejection(), contains('at most once'));
+      },
+    );
+
+    test('refuses a malformed question without keeping it', () async {
+      await ask({
+        'question': 'Hi?',
+        'banner': {'headline': 'Hey', 'tone': 'roast', 'animation': 'steady'},
+      });
+      expect(strategy.question, isNull);
+      expect(rejection(), contains('never roasts'));
+    });
   });
 }

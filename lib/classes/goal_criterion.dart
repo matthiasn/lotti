@@ -33,7 +33,12 @@ abstract class GoalDailyTimeRange with _$GoalDailyTimeRange {
 /// This is deliberately **not** a reuse of `AutoCompleteRule`: that tree
 /// models point-in-time, same-day thresholds owned by habit autocompletion,
 /// with no windows, aggregation, direction, or per-window quotas (ADR 0053).
-@freezed
+///
+/// A kind this build does not know decodes as [GoalCriterion.unsupported]
+/// rather than throwing: a peer on a newer version syncs a goal with a new
+/// kind of criterion, and this device must neither fail the sync of that row
+/// nor judge a goal it cannot read (ADR 0145).
+@Freezed(fallbackUnion: 'unsupported')
 sealed class GoalCriterion with _$GoalCriterion {
   /// A health/quantitative dimension: "daily step totals, averaged over a
   /// rolling 7 days, at least 10,000". [dataType] is the journal quantitative
@@ -158,11 +163,59 @@ sealed class GoalCriterion with _$GoalCriterion {
     String? title,
   }) = GoalCriterionAtLeastCount;
 
+  /// A criterion of a kind this build does not know. It is never evaluated
+  /// or edited here (see [goalCriterionHasUnsupported]), but it is stored:
+  /// the inbound sync persists the decoded entity, so [source] keeps the node
+  /// exactly as it arrived, and [GoalCriterion.fromJson] decodes that again —
+  /// on an updated build, as the criterion it always was.
+  const factory GoalCriterion.unsupported({
+    required String criterionId,
+    String? title,
+    @JsonKey(name: goalCriterionSourceKey, readValue: _readSource)
+    Map<String, dynamic>? source,
+  }) = GoalCriterionUnsupported;
+
   const GoalCriterion._();
 
   factory GoalCriterion.fromJson(Map<String, dynamic> json) =>
-      _$GoalCriterionFromJson(json);
+      _$GoalCriterionFromJson(_storedSource(json));
 }
+
+/// [json], or — for a node an older build stored as unsupported — the node it
+/// arrived as: the stub around it still names a kind whose fields it does not
+/// hold.
+Map<String, dynamic> _storedSource(Map<String, dynamic> json) =>
+    switch (json[goalCriterionSourceKey]) {
+      final Map<dynamic, dynamic> source => Map<String, dynamic>.from(source),
+      _ => json,
+    };
+
+/// The key under which an unsupported criterion carries the node it was
+/// decoded from (ADR 0145).
+const goalCriterionSourceKey = 'unsupportedSource';
+
+/// The whole node an unknown kind arrived as. A stored stub never reaches
+/// here — [GoalCriterion.fromJson] unwraps it first.
+Object? _readSource(Map<dynamic, dynamic> json, String key) =>
+    Map<String, dynamic>.from(json);
+
+/// Whether any node of [criterion]'s tree is a kind this build does not know
+/// — the goal it belongs to is then neither evaluated nor editable here.
+bool goalCriterionHasUnsupported(GoalCriterion criterion) =>
+    switch (criterion) {
+      GoalCriterionUnsupported() => true,
+      GoalCriterionAllOf(:final criteria) ||
+      GoalCriterionAnyOf(:final criteria) ||
+      GoalCriterionAtLeastCount(:final criteria) => criteria.any(
+        goalCriterionHasUnsupported,
+      ),
+      GoalCriterionMetric() ||
+      GoalCriterionHabit() ||
+      GoalCriterionMeasurable() ||
+      GoalCriterionCategoryTime() ||
+      GoalCriterionLabelTime() ||
+      GoalCriterionCheckInTime() => false,
+    };
 
 /// Every habit id referenced anywhere in [criterion]'s tree — the join used
 /// to decide which habits a goal claims (and, by complement, which habits are
@@ -180,7 +233,8 @@ Set<String> goalCriterionHabitIds(GoalCriterion criterion) =>
       GoalCriterionMeasurable() ||
       GoalCriterionCategoryTime() ||
       GoalCriterionLabelTime() ||
-      GoalCriterionCheckInTime() => const {},
+      GoalCriterionCheckInTime() ||
+      GoalCriterionUnsupported() => const {},
     };
 
 /// Every quantitative data type referenced anywhere in [criterion]'s tree.
@@ -201,5 +255,6 @@ Set<String> goalCriterionMetricDataTypes(GoalCriterion criterion) =>
       GoalCriterionMeasurable() ||
       GoalCriterionCategoryTime() ||
       GoalCriterionLabelTime() ||
-      GoalCriterionCheckInTime() => const {},
+      GoalCriterionCheckInTime() ||
+      GoalCriterionUnsupported() => const {},
     };

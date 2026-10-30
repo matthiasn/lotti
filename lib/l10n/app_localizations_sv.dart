@@ -8356,6 +8356,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressToday => 'i dag';
 
   @override
+  String get goalQuestionBannerCta => 'Svara i chatten';
+
+  @override
+  String get goalQuestionBannerHeadline => 'Din agent har en fråga';
+
+  @override
   String get goalRecordOfferConflict =>
       'Du har redan loggat detta mätbara en av dessa dagar. Fråga vad som ska sparas innan du spelar in något.';
 
@@ -8451,7 +8457,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalTodayBriefingTitle => 'Idag';
 
   @override
+  String get goalUnitHours => 'h';
+
+  @override
   String get goalUnitMinutes => 'min';
+
+  @override
+  String get goalUnsupportedCriterionBody =>
+      'Det här målet mäter något som den här versionen av Lotti ännu inte kan läsa, så framstegen uppdateras inte här och du kan inte redigera det på den här enheten. Dina andra enheter håller det aktuellt.';
+
+  @override
+  String get goalUnsupportedCriterionTitle =>
+      'Uppdatera appen för att se hela det här målet';
 
   @override
   String goalWatchingMetric(String windowLabel) {

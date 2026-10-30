@@ -442,6 +442,7 @@ bool _criterionCompletedOnDay(
   GoalSignalWindow signals,
   DateTime day,
 ) => switch (criterion) {
+  GoalCriterionUnsupported() => false,
   // The compact strip is an accomplishment history, not a second health
   // verdict: a rolling habit contributes when it was completed on this day.
   GoalCriterionHabit(:final habitId) =>

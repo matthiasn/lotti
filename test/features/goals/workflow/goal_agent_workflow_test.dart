@@ -38,9 +38,11 @@ import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:lotti/features/goals/workflow/goal_report_instructions.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -1262,7 +1264,9 @@ void main() {
     expect(handedOver, isNot(contains(GoalAgentToolNames.replyToUser)));
     expect(handedOver, contains(GoalAgentToolNames.updateGoalReport));
     expect(handedOver, contains(GoalAgentToolNames.retireGoalAd));
-    expect(handedOver, hasLength(goalAgentTools.length - 3));
+    // ...and nothing new was said, so there is no question to offer.
+    expect(handedOver, isNot(contains(GoalAgentToolNames.askGoalQuestion)));
+    expect(handedOver, hasLength(goalAgentTools.length - 4));
   });
 
   test('a wake compacts pending check-ins and carries the user voice into '
@@ -1941,6 +1945,55 @@ void main() {
     });
   });
 
+  test('a goal holding a criterion this build cannot read pays for no '
+      'inference: an automatic wake ends quietly and a chat turn fails for '
+      'a device that can read it (ADR 0145)', () async {
+    stubSpec(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.unsupported(criterionId: 'from-a-newer-build'),
+        ],
+      ),
+    );
+    stubGlmResolution();
+    var inferred = false;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          inferred = true;
+          return null;
+        };
+
+    final automatic = await run();
+    final chat = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-chat',
+        triggerTokens: const {},
+        threadId: 'thread-chat',
+        pendingUserMessage: 'How is it going?',
+        chatMessageId: 'chat-1',
+      ),
+    );
+
+    expect(automatic.success, isTrue);
+    expect(chat.success, isFalse);
+    expect(chat.error, contains('cannot read'));
+    expect(inferred, isFalse);
+    expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+  });
+
   group('a goal measured by its check-ins', () {
     const journal = GoalCriterion.checkInTime(
       criterionId: 'journal',
@@ -1951,14 +2004,83 @@ void main() {
 
     /// [count] stored summaries, one a day up to yesterday, each fingerprinted
     /// under [weight] — so a weight that differs from the goal's is stale.
+    ///
+    /// [chat] are user turns in the goal chat by message id; those in
+    /// [chatSummarised] already have a current summary.
     List<GoalCheckInSource> stubJournal({
       required int count,
       required GoalCheckInWeight weight,
       int unsummarised = 0,
       int blocked = 0,
+      Map<String, String> chat = const {},
+      Set<String> chatSummarised = const {},
     }) {
       final sources = <GoalCheckInSource>[];
       final messages = <AgentDomainEntity>[];
+      final chatAt = DateTime.utc(2026, 8, 9, 7);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.user),
+      ).thenAnswer(
+        (_) async => [
+          for (final id in chat.keys)
+            AgentDomainEntity.agentMessage(
+                  id: id,
+                  agentId: agentId,
+                  threadId: id,
+                  kind: AgentMessageKind.user,
+                  createdAt: chatAt,
+                  vectorClock: null,
+                  metadata: const AgentMessageMetadata(),
+                  contentEntryId: '$id:payload',
+                )
+                as AgentMessageEntity,
+        ],
+      );
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (_) async => {
+          for (final MapEntry(key: id, value: text) in chat.entries)
+            '$id:payload': AgentDomainEntity.agentMessagePayload(
+              id: '$id:payload',
+              agentId: agentId,
+              createdAt: chatAt,
+              vectorClock: null,
+              content: {'text': text},
+            ),
+        },
+      );
+      for (final id in chatSummarised) {
+        messages.add(
+          AgentDomainEntity.agentMessage(
+            id: 'summary-$id',
+            agentId: agentId,
+            threadId: 'summary-$id',
+            kind: AgentMessageKind.action,
+            createdAt: chatAt,
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(
+              toolName: goalCheckInSummaryToolName,
+            ),
+            contentEntryId: 'summary-$id:payload',
+          ),
+        );
+        when(() => repository.getEntity('summary-$id:payload')).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: 'summary-$id:payload',
+            agentId: agentId,
+            createdAt: chatAt,
+            vectorClock: null,
+            content: <String, Object?>{
+              'sourceEntryId': id,
+              'recordedAt': chatAt.toIso8601String(),
+              'whatHappened': 'Said in chat: the physio ruled out the ridge.',
+              'sourceDigest': goalCheckInSourceDigest(
+                chat[id]!,
+                weight: weight,
+              ),
+            },
+          ),
+        );
+      }
       for (var i = 0; i < count + unsummarised; i++) {
         final at = DateTime.utc(2026, 8, 8, 20).subtract(Duration(days: i));
         // The newest [blocked] check-ins failed to compact for substance
@@ -2226,6 +2348,40 @@ void main() {
     );
 
     test(
+      'a long chat turn is compacted into the history, shown as said in '
+      'chat, and never counted as new — the chat already answered it',
+      () async {
+        const injury =
+            'The physio says no steep routes for two weeks, so the ridge '
+            'scout has to wait until the knee settles.';
+        const answered =
+            'We decided the seal rocks are worth a look as a halfway camp '
+            'for the youngest chicks before winter.';
+        wire(
+          stubJournal(
+            count: 0,
+            weight: GoalCheckInWeight.substance,
+            chat: {
+              'chat-injury': injury,
+              'chat-answered': answered,
+              'chat-thanks': 'Thanks, that helps.',
+            },
+            chatSummarised: {'chat-answered'},
+          ),
+        );
+        final messages = converse();
+
+        await run();
+
+        expect(compacted, [('chat-injury', GoalCheckInWeight.substance)]);
+        expect(messages.first, contains('"via": "chat"'));
+        expect(messages.first, contains('the physio ruled out the ridge'));
+        expect(messages.first, isNot(contains('sinceLastReport')));
+        expect(messages.first, isNot(contains('newCheckInsSinceLastReport')));
+      },
+    );
+
+    test(
       'marks nothing once the standing report recorded those check-ins',
       () async {
         wire(stubJournal(count: 2, weight: GoalCheckInWeight.substance));
@@ -2291,6 +2447,303 @@ void main() {
         expect(messages.last, isNot(contains('habit day')));
       },
     );
+  });
+
+  group("the agent's own question (ADR 0146)", () {
+    const journal = GoalCriterion.checkInTime(
+      criterionId: 'journal',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetMinutes: 70,
+    );
+
+    /// One summarised check-in the standing report has never seen.
+    void stubNewCheckIn() {
+      final at = DateTime.utc(2026, 8, 8, 20);
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: any(named: 'type'),
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.agentMessage(
+            id: 'summary-0',
+            agentId: agentId,
+            threadId: 'summary-0',
+            kind: AgentMessageKind.action,
+            createdAt: at,
+            vectorClock: null,
+            metadata: const AgentMessageMetadata(
+              toolName: goalCheckInSummaryToolName,
+            ),
+            contentEntryId: 'summary-0:payload',
+          ),
+        ],
+      );
+      when(() => repository.getEntity('summary-0:payload')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'summary-0:payload',
+          agentId: agentId,
+          createdAt: at,
+          vectorClock: null,
+          content: <String, Object?>{
+            'sourceEntryId': 'entry-0',
+            'recordedAt': at.toIso8601String(),
+            'whatHappened': 'Decided to scout the north ridge on Saturday.',
+            'sourceDigest': goalCheckInSourceDigest(
+              'Scout the ridge Saturday.',
+              weight: GoalCheckInWeight.substance,
+            ),
+          },
+        ),
+      );
+    }
+
+    void wireJournal({GoalSignalWindow signals = const GoalSignalWindow()}) {
+      stubSpec(criteria: journal);
+      stubGlmResolution();
+      final compactor = MockGoalCheckInCompactor();
+      workflow = GoalAgentWorkflow(
+        domainLogger: MockDomainLogger(),
+        repository: repository,
+        syncService: syncService,
+        phaseA: GoalAgentPhaseA(
+          repository: repository,
+          syncService: syncService,
+          signalReader: _FakeReader(signals),
+        ),
+        conversationRepository: conversationRepository,
+        cloudInferenceRepository: cloudInferenceRepository,
+        aiConfigRepository: aiConfigRepository,
+        checkInCompactor: compactor,
+        checkInSourceReader: (_) async => [
+          GoalCheckInSource(
+            entryId: 'entry-0',
+            recordedAt: DateTime.utc(2026, 8, 8, 20),
+            text: 'Scout the ridge Saturday.',
+          ),
+        ],
+        messages: AppLocalizationsEn.new,
+      );
+    }
+
+    GoalNudgeEntity questionNudge({
+      String id = 'question-banner',
+      bool question = true,
+    }) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'A question about your week',
+                tone: NudgeTone.encourage,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'digest',
+              createdAt: now.subtract(const Duration(hours: 2)),
+              updatedAt: now.subtract(const Duration(hours: 2)),
+              activatedAt: now.subtract(const Duration(hours: 2)),
+              staleAt: now.add(const Duration(hours: 70)),
+              vectorClock: null,
+              provenance: {
+                'specVersionId': '$agentId:spec-v1',
+                if (question) goalNudgeTriggerKey: goalNudgeQuestionTrigger,
+              },
+            )
+            as GoalNudgeEntity;
+
+    void stubNudges(List<GoalNudgeEntity> nudges) => when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => nudges);
+
+    /// Answers the first turn with [onFirst] and records the tools offered.
+    List<List<String>> converseWith(
+      Future<void> Function(GoalAgentStrategy strategy)? onFirst,
+    ) {
+      final offered = <List<String>>[];
+      conversationRepository
+        ..maxDelegateCalls = 2
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              offered.add([for (final tool in tools!) tool.function.name]);
+              if (offered.length == 1) {
+                await onFirst?.call(strategy! as GoalAgentStrategy);
+              }
+              return null;
+            };
+      return offered;
+    }
+
+    test(
+      'after something new was said, the wake may ask once: the question '
+      "lands in the chat as the agent's own, and its banner points at it",
+      () async {
+        wireJournal();
+        stubNewCheckIn();
+        final offered = converseWith(
+          (strategy) => strategy.processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.askGoalQuestion, {
+                'question': 'Did you get to scout the ridge on Saturday?',
+                'banner': {'tone': 'encourage', 'animation': 'steady'},
+              }),
+            ],
+            manager: conversationManager,
+          ),
+        );
+
+        final result = await run();
+
+        expect(result.success, isTrue);
+        expect(offered.first, contains(GoalAgentToolNames.askGoalQuestion));
+        final question = upserts.whereType<AgentMessageEntity>().singleWhere(
+          (m) => isGoalQuestionOperationId(m.metadata.operationId),
+        );
+        expect(
+          question.metadata.toolName,
+          AgentConversationToolNames.replyToUser,
+        );
+        final banner = upserts.whereType<GoalNudgeEntity>().single;
+        expect(isGoalQuestionNudge(banner), isTrue);
+        expect(banner.provenance[goalNudgeQuestionMessageKey], question.id);
+        // The app's words, never the model's: it is seen outside the goal.
+        expect(banner.brief.headline, 'Your agent has a question');
+        expect(banner.brief.cta, 'Answer in chat');
+      },
+    );
+
+    test('a question still waiting for its answer keeps the tool off the '
+        'wire — no second question', () async {
+      wireJournal();
+      stubNewCheckIn();
+      when(
+        () => repository.getMessagesByKindAndToolName(
+          agentId,
+          AgentMessageKind.action,
+          AgentConversationToolNames.replyToUser,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          AgentDomainEntity.agentMessage(
+                id: 'earlier-question',
+                agentId: agentId,
+                threadId: 't',
+                kind: AgentMessageKind.action,
+                createdAt: now.subtract(const Duration(days: 2)),
+                vectorClock: null,
+                contentEntryId: 'earlier-question:payload',
+                metadata: AgentMessageMetadata(
+                  toolName: AgentConversationToolNames.replyToUser,
+                  operationId: goalQuestionOperationId('earlier-run'),
+                ),
+              )
+              as AgentMessageEntity,
+        ],
+      );
+      final offered = converseWith(null);
+
+      await run();
+
+      expect(
+        offered.first,
+        isNot(contains(GoalAgentToolNames.askGoalQuestion)),
+      );
+    });
+
+    test('a question banner outlives a status that permits no banner, and '
+        'retires once the user answers in the chat', () async {
+      // Twelve minutes a day: on track, a status that permits no banner.
+      wireJournal(
+        signals: GoalSignalWindow(
+          checkInDailyMinutes: {
+            for (var day = 3; day <= 9; day++) DateTime.utc(2026, 8, day): 12,
+          },
+        ),
+      );
+      stubNewCheckIn();
+      stubNudges([
+        questionNudge(),
+        questionNudge(id: 'status-banner', question: false),
+      ]);
+      converseWith(null);
+
+      await run();
+
+      // The sweep ran — the status banner is retired — and passed the
+      // question's banner by.
+      expect(
+        [
+          for (final n in upserts.whereType<GoalNudgeEntity>())
+            if (n.status == NudgeStatus.retired) n.id,
+        ],
+        ['status-banner'],
+      );
+
+      upserts.clear();
+      // The automatic wake spent its two calls (turn and forced report);
+      // the chat turn may make two more, and replies only on its first.
+      var chatCalls = 0;
+      conversationRepository
+        ..maxDelegateCalls = 4
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (++chatCalls > 1) return null;
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.replyToUser, {
+                    'message': 'Glad you went.',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+      final answered = await withClock(
+        fixedClock,
+        () => workflow.execute(
+          agentIdentity: identity,
+          runKey: 'run-answer',
+          triggerTokens: const {},
+          threadId: 'thread-answer',
+          pendingUserMessage: 'Yes, scouted it — the wind gap is real.',
+          chatMessageId: 'chat-answer',
+        ),
+      );
+
+      expect(answered.success, isTrue, reason: answered.error);
+      final retired = upserts.whereType<GoalNudgeEntity>().singleWhere(
+        (n) => n.id == 'question-banner',
+      );
+      expect(retired.status, NudgeStatus.retired);
+      expect(retired.provenance['retireReason'], 'answered in chat');
+    });
   });
 
   group('hierarchical user voice', () {
@@ -2842,11 +3295,17 @@ void main() {
           expect(temperature, 0);
           expect(message, startsWith('FACTS (deterministic'));
           // A scheduled wake has no message waiting, so the reply tool —
-          // whose output persistence would discard — is the one withheld.
-          expect(tools, hasLength(goalAgentTools.length - 1));
+          // whose output persistence would discard — is withheld; with no
+          // new check-in there is nothing to ask about either (ADR 0146).
+          expect(tools, hasLength(goalAgentTools.length - 2));
           expect(
             [for (final tool in tools!) tool.function.name],
-            isNot(contains(GoalAgentToolNames.replyToUser)),
+            isNot(
+              anyOf(
+                contains(GoalAgentToolNames.replyToUser),
+                contains(GoalAgentToolNames.askGoalQuestion),
+              ),
+            ),
           );
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
@@ -6634,6 +7093,84 @@ void main() {
       expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
     },
   );
+
+  test('a fresh question banner is not the status banner P5 requires — the '
+      'pinned ad retry still fires (ADR 0146)', () async {
+    stubSpec();
+    stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'question-live',
+              agentId: agentId,
+              status: NudgeStatus.active,
+              brief: const NudgeBrief(
+                headline: 'Your agent has a question',
+                tone: NudgeTone.encourage,
+                animation: NudgeBannerAnimation.steady,
+              ),
+              briefDigest: 'd-question',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: now.subtract(const Duration(hours: 2)),
+              provenance: const {
+                goalNudgeTriggerKey: goalNudgeQuestionTrigger,
+              },
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+    final calls = <String>[];
+    conversationRepository
+      ..maxDelegateCalls = 3
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls.add(message);
+            if (calls.length > 1) return null;
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'Averaging 6k of 10k.',
+                  'tldr': 'The week slid under target.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(
+      calls,
+      hasLength(2),
+      reason: 'primary + the forced ad retry a fresh status ad would spare',
+    );
+  });
 
   test('a fresh active ad satisfies the P5 requirement — no forced ad '
       'retry fires', () async {

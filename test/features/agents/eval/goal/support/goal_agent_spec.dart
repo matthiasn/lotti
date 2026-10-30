@@ -164,4 +164,13 @@ const goalAgentPolicyMatrix = [
     given: 'user asks about something older than userVoice carries',
     expected: 'search_goal_memory before answering; never invent the past',
   ),
+  GoalAgentPolicyRule(
+    id: 'P22',
+    given:
+        'ask_goal_question offered after new check-ins with a commitment and '
+        'private detail (names, health)',
+    expected:
+        'report as usual; at most ONE question, following up what was said; '
+        'a banner with it carries no private detail (ADR 0146)',
+  ),
 ];

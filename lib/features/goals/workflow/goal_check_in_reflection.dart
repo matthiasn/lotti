@@ -59,10 +59,15 @@ class GoalCheckInReflection {
 /// ago or is history now. A report from before the record existed counts as
 /// having reflected nothing, so the first wake after it engages once with what
 /// it shows.
+///
+/// [answeredEntryIds] are shown but never new: a substantive chat turn
+/// (ADR 0146) was answered in the chat, so it neither demands a reflection
+/// nor opens a question.
 GoalCheckInReflection goalCheckInReflection({
   required List<Map<String, Object?>> userVoice,
   required List<GoalCheckInSummary> summaries,
   required AgentReportEntity? standingReport,
+  Set<String> answeredEntryIds = const {},
 }) {
   final byEntryId = {
     for (final summary in summaries) summary.sourceEntryId: summary,
@@ -89,7 +94,8 @@ GoalCheckInReflection goalCheckInReflection({
     shown: shown,
     unreflectedEntryIds: {
       for (final MapEntry(key: entryId, value: key) in shownEntryIds.entries)
-        if (!reflected.contains(key)) entryId,
+        if (!reflected.contains(key) && !answeredEntryIds.contains(entryId))
+          entryId,
     },
   );
 }
