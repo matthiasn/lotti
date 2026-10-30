@@ -6564,6 +6564,7 @@
   "taskSetEstimateLabel": "Přidat odhad",
   "tasksFilterApplyTitle": "Použít filtr",
   "tasksFilterClearAll": "Vymazat vše",
+  "tasksFilterIgnoredBySearch": "Hledání tento filtr nebere v úvahu",
   "tasksFilterTitle": "Filtrovat úkoly",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} hotovo",

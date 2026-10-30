@@ -17339,6 +17339,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get tasksFilterClearAll => 'Rensa allt';
 
   @override
+  String get tasksFilterIgnoredBySearch =>
+      'Sökningen bortser från det här filtret';
+
+  @override
   String get tasksFilterTitle => 'Filtrera uppgifter';
 
   @override

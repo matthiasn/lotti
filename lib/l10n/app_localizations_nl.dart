@@ -17383,6 +17383,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tasksFilterClearAll => 'Alles wissen';
 
   @override
+  String get tasksFilterIgnoredBySearch => 'Zoeken negeert dit filter';
+
+  @override
   String get tasksFilterTitle => 'Filtertaken';
 
   @override

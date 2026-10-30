@@ -17322,6 +17322,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get tasksFilterClearAll => 'Ryd alt';
 
   @override
+  String get tasksFilterIgnoredBySearch =>
+      'Søgningen ser bort fra dette filter';
+
+  @override
   String get tasksFilterTitle => 'Filteropgaver';
 
   @override

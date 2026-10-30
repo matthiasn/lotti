@@ -10725,6 +10725,10 @@
   "taskSetEstimateLabel": "Add estimate",
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
+  "tasksFilterIgnoredBySearch": "Search looks past this filter",
+  "@tasksFilterIgnoredBySearch": {
+    "description": "Tooltip on a task filter chip shown dimmed while a search is typed: the search does not apply this filter."
+  },
   "tasksFilterTitle": "Filter tasks",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",

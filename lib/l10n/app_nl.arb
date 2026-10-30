@@ -7226,6 +7226,7 @@
   "taskSetEstimateLabel": "Schatting toevoegen",
   "tasksFilterApplyTitle": "Filter toepassen",
   "tasksFilterClearAll": "Alles wissen",
+  "tasksFilterIgnoredBySearch": "Zoeken negeert dit filter",
   "tasksFilterTitle": "Filtertaken",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} ' {total} klaar",

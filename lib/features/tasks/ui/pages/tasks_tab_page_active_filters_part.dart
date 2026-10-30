@@ -42,6 +42,14 @@ class _TasksTabActiveFilters extends ConsumerWidget {
 
     final agentFilter = state.agentAssignmentFilter;
 
+    // A task search looks past the status, label, priority, project and agent
+    // selections (ADR 0149), so while a query is typed their chips recede
+    // and say why. Category still scopes the search, so its chips stay.
+    final searching = state.match.trim().isNotEmpty;
+    final ignoredReason = searching
+        ? context.messages.tasksFilterIgnoredBySearch
+        : null;
+
     if (taskFilterNarrowingClauseCount(liveTasksFilterFor(state)) == 0) {
       return const SizedBox.shrink();
     }
@@ -54,6 +62,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     if (agentFilter != AgentAssignmentFilter.all) {
       chips.add(
         ActiveFilterChip(
+          muted: searching,
+          mutedReason: ignoredReason,
           label: agentFilter == AgentAssignmentFilter.hasAgent
               ? context.messages.tasksAgentFilterHasAgent
               : context.messages.tasksAgentFilterNoAgent,
@@ -71,6 +81,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
     for (final status in statusesNarrowed ? statuses : const <String>{}) {
       chips.add(
         ActiveFilterChip(
+          muted: searching,
+          mutedReason: ignoredReason,
           label: taskLabelFromStatusString(status, context),
           accentColor: taskColorFromStatusString(
             status,
@@ -90,6 +102,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       final taskPriority = _priorityFromInternalId(priority);
       chips.add(
         ActiveFilterChip(
+          muted: searching,
+          mutedReason: ignoredReason,
           label: priority,
           accentColor:
               _priorityAccent(priority, brightness: brightness) ?? accent,
@@ -138,6 +152,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       if (chipLabel == null) continue;
       chips.add(
         ActiveFilterChip(
+          muted: searching,
+          mutedReason: ignoredReason,
           label: chipLabel,
           accentColor: _entityAccent(label?.color, accent),
           onRemove: () => unawaited(
@@ -154,6 +170,8 @@ class _TasksTabActiveFilters extends ConsumerWidget {
       if (title == null) continue;
       chips.add(
         ActiveFilterChip(
+          muted: searching,
+          mutedReason: ignoredReason,
           label: title,
           accentColor: accent,
           leadingIcon: LottiIcons.folder,

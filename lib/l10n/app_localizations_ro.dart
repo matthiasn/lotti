@@ -17645,6 +17645,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksFilterClearAll => 'Ștergeți tot';
 
   @override
+  String get tasksFilterIgnoredBySearch =>
+      'Căutarea nu ține cont de acest filtru';
+
+  @override
   String get tasksFilterTitle => 'Filtrați sarcinile';
 
   @override

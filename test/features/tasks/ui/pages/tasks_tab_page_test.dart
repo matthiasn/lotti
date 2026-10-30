@@ -1185,6 +1185,45 @@ void main() {
   );
 
   group('active-filter chip row', () {
+    for (final query in ['krill', '']) {
+      testWidgets(
+        query.isEmpty
+            ? 'without a search every chip applies at full strength'
+            : 'while a search is typed, the chips it looks past recede and '
+                  'say why; category still scopes it',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: state(
+                match: query,
+                selectedPriorities: const {'P1'},
+                agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final chips = {
+            for (final chip in tester.widgetList<ActiveFilterChip>(
+              find.byType(ActiveFilterChip),
+            ))
+              chip.label: chip,
+          };
+          expect(chips.keys, containsAll(['Has Agent', 'Open', 'P1', 'Work']));
+          for (final label in ['Has Agent', 'Open', 'P1']) {
+            expect(chips[label]!.muted, query.isNotEmpty, reason: label);
+            expect(
+              chips[label]!.mutedReason,
+              query.isEmpty ? isNull : 'Search looks past this filter',
+              reason: label,
+            );
+          }
+          expect(chips['Work']!.muted, isFalse);
+        },
+      );
+    }
+
     testWidgets(
       'the agent clause is a removable chip, so the funnel and the chip row '
       'agree about what is narrowing the list',

@@ -17227,6 +17227,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksFilterClearAll => 'Clear all';
 
   @override
+  String get tasksFilterIgnoredBySearch => 'Search looks past this filter';
+
+  @override
   String get tasksFilterTitle => 'Filter tasks';
 
   @override

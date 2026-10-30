@@ -8,6 +8,12 @@ import 'package:material_ui/material_ui.dart';
 /// end. Tapping anywhere on the chip removes the filter. Colour is reserved
 /// for the chip's own semantics (status, priority) — the plate never tints,
 /// so a red priority and a green status read as themselves.
+///
+/// A [muted] chip names a clause that is set but not applying right now — a
+/// task search looks past the status, label, priority, project and agent
+/// selections. It keeps its hue at reduced strength and its label at low
+/// emphasis, stays removable, and explains itself through [mutedReason] as
+/// a tooltip and to screen readers.
 class ActiveFilterChip extends StatelessWidget {
   const ActiveFilterChip({
     required this.label,
@@ -15,6 +21,8 @@ class ActiveFilterChip extends StatelessWidget {
     required this.onRemove,
     this.leadingIcon,
     this.avatar,
+    this.muted = false,
+    this.mutedReason,
     super.key,
   }) : assert(
          leadingIcon == null || avatar == null,
@@ -27,6 +35,12 @@ class ActiveFilterChip extends StatelessWidget {
   final IconData? leadingIcon;
   final Widget? avatar;
 
+  /// Whether the clause is set but not applying, e.g. while a search runs.
+  final bool muted;
+
+  /// Why a [muted] chip is not applying; shown as its tooltip.
+  final String? mutedReason;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -37,13 +51,23 @@ class ActiveFilterChip extends StatelessWidget {
     // mint plate). The accent outline and glyph carry the semantics; the
     // plate only lifts the chip off the page surface.
     final backgroundColor = tokens.colors.background.level02;
-    final labelColor = tokens.colors.text.highEmphasis;
-    final removeIconColor = tokens.colors.text.mediumEmphasis;
+    final labelColor = muted
+        ? tokens.colors.text.lowEmphasis
+        : tokens.colors.text.highEmphasis;
+    final removeIconColor = muted
+        ? tokens.colors.text.lowEmphasis
+        : tokens.colors.text.mediumEmphasis;
+    final accentColor = muted
+        ? this.accentColor.withValues(alpha: SurfaceAlphas.muted)
+        : this.accentColor;
 
     final accessory = avatar != null
         ? SizedBox.square(
             dimension: IconSizes.xs + tokens.spacing.step1,
-            child: ClipOval(child: avatar),
+            child: Opacity(
+              opacity: muted ? SurfaceAlphas.muted : 1,
+              child: ClipOval(child: avatar),
+            ),
           )
         : leadingIcon != null
         ? Icon(
@@ -53,7 +77,7 @@ class ActiveFilterChip extends StatelessWidget {
           )
         : null;
 
-    return Material(
+    final chip = Material(
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
         side: BorderSide(color: accentColor),
@@ -117,5 +141,8 @@ class ActiveFilterChip extends StatelessWidget {
         ),
       ),
     );
+    final reason = mutedReason;
+    if (!muted || reason == null) return chip;
+    return Tooltip(message: reason, child: chip);
   }
 }

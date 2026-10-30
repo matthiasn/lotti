@@ -17531,6 +17531,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksFilterClearAll => 'Vymazat vše';
 
   @override
+  String get tasksFilterIgnoredBySearch => 'Hledání tento filtr nebere v úvahu';
+
+  @override
   String get tasksFilterTitle => 'Filtrovat úkoly';
 
   @override

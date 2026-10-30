@@ -7227,6 +7227,7 @@
   "taskSetEstimateLabel": "Lägg till uppskattning",
   "tasksFilterApplyTitle": "Använd filter",
   "tasksFilterClearAll": "Rensa allt",
+  "tasksFilterIgnoredBySearch": "Sökningen bortser från det här filtret",
   "tasksFilterTitle": "Filtrera uppgifter",
   "taskShowcaseAudio": "Ljud",
   "taskShowcaseCompletedCount": "{completed} / {total} färdigt",

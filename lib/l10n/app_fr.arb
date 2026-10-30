@@ -6557,6 +6557,7 @@
   "taskSetEstimateLabel": "Ajouter une estimation",
   "tasksFilterApplyTitle": "Appliquer le filtre",
   "tasksFilterClearAll": "Tout effacer",
+  "tasksFilterIgnoredBySearch": "La recherche ne tient pas compte de ce filtre",
   "tasksFilterTitle": "Filtrer les tâches",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed, plural, =1{1 / {total} terminé} other{{completed} / {total} terminés}}",

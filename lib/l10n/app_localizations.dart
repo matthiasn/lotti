@@ -28739,6 +28739,12 @@ abstract class AppLocalizations {
   /// **'Clear all'**
   String get tasksFilterClearAll;
 
+  /// Tooltip on a task filter chip shown dimmed while a search is typed: the search does not apply this filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Search looks past this filter'**
+  String get tasksFilterIgnoredBySearch;
+
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:
