@@ -97,7 +97,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
         // bumps the generation once its state is set, which would otherwise
         // mark this refresh stale before it starts.
         scheduleMicrotask(() {
-          if (ref.mounted) unawaited(_refresh());
+          if (ref.mounted) _startRefresh();
         });
       }
     });
@@ -120,7 +120,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
       if (affected.contains(eventNotification) ||
           affectsLoadedEventLink ||
           pendingCoverArrived) {
-        unawaited(_refresh());
+        _startRefresh();
       }
     });
     ref.onDispose(sub.cancel);
@@ -236,6 +236,10 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     // list and the old filter; its page must not land on the new one.
     _generation++;
   }
+
+  /// Starts [_refresh] without waiting for it: it is triggered by
+  /// notifications, and a failure keeps the current list (see [_refresh]).
+  void _startRefresh() => unawaited(_refresh());
 
   /// Re-fetches the currently-loaded window after a sync/db change, so new or
   /// edited events show up without losing the user's scroll depth.
