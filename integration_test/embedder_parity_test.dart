@@ -29,6 +29,8 @@ void main() {
     skip: _modelsDir.isEmpty || _vectors.isEmpty,
     (_) async {
       final cases = jsonDecode(File(_vectors).readAsStringSync()) as List;
+      // With nothing to compare, the cosine check below would pass vacuously.
+      expect(cases, isNotEmpty, reason: '$_vectors holds no vectors');
 
       final load = Stopwatch()..start();
       final embedder = await GemmaEmbedder.load(
