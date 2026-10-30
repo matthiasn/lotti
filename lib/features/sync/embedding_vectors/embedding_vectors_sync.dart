@@ -34,7 +34,7 @@ String embeddingVectorsCaughtUpKey(String modelId) =>
     'embedding_vectors_caught_up.$modelId';
 
 /// Sync's half of the embedding-vectors register
-/// (`SyncMessage.embeddingVectors`, ADR 0149).
+/// (`SyncMessage.embeddingVectors`, ADR 0150).
 ///
 /// Created with the sync stack, which registers before the embedding
 /// pipeline; the pipeline [attach]es its store and receiver once it is up.

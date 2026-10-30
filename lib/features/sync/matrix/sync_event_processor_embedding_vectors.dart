@@ -2,7 +2,7 @@ part of 'sync_event_processor.dart';
 
 /// Receiving `SyncMessage.embeddingVectors`: the attachment is resolved in
 /// prepare, the version handed to the AI feature's sink in apply, and its
-/// receipt recorded whatever the sink made of it (ADR 0149).
+/// receipt recorded whatever the sink made of it (ADR 0150).
 extension SyncEventProcessorEmbeddingVectors on SyncEventProcessor {
   /// The JSON of [msg]'s vectors attachment, or `null` for a tombstone and
   /// for a version sent without one (the sender's file was gone: an exact
@@ -44,7 +44,7 @@ extension SyncEventProcessorEmbeddingVectors on SyncEventProcessor {
   /// Hands [msg] to the sink, then records its receipt (and those of the
   /// versions it covers). A device that does not store vectors — the flags
   /// off, a platform without the pipeline — records the receipt alone; it
-  /// catches up once it can store (ADR 0149).
+  /// catches up once it can store (ADR 0150).
   Future<void> _applyEmbeddingVectors({
     required SyncEmbeddingVectors msg,
     required String? payload,

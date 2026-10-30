@@ -332,7 +332,7 @@ void main() {
 
     test(
       'an embedding-vectors attachment is indexed and never downloaded: its '
-      'message reads it from the descriptor (ADR 0149)',
+      'message reads it from the descriptor (ADR 0150)',
       () async {
         var downloads = 0;
         final ingestor = AttachmentIngestor(documentsDirectory: tempDir);

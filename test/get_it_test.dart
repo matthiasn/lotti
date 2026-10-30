@@ -503,7 +503,7 @@ void main() {
 
     test(
       'populates the vectors registers the store holds, after restore '
-      '(ADR 0149)',
+      '(ADR 0150)',
       () async {
         when(
           () => settingsDb.itemByKey(settingsKey),

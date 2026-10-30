@@ -126,7 +126,7 @@ bundle resurface through per-`(host, counter)` backfill on demand.
 
 `embeddingVectors` carries one version of an entry's vectors under one model,
 the register `<entityId>|<modelId>`
-([ADR 0149](../../../docs/adr/0149-embedding-vectors-sync-as-a-tracked-register.md)):
+([ADR 0150](../../../docs/adr/0150-embedding-vectors-sync-as-a-tracked-register.md)):
 the register's own clock, the entry's clock when it was embedded, the content
 hash, a tombstone flag, and the complete chunk set as a gzipped JSON
 attachment, one file per version. Its row travels alone, never in a bundle.

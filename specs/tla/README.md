@@ -3217,7 +3217,7 @@ skips a deleted entry's leftover vector. Each fails with its fix reverted.
 ## `EmbeddingVectorSync` — vectors shared between devices
 
 One entry's embedding vectors under one model, synced as a register
-(`<entityId>|<modelId>`, ADR 0149): `EmbeddingProcessor` writes a version on
+(`<entityId>|<modelId>`, ADR 0150): `EmbeddingProcessor` writes a version on
 every store and removal and `EmbeddingVectorsSync` sends it;
 `EmbeddingSyncReceiver` merges what arrives. The entry's text has a linear
 history and syncs on its own, in any order relative to the vectors; vector

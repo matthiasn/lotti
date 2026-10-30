@@ -95,7 +95,7 @@ void main() {
     ),
   );
 
-  group('held embedding vectors (ADR 0149)', () {
+  group('held embedding vectors (ADR 0150)', () {
     late MockSyncedEmbeddingSink sink;
 
     setUp(() {

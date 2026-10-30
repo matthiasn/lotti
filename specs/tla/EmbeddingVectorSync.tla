@@ -3,7 +3,7 @@ EXTENDS Naturals, FiniteSets
 
 (***************************************************************************)
 (* The register of one entry's embedding vectors, synced between devices  *)
-(* (ADR 0149): `EmbeddingProcessor` writes a version, `EmbeddingVectorsSync`*)
+(* (ADR 0150): `EmbeddingProcessor` writes a version, `EmbeddingVectorsSync`*)
 (* sends it, and `EmbeddingSyncReceiver` merges what arrives.              *)
 (*                                                                         *)
 (* The entry's text has a linear history 1..MaxText (0: not arrived yet);  *)

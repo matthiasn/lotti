@@ -3,7 +3,7 @@ import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_store.dart';
 import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 
-/// Embedding-vector registers (ADR 0149), read from the vector store through
+/// Embedding-vector registers (ADR 0150), read from the vector store through
 /// [EmbeddingVectorsSync]: one row per `<entityId>|<modelId>` this device
 /// shared or received, tombstones included, listed and resent like a live
 /// version.

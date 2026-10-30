@@ -64,7 +64,7 @@ sources:
 
 The vectors one device embeds reach the user's other devices, so a phone can
 search an entry by meaning without embedding it
-([ADR 0149](../../../docs/adr/0149-embedding-vectors-sync-as-a-tracked-register.md)).
+([ADR 0150](../../../docs/adr/0150-embedding-vectors-sync-as-a-tracked-register.md)).
 It still embeds the query itself. Off by default behind `sync_embeddings`,
 which also needs `enable_embeddings`; the pipeline itself is
 [Embeddings and search](embeddings-and-search.md).

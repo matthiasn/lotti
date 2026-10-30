@@ -516,7 +516,7 @@ void main() {
 
   testWidgets(
     'full onboarding sends the vectors only after End, and lists a vector '
-    'that failed with the rest (ADR 0149)',
+    'that failed with the rest (ADR 0150)',
     (tester) async {
       const target = OnboardingSyncTarget(
         userId: '@alice:example.com',

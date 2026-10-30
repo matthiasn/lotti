@@ -166,7 +166,7 @@ void main() {
 
     test(
       'releases the vectors held for an applied entry, and not for a refused '
-      'one (ADR 0149)',
+      'one (ADR 0150)',
       () async {
         final sink = MockSyncedEmbeddingSink();
         when(() => sink.onJournalEntityApplied(any())).thenAnswer((_) async {});

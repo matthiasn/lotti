@@ -824,7 +824,7 @@ consumption events, entity definitions — one store over their six tables
 `ai_config_versions` so hard deletions are listed and resent too
 (`AiConfigDeepBackfillStore`, ADR 0136) — and embedding-vector registers, read
 from the vector store with their tombstones
-(`EmbeddingVectorsDeepBackfillStore`, ADR 0149) — all registered with the sync
+(`EmbeddingVectorsDeepBackfillStore`, ADR 0150) — all registered with the sync
 stack. A store that does not `participates()` is neither advertised nor diffed
 against a peer's inventory: a device that does not store vectors would
 otherwise ask for every vector only to drop it. `runRound(only:)` advertises

@@ -147,7 +147,7 @@ class AttachmentIngestor {
         _recordHandledAttachmentEvent(event.eventId);
       }
       // A vectors attachment is read from its descriptor when its message
-      // applies (ADR 0149); a receiver keeps no file per version.
+      // applies (ADR 0150); a receiver keeps no file per version.
       if (rpAny.contains(embeddingVectorsSegment)) return false;
       // Only check the local file for repair when the event was already
       // handled once — new events always proceed.

@@ -1033,7 +1033,7 @@ void main() {
 
     test(
       'an applied agent entity releases the vectors held for it — a report '
-      'never runs the journal hook (ADR 0149)',
+      'never runs the journal hook (ADR 0150)',
       () async {
         final sink = MockSyncedEmbeddingSink();
         when(() => sink.onAgentEntityApplied(any())).thenAnswer((_) async {});

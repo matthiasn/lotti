@@ -1071,7 +1071,7 @@ void main() {
     );
   });
 
-  group('embedding vectors (ADR 0149)', () {
+  group('embedding vectors (ADR 0150)', () {
     const jsonPath = '/embedding_vectors/e1/m/host-a-3.json';
     const message = SyncMessage.embeddingVectors(
       id: 'e1|m',

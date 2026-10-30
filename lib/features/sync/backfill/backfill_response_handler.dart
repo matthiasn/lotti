@@ -114,7 +114,7 @@ class BackfillResponseHandler {
 
   AiConfigRepository? _aiConfigRepository;
 
-  /// The embedding-vectors register (ADR 0149), injected after the
+  /// The embedding-vectors register (ADR 0150), injected after the
   /// embedding pipeline is up. When set, backfill answers a counter of a
   /// vectors register with the version held now.
   EmbeddingVectorsSync? get embeddingVectors => _embeddingVectors;

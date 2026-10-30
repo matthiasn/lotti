@@ -1,7 +1,7 @@
 part of 'matrix_payload_sender.dart';
 
 /// Upload of embedding-vectors attachments for [MatrixPayloadSender]
-/// (ADR 0149). Public for the same reason as
+/// (ADR 0150). Public for the same reason as
 /// [MatrixPayloadSenderNotifications]: [MatrixMessageSender] in a sibling
 /// library calls it.
 ///

@@ -258,7 +258,7 @@ void routeNotificationTap(String payload) {
   unawaited(getIt<NotificationTapHandler>().handleTap(payload));
 }
 
-/// Connects the pipeline to sync's half of the vectors register (ADR 0149):
+/// Connects the pipeline to sync's half of the vectors register (ADR 0150):
 /// the receiver that stores what other devices share, the processor's share
 /// of what this one embeds, and backfill's answers from the store. A guest
 /// world has no sync stack, and its vectors stay on the device.

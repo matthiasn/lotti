@@ -333,7 +333,7 @@ Future<void> _migrateSpeechDictionary() => SpeechDictionaryMigration(
 Future<void> migrateSpeechDictionaryForTesting() => _migrateSpeechDictionary();
 
 /// The registers of the vector store as a sequence-log record source (ADR
-/// 0149): the store is ObjectBox, so the shared registers are read whole and
+/// 0150): the store is ObjectBox, so the shared registers are read whole and
 /// handed over in one batch.
 ({
   SyncSequencePayloadType payloadType,

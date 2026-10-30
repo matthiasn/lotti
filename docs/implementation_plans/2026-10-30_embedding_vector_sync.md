@@ -550,7 +550,7 @@ before.
 ## As built
 
 The six slices shipped in one pull request. Where the code departs from the
-plan above, the code and [ADR 0149](../adr/0149-embedding-vectors-sync-as-a-tracked-register.md)
+plan above, the code and [ADR 0150](../adr/0150-embedding-vectors-sync-as-a-tracked-register.md)
 win; the runtime map is
 [embedding vectors sync](../../knowledge/features/ai/embedding-vector-sync.md).
 

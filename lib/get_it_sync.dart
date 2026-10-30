@@ -189,7 +189,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         ..consumptionRepository = consumptionRepository
         ..aiConfigRepository = aiConfigRepository;
 
-  // The embedding-vectors register (ADR 0149). The pipeline registers after
+  // The embedding-vectors register (ADR 0150). The pipeline registers after
   // the sync stack and attaches itself (`_registerEmbeddingPipeline`); until
   // it does, nothing is shared and arriving versions wait.
   final embeddingVectorsSync = EmbeddingVectorsSync(

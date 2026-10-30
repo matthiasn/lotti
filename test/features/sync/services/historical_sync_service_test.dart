@@ -1733,7 +1733,7 @@ void main() {
     ).called(1);
   });
 
-  group('sendEmbeddingVectors (ADR 0149)', () {
+  group('sendEmbeddingVectors (ADR 0150)', () {
     late MockEmbeddingVectorsSync vectors;
     late HistoricalSyncService service;
 

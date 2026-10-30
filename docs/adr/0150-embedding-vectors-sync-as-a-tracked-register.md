@@ -1,4 +1,4 @@
-# ADR 0149: Embedding Vectors Sync as a Tracked Register
+# ADR 0150: Embedding Vectors Sync as a Tracked Register
 
 - Status: Accepted
 - Date: 2026-10-30

@@ -188,7 +188,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   }
 
   /// Add Device's vectors, sent only once End is enqueued: low priority,
-  /// they would otherwise delay it (ADR 0149). Their failures join the
+  /// they would otherwise delay it (ADR 0150). Their failures join the
   /// result, and its retry resends just those.
   Future<ReSyncResult> _sendEmbeddingVectors() => ref
       .read(historicalSyncServiceProvider)

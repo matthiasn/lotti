@@ -45,7 +45,7 @@ Counter(c) == IF ConcurrentWriters /\ c = 2 THEN 1
               ELSE IF ConcurrentWriters /\ c >= 3 THEN c - 1 ELSE c
 Nodes == Peers \cup Origins
 IsNotification(c) == FamilyAt(c) = "notification"
-\* Embedding vectors (ADR 0149) carry their chunk set as an attachment, built
+\* Embedding vectors (ADR 0150) carry their chunk set as an attachment, built
 \* at enqueue and fetched by the receiver before apply, and never collapse.
 FileBacked(c) == FamilyAt(c) \in {"journal", "notification", "embeddingVectors"}
 CanCollapse(c) == FamilyAt(c) \in {"journal", "entryLink", "agentEntity", "agentLink"}

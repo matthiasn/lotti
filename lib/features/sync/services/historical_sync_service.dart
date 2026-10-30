@@ -761,7 +761,7 @@ class HistoricalSyncService {
   }
 
   /// Sends the current version of every embedding-vectors register — Add
-  /// Device's step after the onboarding End barrier (ADR 0149). Run after
+  /// Device's step after the onboarding End barrier (ADR 0150). Run after
   /// End because the vectors are low priority: staged before it, they would
   /// delay it. A register that cannot be enqueued becomes a failure of
   /// [ReSyncItemType.embeddingVectors], retried with the rest.

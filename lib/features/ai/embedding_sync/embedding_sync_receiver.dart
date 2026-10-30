@@ -30,7 +30,7 @@ typedef _LocalText = ({
 });
 
 /// Stores the vector versions other devices share, when — and only when —
-/// they describe the text this device holds (ADR 0149).
+/// they describe the text this device holds (ADR 0150).
 ///
 /// Per register, under the entry's lock (an agent report's: its task's,
 /// as in `EmbeddingProcessor`):

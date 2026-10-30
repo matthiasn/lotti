@@ -754,7 +754,7 @@ void main() {
     });
   });
 
-  group('embedding vectors sequence tracking (ADR 0149)', () {
+  group('embedding vectors sequence tracking (ADR 0150)', () {
     const clock = VectorClock({'hostA': 6});
     late MockSyncSequenceLogService sequenceLog;
 

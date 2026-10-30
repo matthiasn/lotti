@@ -412,7 +412,7 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
           return false;
         }
         // Answered with the version or tombstone held now, its attachment
-        // written afresh from the store (ADR 0149).
+        // written afresh from the store (ADR 0150).
         return _processAgentBackfillEntry<SyncEmbeddingVectors>(
           hostId: hostId,
           counter: counter,
