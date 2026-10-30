@@ -572,6 +572,19 @@ void main() {
               (ctx) => ctx.messages.syncPayloadAiConfig,
             ),
             (
+              'embeddingVectors',
+              () => const SyncMessage.embeddingVectors(
+                id: 'e1|m',
+                entityId: 'e1',
+                entityType: 'task',
+                modelId: 'm',
+                vectorClock: VectorClock({'a': 1}),
+                originatingHostId: 'a',
+                contentHash: 'h',
+              ),
+              (ctx) => ctx.messages.syncPayloadEmbeddingVectors,
+            ),
+            (
               'savedTaskFilter',
               () => const SyncMessage.savedTaskFilter(
                 filter: SavedTaskFilter(

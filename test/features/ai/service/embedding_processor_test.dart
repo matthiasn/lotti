@@ -9,6 +9,8 @@ import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -18,6 +20,7 @@ import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dar
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../helpers/in_memory_embedding_store.dart';
 import '../../../mocks/mocks.dart';
 import '../../ai_consumption/test_utils.dart';
 
@@ -388,6 +391,7 @@ void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
       categoryId: any(named: 'categoryId'),
       taskId: any(named: 'taskId'),
       subtype: any(named: 'subtype'),
+      register: any(named: 'register'),
     ),
   ).thenReturn(null);
 }
@@ -425,6 +429,9 @@ void _backWithRows(MockEmbeddingStore store, Map<String, _StoredRow> rows) {
     () => store.getContentHash(any()),
   ).thenAnswer((i) => rows[idOf(i)]?.hash);
   when(
+    () => store.hasEmbedding(any()),
+  ).thenAnswer((i) => rows.containsKey(idOf(i)));
+  when(
     () => store.getCategoryId(any()),
   ).thenAnswer((i) => rows[idOf(i)]?.categoryId);
   when(() => store.deleteEntityEmbeddings(any())).thenAnswer((i) {
@@ -454,6 +461,7 @@ void _backWithRows(MockEmbeddingStore store, Map<String, _StoredRow> rows) {
       categoryId: any(named: 'categoryId'),
       taskId: any(named: 'taskId'),
       subtype: any(named: 'subtype'),
+      register: any(named: 'register'),
     ),
   ).thenAnswer((i) {
     rows[i.namedArguments[#entityId] as String] = _StoredRow(
@@ -493,7 +501,9 @@ void main() {
 
   setUp(() {
     mockJournalDb = MockJournalDb();
+    stubNoDeletedEntries(mockJournalDb);
     mockEmbeddingStore = MockEmbeddingStore();
+    stubEmbeddingRegisters(mockEmbeddingStore);
     mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
 
     _stubNoExistingHash(mockEmbeddingStore);
@@ -574,6 +584,7 @@ void main() {
           categoryId: 'cat-1',
           taskId: any(named: 'taskId'),
           subtype: any(named: 'subtype'),
+          register: any(named: 'register'),
         ),
       ).called(1);
     });
@@ -744,7 +755,9 @@ void main() {
       'matches generated entity embedding pipeline semantics',
       (scenario) async {
         final localJournalDb = MockJournalDb();
+        stubNoDeletedEntries(localJournalDb);
         final localEmbeddingStore = MockEmbeddingStore();
+        stubEmbeddingRegisters(localEmbeddingStore);
         final localEmbeddingRepo = MockOnDeviceEmbeddingRepository();
         when(() => localEmbeddingRepo.modelId).thenReturn(_modelId);
         final entity = scenario.entity();
@@ -805,6 +818,7 @@ void main() {
               categoryId: any(named: 'categoryId'),
               taskId: any(named: 'taskId'),
               subtype: any(named: 'subtype'),
+              register: any(named: 'register'),
             ),
           );
           // A deleted or too-short entry loses its vectors; an entity type
@@ -879,6 +893,7 @@ void main() {
             contentHash: _hashOf(expectedText!),
             embeddings: any(named: 'embeddings'),
             categoryId: expectedCategoryId,
+            register: any(named: 'register'),
           ),
         ).called(1);
         verifyReportsFollow();
@@ -992,6 +1007,7 @@ void main() {
               categoryId: 'cat-new',
               taskId: any(named: 'taskId'),
               subtype: any(named: 'subtype'),
+              register: any(named: 'register'),
             ),
           ).called(1);
           // Reports must also be moved to the new category.
@@ -1206,6 +1222,7 @@ void main() {
           categoryId: 'cat-1',
           taskId: 'task-1',
           subtype: 'current',
+          register: any(named: 'register'),
         ),
       ).called(1);
     });
@@ -1304,6 +1321,7 @@ void main() {
           categoryId: any(named: 'categoryId'),
           taskId: any(named: 'taskId'),
           subtype: any(named: 'subtype'),
+          register: any(named: 'register'),
         ),
       ).called(1);
     });
@@ -1315,6 +1333,7 @@ void main() {
       'matches generated agent report embedding semantics',
       (scenario) async {
         final localEmbeddingStore = MockEmbeddingStore();
+        stubEmbeddingRegisters(localEmbeddingStore);
         final localEmbeddingRepo = MockOnDeviceEmbeddingRepository();
         when(() => localEmbeddingRepo.modelId).thenReturn(_modelId);
         _stubNoTaskReports(localEmbeddingStore);
@@ -1339,6 +1358,7 @@ void main() {
             categoryId: any(named: 'categoryId'),
             taskId: any(named: 'taskId'),
             subtype: any(named: 'subtype'),
+            register: any(named: 'register'),
           ),
         ).thenAnswer((invocation) {
           writes.add(
@@ -1654,6 +1674,371 @@ void main() {
 
         expect(rows['task-1']!.categoryId, 'cat-new');
         expect(rows['report-1']!.categoryId, 'cat-new');
+      },
+    );
+  });
+
+  group('register versions', () {
+    late InMemoryEmbeddingStore store;
+    late MockEmbeddingShare share;
+    late MockEmbeddingVersionTicket ticket;
+
+    const sharedClock = VectorClock({'host-a': 7});
+
+    setUp(() {
+      store = InMemoryEmbeddingStore();
+      share = MockEmbeddingShare();
+      ticket = MockEmbeddingVersionTicket();
+      when(() => ticket.vectorClock).thenReturn(sharedClock);
+      when(() => ticket.hostId).thenReturn('host-a');
+      when(() => ticket.send(any(), any())).thenAnswer((_) async {});
+      when(ticket.release).thenAnswer((_) async {});
+      when(
+        () => share.reserve(
+          registerId: any(named: 'registerId'),
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => ticket);
+    });
+
+    tearDown(() => EmbeddingProcessor.share = null);
+
+    Future<bool> process(JournalEntity entity) {
+      _stubEntity(mockJournalDb, entity);
+      return EmbeddingProcessor.processEntity(
+        entityId: entity.id,
+        journalDb: mockJournalDb,
+        embeddingStore: store,
+        embeddingRepository: mockEmbeddingRepo,
+      );
+    }
+
+    final entry = JournalEntry(
+      meta: _meta(id: 'entry-1').copyWith(
+        vectorClock: const VectorClock({'host-b': 3}),
+      ),
+      entryText: const EntryText(plainText: _longText),
+    );
+
+    test('without a share a version is stored with no clock', () async {
+      await process(entry);
+
+      final register = store.registers['entry-1']!;
+      expect(register.isShared, isFalse);
+      expect(register.contentHash, _hashOf(_longText));
+      expect(register.sourceVectorClock, const VectorClock({'host-b': 3}));
+      expect(register.modelId, _modelId);
+    });
+
+    test(
+      'a shared version extends the stored clock, is stored with the '
+      "ticket's clock and sent with its chunks",
+      () async {
+        store.registers['entry-1'] = const EmbeddingRegister(
+          entityId: 'entry-1',
+          modelId: _modelId,
+          entityType: kEntityTypeJournalText,
+          contentHash: 'old',
+          vectorClock: VectorClock({'host-a': 2}),
+        );
+        EmbeddingProcessor.share = share;
+
+        await process(entry);
+
+        verify(
+          () => share.reserve(
+            registerId: 'entry-1|$_modelId',
+            previous: const VectorClock({'host-a': 2}),
+          ),
+        ).called(1);
+        final register = store.registers['entry-1']!;
+        expect(register.vectorClock, sharedClock);
+        expect(register.originatingHostId, 'host-a');
+        final sent = verify(() => ticket.send(captureAny(), captureAny()))
+          ..called(1);
+        expect(sent.captured[0], register);
+        expect(
+          sent.captured[1] as List<Float32List>,
+          store.chunkVectors('entry-1'),
+        );
+        verifyNever(ticket.release);
+      },
+    );
+
+    test(
+      'a store that fails releases the reservation and sends nothing',
+      () async {
+        final failing = MockEmbeddingStore();
+        stubEmbeddingRegisters(failing);
+        when(() => failing.getContentHash(any())).thenReturn(null);
+        when(() => failing.getCategoryId(any())).thenReturn(null);
+        when(
+          () => failing.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+            register: any(named: 'register'),
+          ),
+        ).thenThrow(StateError('disk full'));
+        EmbeddingProcessor.share = share;
+        _stubEntity(mockJournalDb, entry);
+
+        await expectLater(
+          EmbeddingProcessor.processEntity(
+            entityId: entry.id,
+            journalDb: mockJournalDb,
+            embeddingStore: failing,
+            embeddingRepository: mockEmbeddingRepo,
+          ),
+          throwsStateError,
+        );
+
+        verify(ticket.release).called(1);
+        verifyNever(() => ticket.send(any(), any()));
+      },
+    );
+
+    test(
+      'a deleted entry leaves a sent tombstone in place of its vectors',
+      () async {
+        await process(entry);
+        EmbeddingProcessor.share = share;
+        when(
+          () => mockJournalDb.journalEntityById('entry-1'),
+        ).thenAnswer((_) async => null);
+
+        await EmbeddingProcessor.processEntity(
+          entityId: 'entry-1',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        final tombstone = store.registers['entry-1']!;
+        expect(tombstone.deleted, isTrue);
+        expect(tombstone.vectorClock, sharedClock);
+        expect(tombstone.entityType, kEntityTypeJournalText);
+        expect(store.chunks, isEmpty);
+        verify(() => ticket.send(tombstone, const [])).called(1);
+      },
+    );
+
+    test(
+      'a deleted entry this device never embedded still announces its '
+      'removal, made from the deleted version',
+      () async {
+        EmbeddingProcessor.share = share;
+        when(
+          () => mockJournalDb.journalEntityById('entry-1'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityByIdIncludingDeleted('entry-1'),
+        ).thenAnswer(
+          (_) async => entry.copyWith(
+            meta: entry.meta.copyWith(
+              vectorClock: const VectorClock({'host-b': 4}),
+              deletedAt: _fixedDate,
+            ),
+          ),
+        );
+
+        await EmbeddingProcessor.processEntity(
+          entityId: 'entry-1',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        final tombstone = store.registers['entry-1']!;
+        expect(tombstone.deleted, isTrue);
+        expect(tombstone.entityType, kEntityTypeJournalText);
+        expect(tombstone.sourceVectorClock, const VectorClock({'host-b': 4}));
+        verify(() => ticket.send(tombstone, const [])).called(1);
+
+        // A second pass finds the tombstone and sends nothing more.
+        await EmbeddingProcessor.processEntity(
+          entityId: 'entry-1',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+        verifyNever(() => ticket.send(any(), any()));
+      },
+    );
+
+    test(
+      'an id that was never an embeddable entry announces nothing',
+      () async {
+        EmbeddingProcessor.share = share;
+        when(
+          () => mockJournalDb.journalEntityById('gone'),
+        ).thenAnswer((_) async => null);
+
+        await EmbeddingProcessor.processEntity(
+          entityId: 'gone',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        expect(store.registers, isEmpty);
+        verifyNever(
+          () => share.reserve(
+            registerId: any(named: 'registerId'),
+            previous: any(named: 'previous'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'a tombstone made from this version or a later one is not embedded '
+      'over; one made from an older version is',
+      () async {
+        Future<void> tombstoneFrom(Map<String, int> source) async =>
+            store.registers['entry-1'] = EmbeddingRegister(
+              entityId: 'entry-1',
+              modelId: _modelId,
+              entityType: kEntityTypeJournalText,
+              contentHash: '',
+              vectorClock: const VectorClock({'host-c': 1}),
+              sourceVectorClock: VectorClock(source),
+              deleted: true,
+            );
+
+        await tombstoneFrom({'host-b': 3});
+        expect(await process(entry), isFalse);
+        await tombstoneFrom({'host-b': 5});
+        expect(await process(entry), isFalse);
+        expect(store.chunks, isEmpty);
+
+        await tombstoneFrom({'host-b': 2});
+        expect(await process(entry), isTrue);
+        expect(store.chunks.keys, ['entry-1']);
+      },
+    );
+
+    test(
+      "a shortened entry's tombstone is made from the short version",
+      () async {
+        await process(entry);
+        EmbeddingProcessor.share = share;
+
+        await process(
+          JournalEntry(
+            meta: _meta(id: 'entry-1').copyWith(
+              vectorClock: const VectorClock({'host-b': 9}),
+            ),
+            entryText: const EntryText(plainText: 'short'),
+          ),
+        );
+
+        final tombstone = store.registers['entry-1']!;
+        expect(tombstone.deleted, isTrue);
+        expect(tombstone.sourceVectorClock, const VectorClock({'host-b': 9}));
+      },
+    );
+
+    test('a tombstone that cannot be written releases its ticket', () async {
+      final failing = MockEmbeddingStore();
+      when(() => failing.getRegister(any())).thenReturn(null);
+      when(() => failing.hasEmbedding(any())).thenReturn(true);
+      when(() => failing.writeTombstone(any())).thenThrow(StateError('closed'));
+      EmbeddingProcessor.share = share;
+      when(
+        () => mockJournalDb.journalEntityById('entry-1'),
+      ).thenAnswer((_) async => null);
+
+      await expectLater(
+        EmbeddingProcessor.processEntity(
+          entityId: 'entry-1',
+          journalDb: mockJournalDb,
+          embeddingStore: failing,
+          embeddingRepository: mockEmbeddingRepo,
+        ),
+        throwsStateError,
+      );
+
+      verify(ticket.release).called(1);
+      verifyNever(() => ticket.send(any(), any()));
+    });
+
+    test('a removal with no share deletes the register along', () async {
+      await process(entry);
+      when(
+        () => mockJournalDb.journalEntityById('entry-1'),
+      ).thenAnswer((_) async => null);
+
+      await EmbeddingProcessor.processEntity(
+        entityId: 'entry-1',
+        journalDb: mockJournalDb,
+        embeddingStore: store,
+        embeddingRepository: mockEmbeddingRepo,
+      );
+
+      expect(store.registers, isEmpty);
+      expect(store.chunks, isEmpty);
+    });
+
+    test(
+      'an entry that never had vectors, or has a tombstone already, sends '
+      'nothing however often it is processed',
+      () async {
+        EmbeddingProcessor.share = share;
+        final short = JournalEntry(
+          meta: _meta(id: 'entry-2'),
+          entryText: const EntryText(plainText: 'short'),
+        );
+        await process(short);
+        store.registers['entry-2'] = const EmbeddingRegister(
+          entityId: 'entry-2',
+          modelId: _modelId,
+          entityType: kEntityTypeJournalText,
+          contentHash: '',
+          vectorClock: VectorClock({'host-a': 1}),
+          deleted: true,
+        );
+        await process(short);
+
+        verifyNever(
+          () => share.reserve(
+            registerId: any(named: 'registerId'),
+            previous: any(named: 'previous'),
+          ),
+        );
+      },
+    );
+
+    test(
+      "a report's cleanup sends a tombstone for each report it removes",
+      () async {
+        when(
+          () => mockJournalDb.journalEntityById('task-1'),
+        ).thenAnswer((_) async => null);
+        Future<void> report(String id) => EmbeddingProcessor.processAgentReport(
+          reportId: id,
+          reportContent: 'An agent report with plenty of content: $id',
+          taskId: 'task-1',
+          subtype: 'current',
+          journalDb: mockJournalDb,
+          embeddingStore: store,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+        await report('report-1');
+        EmbeddingProcessor.share = share;
+
+        await report('report-2');
+
+        expect(store.chunks.keys, ['report-2']);
+        final tombstone = store.registers['report-1']!;
+        expect(tombstone.deleted, isTrue);
+        expect(tombstone.taskId, 'task-1');
+        verify(() => ticket.send(tombstone, const [])).called(1);
       },
     );
   });

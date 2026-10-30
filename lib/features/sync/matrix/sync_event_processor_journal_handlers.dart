@@ -478,6 +478,9 @@ extension _JournalHandlers on SyncEventProcessor {
     );
     if (updateResult.applied) {
       await onJournalEntityApplied?.call(journalEntity);
+      await _notifyEmbeddingDependency(
+        (sink) => sink.onJournalEntityApplied(journalEntity.id),
+      );
     }
 
     // (3) POST — sequence-log gap detection. Writes to *sync_db* (a

@@ -3038,6 +3038,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definiții de setări';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Încorporări';
+
+  @override
   String get backfillRecordsEntryLinks => 'Legături între intrări';
 
   @override
@@ -4129,6 +4132,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Sincronizați încorporările';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Când este activată, încorporările generate de acest dispozitiv sunt partajate cu celelalte dispozitive ale dumneavoastră, iar ale lor sunt folosite aici, astfel încât puteți căuta intrările după sens fără a le genera din nou. Necesită activarea opțiunii „Generare încorporări”.';
 
   @override
   String get configFlagUseIsolateSync => 'Proces de sincronizare în fundal';
@@ -16690,6 +16700,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncPayloadDeepBackfillRequest =>
       'Cerere de completare aprofundată';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Vectori de încorporare';
 
   @override
   String get syncPayloadEntityDefinition => 'Definiție entitate';

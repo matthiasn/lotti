@@ -2325,6 +2325,7 @@ not describe task configuration or tool activity as progress.
                   )
                   as AgentReportHeadEntity;
           final mockEmbeddingStore = MockEmbeddingStore();
+          stubEmbeddingRegisters(mockEmbeddingStore);
           final mockEmbeddingRepository = MockOnDeviceEmbeddingRepository();
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,
@@ -2433,6 +2434,7 @@ not describe task configuration or tool activity as progress.
               categoryId: any(named: 'categoryId'),
               taskId: any(named: 'taskId'),
               subtype: any(named: 'subtype'),
+              register: any(named: 'register'),
             ),
           ).thenAnswer((invocation) async {
             newReportId = invocation.namedArguments[#entityId] as String;
@@ -2499,6 +2501,7 @@ not describe task configuration or tool activity as progress.
                     'embedded',
           () async {
             final mockEmbeddingStore = MockEmbeddingStore();
+            stubEmbeddingRegisters(mockEmbeddingStore);
             final embeddingRepository = MockOnDeviceEmbeddingRepository();
             // The gate's last check completes this, so the test can wait
             // for the fire-and-forget embedding deterministically.
@@ -2627,6 +2630,7 @@ not describe task configuration or tool activity as progress.
         // caught (logged) and never surface as a wake failure, and no
         // embedding/deletion side effects should run.
         final mockEmbeddingStore = MockEmbeddingStore();
+        stubEmbeddingRegisters(mockEmbeddingStore);
         final mockEmbeddingRepository = MockOnDeviceEmbeddingRepository();
         final workflowWithEmbeddings = TaskAgentWorkflow(
           agentRepository: mockAgentRepository,

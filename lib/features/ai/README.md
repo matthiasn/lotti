@@ -28,7 +28,9 @@ one.
   something baked into the code.
 - **Finds things by meaning**, not just by keyword, through semantic search
   that runs on the device: the model is downloaded once, and no text leaves
-  the device to be embedded.
+  the device to be embedded. With sync of embeddings switched on, the
+  vectors one device makes reach the user's other devices, so a phone can
+  search what a desktop embedded without embedding it again.
 - **Keeps automation opt-in.** Automatic transcription, image analysis and
   recording summaries are off until switched on per area, because choosing a
   model is not the same as agreeing to spend tokens on every recording.
@@ -67,6 +69,7 @@ lib/features/ai/
 ├── database/       # AiConfigDb, embedding stores
 ├── model_files/   # verified downloads of pinned model files
 ├── on_device_embedding/  # EmbeddingGemma: download, tokenizer, ONNX embedder
+├── embedding_sync/ # sharing vectors with the user's other devices
 └── ui/             # provider, model and profile editors
 ```
 

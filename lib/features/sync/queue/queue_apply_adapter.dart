@@ -355,6 +355,7 @@ class QueueApplyAdapter {
         '/agent_links/',
         '/notifications/',
         '/deep_backfill/',
+        '/embedding_vectors/',
       ];
       for (final prefix in attachmentPrefixes) {
         if (path.contains(prefix)) return true;
@@ -385,6 +386,8 @@ class QueueApplyAdapter {
       entityDefinition: (_) => false,
       // ai_config_db.
       aiConfig: (_) => false,
+      // The vector store (ObjectBox) and the hold files — not JournalDb.
+      embeddingVectors: (_) => false,
       // ai_consumption.sqlite — not JournalDb.
       consumptionEvent: (_) => false,
       aiConfigDelete: (_) => false,

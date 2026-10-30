@@ -59,6 +59,7 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationship_nudge_providers.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/repository/preference_resend.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
@@ -337,6 +338,11 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     ),
     if (getIt.isRegistered<VectorClockService>())
       vectorClockServiceProvider.overrideWithValue(getIt<VectorClockService>()),
+    // Absent in a guest world, which has no sync stack.
+    if (getIt.isRegistered<EmbeddingVectorsSync>())
+      embeddingVectorsSyncProvider.overrideWithValue(
+        getIt<EmbeddingVectorsSync>(),
+      ),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
     if (getIt.isRegistered<EntitiesCacheService>())
       entitiesCacheServiceProvider.overrideWithValue(

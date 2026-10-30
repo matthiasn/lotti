@@ -3019,6 +3019,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Einstellungsdefinitionen';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Einbettungen';
+
+  @override
   String get backfillRecordsEntryLinks => 'Eintragsverknüpfungen';
 
   @override
@@ -4095,6 +4098,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Einbettungen synchronisieren';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Wenn aktiviert, werden die Einbettungen, die dieses Gerät erzeugt, mit deinen anderen Geräten geteilt und deren Einbettungen hier genutzt, sodass Einträge nach Bedeutung durchsuchbar sind, ohne sie erneut einzubetten. Erfordert „Einbettungen generieren“.';
 
   @override
   String get configFlagUseIsolateSync => 'Sync-Hintergrundprozess';
@@ -16494,6 +16504,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadDeepBackfillRequest => 'Anfrage zum tiefen Nachfüllen';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Einbettungsvektoren';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitätsdefinition';

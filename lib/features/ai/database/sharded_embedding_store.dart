@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
@@ -76,6 +77,10 @@ class ShardedEmbeddingStore implements EmbeddingStore {
 
   /// entityId → taskId for efficient reverse-index cleanup.
   final Map<String, String> _entityTaskIndex = {};
+
+  /// entityId → shardKey of its register row. The register lives with the
+  /// entity's chunks; a tombstone, which has none, stays where they were.
+  final Map<String, String> _registerIndex = {};
 
   /// Opens a [ShardedEmbeddingStore] and rebuilds in-memory indexes.
   static Future<ShardedEmbeddingStore> open({
@@ -173,6 +178,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     String categoryId = '',
     String taskId = '',
     String subtype = '',
+    EmbeddingRegister? register,
   }) async {
     final shardKey = sanitizeShardKey(categoryId);
     final targetShard = await _getOrCreateShard(shardKey);
@@ -190,12 +196,25 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       categoryId: categoryId,
       taskId: taskId,
       subtype: subtype,
+      register: register,
     );
 
     // Now safe to delete from the old shard (data exists in the new one).
+    // The delete takes the old shard's register row along.
     final oldShardKey = _primaryIndex[entityId];
     if (oldShardKey != null && oldShardKey != shardKey) {
       _shards[oldShardKey]?.store.deleteEntityEmbeddings(entityId);
+    }
+    final oldRegisterShardKey = _registerIndex[entityId];
+    if (oldRegisterShardKey != null &&
+        oldRegisterShardKey != shardKey &&
+        oldRegisterShardKey != oldShardKey) {
+      _shards[oldRegisterShardKey]?.store.deleteEntityEmbeddings(entityId);
+    }
+    if (register == null) {
+      _registerIndex.remove(entityId);
+    } else {
+      _registerIndex[entityId] = shardKey;
     }
 
     // Update indexes. An empty embeddings list means "delete only" — the
@@ -214,11 +233,62 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   @override
   Future<void> deleteEntityEmbeddings(String entityId) async {
     final shardKey = _primaryIndex[entityId];
+    final registerShardKey = _registerIndex.remove(entityId);
+    if (registerShardKey != null && registerShardKey != shardKey) {
+      _shards[registerShardKey]?.store.deleteEntityEmbeddings(entityId);
+    }
     if (shardKey == null) return;
 
     _shards[shardKey]?.store.deleteEntityEmbeddings(entityId);
     _removeFromIndexes(entityId);
   }
+
+  @override
+  Future<void> writeTombstone(EmbeddingRegister tombstone) async {
+    final entityId = tombstone.entityId;
+    final chunkShardKey = _primaryIndex[entityId];
+    final registerShardKey = _registerIndex[entityId];
+    // In the chunks' shard, so removing them and writing the tombstone is
+    // one transaction.
+    final shardKey = chunkShardKey ?? registerShardKey ?? kDefaultShardKey;
+    final shard = await _getOrCreateShard(shardKey);
+    shard.store.writeTombstone(tombstone);
+    if (registerShardKey != null && registerShardKey != shardKey) {
+      _shards[registerShardKey]?.store.deleteEntityEmbeddings(entityId);
+    }
+    _removeFromIndexes(entityId);
+    _registerIndex[entityId] = shardKey;
+  }
+
+  @override
+  Future<void> putRegister(EmbeddingRegister register) async {
+    final entityId = register.entityId;
+    final shardKey =
+        _registerIndex[entityId] ?? _primaryIndex[entityId] ?? kDefaultShardKey;
+    final shard = await _getOrCreateShard(shardKey);
+    shard.store.putRegister(register);
+    _registerIndex[entityId] = shardKey;
+  }
+
+  @override
+  Future<EmbeddingRegister?> getRegister(String entityId) async {
+    final shardKey = _registerIndex[entityId];
+    if (shardKey == null) return null;
+    return _shards[shardKey]?.store.getRegister(entityId);
+  }
+
+  @override
+  Future<List<Float32List>> chunkVectors(String entityId) async {
+    final shardKey = _primaryIndex[entityId];
+    if (shardKey == null) return const [];
+    return _shards[shardKey]?.store.chunkVectors(entityId) ?? const [];
+  }
+
+  @override
+  Future<List<EmbeddingRegister>> allRegisters() async => [
+    for (final entry in _registerIndex.entries)
+      ?_shards[entry.value]?.store.getRegister(entry.key),
+  ];
 
   /// Removes an entity from all in-memory indexes.
   void _removeFromIndexes(String entityId) {
@@ -277,13 +347,22 @@ class ShardedEmbeddingStore implements EmbeddingStore {
         ..id = 0;
     }
 
+    // The register travels with its chunks, in the same transaction.
+    final register = oldShard.ops.findRegister(entityId)
+      ?..id = 0
+      ..updatedAt = movedAt;
+
     // Write-first strategy: insert into new shard, then delete from old.
     final newShard = await _getOrCreateShard(newShardKey);
-    newShard.ops.putMany(chunks);
+    newShard.ops.runInWriteTransaction(() {
+      newShard.ops.putMany(chunks);
+      if (register != null) newShard.ops.putRegister(register);
+    });
     oldShard.store.deleteEntityEmbeddings(entityId);
 
     // Update primary index.
     _primaryIndex[entityId] = newShardKey;
+    if (register != null) _registerIndex[entityId] = newShardKey;
   }
 
   @override
@@ -327,6 +406,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
     _entityTaskIndex.clear();
+    _registerIndex.clear();
   }
 
   @override
@@ -338,6 +418,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
     _entityTaskIndex.clear();
+    _registerIndex.clear();
   }
 
   // ---------------------------------------------------------------------------
@@ -435,11 +516,13 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   }
 
   /// Rebuilds [_primaryIndex] and [_reverseTaskIndex] from all open shards,
-  /// removing all but the newest copy of an entity found in several.
+  /// removing all but the newest copy of an entity found in several, then
+  /// [_registerIndex] the same way.
   void _rebuildIndexes() {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
     _entityTaskIndex.clear();
+    _registerIndex.clear();
 
     for (final entry in _shards.entries) {
       final shardKey = entry.key;
@@ -463,6 +546,29 @@ class ShardedEmbeddingStore implements EmbeddingStore {
           _entityTaskIndex[row.entityId] = row.taskId;
           (_reverseTaskIndex[row.taskId] ??= {}).add(row.entityId);
         }
+      }
+    }
+    _rebuildRegisterIndex();
+  }
+
+  /// Rebuilds [_registerIndex], keeping only the row written last of an
+  /// entity whose register is found in several shards (an interrupted move).
+  void _rebuildRegisterIndex() {
+    final writtenAt = <String, DateTime>{};
+    for (final entry in _shards.entries) {
+      for (final row in entry.value.ops.findAllRegisters()) {
+        final existingShardKey = _registerIndex[row.entityId];
+        if (existingShardKey != null) {
+          final keepExisting = !row.updatedAt.isAfter(
+            writtenAt[row.entityId]!,
+          );
+          final dropped = keepExisting ? entry.key : existingShardKey;
+          final ops = _shards[dropped]!.ops;
+          ops.runInWriteTransaction(() => ops.removeRegister(row.entityId));
+          if (keepExisting) continue;
+        }
+        _registerIndex[row.entityId] = entry.key;
+        writtenAt[row.entityId] = row.updatedAt;
       }
     }
   }

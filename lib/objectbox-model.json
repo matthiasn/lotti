@@ -85,10 +85,88 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "2:734398385337894216",
+      "lastPropertyId": "13:8431100665833095536",
+      "name": "EmbeddingRegisterEntity",
+      "properties": [
+        {
+          "id": "1:6393816241437564561",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:2235300859156956915",
+          "name": "registerId",
+          "indexId": "8:7678021468601014512",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:5644229797989771777",
+          "name": "entityId",
+          "indexId": "9:2067573748351414394",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "4:4227182202104425677",
+          "name": "modelId",
+          "type": 9
+        },
+        {
+          "id": "5:8332774464220279742",
+          "name": "entityType",
+          "type": 9
+        },
+        {
+          "id": "6:5787718052484845924",
+          "name": "vectorClock",
+          "type": 9
+        },
+        {
+          "id": "7:8050824757849983517",
+          "name": "sourceVectorClock",
+          "type": 9
+        },
+        {
+          "id": "8:3094827606671995983",
+          "name": "contentHash",
+          "type": 9
+        },
+        {
+          "id": "9:2906519430127044536",
+          "name": "deleted",
+          "type": 1
+        },
+        {
+          "id": "10:4411255196640112221",
+          "name": "taskId",
+          "type": 9
+        },
+        {
+          "id": "11:2219189392734399485",
+          "name": "subtype",
+          "type": 9
+        },
+        {
+          "id": "12:2249247235913521439",
+          "name": "originatingHostId",
+          "type": 9
+        },
+        {
+          "id": "13:8431100665833095536",
+          "name": "updatedAt",
+          "type": 10
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "1:7733010829479720585",
-  "lastIndexId": "7:4134738425623489094",
+  "lastEntityId": "2:734398385337894216",
+  "lastIndexId": "9:2067573748351414394",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

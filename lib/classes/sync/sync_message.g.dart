@@ -387,6 +387,52 @@ Map<String, dynamic> _$SyncNotificationStateUpdateToJson(
   'runtimeType': instance.$type,
 };
 
+SyncEmbeddingVectors _$SyncEmbeddingVectorsFromJson(
+  Map<String, dynamic> json,
+) => SyncEmbeddingVectors(
+  id: json['id'] as String,
+  entityId: json['entityId'] as String,
+  entityType: json['entityType'] as String,
+  modelId: json['modelId'] as String,
+  vectorClock: VectorClock.fromJson(
+    json['vectorClock'] as Map<String, dynamic>,
+  ),
+  originatingHostId: json['originatingHostId'] as String,
+  contentHash: json['contentHash'] as String,
+  deleted: json['deleted'] as bool? ?? false,
+  sourceVectorClock: json['sourceVectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['sourceVectorClock'] as Map<String, dynamic>),
+  jsonPath: json['jsonPath'] as String?,
+  attachmentEventId: json['attachmentEventId'] as String?,
+  taskId: json['taskId'] as String?,
+  subtype: json['subtype'] as String?,
+  coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+      ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncEmbeddingVectorsToJson(
+  SyncEmbeddingVectors instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'entityId': instance.entityId,
+  'entityType': instance.entityType,
+  'modelId': instance.modelId,
+  'vectorClock': instance.vectorClock,
+  'originatingHostId': instance.originatingHostId,
+  'contentHash': instance.contentHash,
+  'deleted': instance.deleted,
+  'sourceVectorClock': instance.sourceVectorClock,
+  'jsonPath': instance.jsonPath,
+  'attachmentEventId': instance.attachmentEventId,
+  'taskId': instance.taskId,
+  'subtype': instance.subtype,
+  'coveredVectorClocks': instance.coveredVectorClocks,
+  'runtimeType': instance.$type,
+};
+
 SyncOnboardingSnapshotBegin _$SyncOnboardingSnapshotBeginFromJson(
   Map<String, dynamic> json,
 ) => SyncOnboardingSnapshotBegin(
@@ -582,6 +628,7 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.consumptionEvent: 'consumptionEvent',
   SyncSequencePayloadType.entityDefinition: 'entityDefinition',
   SyncSequencePayloadType.aiConfig: 'aiConfig',
+  SyncSequencePayloadType.embeddingVectors: 'embeddingVectors',
 };
 
 SyncDeepBackfillRequest _$SyncDeepBackfillRequestFromJson(

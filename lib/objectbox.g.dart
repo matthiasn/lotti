@@ -114,6 +114,96 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(2, 734398385337894216),
+    name: 'EmbeddingRegisterEntity',
+    lastPropertyId: const obx_int.IdUid(13, 8431100665833095536),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 6393816241437564561),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 2235300859156956915),
+        name: 'registerId',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(8, 7678021468601014512),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 5644229797989771777),
+        name: 'entityId',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(9, 2067573748351414394),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 4227182202104425677),
+        name: 'modelId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 8332774464220279742),
+        name: 'entityType',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 5787718052484845924),
+        name: 'vectorClock',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 8050824757849983517),
+        name: 'sourceVectorClock',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3094827606671995983),
+        name: 'contentHash',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 2906519430127044536),
+        name: 'deleted',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 4411255196640112221),
+        name: 'taskId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 2219189392734399485),
+        name: 'subtype',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 2249247235913521439),
+        name: 'originatingHostId',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(13, 8431100665833095536),
+        name: 'updatedAt',
+        type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -159,8 +249,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(1, 7733010829479720585),
-    lastIndexId: const obx_int.IdUid(7, 4134738425623489094),
+    lastEntityId: const obx_int.IdUid(2, 734398385337894216),
+    lastIndexId: const obx_int.IdUid(9, 2067573748351414394),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -274,6 +364,114 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    EmbeddingRegisterEntity: obx_int.EntityDefinition<EmbeddingRegisterEntity>(
+      model: _entities[1],
+      toOneRelations: (EmbeddingRegisterEntity object) => [],
+      toManyRelations: (EmbeddingRegisterEntity object) => {},
+      getId: (EmbeddingRegisterEntity object) => object.id,
+      setId: (EmbeddingRegisterEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (EmbeddingRegisterEntity object, fb.Builder fbb) {
+        final registerIdOffset = fbb.writeString(object.registerId);
+        final entityIdOffset = fbb.writeString(object.entityId);
+        final modelIdOffset = fbb.writeString(object.modelId);
+        final entityTypeOffset = fbb.writeString(object.entityType);
+        final vectorClockOffset = fbb.writeString(object.vectorClock);
+        final sourceVectorClockOffset = fbb.writeString(
+          object.sourceVectorClock,
+        );
+        final contentHashOffset = fbb.writeString(object.contentHash);
+        final taskIdOffset = fbb.writeString(object.taskId);
+        final subtypeOffset = fbb.writeString(object.subtype);
+        final originatingHostIdOffset = fbb.writeString(
+          object.originatingHostId,
+        );
+        fbb.startTable(14);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, registerIdOffset);
+        fbb.addOffset(2, entityIdOffset);
+        fbb.addOffset(3, modelIdOffset);
+        fbb.addOffset(4, entityTypeOffset);
+        fbb.addOffset(5, vectorClockOffset);
+        fbb.addOffset(6, sourceVectorClockOffset);
+        fbb.addOffset(7, contentHashOffset);
+        fbb.addBool(8, object.deleted);
+        fbb.addOffset(9, taskIdOffset);
+        fbb.addOffset(10, subtypeOffset);
+        fbb.addOffset(11, originatingHostIdOffset);
+        fbb.addInt64(12, object.updatedAt.millisecondsSinceEpoch);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final registerIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final entityIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final modelIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final entityTypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final vectorClockParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
+        final sourceVectorClockParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 16, '');
+        final contentHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final deletedParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          20,
+          false,
+        );
+        final taskIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 22, '');
+        final subtypeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 24, '');
+        final originatingHostIdParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 26, '');
+        final updatedAtParam = DateTime.fromMillisecondsSinceEpoch(
+          const fb.Int64Reader().vTableGet(buffer, rootOffset, 28, 0),
+          isUtc: true,
+        );
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final object = EmbeddingRegisterEntity(
+          registerId: registerIdParam,
+          entityId: entityIdParam,
+          modelId: modelIdParam,
+          entityType: entityTypeParam,
+          vectorClock: vectorClockParam,
+          sourceVectorClock: sourceVectorClockParam,
+          contentHash: contentHashParam,
+          deleted: deletedParam,
+          taskId: taskIdParam,
+          subtype: subtypeParam,
+          originatingHostId: originatingHostIdParam,
+          updatedAt: updatedAtParam,
+          id: idParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -339,5 +537,75 @@ class EmbeddingChunkEntity_ {
   /// See [EmbeddingChunkEntity.embedding].
   static final embedding = obx.QueryHnswProperty<EmbeddingChunkEntity>(
     _entities[0].properties[11],
+  );
+}
+
+/// [EmbeddingRegisterEntity] entity fields to define ObjectBox queries.
+class EmbeddingRegisterEntity_ {
+  /// See [EmbeddingRegisterEntity.id].
+  static final id = obx.QueryIntegerProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[0],
+  );
+
+  /// See [EmbeddingRegisterEntity.registerId].
+  static final registerId = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[1],
+  );
+
+  /// See [EmbeddingRegisterEntity.entityId].
+  static final entityId = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[2],
+  );
+
+  /// See [EmbeddingRegisterEntity.modelId].
+  static final modelId = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[3],
+  );
+
+  /// See [EmbeddingRegisterEntity.entityType].
+  static final entityType = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[4],
+  );
+
+  /// See [EmbeddingRegisterEntity.vectorClock].
+  static final vectorClock = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[5],
+  );
+
+  /// See [EmbeddingRegisterEntity.sourceVectorClock].
+  static final sourceVectorClock =
+      obx.QueryStringProperty<EmbeddingRegisterEntity>(
+        _entities[1].properties[6],
+      );
+
+  /// See [EmbeddingRegisterEntity.contentHash].
+  static final contentHash = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[7],
+  );
+
+  /// See [EmbeddingRegisterEntity.deleted].
+  static final deleted = obx.QueryBooleanProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[8],
+  );
+
+  /// See [EmbeddingRegisterEntity.taskId].
+  static final taskId = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[9],
+  );
+
+  /// See [EmbeddingRegisterEntity.subtype].
+  static final subtype = obx.QueryStringProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[10],
+  );
+
+  /// See [EmbeddingRegisterEntity.originatingHostId].
+  static final originatingHostId =
+      obx.QueryStringProperty<EmbeddingRegisterEntity>(
+        _entities[1].properties[11],
+      );
+
+  /// See [EmbeddingRegisterEntity.updatedAt].
+  static final updatedAt = obx.QueryDateProperty<EmbeddingRegisterEntity>(
+    _entities[1].properties[12],
   );
 }

@@ -643,6 +643,7 @@ class MatrixService implements SyncService {
       gitHubAccount: (_) => 'gitHubAccount',
       notification: (_) => 'notification',
       notificationStateUpdate: (_) => 'notificationStateUpdate',
+      embeddingVectors: (_) => 'embeddingVectors',
       onboardingSnapshotBegin: (_) => 'onboardingSnapshotBegin',
       onboardingSnapshotAccepted: (_) => 'onboardingSnapshotAccepted',
       onboardingTerminalCounters: (_) => 'onboardingTerminalCounters',

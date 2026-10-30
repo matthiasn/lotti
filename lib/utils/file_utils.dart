@@ -243,3 +243,22 @@ String relativeOutboxBundlePath(String bundleId) {
 String relativeNotificationPath(String notificationId) {
   return '$notificationsSegment${Uri.encodeComponent(notificationId)}.json';
 }
+
+/// Segment under which synced embedding-vector attachments are stored.
+const embeddingVectorsSegment = '/embedding_vectors/';
+
+/// Returns the documents-directory-relative path for the vectors attachment
+/// of one register version, including a leading `/`:
+/// `/embedding_vectors/<entityId>/<modelId>/<hostId>-<counter>.json`.
+///
+/// One path per version, never reused: a receiver that already holds the
+/// file of one version can never mistake it for another's.
+String relativeEmbeddingVectorsPath({
+  required String entityId,
+  required String modelId,
+  required String hostId,
+  required int counter,
+}) =>
+    '$embeddingVectorsSegment${Uri.encodeComponent(entityId)}/'
+    '${Uri.encodeComponent(modelId)}/'
+    '${Uri.encodeComponent(hostId)}-$counter.json';

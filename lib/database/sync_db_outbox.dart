@@ -2,6 +2,18 @@ part of 'sync_db.dart';
 
 final int _outboxSendingStatus = OutboxStatus.sending.index;
 
+/// The subject prefix of an embedding-vectors row, which travels alone: its
+/// attachment is built at send time, and an older build that cannot decode
+/// it then replays only this row, never a bundle of journal rows.
+const embeddingVectorsOutboxSubjectPrefix = 'embeddingVectors:';
+
+/// Whether [row] is sent on its own, never in a bundle: a media attachment,
+/// a row of negative priority, or a vectors version.
+bool _travelsAlone(OutboxItem row) =>
+    row.filePath != null ||
+    row.priority < 0 ||
+    row.subject.startsWith(embeddingVectorsOutboxSubjectPrefix);
+
 /// Outbox queue engine for [SyncDatabase]: enqueue, claim/lease,
 /// mark-sent, watch/list surfaces, and counts.
 ///
@@ -122,12 +134,10 @@ mixin _SyncDbOutbox on _$SyncDatabase {
       if (candidates.isEmpty) return const <OutboxItem>[];
 
       final List<OutboxItem> selected;
-      if (candidates.first.filePath != null || candidates.first.priority < 0) {
+      if (_travelsAlone(candidates.first)) {
         selected = [candidates.first];
       } else {
-        final stopAt = candidates.indexWhere(
-          (row) => row.filePath != null,
-        );
+        final stopAt = candidates.indexWhere(_travelsAlone);
         selected = stopAt == -1 ? candidates : candidates.sublist(0, stopAt);
       }
 

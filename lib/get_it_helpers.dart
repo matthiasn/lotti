@@ -258,6 +258,50 @@ void routeNotificationTap(String payload) {
   unawaited(getIt<NotificationTapHandler>().handleTap(payload));
 }
 
+/// Connects the pipeline to sync's half of the vectors register (ADR 0150):
+/// the receiver that stores what other devices share, the processor's share
+/// of what this one embeds, and backfill's answers from the store. A guest
+/// world has no sync stack, and its vectors stay on the device.
+// coverage:ignore-start
+Future<void> _attachEmbeddingVectorsSync(EmbeddingStore store) async {
+  if (!getIt.isRegistered<EmbeddingVectorsSync>()) return;
+  final vectorsSync = getIt<EmbeddingVectorsSync>();
+  final journalDb = getIt<JournalDb>();
+  final held = await HeldEmbeddingVersions.open(
+    p.join(getIt<Directory>().path, 'embedding_vector_holds.json'),
+  );
+  final modelId = getIt<OnDeviceEmbeddingRepository>().modelId;
+  await vectorsSync.attach(
+    store: store,
+    modelId: modelId,
+    sink: EmbeddingSyncReceiver(
+      store: store,
+      modelId: modelId,
+      journalDb: journalDb,
+      held: held,
+      readFlag: journalDb.getConfigFlag,
+      // Resolved per read: the agent runtime may start after the pipeline.
+      reportContent: (reportId) async {
+        if (!getIt.isRegistered<AgentRepository>()) return null;
+        final report = await getIt<AgentRepository>().getEntity(reportId);
+        return report is AgentReportEntity ? report.content : null;
+      },
+    ),
+    flagChanges: journalDb.watchConfigFlags(),
+  );
+  EmbeddingProcessor.share = vectorsSync;
+  getIt<BackfillResponseHandler>().embeddingVectors = vectorsSync;
+}
+
+/// Undoes [_attachEmbeddingVectorsSync] as the store closes.
+Future<void> _detachEmbeddingVectorsSync() async {
+  EmbeddingProcessor.share = null;
+  if (!getIt.isRegistered<EmbeddingVectorsSync>()) return;
+  await getIt<EmbeddingVectorsSync>().detach();
+  getIt<BackfillResponseHandler>().embeddingVectors = null;
+}
+// coverage:ignore-end
+
 /// Opens the embedding store and registers the pipeline around it. A store
 /// that fails to open leaves the pipeline out; the app starts without it.
 // coverage:ignore-start
@@ -269,7 +313,10 @@ Future<void> _registerEmbeddingPipeline() async {
     getIt
       ..registerSingleton<EmbeddingStore>(
         embeddingStore,
-        dispose: (store) => store.close(),
+        dispose: (store) async {
+          await _detachEmbeddingVectorsSync();
+          await store.close();
+        },
       )
       // One instance for every caller, so the model is loaded once and its
       // download is shared application-wide.
@@ -296,6 +343,7 @@ Future<void> _registerEmbeddingPipeline() async {
         ),
       );
 
+    await _attachEmbeddingVectorsSync(embeddingStore);
     getIt<EmbeddingService>().start();
     _safeLog('Embedding pipeline initialized successfully', isError: false);
   } catch (e, stackTrace) {

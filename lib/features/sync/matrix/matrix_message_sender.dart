@@ -230,6 +230,20 @@ class MatrixMessageSender {
         }
         outboundMessage = normalized;
       }
+      if (outboundMessage is SyncEmbeddingVectors) {
+        final normalized = await _payloadSender.sendEmbeddingVectorsPayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (normalized == null) {
+          _trace(
+            'FAIL embeddingVectorsPayload id=${outboundMessage.id}',
+            subDomain: 'matrix.send.error',
+          );
+          return false;
+        }
+        outboundMessage = normalized;
+      }
       if (outboundMessage is SyncEntryLink) {
         final covered = VectorClock.mergeUniqueClocks(
           [
@@ -320,6 +334,9 @@ class MatrixMessageSender {
       }
 
       _sentEventRegistry.register(eventId);
+      if (message is SyncEmbeddingVectors) {
+        await _payloadSender.discardEmbeddingVectorsFile(message);
+      }
 
       try {
         await onSent(eventId, outboundMessage);

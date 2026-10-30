@@ -3214,6 +3214,62 @@ recategorisation, the short task's reports — and checks the deletion rules;
 time; `sharded_embedding_store_test.dart` pins the rebuild's
 choice and a move's re-stamped `createdAt`; `vector_search_repository_test.dart`
 skips a deleted entry's leftover vector. Each fails with its fix reverted.
+## `EmbeddingVectorSync` — vectors shared between devices
+
+One entry's embedding vectors under one model, synced as a register
+(`<entityId>|<modelId>`, ADR 0150): `EmbeddingProcessor` writes a version on
+every store and removal and `EmbeddingVectorsSync` sends it;
+`EmbeddingSyncReceiver` merges what arrives. The entry's text has a linear
+history and syncs on its own, in any order relative to the vectors; vector
+messages arrive in any order and may arrive again. Devices embed their own
+edits fairly and, like the manual backfill, any text they hold without vectors
+unfairly; receivers never embed synced edits. A removal is known to the device
+that made it and to those its deletion reaches, and is announced by a
+tombstone. With `ImmutableText` it is an agent report superseded by its
+writer, whose text never changes. The runtime rules are in
+[the knowledge concept](../../knowledge/features/ai/embedding-vector-sync.md).
+
+| Property | Kind | Says |
+|----------|------|------|
+| `NoForeignVectors` | invariant | a device stores live vectors only of a text it has held: the hash check |
+| `ReceiverNeverBumps` | invariant | no stored or held clock carries a counter its host did not reserve |
+| `StoredClockMonotone` | action | a device's stored version only moves forward in its clock |
+| `HeldReleased` | liveness | a held version is always released or replaced |
+| `EventuallyConverged` | liveness | once quiet, every device stores the newest text's version by the same winner, or a tombstone of a removed entry |
+
+| Configuration | Devices | Texts | Report | Distinct states |
+|---------------|---------|-------|--------|-----------------|
+| `EmbeddingVectorSync` | 2 | 2 | no | 21,660 |
+| `EmbeddingVectorSyncThree` | 3 | 1 | no | 168,497 |
+| `EmbeddingVectorSyncReport` | 3 | 1 | yes | 418 |
+
+Each fix has a switch; setting one to `FALSE` in a temporary copy gives:
+
+| Mutation | Configuration | Counterexample |
+|----------|---------------|----------------|
+| `CanonicalTieBreak = FALSE` | `Three` | `HeldReleased` (14 states): preferring the version that matches the receiver's own text, two devices keep different winners of a concurrent pair, and one holds the other's version for good |
+| `KeepTombstoneRow = FALSE` | `Report` | `EventuallyConverged` (12 states): a tombstone for a report this device held no vectors of is dropped, the report's delayed live copy still matches its unchanged text, and the superseded report is searchable again |
+| `AnnounceDeletion = FALSE` | `EmbeddingVectorSync` | `EventuallyConverged` (12 states): the entry is deleted on a device that never held its vectors, so no tombstone goes out, and the device that embedded it keeps its vectors |
+| `TombstoneWinsTie = FALSE` | `EmbeddingVectorSync` | `EventuallyConverged` (16 states): a deletion's tombstone and an embed of the same text are concurrent, and the lower host's live version wins everywhere |
+| `SkipCoveredEmbed = FALSE` | `EmbeddingVectorSync` | `EventuallyConverged` (13 states): a tombstone arrives before the deletion, the backfill embeds the entry again over it, and the new live version dominates the tombstone |
+
+Discarding a held version whose entry has moved past its source is not a
+switch: under the model's fairness the newer text's own version replaces the
+hold anyway, and the discard only bounds the table when a writer never shares.
+
+What the model leaves out:
+
+- **Clocks per text.** Texts are a linear history; concurrent journal edits
+  and their conflict resolution are `SyncPipeline`'s and the journal's.
+- **The transport.** Loss, gaps, backfill and deep backfill are
+  `SyncPipelineEmbeddingVectors`, `SyncSequence` and `DeepBackfill`; here
+  every sent version is eventually delivered to every device.
+- **Device trust.** The room admits only verified devices before anything
+  reaches the apply path.
+- **Several registers.** A task's reports are separate registers; the
+  `Report` configuration checks one, and the one-report-per-task cleanup is
+  the writer's tombstone of each.
+
 ## `ConversationLoop` — the multi-turn tool-calling loop
 
 `ConversationRepository.sendMessage` drives every agent wake and evolution

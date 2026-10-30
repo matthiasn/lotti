@@ -375,8 +375,10 @@ void main() {
 
   setUp(() {
     mockEmbeddingStore = MockEmbeddingStore();
+    stubEmbeddingRegisters(mockEmbeddingStore);
     mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
     mockJournalDb = MockJournalDb();
+    stubNoDeletedEntries(mockJournalDb);
     mockLogger = MockDomainLogger();
     updateNotifications = UpdateNotifications();
 
@@ -411,6 +413,7 @@ void main() {
         categoryId: any(named: 'categoryId'),
         taskId: any(named: 'taskId'),
         subtype: any(named: 'subtype'),
+        register: any(named: 'register'),
       ),
     ).thenReturn(null);
 
@@ -480,6 +483,7 @@ void main() {
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
+            register: any(named: 'register'),
           ),
         ).called(1);
 
@@ -779,6 +783,7 @@ void main() {
             contentHash: any(named: 'contentHash'),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
+            register: any(named: 'register'),
           ),
         ).called(1);
 
@@ -817,6 +822,7 @@ void main() {
             contentHash: any(named: 'contentHash'),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
+            register: any(named: 'register'),
           ),
         ).called(1);
 
@@ -863,6 +869,7 @@ void main() {
             contentHash: any(named: 'contentHash'),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
+            register: any(named: 'register'),
           );
 
       Future<Float32List> anyEmbed() => mockEmbeddingRepo.embedDocument(any());
@@ -1047,8 +1054,10 @@ void main() {
       (scenario) {
         fakeAsync((async) {
           final generatedEmbeddingStore = MockEmbeddingStore();
+          stubEmbeddingRegisters(generatedEmbeddingStore);
           final generatedEmbeddingRepo = MockOnDeviceEmbeddingRepository();
           final generatedJournalDb = MockJournalDb();
+          stubNoDeletedEntries(generatedJournalDb);
           final generatedNotifications = UpdateNotifications();
           final generatedService = EmbeddingService(
             embeddingStore: generatedEmbeddingStore,
@@ -1128,6 +1137,7 @@ void main() {
               categoryId: any(named: 'categoryId'),
               taskId: any(named: 'taskId'),
               subtype: any(named: 'subtype'),
+              register: any(named: 'register'),
             ),
           ).thenAnswer((invocation) {
             actual.storedEntityIds.add(

@@ -5070,6 +5070,12 @@ abstract class AppLocalizations {
   /// **'Settings definitions'**
   String get backfillRecordsDefinitions;
 
+  /// No description provided for @backfillRecordsEmbeddingVectors.
+  ///
+  /// In en, this message translates to:
+  /// **'Embeddings'**
+  String get backfillRecordsEmbeddingVectors;
+
   /// No description provided for @backfillRecordsEntryLinks.
   ///
   /// In en, this message translates to:
@@ -6893,6 +6899,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
+
+  /// No description provided for @configFlagSyncEmbeddings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Embeddings'**
+  String get configFlagSyncEmbeddings;
+
+  /// No description provided for @configFlagSyncEmbeddingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'When enabled, the embeddings this device generates are shared with your other devices, and theirs are used here, so entries are searchable by meaning without embedding them again. Needs Generate Embeddings.'**
+  String get configFlagSyncEmbeddingsDescription;
 
   /// No description provided for @configFlagUseIsolateSync.
   ///
@@ -27124,6 +27142,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deep backfill request'**
   String get syncPayloadDeepBackfillRequest;
+
+  /// No description provided for @syncPayloadEmbeddingVectors.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedding vectors'**
+  String get syncPayloadEmbeddingVectors;
 
   /// No description provided for @syncPayloadEntityDefinition.
   ///

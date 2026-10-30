@@ -562,6 +562,14 @@ acts only on those retained rows. A successful retry completes the round;
 dismissing the sheet during staging, retry or the partial summary aborts it,
 and a disposed sheet cannot later enqueue End.
 
+**Embedding vectors follow End, never precede it.** Once the full round's End
+is enqueued, the sheet sends the current version of every vectors register
+(`HistoricalSyncService.sendEmbeddingVectors`): they are low priority, and
+staged before End they would delay it. A register that cannot be enqueued is a
+`ReSyncItemType.embeddingVectors` failure, retried with the others; its retry
+never queues End again, because the round is already complete
+([embedding vectors sync](../ai/embedding-vector-sync.md)).
+
 ```mermaid
 stateDiagram-v2
   [*] --> AwaitingAcceptance: sender persists begin
@@ -814,7 +822,14 @@ journal entries, entry links, agent entities and links, notifications, AI
 consumption events, entity definitions — one store over their six tables
 (`DefinitionDeepBackfillStore`) — and AI configurations, read from
 `ai_config_versions` so hard deletions are listed and resent too
-(`AiConfigDeepBackfillStore`, ADR 0136) — all registered with the sync stack. Each reads its own
+(`AiConfigDeepBackfillStore`, ADR 0136) — and embedding-vector registers, read
+from the vector store with their tombstones
+(`EmbeddingVectorsDeepBackfillStore`, ADR 0150) — all registered with the sync
+stack. A store that does not `participates()` is neither advertised nor diffed
+against a peer's inventory: a device that does not store vectors would
+otherwise ask for every vector only to drop it. `runRound(only:)` advertises
+some types alone — the vectors catch-up a device runs once per model, when it
+first can store. Each reads its own
 database, so none waits on another feature's runtime. Agent stores used to
 join only once the agent runtime had wired itself into the processor; a
 device whose agent start-up failed first advertised and counted no agent

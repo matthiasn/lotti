@@ -25,6 +25,12 @@ abstract class DeepBackfillStore {
   /// The payload type these records travel as.
   SyncSequencePayloadType get payloadType;
 
+  /// Whether this device takes part in rounds of this type now. A store
+  /// that does not is neither advertised nor diffed against a peer's
+  /// inventory: an empty range would ask the peer for every record, only to
+  /// drop them. Every store but the embedding vectors always takes part.
+  Future<bool> participates() async => true;
+
   /// How many rows a round will advertise, tombstones included.
   Future<int> count();
 

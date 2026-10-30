@@ -59,3 +59,54 @@ class EmbeddingChunkEntity {
   )
   Float32List embedding;
 }
+
+/// The synced version of one entry's vectors under one model: the register
+/// `<entityId>|<modelId>` of `SyncMessage.embeddingVectors`. Kept in the shard
+/// that holds the entry's chunks, so a chunk set and the version it belongs to
+/// are written in one transaction. A tombstone has no chunks and
+/// [deleted] set.
+@Entity()
+class EmbeddingRegisterEntity {
+  EmbeddingRegisterEntity({
+    required this.registerId,
+    required this.entityId,
+    required this.modelId,
+    required this.entityType,
+    required this.vectorClock,
+    required this.sourceVectorClock,
+    required this.contentHash,
+    required this.deleted,
+    required this.taskId,
+    required this.subtype,
+    required this.originatingHostId,
+    required this.updatedAt,
+    this.id = 0,
+  });
+
+  @Id()
+  int id;
+
+  @Unique()
+  String registerId;
+
+  @Index()
+  String entityId;
+
+  String modelId;
+  String entityType;
+
+  /// The register's own clock, JSON; empty for a version never shared.
+  String vectorClock;
+
+  /// The entry's clock when it was embedded, JSON; empty when unknown.
+  String sourceVectorClock;
+
+  String contentHash;
+  bool deleted;
+  String taskId;
+  String subtype;
+  String originatingHostId;
+
+  @Property(type: PropertyType.dateUtc)
+  DateTime updatedAt;
+}

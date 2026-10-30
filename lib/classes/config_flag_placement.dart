@@ -100,6 +100,7 @@ const Map<ConfigFlagGroup, List<String>> configFlagGroups = {
     enableCompanionFlag,
     enableFrontAgentFlag,
     enableEmbeddingsFlag,
+    syncEmbeddingsFlag,
     enableVectorSearchFlag,
     dailyOsOnboardingEnabledFlag,
     enableForkHealingFlag,

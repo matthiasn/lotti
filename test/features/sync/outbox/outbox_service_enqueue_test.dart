@@ -754,6 +754,58 @@ void main() {
     });
   });
 
+  group('embedding vectors sequence tracking (ADR 0150)', () {
+    const clock = VectorClock({'hostA': 6});
+    late MockSyncSequenceLogService sequenceLog;
+
+    setUp(() {
+      sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    test(
+      'a version goes out at low priority, under a subject that keeps it out '
+      'of bundles, and its counter is bound to the register',
+      () async {
+        await buildService(sequenceLogService: sequenceLog).enqueueMessage(
+          const SyncMessage.embeddingVectors(
+            id: 'e1|m',
+            entityId: 'e1',
+            entityType: 'task',
+            modelId: 'm',
+            vectorClock: clock,
+            originatingHostId: 'hostA',
+            contentHash: 'hash',
+            jsonPath: '/embedding_vectors/e1/m/hostA-6.json',
+          ),
+        );
+
+        final companion =
+            verify(
+                  () =>
+                      syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+                ).captured.single
+                as OutboxCompanion;
+        expect(companion.subject.value, 'embeddingVectors:e1|m');
+        expect(companion.filePath.present, isFalse);
+        expect(companion.priority.value, OutboxPriority.low.index);
+        verify(
+          () => sequenceLog.recordSentEntry(
+            entryId: 'e1|m',
+            vectorClock: clock,
+            payloadType: SyncSequencePayloadType.embeddingVectors,
+          ),
+        ).called(1);
+      },
+    );
+  });
+
   test('enqueueMessage logs SyncAiConfig', () async {
     final cfg = SyncMessage.aiConfig(
       aiConfig: AiConfig.inferenceProvider(

@@ -34,6 +34,8 @@ import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_entity_receive.dart';
 import 'package:lotti/features/agents/wake/agent_wake_coordinator.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
+import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/ai_consumption/service/attribution_carrier_projector.dart';
@@ -41,6 +43,7 @@ import 'package:lotti/features/notifications/preferences/notification_preference
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
@@ -83,6 +86,7 @@ part 'sync_event_processor_consumption_handlers.dart';
 part 'sync_event_processor_deep_backfill.dart';
 part 'sync_event_processor_definition_handlers.dart';
 part 'sync_event_processor_descriptor_cache.dart';
+part 'sync_event_processor_embedding_vectors.dart';
 // Per-domain method bodies live in part files so they share the orchestrator's
 // private state (dedup cache, sequence log service, agent repository) without
 // dependency-injection plumbing for every collaborator.
@@ -314,6 +318,12 @@ class SyncEventProcessor {
   /// (`ChecklistRepository.settleReceived`, ADR 0105). Injected after
   /// construction; must not throw.
   Future<void> Function(JournalEntity applied)? onJournalEntityApplied;
+
+  /// Sync's half of the embedding-vectors register, injected after
+  /// construction. Arriving versions go to its sink, and applied journal
+  /// entities, agent entities and definitions release the versions held for
+  /// them. Without it a version only records its receipt.
+  EmbeddingVectorsSync? embeddingVectors;
 
   /// Wake orchestrator, injected after agent infrastructure starts. Used to
   /// remove subscriptions when an incoming sync message pauses or destroys
@@ -593,6 +603,7 @@ class SyncEventProcessor {
     final SyncConsumptionEvent m => m.originatingHostId,
     final SyncNotification m => m.originatingHostId,
     final SyncNotificationStateUpdate m => m.originatingHostId,
+    final SyncEmbeddingVectors m => m.originatingHostId,
     final SyncAgentBundle m => m.originatingHostId,
     final SyncOutboxBundle m => m.originatingHostId,
     final SyncAgentWakeCoordination m => m.hostId,
@@ -689,6 +700,13 @@ class SyncEventProcessor {
           envelope: envelope,
           syncMessage: msg,
           resolvedNotification: resolved,
+        );
+      case final SyncEmbeddingVectors msg:
+        return PreparedSyncEvent._(
+          envelope: envelope,
+          syncMessage: msg,
+          resolvedEmbeddingVectorsPayload:
+              await _resolveEmbeddingVectorsPayload(msg),
         );
       case final SyncAgentBundle msg:
         // Legacy wire variant — agent wake-cycle bundling has been

@@ -64,6 +64,10 @@ sources:
     resource: ../../../lib/features/ai/on_device_embedding/gemma_embedder.dart
     title: GemmaEmbedder, EmbeddingGemma on the bundled ONNX Runtime
     last_modified: 2026-10-30
+  - id: register
+    resource: ../../../lib/features/ai/database/embedding_register.dart
+    title: EmbeddingRegister, the version every store and removal writes
+    last_modified: 2026-10-30
   - id: spec
     resource: ../../../specs/tla/EmbeddingFreshness.tla
     title: EmbeddingFreshness TLA+ model
@@ -72,7 +76,9 @@ sources:
 
 The AI feature owns local embeddings and vector search — the one place where the
 app stores data outside Drift. The index is a **regenerable local cache**: each
-device embeds what it holds, and nothing is synced. The vectors come from one
+device embeds what it writes, and with `sync_embeddings` on it shares those
+vectors with the user's other devices and stores theirs
+([embedding vectors sync](embedding-vector-sync.md)). The vectors come from one
 model running on the device, EmbeddingGemma-300m
 ([ADR 0144](../../../docs/adr/0144-on-device-embeddings-use-embeddinggemma.md)),
 the only embedding provider
@@ -127,8 +133,13 @@ flowchart LR
 - **Only local writes are embedded as they happen.** The service listens to
   `localUpdateStream`, so an edit that arrives by sync, or one an agent makes
   (routed through `notifyUiOnly`), is not re-embedded until the entry is next
-  edited locally or a backfill covers it. See
+  edited locally or a backfill covers it. With `sync_embeddings` on, a synced
+  edit arrives with the vectors its writer made instead. See
   [Keeping up with the journal](#keeping-up-with-the-journal).
+- **Every store and every removal is a version** of the entry's register
+  (`EmbeddingRegister`), written in the same ObjectBox transaction as its
+  chunks; a removal is a tombstone. See
+  [embedding vectors sync](embedding-vector-sync.md).
 - Tasks can be embedded with **label-enriched** text, not just raw title and
   body.
 - **A task has at most one report in the index.** Once a new report is
@@ -259,11 +270,10 @@ stateDiagram-v2
 
 Open questions the model leaves as residuals:
 
-- **Synced edits are not embedded on the receiving device.** Each device embeds
-  its own copy today, which suggests the service should hear synced edits;
-  embedding every synced write would also re-embed a whole initial sync. The
-  direction under consideration is syncing the vectors themselves, keyed by
-  entry, content hash and model, so one device's work serves every device.
+- **Synced edits arrive with their vectors** when `sync_embeddings` is on
+  ([embedding vectors sync](embedding-vector-sync.md)). An entry whose writer
+  never embedded it — the flag off there, Windows, no model — is still not
+  embedded on the receiver until a local edit or a backfill.
 - **The model id is stored with each chunk but never compared.** A store
   directory per model keeps a change of model from mixing vectors, but within
   one directory nothing checks the id.

@@ -3003,6 +3003,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Inställningsdefinitioner';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Inbäddningar';
+
+  @override
   String get backfillRecordsEntryLinks => 'Länkar mellan poster';
 
   @override
@@ -4069,6 +4072,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Synka inbäddningar';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'När det är på delas inbäddningarna som den här enheten skapar med dina andra enheter, och deras används här, så att du kan söka i poster efter betydelse utan att bädda in dem igen. Kräver Generera inbäddningar.';
 
   @override
   String get configFlagUseIsolateSync => 'Synkroniseringsprocess i bakgrunden';
@@ -16393,6 +16403,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get syncPayloadDeepBackfillRequest => 'Begäran om djup återfyllning';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Inbäddningsvektorer';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitetsdefinition';

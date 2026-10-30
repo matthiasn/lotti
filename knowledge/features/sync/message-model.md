@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Sync message model
-description: The twenty-five SyncMessage families, which eight are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
+description: The thirty-one SyncMessage families, which ten are sequence-tracked, and how onboarding control messages stay outside causal payload accounting.
 resource: ../../../lib/classes/sync/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
@@ -64,7 +64,7 @@ sources:
 
 # Families
 
-Everything on the wire is a `SyncMessage` — a freezed union with thirty
+Everything on the wire is a `SyncMessage` — a freezed union with thirty-one
 variants:
 
 `journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
@@ -72,7 +72,7 @@ variants:
 `savedTaskFilterDelete`, `configFlag`, `themingSelection`, `dailyOsUserName`,
 `companionCustomization`,
 `gitHubAccount`, `notification`, `notificationStateUpdate`,
-`onboardingSnapshotBegin`, `onboardingSnapshotAccepted`,
+`embeddingVectors`, `onboardingSnapshotBegin`, `onboardingSnapshotAccepted`,
 `onboardingTerminalCounters`, `onboardingSnapshotEnd`, `backfillRequest`,
 `deepBackfillInventory`, `deepBackfillRequest`, `backfillResponse`,
 `mediaRequest`, `agentWakeCoordination`, `agentEntity`, `agentLink`,
@@ -91,16 +91,17 @@ Their persistence, ordering and suppression semantics live in
 
 ## Sequence-tracked payloads
 
-Only a subset participates in `(hostId, counter)` accounting — the nine
+Only a subset participates in `(hostId, counter)` accounting — the ten
 members of `SyncSequencePayloadType`:
 
 `journalEntity`, `entryLink`, `agentEntity`, `agentLink`, `notification`,
-`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`, `aiConfig`.
+`notificationStateUpdate`, `consumptionEvent`, `entityDefinition`, `aiConfig`,
+`embeddingVectors`.
 
 The enum's ordinal is **persisted** in the sequence log, so existing values
 must never be reordered. New values are appended at the end only —
-`consumptionEvent`, `entityDefinition` and then `aiConfig` were added that
-way.
+`consumptionEvent`, `entityDefinition`, `aiConfig` and then `embeddingVectors`
+were added that way.
 
 Sequence-tracked payloads may carry:
 
@@ -120,6 +121,17 @@ builds new ones. Agent-wake writes hit the outbox as individual
 `agentEntity` / `agentLink` rows, and the generic dequeue-time bundler
 coalesces them (see [send path](send-path.md)). Children of any in-flight legacy
 bundle resurface through per-`(host, counter)` backfill on demand.
+
+# Embedding vectors: a tracked register
+
+`embeddingVectors` carries one version of an entry's vectors under one model,
+the register `<entityId>|<modelId>`
+([ADR 0150](../../../docs/adr/0150-embedding-vectors-sync-as-a-tracked-register.md)):
+the register's own clock, the entry's clock when it was embedded, the content
+hash, a tombstone flag, and the complete chunk set as a gzipped JSON
+attachment, one file per version. Its row travels alone, never in a bundle.
+How it is written, sent and merged is
+[embedding vectors sync](../ai/embedding-vector-sync.md).
 
 # Entity definitions: sequence-tracked
 

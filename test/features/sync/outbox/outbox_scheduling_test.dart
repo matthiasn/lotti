@@ -25,6 +25,7 @@ enum _GeneratedPriorityMessageKind {
   entryLink,
   aiConfig,
   aiConfigDelete,
+  embeddingVectors,
   themingSelection,
   dailyOsUserName,
   companionCustomization,
@@ -149,6 +150,16 @@ class _GeneratedPriorityScenario {
       ),
       _GeneratedPriorityMessageKind.aiConfigDelete =>
         SyncMessage.aiConfigDelete(id: id),
+      _GeneratedPriorityMessageKind.embeddingVectors =>
+        SyncMessage.embeddingVectors(
+          id: '$id|m',
+          entityId: id,
+          entityType: 'task',
+          modelId: 'm',
+          vectorClock: VectorClock({'hostA': counterSlot}),
+          originatingHostId: 'hostA',
+          contentHash: 'hash-$counterSlot',
+        ),
       _GeneratedPriorityMessageKind.themingSelection =>
         SyncMessage.themingSelection(
           lightThemeName: 'light-$counterSlot',
@@ -309,6 +320,8 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.entityDefinition ||
       _GeneratedPriorityMessageKind.aiConfig ||
       _GeneratedPriorityMessageKind.aiConfigDelete ||
+      // Behind journal entities, so the entry usually lands first.
+      _GeneratedPriorityMessageKind.embeddingVectors ||
       // Consumption metrics are best-effort diagnostics — they must never
       // queue-jump user writes.
       _GeneratedPriorityMessageKind.consumptionEvent ||

@@ -69,6 +69,8 @@ Future<void> _checkAndPopulateSequenceLog() async {
         records: aiConfigDb.streamVersionsWithVectorClock,
         count: aiConfigDb.countAllVersions,
       ),
+      if (getIt.isRegistered<EmbeddingVectorsSync>())
+        _embeddingVectorsRecordSource(getIt<EmbeddingVectorsSync>()),
     ];
 
     // Check current sequence log count
@@ -329,3 +331,24 @@ Future<void> _migrateSpeechDictionary() => SpeechDictionaryMigration(
 
 @visibleForTesting
 Future<void> migrateSpeechDictionaryForTesting() => _migrateSpeechDictionary();
+
+/// The registers of the vector store as a sequence-log record source (ADR
+/// 0150): the store is ObjectBox, so the shared registers are read whole and
+/// handed over in one batch.
+({
+  SyncSequencePayloadType payloadType,
+  Stream<List<({String id, Map<String, int>? vectorClock})>> Function() records,
+  Future<int> Function() count,
+})
+_embeddingVectorsRecordSource(EmbeddingVectorsSync vectors) => (
+  payloadType: SyncSequencePayloadType.embeddingVectors,
+  records: () => Stream.fromFuture(
+    vectors.sharedRegisters().then(
+      (registers) => [
+        for (final register in registers)
+          (id: register.id, vectorClock: register.vectorClock?.vclock),
+      ],
+    ),
+  ),
+  count: () async => (await vectors.sharedRegisters()).length,
+);

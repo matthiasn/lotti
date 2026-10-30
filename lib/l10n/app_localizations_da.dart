@@ -2993,6 +2993,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Indstillingsdefinitioner';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Indlejringer';
+
+  @override
   String get backfillRecordsEntryLinks => 'Links mellem poster';
 
   @override
@@ -4061,6 +4064,13 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Synkroniser indlejringer';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Når det er slået til, deles de indlejringer, som denne enhed laver, med dine andre enheder, og deres bruges her, så du kan søge i indlæg efter betydning uden at lave dem igen. Kræver, at \"Generer indlejringer\" er slået til.';
 
   @override
   String get configFlagUseIsolateSync => 'Synkroniseringsproces i baggrunden';
@@ -16377,6 +16387,9 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncPayloadDeepBackfillRequest =>
       'Anmodning om dyb tilbagefyldning';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Indlejringsvektorer';
 
   @override
   String get syncPayloadEntityDefinition => 'Entitetsdefinition';

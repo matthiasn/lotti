@@ -901,6 +901,35 @@ void main() {
       );
 
       test(
+        'an embedding-vectors row travels alone and ends the bundle before '
+        'it, so an older build that cannot decode it replays only it',
+        () async {
+          final database = db!;
+          for (final (minute, subject) in [
+            (0, 'text-0'),
+            (1, '${embeddingVectorsOutboxSubjectPrefix}e1|m'),
+            (2, 'text-2'),
+          ]) {
+            await database.addOutboxItem(
+              buildOutboxCompanion(
+                status: OutboxStatus.pending,
+                createdAt: DateTime(2024, 1, 1, 0, minute),
+                subject: subject,
+              ),
+            );
+          }
+
+          final first = await database.claimNextOutboxBatch(maxSize: 50);
+          final second = await database.claimNextOutboxBatch(maxSize: 50);
+
+          expect(first.map((r) => r.subject), ['text-0']);
+          expect(second.map((r) => r.subject), [
+            '${embeddingVectorsOutboxSubjectPrefix}e1|m',
+          ]);
+        },
+      );
+
+      test(
         'bundles in priority order before createdAt order',
         () async {
           final database = db!;

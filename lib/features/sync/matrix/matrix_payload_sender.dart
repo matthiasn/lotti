@@ -24,6 +24,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path/path.dart' as p;
 
+part 'matrix_payload_sender_embedding_vectors.dart';
 part 'matrix_payload_sender_notifications.dart';
 part 'matrix_payload_sender_upload_checks.dart';
 

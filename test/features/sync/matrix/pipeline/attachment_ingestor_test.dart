@@ -331,6 +331,34 @@ void main() {
     );
 
     test(
+      'an embedding-vectors attachment is indexed and never downloaded: its '
+      'message reads it from the descriptor (ADR 0150)',
+      () async {
+        var downloads = 0;
+        final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
+        const path = '/embedding_vectors/e1/m/host-a-3.json';
+        final e = _makeEvent(
+          eventId: 'vectors',
+          relativePath: path,
+          mime: 'application/json',
+          downloadBytes: utf8.encode('{"dims":768}'),
+          onDownload: () => downloads++,
+        );
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(wrote, isFalse);
+        expect(downloads, 0);
+        expect(index.find(path), isNotNull);
+        expect(File('${tempDir.path}$path').existsSync(), isFalse);
+      },
+    );
+
+    test(
       'verbose logging emits an attachment.observe line per event',
       () async {
         final ingestor = AttachmentIngestor();

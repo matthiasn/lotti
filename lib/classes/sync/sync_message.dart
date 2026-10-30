@@ -353,6 +353,42 @@ sealed class SyncMessage with _$SyncMessage {
     DateTime? deletedAt,
   }) = SyncNotificationStateUpdate;
 
+  /// A version of one entry's embedding vectors under one model: the
+  /// register [id] `<entityId>|<modelId>`, tracked like every other synced
+  /// kind ([SyncSequencePayloadType.embeddingVectors]).
+  ///
+  /// [vectorClock] is the register's own clock, bumped only by the device
+  /// that embedded the entry (or removed its vectors); receivers merge it
+  /// and never bump it. [sourceVectorClock] is the entry's clock when it was
+  /// embedded and [contentHash] the SHA-256 of the embedded text: a receiver
+  /// stores the vectors only when its own copy of the entry hashes the same.
+  ///
+  /// The complete chunk set travels as a JSON attachment at [jsonPath]
+  /// (`{"dims": 768, "chunks": [<base64 float32>...]}`, gzipped on the
+  /// wire), built from the sender's store at send time, so the row travels
+  /// alone and never in a bundle. A tombstone ([deleted]) has no attachment
+  /// and says the entry has no vectors any more.
+  ///
+  /// [coveredVectorClocks] are the clocks of earlier versions of the
+  /// register this one superseded before it was sent; receivers record a
+  /// receipt for each.
+  const factory SyncMessage.embeddingVectors({
+    required String id,
+    required String entityId,
+    required String entityType,
+    required String modelId,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    required String contentHash,
+    @Default(false) bool deleted,
+    VectorClock? sourceVectorClock,
+    String? jsonPath,
+    String? attachmentEventId,
+    String? taskId,
+    String? subtype,
+    List<VectorClock>? coveredVectorClocks,
+  }) = SyncEmbeddingVectors;
+
   /// Announces a bounded, target-specific full-history onboarding round.
   ///
   /// Every peer receives the room event, but only the Matrix device named by

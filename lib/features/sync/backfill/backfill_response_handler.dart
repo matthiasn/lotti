@@ -15,6 +15,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
@@ -112,6 +113,17 @@ class BackfillResponseHandler {
   }
 
   AiConfigRepository? _aiConfigRepository;
+
+  /// The embedding-vectors register (ADR 0150), injected after the
+  /// embedding pipeline is up. When set, backfill answers a counter of a
+  /// vectors register with the version held now.
+  EmbeddingVectorsSync? get embeddingVectors => _embeddingVectors;
+  set embeddingVectors(EmbeddingVectorsSync? vectors) {
+    _embeddingVectors = vectors;
+    _retrySettlementAwaitingStore();
+  }
+
+  EmbeddingVectorsSync? _embeddingVectors;
 
   /// Set when an orphaned own counter could not be settled because its
   /// payload store was not wired yet.
@@ -730,6 +742,18 @@ class BackfillResponseHandler {
                 loadPayload: () => aiConfigRepository!.heldVersion(payloadId),
                 getVectorClock: (held) => held.vectorClock,
                 payloadTypeName: 'aiConfig',
+              );
+            }
+          case SyncSequencePayloadType.embeddingVectors:
+            if (_embeddingVectors case final vectors?) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => vectors.heldVersion(payloadId),
+                getVectorClock: (held) => held.vectorClock,
+                payloadTypeName: 'embeddingVectors',
               );
             }
         }

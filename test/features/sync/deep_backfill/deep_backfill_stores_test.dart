@@ -663,6 +663,7 @@ void main() {
       notificationsDb: notificationsDb,
       consumptionDatabase: consumptionDb,
       aiConfigRepository: AiConfigRepository(aiConfigDb),
+      embeddingVectors: MockEmbeddingVectorsSync(),
       outboxService: outbox,
       documentsDirectory: Directory.systemTemp,
     );
@@ -679,9 +680,17 @@ void main() {
       SyncSequencePayloadType.consumptionEvent,
       SyncSequencePayloadType.entityDefinition,
       SyncSequencePayloadType.aiConfig,
+      SyncSequencePayloadType.embeddingVectors,
     ]);
-    for (final store in stores) {
+    for (final store in stores.where(
+      (s) => s.payloadType != SyncSequencePayloadType.embeddingVectors,
+    )) {
       expect(await store.count(), 0, reason: '${store.payloadType} reads');
+      expect(
+        await store.participates(),
+        isTrue,
+        reason: '${store.payloadType}',
+      );
     }
   });
 }
