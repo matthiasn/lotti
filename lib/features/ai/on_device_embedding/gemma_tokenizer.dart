@@ -53,13 +53,28 @@ class GemmaTokenizer {
     _expect(
       pre == null ||
           (pre['type'] == 'Split' &&
-              (pre['pattern'] as Map<String, dynamic>)['String'] == ' '),
+              (pre['pattern'] as Map<String, dynamic>)['String'] == ' ' &&
+              pre['invert'] != true),
       'no pre-tokenizer, or one splitting on spaces',
     );
+    final processor = json['post_processor'];
     _expect(
-      _isBosEosTemplate(json['post_processor']),
+      _isBosEosTemplate(processor),
       'a post-processor wrapping the text in <bos> … <eos>',
     );
+    // The processor emits the ids of its own special-token table, not the
+    // vocabulary's.
+    final specialTokens = (processor as Map<String, dynamic>)['special_tokens'];
+    int specialId(String token) {
+      final entry = specialTokens is Map<String, dynamic>
+          ? specialTokens[token]
+          : null;
+      final ids = entry is Map<String, dynamic> ? entry['ids'] : null;
+      if (ids is List<dynamic> && ids.length == 1 && ids.single is int) {
+        return ids.single as int;
+      }
+      throw FormatException('expected one post-processor id for $token');
+    }
 
     final vocab = (model['vocab'] as Map<String, dynamic>).map(
       (token, id) => MapEntry(token, id as int),
@@ -110,8 +125,8 @@ class GemmaTokenizer {
       merges,
       addedTokens,
       byteIds,
-      bosId: vocab['<bos>'] ?? (throw const FormatException('no <bos>')),
-      eosId: vocab['<eos>'] ?? (throw const FormatException('no <eos>')),
+      bosId: specialId('<bos>'),
+      eosId: specialId('<eos>'),
     );
   }
 

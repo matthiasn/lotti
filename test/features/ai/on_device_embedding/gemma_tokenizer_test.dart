@@ -14,6 +14,18 @@ const Map<String, Object> _bosEosTemplate = {
       'SpecialToken': {'id': '<eos>', 'type_id': 0},
     },
   ],
+  'special_tokens': {
+    '<bos>': {
+      'id': '<bos>',
+      'ids': [2],
+      'tokens': ['<bos>'],
+    },
+    '<eos>': {
+      'id': '<eos>',
+      'ids': [1],
+      'tokens': ['<eos>'],
+    },
+  },
 };
 
 /// A `tokenizer.json` shaped like EmbeddingGemma's, over a small vocabulary:
@@ -101,6 +113,26 @@ void main() {
     expect(tokenizer.bosId, 2);
     expect(tokenizer.eosId, 1);
     expect(tokenizer.encode(''), [2, 1]);
+  });
+
+  test("takes <bos> and <eos> from the post-processor's own table", () {
+    final tokenizer = GemmaTokenizer.fromTokenizerJson(
+      _tokenizerJson(
+        postProcessor: {
+          ..._bosEosTemplate,
+          'special_tokens': {
+            '<bos>': {
+              'ids': [7],
+            },
+            '<eos>': {
+              'ids': [8],
+            },
+          },
+        },
+      ),
+    );
+
+    expect(tokenizer.encode(''), [7, 8]);
   });
 
   test('marks spaces with ▁ and merges across them into one word', () {
@@ -299,17 +331,56 @@ void main() {
       expectRejected(_tokenizerJson(tokens: ['a', 'b', 'ab'], merges: ['ab']));
     });
 
-    test('a vocabulary without <bos> or <eos>', () {
-      for (final special in ['<bos>', '<eos>']) {
-        final json = _tokenizerJson();
-        final model = json['model'] as Map<String, dynamic>;
-        (model['vocab'] as Map<String, int>).remove(special);
-        json['added_tokens'] = [
-          for (final token in json['added_tokens'] as List<dynamic>)
-            if ((token as Map<String, dynamic>)['content'] != special) token,
-        ];
-        expectRejected(json);
+    test('a post-processor without one id for <bos> and for <eos>', () {
+      for (final specialTokens in <Object?>[
+        null,
+        'not a map',
+        <String, Object>{},
+        {
+          '<bos>': {'ids': 2},
+          '<eos>': {
+            'ids': [1],
+          },
+        },
+        {
+          '<bos>': {
+            'ids': [2, 3],
+          },
+          '<eos>': {
+            'ids': [1],
+          },
+        },
+        {
+          '<bos>': {
+            'ids': [2],
+          },
+          '<eos>': {
+            'ids': ['1'],
+          },
+        },
+      ]) {
+        expectRejected(
+          _tokenizerJson(
+            postProcessor: {
+              ..._bosEosTemplate,
+              'special_tokens': specialTokens,
+            },
+          ),
+        );
       }
+    });
+
+    test('an inverted split', () {
+      expectRejected(
+        _tokenizerJson(
+          preTokenizer: {
+            'type': 'Split',
+            'pattern': {'String': ' '},
+            'behavior': 'Removed',
+            'invert': true,
+          },
+        ),
+      );
     });
   });
 
