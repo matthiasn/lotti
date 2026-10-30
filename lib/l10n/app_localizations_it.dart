@@ -15928,9 +15928,43 @@ class AppLocalizationsIt extends AppLocalizations {
   String get speechSettingsChatAudioLabel => 'Audio della chat';
 
   @override
-  String speechSettingsCloudVoiceDefault(String name) {
-    return 'Predefinita · $name';
+  String speechSettingsCloudVoiceChanged(String language, String voice) {
+    return '$language ora usa $voice';
   }
+
+  @override
+  String get speechSettingsCloudVoiceChosenTag => 'La tua scelta';
+
+  @override
+  String speechSettingsCloudVoiceCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voci',
+      one: '1 voce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get speechSettingsCloudVoiceDefaultTag => 'Predefinita';
+
+  @override
+  String speechSettingsCloudVoiceInUse(String voice) {
+    return 'In uso: $voice';
+  }
+
+  @override
+  String speechSettingsCloudVoiceListen(String voice) {
+    return 'Ascolta $voice';
+  }
+
+  @override
+  String get speechSettingsCloudVoicePickerHint =>
+      'Tocca una voce per ascoltarla e usarla.';
+
+  @override
+  String get speechSettingsCloudVoicePreviousTag => 'Precedente';
 
   @override
   String get speechSettingsCloudVoiceSample =>
@@ -15938,7 +15972,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get speechSettingsCloudVoicesDescription =>
-      'I profili con un modello di lettura ad alta voce parlano con queste voci. Ogni lingua usa la tua scelta, o la sua prima voce femminile.';
+      'Ogni lingua viene letta con la voce indicata. Toccala per ascoltarla o cambiarla.';
+
+  @override
+  String get speechSettingsCloudVoicesFewerLanguages => 'Meno lingue';
+
+  @override
+  String speechSettingsCloudVoiceSheetTitle(String language) {
+    return 'Voce: $language';
+  }
 
   @override
   String get speechSettingsCloudVoicesLabel => 'Voci cloud';
@@ -15951,8 +15993,27 @@ class AppLocalizationsIt extends AppLocalizations {
       'La lettura ad alta voce usa la voce sul dispositivo. Per una voce cloud, scegli un modello di lettura ad alta voce in un profilo di inferenza.';
 
   @override
+  String speechSettingsCloudVoicesOtherLanguages(int count) {
+    return 'Altre lingue ($count)';
+  }
+
+  @override
+  String get speechSettingsCloudVoicesRetry => 'Riprova';
+
+  @override
   String get speechSettingsCloudVoicesUnavailable =>
       'Impossibile caricare le voci. Controlla la connessione e la chiave API del provider.';
+
+  @override
+  String speechSettingsCloudVoicesWithChoice(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count con più voci tra cui scegliere',
+      one: '1 con più voci tra cui scegliere',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get speechSettingsModelDescription => 'Modello vocale on-device';
@@ -15976,11 +16037,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get speechSettingsSpeedLabel => 'Velocità di lettura';
 
   @override
-  String get speechSettingsVoiceDescription =>
-      'La voce sul dispositivo, per i profili senza voce cloud';
+  String get speechSettingsVoiceDescription => 'Per i profili senza voce cloud';
 
   @override
-  String get speechSettingsVoiceLabel => 'Voce';
+  String get speechSettingsVoiceLabel => 'Voce sul dispositivo';
 
   @override
   String get speechVoiceGenderFemale => 'Femmina';
@@ -17215,6 +17275,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskLanguageBulgarian => 'Bulgaro';
+
+  @override
+  String get taskLanguageCatalan => 'Catalano';
 
   @override
   String get taskLanguageChinese => 'Cinese';

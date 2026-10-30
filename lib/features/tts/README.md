@@ -18,8 +18,10 @@ read-aloud model, and only when the user presses play.
 - **Speaks with a profile's cloud voice.** A profile's *Read aloud* slot can
   name Voxtral TTS on Mistral; summaries and answers then speak in the task's
   language with that language's voice — the user's pick in Speech settings,
-  else its first female voice. The voice list is cached, so it still works
-  offline once fetched; speech itself needs the network.
+  else its first female voice. Speech settings list the user's own languages
+  first, and every voice can be heard before it is picked. The voice list is
+  cached, so it still works offline once fetched; speech itself needs the
+  network.
 - **Uses the app's own audio stack**, so playback behaves like every other sound
   in Lotti.
 

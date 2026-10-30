@@ -22,9 +22,10 @@ class CloudSpeechSynthesizer {
   final Future<Directory> Function() _tempDirectory;
   int _counter = 0;
 
-  /// Synthesizes [text] with the voice [voiceByLanguage] names for the
-  /// route's language, or that language's default voice. The caller owns,
-  /// and deletes, the returned file.
+  /// Synthesizes [text] with the route's own voice when it names one, else
+  /// the voice [voiceByLanguage] names for the route's language, else that
+  /// language's default voice. The caller owns, and deletes, the returned
+  /// file.
   ///
   /// [canSend] is asked once the voice is known, immediately before the text
   /// is uploaded: resolving the catalog may wait on the network, and an
@@ -42,7 +43,7 @@ class CloudSpeechSynthesizer {
     final catalog = await _catalogs.catalogFor(route.provider);
     final voice = catalog.resolve(
       languageCode: route.languageCode,
-      preferredVoiceId: voiceByLanguage[route.languageCode],
+      preferredVoiceId: route.voiceId ?? voiceByLanguage[route.languageCode],
     );
     if (voice == null) {
       throw VoxtralTtsException(

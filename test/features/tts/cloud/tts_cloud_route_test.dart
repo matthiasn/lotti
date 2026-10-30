@@ -86,4 +86,20 @@ void main() {
     expect(route('de').hashCode, route('de').hashCode);
     expect(route('de'), isNot(route('en')));
   });
+
+  test("a preview's own voice is part of the route and its cache key", () {
+    TtsCloudRoute route({String? voiceId}) => TtsCloudRoute(
+      provider: mistral,
+      model: voice,
+      languageCode: 'de',
+      voiceId: voiceId,
+    );
+    expect(route(voiceId: 'v1'), route(voiceId: 'v1'));
+    expect(route(voiceId: 'v1').hashCode, route(voiceId: 'v1').hashCode);
+    expect(route(voiceId: 'v1'), isNot(route(voiceId: 'v2')));
+    expect(route(voiceId: 'v1'), isNot(route()));
+    // Prepared audio of one voice must never be played for another.
+    expect(route().cacheKey, '${mistral.id}/${voice.id}/de');
+    expect(route(voiceId: 'v1').cacheKey, '${mistral.id}/${voice.id}/de/v1');
+  });
 }

@@ -53,15 +53,19 @@ class SpeechSettingsBody extends ConsumerWidget {
               ],
             ),
             const TtsCloudVoicesSection(),
+            // Heading only: the voice list is a grouped list of its own, so
+            // its rows are not inset twice by a form card.
             SettingsFormSection(
               title: messages.speechSettingsVoiceLabel,
               description: messages.speechSettingsVoiceDescription,
-              children: [
-                TtsVoiceSelector(
-                  voiceId: settings.voiceId,
-                  onChanged: controller.setVoice,
-                ),
-              ],
+              children: const [],
+            ),
+            Padding(
+              padding: EdgeInsets.only(bottom: spacing.sectionGap),
+              child: TtsVoiceSelector(
+                voiceId: settings.voiceId,
+                onChanged: controller.setVoice,
+              ),
             ),
             SettingsFormSection(
               title: messages.speechSettingsModelLabel,

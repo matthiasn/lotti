@@ -25,7 +25,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Section titles (entity-definition SettingsFormSection headers).
-    expect(find.text('Voice'), findsOneWidget);
+    expect(find.text('On-device voice'), findsOneWidget);
     expect(find.text('Model'), findsOneWidget);
     expect(find.text('Reading speed'), findsOneWidget);
     // Cloud voices sit above the on-device voice; with no profile naming one
@@ -33,7 +33,7 @@ void main() {
     expect(find.byType(TtsCloudVoicesSection), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Cloud voices')).dy,
-      lessThan(tester.getTopLeft(find.text('Voice')).dy),
+      lessThan(tester.getTopLeft(find.text('On-device voice')).dy),
     );
 
     expect(find.byType(TtsVoiceSelector), findsOneWidget);

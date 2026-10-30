@@ -170,11 +170,12 @@ void main() {
         await tester.tap(find.byType(DropdownButton<String>));
         await tester.pump();
 
-        // Tap "English" option
-        await tester.tap(find.text('English').last);
+        // Tap the first language, which is on screen however many the list
+        // grows by (English moved below the fold when Catalan joined).
+        await tester.tap(find.text('Arabic').last);
         await tester.pump();
 
-        expect(ctrl.setLanguageCalls, contains('en'));
+        expect(ctrl.setLanguageCalls, contains('ar'));
       },
     );
   });

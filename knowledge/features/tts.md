@@ -15,7 +15,7 @@ sources:
   - id: cloud-route
     resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
     title: The cloud route a profile's read-aloud slot names
-    last_modified: 2026-10-28
+    last_modified: 2026-10-30
   - id: voxtral-service
     resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
     title: Voxtral speech and voice-catalog client
@@ -23,7 +23,19 @@ sources:
   - id: voice-catalog
     resource: ../../lib/features/tts/cloud/voxtral_voice_catalog.dart
     title: Voice catalog and per-language voice resolution
-    last_modified: 2026-10-28
+    last_modified: 2026-10-30
+  - id: cloud-voices-section
+    resource: ../../lib/features/tts/ui/widgets/tts_cloud_voices_section.dart
+    title: The Cloud voices section of Speech settings
+    last_modified: 2026-10-30
+  - id: cloud-voice-picker
+    resource: ../../lib/features/tts/ui/widgets/tts_cloud_voice_picker.dart
+    title: The per-language voice picker sheet and its previews
+    last_modified: 2026-10-30
+  - id: cloud-voice-samples
+    resource: ../../lib/features/tts/cloud/cloud_voice_samples.dart
+    title: The sentence each language's voices preview with
+    last_modified: 2026-10-30
 ---
 
 Text-to-speech that reads a task's AI **TL;DR**, a goal report or a saved
@@ -117,9 +129,34 @@ language: the user's choice for that language while the catalog still has it
 (`TtsSettings.cloudVoiceByLanguage`, `TTS_CLOUD_VOICES`), else the language's
 first female preset, else its first voice. The API has no voice-per-language
 default of its own. A language with no voice fails with `noVoice` before any
-text is sent, rather than reading German in an English voice. Speech settings
-list each catalog language with that choice and a test that speaks
-`speechSettingsCloudVoiceSample` from that language's own ARB catalog.
+text is sent, rather than reading German in an English voice. Each voice
+keeps the API's mood `tags` (cached with it) so voices of one language can
+be told apart before they are heard.
+
+**Speech settings → Cloud voices.** `TtsCloudVoicesSection` lists, per
+provider, the user's own languages — the app's and every language with a
+pick — then folds the rest of the catalog behind one "Other languages (N)"
+header, which says how many of them have a choice of voices. Each row names the voice in use, "Your pick" when chosen, and the
+number of voices when there is a choice; its speaker plays the voice in use.
+A language with several voices opens `showCloudVoicePicker`; a language with
+one plays it from the row. Grouping holds while the page is open: a language
+picked from the open list keeps its row until the list is collapsed, so an
+edited row never jumps.
+
+The picker sheet (`CloudVoicePicker`) pins the default voice and the pick it
+opened with (labelled "Your pick" while in use, "Previous" once another is
+tapped) above a Female/Male filter (`TtsGenderFilter`, shared with the
+on-device list, shown for more than eight voices of both genders). A tap
+picks a voice and plays it; picking the default clears the choice. The
+sheet stays open, and closing it on a different voice than it opened with
+shows a toast with Undo back to that voice. Previews go through a
+`TtsCloudRoute` carrying the previewed `voiceId`, which wins over the user's
+choice and is part of the route's cache key, so a preview never plays as
+another voice. The sentence is `cloudVoiceSample`: the app's own
+`speechSettingsCloudVoiceSample` for a shipped language, a native sentence
+for the other languages Voxtral speaks, else English — every voice can be
+heard before it is picked. The on-device voice list and the picker share one
+row, `TtsVoiceRadioRow`.
 
 **Model and speed.** There is one hosted TTS family and no quality or speed
 parameter to tune; the curated model is `voxtral-mini-tts-3-0` (Mistral

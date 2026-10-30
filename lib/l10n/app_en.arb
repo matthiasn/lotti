@@ -9803,22 +9803,81 @@
   "speechSettingsAutoPrepareChatAudio": "Prepare chat audio automatically",
   "speechSettingsChatAudioDescription": "Prepare new chat replies on this device so playback starts sooner. Audio plays only when you tap play.",
   "speechSettingsChatAudioLabel": "Chat audio",
-  "speechSettingsCloudVoiceDefault": "Default · {name}",
-  "@speechSettingsCloudVoiceDefault": {
-    "description": "Dropdown entry for a language's default cloud voice, naming the voice that will speak",
+  "speechSettingsCloudVoiceChanged": "{language} now uses {voice}",
+  "@speechSettingsCloudVoiceChanged": {
+    "description": "Toast after the cloud voice picker closes with a different voice for a language; offers Undo",
     "placeholders": {
-      "name": {
+      "language": {
+        "type": "String"
+      },
+      "voice": {
         "type": "String"
       }
     }
+  },
+  "speechSettingsCloudVoiceChosenTag": "Your pick",
+  "@speechSettingsCloudVoiceChosenTag": {
+    "description": "Marks a language whose cloud voice the user picked, rather than the default"
+  },
+  "speechSettingsCloudVoiceCount": "{count, plural, =1{1 voice} other{{count} voices}}",
+  "@speechSettingsCloudVoiceCount": {
+    "description": "How many cloud voices a language has, under its row in Speech settings",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "speechSettingsCloudVoiceDefaultTag": "Default",
+  "@speechSettingsCloudVoiceDefaultTag": {
+    "description": "Tag on the voice a language uses when the user has not picked one"
+  },
+  "speechSettingsCloudVoiceInUse": "In use: {voice}",
+  "@speechSettingsCloudVoiceInUse": {
+    "description": "In the cloud voice picker, names the voice in use when the gender filter hides it",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "speechSettingsCloudVoiceListen": "Listen to {voice}",
+  "@speechSettingsCloudVoiceListen": {
+    "description": "Tooltip and accessibility label of the button that plays a sample in one cloud voice",
+    "placeholders": {
+      "voice": {
+        "type": "String"
+      }
+    }
+  },
+  "speechSettingsCloudVoicePickerHint": "Tap a voice to hear it and use it.",
+  "@speechSettingsCloudVoicePickerHint": {
+    "description": "Line at the top of the cloud voice picker: a tap on a voice plays it and makes it the language's voice"
+  },
+  "speechSettingsCloudVoicePreviousTag": "Previous",
+  "@speechSettingsCloudVoicePreviousTag": {
+    "description": "Marks, in the cloud voice picker, the voice that was in use when the picker opened, so going back to it is easy to find"
   },
   "speechSettingsCloudVoiceSample": "Hello! This is how I sound reading your summaries aloud.",
   "@speechSettingsCloudVoiceSample": {
     "description": "Sample sentence a cloud voice speaks when tested in Speech settings; spoken in each language's own catalog"
   },
-  "speechSettingsCloudVoicesDescription": "Profiles with a read-aloud model speak with these voices. Each language uses your pick, or its first female voice.",
+  "speechSettingsCloudVoicesDescription": "Each language is read aloud in the voice shown. Tap one to hear or change it.",
   "@speechSettingsCloudVoicesDescription": {
     "description": "Description of the cloud voices section when a profile reads aloud with a cloud voice"
+  },
+  "speechSettingsCloudVoicesFewerLanguages": "Fewer languages",
+  "@speechSettingsCloudVoicesFewerLanguages": {
+    "description": "Row that hides the cloud-voice languages beyond the user's own again"
+  },
+  "speechSettingsCloudVoiceSheetTitle": "{language} voice",
+  "@speechSettingsCloudVoiceSheetTitle": {
+    "description": "Title of the sheet that picks the cloud voice for one language",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
   },
   "speechSettingsCloudVoicesLabel": "Cloud voices",
   "@speechSettingsCloudVoicesLabel": {
@@ -9832,9 +9891,31 @@
   "@speechSettingsCloudVoicesNone": {
     "description": "Description of the cloud voices section when no profile names a cloud read-aloud model"
   },
+  "speechSettingsCloudVoicesOtherLanguages": "Other languages ({count})",
+  "@speechSettingsCloudVoicesOtherLanguages": {
+    "description": "Header row of the cloud-voice languages beyond the user's own, with how many there are; tapping it opens or closes them",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "speechSettingsCloudVoicesRetry": "Try again",
+  "@speechSettingsCloudVoicesRetry": {
+    "description": "Button that retries loading a provider's cloud voices after it failed"
+  },
   "speechSettingsCloudVoicesUnavailable": "The voices could not be loaded. Check the connection and the provider’s API key.",
   "@speechSettingsCloudVoicesUnavailable": {
     "description": "Shown when the cloud voice catalog could not be loaded and none is cached"
+  },
+  "speechSettingsCloudVoicesWithChoice": "{count, plural, =1{1 has a choice of voices} other{{count} have a choice of voices}}",
+  "@speechSettingsCloudVoicesWithChoice": {
+    "description": "Under the collapsed Other languages header: how many of the hidden languages offer more than one cloud voice",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "speechSettingsModelDescription": "On-device speech model",
   "speechSettingsModelDownloadSize": "{size} · downloads once, when you first read aloud",
@@ -9849,11 +9930,11 @@
   "speechSettingsRecommendedBadge": "Recommended",
   "speechSettingsSpeedDescription": "How fast summaries are read",
   "speechSettingsSpeedLabel": "Reading speed",
-  "speechSettingsVoiceDescription": "The on-device voice, for profiles without a cloud voice",
+  "speechSettingsVoiceDescription": "For profiles without a cloud voice",
   "@speechSettingsVoiceDescription": {
     "description": "Description of the on-device voice section in Speech settings"
   },
-  "speechSettingsVoiceLabel": "Voice",
+  "speechSettingsVoiceLabel": "On-device voice",
   "speechVoiceGenderFemale": "Female",
   "speechVoiceGenderMale": "Male",
   "speechVoicePreviewTooltip": "Preview voice",
@@ -10515,6 +10596,10 @@
   "taskLanguageArabic": "Arabic",
   "taskLanguageBengali": "Bengali",
   "taskLanguageBulgarian": "Bulgarian",
+  "taskLanguageCatalan": "Catalan",
+  "@taskLanguageCatalan": {
+    "description": "Language name: Catalan"
+  },
   "taskLanguageChinese": "Chinese",
   "taskLanguageCroatian": "Croatian",
   "taskLanguageCzech": "Czech",

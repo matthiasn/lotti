@@ -118,6 +118,9 @@ void main() {
         SupportedLanguage.de.localizedName(context),
         messages.taskLanguageGerman,
       );
+      // Catalan joined for the cloud voices that speak it.
+      expect(SupportedLanguage.fromCode('ca'), SupportedLanguage.ca);
+      expect(SupportedLanguage.ca.localizedName(context), 'Catalan');
       expect(
         SupportedLanguage.ro.localizedName(context),
         messages.taskLanguageRomanian,
