@@ -6,7 +6,6 @@ import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:lotti/widgets/media/file_watcher_mixin.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:path/path.dart' as p;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -251,104 +250,6 @@ void main() {
     });
   });
 
-  group('pathsEqual', () {
-    test('returns true for identical paths', () {
-      expect(pathsEqual('/foo/bar/file.txt', '/foo/bar/file.txt'), isTrue);
-    });
-
-    test('returns false for different paths', () {
-      expect(pathsEqual('/foo/bar/file.txt', '/foo/baz/file.txt'), isFalse);
-    });
-
-    test('normalizes paths with redundant separators', () {
-      expect(pathsEqual('/foo//bar/file.txt', '/foo/bar/file.txt'), isTrue);
-    });
-
-    test('normalizes paths with . components', () {
-      expect(pathsEqual('/foo/./bar/file.txt', '/foo/bar/file.txt'), isTrue);
-    });
-
-    test('normalizes paths with .. components', () {
-      expect(
-        pathsEqual('/foo/baz/../bar/file.txt', '/foo/bar/file.txt'),
-        isTrue,
-      );
-    });
-
-    test('handles mixed forward and back slashes', () {
-      // On non-Windows, backslashes are literal characters in paths.
-      // On Windows, they're path separators.
-      // This test verifies normalization handles this correctly.
-      final path1 = p.join('foo', 'bar', 'file.txt');
-      final path2 = p.join('foo', 'bar', 'file.txt');
-      expect(pathsEqual(path1, path2), isTrue);
-    });
-
-    test('handles trailing separators consistently', () {
-      // Directories with and without trailing separators
-      expect(
-        pathsEqual('/foo/bar/', '/foo/bar'),
-        // Note: p.normalize keeps trailing separator for directories
-        // but the paths should still compare correctly for files
-        isTrue,
-      );
-    });
-
-    test('handles relative paths by making them absolute', () {
-      // Both paths should be made absolute before comparison
-      final currentDir = Directory.current.path;
-      const relativePath = 'test.txt';
-      final absolutePath = p.join(currentDir, 'test.txt');
-      expect(pathsEqual(relativePath, absolutePath), isTrue);
-    });
-
-    test('case sensitivity depends on platform', () {
-      // On Windows, paths are case-insensitive
-      // On Unix-like systems, paths are case-sensitive
-      const path1 = '/foo/bar/File.txt';
-      const path2 = '/foo/bar/file.txt';
-
-      if (Platform.isWindows) {
-        expect(pathsEqual(path1, path2), isTrue);
-      } else {
-        expect(pathsEqual(path1, path2), isFalse);
-      }
-    });
-
-    test('handles Windows-style paths with backslashes on Windows', () {
-      // This test is more meaningful on Windows, but should not break on other platforms
-      if (Platform.isWindows) {
-        expect(
-          pathsEqual(r'C:\Users\test\file.txt', r'C:\Users\test\file.txt'),
-          isTrue,
-        );
-        expect(
-          pathsEqual(r'C:\Users\test\file.txt', 'C:/Users/test/file.txt'),
-          isTrue,
-        );
-        // Case insensitivity on Windows
-        expect(
-          pathsEqual(r'C:\Users\Test\FILE.txt', r'C:\Users\test\file.txt'),
-          isTrue,
-        );
-      }
-    });
-
-    test('handles paths with spaces', () {
-      expect(
-        pathsEqual('/foo/bar baz/file.txt', '/foo/bar baz/file.txt'),
-        isTrue,
-      );
-    });
-
-    test('handles paths with special characters', () {
-      expect(
-        pathsEqual('/foo/bar-baz_123/file.txt', '/foo/bar-baz_123/file.txt'),
-        isTrue,
-      );
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Non-test-env code paths (lines 36–57 of file_watcher_mixin.dart)
   // These tests temporarily set isTestEnv = false so that setupFileWatcher
@@ -436,9 +337,11 @@ void main() {
     );
 
     testWidgets(
-      'non-existent parent directory: returns early without watcher (lines 51-52)',
+      'a parent directory that does not exist yet is polled until the file '
+      'lands in it',
       (tester) async {
-        final path = '${tempDir.path}/missing_dir/file.txt';
+        final dir = Directory('${tempDir.path}/2026-10-30');
+        final path = '${dir.path}/photo.jpg';
 
         platform_utils.isTestEnv = false;
         addTearDown(() => platform_utils.isTestEnv = true);
@@ -451,8 +354,15 @@ void main() {
         );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
-        // Parent dir does not exist → early return, no crash, fileExists = false.
         expect(state.fileExists, isFalse);
+
+        // The writer creates the date directory along with the first file.
+        dir.createSync();
+        File(path).writeAsStringSync('bytes');
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(state.fileExists, isTrue);
+        expect(find.text('exists'), findsOneWidget);
       },
     );
 
@@ -544,6 +454,79 @@ void main() {
         expect(find.text('exists'), findsOneWidget);
       },
     );
+  });
+
+  group('FileWatcherMixin – atomic writes', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('file_watcher_atomic_');
+      platform_utils.isTestEnv = false;
+    });
+
+    tearDown(() {
+      platform_utils.isTestEnv = true;
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    testWidgets('a temporary sibling renamed onto the path is noticed', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/photo.jpg';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: LegacyMaterialBridge.builder,
+          home: _TestWidget(path: path),
+        ),
+      );
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      expect(state.fileExists, isFalse);
+
+      // What atomicWriteBytes does: the watch reports a move whose `path` is
+      // the temporary file and whose destination is the photo.
+      await tester.runAsync(() async {
+        File('$path.tmp.1.media')
+          ..writeAsStringSync('bytes')
+          ..renameSync(path);
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+
+      expect(state.fileExists, isTrue);
+      expect(find.text('exists'), findsOneWidget);
+    });
+
+    testWidgets('a file landing while the watch is set up is noticed', (
+      tester,
+    ) async {
+      final path = '${tempDir.path}/photo.jpg';
+      final silentWatch = StreamController<FileSystemEvent>();
+      addTearDown(silentWatch.close);
+
+      await IOOverrides.runZoned(
+        () async {
+          await tester.pumpWidget(
+            MaterialApp(
+              builder: LegacyMaterialBridge.builder,
+              home: _TestWidget(path: path),
+            ),
+          );
+        },
+        // The file lands after the existence check but before the watch is
+        // registered, so the watch never reports it.
+        fsWatch: (_, _, _) {
+          File(path).writeAsStringSync('bytes');
+          return silentWatch.stream;
+        },
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      expect(state.fileExists, isTrue);
+      expect(find.text('exists'), findsOneWidget);
+    });
   });
 
   // ---------------------------------------------------------------------------

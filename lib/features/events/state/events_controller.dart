@@ -19,12 +19,19 @@ class ResolvedEvent {
     required this.categoryColor,
     this.categoryName,
     this.coverImage,
+    this.pendingCoverIds = const {},
   });
 
   final JournalEvent event;
   final Color categoryColor;
   final String? categoryName;
   final ImageProvider? coverImage;
+
+  /// Ids this event's cover depends on that are not in the database yet: a
+  /// `coverArtId`, or a linked entry, whose row has not synced in. Sync can
+  /// apply the event→photo link before the photo itself, so the overview
+  /// re-resolves the cover when one of these arrives.
+  final Set<String> pendingCoverIds;
 }
 
 /// How many events the overview loads per page — the initial load and each
@@ -95,6 +102,8 @@ bool eventMatchesQuery(JournalEvent event, String query) {
 
 /// Resolves category styling and a cover [ImageProvider] for each of [events]:
 /// the explicit `coverArtId` image, else the newest linked photo, else none.
+/// Ids referenced for a cover whose rows are missing are reported as
+/// [ResolvedEvent.pendingCoverIds].
 Future<List<ResolvedEvent>> _resolveEventCovers(
   JournalDb db,
   EntitiesCacheService cache,
@@ -106,11 +115,15 @@ Future<List<ResolvedEvent>> _resolveEventCovers(
       .whereType<String>()
       .toSet();
   final coverImagesById = <String, JournalImage>{};
+  final missingIds = <String>{};
   if (coverIds.isNotEmpty) {
     final images = await db.getJournalEntitiesForIds(coverIds);
     for (final image in images.whereType<JournalImage>()) {
       coverImagesById[image.meta.id] = image;
     }
+    missingIds.addAll(
+      coverIds.difference(images.map((e) => e.meta.id).toSet()),
+    );
   }
 
   // 2) Fall back to the event's newest linked photo when there's no resolvable
@@ -124,6 +137,7 @@ Future<List<ResolvedEvent>> _resolveEventCovers(
       .map((e) => e.meta.id)
       .toList();
   final fallbackCoverByEventId = <String, JournalImage>{};
+  final pendingLinkedIdsByEventId = <String, Set<String>>{};
   if (fallbackEventIds.isNotEmpty) {
     final links = await db.linksFromIds(fallbackEventIds).get();
     final linkedImagesById = <String, JournalImage>{};
@@ -133,8 +147,16 @@ Future<List<ResolvedEvent>> _resolveEventCovers(
       for (final entity in linkedEntities.whereType<JournalImage>()) {
         linkedImagesById[entity.meta.id] = entity;
       }
+      missingIds.addAll(
+        toIds.difference(linkedEntities.map((e) => e.meta.id).toSet()),
+      );
     }
     for (final link in links) {
+      if (missingIds.contains(link.toId)) {
+        pendingLinkedIdsByEventId
+            .putIfAbsent(link.fromId, () => {})
+            .add(link.toId);
+      }
       final image = linkedImagesById[link.toId];
       if (image == null) continue;
       final current = fallbackCoverByEventId[link.fromId];
@@ -153,6 +175,10 @@ Future<List<ResolvedEvent>> _resolveEventCovers(
     final coverImage =
         (coverArtId != null ? coverImagesById[coverArtId] : null) ??
         fallbackCoverByEventId[event.meta.id];
+    final pendingCoverIds = {
+      if (coverArtId != null && missingIds.contains(coverArtId)) coverArtId,
+      ...?pendingLinkedIdsByEventId[event.meta.id],
+    };
     return ResolvedEvent(
       event: event,
       categoryColor: colorFromCssHex(category?.color),
@@ -167,6 +193,7 @@ Future<List<ResolvedEvent>> _resolveEventCovers(
                 ),
               ),
             ),
+      pendingCoverIds: pendingCoverIds,
     );
   }).toList();
 }

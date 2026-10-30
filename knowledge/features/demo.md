@@ -322,9 +322,12 @@ downloads.
 The file watcher behind the resolver all three draw through
 ([`FileWatcherMixin`](../../lib/widgets/media/file_watcher_mixin.dart))
 polls instead of watching where the OS offers no directory watch — iOS throws
-from `Directory.watch` — and falls back to polling when a watch is refused or
-errors out, because a watcher that throws inside `build` became a 100 000 px
-`ErrorWidget` in every cover slot.
+from `Directory.watch` — or where the parent directory does not exist yet, and
+falls back to polling when a watch is refused or errors out, because a watcher
+that throws inside `build` became a 100 000 px `ErrorWidget` in every cover
+slot. A watch event of any kind re-checks the file itself rather than matching
+the event's path: `atomicWriteBytes` lands a file as a rename from a temporary
+sibling, which the watch reports under the sibling's name.
 
 ```mermaid
 flowchart LR

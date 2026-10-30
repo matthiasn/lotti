@@ -41,7 +41,7 @@ flowchart TD
     DB[(JournalDb + EntitiesCacheService)]
 
     subgraph Overview
-      ESP[eventsOverviewControllerProvider<br/>query + categoryIds<br/>EVENT + LINK_CHANGED refresh<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
+      ESP[eventsOverviewControllerProvider<br/>query + categoryIds<br/>EVENT + LINK_CHANGED + pending cover refresh<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
       OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
       OV --> CARD[EventCard / EventFeatureCard]
     end
@@ -197,6 +197,20 @@ an event currently loaded in the overview. Photo links are separate rows from
 the event, so listening only for `EVENT` leaves fallback covers stale after
 local linking or sync; gating by endpoint avoids reloading covers for unrelated
 task and journal links.
+
+Sync can apply the event→photo link before the photo's own entry (links are
+also sent as their own messages, and `linked_entries` has no foreign keys). The
+refresh then finds no photo, and the photo's later apply notifies only its own
+id and `IMAGE`. So `_resolveEventCovers` reports every `coverArtId` or linked id
+whose row is missing as `ResolvedEvent.pendingCoverIds`, and the controller also
+refreshes when a notification names one of them.
+
+The photo's bytes travel separately again: its entry can apply before the file
+lands, and nothing is notified when the file does. `EventCoverImage` therefore
+shows the fallback while a `FileImage`'s file is missing and watches for it
+(`FileWatcherMixin`, which also covers a date directory that does not exist yet
+and the atomic rename sync writes with); decoding early would leave the failed load in the image
+cache under that key, where every later card for the photo would find it.
 
 Opening a timeline source preserves the event id as `linkedFromId`. Mobile
 passes it into the pushed detail page; desktop mirrors it beside the selected

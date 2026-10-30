@@ -75,22 +75,52 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   String _requestedQuery = '';
   Set<String> _requestedCategoryIds = const {};
 
+  /// Page loads currently awaiting the database, and the ids notified while
+  /// any was. A photo can arrive after a load has already read it as missing
+  /// but before that load commits — the listener then judges it against the
+  /// older state, which was not waiting for it. Each committed state is
+  /// checked against these ids so such an arrival still reloads the cover.
+  int _loadsInFlight = 0;
+  final Set<String> _notifiedDuringLoad = {};
+
   @override
   Future<EventsOverviewState> build() async {
     _requestedQuery = '';
     _requestedCategoryIds = const {};
+    listenSelf((_, next) {
+      final pending = next.value?.events.expand(
+        (resolved) => resolved.pendingCoverIds,
+      );
+      if (pending != null && pending.any(_notifiedDuringLoad.contains)) {
+        _notifiedDuringLoad.clear();
+        // After the committing load has finished its own bookkeeping: it
+        // bumps the generation once its state is set, which would otherwise
+        // mark this refresh stale before it starts.
+        scheduleMicrotask(() {
+          if (ref.mounted) _startRefresh();
+        });
+      }
+    });
     final sub = ref.read(updateNotificationsProvider).updateStream.listen((
       affected,
     ) {
-      final loadedEventIds = state.value?.events
+      if (_loadsInFlight > 0) _notifiedDuringLoad.addAll(affected);
+      final loaded = state.value?.events ?? const <ResolvedEvent>[];
+      final loadedEventIds = loaded
           .map((resolved) => resolved.event.meta.id)
           .toSet();
       final affectsLoadedEventLink =
           affected.contains(linkNotification) &&
-          loadedEventIds != null &&
           affected.any(loadedEventIds.contains);
-      if (affected.contains(eventNotification) || affectsLoadedEventLink) {
-        unawaited(_refresh());
+      // A cover photo whose link synced in before the photo itself: its
+      // arrival notifies only the photo's own id.
+      final pendingCoverArrived = loaded.any(
+        (resolved) => resolved.pendingCoverIds.any(affected.contains),
+      );
+      if (affected.contains(eventNotification) ||
+          affectsLoadedEventLink ||
+          pendingCoverArrived) {
+        _startRefresh();
       }
     });
     ref.onDispose(sub.cancel);
@@ -101,7 +131,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     required Set<String> categoryIds,
     required String query,
   }) async {
-    final page = await loadResolvedEventsPage(
+    final page = await _loadPage(
       limit: eventsPageSize,
       offset: 0,
       categoryIds: categoryIds,
@@ -115,6 +145,28 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     );
   }
 
+  /// [loadResolvedEventsPage], counted in [_loadsInFlight]. The first of
+  /// overlapping loads starts a fresh [_notifiedDuringLoad]: anything notified
+  /// before it began is already in what it reads.
+  Future<List<ResolvedEvent>> _loadPage({
+    required int limit,
+    required int offset,
+    required Set<String> categoryIds,
+    required String query,
+  }) async {
+    if (_loadsInFlight++ == 0) _notifiedDuringLoad.clear();
+    try {
+      return await loadResolvedEventsPage(
+        limit: limit,
+        offset: offset,
+        categoryIds: categoryIds,
+        query: query,
+      );
+    } finally {
+      _loadsInFlight--;
+    }
+  }
+
   /// Appends the next page. A no-op while a fetch is in flight or no more pages
   /// remain, so the scroll-triggered caller can fire it freely.
   Future<void> loadMore() async {
@@ -124,7 +176,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final generation = _generation;
     state = AsyncData(current.copyWith(isLoadingMore: true));
     try {
-      final next = await loadResolvedEventsPage(
+      final next = await _loadPage(
         limit: eventsPageSize,
         offset: current.events.length,
         categoryIds: current.categoryIds,
@@ -185,6 +237,10 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     _generation++;
   }
 
+  /// Starts [_refresh] without waiting for it: it is triggered by
+  /// notifications, and a failure keeps the current list (see [_refresh]).
+  void _startRefresh() => unawaited(_refresh());
+
   /// Re-fetches the currently-loaded window after a sync/db change, so new or
   /// edited events show up without losing the user's scroll depth.
   Future<void> _refresh() async {
@@ -199,7 +255,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final query = _requestedQuery;
     final categoryIds = _requestedCategoryIds;
     try {
-      final reloaded = await loadResolvedEventsPage(
+      final reloaded = await _loadPage(
         limit: count,
         offset: 0,
         categoryIds: categoryIds,
