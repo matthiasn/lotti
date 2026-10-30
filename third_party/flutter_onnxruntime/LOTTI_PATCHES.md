@@ -32,20 +32,28 @@ against `cleanupResources` on app termination. The reply is delivered via the
 normal `result(...)` callback, which `FlutterMethodChannel` marshals back to
 the engine from any thread.
 
-Search the file for `LOTTI FORK PATCH` to find the exact changes. This is the
-only patch to *plugin logic* — iOS/Android/Linux/Windows implementations are
-byte-for-byte upstream (iOS already offloads correctly via its working task
-queue). The iOS podspec and the Linux CMake carry build-configuration patches,
-documented below.
+Search the file for `LOTTI FORK PATCH` to find the exact changes. iOS and
+Android are byte-for-byte upstream for threading (iOS already offloads correctly
+via its working task queue), and Windows is wholly upstream. The iOS podspec and
+the Linux CMake carry build-configuration patches, documented below.
 
-TTS now also targets **Linux**, but the Linux plugin is still upstream for
-threading and runs `runInference` synchronously on the GTK main thread (no
-background-task-queue API in the Linux desktop embedder to offload to). So Linux
-synthesis blocks the UI thread the same way macOS did before this patch —
-functional, but not yet smooth. Porting the `workQueue` offload to the Linux
-plugin (dispatch `runInference` to a `GTask`/worker thread, reply from the
-worker) is the analogous fix; see `lib/features/tts/README.md` → "Platform
-threading caveat".
+### Linux: inference off the main thread
+
+**File:** `linux/src/flutter_onnxruntime_plugin.cc` (search for
+`LOTTI FORK PATCH`).
+
+The Linux desktop embedder has no background task queue for platform channels
+either, and it runs Flutter's UI isolate on the GTK main thread, so upstream's
+synchronous `runInference` froze the whole app for as long as a call ran. The
+patch is the macOS one in GLib terms: every method call goes to a
+single-threaded `GThreadPool` (`work_pool`), one thread so the session and
+value maps are never touched concurrently, and its reply is handed back to the
+main context with `g_main_context_invoke`, since the embedder only accepts
+responses there. Dispose drains the pool before it frees the managers.
+
+Measured with `integration_test/embedder_parity_test.dart` (EmbeddingGemma on
+the eval sample, a debug build): the app's longest stall fell from 230 ms to
+19 ms, with the same vectors.
 
 ### iOS: deployment target
 
@@ -89,6 +97,10 @@ When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
 - **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding
   and separate `SYSTEM_ONNXRUNTIME` pkg-config prefix, which prevents a failed
   lookup from clearing the application's pinned download version.
+- **Linux** (`linux/src/flutter_onnxruntime_plugin.cc`): the `work_pool`
+  worker, `run_method_call` / `respond_on_main_thread`, and the
+  `handle_method_call` → `build_response` split. Rerun the embedder parity test
+  afterwards and compare the stall it prints.
 - **Android** (`android/src/main/kotlin/com/masicai/flutteronnxruntime/FlutterOnnxruntimePlugin.kt`):
   remove the obsolete `addArmNN` call, which is absent from the shared runtime's
   Java API. Explicit ArmNN requests use the existing unsupported-provider error;

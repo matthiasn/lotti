@@ -38,13 +38,24 @@ struct _FlutterOnnxruntimePlugin {
 
   // Mutex for thread safety
   std::mutex mutex;
+
+  // LOTTI FORK PATCH (see third_party/flutter_onnxruntime/LOTTI_PATCHES.md):
+  // the Linux embedder has no background task queue for platform channels, so
+  // method calls — multi-hundred-millisecond inference included — would run on
+  // the GTK main thread, which also runs Flutter's UI isolate, and freeze the
+  // app. Every call runs on this pool's single thread instead: one thread, so
+  // the session and value maps are never touched concurrently, and the reply
+  // is handed back to the main thread, where the embedder requires it.
+  GThreadPool *work_pool;
 };
 
 G_DEFINE_TYPE(FlutterOnnxruntimePlugin, flutter_onnxruntime_plugin, g_object_get_type())
 
 // Method declarations
 static void flutter_onnxruntime_plugin_dispose(GObject *object);
-static void flutter_onnxruntime_plugin_handle_method_call(FlutterOnnxruntimePlugin *self, FlMethodCall *method_call);
+static FlMethodResponse *flutter_onnxruntime_plugin_build_response(FlutterOnnxruntimePlugin *self,
+                                                                   FlMethodCall *method_call);
+static void run_method_call(gpointer data, gpointer user_data);
 static void method_call_handler(FlMethodChannel *channel, FlMethodCall *method_call, gpointer user_data);
 
 // Helper function to get platform version
@@ -102,14 +113,25 @@ static void flutter_onnxruntime_plugin_class_init(FlutterOnnxruntimePluginClass 
 static void flutter_onnxruntime_plugin_init(FlutterOnnxruntimePlugin *self) {
   self->session_manager = new SessionManager();
   self->tensor_manager = new TensorManager();
+  // LOTTI FORK PATCH: the serial worker (see work_pool above).
+  self->work_pool = g_thread_pool_new(run_method_call, self, 1, FALSE, nullptr);
 }
 
 static void flutter_onnxruntime_plugin_dispose(GObject *object) {
   FlutterOnnxruntimePlugin *self = FLUTTER_ONNXRUNTIME_PLUGIN(object);
 
+  // LOTTI FORK PATCH: let the worker finish the calls it holds before the
+  // managers they use go. Dispose can run more than once.
+  if (self->work_pool != nullptr) {
+    g_thread_pool_free(self->work_pool, FALSE, TRUE);
+    self->work_pool = nullptr;
+  }
+
   // Clean up session manager, tensor manager and values
   delete self->session_manager;
+  self->session_manager = nullptr;
   delete self->tensor_manager;
+  self->tensor_manager = nullptr;
 
   std::lock_guard<std::mutex> lock(self->mutex);
   self->values.clear();
@@ -133,14 +155,48 @@ void flutter_onnxruntime_plugin_register_with_registrar(FlPluginRegistrar *regis
 }
 
 // Method call handler function
-static void method_call_handler(FlMethodChannel *channel, FlMethodCall *method_call, gpointer user_data) {
-  FlutterOnnxruntimePlugin *self = FLUTTER_ONNXRUNTIME_PLUGIN(user_data);
-  flutter_onnxruntime_plugin_handle_method_call(self, method_call);
+// LOTTI FORK PATCH: a reply on its way from the worker to the main thread.
+struct PendingResponse {
+  FlMethodCall *method_call;
+  FlMethodResponse *response;
+};
+
+static gboolean respond_on_main_thread(gpointer data) {
+  auto *pending = static_cast<PendingResponse *>(data);
+  fl_method_call_respond(pending->method_call, pending->response, nullptr);
+  g_object_unref(pending->response);
+  g_object_unref(pending->method_call);
+  delete pending;
+  return G_SOURCE_REMOVE;
 }
 
-// Handler for method calls from Dart
-static void flutter_onnxruntime_plugin_handle_method_call(FlutterOnnxruntimePlugin *self, FlMethodCall *method_call) {
-  g_autoptr(FlMethodResponse) response = nullptr;
+// LOTTI FORK PATCH: runs on the worker thread.
+static void run_method_call(gpointer data, gpointer user_data) {
+  FlMethodCall *method_call = FL_METHOD_CALL(data);
+  FlutterOnnxruntimePlugin *self = FLUTTER_ONNXRUNTIME_PLUGIN(user_data);
+  FlMethodResponse *response = flutter_onnxruntime_plugin_build_response(self, method_call);
+  g_main_context_invoke(nullptr, respond_on_main_thread, new PendingResponse{method_call, response});
+}
+
+// Method call handler function
+static void method_call_handler(FlMethodChannel *channel, FlMethodCall *method_call, gpointer user_data) {
+  FlutterOnnxruntimePlugin *self = FLUTTER_ONNXRUNTIME_PLUGIN(user_data);
+  // LOTTI FORK PATCH: hand the call to the worker (see work_pool above).
+  g_autoptr(GError) error = nullptr;
+  g_object_ref(method_call);
+  if (self->work_pool == nullptr || !g_thread_pool_push(self->work_pool, method_call, &error)) {
+    g_autoptr(FlMethodResponse) response = FL_METHOD_RESPONSE(fl_method_error_response_new(
+        "INTERNAL_ERROR", error != nullptr ? error->message : "The plugin is shutting down", nullptr));
+    fl_method_call_respond(method_call, response, nullptr);
+    g_object_unref(method_call);
+  }
+}
+
+// Handler for method calls from Dart. Returns the reply, which the caller
+// owns; it runs on the worker thread (LOTTI FORK PATCH).
+static FlMethodResponse *flutter_onnxruntime_plugin_build_response(FlutterOnnxruntimePlugin *self,
+                                                                   FlMethodCall *method_call) {
+  FlMethodResponse *response = nullptr;
   const gchar *method = fl_method_call_get_name(method_call);
   FlValue *args = fl_method_call_get_args(method_call);
 
@@ -174,14 +230,12 @@ static void flutter_onnxruntime_plugin_handle_method_call(FlutterOnnxruntimePlug
     response = FL_METHOD_RESPONSE(fl_method_not_implemented_response_new());
   }
 
-  if (response != nullptr) {
-    fl_method_call_respond(method_call, response, nullptr);
-  } else {
+  if (response == nullptr) {
     // Fallback if no response was created (should ideally not happen)
     response =
         FL_METHOD_RESPONSE(fl_method_error_response_new("INTERNAL_ERROR", "Failed to process method call", nullptr));
-    fl_method_call_respond(method_call, response, nullptr);
   }
+  return response;
 }
 
 // Implementation of method functions
