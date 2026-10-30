@@ -209,6 +209,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: syncEmbeddingsFlag,
+      description: 'Sync embeddings between devices?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableVectorSearchFlag,
       description: 'Enable vector search UI?',
       status: false,

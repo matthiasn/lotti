@@ -3026,6 +3026,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Definice nastavení';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Embeddingy';
+
+  @override
   String get backfillRecordsEntryLinks => 'Odkazy mezi záznamy';
 
   @override
@@ -4109,6 +4112,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Synchronizovat embeddingy';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Když je zapnuto, embeddingy, které toto zařízení vytvoří, se sdílejí s tvými ostatními zařízeními a jejich embeddingy se používají tady, takže záznamy můžeš hledat podle významu, aniž by se znovu vytvářely. Vyžaduje Generovat embeddingy.';
 
   @override
   String get configFlagUseIsolateSync => 'Synchronizační proces na pozadí';
@@ -16585,6 +16595,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadDeepBackfillRequest => 'Žádost o hloubkové doplnění';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Vektory embeddingů';
 
   @override
   String get syncPayloadEntityDefinition => 'Definice entity';

@@ -21,6 +21,7 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
     SyncSequencePayloadType.notificationStateUpdate => _notificationsDb != null,
     SyncSequencePayloadType.consumptionEvent => _consumptionRepository != null,
     SyncSequencePayloadType.aiConfig => _aiConfigRepository != null,
+    SyncSequencePayloadType.embeddingVectors => _embeddingVectors != null,
   };
 
   void _retrySettlementAwaitingStore() {
@@ -400,6 +401,30 @@ extension _BackfillResponseHandlerInternals on BackfillResponseHandler {
           buildSyncMessage: (held) =>
               held.toSyncMessage(originatingHostId: originatingHostId),
           typeName: 'aiConfig',
+        );
+      case SyncSequencePayloadType.embeddingVectors:
+        final vectors = _embeddingVectors;
+        if (vectors == null) {
+          _trace(
+            'embeddingVectors not wired, skipping $payloadId',
+            subDomain: 'backfill.processEntry',
+          );
+          return false;
+        }
+        // Answered with the version or tombstone held now, its attachment
+        // written afresh from the store (ADR 0149).
+        return _processAgentBackfillEntry<SyncEmbeddingVectors>(
+          hostId: hostId,
+          counter: counter,
+          payloadId: payloadId,
+          payloadType: payloadType,
+          originatingHostId: originatingHostId,
+          sentPayloads: sentPayloads,
+          durable: durable,
+          loadPayload: () => vectors.prepareResend(payloadId),
+          getVectorClock: (message) => message.vectorClock,
+          buildSyncMessage: (message) => message,
+          typeName: 'embeddingVectors',
         );
     }
   }

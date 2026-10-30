@@ -1032,6 +1032,39 @@ void main() {
     });
 
     test(
+      'an applied agent entity releases the vectors held for it — a report '
+      'never runs the journal hook (ADR 0149)',
+      () async {
+        final sink = MockSyncedEmbeddingSink();
+        when(() => sink.onAgentEntityApplied(any())).thenAnswer((_) async {});
+        final vectors = MockEmbeddingVectorsSync();
+        when(() => vectors.sink).thenReturn(sink);
+        processor.embeddingVectors = vectors;
+        final report = AgentDomainEntity.agentReport(
+          id: 'report-1',
+          agentId: 'agent-1',
+          scope: 'current',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          content: 'The report',
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: report,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(envelope: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(report)).called(1);
+        verify(() => sink.onAgentEntityApplied('report-1')).called(1);
+      },
+    );
+
+    test(
       'older-client rewrite preserves explicit task-agent setup fields',
       () async {
         final local =

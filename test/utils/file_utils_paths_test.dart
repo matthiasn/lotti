@@ -327,4 +327,19 @@ void main() {
       tags: 'glados',
     );
   });
+
+  test(
+    'an embedding-vectors path is one per version and encodes its parts',
+    () {
+      expect(
+        relativeEmbeddingVectorsPath(
+          entityId: 'e 1',
+          modelId: 'embeddinggemma-300m-q4',
+          hostId: 'host/a',
+          counter: 7,
+        ),
+        '/embedding_vectors/e%201/embeddinggemma-300m-q4/host%2Fa-7.json',
+      );
+    },
+  );
 }

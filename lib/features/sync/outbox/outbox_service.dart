@@ -480,6 +480,11 @@ class MatrixOutboxService extends _OutboxServiceBase
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncEmbeddingVectors msg =>
+          _enqueueWriter.enqueueEmbeddingVectors(
+            msg: msg,
+            commonFields: commonFields,
+          ),
         final SyncNotificationStateUpdate msg =>
           _enqueueWriter.enqueueNotificationStateUpdate(
             msg: msg,

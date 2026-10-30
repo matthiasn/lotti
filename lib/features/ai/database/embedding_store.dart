@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/on_device_embedding/gemma_embedder.dart';
 
 /// The fixed embedding dimension used by the current embedding model.
@@ -68,12 +69,28 @@ abstract class EmbeddingStore {
   /// Total number of embedding chunks across all entities.
   FutureOr<int> get count;
 
+  /// The stored version of [entityId]'s register, tombstones included, or
+  /// `null` when the entity has none.
+  FutureOr<EmbeddingRegister?> getRegister(String entityId);
+
+  /// The stored chunk vectors of [entityId], in chunk order; empty when it
+  /// has none. What a resent version carries.
+  FutureOr<List<Float32List>> chunkVectors(String entityId);
+
+  /// Every stored register, tombstones included: what deep backfill, the
+  /// sequence-log population and Add Device walk.
+  FutureOr<List<EmbeddingRegister>> allRegisters();
+
   /// Replaces all embedding chunks for [entityId] with [embeddings].
   ///
   /// Deletes any prior chunks for the entity first, so this is an upsert at the
   /// entity granularity. [contentHash] is stored alongside for change
   /// detection; [categoryId] selects the shard; [taskId] / [subtype] link
   /// agent-report embeddings back to their parent task.
+  ///
+  /// [register] is the version this chunk set belongs to, `null` for none.
+  /// It is written in the same transaction as the chunks, so a chunk set is
+  /// never stored beside the version of another one.
   FutureOr<void> replaceEntityEmbeddings({
     required String entityId,
     required String entityType,
@@ -83,10 +100,22 @@ abstract class EmbeddingStore {
     String categoryId = '',
     String taskId = '',
     String subtype = '',
+    EmbeddingRegister? register,
   });
 
-  /// Removes every embedding chunk for [entityId].
+  /// Removes every embedding chunk for [entityId], and its register.
   FutureOr<void> deleteEntityEmbeddings(String entityId);
+
+  /// Replaces the register row of [register]'s entity and leaves its chunks
+  /// as they are: a version that kept its chunk set but merged another
+  /// version's clock.
+  FutureOr<void> putRegister(EmbeddingRegister register);
+
+  /// Removes every embedding chunk for the register's entity and stores
+  /// [tombstone] in their place: the version that says the entry has no
+  /// vectors, kept so a delayed copy of an older live version is dominated
+  /// by it.
+  FutureOr<void> writeTombstone(EmbeddingRegister tombstone);
 
   /// Nearest-neighbour search for [queryVector].
   ///
@@ -100,7 +129,7 @@ abstract class EmbeddingStore {
     Set<String>? categoryIds,
   });
 
-  /// Removes all embeddings from the store.
+  /// Removes all embeddings and registers from the store.
   FutureOr<void> deleteAll();
 
   /// Releases the underlying database resources.

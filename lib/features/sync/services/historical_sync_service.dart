@@ -8,6 +8,7 @@ import 'package:lotti/database/agents/agent_db_conversions.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/services/agent_clock_stamper.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -17,10 +18,16 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 
 /// One database family visited while historical sync messages are enqueued.
+///
+/// [embeddingVectors] is never part of the sweep: Add Device sends the
+/// vectors after the onboarding End barrier
+/// ([HistoricalSyncService.sendEmbeddingVectors]), and the phase only labels
+/// that step's progress and failures.
 enum ReSyncPhase {
   journalEntities,
   agentEntities,
   agentLinks,
+  embeddingVectors,
 }
 
 /// The individual payload family represented by a [ReSyncFailure].
@@ -29,6 +36,7 @@ enum ReSyncItemType {
   entryLink,
   agentEntity,
   agentLink,
+  embeddingVectors,
 }
 
 /// One historical-sync item that could not be prepared or queued.
@@ -125,6 +133,12 @@ class ReSyncResult {
 
   int get total => succeeded + failures.length;
   bool get hasFailures => failures.isNotEmpty;
+
+  /// This result and [other] as one: the sweep and the step after it.
+  ReSyncResult followedBy(ReSyncResult other) => ReSyncResult(
+    succeeded: succeeded + other.succeeded,
+    failures: [...failures, ...other.failures],
+  );
 
   /// Retries only the items that failed in this result.
   ///
@@ -281,12 +295,14 @@ class HistoricalSyncService {
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
     required DomainLogger logger,
+    EmbeddingVectorsSync? embeddingVectors,
   }) => HistoricalSyncService._(
     journalDb: journalDb,
     agentRepository: agentRepository,
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     logger: logger,
+    embeddingVectors: embeddingVectors,
   );
 
   HistoricalSyncService._({
@@ -295,7 +311,10 @@ class HistoricalSyncService {
     required this._outboxService,
     required this._vectorClockService,
     required this._logger,
+    this._embeddingVectors,
   });
+
+  final EmbeddingVectorsSync? _embeddingVectors;
 
   final JournalDb _journalDb;
   final AgentRepository _agentRepository;
@@ -740,6 +759,44 @@ class HistoricalSyncService {
       );
     }
   }
+
+  /// Sends the current version of every embedding-vectors register — Add
+  /// Device's step after the onboarding End barrier (ADR 0149). Run after
+  /// End because the vectors are low priority: staged before it, they would
+  /// delay it. A register that cannot be enqueued becomes a failure of
+  /// [ReSyncItemType.embeddingVectors], retried with the rest.
+  ///
+  /// Nothing is sent while vectors are not shared.
+  Future<ReSyncResult> sendEmbeddingVectors({
+    ReSyncProgressCallback? onProgress,
+  }) async {
+    final vectors = _embeddingVectors;
+    if (vectors == null || !await vectors.isSharing) return ReSyncResult.empty;
+    final ids = await vectors.registerIdsToSend();
+    final collector = _ReSyncFailureCollector(_logger);
+    var processed = 0;
+    var failed = 0;
+    for (final id in ids) {
+      final sent = await collector.attempt(
+        phase: ReSyncPhase.embeddingVectors,
+        itemType: ReSyncItemType.embeddingVectors,
+        itemId: id,
+        action: () => vectors.sendCurrent(id),
+      );
+      processed++;
+      if (!sent) failed++;
+      onProgress?.call(
+        ReSyncProgress(
+          phase: ReSyncPhase.embeddingVectors,
+          processed: processed,
+          total: ids.length,
+          isComplete: processed == ids.length,
+          failed: failed,
+        ),
+      );
+    }
+    return collector.result;
+  }
 }
 
 /// Sync-owned historical staging service assembled from the app's shared
@@ -751,6 +808,7 @@ final historicalSyncServiceProvider = Provider<HistoricalSyncService>(
     outboxService: ref.watch(outboxServiceProvider),
     vectorClockService: ref.read(vectorClockServiceProvider),
     logger: ref.watch(domainLoggerProvider),
+    embeddingVectors: ref.watch(embeddingVectorsSyncProvider),
   ),
   name: 'historicalSyncServiceProvider',
 );

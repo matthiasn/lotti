@@ -77,6 +77,8 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
+import 'package:lotti/features/ai/embedding_sync/embedding_share.dart';
+import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
@@ -190,6 +192,7 @@ import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_re
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/isolate/isolate_sync_service.dart';
@@ -732,6 +735,34 @@ class MockHabitAutoCompletionNotifier extends Mock
 
 class MockEmbeddingStore extends Mock implements EmbeddingStore {}
 
+class MockEmbeddingShare extends Mock implements EmbeddingShare {}
+
+class MockEmbeddingVectorsSync extends Mock implements EmbeddingVectorsSync {}
+
+class MockSyncedEmbeddingSink extends Mock implements SyncedEmbeddingSink {}
+
+class MockEmbeddingVersionTicket extends Mock
+    implements EmbeddingVersionTicket {}
+
+/// Stubs the deleted-entry read `EmbeddingProcessor` makes for an entry
+/// that is gone: none of them was ever stored.
+void stubNoDeletedEntries(MockJournalDb mock) {
+  when(
+    () => mock.journalEntityByIdIncludingDeleted(any()),
+  ).thenAnswer((_) async => null);
+}
+
+/// Stubs the register reads `EmbeddingProcessor` makes around every store
+/// and removal: no register stored, and chunks present when [hasEmbedding]
+/// (so a removal reaches `deleteEntityEmbeddings`).
+void stubEmbeddingRegisters(
+  MockEmbeddingStore mock, {
+  bool hasEmbedding = true,
+}) {
+  when(() => mock.getRegister(any())).thenReturn(null);
+  when(() => mock.hasEmbedding(any())).thenReturn(hasEmbedding);
+}
+
 class MockOnDeviceEmbeddingRepository extends Mock
     implements OnDeviceEmbeddingRepository {}
 
@@ -845,6 +876,8 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {
 class MockHealthImport extends Mock implements HealthImport {}
 
 class MockSecureStorage extends Mock implements SecureStorage {}
+
+class MockVcReservation extends Mock implements VcReservation {}
 
 class MockVectorClockService extends Mock implements VectorClockService {
   /// Default passthrough so tests don't each have to stub the VC scope.

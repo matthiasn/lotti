@@ -1,7 +1,7 @@
 # Embedding vectors sync between a user's devices
 
 Date: 2026-10-30
-Status: plan, for an implementing agent; not started
+Status: implemented in the PR that carried this plan (all six slices, one PR); see *As built* at the end
 Builds on:
 - [ADR 0144](../adr/0144-on-device-embeddings-use-embeddinggemma.md): the model;
 - [ADR 0148](../adr/0148-embeddings-run-only-on-the-device.md): on-device is the only provider, and it names this as a separate decision;
@@ -546,3 +546,46 @@ before.
 - **Windows** neither sends nor receives until its ONNX worker lands
   (earmarked).
 - **Int8 vectors** are left out; they need their own measurement first.
+
+## As built
+
+The six slices shipped in one pull request. Where the code departs from the
+plan above, the code and [ADR 0149](../adr/0149-embedding-vectors-sync-as-a-tracked-register.md)
+win; the runtime map is
+[embedding vectors sync](../../knowledge/features/ai/embedding-vector-sync.md).
+
+- **The seams live in the AI feature.** Sync ranks above it in the layer
+  guard, so `EmbeddingShare` and `SyncedEmbeddingSink` are defined in
+  `lib/features/ai/embedding_sync/` and implemented or called by sync
+  (`EmbeddingVectorsSync`), the reverse of what §2 and §3 assumed. The
+  pipeline attaches to sync after it starts, since the sync stack is built
+  first; until then an arriving version on a device that will run the
+  pipeline is retried, not dropped.
+- **The register is a row per shard beside its chunks**
+  (`EmbeddingRegisterEntity`), written in the chunks' transaction.
+- **One file per version.** The attachment is written at enqueue under
+  `/embedding_vectors/<entity>/<model>/<host>-<counter>.json`, because the
+  sender may run in the sync isolate and cannot read ObjectBox there. Writing a
+  version deletes the register's older files; a sent one deletes its own; a
+  row whose file is gone goes out without it and receivers record only the
+  receipt. Receivers read the attachment from its descriptor and keep no file.
+- **Travel-alone is a subject prefix,** `embeddingVectorsOutboxSubjectPrefix`
+  in `claimNextOutboxBatch`, not a `filePath`, so tombstones travel alone too.
+- **Holds are a JSON file** (`embedding_vector_holds.json`), not a table.
+- **Deep backfill gained `participates()` and `runRound(only:)`**: a device
+  that does not store vectors takes no part, and the catch-up advertises the
+  vectors alone.
+- **Tombstones go further than §1a.** The model checker found that a deletion
+  on a device that never held the vectors sent nothing, that a concurrent live
+  version beat a tombstone, and that a backfill between a tombstone and the
+  deletion brought the vectors back. A deletion now always announces itself,
+  with the deleted version as its source clock; on equal sources a tombstone
+  wins; and nothing is embedded over a tombstone made from the entry's version
+  or a later one.
+- **Reports carry no source clock**: a report is immutable and only its
+  writer embeds it, so no concurrent version of its register exists.
+- **The model is a spec of its own,** `EmbeddingVectorSync.tla`, rather than
+  an actor in `EmbeddingFreshness.tla`; `SyncPipeline` gained the family.
+  `SyncSequence` and `DeepBackfill` are kind-agnostic and needed nothing.
+- **Versions stored while sharing was off** have no clock and stay local;
+  Add Device versions them before sending.

@@ -20,8 +20,10 @@ import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/repository/ai_config_sync_sender.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
@@ -588,6 +590,7 @@ class _GeneratedBackfillResponseBench {
     required this.agentRepository,
     required this.consumptionRepository,
     required this.aiConfigRepository,
+    required this.embeddingVectors,
     required this.notificationsDb,
     required this.handler,
   });
@@ -605,6 +608,7 @@ class _GeneratedBackfillResponseBench {
     final agentRepository = MockAgentRepository();
     final consumptionRepository = MockConsumptionRepository();
     final aiConfigRepository = MockAiConfigRepository();
+    final embeddingVectors = MockEmbeddingVectorsSync();
     final notificationsDb = MockNotificationsDb();
     final handler =
         BackfillResponseHandler(
@@ -617,9 +621,16 @@ class _GeneratedBackfillResponseBench {
           )
           ..agentRepository = agentRepository
           ..consumptionRepository = consumptionRepository
-          ..aiConfigRepository = aiConfigRepository;
+          ..aiConfigRepository = aiConfigRepository
+          ..embeddingVectors = embeddingVectors;
     when(
       () => consumptionRepository.getEvent(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => embeddingVectors.heldVersion(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => embeddingVectors.prepareResend(any()),
     ).thenAnswer((_) async => null);
     when(
       () => aiConfigRepository.heldVersion(any()),
@@ -652,6 +663,7 @@ class _GeneratedBackfillResponseBench {
       agentRepository: agentRepository,
       consumptionRepository: consumptionRepository,
       aiConfigRepository: aiConfigRepository,
+      embeddingVectors: embeddingVectors,
       notificationsDb: notificationsDb,
       handler: handler,
     );
@@ -796,6 +808,7 @@ class _GeneratedBackfillResponseBench {
   final MockAgentRepository agentRepository;
   final MockConsumptionRepository consumptionRepository;
   final MockAiConfigRepository aiConfigRepository;
+  final MockEmbeddingVectorsSync embeddingVectors;
   final MockNotificationsDb notificationsDb;
   final BackfillResponseHandler handler;
   final sentMessages = <SyncMessage>[];
@@ -6376,6 +6389,20 @@ void _stubPayloadByType(
             ? null
             : _heldAiConfig(payloadId, vectorClock: vectorClock),
       );
+    case SyncSequencePayloadType.embeddingVectors:
+      final held = vectorClock == null
+          ? null
+          : _heldVectors(payloadId, vectorClock: vectorClock);
+      when(
+        () => bench.embeddingVectors.heldVersion(payloadId),
+      ).thenAnswer((_) async => held);
+      when(
+        () => bench.embeddingVectors.prepareResend(payloadId),
+      ).thenAnswer(
+        (_) async => held?.vectorClock == null
+            ? null
+            : EmbeddingVectorsSync.messageFor(held!),
+      );
   }
 }
 
@@ -6455,6 +6482,14 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? _heldAiConfig(payloadId, vectorClock: vectorClock)
+            : null,
+      );
+    case SyncSequencePayloadType.embeddingVectors:
+      when(
+        () => bench.embeddingVectors.heldVersion(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? _heldVectors(payloadId, vectorClock: vectorClock)
             : null,
       );
   }
@@ -6604,8 +6639,26 @@ void _expectPayloadMessage(
       final config = message as SyncAiConfig;
       expect(config.aiConfig.id, payloadId);
       expect(config.status, SyncEntryStatus.update);
+    case SyncSequencePayloadType.embeddingVectors:
+      // The bench's held version names [payloadId] as its entity; the
+      // register id appends the model.
+      expect(message, isA<SyncEmbeddingVectors>());
+      expect((message as SyncEmbeddingVectors).entityId, payloadId);
   }
 }
+
+/// A tombstone of the vectors register [id] held at [vectorClock], standing
+/// in for any embedding-vectors version.
+EmbeddingRegister _heldVectors(String id, {VectorClock? vectorClock}) =>
+    EmbeddingRegister(
+      entityId: id,
+      modelId: 'm',
+      entityType: 'task',
+      contentHash: '',
+      vectorClock: vectorClock,
+      deleted: true,
+      originatingHostId: 'host',
+    );
 
 /// An inference profile held under [id] at stamp 1 and [vectorClock],
 /// standing in for any AI configuration version.

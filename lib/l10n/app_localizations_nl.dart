@@ -3008,6 +3008,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Instellingsdefinities';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Embeddings';
+
+  @override
   String get backfillRecordsEntryLinks => 'Koppelingen tussen items';
 
   @override
@@ -4084,6 +4087,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Schakel dit in om mislukte bijlageuploads automatisch opnieuw te verzenden wanneer de verbinding hersteld is.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Embeddings synchroniseren';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Als je dit aanzet, worden de embeddings die dit apparaat maakt gedeeld met je andere apparaten en worden die van hen hier gebruikt, zodat je items op betekenis kunt zoeken zonder ze opnieuw te embedden. Vereist Embeddings genereren.';
 
   @override
   String get configFlagUseIsolateSync =>
@@ -16433,6 +16443,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get syncPayloadDeepBackfillRequest => 'Verzoek voor diep terugvullen';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Embeddingvectoren';
 
   @override
   String get syncPayloadEntityDefinition => 'De definitie van entiteit';

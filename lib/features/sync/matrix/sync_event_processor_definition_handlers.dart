@@ -89,6 +89,10 @@ extension SyncEventProcessorDefinitionHandlers on SyncEventProcessor {
         fromSync: true,
       );
     }
+    // A label's name is part of a task's embedded text.
+    await _notifyEmbeddingDependency(
+      (sink) => sink.onEntityDefinitionApplied(entityDefinition.id),
+    );
     await _recordReceivedEntityDefinition(msg);
   }
 

@@ -415,6 +415,11 @@ extension _AgentHandlers on SyncEventProcessor {
         'apply agentEntity id=${resolvedEntity.id}',
         subDomain: 'processor.apply',
       );
+      // A report's text is in the agent database, which never runs the
+      // journal hook: release the vectors held for it here.
+      await _notifyEmbeddingDependency(
+        (sink) => sink.onAgentEntityApplied(resolvedEntity.id),
+      );
 
       await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
     } else {

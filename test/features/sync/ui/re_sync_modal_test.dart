@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -155,6 +156,11 @@ void main() {
       },
     );
     mockHistoricalSyncService = MockHistoricalSyncService();
+    when(
+      () => mockHistoricalSyncService.sendEmbeddingVectors(
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => ReSyncResult.empty);
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -506,6 +512,92 @@ void main() {
 
     verify(() => onboarding.releaseInboundPreflight(target)).called(1);
     expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets(
+    'full onboarding sends the vectors only after End, and lists a vector '
+    'that failed with the rest (ADR 0149)',
+    (tester) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'PHONE',
+      );
+      const round = OutboundOnboardingRound(
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        target: target,
+        coverageUpperBounds: {'desktop-host': 99},
+      );
+      final steps = <String>[];
+      final onboarding = MockOnboardingSyncService();
+      when(
+        () => onboarding.beginOutbound(target),
+      ).thenAnswer((_) async => round);
+      when(() => onboarding.completeOutbound(round)).thenAnswer((_) async {
+        steps.add('end');
+      });
+      when(
+        () => mockHistoricalSyncService.sendEmbeddingVectors(
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) async {
+        steps.add('vectors');
+        final onProgress =
+            invocation.namedArguments[#onProgress] as ReSyncProgressCallback;
+        onProgress(
+          const ReSyncProgress(
+            phase: ReSyncPhase.embeddingVectors,
+            processed: 1,
+            total: 1,
+            isComplete: true,
+            failed: 1,
+          ),
+        );
+        return ReSyncResult(
+          succeeded: 0,
+          failures: [
+            ReSyncFailure(
+              phase: ReSyncPhase.embeddingVectors,
+              itemType: ReSyncItemType.embeddingVectors,
+              itemId: 'e1|m',
+              error: StateError('outbox full'),
+              stackTrace: StackTrace.empty,
+              retryAction: () async {},
+              logger: MockDomainLogger(),
+            ),
+          ],
+        );
+      });
+
+      await openOnboardingModal(
+        tester,
+        target: target,
+        onboardingSyncService: onboarding,
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+
+      expect(steps, ['end', 'vectors']);
+      final context = tester.element(find.byKey(const Key('reSyncComplete')));
+      expect(
+        find.text('${context.messages.syncPayloadEmbeddingVectors}: e1|m'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a run that is not a full onboarding sends no vectors', (
+    tester,
+  ) async {
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    verifyNever(
+      () => mockHistoricalSyncService.sendEmbeddingVectors(
+        onProgress: any(named: 'onProgress'),
+      ),
+    );
   });
 
   testWidgets('started onboarding is not released again on dismissal', (

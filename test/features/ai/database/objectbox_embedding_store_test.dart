@@ -2,12 +2,15 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -22,11 +25,16 @@ void main() {
       registerFallbackValue(<EmbeddingChunkEntity>[]);
       registerFallbackValue(<int>[]);
       registerFallbackValue(<String>[]);
+      registerAllFallbackValues();
     });
 
     setUp(() {
       mockOps = MockObjectBoxOps();
       store = ObjectBoxEmbeddingStore(mockOps);
+      when(mockOps.findAllRegisters).thenReturn([]);
+      when(() => mockOps.findRegister(any())).thenReturn(null);
+      when(() => mockOps.putRegister(any())).thenReturn(null);
+      when(() => mockOps.removeRegister(any())).thenReturn(null);
     });
 
     Float32List validVector() => Float32List(kEmbeddingDimensions);
@@ -541,6 +549,150 @@ void main() {
 
         expect(store.getContentHash('special-id'), 'found-hash');
         verify(() => mockOps.findByEmbeddingKey('special-id:0')).called(1);
+      });
+    });
+
+    group('registers', () {
+      const live = EmbeddingRegister(
+        entityId: 'entity-1',
+        modelId: 'm',
+        entityType: 'task',
+        contentHash: 'hash-1',
+        vectorClock: VectorClock({'a': 2}),
+        sourceVectorClock: VectorClock({'a': 1}),
+        taskId: 't',
+        subtype: 's',
+        originatingHostId: 'a',
+      );
+
+      EmbeddingRegisterEntity row(EmbeddingRegister register) =>
+          ObjectBoxEmbeddingStore.registerToEntity(
+            register,
+            updatedAt: testDate,
+          );
+
+      test('a register round-trips through its row, clocks included', () {
+        final entity = row(live);
+
+        expect(entity.registerId, 'entity-1|m');
+        expect(entity.vectorClock, '{"a":2}');
+        expect(ObjectBoxEmbeddingStore.registerFromEntity(entity), live);
+        const unshared = EmbeddingRegister(
+          entityId: 'e',
+          modelId: 'm',
+          entityType: 'task',
+          contentHash: 'h',
+        );
+        expect(row(unshared).vectorClock, '');
+        expect(
+          ObjectBoxEmbeddingStore.registerFromEntity(row(unshared)),
+          unshared,
+        );
+      });
+
+      test('reads one register and all of them', () {
+        when(() => mockOps.findRegister('entity-1')).thenReturn(row(live));
+        when(mockOps.findAllRegisters).thenReturn([row(live)]);
+
+        expect(store.getRegister('entity-1'), live);
+        expect(store.getRegister('other'), isNull);
+        expect(store.allRegisters(), [live]);
+      });
+
+      test(
+        'a chunk set is written with its register in one transaction, and '
+        'without one removes it',
+        () {
+          when(() => mockOps.findIdsByEntityId('entity-1')).thenReturn([4]);
+          var inTransaction = false;
+          when(() => mockOps.runInWriteTransaction(any())).thenAnswer((i) {
+            inTransaction = true;
+            (i.positionalArguments.first as void Function())();
+            inTransaction = false;
+          });
+          when(() => mockOps.putRegister(any())).thenAnswer((_) {
+            expect(inTransaction, isTrue);
+          });
+
+          store.replaceEntityEmbeddings(
+            entityId: 'entity-1',
+            entityType: 'task',
+            modelId: 'm',
+            contentHash: 'hash-1',
+            embeddings: [validVector()],
+            register: live,
+          );
+          final written =
+              verify(() => mockOps.putRegister(captureAny())).captured.single
+                  as EmbeddingRegisterEntity;
+          expect(ObjectBoxEmbeddingStore.registerFromEntity(written), live);
+
+          store.replaceEntityEmbeddings(
+            entityId: 'entity-1',
+            entityType: 'task',
+            modelId: 'm',
+            contentHash: 'hash-1',
+            embeddings: [validVector()],
+          );
+          verify(() => mockOps.removeRegister('entity-1')).called(1);
+        },
+      );
+
+      test('a tombstone removes the chunks and keeps the register', () {
+        when(() => mockOps.findIdsByEntityId('entity-1')).thenReturn([4, 5]);
+        when(() => mockOps.runInWriteTransaction(any())).thenAnswer(
+          (i) => (i.positionalArguments.first as void Function())(),
+        );
+
+        store.writeTombstone(
+          const EmbeddingRegister(
+            entityId: 'entity-1',
+            modelId: 'm',
+            entityType: 'task',
+            contentHash: '',
+            vectorClock: VectorClock({'a': 3}),
+            deleted: true,
+          ),
+        );
+
+        verify(() => mockOps.removeMany([4, 5])).called(1);
+        final written =
+            verify(() => mockOps.putRegister(captureAny())).captured.single
+                as EmbeddingRegisterEntity;
+        expect(written.deleted, isTrue);
+        expect(written.vectorClock, '{"a":3}');
+      });
+
+      test(
+        'a deletion takes the register along; putRegister keeps the chunks',
+        () {
+          when(() => mockOps.findIdsByEntityId('entity-1')).thenReturn([]);
+          when(() => mockOps.runInWriteTransaction(any())).thenAnswer(
+            (i) => (i.positionalArguments.first as void Function())(),
+          );
+
+          store
+            ..deleteEntityEmbeddings('entity-1')
+            ..putRegister(live);
+
+          verify(() => mockOps.removeRegister('entity-1')).called(1);
+          verify(() => mockOps.putRegister(any())).called(1);
+          verifyNever(() => mockOps.removeMany(any()));
+        },
+      );
+
+      test('chunk vectors come back in chunk order', () {
+        final second = makeEntity(chunkIndex: 1)
+          ..embedding = Float32List(kEmbeddingDimensions)
+          ..embedding[0] = 2;
+        final first = makeEntity()
+          ..embedding = Float32List(kEmbeddingDimensions)
+          ..embedding[0] = 1;
+        when(
+          () => mockOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn([second, first]);
+
+        expect(store.chunkVectors('entity-1').map((v) => v[0]), [1, 2]);
       });
     });
   });

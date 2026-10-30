@@ -37,6 +37,10 @@ const enableRelationshipsFlag = 'enable_relationships';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableProjectsFlag = 'enable_projects';
 const enableEmbeddingsFlag = 'enable_embeddings';
+
+/// Shares the vectors this device embeds with the user's other devices, and
+/// stores the ones they share (ADR 0149). Needs [enableEmbeddingsFlag].
+const syncEmbeddingsFlag = 'sync_embeddings';
 const enableVectorSearchFlag = 'enable_vector_search';
 
 const enableWhatsNewFlag = 'enable_whats_new';

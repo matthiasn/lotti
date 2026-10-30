@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
+import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/notifications/preferences/notification_preference_effects.dart';
@@ -16,6 +18,7 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/maintenance_keys.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
@@ -454,6 +457,94 @@ void main() {
         ..registerSingleton<SyncSequenceLogService>(sequenceLogService);
     });
 
+    /// Every store the population reads, empty, and the settings it writes.
+    void stubEmptyPopulation() {
+      when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
+      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
+      for (final populate in [
+        () => sequenceLogService.populateFromJournal(
+          entryStream: any(named: 'entryStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromEntryLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromAgentEntities(
+          entityStream: any(named: 'entityStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+        () => sequenceLogService.populateFromAgentLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ]) {
+        when(populate).thenAnswer((_) async => 0);
+      }
+      when(
+        journalDb.streamEntriesWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        journalDb.streamEntryLinksWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        agentDb.streamAgentEntitiesWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        agentDb.streamAgentLinksWithVectorClock,
+      ).thenAnswer((_) => noRecords);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+    }
+
+    test(
+      'populates the vectors registers the store holds, after restore '
+      '(ADR 0149)',
+      () async {
+        when(
+          () => settingsDb.itemByKey(settingsKey),
+        ).thenAnswer((_) async => null);
+        stubEmptyPopulation();
+        final vectors = MockEmbeddingVectorsSync();
+        when(vectors.sharedRegisters).thenAnswer(
+          (_) async => [
+            const EmbeddingRegister(
+              entityId: 'e1',
+              modelId: 'm',
+              entityType: 'task',
+              contentHash: 'h',
+              vectorClock: VectorClock({'host': 4}),
+              originatingHostId: 'host',
+            ),
+          ],
+        );
+        getIt.registerSingleton<EmbeddingVectorsSync>(vectors);
+        addTearDown(() => getIt.unregister<EmbeddingVectorsSync>());
+
+        await checkAndPopulateSequenceLogForTesting();
+
+        final call = verify(
+          () => sequenceLogService.populateFromRecords(
+            payloadType: SyncSequencePayloadType.embeddingVectors,
+            records: captureAny(named: 'records'),
+            getTotalCount: captureAny(named: 'getTotalCount'),
+          ),
+        )..called(1);
+        final records =
+            call.captured[0]
+                as Stream<List<({String id, Map<String, int>? vectorClock})>>;
+        final count = call.captured[1] as Future<int> Function();
+        final record = (await records.toList()).single.single;
+        expect(record.id, 'e1|m');
+        expect(record.vectorClock, {'host': 4});
+        expect(await count(), 1);
+      },
+    );
+
     test('skips when flag already set', () async {
       when(
         () => settingsDb.itemByKey(settingsKey),
@@ -546,47 +637,8 @@ void main() {
       when(
         () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => null);
-      when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
-      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
-      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
-      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
-      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
+      stubEmptyPopulation();
       when(notificationsDb.countAllNotifications).thenAnswer((_) async => 3);
-      for (final populate in [
-        () => sequenceLogService.populateFromJournal(
-          entryStream: any(named: 'entryStream'),
-          getTotalCount: any(named: 'getTotalCount'),
-        ),
-        () => sequenceLogService.populateFromEntryLinks(
-          linkStream: any(named: 'linkStream'),
-          getTotalCount: any(named: 'getTotalCount'),
-        ),
-        () => sequenceLogService.populateFromAgentEntities(
-          entityStream: any(named: 'entityStream'),
-          getTotalCount: any(named: 'getTotalCount'),
-        ),
-        () => sequenceLogService.populateFromAgentLinks(
-          linkStream: any(named: 'linkStream'),
-          getTotalCount: any(named: 'getTotalCount'),
-        ),
-      ]) {
-        when(populate).thenAnswer((_) async => 0);
-      }
-      when(
-        journalDb.streamEntriesWithVectorClock,
-      ).thenAnswer((_) => noRecords);
-      when(
-        journalDb.streamEntryLinksWithVectorClock,
-      ).thenAnswer((_) => noRecords);
-      when(
-        agentDb.streamAgentEntitiesWithVectorClock,
-      ).thenAnswer((_) => noRecords);
-      when(
-        agentDb.streamAgentLinksWithVectorClock,
-      ).thenAnswer((_) => noRecords);
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenAnswer((_) async => 1);
 
       await checkAndPopulateSequenceLogForTesting();
 

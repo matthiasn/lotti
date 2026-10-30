@@ -31,6 +31,7 @@ class _FakeStore extends DeepBackfillStore {
     this.agents = const {},
     this.deletedAgents = const {},
     this.pruned = const {},
+    this.participating = true,
   }) : rows = SplayTreeMap.of(rows),
        media = Map.of(media);
 
@@ -48,6 +49,12 @@ class _FakeStore extends DeepBackfillStore {
 
   /// The records this device's retention pruned.
   final Set<String> pruned;
+
+  /// Whether the store takes part in rounds now.
+  bool participating;
+
+  @override
+  Future<bool> participates() async => participating;
 
   /// What each [resendDestroyedAgents] call was handed.
   final destroyedAsked = <Map<String, VectorClock?>>[];
@@ -409,6 +416,66 @@ void main() {
         throwsStateError,
       );
       expect(progress, isEmpty);
+    });
+  });
+
+  group('stores that take part', () {
+    test('a round with only some types advertises those alone', () async {
+      final journal = _FakeStore(
+        _journal,
+        rows: {
+          'a': const VectorClock({'x': 1}),
+        },
+      );
+      final links = _FakeStore(
+        _links,
+        rows: {
+          'l': const VectorClock({'x': 1}),
+        },
+      );
+
+      final summary = await service(
+        stores: [journal, links],
+      ).runRound(only: const {_links});
+
+      expect(enqueued().map((b) => b.payloadType).toSet(), {_links});
+      expect(summary.recordsByType, {_links: 1});
+    });
+
+    test('a store that does not take part is not advertised', () async {
+      final journal = _FakeStore(
+        _journal,
+        rows: {
+          'a': const VectorClock({'x': 1}),
+        },
+      );
+      final links = _FakeStore(
+        _links,
+        rows: {
+          'l': const VectorClock({'x': 1}),
+        },
+        participating: false,
+      );
+
+      await service(stores: [journal, links]).runRound();
+
+      expect(enqueued().map((b) => b.payloadType).toSet(), {_journal});
+    });
+
+    test("a peer's inventory is not diffed against a store that does not "
+        'take part', () async {
+      final store = _FakeStore(_journal, participating: false);
+
+      await service(stores: [store]).handleInventory(
+        inventory(
+          records: {
+            'absent': const VectorClock({'x': 1}),
+          },
+        ),
+      );
+
+      verifyNever(() => outbox.enqueueMessageOrThrow(any()));
+      expect(store.resent, isEmpty);
     });
   });
 

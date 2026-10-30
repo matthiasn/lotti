@@ -14,7 +14,7 @@ abstract class ObjectBoxOps {
   /// Closes the underlying store.
   void close();
 
-  /// Removes all entities.
+  /// Removes all chunks and registers.
   void removeAll();
 
   /// Finds an entity by its unique embedding key (entityId:chunkIndex).
@@ -57,6 +57,18 @@ abstract class ObjectBoxOps {
     String? entityTypeFilter,
     List<String>? categoryIds,
   });
+
+  /// The register row stored for [entityId], or null.
+  EmbeddingRegisterEntity? findRegister(String entityId);
+
+  /// Every register row in this store.
+  List<EmbeddingRegisterEntity> findAllRegisters();
+
+  /// Inserts or replaces the register row of its entity.
+  void putRegister(EmbeddingRegisterEntity register);
+
+  /// Removes the register row of [entityId], if any.
+  void removeRegister(String entityId);
 
   /// Executes [action] inside a write transaction.
   void runInWriteTransaction(void Function() action);

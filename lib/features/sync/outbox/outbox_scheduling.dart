@@ -70,6 +70,9 @@ int priorityForMessage(SyncMessage message) {
     SyncConfigFlag() => OutboxPriority.normal.index,
     SyncOutboxBundle() => OutboxPriority.normal.index,
     SyncSyncNodeProfile() => OutboxPriority.low.index,
+    // Behind journal entities, so the entry they describe usually lands
+    // first and the receiver's hash check passes on arrival.
+    SyncEmbeddingVectors() => OutboxPriority.low.index,
   };
 }
 

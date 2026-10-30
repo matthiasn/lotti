@@ -66,6 +66,8 @@ abstract final class ConfigFlagLabels {
         return LottiIcons.folder;
       case enableEmbeddingsFlag:
         return LottiIcons.hub;
+      case syncEmbeddingsFlag:
+        return LottiIcons.sync;
       case enableVectorSearchFlag:
         return LottiIcons.search;
       case enableWhatsNewFlag:
@@ -123,6 +125,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableProjects;
       case enableEmbeddingsFlag:
         return context.messages.configFlagEnableEmbeddings;
+      case syncEmbeddingsFlag:
+        return context.messages.configFlagSyncEmbeddings;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearch;
       case enableWhatsNewFlag:
@@ -180,6 +184,8 @@ abstract final class ConfigFlagLabels {
         return context.messages.configFlagEnableProjectsDescription;
       case enableEmbeddingsFlag:
         return context.messages.configFlagAttemptEmbeddingDescription;
+      case syncEmbeddingsFlag:
+        return context.messages.configFlagSyncEmbeddingsDescription;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearchDescription;
       case enableWhatsNewFlag:

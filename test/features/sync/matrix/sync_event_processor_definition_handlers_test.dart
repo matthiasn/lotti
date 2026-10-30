@@ -95,6 +95,56 @@ void main() {
     ),
   );
 
+  group('held embedding vectors (ADR 0149)', () {
+    late MockSyncedEmbeddingSink sink;
+
+    setUp(() {
+      sink = MockSyncedEmbeddingSink();
+      final vectors = MockEmbeddingVectorsSync();
+      when(() => vectors.sink).thenReturn(sink);
+      processor.embeddingVectors = vectors;
+    });
+
+    test(
+      'an applied definition releases the task vectors waiting on it',
+      () async {
+        when(
+          () => sink.onEntityDefinitionApplied(any()),
+        ).thenAnswer((_) async {});
+        journalAnswers(1);
+        receive(label);
+
+        await processor.process(envelope: event, journalDb: journalDb);
+
+        verify(() => sink.onEntityDefinitionApplied(label.id)).called(1);
+        verifyRecorded();
+      },
+    );
+
+    test(
+      'a failed re-check is logged and the definition still recorded',
+      () async {
+        when(
+          () => sink.onEntityDefinitionApplied(any()),
+        ).thenThrow(StateError('store closed'));
+        journalAnswers(1);
+        receive(label);
+
+        await processor.process(envelope: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'processor.embeddingVectors.recheck',
+          ),
+        ).called(1);
+        verifyRecorded();
+      },
+    );
+  });
+
   group('the startup clock repair', () {
     setUp(() {
       when(

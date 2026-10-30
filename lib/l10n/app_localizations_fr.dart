@@ -3037,6 +3037,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillRecordsDefinitions => 'Définitions de réglages';
 
   @override
+  String get backfillRecordsEmbeddingVectors => 'Embeddings';
+
+  @override
   String get backfillRecordsEntryLinks => 'Liens entre entrées';
 
   @override
@@ -4123,6 +4126,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagResendAttachmentsDescription =>
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
+
+  @override
+  String get configFlagSyncEmbeddings => 'Synchroniser les embeddings';
+
+  @override
+  String get configFlagSyncEmbeddingsDescription =>
+      'Si tu l’actives, les embeddings que cet appareil génère sont partagés avec tes autres appareils, et les leurs sont utilisés ici : tu peux chercher tes entrées par leur sens sans les recalculer. Nécessite Générer les embeddings.';
 
   @override
   String get configFlagUseIsolateSync =>
@@ -16643,6 +16653,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadDeepBackfillRequest => 'Demande de rattrapage complet';
+
+  @override
+  String get syncPayloadEmbeddingVectors => 'Vecteurs d’embeddings';
 
   @override
   String get syncPayloadEntityDefinition => 'Définition d\'entité';

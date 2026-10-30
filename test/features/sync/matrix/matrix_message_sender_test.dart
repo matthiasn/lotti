@@ -1071,6 +1071,104 @@ void main() {
     );
   });
 
+  group('embedding vectors (ADR 0149)', () {
+    const jsonPath = '/embedding_vectors/e1/m/host-a-3.json';
+    const message = SyncMessage.embeddingVectors(
+      id: 'e1|m',
+      entityId: 'e1',
+      entityType: 'task',
+      modelId: 'm',
+      vectorClock: VectorClock({'host-a': 3}),
+      originatingHostId: 'host-a',
+      contentHash: 'hash',
+      jsonPath: jsonPath,
+    );
+    late File file;
+    String? capturedText;
+
+    setUp(() {
+      capturedText = null;
+      file = File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('{"dims":768,"chunks":[]}');
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer(uploadStub.record((_) async => r'$vectors-file'));
+    });
+
+    void textEventAnswers(String? eventId) =>
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedText = invocation.positionalArguments.first as String;
+          return eventId;
+        });
+
+    test(
+      'sends the version pointing at its upload, then deletes its file',
+      () async {
+        textEventAnswers(r'$vectors-text');
+
+        final result = await sender.sendMatrixMessage(
+          message: message,
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isTrue);
+        final outbound =
+            SyncMessage.fromJson(
+                  jsonDecode(utf8.decode(base64.decode(capturedText!)))
+                      as Map<String, dynamic>,
+                )
+                as SyncEmbeddingVectors;
+        expect(outbound.attachmentEventId, r'$vectors-file');
+        expect(outbound.jsonPath, jsonPath);
+        expect(file.existsSync(), isFalse);
+      },
+    );
+
+    test('a text event that fails keeps the file for the retry', () async {
+      textEventAnswers(null);
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, _) {},
+      );
+
+      expect(result, isFalse);
+      expect(file.existsSync(), isTrue);
+    });
+
+    test('an upload that fails sends no text event', () async {
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => null);
+      textEventAnswers(r'$vectors-text');
+
+      final result = await sender.sendMatrixMessage(
+        message: message,
+        context: buildContext(),
+        onSent: (_, _) {},
+      );
+
+      expect(result, isFalse);
+      expect(capturedText, isNull);
+    });
+  });
+
   group('a sidecar older than the queued version (ADR 0086)', () {
     // Two enqueues of one entry refresh its sidecar concurrently; the older
     // refresh can land last. Adopting that sidecar's clock would cover the

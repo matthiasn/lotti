@@ -395,6 +395,12 @@ extension SyncEventProcessorApply on SyncEventProcessor {
       case final SyncNotificationStateUpdate msg:
         await _applyNotificationStateUpdateMessage(msg);
         return null;
+      case final SyncEmbeddingVectors msg:
+        await _applyEmbeddingVectors(
+          msg: msg,
+          payload: prepared.resolvedEmbeddingVectorsPayload,
+        );
+        return null;
       case SyncAgentBundle():
         // Legacy wire variant — already logged + skipped in prepare. Apply
         // is a no-op so the inbound queue marker advances; missing
@@ -559,6 +565,7 @@ class PreparedSyncEvent {
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
+    this.resolvedEmbeddingVectorsPayload,
     this.hasUndecodableParts = false,
   });
 
@@ -574,6 +581,7 @@ class PreparedSyncEvent {
     this.resolvedAgentLink,
     this.resolvedNotification,
     this.resolvedOutboxBundle,
+    this.resolvedEmbeddingVectorsPayload,
     this.hasUndecodableParts = false,
   });
 
@@ -632,6 +640,11 @@ class PreparedSyncEvent {
   /// apply can recurse through the existing per-type pipeline. Null means
   /// the bundle payload could not be resolved and apply will skip it.
   final PreparedOutboxSyncBundle? resolvedOutboxBundle;
+
+  /// The vectors attachment's JSON when [syncMessage] is a
+  /// [SyncEmbeddingVectors]; null for a tombstone and for a version sent
+  /// without its file.
+  final String? resolvedEmbeddingVectorsPayload;
 
   /// Whether part of the event — an outbox bundle's manifest, or one of
   /// its children — did not decode in this build. What did decode is

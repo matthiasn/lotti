@@ -94,6 +94,14 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     ],
   ];
 
+  /// The phases shown while sending: the sweep's, and the vectors step once
+  /// it runs after End.
+  List<ReSyncPhase> get _progressPhases => [
+    ..._selectedPhases,
+    if (_progress.containsKey(ReSyncPhase.embeddingVectors))
+      ReSyncPhase.embeddingVectors,
+  ];
+
   bool get _isFullOnboarding =>
       widget.onboardingTarget != null &&
       _rangePreset == ReSyncRangePreset.everything &&
@@ -152,15 +160,17 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             },
           );
       if (!mounted) return;
+      var finished = result;
       if (onboardingRound != null && !result.hasFailures) {
         await _onboardingService.completeOutbound(onboardingRound);
         _setActiveOnboardingRound(null);
+        finished = result.followedBy(await _sendEmbeddingVectors());
       }
       if (!mounted) return;
       setState(() {
         _isRunning = false;
         _isComplete = true;
-        _result = result;
+        _result = finished;
       });
     } catch (error, stackTrace) {
       await _abortOnboardingAndLog(
@@ -176,6 +186,20 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       });
     }
   }
+
+  /// Add Device's vectors, sent only once End is enqueued: low priority,
+  /// they would otherwise delay it (ADR 0149). Their failures join the
+  /// result, and its retry resends just those.
+  Future<ReSyncResult> _sendEmbeddingVectors() => ref
+      .read(historicalSyncServiceProvider)
+      .sendEmbeddingVectors(
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _progress = {..._progress, progress.phase: progress};
+          });
+        },
+      );
 
   void _setActiveOnboardingRound(OutboundOnboardingRound? round) {
     _activeOnboardingRound = round;
@@ -232,15 +256,17 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
       );
       if (!mounted) return;
       final onboardingRound = _activeOnboardingRound;
+      var finished = result;
       if (!result.hasFailures && onboardingRound != null) {
         await _onboardingService.completeOutbound(onboardingRound);
         _setActiveOnboardingRound(null);
+        finished = result.followedBy(await _sendEmbeddingVectors());
       }
       if (!mounted) return;
       setState(() {
         _isRunning = false;
         _isComplete = true;
-        _result = result;
+        _result = finished;
       });
     } catch (error, stackTrace) {
       await _abortOnboardingAndLog(
@@ -437,7 +463,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   Widget _buildProgress(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final phases = _selectedPhases;
+    final phases = _progressPhases;
     var completed = 0.0;
     for (final phase in phases) {
       final progress = _progress[phase];
@@ -561,6 +587,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     ReSyncItemType.entryLink => messages.syncPayloadEntryLink,
     ReSyncItemType.agentEntity => messages.syncPayloadAgentEntity,
     ReSyncItemType.agentLink => messages.syncPayloadAgentLink,
+    ReSyncItemType.embeddingVectors => messages.syncPayloadEmbeddingVectors,
   };
 }
 
@@ -620,6 +647,8 @@ class _ReSyncProgressRow extends StatelessWidget {
       ReSyncPhase.agentEntities =>
         context.messages.maintenanceReSyncAgentEntities,
       ReSyncPhase.agentLinks => context.messages.maintenanceReSyncAgentLinks,
+      ReSyncPhase.embeddingVectors =>
+        context.messages.syncPayloadEmbeddingVectors,
     };
     final processed = progress?.succeeded ?? 0;
     final total = progress?.total;

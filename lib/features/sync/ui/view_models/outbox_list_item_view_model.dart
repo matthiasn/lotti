@@ -93,6 +93,7 @@ class OutboxListItemViewModel {
         entityDefinition: (_) => messages.syncPayloadEntityDefinition,
         entryLink: (_) => messages.syncPayloadEntryLink,
         aiConfig: (_) => messages.syncPayloadAiConfig,
+        embeddingVectors: (_) => messages.syncPayloadEmbeddingVectors,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,
         savedTaskFilter: (_) => messages.syncPayloadSavedTaskFilter,
         savedTaskFilterDelete: (_) => messages.syncPayloadSavedTaskFilterDelete,

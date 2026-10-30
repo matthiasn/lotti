@@ -44,6 +44,9 @@ import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/wake/wake_audit.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
+import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
+import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
@@ -305,6 +308,32 @@ void registerAllFallbackValues() {
     ),
   );
   registerFallbackValue(Future<void>.value());
+  const fallbackRegister = EmbeddingRegister(
+    entityId: 'fallback',
+    modelId: 'fallback',
+    entityType: 'fallback',
+    contentHash: '',
+  );
+  registerFallbackValue(fallbackRegister);
+  registerFallbackValue(
+    const IncomingEmbeddingVersion(register: fallbackRegister),
+  );
+  registerFallbackValue(
+    EmbeddingRegisterEntity(
+      registerId: 'fallback',
+      entityId: 'fallback',
+      modelId: 'fallback',
+      entityType: 'fallback',
+      vectorClock: '',
+      sourceVectorClock: '',
+      contentHash: '',
+      deleted: false,
+      taskId: '',
+      subtype: '',
+      originatingHostId: '',
+      updatedAt: DateTime.utc(2026),
+    ),
+  );
   registerFallbackValue(Uint8List(0));
   registerFallbackValue(http.Request('GET', Uri.parse('https://example.test')));
   // Services taking a `BuildContext` (EntryCreationService's sheets) are

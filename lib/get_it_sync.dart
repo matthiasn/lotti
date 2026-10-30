@@ -189,6 +189,21 @@ Future<String? Function()> _registerMatrixSyncStack({
         ..consumptionRepository = consumptionRepository
         ..aiConfigRepository = aiConfigRepository;
 
+  // The embedding-vectors register (ADR 0149). The pipeline registers after
+  // the sync stack and attaches itself (`_registerEmbeddingPipeline`); until
+  // it does, nothing is shared and arriving versions wait.
+  final embeddingVectorsSync = EmbeddingVectorsSync(
+    vectorClockService: vectorClockService,
+    outboxService: outboxService,
+    readFlag: journalDb.getConfigFlag,
+    documentsPath: documentsDirectory.path,
+    domainLogger: domainLogger,
+    expectsPipeline: OnDeviceEmbeddingRepository.isPlatformSupported,
+    readSetting: settingsDb.itemByKey,
+    writeSetting: (key, value) => settingsDb.saveSettingsItem(key, value),
+  )..watchInboundQueue(core.inboundQueue.depthChanges);
+  syncEventProcessor.embeddingVectors = embeddingVectorsSync;
+
   // Released VC reservations: when a write is rejected, its scope throws, or
   // commitWhen is false, the row is already `burnPending` and names its
   // payload. Settle it now: a payload that landed anyway is bound and resent,
@@ -338,11 +353,15 @@ Future<String? Function()> _registerMatrixSyncStack({
       notificationsDb: notificationsDb,
       consumptionDatabase: getIt<ConsumptionDatabase>(),
       aiConfigRepository: aiConfigRepository,
+      embeddingVectors: embeddingVectorsSync,
       outboxService: outboxService,
       documentsDirectory: documentsDirectory,
     ),
   );
   syncEventProcessor.deepBackfillService = deepBackfillService;
+  embeddingVectorsSync.catchUpRound = () => deepBackfillService.runRound(
+    only: const {SyncSequencePayloadType.embeddingVectors},
+  );
 
   // Start the backfill request service
   backfillRequestService.start();
@@ -353,6 +372,10 @@ Future<String? Function()> _registerMatrixSyncStack({
       dispose: (service) => service.dispose(),
     )
     ..registerSingleton<BackfillResponseHandler>(backfillResponseHandler)
+    ..registerSingleton<EmbeddingVectorsSync>(
+      embeddingVectorsSync,
+      dispose: (vectors) => vectors.dispose(),
+    )
     ..registerSingleton<BackfillRequestService>(
       backfillRequestService,
       dispose: (service) => service.stopAndDrain(),

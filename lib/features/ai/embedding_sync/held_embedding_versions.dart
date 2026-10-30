@@ -1,0 +1,102 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:lotti/features/ai/database/embedding_register.dart';
+
+/// A received version waiting for the text it was made from.
+class HeldEmbeddingVersion {
+  const HeldEmbeddingVersion({
+    required this.register,
+    required this.payload,
+    this.labelIds = const [],
+  });
+
+  factory HeldEmbeddingVersion.fromJson(Map<String, dynamic> json) =>
+      HeldEmbeddingVersion(
+        register: EmbeddingRegister.fromJson(
+          json['register'] as Map<String, dynamic>,
+        ),
+        payload: json['payload'] as String,
+        labelIds: [...?(json['labelIds'] as List<dynamic>?)?.cast<String>()],
+      );
+
+  final EmbeddingRegister register;
+
+  /// The vectors attachment's JSON, as it arrived.
+  final String payload;
+
+  /// The labels of the local copy of a task when the version was held: a
+  /// label whose definition has not arrived changes the task's text.
+  final List<String> labelIds;
+
+  Map<String, dynamic> toJson() => {
+    'register': register.toJson(),
+    'payload': payload,
+    'labelIds': labelIds,
+  };
+}
+
+/// The versions held until their text arrives, newest per register, kept in
+/// one JSON file so they survive a restart: their receipts are recorded, so
+/// nothing would send them again.
+///
+/// The table stays small — a version is held only while its entry has not
+/// caught up — so every change rewrites the whole file, through a temporary
+/// file and a rename.
+class HeldEmbeddingVersions {
+  HeldEmbeddingVersions._(this._file, this._held);
+
+  /// Opens the table at [path]. A missing or unreadable file is an empty
+  /// table: what it held is versions a later backfill can deliver again.
+  static Future<HeldEmbeddingVersions> open(String path) async {
+    final file = File(path);
+    final held = <String, HeldEmbeddingVersion>{};
+    if (file.existsSync()) {
+      try {
+        final json =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        for (final entry in json.entries) {
+          held[entry.key] = HeldEmbeddingVersion.fromJson(
+            entry.value as Map<String, dynamic>,
+          );
+        }
+      } on Object {
+        held.clear();
+      }
+    }
+    return HeldEmbeddingVersions._(file, held);
+  }
+
+  final File _file;
+  final Map<String, HeldEmbeddingVersion> _held;
+
+  /// Every held version.
+  List<HeldEmbeddingVersion> get all => List.unmodifiable(_held.values);
+
+  /// The version held of register [registerId], or `null`.
+  HeldEmbeddingVersion? operator [](String registerId) => _held[registerId];
+
+  /// Holds [version], replacing what was held of its register.
+  Future<void> put(HeldEmbeddingVersion version) async {
+    _held[version.register.id] = version;
+    await _persist();
+  }
+
+  /// Drops what is held of [registerId]; a no-op when nothing is.
+  Future<void> remove(String registerId) async {
+    if (_held.remove(registerId) == null) return;
+    await _persist();
+  }
+
+  Future<void> _persist() async {
+    await _file.parent.create(recursive: true);
+    final temp = File('${_file.path}.tmp');
+    await temp.writeAsString(
+      jsonEncode({
+        for (final entry in _held.entries) entry.key: entry.value.toJson(),
+      }),
+      flush: true,
+    );
+    await temp.rename(_file.path);
+  }
+}

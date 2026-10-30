@@ -4,9 +4,12 @@ import 'dart:typed_data';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/entity_metadata_row.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
+import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/database/sharded_embedding_store.dart';
 import 'package:mocktail/mocktail.dart';
@@ -105,6 +108,10 @@ void main() {
       when(mock.count).thenReturn(0);
       when(mock.close).thenReturn(null);
       when(mock.removeAll).thenReturn(null);
+      when(mock.findAllRegisters).thenReturn([]);
+      when(() => mock.findRegister(any())).thenReturn(null);
+      when(() => mock.putRegister(any())).thenReturn(null);
+      when(() => mock.removeRegister(any())).thenReturn(null);
       when(mock.queryAllEntityMetadata).thenReturn([]);
       when(() => mock.findIdsByEntityId(any())).thenReturn([]);
       when(() => mock.findByEmbeddingKey(any())).thenReturn(null);
@@ -138,6 +145,7 @@ void main() {
       double distanceCutoff = 0.7,
       Map<String, List<EntityMetadataRow>>? metadata,
       Map<String, DateTime>? writtenAt,
+      Map<String, List<EmbeddingRegisterEntity>>? registers,
     }) async {
       // Create shard directories before opening.
       for (final key in shardKeys) {
@@ -152,6 +160,9 @@ void main() {
           final key = p.basename(directory);
           if (metadata != null && metadata.containsKey(key)) {
             when(mock.queryAllEntityMetadata).thenReturn(metadata[key]!);
+          }
+          if (registers?[key] case final rows?) {
+            when(mock.findAllRegisters).thenReturn(rows);
           }
           final at = writtenAt?[key];
           if (at != null) {
@@ -449,6 +460,236 @@ void main() {
         expect(results, hasLength(1));
         expect(results.first.entityId, 'close');
       });
+    });
+
+    group('registers', () {
+      EmbeddingRegister register({bool deleted = false}) => EmbeddingRegister(
+        entityId: 'entity-1',
+        modelId: 'm',
+        entityType: 'task',
+        contentHash: deleted ? '' : 'hash-1',
+        vectorClock: const VectorClock({'a': 1}),
+        deleted: deleted,
+        originatingHostId: 'a',
+      );
+
+      EmbeddingRegisterEntity row({DateTime? at}) =>
+          ObjectBoxEmbeddingStore.registerToEntity(
+            register(),
+            updatedAt: at ?? testDate,
+          );
+
+      Future<void> replace({
+        String categoryId = '',
+        EmbeddingRegister? with_,
+      }) => store.replaceEntityEmbeddings(
+        entityId: 'entity-1',
+        entityType: 'task',
+        modelId: 'm',
+        contentHash: 'hash-1',
+        embeddings: [validVector()],
+        categoryId: categoryId,
+        register: with_,
+      );
+
+      test('a chunk set and its register land in the same shard, and are read '
+          'back from it', () async {
+        await openStore();
+
+        await replace(categoryId: 'cat-a', with_: register());
+
+        final shard = getShardOps('cat-a');
+        verify(() => shard.putRegister(any())).called(1);
+        when(() => shard.findRegister('entity-1')).thenReturn(row());
+        expect(await store.getRegister('entity-1'), register());
+        expect(await store.allRegisters(), [register()]);
+      });
+
+      test('a re-categorised chunk set takes its register along', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [(entityId: 'entity-1', taskId: '')],
+          },
+          registers: {
+            'cat-a': [row()],
+          },
+        );
+
+        await replace(categoryId: 'cat-b', with_: register());
+
+        verify(() => getShardOps('cat-a').removeRegister('entity-1')).called(1);
+        verify(() => getShardOps('cat-b').putRegister(any())).called(1);
+      });
+
+      test(
+        'a version stored without a register drops the one it had',
+        () async {
+          await openStoreWithShards(
+            ['cat-a'],
+            metadata: {
+              'cat-a': [(entityId: 'entity-1', taskId: '')],
+            },
+            registers: {
+              'cat-a': [row()],
+            },
+          );
+
+          await replace(categoryId: 'cat-a');
+
+          expect(await store.getRegister('entity-1'), isNull);
+        },
+      );
+
+      test('a tombstone of an entity without chunks goes to the default '
+          'shard', () async {
+        await openStore();
+
+        await store.writeTombstone(register(deleted: true));
+
+        final written =
+            verify(
+                  () => getShardOps(kDefaultShardKey).putRegister(captureAny()),
+                ).captured.single
+                as EmbeddingRegisterEntity;
+        expect(written.deleted, isTrue);
+        expect(await store.hasEmbedding('entity-1'), isFalse);
+      });
+
+      test('a tombstone is written where the chunks were, and removes a '
+          'register kept in another shard', () async {
+        await openStoreWithShards(
+          ['cat-a', 'cat-b'],
+          metadata: {
+            'cat-a': [(entityId: 'entity-1', taskId: '')],
+          },
+          registers: {
+            'cat-b': [row()],
+          },
+        );
+
+        await store.writeTombstone(register(deleted: true));
+
+        verify(() => getShardOps('cat-a').putRegister(any())).called(1);
+        verify(() => getShardOps('cat-b').removeRegister('entity-1')).called(1);
+      });
+
+      test(
+        'a deletion removes a register kept apart from any chunks',
+        () async {
+          await openStoreWithShards(
+            ['cat-b'],
+            registers: {
+              'cat-b': [row()],
+            },
+          );
+
+          await store.deleteEntityEmbeddings('entity-1');
+
+          verify(
+            () => getShardOps('cat-b').removeRegister('entity-1'),
+          ).called(1);
+          expect(await store.getRegister('entity-1'), isNull);
+        },
+      );
+
+      test(
+        'putRegister keeps the shard the register or its chunks are in',
+        () async {
+          await openStoreWithShards(
+            ['cat-a'],
+            metadata: {
+              'cat-a': [(entityId: 'entity-1', taskId: '')],
+            },
+          );
+
+          await store.putRegister(register());
+
+          verify(() => getShardOps('cat-a').putRegister(any())).called(1);
+        },
+      );
+
+      test('a move carries the register with the chunks', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [(entityId: 'entity-1', taskId: '')],
+          },
+          registers: {
+            'cat-a': [row()],
+          },
+        );
+        final old = getShardOps('cat-a');
+        when(
+          () => old.findEntitiesByEntityId('entity-1'),
+        ).thenReturn([makeEntity(categoryId: 'cat-a')]);
+        when(() => old.findRegister('entity-1')).thenReturn(row());
+
+        await store.moveEntityToShard('entity-1', 'cat-b');
+
+        final moved =
+            verify(
+                  () => getShardOps('cat-b').putRegister(captureAny()),
+                ).captured.single
+                as EmbeddingRegisterEntity;
+        expect(moved.registerId, 'entity-1|m');
+        expect(moved.id, 0);
+        verify(() => old.removeRegister('entity-1')).called(1);
+      });
+
+      test('a rebuild keeps the register written last when two shards hold '
+          'one', () async {
+        await openStoreWithShards(
+          ['cat-a', 'cat-b'],
+          registers: {
+            'cat-a': [row(at: DateTime.utc(2024, 1, 2))],
+            'cat-b': [row(at: DateTime.utc(2024))],
+          },
+        );
+
+        verify(() => getShardOps('cat-b').removeRegister('entity-1')).called(1);
+        verifyNever(() => getShardOps('cat-a').removeRegister(any()));
+      });
+
+      test(
+        'a rebuild prefers a later shard only when its copy is newer',
+        () async {
+          await openStoreWithShards(
+            ['cat-a', 'cat-b'],
+            registers: {
+              'cat-a': [row(at: DateTime.utc(2024))],
+              'cat-b': [row(at: DateTime.utc(2024, 1, 2))],
+            },
+          );
+
+          verify(
+            () => getShardOps('cat-a').removeRegister('entity-1'),
+          ).called(1);
+          when(
+            () => getShardOps('cat-b').findRegister('entity-1'),
+          ).thenReturn(row());
+          expect(await store.getRegister('entity-1'), register());
+        },
+      );
+
+      test(
+        'chunk vectors are read from the chunks shard, none when unknown',
+        () async {
+          await openStoreWithShards(
+            ['cat-a'],
+            metadata: {
+              'cat-a': [(entityId: 'entity-1', taskId: '')],
+            },
+          );
+          when(
+            () => getShardOps('cat-a').findEntitiesByEntityId('entity-1'),
+          ).thenReturn([makeEntity()]);
+
+          expect(await store.chunkVectors('entity-1'), hasLength(1));
+          expect(await store.chunkVectors('absent'), isEmpty);
+          expect(await store.getRegister('absent'), isNull);
+        },
+      );
     });
 
     group('replaceEntityEmbeddings', () {

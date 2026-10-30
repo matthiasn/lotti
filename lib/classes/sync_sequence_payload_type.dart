@@ -21,4 +21,8 @@ enum SyncSequencePayloadType {
   /// A version or hard deletion of an AI configuration — inference provider,
   /// model, prompt, inference profile or skill (ADR 0136).
   aiConfig,
+
+  /// A version or tombstone of an entry's embedding vectors under one model:
+  /// the register `<entityId>|<modelId>`.
+  embeddingVectors,
 }

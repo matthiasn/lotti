@@ -451,6 +451,21 @@ void main() {
       );
     });
 
+    testWidgets('counts embedding vectors on a row of their own', (
+      tester,
+    ) async {
+      await pumpCounts(tester, const {
+        SyncSequencePayloadType.embeddingVectors: 17,
+      });
+
+      final context = tester.element(find.byType(RecordCountsCard));
+      expect(
+        find.text(context.messages.backfillRecordsEmbeddingVectors),
+        findsOneWidget,
+      );
+      expect(find.text('17'), findsOneWidget);
+    });
+
     testWidgets('counts AI settings on a row of their own, after the '
         'definitions', (tester) async {
       await pumpCounts(tester, const {

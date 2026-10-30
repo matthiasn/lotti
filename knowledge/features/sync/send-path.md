@@ -137,6 +137,16 @@ it joined arrived complete.
 reaches it anyway — defence in depth against a row enqueued by an older build,
 where the attachment decision had not yet moved to enqueue time.
 
+**Embedding vectors travel alone too, without a `filePath`.** Their row's
+subject starts with `embeddingVectorsOutboxSubjectPrefix`, which
+`claimNextOutboxBatch` treats as it treats a media row: sent on its own, and the
+end of the bundle before it. The vectors file is written at enqueue, one per
+version; `sendEmbeddingVectorsPayload` uploads it gzipped and the sender deletes
+it once the text event is sent. A queued version whose file is already gone is
+sent without one — an exact copy went out, or a newer version replaced it — and
+its receivers record only the receipt
+([embedding vectors sync](../ai/embedding-vector-sync.md)).
+
 ## Self-healing: repairing a blob that never arrived
 
 The policy above governs sends this device chooses to make. A device can still

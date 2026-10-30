@@ -164,6 +164,32 @@ void main() {
       },
     );
 
+    test(
+      'releases the vectors held for an applied entry, and not for a refused '
+      'one (ADR 0149)',
+      () async {
+        final sink = MockSyncedEmbeddingSink();
+        when(() => sink.onJournalEntityApplied(any())).thenAnswer((_) async {});
+        final vectors = MockEmbeddingVectorsSync();
+        when(() => vectors.sink).thenReturn(sink);
+        processor.embeddingVectors = vectors;
+        receiveImage();
+
+        await processor.process(envelope: event, journalDb: journalDb);
+        verify(() => sink.onJournalEntityApplied(testImageEntry.id)).called(1);
+
+        when(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        );
+        await processor.process(envelope: event, journalDb: journalDb);
+        verifyNever(() => sink.onJournalEntityApplied(any()));
+      },
+    );
+
     test('not an entry the write decision refused', () async {
       final applied = <JournalEntity>[];
       processor.onJournalEntityApplied = (entity) async => applied.add(entity);

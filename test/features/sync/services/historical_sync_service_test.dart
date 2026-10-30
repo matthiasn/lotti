@@ -1000,9 +1000,12 @@ void main() {
 
           expect(result.total, 6);
           expect(result.succeeded, 2);
+          // Every family the sweep visits; the vectors are Add Device's
+          // separate step after End, never part of it.
           expect(
             result.failures.map((failure) => failure.itemType).toSet(),
-            ReSyncItemType.values.toSet(),
+            ReSyncItemType.values.toSet()
+              ..remove(ReSyncItemType.embeddingVectors),
           );
           expect(
             sentMessages.map((message) => message.runtimeType).toSet(),
@@ -1728,5 +1731,87 @@ void main() {
         subDomain: 'reSyncInterval',
       ),
     ).called(1);
+  });
+
+  group('sendEmbeddingVectors (ADR 0149)', () {
+    late MockEmbeddingVectorsSync vectors;
+    late HistoricalSyncService service;
+
+    setUp(() {
+      vectors = MockEmbeddingVectorsSync();
+      service = HistoricalSyncService(
+        journalDb: MockJournalDb(),
+        agentRepository: MockAgentRepository(),
+        outboxService: MockOutboxService(),
+        vectorClockService: MockVectorClockService(),
+        logger: MockDomainLogger(),
+        embeddingVectors: vectors,
+      );
+    });
+
+    test(
+      'sends nothing while vectors are not shared, or without them',
+      () async {
+        when(() => vectors.isSharing).thenAnswer((_) async => false);
+
+        expect((await service.sendEmbeddingVectors()).total, 0);
+        verifyNever(vectors.registerIdsToSend);
+
+        final without = HistoricalSyncService(
+          journalDb: MockJournalDb(),
+          agentRepository: MockAgentRepository(),
+          outboxService: MockOutboxService(),
+          vectorClockService: MockVectorClockService(),
+          logger: MockDomainLogger(),
+        );
+        expect((await without.sendEmbeddingVectors()).total, 0);
+      },
+    );
+
+    test(
+      'sends every register, reports its progress, and keeps a refused one '
+      'as a failure its retry sends again',
+      () async {
+        when(() => vectors.isSharing).thenAnswer((_) async => true);
+        when(vectors.registerIdsToSend).thenAnswer((_) async => ['a', 'b']);
+        var refuse = true;
+        when(() => vectors.sendCurrent('a')).thenAnswer((_) async {});
+        when(() => vectors.sendCurrent('b')).thenAnswer((_) async {
+          if (refuse) throw StateError('outbox full');
+        });
+        final progress = <ReSyncProgress>[];
+
+        final result = await service.sendEmbeddingVectors(
+          onProgress: progress.add,
+        );
+
+        expect(result.succeeded, 1);
+        final failure = result.failures.single;
+        expect(failure.itemType, ReSyncItemType.embeddingVectors);
+        expect(failure.phase, ReSyncPhase.embeddingVectors);
+        expect(failure.itemId, 'b');
+        expect(progress.map((p) => (p.processed, p.total, p.failed)), [
+          (1, 2, 0),
+          (2, 2, 1),
+        ]);
+        expect(progress.last.isComplete, isTrue);
+
+        refuse = false;
+        final retried = await result.retryFailures();
+        expect(retried.hasFailures, isFalse);
+        expect(retried.succeeded, 2);
+        verify(() => vectors.sendCurrent('b')).called(2);
+      },
+    );
+
+    test('followedBy adds the step to the sweep it ran after', () {
+      final sweep = ReSyncResult(succeeded: 3, failures: const []);
+      final step = ReSyncResult(succeeded: 2, failures: const []);
+
+      final both = sweep.followedBy(step);
+
+      expect(both.succeeded, 5);
+      expect(both.hasFailures, isFalse);
+    });
   });
 }

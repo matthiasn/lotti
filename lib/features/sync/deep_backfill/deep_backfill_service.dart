@@ -136,20 +136,31 @@ class DeepBackfillService {
   /// unbounded below, the last unbounded above, and a type without records
   /// still sends one empty batch covering everything, so a record only a
   /// peer holds always lies in some range it can push.
+  ///
+  /// With [only], just the stores of those types — the catch-up of one type
+  /// a device has just become able to store. A store that does not
+  /// [DeepBackfillStore.participates] is left out.
   Future<DeepBackfillRoundSummary> runRound({
     void Function(DeepBackfillProgress progress)? onProgress,
+    Set<SyncSequencePayloadType>? only,
   }) async {
     final host = await _requireHost();
     final roundId = _newRoundId();
+    final stores = [
+      for (final store in _stores.values)
+        if ((only == null || only.contains(store.payloadType)) &&
+            await store.participates())
+          store,
+    ];
     var total = 0;
-    for (final store in _stores.values) {
+    for (final store in stores) {
       total += await store.count();
     }
     final recordsByType = <SyncSequencePayloadType, int>{};
     var batches = 0;
     var records = 0;
 
-    for (final store in _stores.values) {
+    for (final store in stores) {
       final type = store.payloadType;
       String? start;
       String? after;
@@ -244,7 +255,7 @@ class DeepBackfillService {
     final host = await _vectorClock.getHost();
     if (host == null || inventory.hostId == host) return;
     final store = _stores[inventory.payloadType];
-    if (store == null) return;
+    if (store == null || !await store.participates()) return;
 
     final start = inventory.rangeStart;
     final end = inventory.rangeEnd;

@@ -16,6 +16,7 @@ void main() {
           SyncSequencePayloadType.consumptionEvent,
           SyncSequencePayloadType.entityDefinition,
           SyncSequencePayloadType.aiConfig,
+          SyncSequencePayloadType.embeddingVectors,
         ],
       );
     });
@@ -24,6 +25,7 @@ void main() {
       // Stored by index: a value may only be appended, never moved.
       expect(SyncSequencePayloadType.entityDefinition.index, 7);
       expect(SyncSequencePayloadType.aiConfig.index, 8);
+      expect(SyncSequencePayloadType.embeddingVectors.index, 9);
     });
   });
 }

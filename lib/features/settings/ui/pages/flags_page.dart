@@ -100,6 +100,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableMatrixFlag,
     resendAttachments,
     useIsolateSyncFlag,
+    syncEmbeddingsFlag,
   };
 
   @override

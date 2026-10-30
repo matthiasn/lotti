@@ -84,6 +84,31 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
     );
   }
 
+  /// Enqueues a version of an entry's vectors. Its subject keeps the row out
+  /// of the dequeue-time bundler (`embeddingVectorsOutboxSubjectPrefix`):
+  /// the attachment is built from the vector store at send time, and an
+  /// older build that cannot decode the message replays only this row. Binds this host's counter in the register's clock, so a peer
+  /// that missed the version can ask for it.
+  Future<void> enqueueEmbeddingVectors({
+    required SyncEmbeddingVectors msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    final subject = '$embeddingVectorsOutboxSubjectPrefix${msg.id}';
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(subject: Value(subject)),
+    );
+    _logEnqueueSample(
+      'enqueue type=SyncEmbeddingVectors subject=$subject '
+      'deleted=${msg.deleted}',
+      sampleKey: 'insert.SyncEmbeddingVectors',
+    );
+    await recordAgentSent(
+      entryId: msg.id,
+      vectorClock: msg.vectorClock,
+      payloadType: SyncSequencePayloadType.embeddingVectors,
+    );
+  }
+
   Future<void> enqueueSavedTaskFilter({
     required SyncSavedTaskFilter msg,
     required OutboxCompanion commonFields,

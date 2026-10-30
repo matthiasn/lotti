@@ -23,7 +23,8 @@ CONSTANTS Family, Peers, MaxCounter, SeparateEntities, AbortCounters, Concurrent
           PrepareExactPayload, RetryReceipts, AnnounceHeads, MixedFamilies, NamespacePayloads
 
 ASSUME /\ Family \in {"journal", "entryLink", "agentEntity", "agentLink",
-                       "notification", "consumptionEvent", "entityDefinition"}
+                       "notification", "consumptionEvent", "entityDefinition",
+                       "embeddingVectors"}
        /\ MaxCounter \in 1..3
        /\ ConcurrentWriters => MaxCounter >= 2
        /\ MixedFamilies => MaxCounter = 2 /\ Family # "notification"
@@ -44,7 +45,9 @@ Counter(c) == IF ConcurrentWriters /\ c = 2 THEN 1
               ELSE IF ConcurrentWriters /\ c >= 3 THEN c - 1 ELSE c
 Nodes == Peers \cup Origins
 IsNotification(c) == FamilyAt(c) = "notification"
-FileBacked(c) == FamilyAt(c) \in {"journal", "notification"}
+\* Embedding vectors (ADR 0149) carry their chunk set as an attachment, built
+\* at enqueue and fetched by the receiver before apply, and never collapse.
+FileBacked(c) == FamilyAt(c) \in {"journal", "notification", "embeddingVectors"}
 CanCollapse(c) == FamilyAt(c) \in {"journal", "entryLink", "agentEntity", "agentLink"}
 Kind(c) == IF IsNotification(c) /\ ~MixedFamilies /\ ~ConcurrentWriters /\ ~SeparateEntities /\ c = 2 THEN "state" ELSE "full"
 SameEntity(a, b) == Entity(a) = Entity(b)

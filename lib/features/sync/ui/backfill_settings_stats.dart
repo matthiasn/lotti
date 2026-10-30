@@ -386,6 +386,8 @@ class RecordCountsCard extends StatelessWidget {
       SyncSequencePayloadType.entityDefinition:
           messages.backfillRecordsDefinitions,
       SyncSequencePayloadType.aiConfig: messages.backfillRecordsAiConfigs,
+      SyncSequencePayloadType.embeddingVectors:
+          messages.backfillRecordsEmbeddingVectors,
     };
 
     return SurfaceCard(

@@ -8,10 +8,13 @@ import 'package:lotti/objectbox.g.dart';
 
 /// Production [ObjectBoxOps] backed by a real ObjectBox [Store].
 class RealObjectBoxOps implements ObjectBoxOps {
-  RealObjectBoxOps(this._store) : _box = _store.box<EmbeddingChunkEntity>();
+  RealObjectBoxOps(this._store)
+    : _box = _store.box<EmbeddingChunkEntity>(),
+      _registers = _store.box<EmbeddingRegisterEntity>();
 
   final Store _store;
   final Box<EmbeddingChunkEntity> _box;
+  final Box<EmbeddingRegisterEntity> _registers;
 
   @override
   int count() => _box.count();
@@ -20,7 +23,10 @@ class RealObjectBoxOps implements ObjectBoxOps {
   void close() => _store.close();
 
   @override
-  void removeAll() => _box.removeAll();
+  void removeAll() {
+    _box.removeAll();
+    _registers.removeAll();
+  }
 
   @override
   EmbeddingChunkEntity? findByEmbeddingKey(String embeddingKey) {
@@ -131,6 +137,42 @@ class RealObjectBoxOps implements ObjectBoxOps {
             (hit) => EmbeddingSearchHit(object: hit.object, score: hit.score),
           )
           .toList(growable: false);
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  EmbeddingRegisterEntity? findRegister(String entityId) {
+    final query =
+        _registers
+            .query(EmbeddingRegisterEntity_.entityId.equals(entityId))
+            .build()
+          ..limit = 1;
+    try {
+      return query.findFirst();
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<EmbeddingRegisterEntity> findAllRegisters() => _registers.getAll();
+
+  @override
+  void putRegister(EmbeddingRegisterEntity register) {
+    final existing = findRegister(register.entityId);
+    register.id = existing?.id ?? 0;
+    _registers.put(register);
+  }
+
+  @override
+  void removeRegister(String entityId) {
+    final query = _registers
+        .query(EmbeddingRegisterEntity_.entityId.equals(entityId))
+        .build();
+    try {
+      query.remove();
     } finally {
       query.close();
     }

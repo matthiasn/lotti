@@ -423,6 +423,19 @@ void main() {
       expect(wraps(message), isFalse);
     });
 
+    test('SyncEmbeddingVectors bypasses outer wrap (the vector store)', () {
+      const message = SyncMessage.embeddingVectors(
+        id: 'e1|m',
+        entityId: 'e1',
+        entityType: 'task',
+        modelId: 'm',
+        vectorClock: VectorClock({'a': 1}),
+        originatingHostId: 'a',
+        contentHash: 'h',
+      );
+      expect(wraps(message), isFalse);
+    });
+
     test('SyncSavedTaskFilter bypasses outer wrap (writes to settings_db)', () {
       const message = SyncMessage.savedTaskFilter(
         filter: SavedTaskFilter(
