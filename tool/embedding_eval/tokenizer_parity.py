@@ -43,7 +43,7 @@ EDGE_CASES = [
     'العربية نص',
     'emoji 🐧🐧 and 👩‍💻 and 🇩🇪',
     'math ∑∫√ and symbols ©®™',
-    '​ zero width ﻿ bom',
+    '\u200b zero width \ufeff bom',
     '\U0001d11e musical symbol, \U00010348 gothic',
     'https://github.com/matthiasn/lotti/pull/4879#issuecomment-1',
     'snake_case_identifier and camelCaseIdentifier',

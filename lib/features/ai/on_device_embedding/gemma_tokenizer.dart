@@ -16,7 +16,7 @@ import 'package:collection/collection.dart';
 /// 3. **BPE**: the segment's characters, each one missing from the vocabulary
 ///    replaced by its UTF-8 byte tokens (`<0xNN>`), are merged pair by pair,
 ///    the lowest-ranked merge first and the leftmost among equal ranks.
-/// 4. The ids are wrapped in `<bos>` … `<eos>`.
+/// 4. The ids are wrapped in `<bos>` … `<eos>`, the file's post-processor.
 ///
 /// Parity with `tokenizers` itself is checked by
 /// `tool/embedding_eval/tokenizer_parity_test.dart`.
@@ -55,6 +55,10 @@ class GemmaTokenizer {
           (pre['type'] == 'Split' &&
               (pre['pattern'] as Map<String, dynamic>)['String'] == ' '),
       'no pre-tokenizer, or one splitting on spaces',
+    );
+    _expect(
+      _isBosEosTemplate(json['post_processor']),
+      'a post-processor wrapping the text in <bos> … <eos>',
     );
 
     final vocab = (model['vocab'] as Map<String, dynamic>).map(
@@ -225,6 +229,27 @@ class GemmaTokenizer {
         pattern is Map<String, dynamic> &&
         pattern['String'] == ' ' &&
         normalizer['content'] == _spaceMark;
+  }
+
+  static bool _isBosEosTemplate(Object? processor) {
+    if (processor is! Map<String, dynamic> ||
+        processor['type'] != 'TemplateProcessing') {
+      return false;
+    }
+    final single = processor['single'];
+    if (single is! List<dynamic> || single.length != 3) return false;
+    String? part(int index, String kind) {
+      final entry = single[index];
+      if (entry is! Map<String, dynamic>) return null;
+      final body = entry[kind];
+      return body is Map<String, dynamic> && body['type_id'] == 0
+          ? body['id'] as String?
+          : null;
+    }
+
+    return part(0, 'SpecialToken') == '<bos>' &&
+        part(1, 'Sequence') == 'A' &&
+        part(2, 'SpecialToken') == '<eos>';
   }
 
   static void _expect(bool condition, String what) {

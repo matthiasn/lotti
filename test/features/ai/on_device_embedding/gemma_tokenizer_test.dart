@@ -1,6 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/on_device_embedding/gemma_tokenizer.dart';
 
+const Map<String, Object> _bosEosTemplate = {
+  'type': 'TemplateProcessing',
+  'single': [
+    {
+      'SpecialToken': {'id': '<bos>', 'type_id': 0},
+    },
+    {
+      'Sequence': {'id': 'A', 'type_id': 0},
+    },
+    {
+      'SpecialToken': {'id': '<eos>', 'type_id': 0},
+    },
+  ],
+};
+
 /// A `tokenizer.json` shaped like EmbeddingGemma's, over a small vocabulary:
 /// the specials, the 256 byte tokens, then [tokens] in order.
 Map<String, dynamic> _tokenizerJson({
@@ -20,6 +35,7 @@ Map<String, dynamic> _tokenizerJson({
     'behavior': 'MergedWithPrevious',
     'invert': false,
   },
+  Object? postProcessor = _bosEosTemplate,
   bool withBytes = true,
 }) {
   final vocab = <String, int>{};
@@ -35,6 +51,7 @@ Map<String, dynamic> _tokenizerJson({
   return {
     'normalizer': normalizer,
     'pre_tokenizer': preTokenizer,
+    'post_processor': postProcessor,
     'model': {
       'type': 'BPE',
       'dropout': null,
@@ -214,6 +231,40 @@ void main() {
           },
         ),
       );
+    });
+
+    test('a post-processor other than <bos> … <eos>', () {
+      final single = _bosEosTemplate['single']! as List<Object>;
+      for (final processor in <Object?>[
+        null,
+        {'type': 'ByteLevel'},
+        {'type': 'TemplateProcessing', 'single': single.sublist(1)},
+        {'type': 'TemplateProcessing', 'single': 'not a list'},
+        {
+          'type': 'TemplateProcessing',
+          'single': [single[0], single[1], single[0]],
+        },
+        {
+          'type': 'TemplateProcessing',
+          'single': [single[1], single[0], single[2]],
+        },
+        {
+          'type': 'TemplateProcessing',
+          'single': [
+            single[0],
+            {
+              'Sequence': {'id': 'A', 'type_id': 1},
+            },
+            single[2],
+          ],
+        },
+        {
+          'type': 'TemplateProcessing',
+          'single': [single[0], 'A', single[2]],
+        },
+      ]) {
+        expectRejected(_tokenizerJson(postProcessor: processor));
+      }
     });
 
     test('added tokens matched after normalization or with stripping', () {
