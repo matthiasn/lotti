@@ -13,10 +13,17 @@ import 'package:material_ui/material_ui.dart';
 class DetailContentWidth extends StatelessWidget {
   const DetailContentWidth({
     required this.child,
+    this.endBleed = 0,
     super.key,
   });
 
   final Widget child;
+
+  /// How far [child] reaches into the trailing gutter. For a row ending in
+  /// icon buttons whose tap target is wider than their glyph: bleeding by
+  /// that blank inset lands the glyph, rather than the invisible target, on
+  /// the gutter the content below ends on.
+  final double endBleed;
 
   @override
   Widget build(BuildContext context) {
@@ -28,12 +35,14 @@ class DetailContentWidth extends StatelessWidget {
     // asks its child for an intrinsic height, which a LayoutBuilder cannot
     // answer — and loose constraints let a shrink-wrapping child sit
     // centred in the column rather than being stretched across it.
+    final gutter = context.designTokens.spacing.step5;
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.designTokens.spacing.step5,
+          padding: EdgeInsetsDirectional.only(
+            start: gutter,
+            end: gutter - endBleed,
           ),
           child: child,
         ),

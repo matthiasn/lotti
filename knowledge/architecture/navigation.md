@@ -947,10 +947,10 @@ of a section boundary — announcing a separation that neither surface actually
 has. Distance and the glyph-only treatment carry it instead.
 
 `footerBand` is the sidebar's one **full-bleed** slot: it spans the rail edge to
-edge rather than sitting inside the 16 px gutters every other row shares, and
-owns its own smaller inset. That is a width argument, not a decorative one —
+edge rather than sitting inside the 8 px gutters every other row shares, and
+owns its own inset. That is a width argument, not a decorative one —
 four 44 px targets need 176 px, and a gutter-inset row at the 200 px minimum
-offers 168. The band is always the expanded sidebar's final child, with no
+offers 184, which would leave the band no room for an inset of its own. The band is always the expanded sidebar's final child, with no
 optional status row beneath Settings to displace it. Collapsing the sidebar
 removes the band entirely — the icon-only rail is 72 px, narrower than the four
 glyphs — and the Manual stays reachable from Settings meanwhile.

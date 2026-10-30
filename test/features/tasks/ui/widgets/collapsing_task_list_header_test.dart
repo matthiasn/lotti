@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' show Glados2, IntAnys, any;
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -507,6 +509,33 @@ void main() {
             .first,
       );
       expect(colored.color, isNot(Colors.transparent));
+    });
+
+    testWidgets('the trailing buttons reach into the gutter by the expanded '
+        "header's bleed, so the glyphs hold their edge across the collapse", (
+      tester,
+    ) async {
+      await tester.pumpWidget(subject());
+
+      final tokens = tester
+          .element(find.byType(TaskListCompactHeaderBar))
+          .designTokens;
+      final bar = tester.getRect(
+        find.byKey(CollapsingTaskListHeaderKeys.compactBar),
+      );
+      final filter = tester.getRect(
+        find.byKey(CollapsingTaskListHeaderKeys.compactFilterButton),
+      );
+      final title = tester.getRect(
+        find.byKey(CollapsingTaskListHeaderKeys.compactTitle),
+      );
+
+      expect(
+        bar.right - filter.right,
+        tokens.spacing.step5 - tabHeaderTrailingBleed(tokens),
+      );
+      // The leading gutter is untouched: the title still anchors on it.
+      expect(title.left - bar.left, tokens.spacing.step5);
     });
 
     testWidgets('renders the context label (saved view / query) after the '

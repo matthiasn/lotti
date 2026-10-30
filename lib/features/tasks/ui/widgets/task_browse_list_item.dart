@@ -1,5 +1,6 @@
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task_search_hit.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
@@ -140,7 +141,20 @@ class TaskBrowseListItem extends StatelessWidget {
                     ),
                   if (sectionHeaderTrailing case final trailing?) ...[
                     SizedBox(width: tokens.spacing.step3),
-                    trailing,
+                    // Shifted into the gutter by the tab header's bleed, so
+                    // its glyph stands under the header's bell and funnel
+                    // rather than a target's inset further in. The part past
+                    // the row is not hit-testable, leaving the glyph a
+                    // 36-wide target.
+                    Transform.translate(
+                      offset: Offset(
+                        Directionality.of(context) == TextDirection.rtl
+                            ? -tabHeaderTrailingBleed(tokens)
+                            : tabHeaderTrailingBleed(tokens),
+                        0,
+                      ),
+                      child: trailing,
+                    ),
                   ],
                 ],
               ),

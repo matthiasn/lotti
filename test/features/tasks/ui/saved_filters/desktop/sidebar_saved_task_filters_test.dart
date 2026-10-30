@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_mru_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_pill.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filters_sheet.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_filter_due_marker.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
@@ -226,6 +227,28 @@ void main() {
       expect(card.left, 0, reason: '$key');
       expect(card.width, hostWidth, reason: '$key');
     }
+  });
+
+  testWidgets('a row frames its content evenly, and the Manage glyph ends '
+      'over the counts', (tester) async {
+    await _pumpSidebar(tester);
+
+    final row = find.byKey(SidebarSavedTaskFiltersKeys.allTasks);
+    final card = tester.getRect(
+      find.descendant(of: row, matching: find.byType(InkWell)),
+    );
+    final leading = tester.getRect(
+      find.descendant(of: row, matching: find.byIcon(LottiIcons.inbox)),
+    );
+    final count = tester.getRect(
+      find.descendant(of: row, matching: find.byType(SavedFilterCountText)),
+    );
+
+    // Even on both sides, so a selected row's highlight sits centred on
+    // its content instead of crowding the count.
+    expect(leading.left - card.left, dsTokensLight.spacing.step4);
+    expect(card.right - count.right, dsTokensLight.spacing.step4);
+    expect(tester.getRect(find.byIcon(LottiIcons.tune)).right, count.right);
   });
 
   testWidgets('a category-scoped filter announces its category first', (

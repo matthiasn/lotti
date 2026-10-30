@@ -218,8 +218,10 @@ class DesktopNavigationSidebar extends StatelessWidget {
     // slot can opt out of them. [footerBand] does, and the scroll region
     // takes its gutter inside the scroll view rather than around it: the
     // scrollbar then rides the sidebar's own edge, clear of the counts at
-    // the rows' trailing end, instead of painting over them.
-    final gutter = EdgeInsets.symmetric(horizontal: tokens.spacing.step5);
+    // the rows' trailing end, instead of painting over them. Kept to step3:
+    // every row pads its own content by [_rowInset] inside its highlight, so
+    // a wider gutter doubled the air between the rail edge and the glyphs.
+    final gutter = EdgeInsets.symmetric(horizontal: tokens.spacing.step3);
 
     return Container(
       width: effectiveWidth,
@@ -504,7 +506,8 @@ class _SidebarLogoRow extends StatelessWidget {
       child: Row(
         children: [
           Padding(
-            padding: EdgeInsetsDirectional.only(start: tokens.spacing.step5),
+            // The row inset, so the logo starts on the glyphs' edge below.
+            padding: EdgeInsetsDirectional.only(start: _rowInset(tokens)),
             child: menuItems == null
                 ? const DesignSystemBrandLogo()
                 : _SidebarLogoMenuTrigger(
@@ -758,6 +761,10 @@ class _DesktopSidebarNavItem extends StatelessWidget {
 /// labels align down the rail regardless of glyph width.
 const double _iconColumnWidth = 32;
 
+/// Horizontal inset of a destination row's content inside its highlight,
+/// shared with the logo row so the brand mark starts on the glyphs' edge.
+double _rowInset(DsTokens tokens) => tokens.spacing.step4;
+
 class _ExpandedRowContent extends StatelessWidget {
   const _ExpandedRowContent({
     required this.destination,
@@ -773,7 +780,7 @@ class _ExpandedRowContent extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step5,
+        horizontal: _rowInset(tokens),
         vertical: tokens.spacing.step4,
       ),
       // Inside the padding, so `maxWidth` is already the row's content width

@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/classes/task_search_hit.dart';
+import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/time_recording_icon.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -816,6 +817,48 @@ void main() {
         );
       },
     );
+
+    for (final direction in TextDirection.values) {
+      testWidgets(
+        'sectionHeaderTrailing reaches into the trailing gutter by the tab '
+        "header's bleed (${direction.name})",
+        (tester) async {
+          final task = TestTaskFactory.create(
+            id: 'task-header-bleed',
+            title: 'Header bleed task',
+            dateFrom: DateTime(2026, 4, 8),
+          );
+          const trailingKey = Key('test-header-bleed');
+
+          await pumpTaskBrowseItem(
+            tester,
+            task,
+            showSectionHeader: true,
+            sectionCount: 3,
+            textDirection: direction,
+            sectionHeaderTrailing: const SizedBox.square(
+              dimension: 20,
+              key: trailingKey,
+            ),
+          );
+
+          final tokens = tester
+              .element(find.byType(TaskBrowseListItem))
+              .designTokens;
+          final bleed = tabHeaderTrailingBleed(tokens);
+          final item = tester.getRect(find.byType(TaskBrowseListItem));
+          final trailing = tester.getRect(find.byKey(trailingKey));
+          // Its glyph lines up under the header's bell and funnel, which
+          // bleed by the same amount, rather than a target's inset further
+          // in.
+          if (direction == TextDirection.ltr) {
+            expect(trailing.right, item.right + bleed);
+          } else {
+            expect(trailing.left, item.left - bleed);
+          }
+        },
+      );
+    }
 
     testWidgets('compact rows use tighter vertical padding', (tester) async {
       final task = TestTaskFactory.create(

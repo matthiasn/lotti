@@ -4,6 +4,14 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// How far a tab header's trailing controls reach into the content gutter.
+///
+/// The bell's 36 px box and the funnel's 40 px button centre their glyphs in
+/// the header's [TapTargets.minimum] slots, which leaves 12–15 px of blank
+/// target beside each glyph. Bleeding by that much puts the glyphs on the
+/// gutter the list cards end on instead of a gutter's width further in.
+double tabHeaderTrailingBleed(DsTokens tokens) => tokens.spacing.step4;
+
 /// The shared header action button used by tab headers (and their collapsed
 /// compact bars): an [IconButton] that carries the design-system "activated"
 /// treatment — accent glyph over [DesignSystemListPalette.activatedFill] —
@@ -114,6 +122,7 @@ class TabSectionHeader extends StatelessWidget {
         ? tokens.spacing.step5 + tokens.spacing.step2
         : tokens.spacing.step3;
     final highText = tokens.colors.text.highEmphasis;
+    final trailingBleed = tabHeaderTrailingBleed(tokens);
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),
@@ -121,6 +130,7 @@ class TabSectionHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DetailContentWidth(
+            endBleed: trailingBleed,
             child: Row(
               children: [
                 if (titleLeading != null) ...[
@@ -162,6 +172,7 @@ class TabSectionHeader extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step5),
           DetailContentWidth(
+            endBleed: trailingBleed,
             child: Row(
               children: [
                 Expanded(
@@ -175,7 +186,8 @@ class TabSectionHeader extends StatelessWidget {
                     onSearchPressed: onSearchPressed,
                   ),
                 ),
-                SizedBox(width: tokens.spacing.step4),
+                // No gap: the slot's own blank inset beside the glyph is the
+                // air between the field and the funnel.
                 SizedBox.square(
                   dimension: TapTargets.minimum,
                   child: Center(
