@@ -5348,8 +5348,7 @@
   "saveShortcutTooltip": "Speichern — Strg+S (⌘S auf dem Mac)",
   "saveSuccessful": "Erfolgreich gespeichert",
   "searchHint": "Suchen...",
-  "searchModeFullText": "Volltext",
-  "searchModeVector": "Vektor",
+  "searchRelatedByMeaningSection": "Inhaltlich verwandt",
   "searchTasksHint": "Aufgaben suchen…",
   "selectButton": "Auswählen",
   "selectColor": "Farbe auswählen",
@@ -6682,7 +6681,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Suchmodus",
   "tasksSearchNoLinkedTasks": "Keine verknüpften Aufgaben für diesen Pull-Request gefunden.",
   "tasksSearchResultsSection": "Ergebnisse",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",
@@ -6739,17 +6737,6 @@
   "unlinkTaskConfirmNamed": "„{title}“ trennen? Die Aufgabe selbst wird nicht gelöscht.",
   "unlinkTaskFailedMessage": "Die Verknüpfung konnte nicht aufgehoben werden. Bitte versuch es erneut.",
   "unlinkTaskTitle": "Verknüpfung aufheben",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} Ergebnis} other{{elapsed}ms, {count} Ergebnisse}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Ansicht",
   "viewMenuZoomIn": "Vergrößern",
   "viewMenuZoomOut": "Verkleinern",

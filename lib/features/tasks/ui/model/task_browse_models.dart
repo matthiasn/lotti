@@ -6,10 +6,11 @@ import 'package:lotti/utils/date_utils_extension.dart';
 /// The category of a section header in the browsable task list. Which kind a
 /// task falls into is determined by the active [TaskSortOption]: created-date
 /// buckets, due-date buckets (today/tomorrow/yesterday/dated/none), or
-/// priority buckets — or, while a search is typed, the one section of its
-/// results, in the order the search ranked them.
+/// priority buckets — or, while a search is typed, its word matches and then
+/// what search by meaning added, each in the order the search ranked them.
 enum TaskBrowseSectionKind {
   results,
+  relatedByMeaning,
   createdDate,
   dueDate,
   dueToday,
@@ -59,6 +60,9 @@ class TaskBrowseSectionKey {
   const TaskBrowseSectionKey.results()
     : this._(kind: TaskBrowseSectionKind.results);
 
+  const TaskBrowseSectionKey.relatedByMeaning()
+    : this._(kind: TaskBrowseSectionKind.relatedByMeaning);
+
   const TaskBrowseSectionKey.priority(TaskPriority priority)
     : this._(
         kind: TaskBrowseSectionKind.priority,
@@ -71,6 +75,7 @@ class TaskBrowseSectionKey {
 
   String get stableKey => switch (kind) {
     TaskBrowseSectionKind.results => 'results',
+    TaskBrowseSectionKind.relatedByMeaning => 'related',
     TaskBrowseSectionKind.createdDate => 'created:${date!.ymd}',
     TaskBrowseSectionKind.dueDate => 'due:${date!.ymd}',
     TaskBrowseSectionKind.dueToday => 'due:today',
@@ -106,7 +111,8 @@ class TaskBrowseEntry {
 
 /// Turns a flat, already-sorted [items] list into [TaskBrowseEntry]s annotated
 /// with section boundaries and per-section counts for [sortOption] — or, for
-/// [searchResults], all in one results section, kept in their search order.
+/// [searchResults], kept in their search order: the word matches in one
+/// results section, then the [relatedByMeaning] ones in their own.
 ///
 /// Non-task entities are dropped. Section headers are emitted at each boundary;
 /// the count is suppressed for the trailing section when [hasNextPage] is true,
@@ -117,6 +123,7 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
   required DateTime now,
   required bool hasNextPage,
   bool searchResults = false,
+  Set<String> relatedByMeaning = const {},
 }) {
   final tasks = items.whereType<Task>().toList(growable: false);
   if (tasks.isEmpty) {
@@ -125,9 +132,11 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
 
   final sectionKeys = tasks
       .map(
-        (task) => searchResults
-            ? const TaskBrowseSectionKey.results()
-            : _sectionKeyForTask(task, sortOption: sortOption, now: now),
+        (task) => !searchResults
+            ? _sectionKeyForTask(task, sortOption: sortOption, now: now)
+            : relatedByMeaning.contains(task.meta.id)
+            ? const TaskBrowseSectionKey.relatedByMeaning()
+            : const TaskBrowseSectionKey.results(),
       )
       .toList(growable: false);
   final counts = <String, int>{};

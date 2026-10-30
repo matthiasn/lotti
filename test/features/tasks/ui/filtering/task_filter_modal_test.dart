@@ -1098,12 +1098,11 @@ void main() {
     );
 
     testWidgets(
-      'apply passes search mode when enableVectorSearch is true on desktop',
+      'offers no search mode, even on desktop with search by meaning on',
       (tester) async {
-        // Desktop width triggers isDesktopLayout → searchModeOptions populated
-        // → hasSearchMode == true → line 271 (toMode branch) is exercised.
-        // WidgetTestBench uses the mediaQueryData we pass for context.size, so
-        // provide a desktop-width MediaQueryData rather than changing the view.
+        // Search by meaning adds to every search (ADR 0149); there is no
+        // mode to pick. WidgetTestBench uses the mediaQueryData we pass for
+        // context.size, so a desktop width engages the desktop layout.
         mockState = mockState.copyWith(
           enableVectorSearch: true,
         );
@@ -1149,7 +1148,18 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
         await tester.pumpAndSettle();
 
-        // Tap Apply so _applyFilterState executes with hasSearchMode==true.
+        expect(find.text('Search mode'), findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>).value.startsWith(
+                  'design-system-task-filter-search-mode-',
+                ),
+          ),
+          findsNothing,
+        );
+
         final applyBtn = find.byKey(
           const ValueKey('design-system-task-filter-apply'),
         );
@@ -1158,9 +1168,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
-        // applyBatchFilterUpdate was called with a searchMode (not null).
         expect(fakeController.applyBatchFilterUpdateCalled, 1);
-        expect(fakeController.searchModeCalls, isNotEmpty);
         expect(tester.takeException(), isNull);
       },
     );

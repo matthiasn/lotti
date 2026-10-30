@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Callback record for config-flag changes.
@@ -107,15 +105,12 @@ class JournalPageSubscriptions {
   /// state, and returns a result record. The controller applies the mutations.
   static ConfigFlagResult applyJournalConfigFlags({
     required JournalConfigFlags flags,
-    required bool showTasks,
     required bool enableEvents,
     required bool enableHabits,
     required bool enableDashboards,
     required bool enableRelationships,
     required bool enableVectorSearch,
     required bool enableProjects,
-    required SearchMode searchMode,
-    required bool hasExplicitSearchModeSelection,
     required Set<String> selectedEntryTypes,
     required Set<String> selectedProjectIds,
   }) {
@@ -126,21 +121,11 @@ class JournalPageSubscriptions {
       relationships: enableRelationships,
     ).toSet();
 
-    var newSearchMode = searchMode;
-    var shouldRefresh = false;
+    // Search by meaning adds to every search's results, so turning it on or
+    // off changes what a search shows.
+    var shouldRefresh = flags.vectorSearch != enableVectorSearch;
     var newProjectIds = selectedProjectIds;
 
-    if (showTasks &&
-        isDesktop &&
-        flags.vectorSearch &&
-        !hasExplicitSearchModeSelection &&
-        searchMode != SearchMode.vector) {
-      newSearchMode = SearchMode.vector;
-      shouldRefresh = true;
-    } else if (!flags.vectorSearch && searchMode == SearchMode.vector) {
-      newSearchMode = SearchMode.fullText;
-      shouldRefresh = true;
-    }
     if (!flags.projects && selectedProjectIds.isNotEmpty) {
       newProjectIds = {};
       shouldRefresh = true;
@@ -170,7 +155,6 @@ class JournalPageSubscriptions {
       enableRelationships: flags.relationships,
       enableVectorSearch: flags.vectorSearch,
       enableProjects: flags.projects,
-      searchMode: newSearchMode,
       selectedEntryTypes: newEntryTypes,
       selectedProjectIds: newProjectIds,
       shouldRefresh: shouldRefresh,
@@ -187,7 +171,6 @@ class ConfigFlagResult {
     required this.enableRelationships,
     required this.enableVectorSearch,
     required this.enableProjects,
-    required this.searchMode,
     required this.selectedEntryTypes,
     required this.selectedProjectIds,
     required this.shouldRefresh,
@@ -199,7 +182,6 @@ class ConfigFlagResult {
   final bool enableRelationships;
   final bool enableVectorSearch;
   final bool enableProjects;
-  final SearchMode searchMode;
   final Set<String> selectedEntryTypes;
   final Set<String> selectedProjectIds;
   final bool shouldRefresh;

@@ -39,7 +39,7 @@ flowchart TD
   Redesign --> PageCtl["JournalPageController(showTasks: true)"]
   PageCtl --> Paging["PagingController + PagedSliverList"]
   PageCtl --> Filters["Task filter model + persistence"]
-  PageCtl --> Search["Search / sort / vector mode"]
+  PageCtl --> Search["Search (words, then meaning) / sort"]
 ```
 
 `TasksTabPage` owns **no** pagination, query execution or filter semantics — it
@@ -133,16 +133,18 @@ flowchart LR
 
 The due set rides the **same `ids` restriction full-text search uses**, so it
 composes with every other clause and both sort paths without new SQL; an empty
-intersection returns no rows without a query. Semantic search returns its
-results whole, so `runVectorSearch` narrows them to the view itself, keeping
-the distance map whole as the search's result set. The counts restrict to the
-same search: the tasks the full-text search found (`taskFullTextHits`,
-through their own text or what belongs to them), or in semantic mode the
-vector result ids
+intersection returns no rows without a query. What search by meaning adds
+rides the same restriction, after the matches (ADR 0149), so the due view
+narrows it too; the distance map stays whole, as the search's result set.
+While a query is typed, the counts use only the scope clauses the search keeps:
+category and due. The status, label, priority, project and agent selections
+are dropped, as the list drops them (ADR 0149). The counts restrict to the
+same search: the tasks the full-text search found
+(`taskFullTextHits`, through their own text or what belongs to them) and the
+ones meaning added (`JournalPageState.relatedByMeaningIds`)
 (`SavedTaskFilterCountRepository.count(…, restrictToIds:)`). A pasted pull
 request link restricts them to the tasks it is linked to (see
-[browse and linking](../journal/browse-and-linking.md#a-pasted-pull-request-link-is-a-lookup)),
-counted with only the category clause that lookup keeps. The filter modal
+[browse and linking](../journal/browse-and-linking.md#a-pasted-pull-request-link-is-a-lookup)). The filter modal
 has no due control, so saving or updating from it carries the live due clause
 unchanged. Because the strip's number for a
 view is the live filter with that view's clause swapped in, **the pill counts
@@ -390,7 +392,7 @@ flowchart LR
   index itself. **Deleting the active filter resets the live query to `All`.**
 
 The redesigned browse page preserves the existing non-filter behaviour:
-pull-to-refresh, the full-text versus vector search toggle, the create-task FAB
+pull-to-refresh, the create-task FAB
 and auto-assign flow, and `/tasks/:taskId` navigation on row selection.
 
 # The header collapses on scroll in narrow panes

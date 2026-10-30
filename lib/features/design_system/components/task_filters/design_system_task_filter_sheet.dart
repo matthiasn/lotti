@@ -47,22 +47,6 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
     ];
 
     final sections = <Widget>[
-      if (state.hasSearchMode)
-        _TaskFilterChoiceSection(
-          label: state.searchModeLabel,
-          children: [
-            for (final option in state.searchModeOptions)
-              DesignSystemFilterChoicePill(
-                key: ValueKey(
-                  'design-system-task-filter-search-mode-${option.id}',
-                ),
-                label: option.label,
-                selected: option.id == state.selectedSearchModeId,
-                role: DesignSystemFilterChoiceRole.singleSelect,
-                onTap: () => onChanged(state.selectSearchMode(option.id)),
-              ),
-          ],
-        ),
       if (state.hasSortSection)
         _TaskFilterChoiceSection(
           label: state.sortLabel,

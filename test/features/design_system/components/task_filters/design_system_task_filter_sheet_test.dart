@@ -318,46 +318,6 @@ void main() {
       );
     });
 
-    group('selectSearchMode', () {
-      DesignSystemTaskFilterState seed({String selected = 'mode-0'}) {
-        return DesignSystemTaskFilterState(
-          title: 't',
-          clearAllLabel: 'c',
-          applyLabel: 'a',
-          searchModeLabel: 'Search mode',
-          searchModeOptions: const [
-            DesignSystemTaskFilterOption(id: 'mode-0', label: 'Tasks'),
-            DesignSystemTaskFilterOption(id: 'mode-1', label: 'Everything'),
-          ],
-          selectedSearchModeId: selected,
-        );
-      }
-
-      test('returns the same instance when no search mode is configured', () {
-        final state = DesignSystemTaskFilterState(
-          title: 't',
-          clearAllLabel: 'c',
-          applyLabel: 'a',
-        );
-        expect(state.selectSearchMode('mode-1'), same(state));
-      });
-
-      test('returns the same instance when selecting the current id', () {
-        final state = seed();
-        expect(state.selectSearchMode('mode-0'), same(state));
-      });
-
-      test('switches the mode without affecting appliedCount', () {
-        final state = seed();
-        expect(state.appliedCount, 0);
-
-        final switched = state.selectSearchMode('mode-1');
-        expect(switched.selectedSearchModeId, 'mode-1');
-        // Search mode is not a filter: it never contributes to appliedCount.
-        expect(switched.appliedCount, 0);
-      });
-    });
-
     group('toggleValue', () {
       DesignSystemTaskFilterState seed() {
         return DesignSystemTaskFilterState(
@@ -663,39 +623,6 @@ void main() {
       await tester.pump();
 
       expect(lastChanged!.selectedAgentFilterId, 'hasAgent');
-    });
-
-    testWidgets('renders search mode pills', (tester) async {
-      DesignSystemTaskFilterState? lastChanged;
-
-      await _pumpSheetWithState(
-        tester,
-        DesignSystemTaskFilterState(
-          title: 'Filters',
-          clearAllLabel: 'Clear',
-          applyLabel: 'Apply',
-          searchModeLabel: 'Search mode',
-          searchModeOptions: const [
-            DesignSystemTaskFilterOption(
-              id: 'fullText',
-              label: 'Full text',
-            ),
-            DesignSystemTaskFilterOption(
-              id: 'vector',
-              label: 'Vector',
-            ),
-          ],
-          selectedSearchModeId: 'fullText',
-        ),
-        onChanged: (s) => lastChanged = s,
-      );
-
-      expect(find.text('Search mode'), findsOneWidget);
-
-      await tester.tap(find.text('Vector'));
-      await tester.pump();
-
-      expect(lastChanged!.selectedSearchModeId, 'vector');
     });
 
     testWidgets('renders project field section', (tester) async {

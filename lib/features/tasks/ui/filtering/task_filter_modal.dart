@@ -339,9 +339,6 @@ Future<void> _applyFilterState(
     priorities: filter.selectedPriorities,
     sortOption: filter.sortOption,
     agentAssignmentFilter: filter.agentAssignmentFilter,
-    searchMode: sheetState.hasSearchMode
-        ? TasksFilterSearchModeIds.toMode(sheetState.selectedSearchModeId)
-        : null,
     showCreationDate: filter.showCreationDate,
     showDueDate: filter.showDueDate,
   );

@@ -28,27 +28,6 @@ void main() {
       expect(noOptions.selectAgentFilter('hasAgent'), same(noOptions));
     });
 
-    test('selectSearchMode updates selectedSearchModeId', () {
-      final state = DesignSystemTaskFilterState(
-        title: 'T',
-        clearAllLabel: 'C',
-        applyLabel: 'A',
-        searchModeOptions: const [
-          DesignSystemTaskFilterOption(id: 'fullText', label: 'Full'),
-          DesignSystemTaskFilterOption(id: 'vector', label: 'Vector'),
-        ],
-        selectedSearchModeId: 'fullText',
-      );
-
-      final updated = state.selectSearchMode('vector');
-      expect(updated.selectedSearchModeId, 'vector');
-
-      expect(state.selectSearchMode('fullText'), same(state));
-
-      final noOptions = state.copyWith(searchModeOptions: const []);
-      expect(noOptions.selectSearchMode('vector'), same(noOptions));
-    });
-
     test('toggleValue flips toggle and ignores unknown IDs', () {
       final state = DesignSystemTaskFilterState(
         title: 'T',
@@ -165,11 +144,6 @@ void main() {
           DesignSystemTaskFilterOption(id: 'all', label: 'All'),
         ],
         selectedAgentFilterId: 'all',
-        searchModeLabel: 'Search',
-        searchModeOptions: const [
-          DesignSystemTaskFilterOption(id: 'fullText', label: 'Full'),
-        ],
-        selectedSearchModeId: 'fullText',
         toggles: const [
           DesignSystemTaskFilterToggle(id: 'x', label: 'X', value: true),
         ],
@@ -182,8 +156,7 @@ void main() {
       expect(projectField['selectedIds'], ['p1']);
       expect(json['agentFilterLabel'], 'Agent');
       expect(json['selectedAgentFilterId'], 'all');
-      expect(json['searchModeLabel'], 'Search');
-      expect(json['selectedSearchModeId'], 'fullText');
+      expect(json.containsKey('searchModeLabel'), isFalse);
       expect(toggles, [
         {'id': 'x', 'label': 'X', 'value': true},
       ]);

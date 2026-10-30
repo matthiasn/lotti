@@ -32,158 +32,43 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
     });
   });
 
-  group('Vector Search Telemetry', () {
-    test('vector search flow updates telemetry state fields', () {
-      fakeAsync((async) {
-        final mockVectorSearchRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(
-          mockVectorSearchRepo,
-        );
+  group('Search by meaning', () {
+    Task task(String id) =>
+        _buildTestTaskRefresh(id: id, title: id, createdAt: _testDateRefresh);
 
-        when(
-          () => mockVectorSearchRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer(
-          (_) async => VectorSearchResult(
-            entities: [],
-            elapsed: const Duration(milliseconds: 42),
-            distances: const {'task-1': 0.5},
-          ),
-        );
-
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-
-        settle(async);
-
-        // Enable vector search flag
-        setup.configFlagsController.add({enableVectorSearchFlag});
-
-        settle(async);
-
-        // Set search mode to vector
-        controller.setSearchMode(SearchMode.vector);
-
-        settle(async);
-
-        // Set a search string to trigger vector search
-        controller.setSearchString('semantic query');
-
-        async.elapse(const Duration(milliseconds: 100));
-        async.flushMicrotasks();
-
-        final state = setup.container.read(journalPageControllerProvider(true));
-        expect(state.vectorSearchInFlight, isFalse);
-        expect(
-          state.vectorSearchElapsed,
-          equals(const Duration(milliseconds: 42)),
-        );
-        expect(state.vectorSearchResultCount, equals(0));
-        expect(state.vectorSearchDistances, equals({'task-1': 0.5}));
-
-        getIt.unregister<VectorSearchRepository>();
+    /// Answers the task query with the [tasks] it asks for, in the order
+    /// given here rather than the order asked: the list's order is the
+    /// search's, which the runner restores.
+    void stubTasks(List<Task> tasks) {
+      when(
+        () => setup.mockJournalDb.getTasks(
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+          sortByDate: any(named: 'sortByDate'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.namedArguments[#ids] as List<String>?;
+        return [
+          for (final task in tasks)
+            if (ids == null || ids.contains(task.meta.id)) task,
+        ];
       });
-    });
-  });
+    }
 
-  group('A new query keeps what is shown', () {
-    test('the results, and their distances, until its own land', () {
-      fakeAsync((async) {
-        JournalEntity entry(String id) => JournalEntry(
-          meta: Metadata(
-            id: id,
-            createdAt: DateTime(2024),
-            dateFrom: DateTime(2024),
-            dateTo: DateTime(2024),
-            updatedAt: DateTime(2024),
-          ),
-        );
-        final first = entry('first');
-        final second = entry('second');
-        final mockVectorSearchRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorSearchRepo);
-        final pending = Completer<VectorSearchResult>();
-        when(
-          () => mockVectorSearchRepo.searchRelatedTasks(
-            query: 'colony',
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer(
-          (_) async => VectorSearchResult(
-            entities: [first],
-            elapsed: const Duration(milliseconds: 10),
-            distances: const {'first': 0.2},
-          ),
-        );
-        when(
-          () => mockVectorSearchRepo.searchRelatedTasks(
-            query: 'colony counts',
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) => pending.future);
-
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-        settle(async);
-        setup.configFlagsController.add({enableVectorSearchFlag});
-        settle(async);
-        controller.setSearchMode(SearchMode.vector);
-        settle(async);
-
-        controller.setSearchString('colony');
-        async.elapse(const Duration(milliseconds: 100));
-        async.flushMicrotasks();
-        JournalPageState read() =>
-            setup.container.read(journalPageControllerProvider(true));
-        expect(read().pagingController?.value.items, [first]);
-
-        // The next keystroke's search waits on the model.
-        controller.setSearchString('colony counts');
-        async.elapse(const Duration(milliseconds: 100));
-        async.flushMicrotasks();
-
-        expect(read().vectorSearchInFlight, isTrue);
-        expect(read().pagingController?.value.items, [first]);
-        expect(read().vectorSearchDistances, {'first': 0.2});
-
-        pending.complete(
-          VectorSearchResult(
-            entities: [second],
-            elapsed: const Duration(milliseconds: 12),
-            distances: const {'second': 0.3},
-          ),
-        );
-        async.flushMicrotasks();
-
-        expect(read().vectorSearchInFlight, isFalse);
-        expect(read().pagingController?.value.items, [second]);
-        expect(read().vectorSearchDistances, {'second': 0.3});
-
-        getIt.unregister<VectorSearchRepository>();
-      });
-    });
-  });
-
-  group('A slower search for an earlier keystroke', () {
-    JournalEntity entry(String id) => JournalEntry(
-      meta: Metadata(
-        id: id,
-        createdAt: DateTime(2024),
-        dateFrom: DateTime(2024),
-        dateTo: DateTime(2024),
-        updatedAt: DateTime(2024),
-      ),
-    );
-
-    /// Opens the tasks page in vector mode, with [answers] per query.
-    JournalPageController vectorPage(
-      FakeAsync async,
-      Map<String, Future<VectorSearchResult> Function()> answers,
-    ) {
+    /// Opens the tasks page with search by meaning on, its repository
+    /// answering [answers] per query, and the words matching [words].
+    (JournalPageController, MockVectorSearchRepository) meaningPage(
+      FakeAsync async, {
+      Map<String, Future<VectorSearchResult> Function()> answers = const {},
+      Map<String, List<String>> words = const {},
+      bool enabled = true,
+    }) {
       final repo = MockVectorSearchRepository();
       getIt.registerSingleton<VectorSearchRepository>(repo);
       for (final MapEntry(:key, :value) in answers.entries) {
@@ -194,116 +79,220 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
           ),
         ).thenAnswer((_) => value());
       }
+      stubFts5Db(
+        setup.mockFts5Db,
+        matches: (query) => words[query] ?? const [],
+      );
       final controller = setup.container.read(
         journalPageControllerProvider(true).notifier,
       );
       settle(async);
-      setup.configFlagsController.add({enableVectorSearchFlag});
+      setup.configFlagsController.add({if (enabled) enableVectorSearchFlag});
       settle(async);
-      controller.setSearchMode(SearchMode.vector);
-      settle(async);
-      return controller;
+      return (controller, repo);
     }
 
     JournalPageState read() =>
         setup.container.read(journalPageControllerProvider(true));
 
-    test('never lands over the newer one', () {
+    VectorSearchResult found(Map<String, double> distances) =>
+        VectorSearchResult(
+          entities: [for (final id in distances.keys) task(id)],
+          elapsed: const Duration(milliseconds: 5),
+          distances: distances,
+        );
+
+    test('lists what the words missed after the word matches', () {
       fakeAsync((async) {
-        final slow = Completer<VectorSearchResult>();
-        final controller = vectorPage(async, {
-          'colony': () => slow.future,
-          'colony counts': () async => VectorSearchResult(
-            entities: [entry('newer')],
-            elapsed: const Duration(milliseconds: 5),
-            distances: const {'newer': 0.3},
-          ),
+        stubTasks([task('fish-census'), task('feeder-rota'), task('krill')]);
+        final (controller, _) = meaningPage(
+          async,
+          words: {
+            'krill': ['krill', 'feeder-rota'],
+          },
+          answers: {
+            // Meaning also finds a word match; it stays where the words put
+            // it, and only what they missed follows.
+            'krill': () async =>
+                found({'fish-census': 0.2, 'krill': 0.3, 'feeder-rota': 0.4}),
+          },
+        );
+
+        controller.setSearchString('krill');
+        settle(async);
+
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['krill', 'feeder-rota', 'fish-census'],
+        );
+        expect(read().relatedByMeaningIds, {'fish-census'});
+        // The distances stay whole: the due views count from them.
+        expect(read().vectorSearchDistances, {
+          'fish-census': 0.2,
+          'krill': 0.3,
+          'feeder-rota': 0.4,
         });
+        expect(read().pagingController?.value.hasNextPage, isFalse);
+      });
+    });
+
+    test('a search is one page: scrolling on searches nothing again', () {
+      fakeAsync((async) {
+        // A full page, so the list asks for another.
+        final many = [for (var i = 0; i < 50; i++) task('task-$i')];
+        stubTasks(many);
+        final (controller, repo) = meaningPage(
+          async,
+          words: {
+            'krill': [for (final t in many) t.meta.id],
+          },
+          answers: {'krill': () async => found(const {})},
+        );
+        controller.setSearchString('krill');
+        settle(async);
+        final paging = read().pagingController!;
+        expect(paging.value.items, hasLength(50));
+        expect(paging.value.hasNextPage, isTrue);
+        clearInteractions(setup.mockFts5Db);
+
+        paging.fetchNextPage();
+        settle(async);
+
+        // The next page was asked for, and came back empty.
+        expect(paging.value.keys, hasLength(2));
+        expect(paging.value.items, hasLength(50));
+        verifyNever(() => anyMatchHits(setup.mockFts5Db));
+        verify(
+          () => repo.searchRelatedTasks(
+            query: 'krill',
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('a blank query lists everything again, with nothing related', () {
+      fakeAsync((async) {
+        stubTasks([task('fish-census'), task('krill')]);
+        final (controller, repo) = meaningPage(
+          async,
+          words: {
+            'krill': ['krill'],
+          },
+          answers: {
+            'krill': () async => found({'fish-census': 0.2}),
+          },
+        );
+        controller.setSearchString('krill');
+        settle(async);
+        expect(read().relatedByMeaningIds, {'fish-census'});
+
+        controller.setSearchString('');
+        settle(async);
+
+        expect(read().relatedByMeaningIds, isEmpty);
+        expect(read().vectorSearchDistances, isEmpty);
+        verify(
+          () => repo.searchRelatedTasks(
+            query: 'krill',
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).called(1);
+        verifyNoMoreInteractions(repo);
+      });
+    });
+
+    test('is not asked while it is turned off', () {
+      fakeAsync((async) {
+        stubTasks([task('krill')]);
+        final (controller, repo) = meaningPage(
+          async,
+          enabled: false,
+          words: {
+            'krill': ['krill'],
+          },
+        );
+
+        controller.setSearchString('krill');
+        settle(async);
+
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['krill'],
+        );
+        expect(read().relatedByMeaningIds, isEmpty);
+        verifyZeroInteractions(repo);
+      });
+    });
+
+    test('keeps what is shown until the next results land', () {
+      fakeAsync((async) {
+        stubTasks([task('first'), task('second')]);
+        final pending = Completer<VectorSearchResult>();
+        final (controller, _) = meaningPage(
+          async,
+          answers: {
+            'colony': () async => found({'first': 0.2}),
+            'colony counts': () => pending.future,
+          },
+        );
+
+        controller.setSearchString('colony');
+        settle(async);
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['first'],
+        );
+
+        // The next keystroke's search waits on the model.
+        controller.setSearchString('colony counts');
+        settle(async);
+
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['first'],
+        );
+        expect(read().relatedByMeaningIds, {'first'});
+        expect(read().vectorSearchDistances, {'first': 0.2});
+
+        pending.complete(found({'second': 0.3}));
+        settle(async);
+
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['second'],
+        );
+        expect(read().relatedByMeaningIds, {'second'});
+        expect(read().vectorSearchDistances, {'second': 0.3});
+      });
+    });
+
+    test('a slower search for an earlier keystroke never lands over the '
+        'newer one', () {
+      fakeAsync((async) {
+        stubTasks([task('older'), task('newer')]);
+        final slow = Completer<VectorSearchResult>();
+        final (controller, _) = meaningPage(
+          async,
+          answers: {
+            'colony': () => slow.future,
+            'colony counts': () async => found({'newer': 0.3}),
+          },
+        );
 
         controller.setSearchString('colony');
         async.flushMicrotasks();
         controller.setSearchString('colony counts');
-        async.elapse(const Duration(milliseconds: 100));
-        async.flushMicrotasks();
-        slow.complete(
-          VectorSearchResult(
-            entities: [entry('older')],
-            elapsed: const Duration(milliseconds: 90),
-            distances: const {'older': 0.1},
-          ),
-        );
-        async.flushMicrotasks();
+        settle(async);
+        slow.complete(found({'older': 0.1}));
+        settle(async);
 
-        expect(read().pagingController?.value.items, [entry('newer')]);
+        expect(
+          read().pagingController?.value.items?.map((t) => t.meta.id),
+          ['newer'],
+        );
+        expect(read().relatedByMeaningIds, {'newer'});
         expect(read().vectorSearchDistances, {'newer': 0.3});
-        expect(read().vectorSearchElapsed, const Duration(milliseconds: 5));
-        expect(read().vectorSearchInFlight, isFalse);
-
-        getIt.unregister<VectorSearchRepository>();
-      });
-    });
-
-    test(
-      'still stops the spinner when the newer query is no vector search',
-      () {
-        fakeAsync((async) {
-          final slow = Completer<VectorSearchResult>();
-          final controller = vectorPage(async, {'colony': () => slow.future});
-
-          controller.setSearchString('colony');
-          async.flushMicrotasks();
-          expect(read().vectorSearchInFlight, isTrue);
-
-          controller.setSearchMode(SearchMode.fullText);
-          settle(async);
-          slow.complete(
-            VectorSearchResult(
-              entities: [entry('older')],
-              elapsed: const Duration(milliseconds: 90),
-              distances: const {'older': 0.1},
-            ),
-          );
-          async.flushMicrotasks();
-
-          expect(read().vectorSearchInFlight, isFalse);
-          expect(read().vectorSearchDistances, isNot(contains('older')));
-
-          getIt.unregister<VectorSearchRepository>();
-        });
-      },
-    );
-  });
-
-  group('Published Search Mode', () {
-    test('returns fullText by default', () {
-      fakeAsync((async) {
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-
-        settle(async);
-
-        expect(controller.state.searchMode, equals(SearchMode.fullText));
-      });
-    });
-
-    test('returns vector after setSearchMode with vector search enabled', () {
-      fakeAsync((async) {
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-
-        settle(async);
-
-        setup.configFlagsController.add({enableVectorSearchFlag});
-
-        settle(async);
-
-        controller.setSearchMode(SearchMode.vector);
-
-        settle(async);
-
-        expect(controller.state.searchMode, equals(SearchMode.vector));
       });
     });
   });

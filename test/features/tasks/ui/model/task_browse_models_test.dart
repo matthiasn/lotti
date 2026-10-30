@@ -73,6 +73,63 @@ void main() {
       expect(entries.first.sectionCount, 3);
     });
 
+    test('what meaning added follows the matches in a section of its own', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = <JournalEntity>[
+        for (final id in ['krill', 'rota', 'fish', 'ice'])
+          TestTaskFactory.create(id: id, title: id, dateFrom: now),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: false,
+        searchResults: true,
+        relatedByMeaning: const {'fish', 'ice'},
+      );
+
+      expect(entries.map((e) => e.task.meta.id), [
+        'krill',
+        'rota',
+        'fish',
+        'ice',
+      ]);
+      expect(entries.map((e) => e.sectionKey.kind), [
+        TaskBrowseSectionKind.results,
+        TaskBrowseSectionKind.results,
+        TaskBrowseSectionKind.relatedByMeaning,
+        TaskBrowseSectionKind.relatedByMeaning,
+      ]);
+      expect(entries.map((e) => e.showSectionHeader), [
+        true,
+        false,
+        true,
+        false,
+      ]);
+      expect(entries.map((e) => e.sectionCount), [2, null, 2, null]);
+      expect(entries[1].isLastInSection, isTrue);
+      expect(
+        const TaskBrowseSectionKey.relatedByMeaning().stableKey,
+        isNot(const TaskBrowseSectionKey.results().stableKey),
+      );
+    });
+
+    test('related ids are ignored outside a search', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final entries = buildTaskBrowseEntries(
+        items: [
+          TestTaskFactory.create(id: 'fish', title: 'fish', dateFrom: now),
+        ],
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: false,
+        relatedByMeaning: const {'fish'},
+      );
+
+      expect(entries.single.sectionKey.kind, TaskBrowseSectionKind.priority);
+    });
+
     test(
       'groups due-date sort into due buckets and hides partial trailing count',
       () {

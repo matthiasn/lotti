@@ -416,61 +416,6 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
         expect(state.showCreationDate, stateBefore.showCreationDate);
       });
     });
-
-    test(
-      'applyBatchFilterUpdate ignores searchMode when vector disabled',
-      () {
-        fakeAsync((async) {
-          final controller = setup.container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          settle(async);
-
-          controller.applyBatchFilterUpdate(
-            searchMode: SearchMode.vector,
-          );
-
-          settle(async);
-
-          final state = setup.container.read(
-            journalPageControllerProvider(true),
-          );
-          // Vector search not enabled, so mode should stay fullText
-          expect(state.searchMode, SearchMode.fullText);
-        });
-      },
-    );
-
-    test(
-      'applyBatchFilterUpdate applies searchMode when vector enabled',
-      () {
-        fakeAsync((async) {
-          final controller = setup.container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          settle(async);
-
-          // Enable vector search via config flags
-          setup.configFlagsController.add({enableVectorSearchFlag});
-          settle(async);
-
-          expect(controller.state.enableVectorSearch, isTrue);
-
-          controller.applyBatchFilterUpdate(
-            searchMode: SearchMode.vector,
-          );
-
-          settle(async);
-
-          final state = setup.container.read(
-            journalPageControllerProvider(true),
-          );
-          expect(state.searchMode, SearchMode.vector);
-        });
-      },
-    );
   });
 
   group('Vector Search', () {
@@ -488,50 +433,8 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
       async.flushMicrotasks();
     }
 
-    test(
-      'setSearchMode guards against vector mode when flag is disabled',
-      () {
-        fakeAsync((async) {
-          final controller = setup.container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          settle(async);
-
-          // Flag is disabled by default
-          controller.setSearchMode(SearchMode.vector);
-
-          settle(async);
-
-          final state = setup.container.read(
-            journalPageControllerProvider(true),
-          );
-          expect(state.searchMode, equals(SearchMode.fullText));
-        });
-      },
-    );
-
-    test('setSearchMode allows vector mode when flag is enabled', () {
-      fakeAsync((async) {
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-
-        settle(async);
-
-        emitVectorSearchFlag(async);
-
-        controller.setSearchMode(SearchMode.vector);
-
-        settle(async);
-
-        final state = setup.container.read(journalPageControllerProvider(true));
-        expect(state.searchMode, equals(SearchMode.vector));
-        expect(state.enableVectorSearch, isTrue);
-      });
-    });
-
-    test('persisted filters survive switching to vector search', () {
+    test('persisted filters survive a search, which reaches every task in '
+        'their category', () {
       fakeAsync((async) {
         // Persist filter state so the controller loads it on init
         const persistedJson =
@@ -601,9 +504,7 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
 
         emitVectorSearchFlag(async);
 
-        controller
-          ..setSearchMode(SearchMode.vector)
-          ..setSearchString('semantic query');
+        controller.setSearchString('semantic query');
 
         async.elapse(const Duration(milliseconds: 200));
         async.flushMicrotasks();
@@ -626,6 +527,23 @@ void _registerProjectQueriesAndBatches(JournalControllerTestSetup setup) {
           state.agentAssignmentFilter,
           equals(AgentAssignmentFilter.all),
         );
+        // The search keeps the category, and drops the status, label and
+        // priority selections, for what meaning found as for the words.
+        final ids = verify(
+          () => setup.mockJournalDb.getTasks(
+            ids: captureAny(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: JournalPageController.allTaskStatusValues,
+            categoryIds: ['cat-1'],
+            labelIds: const <String>[],
+            priorities: const <String>[],
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).captured;
+        expect(ids.last, ['vector-task-1']);
+        expect(state.relatedByMeaningIds, {'vector-task-1'});
       });
     });
   });

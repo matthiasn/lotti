@@ -44,6 +44,24 @@ d('Xenova/multilingual-e5-small', revision='761b726dd34fb83930e26aab4e9ac3899aa1
 
 `--only NAME` scores the models whose name contains `NAME`.
 
+## Hybrid ranking
+
+`hybrid.py` chooses how the app combines keyword search with search by
+meaning ([ADR 0149](../../docs/adr/0149-search-lists-word-matches-then-related-by-meaning.md)).
+Unlike the BM25 baseline above, its keyword side is the app's own path: the
+search index's columns and tokenizer, `ftsMatchExpression` (every word
+required, the last also as a prefix) and the app's column weights. It scores
+six query sets per language — paraphrases, two title words, one title word,
+two body words, the title words mid-keystroke, and whole titles — for
+meaning alone, keywords alone, keywords first and weighted reciprocal rank
+fusion over a grid:
+
+```sh
+/tmp/embed-venv/bin/python tool/embedding_eval/hybrid.py --models-dir /tmp/models
+```
+
+It writes `build/embedding_eval/hybrid.json` and `hybrid.md`.
+
 ## Tokenizer parity
 
 The app tokenizes EmbeddingGemma's input in Dart (`GemmaTokenizer`), not

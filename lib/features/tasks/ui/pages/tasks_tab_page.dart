@@ -425,13 +425,12 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
       // so a bare join cannot tell {} from {''} and the header would miss a
       // filter change across the modal round trip.
     ].map((clause) => (clause.toList()..sort()).map((id) => '[$id]').join()).join('|');
-    // The modal can also change agent mode, sort and (with vector search on)
-    // the search MODE without touching a clause set. All three alter what the
-    // list shows, so all three must re-expand the header.
+    // The modal can also change agent mode and sort without touching a
+    // clause set. Both alter what the list shows, so both must re-expand the
+    // header.
     return '$clauses'
         '|${state.agentAssignmentFilter.name}'
-        '|${state.sortOption.name}'
-        '|${state.searchMode.name}';
+        '|${state.sortOption.name}';
   }
 
   @override
@@ -621,9 +620,11 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                   sortOption: state.sortOption,
                                   now: clock.now(),
                                   hasNextPage: pagingState.hasNextPage,
-                                  // While a search is typed its results
-                                  // stand in one section, best match first.
+                                  // While a search is typed its word matches
+                                  // stand in one section, best match first,
+                                  // and what meaning added in the next.
                                   searchResults: state.match.trim().isNotEmpty,
+                                  relatedByMeaning: state.relatedByMeaningIds,
                                 );
                                 final entryIndexByTaskId = <String, int>{
                                   for (var i = 0; i < entries.length; i++)
@@ -727,12 +728,15 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             // every row would carry the same
                                             // chip — drop it. With 0 (no filter)
                                             // or 2+ statuses selected the chip
-                                            // disambiguates rows.
+                                            // disambiguates rows, and so it does
+                                            // in a search, which reaches every
+                                            // status (ADR 0149).
                                             showStatus:
+                                                state.match.trim().isNotEmpty ||
                                                 state
-                                                    .selectedTaskStatuses
-                                                    .length !=
-                                                1,
+                                                        .selectedTaskStatuses
+                                                        .length !=
+                                                    1,
                                             compact: compactList,
                                             // The density toggle rides the
                                             // first section-header line so

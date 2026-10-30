@@ -2,10 +2,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
-import 'package:lotti/utils/platform.dart' as platform;
 
 /// Convenience: build a [JournalConfigFlags] record.
 JournalConfigFlags _flags({
@@ -28,15 +26,12 @@ JournalConfigFlags _flags({
 /// individual tests only have to override what they care about.
 ConfigFlagResult _apply({
   JournalConfigFlags? flags,
-  bool showTasks = false,
   bool enableEvents = true,
   bool enableHabits = true,
   bool enableDashboards = true,
   bool enableRelationships = true,
   bool enableVectorSearch = false,
   bool enableProjects = true,
-  SearchMode searchMode = SearchMode.fullText,
-  bool hasExplicitSearchModeSelection = false,
   Set<String>? selectedEntryTypes,
   Set<String> selectedProjectIds = const {},
 }) {
@@ -52,15 +47,12 @@ ConfigFlagResult _apply({
 
   return JournalPageSubscriptions.applyJournalConfigFlags(
     flags: resolvedFlags,
-    showTasks: showTasks,
     enableEvents: enableEvents,
     enableHabits: enableHabits,
     enableDashboards: enableDashboards,
     enableRelationships: enableRelationships,
     enableVectorSearch: enableVectorSearch,
     enableProjects: enableProjects,
-    searchMode: searchMode,
-    hasExplicitSearchModeSelection: hasExplicitSearchModeSelection,
     selectedEntryTypes: resolvedTypes,
     selectedProjectIds: selectedProjectIds,
   );
@@ -240,81 +232,33 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // vector-search search-mode switching
+  // search by meaning turning on or off
   // ---------------------------------------------------------------------------
 
-  group('applyJournalConfigFlags — search-mode transitions', () {
-    test(
-      'disabling vectorSearch while mode is vector switches mode to fullText '
-      'and sets shouldRefresh',
-      () {
+  group('applyJournalConfigFlags — search by meaning', () {
+    for (final (was, now) in [(false, true), (true, false)]) {
+      test('turning it ${now ? 'on' : 'off'} refreshes: it changes what a '
+          'search lists', () {
         final result = _apply(
-          flags: _flags(vectorSearch: false),
-          enableVectorSearch: true,
-          searchMode: SearchMode.vector,
+          flags: _flags(vectorSearch: now),
+          enableVectorSearch: was,
         );
 
-        expect(result.searchMode, SearchMode.fullText);
+        expect(result.enableVectorSearch, now);
         expect(result.shouldRefresh, isTrue);
-      },
-    );
+      });
+    }
 
-    test('keeping vectorSearch enabled while mode is already vector does not '
-        'trigger a shouldRefresh for the search-mode branch', () {
-      // Save and restore isDesktop so we can control the "showTasks+isDesktop"
-      // guard reliably in test.
-      final savedDesktop = platform.isDesktop;
-      platform.isDesktop = false; // suppress the auto-switch branch
-      addTearDown(() => platform.isDesktop = savedDesktop);
+    for (final on in [false, true]) {
+      test('staying ${on ? 'on' : 'off'} refreshes nothing', () {
+        final result = _apply(
+          flags: _flags(vectorSearch: on),
+          enableVectorSearch: on,
+        );
 
-      final result = _apply(
-        flags: _flags(vectorSearch: true),
-        showTasks: true,
-        enableVectorSearch: true,
-        searchMode: SearchMode.vector,
-        hasExplicitSearchModeSelection: true,
-      );
-
-      // Mode was already vector — no change.
-      expect(result.searchMode, SearchMode.vector);
-      // shouldRefresh may be false unless projects also changed.
-      expect(result.shouldRefresh, isFalse);
-    });
-
-    test('enableVectorSearch flag turns on, showTasks=true, isDesktop=true, '
-        'no explicit selection → mode switches to vector', () {
-      final savedDesktop = platform.isDesktop;
-      platform.isDesktop = true;
-      addTearDown(() => platform.isDesktop = savedDesktop);
-
-      final result = _apply(
-        flags: _flags(vectorSearch: true),
-        showTasks: true,
-        enableVectorSearch: false,
-        searchMode: SearchMode.fullText,
-        hasExplicitSearchModeSelection: false,
-      );
-
-      expect(result.searchMode, SearchMode.vector);
-      expect(result.shouldRefresh, isTrue);
-    });
-
-    test('explicit search mode selection prevents auto-switch to vector even '
-        'when all other conditions are met', () {
-      final savedDesktop = platform.isDesktop;
-      platform.isDesktop = true;
-      addTearDown(() => platform.isDesktop = savedDesktop);
-
-      final result = _apply(
-        flags: _flags(vectorSearch: true),
-        showTasks: true,
-        enableVectorSearch: false,
-        searchMode: SearchMode.fullText,
-        hasExplicitSearchModeSelection: true, // explicit → no auto-switch
-      );
-
-      expect(result.searchMode, SearchMode.fullText);
-    });
+        expect(result.shouldRefresh, isFalse);
+      });
+    }
   });
 
   group('applyJournalConfigFlags — generated invariants', () {
@@ -340,9 +284,7 @@ void main() {
       final enableRelationships = bit(13);
       final enableHabits = bit(6);
       final enableDashboards = bit(7);
-      final showTasks = bit(8);
-      final hasExplicitSelection = bit(9);
-      final searchMode = bit(10) ? SearchMode.vector : SearchMode.fullText;
+      final enableVectorSearch = bit(10);
       final selectedProjectIds = bit(11) ? {'project-1'} : <String>{};
 
       final oldAllowed = computeAllowedEntryTypes(
@@ -357,22 +299,15 @@ void main() {
         _ => oldAllowed.take(oldAllowed.length ~/ 2).toSet(),
       };
 
-      // Pin the desktop flag so the showTasks auto-switch branch is part
-      // of the generated space deterministically.
-      final savedDesktop = platform.isDesktop;
-      platform.isDesktop = true;
-      try {
+      {
         final result = JournalPageSubscriptions.applyJournalConfigFlags(
           flags: flags,
-          showTasks: showTasks,
           enableEvents: enableEvents,
           enableHabits: enableHabits,
           enableDashboards: enableDashboards,
           enableRelationships: enableRelationships,
-          enableVectorSearch: bit(3),
+          enableVectorSearch: enableVectorSearch,
           enableProjects: bit(4),
-          searchMode: searchMode,
-          hasExplicitSearchModeSelection: hasExplicitSelection,
           selectedEntryTypes: selectedEntryTypes,
           selectedProjectIds: selectedProjectIds,
         );
@@ -413,26 +348,20 @@ void main() {
           expect(result.selectedEntryTypes, newAllowed, reason: reason);
         }
 
-        // Vector mode never survives a disabled vector-search flag.
-        if (!flags.vectorSearch) {
-          expect(result.searchMode, isNot(SearchMode.vector), reason: reason);
-        }
         // Project selection never survives a disabled projects flag.
         if (!flags.projects) {
           expect(result.selectedProjectIds, isEmpty, reason: reason);
         }
 
-        // shouldRefresh fires exactly for a search-mode change or a
-        // cleared project selection.
+        // shouldRefresh fires exactly when search by meaning turns on or
+        // off, or a project selection is cleared.
         final projectsCleared =
             !flags.projects && selectedProjectIds.isNotEmpty;
         expect(
           result.shouldRefresh,
-          result.searchMode != searchMode || projectsCleared,
+          flags.vectorSearch != enableVectorSearch || projectsCleared,
           reason: reason,
         );
-      } finally {
-        platform.isDesktop = savedDesktop;
       }
     }, tags: 'glados');
   });

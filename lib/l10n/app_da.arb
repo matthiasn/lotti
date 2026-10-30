@@ -5958,8 +5958,7 @@
   "saveShortcutTooltip": "Gem — Ctrl+S (⌘S på Mac)",
   "saveSuccessful": "Reddet med succes",
   "searchHint": "Søg...",
-  "searchModeFullText": "Fuld tekst",
-  "searchModeVector": "Vektor",
+  "searchRelatedByMeaningSection": "Beslægtede i betydning",
   "searchTasksHint": "Søgeopgaver…",
   "selectButton": "Vælg",
   "selectColor": "Vælg en farve",
@@ -7408,7 +7407,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Søgefunktion",
   "tasksSearchNoLinkedTasks": "Ingen tilknyttede opgaver fundet for denne pull request.",
   "tasksSearchResultsSection": "Resultater",
   "tasksShowCreationDate": "Vis oprettelsesdato på kortene",
@@ -7465,17 +7463,6 @@
   "unlinkTaskConfirmNamed": "Koble „{title}“ fra? Selve opgaven bliver ikke slettet.",
   "unlinkTaskFailedMessage": "Opgaven kunne ikke kobles fra. Prøv igen.",
   "unlinkTaskTitle": "Afkoblingsopgave",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Udsigt",
   "viewMenuZoomIn": "Zoom ind",
   "viewMenuZoomOut": "Zoom ud",

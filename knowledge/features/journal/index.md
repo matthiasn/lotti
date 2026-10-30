@@ -5,7 +5,7 @@ filtered, linked, highlighted and deleted.
 
 * [Overview](overview.md) - the two controller centers, the model boundary, split-pane routing, the repository facade and its side effects.
 * [Entry detail and saving](detail-and-saving.md) - the two-state detail machine, the double write for tasks, and the date-time editor.
-* [Browse, search and linking](browse-and-linking.md) - one controller across two tabs, search modes, post-filter pagination, linked entries and focus.
+* [Browse, search and linking](browse-and-linking.md) - one controller across two tabs, one search of words then meaning, post-filter pagination, linked entries and focus.
 
 # Related
 

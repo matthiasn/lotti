@@ -30,7 +30,6 @@ class FakeJournalPageController extends JournalPageController {
   final List<bool> showDueDateCalls = [];
   final List<Set<DisplayFilter>> filtersCalls = [];
   final List<String> searchStringCalls = [];
-  final List<SearchMode> searchModeCalls = [];
   final List<AgentAssignmentFilter> agentAssignmentFilterCalls = [];
   final List<TaskDueFilter> dueFilterCalls = [];
   final List<String> toggledProjectIds = [];
@@ -100,7 +99,6 @@ class FakeJournalPageController extends JournalPageController {
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
     TaskDueFilter? dueFilter,
-    SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
   }) async {
@@ -115,7 +113,6 @@ class FakeJournalPageController extends JournalPageController {
     if (agentAssignmentFilter != null) {
       agentAssignmentFilterCalls.add(agentAssignmentFilter);
     }
-    if (searchMode != null) searchModeCalls.add(searchMode);
     if (showCreationDate != null) showCreationDateCalls.add(showCreationDate);
     if (showDueDate != null) showDueDateCalls.add(showDueDate);
   }
@@ -222,11 +219,6 @@ class FakeJournalPageController extends JournalPageController {
 
   // Search methods
   @override
-  void setSearchMode(SearchMode mode) {
-    searchModeCalls.add(mode);
-  }
-
-  @override
   Future<void> setSearchString(String query) async {
     searchStringCalls.add(query);
   }
@@ -261,7 +253,6 @@ class FakeJournalPageController extends JournalPageController {
     showDueDateCalls.clear();
     filtersCalls.clear();
     searchStringCalls.clear();
-    searchModeCalls.clear();
     agentAssignmentFilterCalls.clear();
     dueFilterCalls.clear();
     toggledProjectIds.clear();

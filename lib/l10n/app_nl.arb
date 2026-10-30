@@ -5957,8 +5957,7 @@
   "saveShortcutTooltip": "Opslaan",
   "saveSuccessful": "Opgeslagen met succes",
   "searchHint": "Zoeken...",
-  "searchModeFullText": "Volledige tekst",
-  "searchModeVector": "Vector",
+  "searchRelatedByMeaningSection": "Verwant qua betekenis",
   "searchTasksHint": "Zoeken taken…",
   "selectButton": "Selecteren",
   "selectColor": "Een kleur selecteren",
@@ -7407,7 +7406,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Zoeken",
   "tasksSearchNoLinkedTasks": "Geen gekoppelde taken gevonden voor deze pull request.",
   "tasksSearchResultsSection": "Resultaten",
   "tasksShowCreationDate": "Aanmaakdatum op kaarten tonen",
@@ -7464,17 +7462,6 @@
   "unlinkTaskConfirmNamed": "„{title}“ ontkoppelen? De taak zelf wordt niet verwijderd.",
   "unlinkTaskFailedMessage": "Ontkoppelen van de taak is mislukt. Probeer het opnieuw.",
   "unlinkTaskTitle": "Taak loskoppelen",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms. {count} resultaat} other{{elapsed}ms. {count} resultaten}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Beeld",
   "viewMenuZoomIn": "Inzoomen",
   "viewMenuZoomOut": "Uitzoomen",

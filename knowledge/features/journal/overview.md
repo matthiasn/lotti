@@ -149,7 +149,7 @@ caption-tier "New entries will open here." rather than echoing the list's title.
 # Concepts
 
 * [Entry detail and saving](detail-and-saving.md) - the entry controller, its state machine, the save path's double write, and the date-time editor.
-* [Browse, search and linking](browse-and-linking.md) - the page controller, search modes, post-filter pagination, and the linked-entry machinery.
+* [Browse, search and linking](browse-and-linking.md) - the page controller, the search (words, then meaning), post-filter pagination, and the linked-entry machinery.
 
 # The repository is a facade
 

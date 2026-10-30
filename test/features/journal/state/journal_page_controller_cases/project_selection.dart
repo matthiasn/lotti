@@ -101,53 +101,6 @@ void _registerProjectSelection(JournalControllerTestSetup setup) {
       },
     );
   });
-
-  group('Search Mode', () {
-    test('setSearchMode sets vector mode when vector search is enabled', () {
-      fakeAsync((async) {
-        final controller = setup.container.read(
-          journalPageControllerProvider(true).notifier,
-        );
-
-        settle(async);
-
-        // Enable vector search flag
-        setup.configFlagsController.add({enableVectorSearchFlag});
-
-        settle(async);
-
-        controller.setSearchMode(SearchMode.vector);
-
-        settle(async);
-
-        final state = setup.container.read(journalPageControllerProvider(true));
-        expect(state.searchMode, equals(SearchMode.vector));
-      });
-    });
-
-    test(
-      'setSearchMode falls back to fullText when vector search is disabled',
-      () {
-        fakeAsync((async) {
-          final controller = setup.container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          settle(async);
-
-          // Do not enable vector search flag
-          controller.setSearchMode(SearchMode.vector);
-
-          settle(async);
-
-          final state = setup.container.read(
-            journalPageControllerProvider(true),
-          );
-          expect(state.searchMode, equals(SearchMode.fullText));
-        });
-      },
-    );
-  });
 }
 
 void _registerSharedProjectFilters(JournalControllerTestSetup setup) {

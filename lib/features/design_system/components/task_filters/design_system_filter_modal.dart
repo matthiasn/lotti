@@ -98,7 +98,6 @@ Future<void> showDesignSystemFilterModal({
           !initialState.hasSortSection &&
           !initialState.hasPrioritySection &&
           !initialState.hasAgentFilter &&
-          !initialState.hasSearchMode &&
           initialState.toggles.isEmpty
       ? sections.single
       : null;

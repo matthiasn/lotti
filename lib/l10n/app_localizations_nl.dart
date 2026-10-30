@@ -14080,10 +14080,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchHint => 'Zoeken...';
 
   @override
-  String get searchModeFullText => 'Volledige tekst';
-
-  @override
-  String get searchModeVector => 'Vector';
+  String get searchRelatedByMeaningSection => 'Verwant qua betekenis';
 
   @override
   String get searchTasksHint => 'Zoeken taken…';
@@ -17687,9 +17684,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get tasksSearchModeLabel => 'Zoeken';
-
-  @override
   String get tasksSearchNoLinkedTasks =>
       'Geen gekoppelde taken gevonden voor deze pull request.';
 
@@ -17895,17 +17889,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Taak loskoppelen';
-
-  @override
-  String vectorSearchTiming(int elapsed, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '${elapsed}ms. $count resultaten',
-      one: '${elapsed}ms. $count resultaat',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get viewMenuTitle => 'Beeld';

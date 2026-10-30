@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/database/agents/agent_database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/get_it.dart';
@@ -225,47 +224,44 @@ void main() {
     });
 
     test(
-      'semantic results are narrowed to the view, distances kept whole',
+      'what meaning found is narrowed to the view like the matches',
       () async {
-        final repo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(repo);
-        final late = hMakeTask(id: 'late', createdAt: hTestDate);
-        final undated = hMakeTask(id: 'undated', createdAt: hTestDate);
-        when(
-          () => repo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer(
-          (_) async => VectorSearchResult(
-            entities: [late, undated],
-            elapsed: const Duration(milliseconds: 5),
-            distances: const {'late': 0.1, 'undated': 0.2},
-          ),
-        );
+        final now = DateTime(2026, 4, 8, 12);
         when(
           () => mockJournalDb.getOpenTaskIdsForDueFilter(
             TaskDueFilter.overdue,
             now: now,
           ),
-        ).thenAnswer((_) async => {'late'});
+        ).thenAnswer((_) async => {'late', 'krill'});
 
-        final result = await withClock(
+        await withClock(
           Clock.fixed(now),
-          () => runner.runVectorSearch(
+          () => runner.runQuery(
             hDefaultParams(
               showTasks: true,
               dueFilter: TaskDueFilter.overdue,
               query: 'fish',
-              enableVectorSearch: true,
-              searchMode: SearchMode.vector,
             ),
+            0,
+            fullTextMatches: {'krill', 'rota'},
+            relatedByMeaning: const ['late', 'undated'],
           ),
         );
 
-        expect(result.entities.map((e) => e.meta.id), ['late']);
-        // The search's own result set, which the smart-view counts read.
-        expect(result.distances.keys, unorderedEquals(['late', 'undated']));
+        final asked = verify(
+          () => mockJournalDb.getTasks(
+            ids: captureAny(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).captured;
+        expect(asked.last, ['krill', 'late']);
       },
     );
 
@@ -414,6 +410,26 @@ void main() {
         expect(page.map((t) => t.meta.id), ['third', 'first']);
       },
     );
+
+    test('what meaning found follows the word matches, nearest first, and a '
+        'word match it also found keeps its place', () async {
+      final fourth = hMakeTask(id: 'fourth', createdAt: hTestDate);
+      taskQueryAnswers([fourth, third, first, second]);
+
+      final page = await runner.runQuery(
+        hDefaultParams(showTasks: true, query: 'krill'),
+        0,
+        fullTextMatches: {'second', 'first'},
+        relatedByMeaning: const ['fourth', 'first', 'third'],
+      );
+
+      expect(page.map((t) => t.meta.id), [
+        'second',
+        'first',
+        'fourth',
+        'third',
+      ]);
+    });
   });
 
   group('runPullRequestSearch', () {
@@ -892,192 +908,134 @@ void main() {
     });
   });
 
-  group('runVectorSearch', () {
-    test(
-      'returns empty result when VectorSearchRepository is not registered',
-      () {
-        fakeAsync((async) {
-          final params = hDefaultParams(
-            query: 'test query',
-            enableVectorSearch: true,
-          );
+  group('meaningSearch', () {
+    test('asks nothing while search by meaning is off, the query is blank, '
+        'or the pipeline is not set up', () async {
+      final repo = MockVectorSearchRepository();
+      for (final params in [
+        hDefaultParams(showTasks: true, query: 'krill'),
+        hDefaultParams(showTasks: true, query: '  ', enableVectorSearch: true),
+      ]) {
+        getIt.registerSingleton<VectorSearchRepository>(repo);
+        final result = await runner.meaningSearch(params);
+        getIt.unregister<VectorSearchRepository>();
+        expect(result.ids, isEmpty);
+        expect(result.distances, isEmpty);
+      }
+      final unregistered = await runner.meaningSearch(
+        hDefaultParams(
+          showTasks: true,
+          query: 'krill',
+          enableVectorSearch: true,
+        ),
+      );
+      expect(unregistered.ids, isEmpty);
+      verifyZeroInteractions(repo);
+    });
 
-          late JournalVectorSearchResult result;
-          runner.runVectorSearch(params).then((r) => result = r);
-          async.flushMicrotasks();
-
-          expect(result.entities, isEmpty);
-          expect(result.elapsed, equals(Duration.zero));
-          expect(result.distances, isEmpty);
-          verify(
-            () => mockDomainLogger.log(
-              LogDomain.persistence,
-              any(that: contains('VectorSearchRepository not registered')),
-              subDomain: 'JournalQueryRunner',
-              level: InsightLevel.warn,
-            ),
-          ).called(1);
-        });
-      },
-    );
-
-    test('returns results with telemetry from repository', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        final task = hMakeTask(id: 'vec-task', createdAt: hTestDate);
-        final vectorResult = VectorSearchResult(
-          entities: [task],
+    test('returns the tasks nearest first, with their distances', () async {
+      final repo = MockVectorSearchRepository();
+      getIt.registerSingleton<VectorSearchRepository>(repo);
+      when(
+        () => repo.searchRelatedTasks(
+          query: any(named: 'query'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer(
+        (_) async => VectorSearchResult(
+          entities: [
+            hMakeTask(id: 'near', createdAt: hTestDate),
+            hMakeTask(id: 'far', createdAt: hTestDate),
+          ],
           elapsed: const Duration(milliseconds: 150),
-          distances: {'vec-task': 0.42},
-        );
+          distances: const {'near': 0.2, 'far': 0.42},
+        ),
+      );
 
-        when(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = hDefaultParams(
+      final result = await runner.meaningSearch(
+        hDefaultParams(
           showTasks: true,
           query: 'semantic search',
           enableVectorSearch: true,
-        );
+          selectedCategoryIds: const {'cat-1'},
+        ),
+      );
 
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, hasLength(1));
-        expect(result.entities.first.meta.id, equals('vec-task'));
-        expect(result.elapsed, equals(const Duration(milliseconds: 150)));
-        expect(result.distances, equals({'vec-task': 0.42}));
-      });
-    });
-
-    test('calls searchRelatedEntries when showTasks is false', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        final entry = hMakeEntry(id: 'vec-entry', createdAt: hTestDate);
-        final vectorResult = VectorSearchResult(
-          entities: [entry],
-          elapsed: const Duration(milliseconds: 80),
-          distances: {'vec-entry': 0.3},
-        );
-
-        when(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = hDefaultParams(
-          showTasks: false,
+      expect(result.ids, ['near', 'far']);
+      expect(result.distances, {'near': 0.2, 'far': 0.42});
+      verify(
+        () => repo.searchRelatedTasks(
           query: 'semantic search',
-          enableVectorSearch: true,
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, hasLength(1));
-        expect(result.entities.first.meta.id, equals('vec-entry'));
-
-        verify(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: 'semantic search',
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        );
-      });
+          categoryIds: {'cat-1'},
+        ),
+      ).called(1);
     });
 
-    test('passes null categoryIds when selectedCategoryIds is empty', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
+    test('searches entries, across every category, when the page lists '
+        'entries', () async {
+      final repo = MockVectorSearchRepository();
+      getIt.registerSingleton<VectorSearchRepository>(repo);
+      when(
+        () => repo.searchRelatedEntries(
+          query: any(named: 'query'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer(
+        (_) async => VectorSearchResult(
+          entities: [hMakeEntry(id: 'vec-entry', createdAt: hTestDate)],
+          elapsed: const Duration(milliseconds: 80),
+          distances: const {'vec-entry': 0.3},
+        ),
+      );
 
-        final vectorResult = VectorSearchResult(
-          entities: <JournalEntity>[],
-          elapsed: const Duration(milliseconds: 10),
-        );
+      final result = await runner.meaningSearch(
+        hDefaultParams(query: 'semantic search', enableVectorSearch: true),
+      );
 
-        when(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = hDefaultParams(
-          query: 'test query',
-          enableVectorSearch: true,
-          // selectedCategoryIds defaults to empty set
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, isEmpty);
-
-        // Verify categoryIds was passed as null (not an empty set).
-        verify(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: 'test query',
-            categoryIds: null,
-          ),
-        ).called(1);
-      });
+      expect(result.ids, ['vec-entry']);
+      verify(
+        () => repo.searchRelatedEntries(
+          query: 'semantic search',
+          categoryIds: null,
+        ),
+      ).called(1);
+      verifyNever(
+        () => repo.searchRelatedTasks(
+          query: any(named: 'query'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      );
     });
 
-    test('returns empty result when repository throws', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
+    test('a failing repository finds nothing, and is logged', () async {
+      final repo = MockVectorSearchRepository();
+      getIt.registerSingleton<VectorSearchRepository>(repo);
+      when(
+        () => repo.searchRelatedTasks(
+          query: any(named: 'query'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenThrow(Exception('embedding service unavailable'));
 
-        when(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenThrow(Exception('embedding service unavailable'));
-
-        final params = hDefaultParams(
+      final result = await runner.meaningSearch(
+        hDefaultParams(
           showTasks: true,
           query: 'broken search',
           enableVectorSearch: true,
-        );
+        ),
+      );
 
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, isEmpty);
-        expect(result.elapsed, equals(Duration.zero));
-        expect(result.distances, isEmpty);
-        verify(
-          () => mockDomainLogger.error(
-            LogDomain.persistence,
-            any(that: isA<Exception>()),
-            stackTrace: any(named: 'stackTrace', that: isNotNull),
-            subDomain: 'JournalQueryRunner',
-            message: 'Vector search failed',
-          ),
-        ).called(1);
-      });
+      expect(result.ids, isEmpty);
+      expect(result.distances, isEmpty);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.persistence,
+          any(that: isA<Exception>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'JournalQueryRunner',
+          message: 'Search by meaning failed',
+        ),
+      ).called(1);
     });
   });
 }

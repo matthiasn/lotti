@@ -5348,8 +5348,7 @@
   "saveShortcutTooltip": "Salvare — Ctrl+S (⌘S pe Mac)",
   "saveSuccessful": "Salvat cu succes",
   "searchHint": "Căutare...",
-  "searchModeFullText": "Text integral",
-  "searchModeVector": "Vector",
+  "searchRelatedByMeaningSection": "Înrudite ca sens",
   "searchTasksHint": "Căutați sarcini…",
   "selectButton": "Selectați",
   "selectColor": "Alegeți o culoare",
@@ -6682,7 +6681,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Mod de căutare",
   "tasksSearchNoLinkedTasks": "Nu s-au găsit sarcini legate de acest pull request.",
   "tasksSearchResultsSection": "Rezultate",
   "tasksShowCreationDate": "Afișați data creării pe carduri",
@@ -6739,17 +6737,6 @@
   "unlinkTaskConfirmNamed": "Deconectați „{title}”? Sarcina în sine nu este ștearsă.",
   "unlinkTaskFailedMessage": "Nu s-a putut deconecta sarcina. Vă rugăm să încercați din nou.",
   "unlinkTaskTitle": "Deconectați sarcina",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} rezultat} other{{elapsed}ms, {count} rezultate}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Vizualizare",
   "viewMenuZoomIn": "Mărire",
   "viewMenuZoomOut": "Micșorare",

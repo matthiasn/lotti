@@ -13976,10 +13976,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHint => 'Search...';
 
   @override
-  String get searchModeFullText => 'Full Text';
-
-  @override
-  String get searchModeVector => 'Vector';
+  String get searchRelatedByMeaningSection => 'Related by meaning';
 
   @override
   String get searchTasksHint => 'Search tasks…';
@@ -17526,9 +17523,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tasksSearchModeLabel => 'Search mode';
-
-  @override
   String get tasksSearchNoLinkedTasks =>
       'No linked tasks found for this pull request.';
 
@@ -17733,17 +17727,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Unlink Task';
-
-  @override
-  String vectorSearchTiming(int elapsed, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '${elapsed}ms, $count results',
-      one: '${elapsed}ms, $count result',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get viewMenuTitle => 'View';

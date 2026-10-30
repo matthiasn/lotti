@@ -5958,8 +5958,7 @@
   "saveShortcutTooltip": "Spara — Ctrl+S (⌘S på Mac)",
   "saveSuccessful": "Räddad framgångsrikt",
   "searchHint": "Sök...",
-  "searchModeFullText": "Fulltext",
-  "searchModeVector": "Vektor",
+  "searchRelatedByMeaningSection": "Besläktade i betydelse",
   "searchTasksHint": "Sökuppgifter…",
   "selectButton": "Välj",
   "selectColor": "Välj en färg",
@@ -7408,7 +7407,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Sökläge",
   "tasksSearchNoLinkedTasks": "Inga kopplade uppgifter hittades för den här pull requesten.",
   "tasksSearchResultsSection": "Resultat",
   "tasksShowCreationDate": "Showens skapandedatum på korten",
@@ -7465,17 +7463,6 @@
   "unlinkTaskConfirmNamed": "Koppla bort „{title}“? Själva uppgiften raderas inte.",
   "unlinkTaskFailedMessage": "Det gick inte att koppla bort uppgiften. Försök igen.",
   "unlinkTaskTitle": "Koppla bort uppgiften",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultat} other{{elapsed}ms, {count} resultat}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Vy",
   "viewMenuZoomIn": "Zooma in",
   "viewMenuZoomOut": "Zooma ut",
