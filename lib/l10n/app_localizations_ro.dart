@@ -12265,6 +12265,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectPickerLabel => 'Proiect';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return 'Deschideți $project';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Fără proiect';
 
   @override

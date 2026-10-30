@@ -328,6 +328,185 @@ void main() {
       handle.dispose();
     },
   );
+
+  group('secondary action', () {
+    const actionKey = Key('row-action');
+
+    DesignSystemSelectionRow actionRow({
+      required VoidCallback? onTap,
+      VoidCallback? onAction,
+      bool selected = false,
+      bool withAction = true,
+      String id = 'action-row',
+    }) => DesignSystemSelectionRow(
+      key: Key(id),
+      title: 'Garden',
+      type: DesignSystemSelectionRowType.singleSelect,
+      selected: selected,
+      trailing: Text('Active', key: Key('badge-$id')),
+      secondaryAction: withAction
+          ? DesignSystemSelectionRowAction(
+              key: actionKey,
+              label: 'Open Garden',
+              onPressed: onAction ?? () {},
+            )
+          : null,
+      onTap: onTap,
+    );
+
+    testWidgets('a tap on the action fires it, never the row, and the other '
+        'way round', (tester) async {
+      var rowTaps = 0;
+      var actionTaps = 0;
+      await _pump(
+        tester,
+        actionRow(onTap: () => rowTaps++, onAction: () => actionTaps++),
+      );
+
+      await tester.tap(find.byKey(actionKey));
+      await tester.pump();
+      expect((rowTaps, actionTaps), (0, 1));
+
+      await tester.tap(find.text('Garden'));
+      await tester.pump();
+      expect((rowTaps, actionTaps), (1, 1));
+    });
+
+    testWidgets('the action is its own button beside the row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, actionRow(onTap: () {}));
+
+      // The row excludes its visual subtree from semantics, so an action
+      // inside it would be unreachable; beside it, it keeps its node.
+      expect(
+        tester.getSemantics(find.byKey(actionKey)),
+        matchesSemantics(
+          label: 'Open Garden',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Garden')),
+        matchesSemantics(
+          label: 'Garden',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('does not grow the row', (tester) async {
+      await _pump(tester, actionRow(onTap: () {}, withAction: false));
+      final plainHeight = tester
+          .getSize(find.byKey(const Key('action-row')))
+          .height;
+
+      await _pump(tester, actionRow(onTap: () {}));
+      expect(
+        tester.getSize(find.byKey(const Key('action-row'))).height,
+        plainHeight,
+      );
+    });
+
+    testWidgets('splits off a full-height trailing segment with the '
+        "navigation row's chevron", (tester) async {
+      await _pump(tester, actionRow(onTap: () {}, selected: true));
+
+      final rowRect = tester.getRect(find.byKey(const Key('action-row')));
+      final target = tester.getRect(find.byKey(actionKey));
+      final chevron = find.byIcon(LottiIcons.chevronRight);
+
+      expect(target.right, rowRect.right);
+      expect(target.width, TapTargets.minimum);
+      expect((target.top, target.bottom), (rowRect.top, rowRect.bottom));
+      expect(tester.widget<Icon>(chevron).size, dsTokensLight.spacing.step6);
+      expect(
+        tester.widget<Icon>(chevron).color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
+    testWidgets('a selected split row lets its band carry the selection, so '
+        'its trailing metadata lines up with an unselected row', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: dsTokensLight.spacing.step13 * 2,
+            child: Column(
+              children: [
+                actionRow(
+                  onTap: () {},
+                  selected: true,
+                  id: 'picked',
+                ),
+                actionRow(onTap: () {}, id: 'other'),
+              ],
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
+      expect(
+        tester.getRect(find.byKey(const Key('badge-picked'))).right,
+        tester.getRect(find.byKey(const Key('badge-other'))).right,
+      );
+      final handle = tester.ensureSemantics();
+      // The picked row comes first; selection stays in its semantics.
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Garden').first)
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the selected band runs under the segment, and only on a '
+        'selected row', (tester) async {
+      Finder bandUnderSegment() => find.ancestor(
+        of: find.byKey(actionKey),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is ColoredBox &&
+              w.color == dsTokensLight.colors.surface.selected,
+        ),
+      );
+
+      await _pump(tester, actionRow(onTap: () {}, selected: true));
+      expect(bandUnderSegment(), findsOneWidget);
+
+      await _pump(tester, actionRow(onTap: () {}));
+      expect(bandUnderSegment(), findsNothing);
+    });
+
+    testWidgets('a disabled row disables its action', (tester) async {
+      var actionTaps = 0;
+      await _pump(
+        tester,
+        actionRow(onTap: null, onAction: () => actionTaps++),
+      );
+
+      await tester.tap(find.byKey(actionKey), warnIfMissed: false);
+      await tester.pump();
+      expect(actionTaps, 0);
+      expect(
+        tester.widget<Icon>(find.byIcon(LottiIcons.chevronRight)).color,
+        dsTokensLight.colors.text.lowEmphasis,
+      );
+    });
+  });
 }
 
 Future<void> _pump(WidgetTester tester, Widget child) async {

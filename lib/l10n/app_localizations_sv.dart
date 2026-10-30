@@ -12055,6 +12055,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectPickerLabel => 'Projekt';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return 'Öppna $project';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Inget projekt';
 
   @override

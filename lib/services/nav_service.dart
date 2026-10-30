@@ -509,8 +509,13 @@ class NavService {
   /// Whether the tab at `tabIndex` may become active under the current
   /// `allowedTabDelegates`.
   bool isTabAllowed(int tabIndex) =>
-      allowedTabDelegates == null ||
-      allowedTabDelegates!.contains(delegateByIndex(tabIndex));
+      isDelegateAllowed(delegateByIndex(tabIndex));
+
+  /// Whether the tab owned by [delegate] may become active under the current
+  /// `allowedTabDelegates`. Keyed by delegate, so a caller can ask about a
+  /// tab whether or not its flag currently gives it an index.
+  bool isDelegateAllowed(BeamerDelegate delegate) =>
+      allowedTabDelegates == null || allowedTabDelegates!.contains(delegate);
 
   /// Beams the tab owned by [delegate] back to its root **without** making
   /// it active — unlike [setTabRoot], which activates its target. Lockdown

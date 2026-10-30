@@ -4570,6 +4570,7 @@
   "projectNoProjects": "Pas encore de projets",
   "projectNotFound": "Projet introuvable",
   "projectPickerLabel": "Projet",
+  "projectPickerOpenProject": "Ouvrir {project}",
   "projectPickerUnassigned": "Aucun projet",
   "projectPickerUpdateFailed": "Impossible de modifier le projet de la tâche. Vérifie la catégorie et la confidentialité, puis réessaie.",
   "projectRecommendationsTitle": "Prochaines étapes recommandées",

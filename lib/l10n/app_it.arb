@@ -5151,6 +5151,7 @@
   "projectNoProjects": "Nessun progetto ancora",
   "projectNotFound": "Progetto non trovato",
   "projectPickerLabel": "Progetto",
+  "projectPickerOpenProject": "Apri {project}",
   "projectPickerUnassigned": "Nessun progetto",
   "projectPickerUpdateFailed": "Impossibile modificare il progetto dell'attività. Controlla categoria e privacy e riprova.",
   "projectRecommendationsTitle": "Prossimi passi consigliati",

@@ -12070,6 +12070,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get projectPickerLabel => 'Project';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return '$project openen';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Geen project';
 
   @override

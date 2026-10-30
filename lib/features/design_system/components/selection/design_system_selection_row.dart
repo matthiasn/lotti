@@ -18,6 +18,26 @@ enum DesignSystemSelectionRowType {
   action,
 }
 
+/// A second way through a [DesignSystemSelectionRow]: rather than choosing the
+/// row's entity, go to that entity's own page — a picker row's project, say.
+/// [label] is both the tooltip and the accessible name, so it should name the
+/// entity ("Open Garden"), not just the verb.
+@immutable
+class DesignSystemSelectionRowAction {
+  const DesignSystemSelectionRowAction({
+    required this.label,
+    required this.onPressed,
+    this.key,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  /// Key for the action control, so a caller can address it apart from the
+  /// row.
+  final Key? key;
+}
+
 /// The shared row used by every modal selection flow.
 ///
 /// It keeps the leading rail, typography, spacing, interaction states, and
@@ -42,6 +62,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     this.selected = false,
     this.showSelectedBackground = true,
     this.secondaryLine,
+    this.secondaryAction,
     this.selectedLabel,
     this.semanticLabel,
     this.focusNode,
@@ -89,6 +110,22 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// own semantics.
   final Widget? secondaryLine;
 
+  /// Optional second target, which splits the row the way
+  /// `DesignSystemSplitButton` splits a button: the row's content stays the
+  /// pick, and a hairline-separated, full-height segment at the trailing edge
+  /// carries the navigation chevron — the same glyph, size and ink as a
+  /// [DesignSystemSelectionRowType.navigation] row's, because it does the same
+  /// thing: open another page.
+  ///
+  /// Each segment has its own ink, so hovering the chevron never lights the
+  /// pick and a tap on it never reaches [onTap]. The selected band runs under
+  /// both and is the whole selected state: a single-select split row draws no
+  /// check, so its [trailing] metadata lines up with every other row's. The
+  /// segment is its own button node beside the row's (the row excludes its
+  /// visual subtree from semantics, so a control inside it would be
+  /// unreachable). A disabled row disables it too.
+  final DesignSystemSelectionRowAction? secondaryAction;
+
   /// Optional visible state label displayed before the selected check.
   final String? selectedLabel;
 
@@ -109,11 +146,12 @@ class DesignSystemSelectionRow extends StatelessWidget {
     final isSingle = type == DesignSystemSelectionRowType.singleSelect;
     final isMulti = type == DesignSystemSelectionRowType.multiSelect;
     final standardTrailing = _standardTrailing(context);
+    final banded = (isSingle || isMulti) && selected && showSelectedBackground;
     final resolvedSemanticLabel =
         semanticLabel ??
         (subtitle == null || subtitle!.isEmpty ? title : '$title, $subtitle');
 
-    final row = Semantics(
+    Widget row = Semantics(
       container: true,
       label: resolvedSemanticLabel,
       button: isMulti ? null : true,
@@ -141,8 +179,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
                 ),
           trailing: trailing,
           trailingExtra: standardTrailing,
-          activated:
-              (isSingle || isMulti) && selected && showSelectedBackground,
+          activated: banded,
           activatedBackgroundColor: tokens.colors.surface.selected,
           onTap: onTap,
           focusNode: focusNode,
@@ -152,6 +189,21 @@ class DesignSystemSelectionRow extends StatelessWidget {
         ),
       ),
     );
+    if (secondaryAction case final action?) {
+      row = IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: row),
+            _SecondaryActionSegment(
+              action: action,
+              enabled: onTap != null,
+              banded: banded,
+            ),
+          ],
+        ),
+      );
+    }
     if (secondaryLine == null) return row;
 
     // The title inset is component-owned: the list item's horizontal padding
@@ -186,6 +238,10 @@ class DesignSystemSelectionRow extends StatelessWidget {
     switch (type) {
       case DesignSystemSelectionRowType.singleSelect:
         if (!selected) return null;
+        // A split row's selected band already says which row is chosen; a
+        // check there would only push that row's trailing metadata out of
+        // line with every other row's. Selection stays in the semantics.
+        if (secondaryAction != null) return null;
         return _SelectionMarker(label: selectedLabel);
       case DesignSystemSelectionRowType.multiSelect:
         return ExcludeFocus(
@@ -206,6 +262,79 @@ class DesignSystemSelectionRow extends StatelessWidget {
       case DesignSystemSelectionRowType.action:
         return null;
     }
+  }
+}
+
+/// The trailing segment of a split selection row: a hairline, then a
+/// [TapTargets.minimum]-wide target holding the navigation chevron.
+class _SecondaryActionSegment extends StatelessWidget {
+  const _SecondaryActionSegment({
+    required this.action,
+    required this.enabled,
+    required this.banded,
+  });
+
+  final DesignSystemSelectionRowAction action;
+  final bool enabled;
+
+  /// Whether the row wears the selected band, which continues under the
+  /// segment so a selected row reads as one row.
+  final bool banded;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final segment = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Inset like a list divider is: it separates two targets, it does
+        // not cut the row in two.
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          child: SizedBox(
+            width: tokens.spacing.step1 / 2,
+            child: ColoredBox(color: tokens.colors.decorative.level01),
+          ),
+        ),
+        Semantics(
+          key: action.key,
+          container: true,
+          button: true,
+          label: action.label,
+          enabled: enabled,
+          onTap: enabled ? action.onPressed : null,
+          child: ExcludeSemantics(
+            child: Tooltip(
+              message: action.label,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: enabled ? action.onPressed : null,
+                  hoverColor: tokens.colors.surface.hover,
+                  highlightColor: tokens.colors.surface.focusPressed,
+                  splashColor: Colors.transparent,
+                  child: SizedBox(
+                    width: TapTargets.minimum,
+                    child: Center(
+                      child: Icon(
+                        LottiIcons.chevronRight,
+                        color: enabled
+                            ? tokens.colors.text.mediumEmphasis
+                            : tokens.colors.text.lowEmphasis,
+                        size: tokens.spacing.step6,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    if (!banded) return segment;
+    return ColoredBox(color: tokens.colors.surface.selected, child: segment);
   }
 }
 

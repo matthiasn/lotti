@@ -4577,6 +4577,7 @@
   "projectNoProjects": "Zatím žádné projekty",
   "projectNotFound": "Projekt nenalezen",
   "projectPickerLabel": "Projekt",
+  "projectPickerOpenProject": "Otevřít {project}",
   "projectPickerUnassigned": "Žádný projekt",
   "projectPickerUpdateFailed": "Projekt úkolu se nepodařilo změnit. Zkontroluj kategorii a soukromí a zkus to znovu.",
   "projectRecommendationsTitle": "Doporučené další kroky",

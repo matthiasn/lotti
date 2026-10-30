@@ -12038,6 +12038,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectPickerLabel => 'Projekt';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return 'Åbn $project';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Intet projekt';
 
   @override

@@ -12234,6 +12234,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectPickerLabel => 'Projet';
 
   @override
+  String projectPickerOpenProject(String project) {
+    return 'Ouvrir $project';
+  }
+
+  @override
   String get projectPickerUnassigned => 'Aucun projet';
 
   @override

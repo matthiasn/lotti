@@ -5151,6 +5151,7 @@
   "projectNoProjects": "Ingen projekter endnu",
   "projectNotFound": "Projekt ikke fundet",
   "projectPickerLabel": "Projekt",
+  "projectPickerOpenProject": "Åbn {project}",
   "projectPickerUnassigned": "Intet projekt",
   "projectPickerUpdateFailed": "Opgavens projekt kunne ikke ændres. Kontrollér kategori og privatliv, og prøv igen.",
   "projectRecommendationsTitle": "Anbefalede næste skridt",
