@@ -859,10 +859,13 @@ class _DimensionHeader extends StatelessWidget {
 }
 
 /// The unit a dimension's values are read in. Check-in time is counted in
-/// minutes, and the word is the reader's language — the state layer has no
-/// locale to write it in. Every other dimension carries its own unit (or, for
-/// tracked hours, none).
+/// minutes and tracked time in hours, and the word is the reader's language —
+/// the state layer has no locale to write it in. Every other dimension
+/// carries its own unit.
 String? _metricUnit(BuildContext context, GoalMetricProgressView metric) =>
-    metric.kind == GoalDimensionKind.checkInTime
-    ? context.messages.goalUnitMinutes
-    : metric.unitName?.trim();
+    switch (metric.kind) {
+      GoalDimensionKind.checkInTime => context.messages.goalUnitMinutes,
+      GoalDimensionKind.categoryTime ||
+      GoalDimensionKind.labelTime => context.messages.goalUnitHours,
+      _ => metric.unitName?.trim(),
+    };

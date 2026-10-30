@@ -8447,6 +8447,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalProgressToday => 'oggi';
 
   @override
+  String get goalQuestionBannerCta => 'Rispondi nella chat';
+
+  @override
+  String get goalQuestionBannerHeadline => 'Il tuo agente ha una domanda';
+
+  @override
   String get goalRecordOfferConflict =>
       'Hai già registrato questo misurabile in uno di questi giorni. Chiedi cosa dovrebbe essere conservato prima di registrare qualsiasi cosa.';
 
@@ -8542,7 +8548,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalTodayBriefingTitle => 'Oggi';
 
   @override
+  String get goalUnitHours => 'h';
+
+  @override
   String get goalUnitMinutes => 'min';
+
+  @override
+  String get goalUnsupportedCriterionBody =>
+      'Questo obiettivo misura qualcosa che questa versione di Lotti non sa ancora leggere, quindi qui i suoi progressi non si aggiornano e su questo dispositivo non puoi modificarlo. I tuoi altri dispositivi lo tengono aggiornato.';
+
+  @override
+  String get goalUnsupportedCriterionTitle =>
+      'Aggiorna l\'app per vedere l\'obiettivo completo';
 
   @override
   String goalWatchingMetric(String windowLabel) {

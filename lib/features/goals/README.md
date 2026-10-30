@@ -135,6 +135,16 @@ answered must fill it. For a goal measured by its check-ins — a journal —
 they are compacted for what they say rather than that they happened, and a
 transcript landing after its recording refreshes the report minutes later
 (ADR 0143).
+When a check-in leaves something open, the agent may ask one question in the
+goal chat, at most once a day and never while its last one is unanswered,
+optionally with a banner that only says a question is waiting and opens the
+chat. It keeps observations it marks critical in view however old they are,
+and long chat turns are compacted into the goal's history like check-ins
+(ADR 0146).
+A goal holding a criterion kind this version of the app cannot read is shown
+but not evaluated, reported on or edited here, with a note to update the app
+(ADR 0145). Time leaves show their unit: minutes for check-in time, hours for
+category and label time.
 Signal charts carry one legend entry per mark drawn, each with its threshold
 as a quiet annotation, and tooltips name the day once above their values.
 A dimension with no readings shows no plot rather than an empty frame, and the

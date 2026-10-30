@@ -19,6 +19,7 @@ typedef GoalHabitWatcher = ({
 /// goal; the first match is the match.
 String? goalCriterionIdForHabit(GoalCriterion criterion, String habitId) =>
     switch (criterion) {
+      GoalCriterionUnsupported() => null,
       GoalCriterionHabit(habitId: final id, :final criterionId) =>
         id == habitId ? criterionId : null,
       GoalCriterionAllOf(:final criteria) ||

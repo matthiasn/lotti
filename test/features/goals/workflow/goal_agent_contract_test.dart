@@ -64,7 +64,7 @@ void main() {
     );
   });
 
-  test('the tool surface includes the shared reply carrier and nine goal '
+  test('the tool surface includes the shared reply carrier and ten goal '
       'tools', () {
     expect(
       [for (final tool in goalAgentTools) tool.name],
@@ -78,6 +78,7 @@ void main() {
         GoalAgentToolNames.proposeGoalRevision,
         GoalAgentToolNames.recordGoalObservation,
         GoalAgentToolNames.searchGoalMemory,
+        GoalAgentToolNames.askGoalQuestion,
         GoalAgentToolNames.rememberGoalFact,
       ],
     );
@@ -156,6 +157,37 @@ void main() {
           as Map<String, dynamic>)['required'],
       ['criterionId', 'action'],
     );
+  });
+
+  test('the question tool carries the rules the prompt has no room for, and '
+      'its banner can never roast (ADR 0146)', () {
+    final tool = goalAgentTools.singleWhere(
+      (tool) => tool.name == GoalAgentToolNames.askGoalQuestion,
+    );
+    expect(
+      tool.description,
+      allOf(
+        contains('ONE short question'),
+        contains('sinceLastReport'),
+        contains('never about numbers'),
+        contains('the app writes its words'),
+      ),
+    );
+    final banner =
+        (tool.parameters['properties'] as Map<String, dynamic>)['banner']
+            as Map<String, dynamic>;
+    final tone =
+        (banner['properties'] as Map<String, dynamic>)['tone']
+            as Map<String, dynamic>;
+    expect(tone['enum'], isNot(contains('roast')));
+    // Free text is not on offer: a banner seen outside the goal cannot leak
+    // what the model never writes.
+    expect(
+      (banner['properties'] as Map<String, dynamic>).keys,
+      unorderedEquals(['tone', 'animation', 'accent']),
+    );
+    expect(tone['enum'], containsAll(['encourage', 'nudge', 'celebrate']));
+    expect(tool.parameters['required'], ['question']);
   });
 
   test('the enum vocabularies are derived from the real enums — the '

@@ -110,6 +110,18 @@ extension _GoalDetailList on _GoalAgentDetailPageState {
         hasStandingAssessment: hasStandingAssessment,
       ),
       SizedBox(height: tokens.spacing.cardItemSpacing),
+      // A goal a newer version measures in a way this one cannot read
+      // (ADR 0145): said once, at the top, because everything under it is
+      // incomplete — no fresh read, no edit, a dimension missing.
+      if (spec != null && goalCriterionHasUnsupported(spec.criteria)) ...[
+        DesignSystemInlineCallout(
+          key: const ValueKey('goal-unsupported-criterion-callout'),
+          icon: LottiIcons.info,
+          title: context.messages.goalUnsupportedCriterionTitle,
+          text: context.messages.goalUnsupportedCriterionBody,
+        ),
+        SizedBox(height: tokens.spacing.cardItemSpacing),
+      ],
       // The hero stack: the agent's narrative above the deterministic
       // week — the two answers to "how is this going" — each at the
       // full content width, so the day strip and the read never trade

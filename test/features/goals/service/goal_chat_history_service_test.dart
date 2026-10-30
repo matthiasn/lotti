@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/goals/service/goal_chat_history_service.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -465,5 +466,79 @@ void main() {
       ),
     ).called(1);
     verifyNever(() => repository.getEntity(any()));
+  });
+
+  group("the agent's own question (ADR 0146)", () {
+    test('is never read as the answer to a user turn — the turn before it '
+        'stays pending', () async {
+      stubHistory(
+        users: [message(id: 'u1', kind: AgentMessageKind.user, minute: 1)],
+        replies: [
+          message(
+            id: 'q1',
+            kind: AgentMessageKind.action,
+            minute: 2,
+            operationId: goalQuestionOperationId('run-1'),
+          ),
+        ],
+      );
+
+      // A reply without an operationId would be paired with u1 as a legacy
+      // answer, and the user's message would never be answered.
+      expect(await service.pendingMessageIds('goal-1'), ['u1']);
+    });
+
+    test('is open until the user writes after it, and reports when it was '
+        'asked', () async {
+      final question = message(
+        id: 'q1',
+        kind: AgentMessageKind.action,
+        minute: 5,
+        operationId: goalQuestionOperationId('run-1'),
+      );
+      stubHistory(
+        users: [message(id: 'u0', kind: AgentMessageKind.user, minute: 1)],
+        replies: [
+          message(
+            id: 'r0',
+            kind: AgentMessageKind.action,
+            minute: 2,
+            operationId: 'u0',
+          ),
+          question,
+        ],
+      );
+      expect(await service.latestAgentQuestion('goal-1'), (
+        askedAt: question.createdAt,
+        answered: false,
+      ));
+
+      stubHistory(
+        users: [
+          message(id: 'u0', kind: AgentMessageKind.user, minute: 1),
+          message(id: 'u1', kind: AgentMessageKind.user, minute: 9),
+        ],
+        replies: [question],
+      );
+      expect(
+        (await service.latestAgentQuestion('goal-1'))?.answered,
+        isTrue,
+      );
+    });
+
+    test('is absent when the agent only ever replied', () async {
+      stubHistory(
+        users: [message(id: 'u0', kind: AgentMessageKind.user, minute: 1)],
+        replies: [
+          message(
+            id: 'r0',
+            kind: AgentMessageKind.action,
+            minute: 2,
+            operationId: 'u0',
+          ),
+        ],
+      );
+      expect(await service.latestAgentQuestion('goal-1'), isNull);
+    });
   });
 }

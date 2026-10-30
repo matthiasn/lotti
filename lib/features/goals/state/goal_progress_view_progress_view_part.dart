@@ -43,6 +43,8 @@ Future<GoalProgressView?> _progressView(
   final habitIds = <String>{};
   void collect(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        return;
       case GoalCriterionHabit(:final habitId):
         habitIds.add(habitId);
       case GoalCriterionMetric() ||
@@ -75,6 +77,8 @@ Future<GoalProgressView?> _progressView(
   final labelIds = <String>{};
   void collectDefinitions(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        return;
       case GoalCriterionMeasurable(:final dataTypeId):
         measurableIds.add(dataTypeId);
       case GoalCriterionCategoryTime(:final categoryId):

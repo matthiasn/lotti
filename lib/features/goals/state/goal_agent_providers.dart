@@ -43,6 +43,7 @@ import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
@@ -577,7 +578,11 @@ final FutureProvider<List<NudgeBannerEntry>> activeGoalNudgesProvider =
                 ? headVersion.title
                 : identity.displayName,
             kind: NudgeBannerKind.goal,
-            tapRoute: goalDetailPath(identity.agentId),
+            // A question's banner points at the question (ADR 0146): the
+            // chat it waits in, not the page about the goal.
+            tapRoute: isGoalQuestionNudge(nudge)
+                ? goalChatPath(identity.agentId)
+                : goalDetailPath(identity.agentId),
           ));
         }
       }
@@ -694,6 +699,7 @@ typedef GoalAgentHealth = ({
 /// period boundary, so a consecutive-register delta there is a period reset,
 /// not a decline. Composites require every child to be sound.
 bool _attainmentTrendIsSound(GoalCriterion criterion) => switch (criterion) {
+  GoalCriterionUnsupported() => false,
   GoalCriterionMetric(:final window) ||
   GoalCriterionMeasurable(:final window) ||
   GoalCriterionHabit(:final window) ||

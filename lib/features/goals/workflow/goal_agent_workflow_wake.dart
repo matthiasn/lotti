@@ -62,6 +62,21 @@ extension _GoalWakePhases on GoalAgentWorkflow {
         version.id != head.versionId) {
       return (version: null, exit: const WakeResult(success: true));
     }
+    // A goal holding a criterion this build cannot read (ADR 0145) is not
+    // judged here. A chat turn fails rather than being answered from facts
+    // that are missing a dimension, so its recovery record hands the turn to
+    // a device that can read the goal.
+    if (goalCriterionHasUnsupported(version.criteria)) {
+      return (
+        version: null,
+        exit: interactive
+            ? const WakeResult(
+                success: false,
+                error: 'goal holds a criterion this version cannot read',
+              )
+            : const WakeResult(success: true),
+      );
+    }
     return (version: version, exit: null);
   }
 
@@ -167,13 +182,20 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     // active must not convince _adRequired that the current goal is
     // covered, and an old-spec retired row must not be offered for
     // rerun. Dismissals pass — the quiet window binds the goal.
+    //
+    // A question's banner is not an ad (ADR 0146): counted here it would
+    // stand in for the status banner policy requires, and be offered for
+    // retire or rerun. Only its dismissal still speaks for the goal.
     return (await _repository.getEntitiesByAgentId(
           agentId,
           type: AgentEntityTypes.goalNudge,
         ))
         .whereType<GoalNudgeEntity>()
         .where(
-          (n) => n.deletedAt == null && _specScopedRow(n, versionId),
+          (n) =>
+              n.deletedAt == null &&
+              _specScopedRow(n, versionId) &&
+              (!isGoalQuestionNudge(n) || n.status == NudgeStatus.dismissed),
         )
         .toList();
   }
@@ -344,6 +366,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required DateTime now,
     required bool userRequestedAd,
     required String? pendingUserMessage,
+    bool questionAllowed = false,
   }) {
     // A tool that is not on the wire cannot be called. The deterministic tier
     // already decides whether a banner is permitted (`automaticGoalAdEligible`
@@ -380,8 +403,37 @@ extension _GoalWakePhases on GoalAgentWorkflow {
                 (tool.function.name != GoalAgentToolNames.createGoalAd &&
                     tool.function.name != GoalAgentToolNames.rerunGoalAd)) &&
             (replyPermitted ||
-                tool.function.name != GoalAgentToolNames.replyToUser))
+                tool.function.name != GoalAgentToolNames.replyToUser) &&
+            // Rationed like the ad tools: offered only when a question is
+            // allowed at all (`goalQuestionAllowed`), never merely forbidden.
+            (questionAllowed ||
+                tool.function.name != GoalAgentToolNames.askGoalQuestion))
           tool,
     ];
+  }
+
+  /// Whether this wake may ask the user a question (ADR 0146). Reads the
+  /// chat only when the cheap conditions already hold.
+  Future<bool> _questionAllowed({
+    required String agentId,
+    required bool interactive,
+    required int newCheckIns,
+  }) async {
+    if (interactive || newCheckIns <= 0) return false;
+    try {
+      return goalQuestionAllowed(
+        interactive: interactive,
+        newCheckIns: newCheckIns,
+        latest: await _chatHistoryService.latestAgentQuestion(agentId),
+      );
+    } on Object catch (error, stackTrace) {
+      // Contained: a question is optional, the wake is not.
+      logError(
+        'goal question allowance unavailable',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
   }
 }

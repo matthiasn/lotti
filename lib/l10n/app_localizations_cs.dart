@@ -8435,6 +8435,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalProgressToday => 'dnes';
 
   @override
+  String get goalQuestionBannerCta => 'Odpovědět v chatu';
+
+  @override
+  String get goalQuestionBannerHeadline => 'Tvůj agent má otázku';
+
+  @override
   String get goalRecordOfferConflict =>
       'V jeden z těchto dnů už máš tuto veličinu zaznamenanou. Než něco uložíš, ujasni si, který záznam se má zachovat.';
 
@@ -8529,7 +8535,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalTodayBriefingTitle => 'Dnes';
 
   @override
+  String get goalUnitHours => 'h';
+
+  @override
   String get goalUnitMinutes => 'min';
+
+  @override
+  String get goalUnsupportedCriterionBody =>
+      'Tento cíl měří něco, co tato verze Lotti zatím neumí přečíst, takže se tu jeho pokrok neaktualizuje a na tomto zařízení ho nelze upravit. Tvoje ostatní zařízení ho udržují aktuální.';
+
+  @override
+  String get goalUnsupportedCriterionTitle =>
+      'Aktualizuj aplikaci, abys tento cíl viděl celý';
 
   @override
   String goalWatchingMetric(String windowLabel) {

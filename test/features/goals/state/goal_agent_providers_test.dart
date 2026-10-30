@@ -31,6 +31,7 @@ import 'package:lotti/features/goals/service/goal_off_track_alert_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
@@ -44,6 +45,7 @@ import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/goal_routes.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -1018,7 +1020,14 @@ void main() {
     ).thenAnswer(
       (_) async => [
         nudgeRow('ad-old', NudgeStatus.active, DateTime(2026, 8, 8)),
-        nudgeRow('ad-new', NudgeStatus.active, DateTime(2026, 8, 10)),
+        // Raised with the agent's question (ADR 0146).
+        nudgeRow(
+          'ad-new',
+          NudgeStatus.active,
+          DateTime(2026, 8, 10),
+        ).copyWith(
+          provenance: const {goalNudgeTriggerKey: goalNudgeQuestionTrigger},
+        ),
         nudgeRow(
           'ad-snoozed',
           NudgeStatus.active,
@@ -1078,6 +1087,16 @@ void main() {
       ['ad-snoozed', 'ad-new', 'ad-old'],
     );
     expect(entries.first.subjectTitle, 'Walk daily');
+    // A question's banner opens the chat its question waits in; every
+    // other banner opens the goal.
+    expect(
+      {for (final entry in entries) entry.nudge.id: entry.tapRoute},
+      {
+        'ad-snoozed': goalDetailPath('goal-a'),
+        'ad-new': goalChatPath('goal-a'),
+        'ad-old': goalDetailPath('goal-a'),
+      },
+    );
 
     // An ad past its staleAt stops rendering even while still `active`.
     when(

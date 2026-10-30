@@ -633,9 +633,13 @@ class GoalCompactionEvalRunner {
         // Recall is withheld too: the eval measures what each compaction arm
         // leaves in `userVoice`, and a search over the raw history would
         // answer the probes around it.
+        //
+        // Every wake here answers a pending message, and the runtime never
+        // offers its own question on a chat turn.
         if (tool.name != GoalAgentToolNames.createGoalAd &&
             tool.name != GoalAgentToolNames.rerunGoalAd &&
-            tool.name != GoalAgentToolNames.searchGoalMemory)
+            tool.name != GoalAgentToolNames.searchGoalMemory &&
+            tool.name != GoalAgentToolNames.askGoalQuestion)
           ChatCompletionTool(
             type: ChatCompletionToolType.function,
             function: FunctionObject(

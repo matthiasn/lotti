@@ -68,6 +68,8 @@ class GoalProgressEvaluator {
   }) {
     final window = GoalWindow.rollingDays(count: days);
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        return null;
       case GoalCriterionMetric(
         :final dataType,
         :final aggregation,
@@ -209,6 +211,9 @@ class GoalProgressEvaluator {
     Map<String, GoalCriterionResult> results,
   ) {
     final outcome = switch (criterion) {
+      GoalCriterionUnsupported(:final criterionId) => _unsupportedLeaf(
+        criterionId,
+      ),
       GoalCriterionMetric(
         :final criterionId,
         :final dataType,
@@ -494,6 +499,7 @@ class GoalProgressEvaluator {
     }
 
     return switch (criterion) {
+      GoalCriterionUnsupported() => false,
       GoalCriterionMetric(:final criterionId) => leafOnTrack(criterionId),
       GoalCriterionHabit(:final criterionId) ||
       GoalCriterionMeasurable(:final criterionId) ||
@@ -875,6 +881,21 @@ class GoalProgressEvaluator {
 }
 
 enum _CompositeKind { allOf, anyOf, atLeastCount }
+
+/// An unknown kind of leaf: nothing this build can measure, so nothing met
+/// and no coverage. Phase A never evaluates a goal holding one (see
+/// `goalCriterionHasUnsupported`); this keeps read-only previews total.
+_NodeOutcome _unsupportedLeaf(String criterionId) => _NodeOutcome(
+  result: GoalCriterionResult(
+    criterionId: criterionId,
+    actual: 0,
+    target: 0,
+    ratio: 0,
+    satisfied: false,
+    sampleCount: 0,
+  ),
+  coverage: 0,
+);
 
 class _NodeOutcome {
   const _NodeOutcome({required this.result, required this.coverage});

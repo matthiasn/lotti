@@ -235,8 +235,16 @@ void main() {
     final recordedAt = DateTime(2026, 8, 7, 9, 30);
     final json = renderedJson(
       observations: [
-        (recordedAt: recordedAt, text: 'Knee pain limits steep routes.'),
-        (recordedAt: null, text: 'Legacy note without a timestamp.'),
+        (
+          recordedAt: recordedAt,
+          text: 'Knee pain limits steep routes.',
+          critical: true,
+        ),
+        (
+          recordedAt: null,
+          text: 'Legacy note without a timestamp.',
+          critical: false,
+        ),
       ],
       unansweredUserMessages: const ['What did you mean by easier?'],
       recentDialogue: const [
@@ -252,6 +260,7 @@ void main() {
       {
         'recordedAt': recordedAt.toIso8601String(),
         'text': 'Knee pain limits steep routes.',
+        'critical': true,
       },
       {'text': 'Legacy note without a timestamp.'},
     ]);
@@ -1611,5 +1620,18 @@ void main() {
             as Map<String, dynamic>;
     expect(summary['sessionCount'], 205);
     expect(summary['totalMinutes'], 205 * 30);
+  });
+
+  test('an unknown criterion reaches FACTS as unsupported, with its title '
+      'and nothing to measure (ADR 0145)', () {
+    expect(
+      criterionJson(
+        const GoalCriterion.unsupported(
+          criterionId: 'quality',
+          title: 'Sleep quality',
+        ),
+      ),
+      {'criterionId': 'quality', 'title': 'Sleep quality', 'unsupported': true},
+    );
   });
 }

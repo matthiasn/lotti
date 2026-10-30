@@ -1126,6 +1126,82 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a goal holding a criterion this version cannot read says so at '
+      'the top and offers no edit (ADR 0145)', (tester) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Sleep better',
+              statement: 'Sleep better.',
+              criteria: const GoalCriterion.allOf(
+                criterionId: 'root',
+                criteria: [
+                  GoalCriterion.unsupported(criterionId: 'from-a-newer-build'),
+                ],
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(
+              HabitsState.initial(now: DateTime(2026, 8, 11)),
+            ),
+          ),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.insufficientData,
+              attainment: 0.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewForSpanProvider((
+            agentId: 'goal-1',
+            historyDays: 14,
+          )).overrideWith(
+            (ref) async => GoalProgressView(today: DateTime.utc(2026, 8, 11)),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-unsupported-criterion-callout')),
+      findsOneWidget,
+    );
+    expect(find.text('Update to see this goal in full'), findsOneWidget);
+
+    await tester.tap(find.byIcon(LottiIcons.moreVertical));
+    await tester.pumpAndSettle();
+    // Editing rebuilds the criteria from what this build decoded, which for
+    // the unknown leaf is its id alone.
+    expect(find.text('Edit goal'), findsNothing);
+  });
+
   testWidgets('an active goal with nothing pending pays no card gap for the '
       'revision card', (tester) async {
     Future<void> pump({required int pendingProposals}) => tester.pumpWidget(

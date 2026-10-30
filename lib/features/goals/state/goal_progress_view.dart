@@ -51,6 +51,8 @@ GoalProgressView buildGoalProgressView({
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        break;
       case final GoalCriterionHabit habit:
         habitLeaves.add(habit);
       case final GoalCriterionMetric metric:

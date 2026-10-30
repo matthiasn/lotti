@@ -34,6 +34,8 @@ List<String> goalRollingAggregateStrings(
   final metricIds = <String>{};
   void walk(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionMetric(:final criterionId):
         metricIds.add(criterionId);
       case GoalCriterionAllOf(:final criteria) ||

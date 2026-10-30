@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
@@ -196,6 +197,15 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
+
+    // A criterion of a kind this build does not know (ADR 0145): it decoded
+    // as a placeholder, so any status derived here would be wrong — and the
+    // register it would write syncs, overwriting the status a device that
+    // can read the goal computed. The cadence stays armed so the tick resumes
+    // after an update; nothing else is written.
+    if (goalCriterionHasUnsupported(version.criteria)) {
+      return const WakeResult(success: true);
+    }
 
     // A write to the goal's own journal row: a check-in recorded, its
     // transcript landing, an edit. On a goal measured by its check-ins those

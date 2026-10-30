@@ -53,6 +53,7 @@ class GoalAgentEvalScenario {
     this.forbiddenAssistantContentClaims = const [],
     this.maxToolCallCounts = const {},
     this.memoryHits = const [],
+    this.forbiddenQuestionBannerTerms = const [],
   });
 
   final String id;
@@ -127,6 +128,23 @@ class GoalAgentEvalScenario {
       hasPendingUserMessage ||
       followUpUserMessages.isNotEmpty;
 
+  /// Whether this wake is handed `ask_goal_question`.
+  ///
+  /// Mirrors `goalQuestionAllowed`: only a wake with no message waiting, and
+  /// only after the user said something the report has not answered yet
+  /// (`reporting.newCheckInsSinceLastReport`). Scenarios assume no earlier
+  /// question is still open. Restraint scenarios keep the whole surface, as
+  /// with the ad and reply tools.
+  bool get questionToolOffered {
+    if (expectsNoToolCalls) return true;
+    if (hasPendingUserMessage) return false;
+    final reporting = _decodedFacts?['reporting'];
+    final newCheckIns = reporting is Map
+        ? reporting['newCheckInsSinceLastReport']
+        : null;
+    return newCheckIns is int && newCheckIns > 0;
+  }
+
   /// Whether the authored FACTS carry a message awaiting an answer.
   bool get hasPendingUserMessage => pendingUserMessages.isNotEmpty;
 
@@ -162,6 +180,11 @@ class GoalAgentEvalScenario {
 
   /// What `search_goal_memory` finds on this wake (production format).
   final List<MemoryLogHit> memoryHits;
+
+  /// Terms that must never appear in an `ask_goal_question` banner. The
+  /// question itself may name them — it stays in the goal chat — but the
+  /// banner is seen outside the goal (ADR 0146, ADR 0056's inventory rule).
+  final List<String> forbiddenQuestionBannerTerms;
 
   /// The no-op discriminator: the model must end the wake without any tool
   /// call at all.
@@ -246,6 +269,7 @@ const List<String> _allGoalToolNames = [
   GoalAgentToolNames.recordGoalObservation,
   GoalAgentToolNames.searchGoalMemory,
   GoalAgentToolNames.rememberGoalFact,
+  GoalAgentToolNames.askGoalQuestion,
 ];
 
 /// Ad-capable tools, forbidden wherever the policy says "no ad".

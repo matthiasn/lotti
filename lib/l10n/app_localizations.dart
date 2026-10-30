@@ -13998,6 +13998,18 @@ abstract class AppLocalizations {
   /// **'today'**
   String get goalProgressToday;
 
+  /// No description provided for @goalQuestionBannerCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer in chat'**
+  String get goalQuestionBannerCta;
+
+  /// No description provided for @goalQuestionBannerHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your agent has a question'**
+  String get goalQuestionBannerHeadline;
+
   /// No description provided for @goalRecordOfferConflict.
   ///
   /// In en, this message translates to:
@@ -14130,11 +14142,29 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get goalTodayBriefingTitle;
 
+  /// Abbreviated unit after a tracked-time value on a goal dimension, e.g. 3.5 h.
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get goalUnitHours;
+
   /// Short unit for minutes beside a goal dimension's value.
   ///
   /// In en, this message translates to:
   /// **'min'**
   String get goalUnitMinutes;
+
+  /// Callout on a goal whose criteria include a kind this app version cannot read (synced from a newer device).
+  ///
+  /// In en, this message translates to:
+  /// **'This goal measures something this version of Lotti cannot read yet, so its progress is not updated here and it cannot be edited on this device. Your other devices keep it current.'**
+  String get goalUnsupportedCriterionBody;
+
+  /// No description provided for @goalUnsupportedCriterionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update to see this goal in full'**
+  String get goalUnsupportedCriterionTitle;
 
   /// No description provided for @goalWatchingMetric.
   ///

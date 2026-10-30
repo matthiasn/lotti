@@ -319,11 +319,8 @@ GoalCriterion _$GoalCriterionFromJson(
           );
         
           default:
-            throw CheckedFromJsonException(
-  json,
-  'runtimeType',
-  'GoalCriterion',
-  'Invalid union type "${json['runtimeType']}"!'
+            return GoalCriterionUnsupported.fromJson(
+  json
 );
         }
       
@@ -407,7 +404,7 @@ extension GoalCriterionPatterns on GoalCriterion {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GoalCriterionMetric value)?  metric,TResult Function( GoalCriterionHabit value)?  habit,TResult Function( GoalCriterionMeasurable value)?  measurable,TResult Function( GoalCriterionCategoryTime value)?  categoryTime,TResult Function( GoalCriterionLabelTime value)?  labelTime,TResult Function( GoalCriterionCheckInTime value)?  checkInTime,TResult Function( GoalCriterionAllOf value)?  allOf,TResult Function( GoalCriterionAnyOf value)?  anyOf,TResult Function( GoalCriterionAtLeastCount value)?  atLeastCount,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GoalCriterionMetric value)?  metric,TResult Function( GoalCriterionHabit value)?  habit,TResult Function( GoalCriterionMeasurable value)?  measurable,TResult Function( GoalCriterionCategoryTime value)?  categoryTime,TResult Function( GoalCriterionLabelTime value)?  labelTime,TResult Function( GoalCriterionCheckInTime value)?  checkInTime,TResult Function( GoalCriterionAllOf value)?  allOf,TResult Function( GoalCriterionAnyOf value)?  anyOf,TResult Function( GoalCriterionAtLeastCount value)?  atLeastCount,TResult Function( GoalCriterionUnsupported value)?  unsupported,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
@@ -419,7 +416,8 @@ return labelTime(_that);case GoalCriterionCheckInTime() when checkInTime != null
 return checkInTime(_that);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that);case GoalCriterionAtLeastCount() when atLeastCount != null:
-return atLeastCount(_that);case _:
+return atLeastCount(_that);case GoalCriterionUnsupported() when unsupported != null:
+return unsupported(_that);case _:
   return orElse();
 
 }
@@ -437,7 +435,7 @@ return atLeastCount(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GoalCriterionMetric value)  metric,required TResult Function( GoalCriterionHabit value)  habit,required TResult Function( GoalCriterionMeasurable value)  measurable,required TResult Function( GoalCriterionCategoryTime value)  categoryTime,required TResult Function( GoalCriterionLabelTime value)  labelTime,required TResult Function( GoalCriterionCheckInTime value)  checkInTime,required TResult Function( GoalCriterionAllOf value)  allOf,required TResult Function( GoalCriterionAnyOf value)  anyOf,required TResult Function( GoalCriterionAtLeastCount value)  atLeastCount,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GoalCriterionMetric value)  metric,required TResult Function( GoalCriterionHabit value)  habit,required TResult Function( GoalCriterionMeasurable value)  measurable,required TResult Function( GoalCriterionCategoryTime value)  categoryTime,required TResult Function( GoalCriterionLabelTime value)  labelTime,required TResult Function( GoalCriterionCheckInTime value)  checkInTime,required TResult Function( GoalCriterionAllOf value)  allOf,required TResult Function( GoalCriterionAnyOf value)  anyOf,required TResult Function( GoalCriterionAtLeastCount value)  atLeastCount,required TResult Function( GoalCriterionUnsupported value)  unsupported,}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric():
@@ -449,7 +447,8 @@ return labelTime(_that);case GoalCriterionCheckInTime():
 return checkInTime(_that);case GoalCriterionAllOf():
 return allOf(_that);case GoalCriterionAnyOf():
 return anyOf(_that);case GoalCriterionAtLeastCount():
-return atLeastCount(_that);}
+return atLeastCount(_that);case GoalCriterionUnsupported():
+return unsupported(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -463,7 +462,7 @@ return atLeastCount(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GoalCriterionMetric value)?  metric,TResult? Function( GoalCriterionHabit value)?  habit,TResult? Function( GoalCriterionMeasurable value)?  measurable,TResult? Function( GoalCriterionCategoryTime value)?  categoryTime,TResult? Function( GoalCriterionLabelTime value)?  labelTime,TResult? Function( GoalCriterionCheckInTime value)?  checkInTime,TResult? Function( GoalCriterionAllOf value)?  allOf,TResult? Function( GoalCriterionAnyOf value)?  anyOf,TResult? Function( GoalCriterionAtLeastCount value)?  atLeastCount,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GoalCriterionMetric value)?  metric,TResult? Function( GoalCriterionHabit value)?  habit,TResult? Function( GoalCriterionMeasurable value)?  measurable,TResult? Function( GoalCriterionCategoryTime value)?  categoryTime,TResult? Function( GoalCriterionLabelTime value)?  labelTime,TResult? Function( GoalCriterionCheckInTime value)?  checkInTime,TResult? Function( GoalCriterionAllOf value)?  allOf,TResult? Function( GoalCriterionAnyOf value)?  anyOf,TResult? Function( GoalCriterionAtLeastCount value)?  atLeastCount,TResult? Function( GoalCriterionUnsupported value)?  unsupported,}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
@@ -475,7 +474,8 @@ return labelTime(_that);case GoalCriterionCheckInTime() when checkInTime != null
 return checkInTime(_that);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that);case GoalCriterionAtLeastCount() when atLeastCount != null:
-return atLeastCount(_that);case _:
+return atLeastCount(_that);case GoalCriterionUnsupported() when unsupported != null:
+return unsupported(_that);case _:
   return null;
 
 }
@@ -492,7 +492,7 @@ return atLeastCount(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  labelTime,TResult Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)?  checkInTime,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  labelTime,TResult Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)?  checkInTime,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,TResult Function( String criterionId,  String? title, @JsonKey(name: goalCriterionSourceKey, readValue: _readSource)  Map<String, dynamic>? source)?  unsupported,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit() when habit != null:
@@ -503,7 +503,8 @@ return labelTime(_that.criterionId,_that.labelId,_that.window,_that.aggregation,
 return checkInTime(_that.criterionId,_that.window,_that.aggregation,_that.targetMinutes,_that.direction,_that.title);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount() when atLeastCount != null:
-return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case _:
+return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case GoalCriterionUnsupported() when unsupported != null:
+return unsupported(_that.criterionId,_that.title,_that.source);case _:
   return orElse();
 
 }
@@ -521,7 +522,7 @@ return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  metric,required TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)  habit,required TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  measurable,required TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)  categoryTime,required TResult Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)  labelTime,required TResult Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)  checkInTime,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  allOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  anyOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)  atLeastCount,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  metric,required TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)  habit,required TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  measurable,required TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)  categoryTime,required TResult Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)  labelTime,required TResult Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)  checkInTime,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  allOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  anyOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)  atLeastCount,required TResult Function( String criterionId,  String? title, @JsonKey(name: goalCriterionSourceKey, readValue: _readSource)  Map<String, dynamic>? source)  unsupported,}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric():
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit():
@@ -532,7 +533,8 @@ return labelTime(_that.criterionId,_that.labelId,_that.window,_that.aggregation,
 return checkInTime(_that.criterionId,_that.window,_that.aggregation,_that.targetMinutes,_that.direction,_that.title);case GoalCriterionAllOf():
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf():
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount():
-return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);}
+return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case GoalCriterionUnsupported():
+return unsupported(_that.criterionId,_that.title,_that.source);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -546,7 +548,7 @@ return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult? Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult? Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult? Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult? Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  labelTime,TResult? Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)?  checkInTime,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult? Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult? Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult? Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult? Function( String criterionId,  String labelId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  String? categoryId,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  labelTime,TResult? Function( String criterionId,  GoalWindow window,  GoalAggregation aggregation,  num targetMinutes,  GoalDirection direction,  String? title)?  checkInTime,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,TResult? Function( String criterionId,  String? title, @JsonKey(name: goalCriterionSourceKey, readValue: _readSource)  Map<String, dynamic>? source)?  unsupported,}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit() when habit != null:
@@ -557,7 +559,8 @@ return labelTime(_that.criterionId,_that.labelId,_that.window,_that.aggregation,
 return checkInTime(_that.criterionId,_that.window,_that.aggregation,_that.targetMinutes,_that.direction,_that.title);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount() when atLeastCount != null:
-return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case _:
+return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case GoalCriterionUnsupported() when unsupported != null:
+return unsupported(_that.criterionId,_that.title,_that.source);case _:
   return null;
 
 }
@@ -1398,6 +1401,91 @@ as String,criteria: null == criteria ? _self._criteria : criteria // ignore: cas
 as List<GoalCriterion>,successes: null == successes ? _self.successes : successes // ignore: cast_nullable_to_non_nullable
 as int,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class GoalCriterionUnsupported extends GoalCriterion {
+  const GoalCriterionUnsupported({required this.criterionId, this.title, @JsonKey(name: goalCriterionSourceKey, readValue: _readSource) final  Map<String, dynamic>? source, final  String? $type}): _source = source,$type = $type ?? 'unsupported',super._();
+  factory GoalCriterionUnsupported.fromJson(Map<String, dynamic> json) => _$GoalCriterionUnsupportedFromJson(json);
+
+@override final  String criterionId;
+@override final  String? title;
+ final  Map<String, dynamic>? _source;
+@JsonKey(name: goalCriterionSourceKey, readValue: _readSource) Map<String, dynamic>? get source {
+  final value = _source;
+  if (value == null) return null;
+  if (_source is EqualUnmodifiableMapView) return _source;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(value);
+}
+
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalCriterionUnsupportedCopyWith<GoalCriterionUnsupported> get copyWith => _$GoalCriterionUnsupportedCopyWithImpl<GoalCriterionUnsupported>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalCriterionUnsupportedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalCriterionUnsupported&&(identical(other.criterionId, criterionId) || other.criterionId == criterionId)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other._source, _source));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,criterionId,title,const DeepCollectionEquality().hash(_source));
+
+@override
+String toString() {
+  return 'GoalCriterion.unsupported(criterionId: $criterionId, title: $title, source: $source)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalCriterionUnsupportedCopyWith<$Res> implements $GoalCriterionCopyWith<$Res> {
+  factory $GoalCriterionUnsupportedCopyWith(GoalCriterionUnsupported value, $Res Function(GoalCriterionUnsupported) _then) = _$GoalCriterionUnsupportedCopyWithImpl;
+@override @useResult
+$Res call({
+ String criterionId, String? title,@JsonKey(name: goalCriterionSourceKey, readValue: _readSource) Map<String, dynamic>? source
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalCriterionUnsupportedCopyWithImpl<$Res>
+    implements $GoalCriterionUnsupportedCopyWith<$Res> {
+  _$GoalCriterionUnsupportedCopyWithImpl(this._self, this._then);
+
+  final GoalCriterionUnsupported _self;
+  final $Res Function(GoalCriterionUnsupported) _then;
+
+/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? criterionId = null,Object? title = freezed,Object? source = freezed,}) {
+  return _then(GoalCriterionUnsupported(
+criterionId: null == criterionId ? _self.criterionId : criterionId // ignore: cast_nullable_to_non_nullable
+as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,source: freezed == source ? _self._source : source // ignore: cast_nullable_to_non_nullable
+as Map<String, dynamic>?,
   ));
 }
 

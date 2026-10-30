@@ -52,17 +52,22 @@ import 'package:lotti/features/goals/service/goal_checkin_compactor.dart';
 import 'package:lotti/features/goals/service/goal_checkin_digest_service.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:lotti/features/goals/workflow/goal_chat_check_ins.dart';
 import 'package:lotti/features/goals/workflow/goal_check_in_reflection.dart';
 import 'package:lotti/features/goals/workflow/goal_criterion_names.dart';
 import 'package:lotti/features/goals/workflow/goal_daily_briefing.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
+import 'package:lotti/features/goals/workflow/goal_observation_recall.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 import 'package:lotti/features/goals/workflow/goal_report_instructions.dart';
 import 'package:lotti/features/notifications/producer/agent_alert_copy.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/device_messages.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -90,9 +95,6 @@ String _goalAgentReplyPayloadId(String agentId, String runKey) =>
       Namespace.url.value,
       'lotti://goal-agent/$agentId/$runKey/reply-payload',
     );
-
-/// How many recent observations feed the FACTS block.
-const goalObservationLookback = 12;
 
 /// How many stale check-in summaries one wake redoes — see
 /// `_reconcileCheckIns`. Bounds the wake a change of compaction weight
@@ -130,8 +132,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
     this._criterionNameReader,
     this._alertCopy,
     this._charterReader,
+    AppLocalizations Function()? messages,
   }) : _chatHistoryService =
-           chatHistoryService ?? GoalChatHistoryService(_repository);
+           chatHistoryService ?? GoalChatHistoryService(_repository),
+       _messages = messages ?? deviceMessages;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -141,6 +145,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
   final AiConfigRepository _aiConfigRepository;
   final GoalChatHistoryService _chatHistoryService;
   final GoalFactsRenderer _factsRenderer;
+
+  /// The device's strings, for the copy a wake writes itself: a question's
+  /// banner (ADR 0146). Injected so tests need no platform binding.
+  final AppLocalizations Function() _messages;
 
   /// Re-words the off-track alert Phase A armed with the banner this wake
   /// authors, when the user allows it (ADR 0074). Optional: without it the
@@ -348,7 +356,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // check-in that fails to compact simply is not in this wake's context, and
     // the next wake retries.
     final checkInWeight = GoalCheckInWeight.of(version.criteria);
-    final checkInSummaries = await _reconcileCheckIns(
+    final reconciled = await _reconcileCheckIns(
       agentId: agentId,
       goalStatement: version.statement,
       model: resolved.modelId,
@@ -356,6 +364,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       compactMissing: pendingUserMessage == null,
       weight: checkInWeight,
     );
+    final checkInSummaries = reconciled.summaries;
 
     final observations = await _recentObservationFacts(agentId);
     // What the user said, compacted. Bounded by tokens rather than by count,
@@ -373,15 +382,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // docs/evaluations/goal_agent_models/compaction.md). Digests are written
     // on the same wakes that compact check-ins — never on an interactive
     // turn — and a failure anywhere falls back to the truncating selection.
-    final userVoice = await _userVoiceEntries(
-      agentId: agentId,
-      summaries: checkInSummaries,
-      goalStatement: version.statement,
-      model: resolved.modelId,
-      provider: resolved.provider,
-      allowInference: pendingUserMessage == null,
-      reference: reference,
-      weight: checkInWeight,
+    final userVoice = goalMarkChatVoice(
+      await _userVoiceEntries(
+        agentId: agentId,
+        summaries: checkInSummaries,
+        goalStatement: version.statement,
+        model: resolved.modelId,
+        provider: resolved.provider,
+        allowInference: pendingUserMessage == null,
+        reference: reference,
+        weight: checkInWeight,
+      ),
+      reconciled.chatEntryIds,
     );
 
     // The day's first report is its briefing; it reads yesterday's to
@@ -409,6 +421,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       userVoice: userVoice,
       summaries: checkInSummaries,
       standingReport: standingReport,
+      answeredEntryIds: reconciled.chatEntryIds,
     );
     final unreflected = pendingUserMessage == null
         ? reflection.unreflectedEntryIds.length
@@ -471,6 +484,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
       now: now,
       userRequestedAd: userRequestedAd,
       pendingUserMessage: pendingUserMessage,
+      questionAllowed: await _questionAllowed(
+        agentId: agentId,
+        interactive: pendingUserMessage != null,
+        newCheckIns: unreflected,
+      ),
     );
     final inferenceRepo = CloudInferenceWrapper(
       cloudRepository: _cloudInferenceRepository,
@@ -928,14 +946,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
   Future<List<GoalObservationFact>> _recentObservationFacts(
     String agentId,
-  ) async => [
-    for (final observation in await recallAgentObservations(
-      _repository,
-      agentId,
-      limit: goalObservationLookback,
-    ))
-      (recordedAt: observation.at, text: observation.text),
-  ];
+  ) => goalObservationFacts(_repository, agentId);
 
   /// Visible for tests: the transactional output write is exercised
   /// directly to pin the ad-state guards (dismissal-terminal defense,

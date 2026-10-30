@@ -173,4 +173,115 @@ void main() {
       'HealthDataType.WEIGHT',
     });
   });
+
+  group('a criterion kind this build does not know (ADR 0145)', () {
+    Map<String, dynamic> future({String id = 'future'}) => {
+      'runtimeType': 'sleepQuality',
+      'criterionId': id,
+      'title': 'Sleep quality',
+      'window': {'runtimeType': 'day'},
+      'targetScore': 80,
+    };
+
+    test('decodes as unsupported with its id and title instead of throwing, '
+        'at any depth', () {
+      final leaf = GoalCriterion.fromJson(future());
+      expect(
+        leaf,
+        GoalCriterion.unsupported(
+          criterionId: 'future',
+          title: 'Sleep quality',
+          source: future(),
+        ),
+      );
+
+      final tree = GoalCriterion.fromJson({
+        'runtimeType': 'allOf',
+        'criterionId': 'root',
+        'criteria': [
+          // As it arrives over sync: plain JSON all the way down.
+          jsonDecode(
+            jsonEncode(
+              const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'h1',
+                window: GoalWindow.calendarWeek(),
+                targetCount: 3,
+              ),
+            ),
+          ),
+          future(id: 'nested'),
+        ],
+      });
+      expect(goalCriterionHasUnsupported(tree), isTrue);
+      expect(goalCriterionHabitIds(tree), {'h1'});
+    });
+
+    test('keeps the node it arrived as through storage, so an updated '
+        'build reads the criterion it never lost', () {
+      final tree = GoalCriterion.fromJson({
+        'runtimeType': 'allOf',
+        'criterionId': 'root',
+        'criteria': [future(id: 'nested')],
+      });
+      // What the inbound sync persists, as the database stores it.
+      final stored =
+          jsonDecode(jsonEncode(tree.toJson())) as Map<String, dynamic>;
+
+      // Read back on this build: still unsupported, still whole.
+      final reread = GoalCriterion.fromJson(stored);
+      expect(reread, tree);
+      expect(
+        jsonDecode(jsonEncode(reread.toJson())),
+        stored,
+        reason: 'storage round-trips without shedding a field',
+      );
+
+      // The stub around a kind an updated build knows decodes as that kind.
+      final habit =
+          jsonDecode(
+                jsonEncode(
+                  const GoalCriterion.habit(
+                    criterionId: 'walk',
+                    habitId: 'h1',
+                    window: GoalWindow.calendarWeek(),
+                    targetCount: 3,
+                  ),
+                ),
+              )
+              as Map<String, dynamic>;
+      expect(
+        GoalCriterion.fromJson({
+          'runtimeType': 'habit',
+          'criterionId': 'walk',
+          goalCriterionSourceKey: habit,
+        }),
+        const GoalCriterion.habit(
+          criterionId: 'walk',
+          habitId: 'h1',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+      );
+    });
+
+    test('a tree of known kinds holds none', () {
+      expect(
+        goalCriterionHasUnsupported(
+          const GoalCriterion.anyOf(
+            criterionId: 'root',
+            criteria: [
+              GoalCriterion.checkInTime(
+                criterionId: 'journal',
+                window: GoalWindow.day(),
+                aggregation: GoalAggregation.sum,
+                targetMinutes: 10,
+              ),
+            ],
+          ),
+        ),
+        isFalse,
+      );
+    });
+  });
 }

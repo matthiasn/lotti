@@ -261,7 +261,9 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
         controller.setSearchString('krill');
         settle(async);
         expect(
-          setup.container.read(journalPageControllerProvider(true)).taskSearchHits,
+          setup.container
+              .read(journalPageControllerProvider(true))
+              .taskSearchHits,
           {
             'task-feed': const TaskSearchHit(
               taskId: 'task-feed',
@@ -274,7 +276,9 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
         controller.setSearchString('https://github.com/matthiasn/lotti/pull/1');
         settle(async);
         expect(
-          setup.container.read(journalPageControllerProvider(true)).taskSearchHits,
+          setup.container
+              .read(journalPageControllerProvider(true))
+              .taskSearchHits,
           isEmpty,
           reason: 'a pull request lookup has no snippets',
         );

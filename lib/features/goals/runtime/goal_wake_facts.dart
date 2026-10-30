@@ -171,6 +171,8 @@ Map<String, List<GoalMetricObservation>> _renderedHealthEvidence({
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        break;
       case final GoalCriterionMetric metric
           when GoalHealthDataTypes.supported.contains(metric.dataType):
         evidence['${metric.criterionId}:${metric.dataType}'] =

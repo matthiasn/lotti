@@ -1721,6 +1721,33 @@ void main() {
       tags: 'glados',
     );
   });
+
+  test('an unknown leaf measures nothing and meets nothing, and a goal '
+      'needing it is not met (ADR 0145)', () {
+    final evaluation = const GoalProgressEvaluator().evaluate(
+      const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.unsupported(criterionId: 'from-a-newer-build'),
+        ],
+      ),
+      const GoalSignalWindow(),
+      DateTime(2026, 8, 13),
+    );
+
+    final leaf = evaluation.results['from-a-newer-build']!;
+    expect(leaf.satisfied, isFalse);
+    expect(leaf.sampleCount, 0);
+    expect(evaluation.satisfied, isFalse);
+    expect(
+      const GoalProgressEvaluator().shortTermAttainment(
+        const GoalCriterion.unsupported(criterionId: 'x'),
+        const GoalSignalWindow(),
+        DateTime(2026, 8, 13),
+      ),
+      isNull,
+    );
+  });
 }
 
 /// One generated leaf: a measurable (or a habit when [isMeasurable] is false)

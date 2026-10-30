@@ -24,6 +24,8 @@ GoalCriterionEntityIds goalCriterionEntityIds(GoalCriterion criterion) {
   final dataTypeIds = <String>{};
   void visit(GoalCriterion node) {
     switch (node) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionHabit(:final habitId):
         habitIds.add(habitId);
       case GoalCriterionMeasurable(:final dataTypeId):

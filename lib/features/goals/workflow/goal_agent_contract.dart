@@ -14,6 +14,7 @@ import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/features/agents/knowledge/agent_knowledge.dart';
 import 'package:lotti/features/agents/memory/memory_search.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/goals/workflow/goal_question.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —
 /// uniform naming so models cannot "generalise" a wrong prefix (the
@@ -41,6 +42,10 @@ class GoalAgentToolNames {
 
   /// Durable, keyed facts about the user and the goal (ADR 0057).
   static const rememberGoalFact = 'remember_goal_fact';
+
+  /// The agent's own question in the goal chat, with an optional banner
+  /// pointing at it (ADR 0146). Offered only when a question is allowed.
+  static const askGoalQuestion = 'ask_goal_question';
 
   static bool isGoalRevisionProposal(String toolName) =>
       toolName == proposeGoalRevision || toolName == legacyProposeGoalRevision;
@@ -413,6 +418,13 @@ final List<String> goalBannerAccentNames = [
   for (final value in NudgeBannerAccent.values) value.name,
 ];
 
+/// A question banner's tones: everything but `roast`, which is only ever
+/// the user's request.
+final List<String> goalQuestionBannerToneNames = [
+  for (final value in NudgeTone.values)
+    if (value != NudgeTone.roast) value.name,
+];
+
 /// The pinned retry a status-transition wake sends when its first response
 /// carried no report. Shared with the compaction eval, which must score the
 /// same recovery production performs rather than the first response alone.
@@ -702,11 +714,18 @@ final List<AgentToolDefinition> goalAgentTools = [
     description:
         'Record a durable, novel fact worth remembering for years '
         '(injury constraints, stated preferences, life changes). Not a '
-        'progress log.',
+        'progress log. Mark it critical only when every future wake must '
+        'keep it in view however much is written after it: an injury, '
+        'medical advice, a change to what the goal is.',
     parameters: {
       'type': 'object',
       'properties': {
         'note': {'type': 'string'},
+        'priority': {
+          'type': 'string',
+          'enum': ['routine', 'critical'],
+          'description': 'Defaults to routine.',
+        },
       },
       'required': ['note'],
     },
@@ -722,6 +741,44 @@ final List<AgentToolDefinition> goalAgentTools = [
         'containing all the keywords; with `ids`, pulls up entries by id. '
         'Never use it to restate FACTS. At most three calls per wake.',
     parameters: memorySearchParameters,
+  ),
+  AgentToolDefinition(
+    name: GoalAgentToolNames.askGoalQuestion,
+    description:
+        'Ask the user ONE short question in the goal chat, following up '
+        'something they said in a userVoice entry marked sinceLastReport: a '
+        'commitment coming due, a question they asked themselves, a '
+        'decision they left open. No such entry, no question: an entry the '
+        'report already answered is not a reason to ask. Never ask what '
+        'FACTS already answer, '
+        'never about numbers or targets, never twice. They answer in the '
+        'chat when they choose. Optionally raise a banner pointing at the '
+        'question; the app writes its words — a question is waiting — and '
+        'you choose only how it looks.',
+    parameters: {
+      'type': 'object',
+      'additionalProperties': false,
+      'properties': {
+        'question': {
+          'type': 'string',
+          'maxLength': goalQuestionMaxLength,
+          'description':
+              "One short question in the user's language, in their terms.",
+        },
+        'banner': {
+          'type': 'object',
+          'additionalProperties': false,
+          'description': 'Optional. Omit unless the question deserves one.',
+          'properties': {
+            'tone': {'type': 'string', 'enum': goalQuestionBannerToneNames},
+            'animation': {'type': 'string', 'enum': goalBannerAnimationNames},
+            'accent': {'type': 'string', 'enum': goalBannerAccentNames},
+          },
+          'required': ['tone', 'animation'],
+        },
+      },
+      'required': ['question'],
+    },
   ),
   const AgentToolDefinition(
     name: GoalAgentToolNames.rememberGoalFact,

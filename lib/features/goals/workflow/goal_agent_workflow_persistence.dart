@@ -273,8 +273,10 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
           for (final action in strategy.retireRequests) action.adId,
         };
         for (final nudge in nudges) {
+          // A question's banner was never the status's to permit (ADR 0146).
           if (nudge.status != NudgeStatus.active ||
-              modelRetired.contains(nudge.id)) {
+              modelRetired.contains(nudge.id) ||
+              isGoalQuestionNudge(nudge)) {
             continue;
           }
           await _syncService.upsertEntity(
@@ -381,9 +383,12 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
       // wake don't count — explicit retire+create and rated replacement both
       // remain legal.
       final retiredNow = {...explicitlyRetiredNow, ...replacedRetiredNow};
+      // A question's banner does not hold off a banner the status requires:
+      // they answer different things, and the dock shows two at most.
       var freshActiveExists = nudges.any(
         (n) =>
             n.status == NudgeStatus.active &&
+            !isGoalQuestionNudge(n) &&
             !retiredNow.contains(n.id) &&
             now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
       );
@@ -527,6 +532,55 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
             },
           ),
         );
+      }
+
+      // The agent's own question (ADR 0146): only on an automatic wake, where
+      // the tool was offered at all. Its banner keeps today's dismissal — a
+      // user who closed a banner today is not shown another.
+      final question = strategy.question;
+      if (question != null && !replyToUser && !staleSpecWake) {
+        await persistGoalQuestion(
+          _syncService,
+          request: question,
+          agentId: agentId,
+          runKey: runKey,
+          threadId: threadId,
+          periodKey: derivation.periodKey,
+          specVersionId: derivation.version.id,
+          now: now,
+          bannerLifetime: goalAdLifetime,
+          raiseBanner: !cooldownActive,
+          existingNudgeIds: {for (final row in allRows) row.id},
+          briefDigest: goalBriefDigest,
+          bannerCopy: () {
+            final messages = _messages();
+            return (
+              headline: messages.goalQuestionBannerHeadline,
+              cta: messages.goalQuestionBannerCta,
+            );
+          },
+        );
+      }
+      // A chat turn is the user answering: a question banner has done its
+      // job once they are talking to the agent.
+      if (replyToUser) {
+        for (final nudge in nudges) {
+          if (nudge.status != NudgeStatus.active ||
+              !isGoalQuestionNudge(nudge)) {
+            continue;
+          }
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: NudgeStatus.retired,
+              retiredAt: now.toUtc(),
+              updatedAt: now,
+              provenance: {
+                ...nudge.provenance,
+                'retireReason': 'answered in chat',
+              },
+            ),
+          );
+        }
       }
 
       // Observations.

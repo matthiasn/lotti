@@ -45,7 +45,13 @@ const int goalLabelTimeMarkdownTokenBudget = 120;
 /// keeping imported or unusually dense histories within provider limits.
 const goalHealthObservationEvidenceLimit = 100;
 
-typedef GoalObservationFact = ({DateTime? recordedAt, String text});
+/// One of the agent's own observations as FACTS carry it; `critical` marks
+/// one the agent filed as a constraint every wake must keep in view.
+typedef GoalObservationFact = ({
+  DateTime? recordedAt,
+  String text,
+  bool critical,
+});
 
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
@@ -257,6 +263,7 @@ class GoalFactsRenderer {
             if (observation.recordedAt != null)
               'recordedAt': observation.recordedAt!.toIso8601String(),
             'text': observation.text,
+            if (observation.critical) 'critical': true,
           },
       ],
       // What the USER said, compacted — never their raw transcripts. Named to
@@ -378,6 +385,8 @@ class GoalFactsRenderer {
     final habits = <String, GoalCriterionHabit>{};
     void visit(GoalCriterion criterion) {
       switch (criterion) {
+        case GoalCriterionUnsupported():
+          break;
         case final GoalCriterionMetric metric:
           metrics[metric.criterionId] = metric;
         case final GoalCriterionHabit habit:
@@ -789,6 +798,11 @@ Map<String, Object?> criterionJson(
   GoalCriterion criterion, {
   Map<String, String> names = const {},
 }) => switch (criterion) {
+  GoalCriterionUnsupported() => {
+    'criterionId': criterion.criterionId,
+    if (criterion.title != null) 'title': criterion.title,
+    'unsupported': true,
+  },
   GoalCriterionMetric() => {
     'criterionId': criterion.criterionId,
     if (criterion.title != null) 'title': criterion.title,

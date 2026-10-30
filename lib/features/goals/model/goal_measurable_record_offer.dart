@@ -54,6 +54,8 @@ GoalMeasurableRecordOffer? parseGoalMeasurableRecordOffer({
   final linkedIds = <String>{};
   void collect(GoalCriterion criterion) {
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        return;
       case GoalCriterionMeasurable(:final dataTypeId):
         linkedIds.add(dataTypeId);
       case GoalCriterionMetric() ||

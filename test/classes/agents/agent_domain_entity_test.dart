@@ -11,6 +11,9 @@ import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/g_counter.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/classes/vector_clock.dart';
@@ -1443,6 +1446,48 @@ void main() {
           ..['status'] = 'active';
 
         expect(() => AgentDomainEntity.fromJson(partial), throwsA(anything));
+      });
+
+      test('a goal spec synced from a newer peer, holding a criterion kind '
+          'this build does not know, decodes with a placeholder instead of '
+          'failing the row (ADR 0145)', () {
+        final json =
+            AgentDomainEntity.goalSpecVersion(
+                id: 'agent-goal:spec-v1',
+                agentId: 'agent-goal',
+                version: 1,
+                status: GoalSpecVersionStatus.active,
+                authoredBy: 'user',
+                title: 'Sleep better',
+                statement: 'Sleep better.',
+                criteria: const GoalCriterion.habit(
+                  criterionId: 'wind-down',
+                  habitId: 'habit-1',
+                  window: GoalWindow.calendarWeek(),
+                  targetCount: 5,
+                ),
+                createdAt: DateTime(2026, 10, 2),
+                vectorClock: null,
+              ).toJson()
+              ..['criteria'] = {
+                'runtimeType': 'allOf',
+                'criterionId': 'root',
+                'criteria': [
+                  {
+                    'runtimeType': 'sleepQuality',
+                    'criterionId': 'quality',
+                    'targetScore': 80,
+                  },
+                ],
+              };
+
+        final decoded = AgentDomainEntity.fromJson(
+          jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
+        );
+
+        expect(decoded, isA<GoalSpecVersionEntity>());
+        final criteria = (decoded as GoalSpecVersionEntity).criteria;
+        expect(goalCriterionHasUnsupported(criteria), isTrue);
       });
 
       test('a genuinely unknown runtimeType still decodes to unknown', () {

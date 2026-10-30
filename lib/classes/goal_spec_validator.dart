@@ -121,6 +121,8 @@ abstract final class GoalSpecValidator {
       issues.add('$id: duplicate criterionId');
     }
     switch (criterion) {
+      case GoalCriterionUnsupported():
+        break;
       case GoalCriterionMetric(:final dataType, :final target, :final window):
         _requireIdentifier(id, 'dataType', dataType, issues);
         _requireFiniteTarget(id, target, issues);
@@ -237,6 +239,14 @@ abstract final class GoalSpecValidator {
     final id = criterion.criterionId;
     final issues = <String>[];
     switch (criterion) {
+      // Every route into authoring refuses it, not only the page that hides
+      // Edit: a revision written here would carry a node this build cannot
+      // check (ADR 0145).
+      case GoalCriterionUnsupported():
+        issues.add(
+          '$id: a kind of criterion this version cannot read; update the app '
+          'to change this goal',
+        );
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria) ||
           GoalCriterionAtLeastCount(:final criteria):

@@ -454,6 +454,27 @@ void main() {
       );
     });
 
+    test('refuses a tree holding a kind this build cannot read, from every '
+        'authoring route, while decoding still accepts it (ADR 0145)', () {
+      const tree = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'walk',
+            habitId: 'h1',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 3,
+          ),
+          GoalCriterion.unsupported(criterionId: 'future', title: 'Sleep'),
+        ],
+      );
+
+      expect(GoalSpecValidator.authoringIssues(tree), [
+        contains('future: a kind of criterion this version cannot read'),
+      ]);
+      expect(GoalSpecValidator.criterionIssues(tree), isEmpty);
+    });
+
     test('keeps every structural issue, and persisted specs still decode', () {
       const infeasible = GoalCriterion.anyOf(
         criterionId: 'root',
