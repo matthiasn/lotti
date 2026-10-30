@@ -4,6 +4,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.71]
+
+### Added
+
+- **A goal's agent can ask you a question.** When something you wrote in a
+  check-in is left open — a decision, a commitment coming due — the agent may
+  ask one short question in the goal's chat, at most once a day. It can raise
+  a banner that a question is waiting; tapping it opens the chat. While
+  private entries are shown, the banner names the question's subject — "Did
+  the physio clear the ridge walk?" — and with them hidden it stays generic.
+- **Goal agents remember what matters for longer.** Notes the agent marks as
+  critical, such as an injury or a doctor's advice, stay in view however much
+  is written after them, and longer messages you send in a goal's chat become
+  part of the goal's history like check-ins.
+- **The project picker in a task's header can take you to a project.** Each
+  project row now ends in its own chevron, set off by a thin divider: tapping
+  it closes the picker and opens that project's page, without changing which
+  project the task belongs to. Tapping the rest of the row picks the project
+  as before. The chevron appears whenever the Projects page can be opened.
+
+### Changed
+
+- **Search by meaning now runs on your device, with no Ollama server.** Lotti
+  embeds your notes and tasks with EmbeddingGemma, a model it downloads once
+  (about 218 MB) when you choose Generate embeddings in Maintenance, where its
+  size and the Gemma Terms of Use are shown first. Embeddings made with Ollama
+  are removed, so generate them again after the download. This comes to
+  macOS, iOS, Linux and Android first; Windows follows once the model can run
+  there without holding up the window.
+- **Choosing a cloud voice is quicker and you can hear every voice first.**
+  Speech settings now list your own languages first and keep the other twenty
+  behind one row, instead of a dropdown for every language. Each language
+  shows the voice it uses and plays it from its row; tapping a language opens
+  its voices with their gender and mood, and tapping a voice plays it and
+  makes it that language's voice — with your previous pick one tap away and
+  an Undo when you close.
+- **Catalan joins the languages a task can be set to.** In Speech settings,
+  the on-device voice section is now called On-device voice.
+- **The sidebar and the task list sit tighter.** The sidebar's side margins
+  are smaller and a highlighted saved filter now has even space on both
+  sides. In the task list, the notification bell, the filter button and the
+  list-density toggle line up with the edge of the task cards instead of
+  sitting further in. On a task's AI summary, the update status follows the
+  "Read more" link at the same spacing as the text above it.
+- **Lists with checkboxes no longer tint the ticked rows or light up under
+  the pointer.** The checkbox alone shows what is selected, in the label,
+  category and other multi-select pickers.
+
+### Fixed
+
+- **Reading aloud with a Mistral Voxtral voice works again.** Every attempt
+  ended in a bare "Error", and Speech settings said the voices could not be
+  loaded, because the voice list was requested in pages larger than Mistral
+  accepts. The voices now load, and a failure the provider reports is logged
+  with the provider's own reason.
+- **Reading aloud on Linux no longer freezes the app.** On-device speech was
+  synthesized on the thread that draws the window, so the app stopped
+  responding for as long as each sentence took to prepare. It now runs in the
+  background, as it already did on macOS.
+- **Search results stay on screen while you type.** Each keystroke used to
+  clear the list before the new results arrived, which made it flicker,
+  most of all in search by meaning. The results you see now stay until the
+  new ones replace them, and the Overdue and Due today counts no longer drop
+  to zero in between.
+- **Photos added to an event on another device now show on its card in the
+  events list.** When the photos synced in, the event's page showed the new
+  cover but its card in the overview stayed without one, even after navigating
+  away and back. The card now updates as soon as the photo and its file arrive.
+- **AI summaries under images and recordings show formatting instead of
+  asterisks.** The short version shown before you tap "Show more" displayed
+  raw Markdown, such as `**bold**` and `*italic*`. It now renders bold and
+  italic text the way the full summary and the task agent's report do.
+- **Goals created in a newer version of the app no longer disappear on an
+  older one.** A goal using a kind of target this version cannot read is
+  shown with a note to update the app, and is not evaluated or changed on
+  this device.
+- **Time targets show their unit.** Category and label time read in hours,
+  check-in time in minutes.
+
 ## [1.1.70]
 
 ### Added
