@@ -173,7 +173,8 @@ stateDiagram-v2
 - **The receiver stores the sender's chunks as they are,** in the shard of its
   own copy's category; it does not chunk again.
 - **Holds are persisted**, newest per register, with the labels a held task
-  waits on. They are re-checked from `onJournalEntityApplied`,
+  waits on. A report also waits for its task, whose category decides the
+  shard it is stored in. They are re-checked from `onJournalEntityApplied`,
   `onAgentEntityApplied` (reports live in the agent database),
   `onEntityDefinitionApplied` (a label's name is part of a task's text), and
   every time the inbound queue drains.
