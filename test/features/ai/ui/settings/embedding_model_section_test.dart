@@ -73,6 +73,38 @@ void main() {
     expect(ready.value, isTrue);
   });
 
+  testWidgets('a joined download that fails offers to try again', (
+    tester,
+  ) async {
+    when(() => repository.isInstalling).thenReturn(true);
+    var attempts = 0;
+    when(
+      () => repository.install(onProgress: any(named: 'onProgress')),
+    ).thenAnswer((_) async {
+      if (attempts++ == 0) throw Exception('offline');
+    });
+
+    await pumpSection(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(DesignSystemSpinner), findsNothing);
+    expect(
+      find.text(
+        "The download didn't finish. Check your connection and try again.",
+      ),
+      findsOneWidget,
+    );
+    expect(ready.value, isFalse);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    expect(attempts, 2);
+    expect(find.text('On this device'), findsOneWidget);
+    expect(ready.value, isTrue);
+  });
+
   testWidgets('shows a spinner while it checks for the model', (tester) async {
     final check = Completer<bool>();
     when(repository.isInstalled).thenAnswer((_) => check.future);

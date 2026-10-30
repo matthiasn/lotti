@@ -101,7 +101,14 @@ class _EmbeddingModelSectionState extends State<EmbeddingModelSection> {
       setState(() => _installed = true);
       widget.ready.value = true;
     } catch (_) {
-      if (mounted) setState(() => _failed = true);
+      if (mounted) {
+        setState(() {
+          _failed = true;
+          // A joined download never checked the files: what failed to
+          // arrive is not there, which offers the retry.
+          _installed ??= false;
+        });
+      }
     } finally {
       if (mounted) setState(() => _progress = null);
     }
