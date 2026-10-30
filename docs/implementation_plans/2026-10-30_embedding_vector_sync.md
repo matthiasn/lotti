@@ -121,8 +121,11 @@ The vectors of one entry under one model form a **register**: id
 is synced like any tracked kind, so no device silently misses one, and devices
 converge on the same vectors:
 
-- **its own vector clock**, bumped by the host that writes it (embeds, or
-  accepts and stores);
+- **its own vector clock.** Only a local write creates a version: an embed, or
+  a removal (a tombstone, below). That device reserves the next counter of its
+  own host and bumps the clock. A receiver never bumps it: it merges the
+  received clock into the stored one, persists the result and sends nothing, as
+  AI configurations do;
 - **a sequence entry per version**: a new `SyncSequencePayloadType.embeddingVectors`,
   appended last (ordinals are persisted);
 - **a vector-clock reservation and a bind at enqueue**;
@@ -165,7 +168,7 @@ const factory SyncMessage.embeddingVectors({
 |---|---|
 | Dominated or equal | Stale or a duplicate: drop it, and record the receipt. |
 | Dominates | Candidate; it goes through the hash check in §3. |
-| Concurrent (two devices embedded the same entry) | The candidate whose `contentHash` matches the receiver's own text wins. If both or neither match, the larger `sourceVectorClock` wins, then the lower host id, so every device picks the same one. Merge the clocks, as AI configurations do. |
+| Concurrent (two devices embedded the same entry) | One deterministic winner: the larger `sourceVectorClock` under `VectorClock.compareCanonically` (a total order, also for concurrent source clocks), then the lower `originatingHostId`. The rule reads only the two versions, never the receiver's own text, so every device picks the same one. Merge the clocks, as AI configurations do; the winner then goes through the hash check in §3. |
 
 **Persisting the clocks** is a schema change in ObjectBox. The register's
 clock, source clock and content hash must be stored per entry and model,
@@ -273,6 +276,18 @@ a backstop, not the mechanism.
 
 **Agent reports and their task.**
 
+- A report is immutable, so a version of a superseded report R1 still passes
+  the hash check after its successor R2 was stored, for example when R1's
+  message is delayed or redelivered. Order comes from the register, not the
+  content: the writer's cleanup tombstones R1's register (a bumped clock), and
+  any later copy of R1's live version is dominated by that tombstone and
+  dropped. The receiver therefore persists a tombstone's register row (clock,
+  no chunks) even when it held no vectors for it, so a tombstone that arrives
+  before the live version still wins.
+- If R1's live version arrives before its tombstone, the receiver stores it
+  beside R2 until the tombstone lands. Storing R1 never removes R2: the
+  receiver does not run the cleanup (next point).
+
 - A report register is keyed by the report, not the task. Its version carries
   `taskId` and `subtype` so the receiver files it under the task.
 - The receiver does **not** run the one-report-per-task cleanup itself, and
@@ -320,7 +335,21 @@ implemented in the AI feature. It does not write the journal:
    for it again. A device that hasn't downloaded the model still stores
    vectors: it needs the model only for queries, so its index is ready the
    moment it downloads.
+
+   **Recovering what was dropped.** A receipt-recorded drop is not requested
+   again, so the device that becomes able to store makes up for it once. When
+   the sink first becomes able to store for a model (`sync_embeddings` turned
+   on, the pipeline registered, or a store opened for a new `modelId`), it
+   starts a deep backfill of the `embeddingVectors` kind alone and records a
+   per-model "caught up" marker, so this happens once per model and device.
+   Slice 5 confirms that deep backfill can be started for one kind, and adds
+   that if it can't. Holding every unstorable message instead would keep
+   vectors for a model the device may never run.
 2. Merges clocks (§1). A dominated version is dropped here.
+   **A tombstone stops here:** under the entity's lock, delete the entry's
+   chunks, persist the register row with the merged clock and no chunks, and
+   drop any held version of that register. It needs no attachment, no entity
+   and no content hash, so a deletion can't end up held.
 3. Reads the attachment and checks it (`dims == kEmbeddingDimensions`, every
    value finite). It rejects anything else.
 4. Recomputes the content hash from its own copy:
@@ -336,8 +365,21 @@ implemented in the AI feature. It does not write the journal:
    - **Hashes differ, or the entity is missing:** the vectors describe a text
      this device doesn't have yet. Hold the version, keeping the newest per
      register, in a small persisted table (it must survive a restart now that
-     the receipt is recorded). Run step 4 again when `onJournalEntityApplied`
-     fires for that entity.
+     the receipt is recorded). Each held row records what it waits on: its
+     entity, and for a task the label ids of the local copy, if there is one.
+     Run step 4 again for the held rows a dependency can release:
+     - `onJournalEntityApplied` for the entity (the journal path);
+     - a new `onAgentEntityApplied`, invoked from `_applyAgentEntityMessage`
+       (`sync_event_processor_agent_handlers.dart`), for an agent report.
+       Reports apply through the agent database, which never calls the
+       journal hook;
+     - a new `onEntityDefinitionApplied`, from
+       `sync_event_processor_definition_handlers.dart`, for a label definition
+       whose id a held task waits on. A label's name is part of a task's
+       hash, and definitions never call the journal hook either;
+     - a sweep of every held row when the sync queue drains, as the backstop
+       for a dependency no hook names. The table is small, so the sweep is
+       cheap.
    - **A held version whose source clock is dominated by the local entry's
      clock** will never match, because the entry has moved on. It is
      discarded, and the device's own next embed of that entry supersedes it.
@@ -353,19 +395,23 @@ Residuals.
 
 ### 4. A new device
 
-Add a vectors phase to the Add Device history (`historical_sync_service.dart`,
-`ReSyncPhase`), after journal entities:
+Add Device sends the history between `beginOutbound` and `completeOutbound`
+(`re_sync_modal.dart`): the `ReSyncPhase` sweep of `historical_sync_service.dart`
+runs inside the onboarding barrier. The vectors are **not** a `ReSyncPhase`. They
+are a separate step that runs only after `completeOutbound` has enqueued End:
 
 - it walks the local store;
 - it sends the current version of each register through `enqueueCurrent`, the
-  same path deep backfill uses.
+  same path deep backfill uses;
+- a register it can't enqueue becomes a `ReSyncFailure` of a new
+  `ReSyncItemType.embeddingVectors`, so the modal's retry handles it like any
+  other failed item, without sweeping again.
 
 Because the vectors are tracked, a device that misses any of them later finds
 the gap and asks for them, like every other tracked row.
 
-Vectors staged before the onboarding End barrier would delay End, because they
-are low priority. Stage them after End, and the new device stores them as they
-arrive.
+Running the step after End matters: vectors staged before End would delay it,
+because they are low priority. The new device stores them as they arrive.
 
 The manual backfill on a device that just received vectors skips those entries
 already: their hashes match.
@@ -416,13 +462,28 @@ follow the AI-config wiring wherever this plan doesn't say otherwise.
      is absent; the agent-report path; tombstones.
 4. **Receiving.**
    - The `SyncedEmbeddingSink`: the merge table, the hash check against the
-     receiver's own text, the shared text extraction, the persisted hold and
-     its re-check on `onJournalEntityApplied`, discarding superseded holds,
-     agent reports, validation, and receipts recorded on every outcome.
+     receiver's own text, the shared text extraction, the persisted hold with
+     its dependencies, discarding superseded holds, agent reports, validation,
+     and receipts recorded on every outcome.
+   - The tombstone path, ahead of the attachment and the hash check.
+   - The re-check hooks: `onJournalEntityApplied`, the new
+     `onAgentEntityApplied` and `onEntityDefinitionApplied`, and the sweep
+     when the queue drains.
    - Tests:
-     - dominated / dominating / concurrent;
+     - dominated / dominating / concurrent, with every device choosing the
+       same winner of a concurrent pair whatever its own text;
+     - a receiver merges the clock and never bumps it;
      - match → stored;
      - mismatch → held → stored after the entity applies;
+     - a report vector before its report → held → stored when the report
+       applies through the agent database;
+     - a task vector before its label definition → held → stored when the
+       definition applies;
+     - a tombstone for a missing entity, and one with no stored vectors,
+       still removes, persists its register row and is never held;
+     - reverse order for a superseded report (R1's tombstone, then R1's live
+       version) and R1 redelivered after R2 is stored: R1 never returns, R2
+       stays;
      - a held version superseded by a newer entry is discarded;
      - wrong model or dims → dropped, receipt recorded;
      - redelivery is a no-op;
@@ -431,8 +492,12 @@ follow the AI-config wiring wherever this plan doesn't say otherwise.
    - The backfill response builder: resend, hint, `deleted`, `unresolvable`.
    - The vectors `DeepBackfillStore`.
    - Sequence-log population after restore.
-   - The `ReSyncPhase` for vectors.
-   - Tests on each, following the `aiConfig` ones.
+   - The Add Device vectors step after `completeOutbound`, with
+     `ReSyncItemType.embeddingVectors` failures and their retry.
+   - Starting a deep backfill of one kind, if it can't be done yet, and the
+     once-per-model catch-up when the sink first becomes able to store.
+   - Tests on each, following the `aiConfig` ones; the vectors step never
+     enqueues before End.
 6. **TLA+ and docs.**
    - Add the vectors family to `specs/tla/SyncPipeline.tla` (`Family`), and
      check it in `SyncSequence.tla` and `DeepBackfill.tla` as the other tracked
@@ -445,6 +510,9 @@ follow the AI-config wiring wherever this plan doesn't say otherwise.
      - a stored vector always matches its entry's current text on the device
        that stored it;
      - nothing reaches the index from an unverified device.
+     - a superseded agent report never returns to a receiver's index, in any
+       delivery order;
+     - no held version waits forever once every dependency has applied.
    - Follow the practice in `specs/tla/README.md`: fix switches, mutations with
      their counterexamples, the ledger row.
    - Update `knowledge/features/ai/embeddings-and-search.md`: the residual
