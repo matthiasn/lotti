@@ -51,6 +51,7 @@ class TimeBlock {
     required this.state,
     required this.category,
     this.taskId,
+    this.relationshipId,
     this.reason,
     this.sessionIndex,
     this.sessionTotal,
@@ -68,6 +69,10 @@ class TimeBlock {
   /// Null for buffers, real calendar events without a backing task,
   /// and unbound manual blocks.
   final String? taskId;
+
+  /// The person a tracked check-in belongs to, so a tap can open the
+  /// check-in on their People page. Null for every other block.
+  final String? relationshipId;
 
   /// The "why" string. **Mandatory** for `type == ai` — the agent
   /// must justify every placement it proposes. Optional for `cal` /
@@ -97,6 +102,7 @@ class TimeBlock {
     TimeBlockState? state,
     DayAgentCategory? category,
     String? taskId,
+    String? relationshipId,
     String? reason,
     int? sessionIndex,
     int? sessionTotal,
@@ -111,6 +117,7 @@ class TimeBlock {
       state: state ?? this.state,
       category: category ?? this.category,
       taskId: taskId ?? this.taskId,
+      relationshipId: relationshipId ?? this.relationshipId,
       reason: reason ?? this.reason,
       sessionIndex: sessionIndex ?? this.sessionIndex,
       sessionTotal: sessionTotal ?? this.sessionTotal,

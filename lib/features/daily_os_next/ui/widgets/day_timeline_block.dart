@@ -448,8 +448,16 @@ class DayBlock extends ConsumerWidget {
     final eventId = tracked && effectiveBlock.type == TimeBlockType.cal
         ? effectiveBlock.trackedEntryId
         : null;
+    // A tracked check-in has no task; its page is its person's, on the
+    // People tab, as from the journal list.
+    final relationshipId = effectiveBlock.relationshipId;
+    final checkInId = tracked && relationshipId != null
+        ? effectiveBlock.trackedEntryId
+        : null;
     final onTap = eventId != null
         ? () => beamToNamed('/events/$eventId')
+        : checkInId != null
+        ? () => beamToNamed('/people/$relationshipId/check-ins/$checkInId')
         : taskId == null || taskId.isEmpty
         ? null
         : () {

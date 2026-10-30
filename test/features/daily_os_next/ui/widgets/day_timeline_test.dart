@@ -122,6 +122,7 @@ TimeBlock _timeBlock({
   TimeBlockState state = TimeBlockState.drafted,
   TimeBlockType type = TimeBlockType.ai,
   String? taskId,
+  String? relationshipId,
 }) {
   final day = DateTime(2026, 5, 25);
   return TimeBlock(
@@ -134,6 +135,7 @@ TimeBlock _timeBlock({
     category: _work,
     reason: 'Window selected for focused work.',
     taskId: taskId,
+    relationshipId: relationshipId,
   );
 }
 
@@ -371,6 +373,49 @@ void main() {
       await tester.pump();
 
       expect(openedPath, '/events/evt-1');
+    });
+
+    // A tracked check-in has no task; like the journal list, the block opens
+    // the check-in on its person's People page.
+    testWidgets('a tracked check-in block opens its check-in page', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+
+      String? openedPath;
+      beamToNamedOverride = (path) => openedPath = path;
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draftWithBlocks(
+              blocks: const [],
+              actualBlocks: [
+                _timeBlock(
+                  id: '${actualTimeBlockIdPrefix}check-in-1',
+                  title: 'Pemberton',
+                  startHour: 8,
+                  endHour: 9,
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.completed,
+                  relationshipId: 'person-1',
+                ),
+              ],
+            ),
+            clock: () => DateTime(2026, 5, 25, 9, 15),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(
+          const Key('daily_os_day_block_${actualTimeBlockIdPrefix}check-in-1'),
+        ),
+      );
+      await tester.pump();
+
+      expect(openedPath, '/people/person-1/check-ins/check-in-1');
     });
 
     testWidgets('a tracked recording with neither task nor event stays inert', (

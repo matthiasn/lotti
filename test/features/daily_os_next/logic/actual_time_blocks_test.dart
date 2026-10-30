@@ -251,6 +251,11 @@ void main() {
       expect(blocks.first.type, TimeBlockType.manual);
       expect(blocks.first.state, TimeBlockState.completed);
       expect(blocks.first.taskId, isNull);
+      // The person rides along so a tap can open the check-in on their page.
+      expect(blocks.map((b) => b.relationshipId), [
+        person.meta.id,
+        person.meta.id,
+      ]);
     });
 
     test('uses entry text → category name → entry id as title fallbacks', () {
