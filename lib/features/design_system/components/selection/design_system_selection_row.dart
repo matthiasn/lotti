@@ -43,7 +43,10 @@ class DesignSystemSelectionRowAction {
 /// It keeps the leading rail, typography, spacing, interaction states, and
 /// trailing affordances identical while allowing each feature to supply its
 /// own semantic icon or metadata. The full-width selected band deliberately
-/// remains selected while hovered; keyboard focus is added by the underlying
+/// remains selected while hovered. A multi-select row says what is selected
+/// with its checkbox alone: it wears no band and no hover fill, so a ticked
+/// row never looks heavier than the box that says it is ticked. Keyboard
+/// focus is added by the underlying
 /// [DesignSystemListItem]. Homogeneous option lists do not render dividers, so
 /// an active row is never bisected by a partial-width rule. Every row preserves
 /// the design system's minimum interactive height, including iconless actions.
@@ -93,7 +96,8 @@ class DesignSystemSelectionRow extends StatelessWidget {
   final DesignSystemSelectionRowType type;
   final bool selected;
 
-  /// Whether a selected row also receives the selected surface fill.
+  /// Whether a selected single-select row also receives the selected surface
+  /// fill. A multi-select row never does: its checkbox carries the selection.
   ///
   /// Keep this false for checkbox lists where the trailing checkbox is the
   /// intended state indicator and tinting every checked row would merge the
@@ -153,7 +157,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     final isSingle = type == DesignSystemSelectionRowType.singleSelect;
     final isMulti = type == DesignSystemSelectionRowType.multiSelect;
     final standardTrailing = _standardTrailing(context);
-    final banded = (isSingle || isMulti) && selected && showSelectedBackground;
+    final banded = isSingle && selected && showSelectedBackground;
     final resolvedSemanticLabel =
         semanticLabel ??
         (subtitle == null || subtitle!.isEmpty ? title : '$title, $subtitle');
@@ -188,6 +192,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
           trailingExtra: standardTrailing,
           activated: banded,
           activatedBackgroundColor: tokens.colors.surface.selected,
+          hoverBackgroundColor: isMulti ? Colors.transparent : null,
           onTap: onTap,
           focusNode: focusNode,
           onHoverChanged: onHoverChanged,

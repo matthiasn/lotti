@@ -4080,7 +4080,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Zapne vektorové vyhledávání ve filtrech úkolů. Vyžaduje povolené embeddingy a spuštěnou Ollamu.';
+      'Zapne vektorové vyhledávání ve filtrech úkolů. Vyžaduje povolené embeddingy a stažený model.';
 
   @override
   String get configFlagEnableWhatsNew => 'Zobrazit „Co je nového\"';
@@ -6696,6 +6696,38 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Zadej poznámky...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Model v tomto zařízení se nepodařilo zkontrolovat.';
+
+  @override
+  String get embeddingModelDescription =>
+      'Vyhledávání podle významu běží na tomto zařízení. Stáhni si model jednou a můžeš ho používat.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Stáhnout';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'Stahování se nedokončilo. Zkontroluj připojení a zkus to znovu.';
+
+  @override
+  String get embeddingModelDownloading => 'Stahuje se';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Stáhnout $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'V tomto zařízení';
+
+  @override
+  String get embeddingModelRetry => 'Zkusit znovu';
+
+  @override
+  String get embeddingModelTerms => 'Podmínky použití Gemma';
 
   @override
   String get embeddingSelectAll => 'Vybrat vše';
@@ -10545,15 +10577,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generovat vektory';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Kategorie';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Ano, generovat';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Generovat vektory pro záznamy ve vybraných kategoriích';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Vyber kategorie pro generování vektorů.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

@@ -169,11 +169,13 @@ feedback, and the keyboard focus ring is the only decoration the row draws.
 The compact `DesignSystemCheckbox` is a 24dp control with no outer inset. A
 feature that needs a mobile-sized option target should not pad seven independent
 checkboxes into a loose stack; it should use
-`DesignSystemSelectionRow.multiSelect`. That component owns the full-row target,
-keeps labels on the left and checkboxes on the right, and normally applies one
-contiguous selected band per option. Checkbox-first lists can set
-`showSelectedBackground: false` when the checkmark is the deliberate sole state
-indicator; checked semantics and the full-row action remain unchanged.
+`DesignSystemSelectionRow.multiSelect`. That component owns the full-row target
+and keeps labels on the left and checkboxes on the right. The checkbox is the
+row's only selected state: a multi-select row wears no selected band and no
+hover fill, so a ticked row never looks heavier than the box that says it is
+ticked. Keyboard focus still draws its border, and checked semantics and the
+full-row action are unchanged. `showSelectedBackground` applies to
+single-select rows only.
 
 A selection row that needs a second command — opening the entity a picker row
 stands for — takes it as `secondaryAction`, never as an interactive widget in

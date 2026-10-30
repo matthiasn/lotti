@@ -29,7 +29,9 @@ abstract final class ConfirmationProgressModal {
   /// above the action bar; [isConfirmEnabled] / [confirmEnabledListenable]
   /// gate and reactively rebuild the confirm button. [actionButtonSize]
   /// changes only the visual tier; both actions retain a padded 48dp
-  /// interaction target.
+  /// interaction target. [horizontalPadding] narrows the side gutter for
+  /// content that brings its own inset, such as a picker; the actions keep
+  /// the standard edge.
   static Future<bool> show({
     required BuildContext context,
     required String message,
@@ -42,6 +44,7 @@ abstract final class ConfirmationProgressModal {
     bool Function()? isConfirmEnabled,
     Listenable? confirmEnabledListenable,
     DesignSystemButtonSize actionButtonSize = DesignSystemButtonSize.large,
+    double horizontalPadding = ModalTheme.padding,
   }) async {
     final pageIndexNotifier = ValueNotifier(0);
     final theme = Theme.of(context);
@@ -66,12 +69,15 @@ abstract final class ConfirmationProgressModal {
           // Confirmation Page
           ModalUtils.modalSheetPage(
             context: modalSheetContext,
-            padding: const EdgeInsets.all(ModalTheme.padding),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: ModalTheme.padding,
+            ),
             hasTopBarLayer: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isDestructive)
+                if (isDestructive) ...[
                   Container(
                     padding: const EdgeInsets.all(ModalTheme.iconPadding),
                     decoration: BoxDecoration(
@@ -94,7 +100,8 @@ abstract final class ConfirmationProgressModal {
                       color: colorScheme.error,
                     ),
                   ),
-                const SizedBox(height: ModalTheme.spacing24),
+                  const SizedBox(height: ModalTheme.spacing24),
+                ],
                 Text(
                   message,
                   style: theme.textTheme.headlineSmall?.copyWith(
@@ -111,47 +118,57 @@ abstract final class ConfirmationProgressModal {
                   const SizedBox(height: ModalTheme.spacing24),
                 ],
                 const SizedBox(height: AppTheme.spacingLarge),
-                DesignSystemModalActionBar(
-                  // The confirm action sizes to its label rather than
-                  // stretching edge to edge: a full-width filled primary reads
-                  // as the loudest thing on screen even when the modal is a
-                  // routine choice, and at modal width it dwarfs the Cancel
-                  // beside it.
-                  layout: DesignSystemModalActionBarLayout.compactPrimary,
-                  secondary: [
-                    DesignSystemButton(
-                      label: context.messages.cancelButton,
-                      variant: DesignSystemButtonVariant.secondary,
-                      size: actionButtonSize,
-                      tapTargetSize: MaterialTapTargetSize.padded,
-                      onPressed: () {
-                        confirmed = false;
-                        Navigator.of(modalSheetContext).pop();
-                      },
+                // The actions keep the standard modal edge however far the
+                // content's gutter is narrowed.
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (ModalTheme.padding - horizontalPadding).clamp(
+                      0,
+                      ModalTheme.padding,
                     ),
-                  ],
-                  primary: confirmEnabledListenable != null
-                      ? ListenableBuilder(
-                          listenable: confirmEnabledListenable,
-                          builder: (context, _) {
-                            return _buildConfirmButton(
-                              modalSheetContext,
-                              isConfirmEnabled,
-                              onConfirm,
-                              confirmLabel,
-                              isDestructive,
-                              actionButtonSize,
-                            );
-                          },
-                        )
-                      : _buildConfirmButton(
-                          modalSheetContext,
-                          isConfirmEnabled,
-                          onConfirm,
-                          confirmLabel,
-                          isDestructive,
-                          actionButtonSize,
-                        ),
+                  ),
+                  child: DesignSystemModalActionBar(
+                    // The confirm action sizes to its label rather than
+                    // stretching edge to edge: a full-width filled primary reads
+                    // as the loudest thing on screen even when the modal is a
+                    // routine choice, and at modal width it dwarfs the Cancel
+                    // beside it.
+                    layout: DesignSystemModalActionBarLayout.compactPrimary,
+                    secondary: [
+                      DesignSystemButton(
+                        label: context.messages.cancelButton,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: actionButtonSize,
+                        tapTargetSize: MaterialTapTargetSize.padded,
+                        onPressed: () {
+                          confirmed = false;
+                          Navigator.of(modalSheetContext).pop();
+                        },
+                      ),
+                    ],
+                    primary: confirmEnabledListenable != null
+                        ? ListenableBuilder(
+                            listenable: confirmEnabledListenable,
+                            builder: (context, _) {
+                              return _buildConfirmButton(
+                                modalSheetContext,
+                                isConfirmEnabled,
+                                onConfirm,
+                                confirmLabel,
+                                isDestructive,
+                                actionButtonSize,
+                              );
+                            },
+                          )
+                        : _buildConfirmButton(
+                            modalSheetContext,
+                            isConfirmEnabled,
+                            onConfirm,
+                            confirmLabel,
+                            isDestructive,
+                            actionButtonSize,
+                          ),
+                  ),
                 ),
               ],
             ),
@@ -160,7 +177,10 @@ abstract final class ConfirmationProgressModal {
           ModalUtils.modalSheetPage(
             context: modalSheetContext,
             hasTopBarLayer: false,
-            padding: const EdgeInsets.all(ModalTheme.padding),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: ModalTheme.padding,
+            ),
             child: progressBuilder(modalSheetContext),
           ),
         ];

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/database/real_objectbox_ops.dart'; // coverage:ignore-line
@@ -12,8 +11,11 @@ import 'package:path/path.dart' as p;
 
 part 'sharded_embedding_store_migration.dart';
 
-/// Directory name for sharded ObjectBox embedding stores.
-const kObjectBoxShardedEmbeddingsDirectoryName = 'objectbox_embeddings_sharded';
+/// Directory name for the sharded ObjectBox stores of the current model's
+/// vectors. One directory per model: a store's index has the width of the
+/// model that filled it.
+const kObjectBoxShardedEmbeddingsDirectoryName =
+    'objectbox_embeddings_embeddinggemma-300m-q4';
 
 /// Default shard key for entities with no category.
 const kDefaultShardKey = '_default';

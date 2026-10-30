@@ -915,17 +915,9 @@ void main() {
         expect(modelIds, isNot(contains('gemma3:12b')));
       });
 
-      test('should still contain embedding model', () {
+      test('offers no embedding model: embeddings run on this device', () {
         final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
-        expect(modelIds, contains('mxbai-embed-large'));
-      });
-
-      test('embedding model should not be a reasoning model', () {
-        final model = ollamaModels.firstWhere(
-          (m) => m.providerModelId == 'mxbai-embed-large',
-        );
-        expect(model.isReasoningModel, isFalse);
-        expect(model.supportsFunctionCalling, isFalse);
+        expect(modelIds, isNot(contains('mxbai-embed-large')));
       });
     });
 

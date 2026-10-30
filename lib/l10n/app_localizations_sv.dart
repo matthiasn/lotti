@@ -4040,7 +4040,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Aktivera vektorsökning i uppgiftsfilter. Kräver att embeddings aktiveras och att Ollama körs.';
+      'Aktivera vektorsökning i uppgiftsfilter. Kräver att embeddings är aktiverade och att deras modell är nedladdad.';
 
   @override
   String get configFlagEnableWhatsNew => 'Visa vad som är nytt';
@@ -6631,6 +6631,38 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Skriv in anteckningarna...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Det gick inte att kontrollera modellen på den här enheten.';
+
+  @override
+  String get embeddingModelDescription =>
+      'Sökning efter betydelse körs på den här enheten. Ladda ner modellen en gång för att använda den.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Ladda ner';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'Nedladdningen slutfördes inte. Kontrollera din anslutning och försök igen.';
+
+  @override
+  String get embeddingModelDownloading => 'Laddar ner';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Ladda ner $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'På den här enheten';
+
+  @override
+  String get embeddingModelRetry => 'Försök igen';
+
+  @override
+  String get embeddingModelTerms => 'Gemmas användarvillkor';
 
   @override
   String get embeddingSelectAll => 'Välj alla';
@@ -10452,15 +10484,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generera inbäddningar';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Kategorier';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Ja, generera';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Generera inbäddningar för poster i utvalda kategorier';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Välj kategorier att generera embeddings för.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

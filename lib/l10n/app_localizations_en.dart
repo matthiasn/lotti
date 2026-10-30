@@ -4017,7 +4017,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.';
+      'Enable vector search in task filters. Requires embeddings to be enabled and their model downloaded.';
 
   @override
   String get configFlagEnableWhatsNew => 'Show What\'s New';
@@ -6597,6 +6597,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Enter notes...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Couldn\'t check the model on this device.';
+
+  @override
+  String get embeddingModelDescription =>
+      'Search by meaning runs on this device. Download the model once to use it.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Download';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'The download didn\'t finish. Check your connection and try again.';
+
+  @override
+  String get embeddingModelDownloading => 'Downloading';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Download $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'On this device';
+
+  @override
+  String get embeddingModelRetry => 'Try again';
+
+  @override
+  String get embeddingModelTerms => 'Gemma Terms of Use';
 
   @override
   String get embeddingSelectAll => 'Select All';
@@ -10397,15 +10429,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generate Embeddings';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Categories';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Yes, generate';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Generate embeddings for entries in selected categories';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Select categories to generate embeddings for.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

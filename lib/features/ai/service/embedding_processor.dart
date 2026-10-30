@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
-import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/ai_attribution.dart';
-import 'package:lotti/classes/ai_consumption/ai_consumption_enums.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/get_it.dart';
 
@@ -30,10 +26,11 @@ typedef LabelNameResolver =
 /// agent's report writer.
 ///
 /// Extracts text from a journal entity, checks for content changes via
-/// SHA-256 hashing, generates an embedding via Ollama, and stores it.
+/// SHA-256 hashing, generates an embedding with the on-device model, and
+/// stores it.
 ///
 /// **One run per entity at a time.** These callers run concurrently and do
-/// not know about each other, and a run spans a network call. Each run for
+/// not know about each other, and a run spans a model call. Each run for
 /// an entity therefore holds that entity's lock from its journal read to its
 /// store write, so a run that read an older version can never write after a
 /// run that read a newer one; the model is `specs/tla/EmbeddingFreshness.tla`.
@@ -85,8 +82,7 @@ abstract final class EmbeddingProcessor {
     required String entityId,
     required JournalDb journalDb,
     required EmbeddingStore embeddingStore,
-    required OllamaEmbeddingRepository embeddingRepository,
-    required String baseUrl,
+    required OnDeviceEmbeddingRepository embeddingRepository,
     LabelNameResolver? labelNameResolver,
   }) => _serialized(entityId, () async {
     final entity = await journalDb.journalEntityById(entityId);
@@ -132,7 +128,6 @@ abstract final class EmbeddingProcessor {
       categoryId: categoryId,
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
-      baseUrl: baseUrl,
     );
     await _moveReports(entity, categoryId, embeddingStore);
 
@@ -220,8 +215,7 @@ abstract final class EmbeddingProcessor {
     required String subtype,
     required JournalDb journalDb,
     required EmbeddingStore embeddingStore,
-    required OllamaEmbeddingRepository embeddingRepository,
-    required String baseUrl,
+    required OnDeviceEmbeddingRepository embeddingRepository,
   }) => _serialized(taskId, () async {
     final text = reportContent.trim();
     if (text.length < kMinEmbeddingTextLength) return false;
@@ -243,7 +237,6 @@ abstract final class EmbeddingProcessor {
       subtype: subtype,
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
-      baseUrl: baseUrl,
     );
 
     for (final staleId in await embeddingStore.agentReportIdsForTask(taskId)) {
@@ -266,8 +259,7 @@ abstract final class EmbeddingProcessor {
     required String entityType,
     required String contentHash,
     required EmbeddingStore embeddingStore,
-    required OllamaEmbeddingRepository embeddingRepository,
-    required String baseUrl,
+    required OnDeviceEmbeddingRepository embeddingRepository,
     String categoryId = '',
     String taskId = '',
     String subtype = '',
@@ -293,44 +285,18 @@ abstract final class EmbeddingProcessor {
     var completionStarted = false;
 
     try {
-      // Phase 1: Generate all embeddings (network calls that can fail).
-      final generated = <Float32List>[];
-      for (final chunk in chunks) {
-        Future<Float32List> invoke() => embeddingRepository.embed(
-          input: chunk,
-          baseUrl: baseUrl,
-        );
-        final embedding = capture == null
-            ? await invoke()
-            : await capture.captureUnary(
-                workType: AiWorkType.embeddingIndexing,
-                interactionKind: AiInteractionKind.embedding,
-                responseType: AiConsumptionResponseType.embeddingIndexing,
-                providerType: InferenceProviderType.ollama,
-                modelId: ollamaEmbedDefaultModel,
-                requestText: chunk,
-                invoke: invoke,
-                responseText: (value) =>
-                    sha256.convert(value.buffer.asUint8List()).toString(),
-                interactionContext: AiCapturedContext(
-                  entryId: entityId,
-                ),
-                existingSession: attributionSession,
-                terminalizeSuccess: false,
-                terminalizeFailure: false,
-                triggerType: AiTriggerType.automatic,
-                automationId: 'automation:embedding-indexer',
-                automationDisplayName: 'Embedding indexer',
-                taskId: taskId.isEmpty ? null : taskId,
-                categoryId: categoryId.isEmpty ? null : categoryId,
-              );
-        generated.add(embedding);
-      }
+      // Phase 1: Generate all embeddings (model calls that can fail). No
+      // provider is called and nothing is consumed, so the session records
+      // the work and its vector, without an interaction per chunk.
+      final generated = <Float32List>[
+        for (final chunk in chunks)
+          await embeddingRepository.embedDocument(chunk),
+      ];
 
       await embeddingStore.replaceEntityEmbeddings(
         entityId: entityId,
         entityType: entityType,
-        modelId: ollamaEmbedDefaultModel,
+        modelId: embeddingRepository.modelId,
         contentHash: contentHash,
         embeddings: generated,
         categoryId: categoryId,

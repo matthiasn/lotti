@@ -118,6 +118,17 @@ class JournalPageController extends Notifier<JournalPageState>
   @override
   Set<String> _selectedPriorities = {};
   Set<String> _fullTextMatches = {};
+
+  /// Bumped by every [refreshQuery]. A query run writes the shared search
+  /// state — its matches, its hits, its vector telemetry — only while it is
+  /// still the latest, so a slower run for an earlier keystroke cannot land
+  /// over a newer one.
+  int _queryGeneration = 0;
+
+  /// The generation of the latest vector search started, so only that run
+  /// clears the in-flight flag: a stale run must not hide a newer run's
+  /// spinner, nor leave it spinning when the newer query is no vector search.
+  int _vectorSearchGeneration = 0;
   @override
   TaskSortOption _sortOption = TaskSortOption.byPriority;
   @override
@@ -388,13 +399,17 @@ class JournalPageController extends Notifier<JournalPageState>
   // Search and query
   // ---------------------------------------------------------------
 
+  /// Runs the search for [query], keeping the results on screen until the new
+  /// ones replace them: a semantic search waits on the embedding model, and
+  /// emptying the list for each keystroke made it flicker.
   Future<void> setSearchString(String query) async {
     _query = query;
-    await refreshQuery();
+    await refreshQuery(preserveVisibleItems: true);
   }
 
   @override
   Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
+    _queryGeneration++;
     _queryRunner.clearCache();
     _emitState();
 
@@ -470,13 +485,17 @@ class JournalPageController extends Notifier<JournalPageState>
         (int? value) => _postFilterNextRawOffset = value;
 
     final params = _buildQueryParams();
+    final generation = _queryGeneration;
+    bool current() => generation == _queryGeneration && ref.mounted;
 
     // A pasted pull request link is a lookup, not a search, in either mode.
     final pullRequestTasks = await _queryRunner.runPullRequestSearch(params);
     if (pullRequestTasks != null) {
-      applyOffset(null);
-      _fullTextMatches = {for (final task in pullRequestTasks) task.meta.id};
-      _showTaskSearchHits(const {});
+      if (current()) {
+        applyOffset(null);
+        _fullTextMatches = {for (final task in pullRequestTasks) task.meta.id};
+        _showTaskSearchHits(const {});
+      }
       return pageKey == 0 ? pullRequestTasks : const <JournalEntity>[];
     }
 
@@ -485,17 +504,22 @@ class JournalPageController extends Notifier<JournalPageState>
         params.query.isNotEmpty &&
         pageKey == 0) {
       _showTaskSearchHits(const {});
-      return _runVectorSearchWithTelemetry(params);
+      return _runVectorSearchWithTelemetry(params, generation, current);
     }
 
     final matches = await _queryRunner.fts5Search(params);
-    _fullTextMatches = matches.ids;
-    _showTaskSearchHits(matches.taskHits);
+    if (current()) {
+      _fullTextMatches = matches.ids;
+      _showTaskSearchHits(matches.taskHits);
+    }
     return _queryRunner.runQuery(
       params,
       pageKey,
-      fullTextMatches: _fullTextMatches,
-      setPostFilterNextRawOffset: applyOffset,
+      // This run's own matches: the shared ones may belong to a newer query.
+      fullTextMatches: matches.ids,
+      setPostFilterNextRawOffset: (offset) {
+        if (current()) applyOffset(offset);
+      },
     );
   }
 
@@ -507,16 +531,25 @@ class JournalPageController extends Notifier<JournalPageState>
     state = state.copyWith(taskSearchHits: hits);
   }
 
+  /// The last search's distances and counts stay until this one lands: they
+  /// belong to the results still on screen, which the due views count from.
   Future<List<JournalEntity>> _runVectorSearchWithTelemetry(
     JournalQueryParams params,
+    int generation,
+    bool Function() current,
   ) async {
-    state = state.copyWith(
-      vectorSearchInFlight: true,
-      vectorSearchElapsed: Duration.zero,
-      vectorSearchResultCount: 0,
-      vectorSearchDistances: const {},
-    );
+    _vectorSearchGeneration = generation;
+    state = state.copyWith(vectorSearchInFlight: true);
     final result = await _queryRunner.runVectorSearch(params);
+    if (!ref.mounted) return result.entities;
+    if (!current()) {
+      // A newer query owns the telemetry. Unless a newer vector search runs,
+      // nothing is in flight any more.
+      if (_vectorSearchGeneration == generation) {
+        state = state.copyWith(vectorSearchInFlight: false);
+      }
+      return result.entities;
+    }
     state = state.copyWith(
       vectorSearchInFlight: false,
       vectorSearchElapsed: result.elapsed,

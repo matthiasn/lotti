@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
@@ -19,10 +18,10 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -2326,7 +2325,7 @@ not describe task configuration or tool activity as progress.
                   )
                   as AgentReportHeadEntity;
           final mockEmbeddingStore = MockEmbeddingStore();
-          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final mockEmbeddingRepository = MockOnDeviceEmbeddingRepository();
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,
             conversationRepository: mockConversationRepository,
@@ -2349,14 +2348,17 @@ not describe task configuration or tool activity as progress.
             () => mockAgentRepository.getReportHead(agentId, 'current'),
           ).thenAnswer((_) async => existingHead);
           when(
-            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
-          ).thenAnswer((_) async => 'http://localhost:11434');
+            () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+          ).thenAnswer((_) async => true);
+          when(
+            mockEmbeddingRepository.isInstalled,
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockEmbeddingRepository.modelId,
+          ).thenReturn('test-embedding-model');
           when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
           when(
-            () => mockEmbeddingRepository.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-            ),
+            () => mockEmbeddingRepository.embedDocument(any()),
           ).thenAnswer(
             (_) async => Float32List.fromList(
               List<double>.filled(kEmbeddingDimensions, 0.25),
@@ -2474,10 +2476,7 @@ not describe task configuration or tool activity as progress.
           );
 
           verify(
-            () => mockEmbeddingRepository.embed(
-              input: any(named: 'input'),
-              baseUrl: 'http://localhost:11434',
-            ),
+            () => mockEmbeddingRepository.embedDocument(any()),
           ).called(1);
           expect(newReportId, isNotNull);
           expect(
@@ -2488,155 +2487,139 @@ not describe task configuration or tool activity as progress.
         },
       );
 
-      test('a known embedding cooldown leaves the saved report intact and '
-          'makes no network call', () async {
-        const baseUrl = 'http://localhost:11434';
-        final previousDelay = OllamaEmbeddingRepository.retryBaseDelay;
-        OllamaEmbeddingRepository.retryBaseDelay = Duration.zero;
-        addTearDown(
-          () => OllamaEmbeddingRepository.retryBaseDelay = previousDelay,
+      for (final (embeddingsOn, modelInstalled) in [
+        (false, true),
+        (true, false),
+      ]) {
+        test(
+          embeddingsOn
+              ? 'a report written before the model is downloaded is saved and '
+                    'not embedded'
+              : 'a report written while embeddings are off is saved and not '
+                    'embedded',
+          () async {
+            final mockEmbeddingStore = MockEmbeddingStore();
+            final embeddingRepository = MockOnDeviceEmbeddingRepository();
+            // The gate's last check completes this, so the test can wait
+            // for the fire-and-forget embedding deterministically.
+            final gateChecked = Completer<void>();
+            when(
+              () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+            ).thenAnswer((_) async {
+              if (!embeddingsOn) gateChecked.complete();
+              return embeddingsOn;
+            });
+            when(embeddingRepository.isInstalled).thenAnswer((_) async {
+              gateChecked.complete();
+              return modelInstalled;
+            });
+
+            await withClock(Clock.fixed(testDate), () async {
+              final workflowWithEmbeddings = TaskAgentWorkflow(
+                agentRepository: mockAgentRepository,
+                conversationRepository: mockConversationRepository,
+                aiInputRepository: mockAiInputRepository,
+                aiConfigRepository: mockAiConfigRepository,
+                journalDb: mockJournalDb,
+                cloudInferenceRepository: mockCloudInferenceRepository,
+                journalRepository: mockJournalRepository,
+                checklistRepository: mockChecklistRepository,
+                labelsRepository: mockLabelsRepository,
+                syncService: mockSyncService,
+                templateService: mockTemplateService,
+                domainLogger: DomainLogger(loggingService: LoggingService())
+                  ..enabledDomains.add(LogDomain.agentWorkflow),
+                embeddingStore: mockEmbeddingStore,
+                embeddingRepository: embeddingRepository,
+              );
+              when(
+                () => mockAgentRepository.getReportHead(agentId, 'current'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentReportHead(
+                          id: 'existing-head-id',
+                          agentId: agentId,
+                          scope: 'current',
+                          reportId: 'old-report',
+                          updatedAt: testDate,
+                          vectorClock: null,
+                        )
+                        as AgentReportHeadEntity,
+              );
+              when(
+                () => mockAgentRepository.getReportHead(agentId, 'current'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentReportHead(
+                          id: 'existing-head-id',
+                          agentId: agentId,
+                          scope: 'current',
+                          reportId: 'old-report',
+                          updatedAt: testDate,
+                          vectorClock: null,
+                        )
+                        as AgentReportHeadEntity,
+              );
+              mockConversationRepository.sendMessageDelegate =
+                  ({
+                    required conversationId,
+                    required message,
+                    required model,
+                    required provider,
+                    required inferenceRepo,
+                    tools,
+                    toolChoice,
+                    temperature = 0.7,
+                    strategy,
+                  }) async {
+                    if (strategy is TaskAgentStrategy) {
+                      await strategy.processToolCalls(
+                        toolCalls: [
+                          const ChatCompletionMessageToolCall(
+                            id: 'rpt-call',
+                            type: ChatCompletionMessageToolCallType.function,
+                            function: ChatCompletionMessageFunctionCall(
+                              name: 'update_report',
+                              arguments:
+                                  r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
+                            ),
+                          ),
+                        ],
+                        manager: mockConversationManager,
+                      );
+                    }
+                    return null;
+                  };
+              when(() => mockConversationManager.messages).thenReturn([]);
+
+              final result = await workflowWithEmbeddings.execute(
+                agentIdentity: testAgentIdentity,
+                runKey: runKey,
+                triggerTokens: {'entity-a'},
+                threadId: threadId,
+              );
+              await gateChecked.future;
+              await pumpEventQueue();
+
+              expect(result.success, isTrue);
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+              expect(
+                capturedEntitiesOfType<AgentReportEntity>(
+                  captured,
+                ).single.content,
+                '# Report\nThis report has enough content to embed.',
+              );
+              verifyNever(() => embeddingRepository.embedDocument(any()));
+              // Search keeps the previous report until a new embedding exists.
+              verifyNever(
+                () => mockEmbeddingStore.deleteEntityEmbeddings(any()),
+              );
+            });
+          },
         );
-        registerFallbackValue(Uri.parse(baseUrl));
-        final httpClient = MockHttpClient();
-        when(
-          () => httpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) async => throw const SocketException('refused'));
-        // A real repository, so the cooldown is the production circuit
-        // rather than a stubbed exception.
-        final embeddingRepository = OllamaEmbeddingRepository(
-          domainLogger: MockDomainLogger(),
-          httpClient: httpClient,
-        );
-        final mockEmbeddingStore = MockEmbeddingStore();
-        when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
-
-        await withClock(Clock.fixed(testDate), () async {
-          // The first report embedding discovers the outage.
-          await expectLater(
-            embeddingRepository.embed(input: 'probe', baseUrl: baseUrl),
-            throwsA(isA<Exception>()),
-          );
-          // The whole transport retry budget was spent discovering it.
-          verify(
-            () => httpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).called(3);
-
-          final workflowWithEmbeddings = TaskAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiInputRepository: mockAiInputRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            journalDb: mockJournalDb,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            checklistRepository: mockChecklistRepository,
-            labelsRepository: mockLabelsRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
-            domainLogger: DomainLogger(loggingService: LoggingService())
-              ..enabledDomains.add(LogDomain.agentWorkflow),
-            embeddingStore: mockEmbeddingStore,
-            embeddingRepository: embeddingRepository,
-          );
-          when(
-            () => mockAgentRepository.getReportHead(agentId, 'current'),
-          ).thenAnswer(
-            (_) async =>
-                AgentDomainEntity.agentReportHead(
-                      id: 'existing-head-id',
-                      agentId: agentId,
-                      scope: 'current',
-                      reportId: 'old-report',
-                      updatedAt: testDate,
-                      vectorClock: null,
-                    )
-                    as AgentReportHeadEntity,
-          );
-          when(
-            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
-          ).thenAnswer((_) async => baseUrl);
-          // The content-hash lookup is the embedding pipeline's last call
-          // before the repository; completing here lets the test wait for it
-          // deterministically.
-          final reachedRepository = Completer<void>();
-          when(() => mockEmbeddingStore.getContentHash(any())).thenAnswer((_) {
-            if (!reachedRepository.isCompleted) reachedRepository.complete();
-            return null;
-          });
-          when(
-            () => mockJournalDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => null);
-          mockConversationRepository.sendMessageDelegate =
-              ({
-                required conversationId,
-                required message,
-                required model,
-                required provider,
-                required inferenceRepo,
-                tools,
-                toolChoice,
-                temperature = 0.7,
-                strategy,
-              }) async {
-                if (strategy is TaskAgentStrategy) {
-                  await strategy.processToolCalls(
-                    toolCalls: [
-                      const ChatCompletionMessageToolCall(
-                        id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
-                        ),
-                      ),
-                    ],
-                    manager: mockConversationManager,
-                  );
-                }
-                return null;
-              };
-          when(() => mockConversationManager.messages).thenReturn([]);
-
-          final result = await workflowWithEmbeddings.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
-          await reachedRepository.future;
-          // Let the fire-and-forget embed settle: the suppressed call throws
-          // without a timer, so a bounded microtask drain is enough.
-          await pumpEventQueue();
-
-          expect(result.success, isTrue);
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          expect(
-            capturedEntitiesOfType<AgentReportEntity>(captured).single.content,
-            '# Report\nThis report has enough content to embed.',
-          );
-          // The report's embedding was suppressed without touching the wire.
-          verifyNever(
-            () => httpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          );
-          // Search keeps the previous report until a new embedding exists.
-          verifyNever(() => mockEmbeddingStore.deleteEntityEmbeddings(any()));
-        });
-      });
+      }
 
       test('swallows errors thrown while embedding the report', () async {
         // _embedAgentReport runs fire-and-forget after the transaction
@@ -2644,7 +2627,7 @@ not describe task configuration or tool activity as progress.
         // caught (logged) and never surface as a wake failure, and no
         // embedding/deletion side effects should run.
         final mockEmbeddingStore = MockEmbeddingStore();
-        final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+        final mockEmbeddingRepository = MockOnDeviceEmbeddingRepository();
         final workflowWithEmbeddings = TaskAgentWorkflow(
           agentRepository: mockAgentRepository,
           conversationRepository: mockConversationRepository,
@@ -2667,8 +2650,11 @@ not describe task configuration or tool activity as progress.
           () => mockAgentRepository.getReportHead(agentId, 'current'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockAiConfigRepository.resolveOllamaBaseUrl(),
-        ).thenAnswer((_) async => 'http://localhost:11434');
+          () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          mockEmbeddingRepository.isInstalled,
+        ).thenAnswer((_) async => true);
         // The category lookup inside _embedAgentReport throws — this is the
         // branch we want to exercise (the catch on line 885).
         when(
@@ -2724,12 +2710,7 @@ not describe task configuration or tool activity as progress.
         await pumpEventQueue();
 
         // The throwing lookup short-circuits before any embed/delete call.
-        verifyNever(
-          () => mockEmbeddingRepository.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
-        );
+        verifyNever(() => mockEmbeddingRepository.embedDocument(any()));
         verifyNever(() => mockEmbeddingStore.deleteEntityEmbeddings(any()));
       });
     });

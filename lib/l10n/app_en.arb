@@ -2648,7 +2648,7 @@
     "description": "Settings flag description for the unified Goals page."
   },
   "configFlagEnableVectorSearch": "Vector Search",
-  "configFlagEnableVectorSearchDescription": "Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.",
+  "configFlagEnableVectorSearchDescription": "Enable vector search in task filters. Requires embeddings to be enabled and their model downloaded.",
   "configFlagEnableWhatsNew": "Show What's New",
   "configFlagEnableWhatsNewDescription": "Highlight new features and changes inside the Settings tree.",
   "configFlagPrivate": "Show private entries?",
@@ -3974,6 +3974,22 @@
   "editorInsertDivider": "Insert divider",
   "editorMoreFormatting": "More formatting",
   "editorPlaceholder": "Enter notes...",
+  "embeddingModelCheckFailed": "Couldn't check the model on this device.",
+  "embeddingModelDescription": "Search by meaning runs on this device. Download the model once to use it.",
+  "embeddingModelDownloadAction": "Download",
+  "embeddingModelDownloadFailed": "The download didn't finish. Check your connection and try again.",
+  "embeddingModelDownloading": "Downloading",
+  "embeddingModelDownloadSemantics": "Download {model}",
+  "@embeddingModelDownloadSemantics": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "embeddingModelInstalled": "On this device",
+  "embeddingModelRetry": "Try again",
+  "embeddingModelTerms": "Gemma Terms of Use",
   "embeddingSelectAll": "Select All",
   "embeddingUnselectAll": "Deselect All",
   "enhancedPromptFormPreconfiguredPromptDescription": "Choose from ready-made prompt templates",
@@ -6609,9 +6625,9 @@
   "maintenanceDeleteSyncDb": "Delete Sync Database",
   "maintenanceDeleteSyncDbDescription": "Delete sync database",
   "maintenanceGenerateEmbeddings": "Generate Embeddings",
+  "maintenanceGenerateEmbeddingsCategories": "Categories",
   "maintenanceGenerateEmbeddingsConfirm": "Yes, generate",
   "maintenanceGenerateEmbeddingsDescription": "Generate embeddings for entries in selected categories",
-  "maintenanceGenerateEmbeddingsMessage": "Select categories to generate embeddings for.",
   "maintenanceGenerateEmbeddingsProgress": "{total, plural, =1{{processed} / {total} entry ({embedded} embedded)} other{{processed} / {total} entries ({embedded} embedded)}}",
   "@maintenanceGenerateEmbeddingsProgress": {
     "placeholders": {

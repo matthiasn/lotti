@@ -2,10 +2,8 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -28,23 +26,21 @@ class VectorSearchResult {
 /// Orchestrates vector-based semantic search for tasks.
 ///
 /// Flow:
-/// 1. Resolve Ollama base URL from AI config
-/// 2. Embed the query text via [OllamaEmbeddingRepository]
-/// 3. Search the vector database via [EmbeddingStore.search]
-/// 4. Resolve results to parent tasks (deduplicating by ID)
+/// 1. Embed the query with the on-device model, as a query
+///    ([OnDeviceEmbeddingRepository.embedQuery])
+/// 2. Search the vector database via [EmbeddingStore.search]
+/// 3. Resolve results to parent tasks (deduplicating by ID)
 class VectorSearchRepository {
   VectorSearchRepository({
     required this._embeddingStore,
     required this._embeddingRepository,
     required this._journalDb,
-    required this._aiConfigRepository,
     required this._domainLogger,
   });
 
   final EmbeddingStore _embeddingStore;
-  final OllamaEmbeddingRepository _embeddingRepository;
+  final OnDeviceEmbeddingRepository _embeddingRepository;
   final JournalDb _journalDb;
-  final AiConfigRepository _aiConfigRepository;
   final DomainLogger _domainLogger;
 
   /// Searches for tasks semantically related to [query].
@@ -177,26 +173,11 @@ class VectorSearchRepository {
       return null;
     }
 
-    final baseUrl = await _aiConfigRepository.resolveOllamaBaseUrl();
-    if (baseUrl == null) {
-      stopwatch.stop();
-      return null;
-    }
-
     final Float32List queryVector;
     try {
-      queryVector = await _embeddingRepository.embed(
-        input: query,
-        baseUrl: baseUrl,
-      );
-    } on EmbeddingEndpointUnavailableException catch (e) {
-      // The circuit is open: routine while Ollama is down, not a failure.
-      _domainLogger.log(
-        LogDomain.ai,
-        'Query not embedded: $e',
-        subDomain: 'VectorSearchRepository',
-        level: InsightLevel.warn,
-      );
+      queryVector = await _embeddingRepository.embedQuery(query);
+    } on EmbeddingModelNotInstalledException {
+      // Routine until the user downloads the model, not a failure.
       stopwatch.stop();
       return null;
     } on Exception catch (e, stackTrace) {

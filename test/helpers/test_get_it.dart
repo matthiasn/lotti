@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/config_flag_effects.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
@@ -89,8 +89,8 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<LoggingService>(loggingService)
     ..registerSingleton<DomainLogger>(domainLogger)
     ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
-    ..registerSingleton<OllamaEmbeddingRepository>(
-      MockOllamaEmbeddingRepository(),
+    ..registerSingleton<OnDeviceEmbeddingRepository>(
+      MockOnDeviceEmbeddingRepository(),
     );
 
   additionalSetup?.call();

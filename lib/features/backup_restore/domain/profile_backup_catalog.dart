@@ -10,7 +10,6 @@ import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
-import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/sharded_embedding_store.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
@@ -363,7 +362,7 @@ abstract final class ProfileBackupCatalog {
     ),
     ProfileBackupStore(
       id: 'embedding-index',
-      relativePath: kObjectBoxEmbeddingsDirectoryName,
+      relativePath: kRetiredSingleEmbeddingsDirectoryName,
       kind: BackupStoreKind.directory,
       treatment: BackupPathTreatment.rebuild,
       sensitivity: BackupSensitivity.none,
@@ -372,6 +371,15 @@ abstract final class ProfileBackupCatalog {
     ),
     ProfileBackupStore(
       id: 'sharded-embedding-index',
+      relativePath: kRetiredShardedEmbeddingsDirectoryName,
+      kind: BackupStoreKind.directory,
+      treatment: BackupPathTreatment.rebuild,
+      sensitivity: BackupSensitivity.none,
+      required: false,
+      rationale: 'Retired vector indexes are deleted at the next start.',
+    ),
+    ProfileBackupStore(
+      id: 'model-embedding-index',
       relativePath: kObjectBoxShardedEmbeddingsDirectoryName,
       kind: BackupStoreKind.directory,
       treatment: BackupPathTreatment.rebuild,

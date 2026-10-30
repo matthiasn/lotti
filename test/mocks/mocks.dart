@@ -80,6 +80,9 @@ import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
+import 'package:lotti/features/ai/model_files/pinned_model_files.dart';
+import 'package:lotti/features/ai/on_device_embedding/gemma_embedder.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -87,7 +90,6 @@ import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/melious_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/omlx_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -730,8 +732,12 @@ class MockHabitAutoCompletionNotifier extends Mock
 
 class MockEmbeddingStore extends Mock implements EmbeddingStore {}
 
-class MockOllamaEmbeddingRepository extends Mock
-    implements OllamaEmbeddingRepository {}
+class MockOnDeviceEmbeddingRepository extends Mock
+    implements OnDeviceEmbeddingRepository {}
+
+class MockPinnedModelFiles extends Mock implements PinnedModelFiles {}
+
+class MockGemmaEmbedder extends Mock implements GemmaEmbedder {}
 
 class MockHttpClient extends Mock implements http.Client {}
 

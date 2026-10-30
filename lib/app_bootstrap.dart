@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/service/subject_agent_lookup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
@@ -307,6 +308,12 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     // A guest profile registers no full-text index.
     fts5DbProvider.overrideWithValue(
       getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
+    ),
+    // Absent when the embedding store failed to open.
+    onDeviceEmbeddingRepositoryProvider.overrideWithValue(
+      getIt.isRegistered<OnDeviceEmbeddingRepository>()
+          ? getIt<OnDeviceEmbeddingRepository>()
+          : null,
     ),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),

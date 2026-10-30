@@ -2,16 +2,14 @@ part of 'task_agent_workflow.dart';
 
 /// Persistence helpers of [TaskAgentWorkflow]: report embeddings.
 extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
-  /// Persist token usage from a wake cycle as a synced entity.
-  ///
-  /// Non-fatal: failures are logged but do not abort the wake.
-
   /// Embeds an agent report for vector search, in its task's category, and
   /// makes it the task's only report there
   /// (see [EmbeddingProcessor.processAgentReport]).
   ///
-  /// Non-fatal: failures are logged but do not affect the wake cycle.
-  /// Called as fire-and-forget via [unawaited] after report persistence.
+  /// Only while embeddings are on and the model is downloaded, as for every
+  /// other embedding. Non-fatal: failures are logged but do not affect the
+  /// wake cycle. Called as fire-and-forget via [unawaited] after report
+  /// persistence.
   Future<void> _embedAgentReport({
     required String reportId,
     required String reportContent,
@@ -22,8 +20,10 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
     if (store == null || repo == null) return;
 
     try {
-      final baseUrl = await this.aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) return;
+      if (!await journalDb.getConfigFlag(enableEmbeddingsFlag) ||
+          !await repo.isInstalled()) {
+        return;
+      }
 
       await EmbeddingProcessor.processAgentReport(
         reportId: reportId,
@@ -33,7 +33,6 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         journalDb: journalDb,
         embeddingStore: store,
         embeddingRepository: repo,
-        baseUrl: baseUrl,
       );
     } catch (e, s) {
       logError('failed to embed agent report', error: e, stackTrace: s);

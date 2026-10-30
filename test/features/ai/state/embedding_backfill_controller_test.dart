@@ -11,10 +11,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -54,8 +52,6 @@ Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
 
 const _testCategoryId = 'cat-1';
 
-const _ollamaBaseUrl = 'http://localhost:11434';
-
 /// Computes the same SHA-256 hash as EmbeddingContentExtractor.contentHash.
 String _hashOf(String text) => sha256.convert(utf8.encode(text)).toString();
 
@@ -63,10 +59,11 @@ String _hashOf(String text) => sha256.convert(utf8.encode(text)).toString();
 // Stub helpers
 // ---------------------------------------------------------------------------
 
-void _stubOllamaProvider(MockAiConfigRepository repo) {
-  when(
-    () => repo.resolveOllamaBaseUrl(),
-  ).thenAnswer((_) async => _ollamaBaseUrl);
+void _stubModelInstalled(
+  MockOnDeviceEmbeddingRepository repo, {
+  bool installed = true,
+}) {
+  when(repo.isInstalled).thenAnswer((_) async => installed);
 }
 
 void _stubNoExistingHash(MockEmbeddingStore db) {
@@ -88,13 +85,10 @@ void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   ).thenReturn(null);
 }
 
-void _stubEmbed(MockOllamaEmbeddingRepository repo) {
+void _stubEmbed(MockOnDeviceEmbeddingRepository repo) {
+  when(() => repo.modelId).thenReturn('test-embedding-model');
   when(
-    () => repo.embed(
-      input: any(named: 'input'),
-      baseUrl: any(named: 'baseUrl'),
-      model: any(named: 'model'),
-    ),
+    () => repo.embedDocument(any()),
   ).thenAnswer((_) async => _fakeEmbedding());
 }
 
@@ -115,8 +109,7 @@ void _stubEntity(MockJournalDb db, JournalEntity entity) {
 void main() {
   late MockJournalDb mockJournalDb;
   late MockEmbeddingStore mockEmbeddingStore;
-  late MockOllamaEmbeddingRepository mockEmbeddingRepo;
-  late MockAiConfigRepository mockAiConfigRepo;
+  late MockOnDeviceEmbeddingRepository mockEmbeddingRepo;
   late MockDomainLogger mockLogger;
   late ProviderContainer container;
 
@@ -127,8 +120,7 @@ void main() {
   setUp(() async {
     mockJournalDb = MockJournalDb();
     mockEmbeddingStore = MockEmbeddingStore();
-    mockEmbeddingRepo = MockOllamaEmbeddingRepository();
-    mockAiConfigRepo = MockAiConfigRepository();
+    mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
     mockLogger = MockDomainLogger();
 
     await setUpTestGetIt(
@@ -138,13 +130,12 @@ void main() {
           ..registerSingleton<JournalDb>(mockJournalDb)
           ..unregister<EmbeddingStore>()
           ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
-          ..unregister<OllamaEmbeddingRepository>()
-          ..registerSingleton<OllamaEmbeddingRepository>(mockEmbeddingRepo)
-          ..registerSingleton<AiConfigRepository>(mockAiConfigRepo);
+          ..unregister<OnDeviceEmbeddingRepository>()
+          ..registerSingleton<OnDeviceEmbeddingRepository>(mockEmbeddingRepo);
       },
     );
 
-    _stubOllamaProvider(mockAiConfigRepo);
+    _stubModelInstalled(mockEmbeddingRepo);
     _stubNoExistingHash(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
@@ -270,7 +261,7 @@ void main() {
       expect(s.progress, 1.0);
     });
 
-    test('passes correct base URL to embedding repository', () async {
+    test('embeds the entry as a document', () async {
       final entry = JournalEntry(
         meta: _meta(id: 'entry-1'),
         entryText: const EntryText(plainText: _longText),
@@ -282,11 +273,7 @@ void main() {
       await controller().backfillCategories({_testCategoryId});
 
       verify(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: _ollamaBaseUrl,
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(_longText),
       ).called(1);
     });
 
@@ -384,11 +371,7 @@ void main() {
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
       verifyNever(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       );
     });
 
@@ -445,11 +428,7 @@ void main() {
       expect(state().processedCount, 1);
       expect(state().embeddedCount, 0);
       verifyNever(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       );
     });
 
@@ -526,14 +505,10 @@ void main() {
       // Override: first embed call throws, second succeeds
       var callCount = 0;
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       ).thenAnswer((_) {
         callCount++;
-        if (callCount == 1) throw Exception('Ollama down');
+        if (callCount == 1) throw Exception('model failed');
         return Future.value(_fakeEmbedding());
       });
 
@@ -555,50 +530,6 @@ void main() {
       ).called(1);
     });
 
-    test('an open embedding circuit skips an entity with a warning', () async {
-      final entry = JournalEntry(
-        meta: _meta(id: 'down-1'),
-        entryText: const EntryText(plainText: _longText),
-      );
-      _stubEntityIds(mockJournalDb, ['down-1']);
-      _stubEntity(mockJournalDb, entry);
-      when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
-      ).thenAnswer(
-        (_) async => throw EmbeddingEndpointUnavailableException(
-          baseUrl: _ollamaBaseUrl,
-          retryAt: DateTime(2024, 3, 15, 0, 5),
-        ),
-      );
-
-      await controller().backfillCategories({_testCategoryId});
-
-      expect(state().processedCount, 1);
-      expect(state().embeddedCount, 0);
-      verify(
-        () => mockLogger.log(
-          LogDomain.ai,
-          any(that: startsWith('Backfill skipped down-1')),
-          subDomain: any(named: 'subDomain'),
-          level: InsightLevel.warn,
-        ),
-      ).called(1);
-      verifyNever(
-        () => mockLogger.error(
-          any(),
-          any<Object>(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-          message: any(named: 'message'),
-          errorType: any(named: 'errorType'),
-        ),
-      );
-    });
-
     test('sets error when embedding pipeline not registered', () async {
       // The controller gates on `getIt.isRegistered<EmbeddingStore>()`, so
       // unregister only that one dependency rather than nuking the whole
@@ -614,14 +545,13 @@ void main() {
       expect(state().isRunning, isFalse);
     });
 
-    test('sets error when no Ollama provider configured', () async {
-      when(
-        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-      ).thenAnswer((_) async => null);
+    test('sets error while the model is not downloaded', () async {
+      _stubModelInstalled(mockEmbeddingRepo, installed: false);
 
       await controller().backfillCategories({_testCategoryId});
 
-      expect(state().error, contains('No Ollama provider'));
+      expect(state().error, contains('not downloaded'));
+      verifyNever(() => mockEmbeddingRepo.embedDocument(any()));
       expect(state().isRunning, isFalse);
     });
 
@@ -649,15 +579,13 @@ void main() {
   group('EmbeddingBackfillController state transitions', () {
     test('clears previous error when starting new backfill', () async {
       // First: trigger error
-      when(
-        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-      ).thenAnswer((_) async => null);
+      _stubModelInstalled(mockEmbeddingRepo, installed: false);
 
       await controller().backfillCategories({_testCategoryId});
       expect(state().error, isNotNull);
 
-      // Second: fix provider, run empty category
-      _stubOllamaProvider(mockAiConfigRepo);
+      // Second: download the model, run empty category
+      _stubModelInstalled(mockEmbeddingRepo);
       _stubEntityIds(mockJournalDb, []);
 
       await controller().backfillCategories({_testCategoryId});
@@ -691,9 +619,7 @@ void main() {
     });
 
     test('isRunning is false after error', () async {
-      when(
-        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-      ).thenAnswer((_) async => null);
+      _stubModelInstalled(mockEmbeddingRepo, installed: false);
 
       await controller().backfillCategories({_testCategoryId});
       expect(state().isRunning, isFalse);
@@ -712,11 +638,7 @@ void main() {
 
       final completer = Completer<Float32List>();
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       ).thenAnswer((_) => completer.future);
 
       // Start first backfill (won't complete yet)
@@ -853,11 +775,7 @@ void main() {
       const expectedText =
           'Fix auth bug\nLabels: security, backend\n$_longText';
       verify(
-        () => mockEmbeddingRepo.embed(
-          input: expectedText,
-          baseUrl: _ollamaBaseUrl,
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(expectedText),
       ).called(1);
     });
 
@@ -903,11 +821,7 @@ void main() {
 
       // Capture the input text that was embedded.
       final captured = verify(
-        () => mockEmbeddingRepo.embed(
-          input: captureAny(named: 'input'),
-          baseUrl: _ollamaBaseUrl,
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(captureAny()),
       ).captured;
 
       final embeddedText = captured.first as String;

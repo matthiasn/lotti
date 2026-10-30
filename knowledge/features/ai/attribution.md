@@ -127,8 +127,9 @@ flowchart LR
 
 # Rules that keep the ledger honest
 
-- **No invented cost.** Embedding indexing records one interaction per chunk with
-  digests only and no monetary figure, because none is reported.
+- **No invented cost.** Embedding indexing runs on the device: it records the
+  work and its vector output, and no interaction, because no provider is called
+  and nothing is consumed.
 - **The carrier is authoritative.** For agent reports the local attribution
   projection is updated *after* the report write, never before.
 - **Carrier-less operations terminalize as partial.** Log-compaction inference is

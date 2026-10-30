@@ -51,7 +51,7 @@
     "lib/features/ai/services/auto_checklist_service.dart": {"lookups": 2},
     "lib/features/ai/services/skill_inference_runner.dart": {"lookups": 6, "isRegistered": 3},
     "lib/features/ai/services/skill_inference_runner_media_runs.dart": {"lookups": 1},
-    "lib/features/ai/state/embedding_backfill_controller.dart": {"lookups": 3, "isRegistered": 1},
+    "lib/features/ai/state/embedding_backfill_controller.dart": {"lookups": 2, "isRegistered": 1},
     "lib/features/ai/state/skill_trigger_providers.dart": {"lookups": 4, "isRegistered": 2},
     "lib/features/ai/ui/settings/embedding_backfill_modal.dart": {"lookups": 2},
     "lib/features/ai/ui/settings/provider/ai_provider_detail_page.dart": {"lookups": 1},

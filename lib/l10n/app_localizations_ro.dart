@@ -4100,7 +4100,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Activați căutarea vectorială în filtrele de sarcini. Necesită reprezentări vectoriale active și Ollama în execuție.';
+      'Activați căutarea vectorială în filtrele de sarcini. Necesită reprezentări vectoriale active și modelul lor descărcat.';
 
   @override
   String get configFlagEnableWhatsNew => 'Afișează „Noutăți\"';
@@ -6733,6 +6733,38 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Introduceți notițe...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Modelul de pe acest dispozitiv nu a putut fi verificat.';
+
+  @override
+  String get embeddingModelDescription =>
+      'Căutarea după sens rulează pe acest dispozitiv. Descărcați modelul o singură dată pentru a o folosi.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Descărcați';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'Descărcarea nu s-a încheiat. Verificați conexiunea și încercați din nou.';
+
+  @override
+  String get embeddingModelDownloading => 'Se descarcă';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Descărcați $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'Pe acest dispozitiv';
+
+  @override
+  String get embeddingModelRetry => 'Încercați din nou';
+
+  @override
+  String get embeddingModelTerms => 'Termenii de utilizare Gemma';
 
   @override
   String get embeddingSelectAll => 'Selectați tot';
@@ -10628,15 +10660,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generare încorporări';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Categorii';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Da, generați';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Generează încorporări pentru intrările din categoriile selectate';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Selectați categoriile pentru a genera reprezentări vectoriale.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

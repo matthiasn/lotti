@@ -6,16 +6,14 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/ai_attribution.dart';
-import 'package:lotti/classes/ai_consumption/ai_consumption_event.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -330,7 +328,7 @@ extension _AnyGeneratedAgentReportScenario on glados.Any {
 // ---------------------------------------------------------------------------
 
 final _fixedDate = DateTime(2024, 3, 15);
-const _baseUrl = 'http://localhost:11434';
+const _modelId = 'test-embedding-model';
 const _longText = 'This is a sufficiently long text for embedding generation.';
 
 Metadata _meta({
@@ -394,13 +392,10 @@ void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   ).thenReturn(null);
 }
 
-void _stubEmbed(MockOllamaEmbeddingRepository repo) {
+void _stubEmbed(MockOnDeviceEmbeddingRepository repo) {
+  when(() => repo.modelId).thenReturn(_modelId);
   when(
-    () => repo.embed(
-      input: any(named: 'input'),
-      baseUrl: any(named: 'baseUrl'),
-      model: any(named: 'model'),
-    ),
+    () => repo.embedDocument(any()),
   ).thenAnswer((_) async => _fakeEmbedding());
 }
 
@@ -471,15 +466,11 @@ void _backWithRows(MockEmbeddingStore store, Map<String, _StoredRow> rows) {
 
 /// Holds the first `embed` call open on the returned completer; every later
 /// call answers at once.
-Completer<Float32List> _pauseFirstEmbed(MockOllamaEmbeddingRepository repo) {
+Completer<Float32List> _pauseFirstEmbed(MockOnDeviceEmbeddingRepository repo) {
   final first = Completer<Float32List>();
   var calls = 0;
   when(
-    () => repo.embed(
-      input: any(named: 'input'),
-      baseUrl: any(named: 'baseUrl'),
-      model: any(named: 'model'),
-    ),
+    () => repo.embedDocument(any()),
   ).thenAnswer(
     (_) => calls++ == 0 ? first.future : Future.value(_fakeEmbedding()),
   );
@@ -493,7 +484,7 @@ Completer<Float32List> _pauseFirstEmbed(MockOllamaEmbeddingRepository repo) {
 void main() {
   late MockJournalDb mockJournalDb;
   late MockEmbeddingStore mockEmbeddingStore;
-  late MockOllamaEmbeddingRepository mockEmbeddingRepo;
+  late MockOnDeviceEmbeddingRepository mockEmbeddingRepo;
 
   setUpAll(() {
     registerAllFallbackValues();
@@ -503,7 +494,7 @@ void main() {
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockEmbeddingStore = MockEmbeddingStore();
-    mockEmbeddingRepo = MockOllamaEmbeddingRepository();
+    mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
 
     _stubNoExistingHash(mockEmbeddingStore);
     _stubNoCategoryId(mockEmbeddingStore);
@@ -513,8 +504,8 @@ void main() {
   });
 
   /// Runs [EmbeddingProcessor.processEntity] against the shared mocks,
-  /// removing the repeated `journalDb:/embeddingStore:/embeddingRepository:/
-  /// baseUrl:` boilerplate from every test. When [entity] is supplied it is
+  /// removing the repeated `journalDb:/embeddingStore:/embeddingRepository:`
+  /// boilerplate from every test. When [entity] is supplied it is
   /// also stubbed on [mockJournalDb] and used as the entity ID, so most tests
   /// collapse to a single call.
   Future<bool> processEntity({
@@ -530,7 +521,6 @@ void main() {
       journalDb: mockJournalDb,
       embeddingStore: mockEmbeddingStore,
       embeddingRepository: mockEmbeddingRepo,
-      baseUrl: _baseUrl,
       labelNameResolver: labelNameResolver,
     );
   }
@@ -544,8 +534,7 @@ void main() {
     required String categoryId,
     required String subtype,
     required EmbeddingStore embeddingStore,
-    required OllamaEmbeddingRepository embeddingRepository,
-    required String baseUrl,
+    required OnDeviceEmbeddingRepository embeddingRepository,
   }) {
     _stubEntity(
       mockJournalDb,
@@ -562,7 +551,6 @@ void main() {
       journalDb: mockJournalDb,
       embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
-      baseUrl: baseUrl,
     );
   }
 
@@ -580,7 +568,7 @@ void main() {
         () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: entry.id,
           entityType: kEntityTypeJournalText,
-          modelId: ollamaEmbedDefaultModel,
+          modelId: _modelId,
           contentHash: _hashOf(_longText),
           embeddings: any(named: 'embeddings'),
           categoryId: 'cat-1',
@@ -665,11 +653,7 @@ void main() {
 
       expect(result, isFalse);
       verifyNever(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       );
     });
 
@@ -687,10 +671,7 @@ void main() {
         // Without label resolver, uses the default extractText format
         const expectedText = 'My task title that is long enough\n$_longText';
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: expectedText,
-            baseUrl: _baseUrl,
-          ),
+          () => mockEmbeddingRepo.embedDocument(expectedText),
         ).called(1);
       },
     );
@@ -714,10 +695,7 @@ void main() {
         const expectedText =
             'Fix auth bug\nLabels: security, backend\n$_longText';
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: expectedText,
-            baseUrl: _baseUrl,
-          ),
+          () => mockEmbeddingRepo.embedDocument(expectedText),
         ).called(1);
       },
     );
@@ -733,9 +711,8 @@ void main() {
       await processEntity(entity: task, labelNameResolver: labelResolver);
 
       verify(
-        () => mockEmbeddingRepo.embed(
-          input: 'A task title that is long enough for embedding',
-          baseUrl: _baseUrl,
+        () => mockEmbeddingRepo.embedDocument(
+          'A task title that is long enough for embedding',
         ),
       ).called(1);
     });
@@ -756,10 +733,7 @@ void main() {
 
       expect(resolverCalled, isFalse);
       verify(
-        () => mockEmbeddingRepo.embed(
-          input: _longText,
-          baseUrl: _baseUrl,
-        ),
+        () => mockEmbeddingRepo.embedDocument(_longText),
       ).called(1);
     });
 
@@ -771,7 +745,8 @@ void main() {
       (scenario) async {
         final localJournalDb = MockJournalDb();
         final localEmbeddingStore = MockEmbeddingStore();
-        final localEmbeddingRepo = MockOllamaEmbeddingRepository();
+        final localEmbeddingRepo = MockOnDeviceEmbeddingRepository();
+        when(() => localEmbeddingRepo.modelId).thenReturn(_modelId);
         final entity = scenario.entity();
         final expectedText = scenario.expectedText;
 
@@ -812,18 +787,13 @@ void main() {
           journalDb: localJournalDb,
           embeddingStore: localEmbeddingStore,
           embeddingRepository: localEmbeddingRepo,
-          baseUrl: _baseUrl,
           labelNameResolver: scenario.useLabelResolver ? labelResolver : null,
         );
 
         if (!scenario.shouldEmbedEntity) {
           expect(result, isFalse, reason: '$scenario');
           verifyNever(
-            () => localEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => localEmbeddingRepo.embedDocument(any()),
           );
           verifyNever(
             () => localEmbeddingStore.replaceEntityEmbeddings(
@@ -877,11 +847,7 @@ void main() {
         if (scenario.hashMatches) {
           expect(result, scenario.categoryChanged, reason: '$scenario');
           verifyNever(
-            () => localEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => localEmbeddingRepo.embedDocument(any()),
           );
           if (scenario.categoryChanged) {
             verify(
@@ -901,10 +867,7 @@ void main() {
 
         expect(result, isTrue, reason: '$scenario');
         verify(
-          () => localEmbeddingRepo.embed(
-            input: expectedText!,
-            baseUrl: _baseUrl,
-          ),
+          () => localEmbeddingRepo.embedDocument(expectedText!),
         ).called(1);
         verify(
           () => localEmbeddingStore.replaceEntityEmbeddings(
@@ -912,7 +875,7 @@ void main() {
             entityType: scenario.isTask
                 ? kEntityTypeTask
                 : kEntityTypeJournalText,
-            modelId: ollamaEmbedDefaultModel,
+            modelId: _modelId,
             contentHash: _hashOf(expectedText!),
             embeddings: any(named: 'embeddings'),
             categoryId: expectedCategoryId,
@@ -1138,12 +1101,8 @@ void main() {
       );
       _stubEntity(mockJournalDb, entry);
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
-      ).thenThrow(Exception('Ollama down'));
+        () => mockEmbeddingRepo.embedDocument(any()),
+      ).thenThrow(Exception('model failed'));
 
       expect(
         () => processEntity(entityId: entry.id),
@@ -1154,7 +1113,7 @@ void main() {
 
   group('EmbeddingProcessor.processAgentReport', () {
     test(
-      'attributes embedding calls and finalizes the stored vector',
+      'attributes the work and its vector, with no interaction per chunk',
       () async {
         final bench = AiInteractionCaptureTestBench.create()..register();
         addTearDown(bench.unregister);
@@ -1169,7 +1128,6 @@ void main() {
           subtype: 'current',
           embeddingStore: mockEmbeddingStore,
           embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
         );
 
         expect(result, isTrue);
@@ -1180,16 +1138,13 @@ void main() {
         expect(start.taskId, 'task-attributed');
         expect(start.categoryId, 'cat-attributed');
         expect(start.intendedOutputs.single.id, 'report-attributed');
-        final event =
-            verify(
-                  () => bench.service.recordInteraction(
-                    attributionId: any(named: 'attributionId'),
-                    event: captureAny(named: 'event'),
-                  ),
-                ).captured.single
-                as AiConsumptionEvent;
-        expect(event.interactionKind, AiInteractionKind.embedding);
-        expect(event.responseDigest, isNotNull);
+        // On-device: no provider is called, so nothing is recorded as used.
+        verifyNever(
+          () => bench.service.recordInteraction(
+            attributionId: any(named: 'attributionId'),
+            event: any(named: 'event'),
+          ),
+        );
         verify(() => bench.service.finalize(any())).called(1);
       },
     );
@@ -1198,11 +1153,7 @@ void main() {
       final bench = AiInteractionCaptureTestBench.create()..register();
       addTearDown(bench.unregister);
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       ).thenThrow(StateError('offline'));
 
       await expectLater(
@@ -1215,7 +1166,6 @@ void main() {
           subtype: 'current',
           embeddingStore: mockEmbeddingStore,
           embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
         ),
         throwsStateError,
       );
@@ -1243,7 +1193,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isTrue);
@@ -1251,7 +1200,7 @@ void main() {
         () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
-          modelId: ollamaEmbedDefaultModel,
+          modelId: _modelId,
           contentHash: _hashOf(reportContent),
           embeddings: any(named: 'embeddings'),
           categoryId: 'cat-1',
@@ -1270,16 +1219,11 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isFalse);
       verifyNever(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       );
     });
 
@@ -1293,7 +1237,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isFalse);
@@ -1313,7 +1256,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isFalse);
@@ -1333,7 +1275,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isTrue);
@@ -1351,7 +1292,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       verify(
@@ -1375,7 +1315,8 @@ void main() {
       'matches generated agent report embedding semantics',
       (scenario) async {
         final localEmbeddingStore = MockEmbeddingStore();
-        final localEmbeddingRepo = MockOllamaEmbeddingRepository();
+        final localEmbeddingRepo = MockOnDeviceEmbeddingRepository();
+        when(() => localEmbeddingRepo.modelId).thenReturn(_modelId);
         _stubNoTaskReports(localEmbeddingStore);
         final actualEmbedInputs = <String>[];
         final writes = <_CapturedAgentReportWrite>[];
@@ -1416,13 +1357,9 @@ void main() {
           );
         });
         when(
-          () => localEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => localEmbeddingRepo.embedDocument(any()),
         ).thenAnswer((invocation) async {
-          final input = invocation.namedArguments[#input] as String;
+          final input = invocation.positionalArguments.first as String;
           actualEmbedInputs.add(input);
           final currentIndex = embedCallIndex++;
           if (scenario.failureIndex == currentIndex) {
@@ -1439,7 +1376,6 @@ void main() {
           subtype: scenario.subtype,
           embeddingStore: localEmbeddingStore,
           embeddingRepository: localEmbeddingRepo,
-          baseUrl: _baseUrl,
         );
 
         if (scenario.shouldThrow) {
@@ -1462,7 +1398,7 @@ void main() {
           final write = writes.single;
           expect(write.entityId, scenario.reportId, reason: '$scenario');
           expect(write.entityType, kEntityTypeAgentReport, reason: '$scenario');
-          expect(write.modelId, ollamaEmbedDefaultModel, reason: '$scenario');
+          expect(write.modelId, _modelId, reason: '$scenario');
           expect(
             write.contentHash,
             _hashOf(scenario.trimmedContent),
@@ -1590,7 +1526,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(result, isTrue);
@@ -1609,14 +1544,9 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       ).thenThrow(StateError('offline'));
       final failed = processAgentReport(
         reportId: 'report-failed',
@@ -1626,7 +1556,6 @@ void main() {
         subtype: 'current',
         embeddingStore: mockEmbeddingStore,
         embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
       );
 
       expect(skipped, isFalse);
@@ -1663,7 +1592,6 @@ void main() {
           subtype: 'current',
           embeddingStore: mockEmbeddingStore,
           embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
         );
         await pumpEventQueue();
         final second = processAgentReport(
@@ -1674,7 +1602,6 @@ void main() {
           subtype: 'current',
           embeddingStore: mockEmbeddingStore,
           embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
         );
         await pumpEventQueue();
         firstListing.complete();
@@ -1714,7 +1641,6 @@ void main() {
           journalDb: mockJournalDb,
           embeddingStore: mockEmbeddingStore,
           embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
         );
         await pumpEventQueue();
         // …while the user moves the task, and the service processes it.

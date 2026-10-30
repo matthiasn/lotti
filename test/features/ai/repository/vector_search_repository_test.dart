@@ -3,9 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -16,38 +15,35 @@ import '../../../test_data/test_data.dart';
 
 void main() {
   late MockEmbeddingStore mockEmbeddingStore;
-  late MockOllamaEmbeddingRepository mockEmbeddingRepo;
+  late MockOnDeviceEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
-  late MockAiConfigRepository mockAiConfigRepo;
   late MockDomainLogger mockDomainLogger;
   late VectorSearchRepository sut;
 
-  final fakeVector = Float32List(1024);
+  final fakeVector = Float32List(kEmbeddingDimensions);
 
   setUpAll(() {
-    registerFallbackValue(Float32List(1024));
+    registerFallbackValue(Float32List(kEmbeddingDimensions));
     registerFallbackValue(<String>{});
     registerFallbackValue(<String>[]);
   });
 
+  void stubModelMissing() => when(
+    () => mockEmbeddingRepo.embedQuery(any()),
+  ).thenThrow(const EmbeddingModelNotInstalledException('test-model'));
+
   setUp(() {
     mockDomainLogger = MockDomainLogger();
     mockEmbeddingStore = MockEmbeddingStore();
-    mockEmbeddingRepo = MockOllamaEmbeddingRepository();
+    mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
     mockJournalDb = MockJournalDb();
-    mockAiConfigRepo = MockAiConfigRepository();
 
     sut = VectorSearchRepository(
       embeddingStore: mockEmbeddingStore,
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
-      aiConfigRepository: mockAiConfigRepo,
       domainLogger: mockDomainLogger,
     );
-
-    when(
-      () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-    ).thenAnswer((_) async => 'http://localhost:11434');
 
     // Default stubs for batch-fetch methods used by _resolveToTasks.
     when(
@@ -83,10 +79,7 @@ void main() {
   group('VectorSearchRepository', () {
     test('returns tasks directly when search results are tasks', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -122,10 +115,7 @@ void main() {
       'resolves non-task results to parent tasks via linked entries',
       () async {
         when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedQuery(any()),
         ).thenAnswer((_) async => fakeVector);
 
         when(
@@ -171,10 +161,7 @@ void main() {
 
     test('a deleted entry no longer surfaces its parent task', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
       // A vector left behind by an entry deleted before deletions dropped
       // their vectors; its link to the task is still stored.
@@ -207,10 +194,7 @@ void main() {
 
     test('deduplicates when multiple results map to the same task', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       final taskId = testTask.meta.id;
@@ -260,10 +244,7 @@ void main() {
       'keeps the closest chunk when one task matches with several chunks',
       () async {
         when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedQuery(any()),
         ).thenAnswer((_) async => fakeVector);
         final taskId = testTask.meta.id;
         when(
@@ -291,29 +272,27 @@ void main() {
       },
     );
 
-    test('returns empty results when no Ollama provider configured', () async {
-      when(
-        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-      ).thenAnswer((_) async => null);
+    test('returns empty results, logging nothing, while the model is not '
+        'downloaded', () async {
+      stubModelMissing();
 
       final result = await sut.searchRelatedTasks(query: 'query');
 
       expect(result.entities, isEmpty);
       verifyNever(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
+        () => mockEmbeddingStore.search(
+          queryVector: any(named: 'queryVector'),
+          k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       );
+      verifyZeroInteractions(mockDomainLogger);
     });
 
     test('returns empty results when embedding fails', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
-      ).thenThrow(Exception('Ollama unavailable'));
+        () => mockEmbeddingRepo.embedQuery(any()),
+      ).thenThrow(Exception('model failed'));
 
       final result = await sut.searchRelatedTasks(query: 'query');
 
@@ -337,55 +316,9 @@ void main() {
       );
     });
 
-    test(
-      'an open embedding circuit is a warning, not an error',
-      () async {
-        when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
-        ).thenThrow(
-          EmbeddingEndpointUnavailableException(
-            baseUrl: 'http://user:secret@localhost:11434/api',
-            retryAt: DateTime(2024, 3, 15, 10, 35),
-          ),
-        );
-
-        final result = await sut.searchRelatedTasks(query: 'query');
-
-        expect(result.entities, isEmpty);
-        final logged =
-            verify(
-                  () => mockDomainLogger.log(
-                    LogDomain.ai,
-                    captureAny(),
-                    subDomain: 'VectorSearchRepository',
-                    level: InsightLevel.warn,
-                  ),
-                ).captured.single
-                as String;
-        expect(logged, startsWith('Query not embedded'));
-        expect(logged, isNot(contains('secret')));
-        verifyNever(
-          () => mockDomainLogger.error(
-            any(),
-            any<Object>(),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: any(named: 'subDomain'),
-            message: any(named: 'message'),
-            errorType: any(named: 'errorType'),
-          ),
-        );
-      },
-    );
-
     test('returns empty results when search returns no matches', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -403,10 +336,7 @@ void main() {
 
     test('skips non-task linked entries when resolving parents', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -450,10 +380,7 @@ void main() {
 
     test('inflates k parameter to account for chunk deduplication', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -480,10 +407,7 @@ void main() {
       'resolves agent report results to tasks via taskId metadata',
       () async {
         when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedQuery(any()),
         ).thenAnswer((_) async => fakeVector);
 
         final taskId = testTask.meta.id;
@@ -518,10 +442,7 @@ void main() {
 
     test('skips agent report results with empty taskId', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -546,10 +467,7 @@ void main() {
 
     test('deduplicates when task and agent report map to same task', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       final taskId = testTask.meta.id;
@@ -585,10 +503,7 @@ void main() {
 
     test('logs distance distribution after search', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -642,11 +557,9 @@ void main() {
     });
 
     test(
-      'returns empty distances when no Ollama provider configured',
+      'returns empty distances while the model is not downloaded',
       () async {
-        when(
-          () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-        ).thenAnswer((_) async => null);
+        stubModelMissing();
 
         final result = await sut.searchRelatedTasks(query: 'query');
 
@@ -656,10 +569,7 @@ void main() {
 
     test('passes categoryIds through to embeddings DB search', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -688,10 +598,7 @@ void main() {
   group('VectorSearchRepository.searchRelatedEntries', () {
     test('returns matched entities directly without task resolution', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -722,10 +629,7 @@ void main() {
 
     test('deduplicates by entity ID keeping lowest distance', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -760,10 +664,7 @@ void main() {
       'drops unresolvable entity ids without wasting k slots on them',
       () async {
         when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedQuery(any()),
         ).thenAnswer((_) async => fakeVector);
 
         // Best hit is an orphaned id (deleted entry / agent report) the
@@ -800,10 +701,8 @@ void main() {
       },
     );
 
-    test('returns empty when no Ollama provider configured', () async {
-      when(
-        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-      ).thenAnswer((_) async => null);
+    test('returns empty while the model is not downloaded', () async {
+      stubModelMissing();
 
       final result = await sut.searchRelatedEntries(query: 'query');
 
@@ -812,11 +711,8 @@ void main() {
 
     test('returns empty when embedding fails', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
-      ).thenThrow(Exception('Ollama unavailable'));
+        () => mockEmbeddingRepo.embedQuery(any()),
+      ).thenThrow(Exception('model failed'));
 
       final result = await sut.searchRelatedEntries(query: 'query');
 
@@ -831,10 +727,7 @@ void main() {
 
     test('preserves distance ordering in results', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
@@ -874,10 +767,7 @@ void main() {
 
     test('passes categoryIds through to search', () async {
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
+        () => mockEmbeddingRepo.embedQuery(any()),
       ).thenAnswer((_) async => fakeVector);
 
       when(
