@@ -14248,10 +14248,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get searchHint => 'Hledat...';
 
   @override
-  String get searchModeFullText => 'Plný text';
-
-  @override
-  String get searchModeVector => 'Vektor';
+  String get searchRelatedByMeaningSection => 'Významově související';
 
   @override
   String get searchTasksHint => 'Hledat úkoly…';
@@ -17849,9 +17846,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get tasksSearchModeLabel => 'Režim hledání';
-
-  @override
   String get tasksSearchNoLinkedTasks =>
       'Nenašly se žádné úkoly propojené s tímto pull requestem.';
 
@@ -18060,18 +18054,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Zrušit propojení úkolu';
-
-  @override
-  String vectorSearchTiming(int elapsed, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '${elapsed}ms, $count výsledků',
-      few: '${elapsed}ms, $count výsledky',
-      one: '${elapsed}ms, $count výsledek',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get viewMenuTitle => 'Zobrazit';

@@ -5351,8 +5351,7 @@
   "saveShortcutTooltip": "Enregistrer — Ctrl+S (⌘S sur Mac)",
   "saveSuccessful": "Enregistré avec succès",
   "searchHint": "Rechercher...",
-  "searchModeFullText": "Texte intégral",
-  "searchModeVector": "Vecteur",
+  "searchRelatedByMeaningSection": "Proches par le sens",
   "searchTasksHint": "Rechercher des tâches…",
   "selectButton": "Sélectionner",
   "selectColor": "Choisir une couleur",
@@ -6686,7 +6685,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Mode de recherche",
   "tasksSearchNoLinkedTasks": "Aucune tâche liée à cette pull request.",
   "tasksSearchResultsSection": "Résultats",
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
@@ -6743,17 +6741,6 @@
   "unlinkTaskConfirmNamed": "Dissocier « {title} » ? La tâche elle-même n’est pas supprimée.",
   "unlinkTaskFailedMessage": "Impossible de délier la tâche. Réessaie.",
   "unlinkTaskTitle": "Délier la tâche",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} résultat} other{{elapsed}ms, {count} résultats}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Affichage",
   "viewMenuZoomIn": "Agrandir",
   "viewMenuZoomOut": "Réduire",

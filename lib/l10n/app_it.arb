@@ -5961,8 +5961,7 @@
   "saveShortcutTooltip": "Salva — Ctrl+S (⌘S su Mac)",
   "saveSuccessful": "Salvataggio con successo",
   "searchHint": "Cerca...",
-  "searchModeFullText": "Testo completo",
-  "searchModeVector": "Vettore",
+  "searchRelatedByMeaningSection": "Correlati per significato",
   "searchTasksHint": "Compiti di ricerca…",
   "selectButton": "Seleziona",
   "selectColor": "Seleziona un colore",
@@ -7412,7 +7411,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Modalità di ricerca",
   "tasksSearchNoLinkedTasks": "Nessuna attività collegata a questa pull request.",
   "tasksSearchResultsSection": "Risultati",
   "tasksShowCreationDate": "Mostra la data di creazione su carte",
@@ -7469,17 +7467,6 @@
   "unlinkTaskConfirmNamed": "Scollegare «{title}»? L’attività non viene eliminata.",
   "unlinkTaskFailedMessage": "Non è stato possibile scollegare l’attività. Riprova.",
   "unlinkTaskTitle": "Scollega attività",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed} ms, {count} risultato} other{{elapsed} ms, {count} risultati}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Vista",
   "viewMenuZoomIn": "Zoom in su",
   "viewMenuZoomOut": "Zoom fuori",

@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
-import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/create/create_entry.dart';
@@ -18,7 +17,7 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_but
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/logbook_filter_modal.dart';
-import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
+import 'package:lotti/features/journal/ui/widgets/logbook_related_by_meaning_header.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
@@ -165,6 +164,20 @@ class _LogbookEmptyState extends StatelessWidget {
   }
 }
 
+/// True when the entry at [index] of [items] is the first a search found by
+/// meaning rather than by its words, so the heading over them goes above it.
+/// They follow the word matches as one run (ADR 0149).
+bool _startsRelatedByMeaning(
+  JournalPageState state,
+  List<JournalEntity>? items,
+  int index,
+) {
+  final related = state.relatedByMeaningIds;
+  if (items == null || index >= items.length) return false;
+  if (!related.contains(items[index].meta.id)) return false;
+  return index == 0 || !related.contains(items[index - 1].meta.id);
+}
+
 /// True when the user's search string or any user-controlled filter narrows
 /// the feed — emptiness is then a query result, not an empty logbook.
 bool _feedNarrowedByUser(JournalPageState state) {
@@ -279,13 +292,6 @@ class _InfiniteJournalPageBodyState
               },
               onFilterPressed: () => showLogbookFilterModal(context),
             ),
-            if (state.enableVectorSearch)
-              Padding(
-                padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                child: DetailContentWidth(
-                  child: LogbookSearchModeRow(state: state),
-                ),
-              ),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: controller.refreshQuery,
@@ -298,6 +304,12 @@ class _InfiniteJournalPageBodyState
                       PagingListener<int, JournalEntity>(
                         controller: state.pagingController!,
                         builder: (context, pagingState, fetchNextPageFunction) {
+                          // Flattened once per paging state, and only while
+                          // a search added related entries: `items` copies
+                          // every loaded page.
+                          final items = state.relatedByMeaningIds.isEmpty
+                              ? null
+                              : pagingState.items;
                           return PagedSliverList<int, JournalEntity>(
                             state: pagingState,
                             fetchNextPage: fetchNextPageFunction,
@@ -320,10 +332,28 @@ class _InfiniteJournalPageBodyState
                                               .meta
                                               .id]
                                         : null;
-                                    return CardWrapperWidget(
-                                      item: item,
-                                      vectorDistance: distance,
+                                    // One structure whether or not the
+                                    // heading is drawn, and the card keyed
+                                    // inside it: a heading that moves on a
+                                    // reload never rebuilds the card.
+                                    return Column(
                                       key: ValueKey(item.meta.id),
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        if (_startsRelatedByMeaning(
+                                          state,
+                                          items,
+                                          index,
+                                        ))
+                                          const LogbookRelatedByMeaningHeader(),
+                                        CardWrapperWidget(
+                                          key: const ValueKey('card'),
+                                          item: item,
+                                          vectorDistance: distance,
+                                        ),
+                                      ],
                                     );
                                   },
                                 ),

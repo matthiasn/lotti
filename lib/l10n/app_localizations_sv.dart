@@ -14067,10 +14067,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get searchHint => 'Sök...';
 
   @override
-  String get searchModeFullText => 'Fulltext';
-
-  @override
-  String get searchModeVector => 'Vektor';
+  String get searchRelatedByMeaningSection => 'Besläktade i betydelse';
 
   @override
   String get searchTasksHint => 'Sökuppgifter…';
@@ -17656,9 +17653,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get tasksSearchModeLabel => 'Sökläge';
-
-  @override
   String get tasksSearchNoLinkedTasks =>
       'Inga kopplade uppgifter hittades för den här pull requesten.';
 
@@ -17864,17 +17858,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Koppla bort uppgiften';
-
-  @override
-  String vectorSearchTiming(int elapsed, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '${elapsed}ms, $count resultat',
-      one: '${elapsed}ms, $count resultat',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get viewMenuTitle => 'Vy';

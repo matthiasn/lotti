@@ -1,11 +1,11 @@
 ---
 type: Feature Module
 title: Browse, search and linking
-description: One page controller shared by two tabs, two search modes and a pull request lookup, post-filter pagination, SQL due-date sorting, and the linked-entry machinery.
+description: One page controller shared by two tabs, one search that lists the word matches and then what meaning adds, a pull request lookup, post-filter pagination, SQL due-date sorting, and the linked-entry machinery.
 resource: ../../../lib/features/journal/state/journal_page_controller.dart
 tags: [journal, search, pagination, linked-entries, focus]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-04T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-30T21:00:00Z }
 stale_after: 2027-02-01
 sources:
   - id: page-controller
@@ -40,13 +40,12 @@ wired only into the journal route. The tasks tab has its **own page widget**,
 the page widget.**
 
 The journal page body is a column: the shared `TabSectionHeader` (the same titled
-header Tasks and Projects use), an optional `LogbookSearchModeRow` when the
-vector-search flag is on, and the paged feed in an expanded scroll view. The
+header Tasks and Projects use) and the paged feed in an expanded scroll view. The
 filter icon opens a two-page Wolt modal. **There is no sliver app bar on this page
 any more.**
 
-The controller owns the `PagingController`, filter state, search mode, and
-feature-flag gating for entry types and vector search.
+The controller owns the `PagingController`, filter state, and feature-flag
+gating for entry types and search by meaning.
 
 ## What it persists
 
@@ -74,47 +73,77 @@ that follows records it, so a later deselection sticks. A type behind a flag
 that is off stays pending instead of being added, stripped by the flag gating
 and consumed unseen. An unchanged launch writes nothing.
 
-# Two search modes
+# One search: the words, then the meaning
 
-`fullText` and `vector`. **Vector mode is feature-gated**, and if the flag is
-disabled while the controller is in vector mode it **falls back to full-text
-rather than leaving the UI in a dead state.**
+There is **no search mode to pick** (ADR 0149). Every query runs the full-text
+search, and — while the vector-search flag is on and the embedding pipeline is
+set up — search by meaning at the same time
+(`JournalQueryRunner.meaningSearch`). One list shows both: **every word match
+first, in the order it already had, then what meaning found that the words did
+not**, nearest first, under a **Related by meaning** heading. The evaluation
+behind that order is in ADR 0149.
 
-Full-text mode asks the search index (`JournalQueryRunner.fts5Search`) for
+```mermaid
+flowchart LR
+  Q["query"] --> W["fts5Search<br/>(the words)"]
+  Q --> M["meaningSearch<br/>(when the flag is on)"]
+  W --> J["word matches"]
+  M --> R["related: meaning ids<br/>not among the matches"]
+  J --> Run["runQuery: one page,<br/>every list clause"]
+  R --> Run
+  Run --> List["matches, then<br/>Related by meaning"]
+```
+
+The full-text side asks the search index (`JournalQueryRunner.fts5Search`) for
 the best matches **the page can list**: the tasks tab asks for tasks and what
 belongs to them (`taskFullTextHits`, shared with the due-view counts), the
 journal tab for the entry types it shows, both in the selected categories and
 with private entities only while private mode shows them, so the index's
-limit keeps matches the page can show. On the journal tab the ids then ride
-the paged query's `ids` restriction, which applies the remaining clauses and
-the page's own sort.
+limit keeps matches the page can show.
 
-**On the tasks tab, a search lists its results best match first.**
-`_runBestMatchTaskQuery` runs the same task query — every list clause still
-applies — once, with room for all the matches the index kept, and puts the
-rows back in the index's order: one page, no paging. While a query is typed
-the list shows them in one **Results** section (`buildTaskBrowseEntries`
-with `searchResults`) instead of the sort's priority or date sections, each
-card carrying the priority and due chips a section would otherwise state and
-a snippet of where it matched (`TaskSearchSnippet`, from
-`JournalPageState.taskSearchHits`). Clearing the query brings the chosen sort
-and its sections back. A pull request lookup and semantic search publish no
-snippets. What the index holds, how a query is built and how matches rank is
-the [search index](../search/full-text-index.md).
+**A search is one page.** `_runQuery` runs both searches for page 0 only; a
+later page of a search runs nothing. `runQuery` lists the word matches and
+then the related ids (`relatedByMeaning`), both through the same clauses.
 
-Vector search behaves differently from normal paging:
+**A task search reaches every task in scope** (ADR 0149). While a query is
+typed, `_buildQueryParams` drops the status, label, priority, project and agent
+selections. They shape the browsing list, not what a search finds. Category
+(and lockdown with it), the due view, starred and private mode still apply.
+The logbook's own clauses (entry types, starred, flagged, private, categories)
+apply to its search unchanged.
 
-- It **bypasses the DB paging pipeline**.
-- It **only runs on the first page**.
-- It stores elapsed time, result count and per-entry distance values in
-  `JournalPageState`.
+- **Tasks tab:** `_runBestMatchTaskQuery` runs the task query once, with room
+  for every id, and puts the rows back in order: the index's best match first,
+  then the related ones by distance. While a query is typed the list shows the
+  matches in one **Results** section and the related ones in a **Related by
+  meaning** section (`buildTaskBrowseEntries` with `searchResults` and
+  `relatedByMeaning`), instead of the sort's priority or date sections. Each
+  card carries the priority and due chips a section would otherwise state, and
+  a match a snippet of where it matched (`TaskSearchSnippet`, from
+  `JournalPageState.taskSearchHits`).
+- **Journal tab:** the matches come newest first, as the feed sorts, then the
+  related entries by distance; `LogbookRelatedByMeaningHeader` sits above the
+  first related entry.
+
+Clearing the query brings the chosen sort and its sections back. A pull request
+lookup publishes no snippets and nothing related. What the index holds, how a
+query is built and how matches rank is the
+[search index](../search/full-text-index.md).
+
+`JournalPageState` carries what meaning added: `relatedByMeaningIds` (the
+heading and the due-view counts read it) and `vectorSearchDistances` for the
+whole meaning result set (the distance read-out). Both are written only by the
+latest query run (`_queryGeneration`), so a slower search for an earlier
+keystroke never lands over a newer one, and the results on screen stay until
+the next ones replace them. Turning the vector-search flag on or off refreshes
+the list, since it changes what a search shows.
 
 # A pasted pull request link is a lookup
 
 On the tasks tab, a query that is a whole pasted GitHub pull request link —
 `https://github.com/{owner}/{repo}/pull/{number}`, with or without the scheme,
 `www.` or anything after the number, or the `api.github.com` twin — is not
-searched at all, in either mode. `pullRequestSearchRef` decides; the
+searched at all. `pullRequestSearchRef` decides; the
 `owner/repo#12` shorthand, a link with other words around it, an issue or
 repository link and a GitLab merge request link stay ordinary searches (linked
 pull requests are GitHub's only, so a GitLab link would never find a task).
@@ -126,7 +155,7 @@ linking already uses, indexed end to end (`idx_journal_type_subtype` on the
 pull request row's `PullRequest` type and lower-cased `owner/repo#number`
 subtype, then `idx_linked_entries_to_id_type`, then the task's primary key), so
 no JSON is searched and no table is scanned, and nothing leaves the device.
-Like a semantic result, the tasks come back **whole, on the first page**,
+The tasks come back **whole, on the first page**,
 newest first, through the private-filtered id read. The category selection
 (and lockdown with it) and the due view still scope them; the **status
 selection does not** — a merged pull request's task is usually done, and the
@@ -137,7 +166,7 @@ pull request." instead of the no-results message.
 ```mermaid
 flowchart LR
   Q["query"] --> Tab{"tasks tab?"}
-  Tab -->|"no"| Text["full-text / semantic search"]
+  Tab -->|"no"| Text["search: words, then meaning"]
   Tab -->|"yes"| Link{"whole pull request link?"}
   Link -->|"no"| Text
   Link -->|"yes"| Holders["taskIdsHoldingPullRequest<br/>(indexed)"]

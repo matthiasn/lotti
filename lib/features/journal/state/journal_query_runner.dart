@@ -7,7 +7,6 @@ import 'package:lotti/database/agents/agent_database.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/task_search.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
@@ -31,7 +30,6 @@ class JournalQueryParams {
     required this.filters,
     required this.query,
     required this.enableVectorSearch,
-    required this.searchMode,
     required this.enableEvents,
     required this.enableHabits,
     required this.enableDashboards,
@@ -54,25 +52,22 @@ class JournalQueryParams {
   final TaskDueFilter dueFilter;
   final String query;
   final bool enableVectorSearch;
-  final SearchMode searchMode;
   final bool enableEvents;
   final bool enableHabits;
   final bool enableDashboards;
   final bool enableRelationships;
 }
 
-/// Result of a vector search, wrapping entity results with timing telemetry.
-class JournalVectorSearchResult {
-  const JournalVectorSearchResult({
-    required this.entities,
-    required this.elapsed,
-    required this.distances,
-  });
+/// What search by meaning found: ids nearest first, and each one's distance.
+typedef MeaningSearchResult = ({
+  List<String> ids,
+  Map<String, double> distances,
+});
 
-  final List<JournalEntity> entities;
-  final Duration elapsed;
-  final Map<String, double> distances;
-}
+const MeaningSearchResult _noMeaningResults = (
+  ids: <String>[],
+  distances: <String, double>{},
+);
 
 /// Executes queries against the journal/task databases, including full-text
 /// search, vector search, post-filtering, and sorting.
@@ -196,8 +191,13 @@ class JournalQueryRunner {
 
   /// Runs a paginated query using the filter state in [params].
   ///
-  /// [fullTextMatches] are the IDs from a prior FTS5 search (pass empty set
-  /// when the query is blank).
+  /// [fullTextMatches] are the IDs from a prior FTS5 search, best match
+  /// first (pass empty set when the query is blank). [relatedByMeaning] are
+  /// the ids search by meaning added, nearest first: a search lists them
+  /// after the word matches, through the same clauses (ADR 0149).
+  ///
+  /// A search is one page, as the index's limit bounds it: tasks in the
+  /// index's order, entries newest first, and after either the related ones.
   ///
   /// [setPostFilterNextRawOffset] is called when post-filters (project /
   /// agent) consume more raw rows than they return, so the caller can track
@@ -206,10 +206,16 @@ class JournalQueryRunner {
     JournalQueryParams params,
     int pageKey, {
     required Set<String> fullTextMatches,
+    List<String> relatedByMeaning = const [],
     void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
   }) async {
     final types = _entryTypes(params);
-    final ids = params.query.isNotEmpty ? fullTextMatches.toList() : null;
+    final ids = params.query.isNotEmpty
+        ? [
+            ...fullTextMatches,
+            ...relatedByMeaning.where((id) => !fullTextMatches.contains(id)),
+          ]
+        : null;
 
     final starredEntriesOnly = params.filters.contains(
       DisplayFilter.starredEntriesOnly,
@@ -247,7 +253,11 @@ class JournalQueryRunner {
       );
     }
 
-    return _db.getJournalEntities(
+    Future<List<JournalEntity>> entries(
+      List<String>? ids, {
+      required int limit,
+      required int offset,
+    }) => _db.getJournalEntities(
       types: types,
       ids: ids,
       starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -256,9 +266,35 @@ class JournalQueryRunner {
       categoryIds: params.selectedCategoryIds.isNotEmpty
           ? params.selectedCategoryIds
           : null,
-      limit: pageSize,
-      offset: pageKey,
+      limit: limit,
+      offset: offset,
     );
+
+    if (ids == null || params.query.trim().isEmpty) {
+      return entries(ids, limit: pageSize, offset: pageKey);
+    }
+    setPostFilterNextRawOffset?.call(null);
+    if (pageKey > 0 || ids.isEmpty) return const <JournalEntity>[];
+    final related = ids.skip(fullTextMatches.length).toList();
+    final matched = fullTextMatches.isEmpty
+        ? const <JournalEntity>[]
+        : await entries(
+            fullTextMatches.toList(),
+            limit: fullTextMatches.length,
+            offset: 0,
+          );
+    if (related.isEmpty) return matched;
+    final rank = {for (final (index, id) in related.indexed) id: index};
+    final relatedEntries = await entries(
+      related,
+      limit: related.length,
+      offset: 0,
+    );
+    return [
+      ...matched,
+      ...[...relatedEntries]
+        ..sort((a, b) => rank[a.meta.id]!.compareTo(rank[b.meta.id]!)),
+    ];
   }
 
   // ---------------------------------------------------------------
@@ -466,26 +502,21 @@ class JournalQueryRunner {
   }
 
   // ---------------------------------------------------------------
-  // Vector search
+  // Search by meaning
   // ---------------------------------------------------------------
 
-  /// Executes a vector search and returns results with telemetry.
-  Future<JournalVectorSearchResult> runVectorSearch(
-    JournalQueryParams params,
-  ) async {
-    if (!getIt.isRegistered<VectorSearchRepository>()) {
-      _domainLogger.log(
-        LogDomain.persistence,
-        'VectorSearchRepository not registered — '
-        'is the embedding pipeline available?',
-        subDomain: 'JournalQueryRunner',
-        level: InsightLevel.warn,
-      );
-      return const JournalVectorSearchResult(
-        entities: [],
-        elapsed: Duration.zero,
-        distances: {},
-      );
+  /// What search by meaning finds for the query of [params], nearest first,
+  /// within its category selection — or nothing when it is off, the query is
+  /// blank, or the embedding pipeline is not set up on this device.
+  ///
+  /// The page's other clauses apply where the results are listed
+  /// ([runQuery]), so the distances stay whole: they are the search's result
+  /// set, which the smart-view counts restrict themselves to.
+  Future<MeaningSearchResult> meaningSearch(JournalQueryParams params) async {
+    if (!params.enableVectorSearch ||
+        params.query.trim().isEmpty ||
+        !getIt.isRegistered<VectorSearchRepository>()) {
+      return _noMeaningResults;
     }
 
     try {
@@ -503,22 +534,8 @@ class JournalQueryRunner {
               query: params.query,
               categoryIds: categoryIds,
             );
-
-      // Semantic results come back whole; narrow them to the due view here,
-      // as the paged path does through its ids restriction. The distances
-      // stay whole: they are the search's result set, which the smart-view
-      // counts restrict themselves to.
-      final dueIds = params.showTasks
-          ? await _narrowByDueFilter(null, params.dueFilter)
-          : null;
-      return JournalVectorSearchResult(
-        entities: dueIds == null
-            ? result.entities
-            : [
-                for (final entity in result.entities)
-                  if (dueIds.contains(entity.meta.id)) entity,
-              ],
-        elapsed: result.elapsed,
+      return (
+        ids: [for (final entity in result.entities) entity.meta.id],
         distances: result.distances,
       );
     } on Exception catch (e, stackTrace) {
@@ -527,13 +544,9 @@ class JournalQueryRunner {
         e,
         stackTrace: stackTrace,
         subDomain: 'JournalQueryRunner',
-        message: 'Vector search failed',
+        message: 'Search by meaning failed',
       );
-      return const JournalVectorSearchResult(
-        entities: [],
-        elapsed: Duration.zero,
-        distances: {},
-      );
+      return _noMeaningResults;
     }
   }
 

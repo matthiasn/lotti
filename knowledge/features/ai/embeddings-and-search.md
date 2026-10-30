@@ -112,6 +112,12 @@ flowchart LR
 | `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** in one directory per model |
 | `VectorSearchRepository` | Embeds the query and resolves hits back to tasks or entries |
 
+**Search by meaning never stands alone.** The tasks and journal pages run it
+beside the full-text search on every query and list what it adds after the
+word matches, under a "Related by meaning" heading (ADR 0149); there is no mode
+switch. That page side is
+[browse, search and linking](../journal/browse-and-linking.md#one-search-the-words-then-the-meaning).
+
 # Constraints
 
 - **Gated by `enableEmbeddingsFlag`.** Off by default. Every writer checks it:

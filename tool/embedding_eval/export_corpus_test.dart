@@ -69,7 +69,22 @@ Map<String, Object> _language(String code) {
   return {
     'tasks': [
       for (final task in tasks.values)
-        {'id': task.meta.id, 'text': _text(task)},
+        {
+          'id': task.meta.id,
+          'text': _text(task),
+          // The full-text index's columns, for `hybrid.py`'s keyword side.
+          ...() {
+            final document = searchDocumentFor(
+              task,
+              measurableDataType: (_) => null,
+            );
+            return {
+              'title': document.title,
+              'body': document.body,
+              'extra': document.extra,
+            };
+          }(),
+        },
     ],
     'queries': queries,
   };

@@ -18,15 +18,6 @@ enum DisplayFilter {
   privateEntriesOnly,
 }
 
-/// Search mode for the journal/tasks page.
-enum SearchMode {
-  /// Traditional FTS5 full-text search.
-  fullText,
-
-  /// Vector-based semantic search via Ollama embeddings.
-  vector,
-}
-
 /// Filter for agent assignment on tasks.
 enum AgentAssignmentFilter {
   /// No filtering — show all tasks regardless of agent assignment.
@@ -70,15 +61,14 @@ enum TaskSortOption {
   byDueDate,
 }
 
-/// Immutable state for the journal page controller.
 /// Immutable view-model for the journal/tasks page, exposed by
 /// `JournalPageController`.
 ///
-/// Bundles everything the page UI reads: the search query/mode, the active
-/// display filters and per-facet selections (categories, projects, labels,
-/// priorities, task statuses, entry types), sort and card-display toggles, the
-/// live [PagingController] that feeds the infinite list, and vector-search
-/// telemetry (in-flight flag, elapsed, result count, per-id distances). The
+/// Bundles everything the page UI reads: the search query, the active display
+/// filters and per-facet selections (categories, projects, labels, priorities,
+/// task statuses, entry types), sort and card-display toggles, the live
+/// [PagingController] that feeds the infinite list, and what search by meaning
+/// added to the results (their ids and per-id distances). The
 /// `pagingController` is excluded from JSON. The persisted subset lives in
 /// [TasksFilter].
 @freezed
@@ -109,17 +99,17 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
     @Default(true) bool showProjectsHeader,
-    @Default(SearchMode.fullText) SearchMode searchMode,
     @Default(false) bool showDistances,
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,
     @Default(TaskDueFilter.all) TaskDueFilter dueFilter,
     @Default(false) bool enableVectorSearch,
     @Default(false) bool enableProjects,
-    @Default(false) bool vectorSearchInFlight,
-    Duration? vectorSearchElapsed,
-    @Default(0) int vectorSearchResultCount,
     @Default(<String, double>{}) Map<String, double> vectorSearchDistances,
+
+    /// The results search by meaning found that the words did not, by id.
+    /// They follow the word matches, under their own heading (ADR 0149).
+    @Default(<String>{}) Set<String> relatedByMeaningIds,
 
     /// The tasks the live full-text search found, by task id, with where
     /// each matched — the snippet its result card shows.

@@ -60,6 +60,15 @@ void main() {
       expect(find.byType(TaskShowcasePriorityGlyph), findsNothing);
     });
 
+    testWidgets('what meaning added reads "Related by meaning"', (
+      tester,
+    ) async {
+      await pumpTitle(tester, const TaskBrowseSectionKey.relatedByMeaning());
+
+      expect(find.text('Related by meaning'), findsOneWidget);
+      expect(find.byType(TaskShowcasePriorityGlyph), findsNothing);
+    });
+
     testWidgets('the search results section reads "Results"', (tester) async {
       await pumpTitle(tester, const TaskBrowseSectionKey.results());
 

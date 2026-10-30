@@ -85,13 +85,8 @@ class JournalPageController extends Notifier<JournalPageState>
   /// yet offered to it — they join the selection once they are (see
   /// [_adoptPendingEntryTypes]).
   Set<String> _pendingEntryTypes = {};
-  @override
   bool _enableVectorSearch = false;
   bool _enableProjects = false;
-  @override
-  SearchMode _searchMode = SearchMode.fullText;
-  @override
-  bool _hasExplicitSearchModeSelection = false;
   String _query = '';
   bool _showPrivateEntries = false;
   final bool _showTasks;
@@ -120,15 +115,11 @@ class JournalPageController extends Notifier<JournalPageState>
   Set<String> _fullTextMatches = {};
 
   /// Bumped by every [refreshQuery]. A query run writes the shared search
-  /// state — its matches, its hits, its vector telemetry — only while it is
+  /// state — its matches, its hits, what meaning added — only while it is
   /// still the latest, so a slower run for an earlier keystroke cannot land
   /// over a newer one.
   int _queryGeneration = 0;
 
-  /// The generation of the latest vector search started, so only that run
-  /// clears the in-flight flag: a stale run must not hide a newer run's
-  /// spinner, nor leave it spinning when the newer query is no vector search.
-  int _vectorSearchGeneration = 0;
   @override
   TaskSortOption _sortOption = TaskSortOption.byPriority;
   @override
@@ -292,15 +283,12 @@ class JournalPageController extends Notifier<JournalPageState>
   void _onJournalConfigFlagsChanged(JournalConfigFlags flags) {
     final result = JournalPageSubscriptions.applyJournalConfigFlags(
       flags: flags,
-      showTasks: _showTasks,
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,
       enableRelationships: _enableRelationships,
       enableVectorSearch: _enableVectorSearch,
       enableProjects: _enableProjects,
-      searchMode: _searchMode,
-      hasExplicitSearchModeSelection: _hasExplicitSearchModeSelection,
       selectedEntryTypes: _selectedEntryTypes,
       selectedProjectIds: _selectedProjectIds,
     );
@@ -312,7 +300,6 @@ class JournalPageController extends Notifier<JournalPageState>
     _enableRelationships = result.enableRelationships;
     _enableVectorSearch = result.enableVectorSearch;
     _enableProjects = result.enableProjects;
-    _searchMode = result.searchMode;
     _selectedEntryTypes = result.selectedEntryTypes;
     _selectedProjectIds = result.selectedProjectIds;
     _adoptPendingEntryTypes();
@@ -389,7 +376,6 @@ class JournalPageController extends Notifier<JournalPageState>
       showDistances: _showDistances,
       agentAssignmentFilter: _agentAssignmentFilter,
       dueFilter: _dueFilter,
-      searchMode: _searchMode,
       enableVectorSearch: _enableVectorSearch,
       enableProjects: _enableProjects,
     );
@@ -488,35 +474,47 @@ class JournalPageController extends Notifier<JournalPageState>
     final generation = _queryGeneration;
     bool current() => generation == _queryGeneration && ref.mounted;
 
-    // A pasted pull request link is a lookup, not a search, in either mode.
+    // A search is one page (see [JournalQueryRunner.runQuery]), so a later
+    // page has nothing to run.
+    if (pageKey > 0 && params.query.trim().isNotEmpty) {
+      if (current()) applyOffset(null);
+      return const <JournalEntity>[];
+    }
+
+    // A pasted pull request link is a lookup, not a search.
     final pullRequestTasks = await _queryRunner.runPullRequestSearch(params);
     if (pullRequestTasks != null) {
       if (current()) {
         applyOffset(null);
         _fullTextMatches = {for (final task in pullRequestTasks) task.meta.id};
         _showTaskSearchHits(const {});
+        _showRelatedByMeaning(const [], const {});
       }
-      return pageKey == 0 ? pullRequestTasks : const <JournalEntity>[];
+      return pullRequestTasks;
     }
 
-    if (params.enableVectorSearch &&
-        params.searchMode == SearchMode.vector &&
-        params.query.isNotEmpty &&
-        pageKey == 0) {
-      _showTaskSearchHits(const {});
-      return _runVectorSearchWithTelemetry(params, generation, current);
-    }
-
-    final matches = await _queryRunner.fts5Search(params);
+    // The words and the meaning are searched at once; either finds nothing
+    // for a blank query.
+    final (matches, meaning) = await (
+      _queryRunner.fts5Search(params),
+      _queryRunner.meaningSearch(params),
+    ).wait;
+    // What meaning found that the words did not; it follows the word matches.
+    final related = [
+      for (final id in meaning.ids)
+        if (!matches.ids.contains(id)) id,
+    ];
     if (current()) {
       _fullTextMatches = matches.ids;
       _showTaskSearchHits(matches.taskHits);
+      _showRelatedByMeaning(related, meaning.distances);
     }
     return _queryRunner.runQuery(
       params,
       pageKey,
       // This run's own matches: the shared ones may belong to a newer query.
       fullTextMatches: matches.ids,
+      relatedByMeaning: related,
       setPostFilterNextRawOffset: (offset) {
         if (current()) applyOffset(offset);
       },
@@ -524,39 +522,29 @@ class JournalPageController extends Notifier<JournalPageState>
   }
 
   /// Publishes where the live full-text search found each task — the
-  /// snippets the result cards show — and drops them for a lookup or a
-  /// semantic search, which have none.
+  /// snippets the result cards show — and drops them for a lookup, which
+  /// has none.
   void _showTaskSearchHits(Map<String, TaskSearchHit> hits) {
     if (mapEquals(state.taskSearchHits, hits)) return;
     state = state.copyWith(taskSearchHits: hits);
   }
 
-  /// The last search's distances and counts stay until this one lands: they
-  /// belong to the results still on screen, which the due views count from.
-  Future<List<JournalEntity>> _runVectorSearchWithTelemetry(
-    JournalQueryParams params,
-    int generation,
-    bool Function() current,
-  ) async {
-    _vectorSearchGeneration = generation;
-    state = state.copyWith(vectorSearchInFlight: true);
-    final result = await _queryRunner.runVectorSearch(params);
-    if (!ref.mounted) return result.entities;
-    if (!current()) {
-      // A newer query owns the telemetry. Unless a newer vector search runs,
-      // nothing is in flight any more.
-      if (_vectorSearchGeneration == generation) {
-        state = state.copyWith(vectorSearchInFlight: false);
-      }
-      return result.entities;
+  /// Publishes what search by meaning added to the results, and how near
+  /// each of its results was, for the heading over them and the distance
+  /// read-out.
+  void _showRelatedByMeaning(
+    List<String> related,
+    Map<String, double> distances,
+  ) {
+    final ids = related.toSet();
+    if (setEquals(state.relatedByMeaningIds, ids) &&
+        mapEquals(state.vectorSearchDistances, distances)) {
+      return;
     }
     state = state.copyWith(
-      vectorSearchInFlight: false,
-      vectorSearchElapsed: result.elapsed,
-      vectorSearchResultCount: result.entities.length,
-      vectorSearchDistances: result.distances,
+      relatedByMeaningIds: ids,
+      vectorSearchDistances: distances,
     );
-    return result.entities;
   }
 
   /// The entry types active feature flags currently permit — the baseline the
@@ -579,27 +567,34 @@ class JournalPageController extends Notifier<JournalPageState>
       ref.read(lockdownControllerProvider).restrict(_selectedCategoryIds);
 
   JournalQueryParams _buildQueryParams() {
+    // While a query is typed, a task search reaches every task in scope
+    // (ADR 0149): the status, label, priority, project and agent selections
+    // narrow the browsing list, not what a search finds — a done task is
+    // often the one being looked for. Category (and lockdown with it), the
+    // due view, starred and private mode still scope it.
+    final searching = _showTasks && _query.trim().isNotEmpty;
     // An empty selection means "no status filter" → query across all statuses
     // rather than returning zero rows because `task_status IN ()` matches
     // nothing.
-    final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
+    final effectiveTaskStatuses = searching || _selectedTaskStatuses.isEmpty
         ? allTaskStatusValues.toSet()
         : _selectedTaskStatuses;
     return JournalQueryParams(
       showTasks: _showTasks,
       selectedEntryTypes: _selectedEntryTypes,
       selectedCategoryIds: _effectiveCategoryIds,
-      selectedProjectIds: _selectedProjectIds,
-      selectedLabelIds: _selectedLabelIds,
-      selectedPriorities: _selectedPriorities,
+      selectedProjectIds: searching ? const {} : _selectedProjectIds,
+      selectedLabelIds: searching ? const {} : _selectedLabelIds,
+      selectedPriorities: searching ? const {} : _selectedPriorities,
       selectedTaskStatuses: effectiveTaskStatuses,
       sortOption: _sortOption,
-      agentAssignmentFilter: _agentAssignmentFilter,
+      agentAssignmentFilter: searching
+          ? AgentAssignmentFilter.all
+          : _agentAssignmentFilter,
       filters: _filters,
       dueFilter: _showTasks ? _dueFilter : TaskDueFilter.all,
       query: _query,
       enableVectorSearch: _enableVectorSearch,
-      searchMode: _searchMode,
       enableEvents: _enableEvents,
       enableHabits: _enableHabits,
       enableDashboards: _enableDashboards,

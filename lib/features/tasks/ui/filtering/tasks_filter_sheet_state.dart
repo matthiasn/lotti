@@ -3,7 +3,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
@@ -67,22 +66,6 @@ abstract final class TasksFilterAgentIds {
   };
 }
 
-/// Search mode option IDs.
-abstract final class TasksFilterSearchModeIds {
-  static const fullText = 'fullText';
-  static const vector = 'vector';
-
-  static String fromMode(SearchMode mode) => switch (mode) {
-    SearchMode.fullText => fullText,
-    SearchMode.vector => vector,
-  };
-
-  static SearchMode toMode(String id) => switch (id) {
-    vector => SearchMode.vector,
-    _ => SearchMode.fullText,
-  };
-}
-
 /// Priority option IDs that map to the internal set-based filter.
 abstract final class TasksFilterPriorityIds {
   static const p0 = 'p0';
@@ -123,7 +106,6 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
   required List<ProjectWithCategory> projectsWithCategories,
 }) {
   final messages = context.messages;
-  final isDesktop = isDesktopLayout(context);
 
   // Sort options
   final sortOptions = [
@@ -244,21 +226,6 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
     ),
   ];
 
-  // Search mode — only on desktop when vector search is enabled
-  final showSearchMode = isDesktop && controllerState.enableVectorSearch;
-  final searchModeOptions = showSearchMode
-      ? [
-          DesignSystemTaskFilterOption(
-            id: TasksFilterSearchModeIds.fullText,
-            label: messages.searchModeFullText,
-          ),
-          DesignSystemTaskFilterOption(
-            id: TasksFilterSearchModeIds.vector,
-            label: messages.searchModeVector,
-          ),
-        ]
-      : <DesignSystemTaskFilterOption>[];
-
   // Display toggles
   final toggles = [
     DesignSystemTaskFilterToggle(
@@ -305,11 +272,6 @@ DesignSystemTaskFilterState buildTasksFilterSheetState(
     agentFilterOptions: agentFilterOptions,
     selectedAgentFilterId: TasksFilterAgentIds.fromFilter(
       controllerState.agentAssignmentFilter,
-    ),
-    searchModeLabel: messages.tasksSearchModeLabel,
-    searchModeOptions: searchModeOptions,
-    selectedSearchModeId: TasksFilterSearchModeIds.fromMode(
-      controllerState.searchMode,
     ),
     toggles: toggles,
   );

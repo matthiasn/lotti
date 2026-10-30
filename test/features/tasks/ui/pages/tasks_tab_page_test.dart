@@ -41,6 +41,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/mobile/saved_task_filter_r
 import 'package:lotti/features/tasks/ui/widgets/collapsing_task_list_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_due_views_strip.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -1882,6 +1883,33 @@ void main() {
       );
     });
 
+    testWidgets('what meaning added follows the matches under its own '
+        'heading', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            match: 'krill',
+          ).copyWith(relatedByMeaningIds: const {'high'}),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Results'), findsOneWidget);
+      expect(find.text('Related by meaning'), findsOneWidget);
+      final related = tester.getTopLeft(find.text('Related by meaning')).dy;
+      expect(
+        tester.getTopLeft(find.text('Negotiate sardine futures')).dy,
+        lessThan(related),
+      );
+      expect(
+        related,
+        lessThan(tester.getTopLeft(find.text('Krill run')).dy),
+      ); // A search reaches every status, so each card shows its own, even
+      // with one status selected.
+      expect(find.byType(TaskShowcaseStatusLabel), findsNWidgets(2));
+    });
+
     testWidgets('without a query the chosen sort groups them again', (
       tester,
     ) async {
@@ -1891,6 +1919,8 @@ void main() {
 
       expect(find.text('Results'), findsNothing);
       expect(find.text('P3 Low'), findsOneWidget);
+      // One status selected: every row would carry the same chip.
+      expect(find.byType(TaskShowcaseStatusLabel), findsNothing);
     });
   });
 

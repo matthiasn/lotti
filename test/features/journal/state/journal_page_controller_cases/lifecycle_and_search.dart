@@ -184,9 +184,9 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
       });
     });
 
-    for (final mode in SearchMode.values) {
+    for (final meaning in [false, true]) {
       test('a pasted pull request link lists its linked tasks instead of '
-          'searching (${mode.name} mode)', () {
+          'searching (search by meaning ${meaning ? 'on' : 'off'})', () {
         fakeAsync((async) {
           const link = 'https://github.com/matthiasn/lotti/pull/42';
           final feed = _buildTestTaskRefresh(
@@ -215,9 +215,9 @@ void _registerLifecycleAndSearch(JournalControllerTestSetup setup) {
             journalPageControllerProvider(true).notifier,
           );
           settle(async);
-          setup.configFlagsController.add({enableVectorSearchFlag});
-          settle(async);
-          controller.setSearchMode(mode);
+          setup.configFlagsController.add({
+            if (meaning) enableVectorSearchFlag,
+          });
           settle(async);
 
           controller.setSearchString(link);

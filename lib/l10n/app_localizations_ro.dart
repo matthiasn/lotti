@@ -14320,10 +14320,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get searchHint => 'Căutare...';
 
   @override
-  String get searchModeFullText => 'Text integral';
-
-  @override
-  String get searchModeVector => 'Vector';
+  String get searchRelatedByMeaningSection => 'Înrudite ca sens';
 
   @override
   String get searchTasksHint => 'Căutați sarcini…';
@@ -17965,9 +17962,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get tasksSearchModeLabel => 'Mod de căutare';
-
-  @override
   String get tasksSearchNoLinkedTasks =>
       'Nu s-au găsit sarcini legate de acest pull request.';
 
@@ -18179,17 +18173,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get unlinkTaskTitle => 'Deconectați sarcina';
-
-  @override
-  String vectorSearchTiming(int elapsed, int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '${elapsed}ms, $count rezultate',
-      one: '${elapsed}ms, $count rezultat',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get viewMenuTitle => 'Vizualizare';

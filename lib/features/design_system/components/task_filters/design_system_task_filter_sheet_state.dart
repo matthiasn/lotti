@@ -168,9 +168,6 @@ class DesignSystemTaskFilterState {
     this.agentFilterLabel = '',
     this.agentFilterOptions = const <DesignSystemTaskFilterOption>[],
     this.selectedAgentFilterId = '',
-    this.searchModeLabel = '',
-    this.searchModeOptions = const <DesignSystemTaskFilterOption>[],
-    this.selectedSearchModeId = '',
     this.toggles = const <DesignSystemTaskFilterToggle>[],
   }) : assert(
          priorityOptions.isEmpty ||
@@ -222,15 +219,11 @@ class DesignSystemTaskFilterState {
   final String agentFilterLabel;
   final List<DesignSystemTaskFilterOption> agentFilterOptions;
   final String selectedAgentFilterId;
-  final String searchModeLabel;
-  final List<DesignSystemTaskFilterOption> searchModeOptions;
-  final String selectedSearchModeId;
   final List<DesignSystemTaskFilterToggle> toggles;
 
   bool get hasSortSection => sortOptions.isNotEmpty;
   bool get hasPrioritySection => priorityOptions.isNotEmpty;
   bool get hasAgentFilter => agentFilterOptions.isNotEmpty;
-  bool get hasSearchMode => searchModeOptions.isNotEmpty;
 
   /// Returns the field model for [section], or `null` when that section is not
   /// part of this filter flow.
@@ -272,9 +265,6 @@ class DesignSystemTaskFilterState {
     String? agentFilterLabel,
     List<DesignSystemTaskFilterOption>? agentFilterOptions,
     String? selectedAgentFilterId,
-    String? searchModeLabel,
-    List<DesignSystemTaskFilterOption>? searchModeOptions,
-    String? selectedSearchModeId,
     List<DesignSystemTaskFilterToggle>? toggles,
   }) {
     return DesignSystemTaskFilterState(
@@ -295,9 +285,6 @@ class DesignSystemTaskFilterState {
       agentFilterOptions: agentFilterOptions ?? this.agentFilterOptions,
       selectedAgentFilterId:
           selectedAgentFilterId ?? this.selectedAgentFilterId,
-      searchModeLabel: searchModeLabel ?? this.searchModeLabel,
-      searchModeOptions: searchModeOptions ?? this.searchModeOptions,
-      selectedSearchModeId: selectedSearchModeId ?? this.selectedSearchModeId,
       toggles: toggles ?? this.toggles,
     );
   }
@@ -333,14 +320,6 @@ class DesignSystemTaskFilterState {
     }
 
     return copyWith(selectedAgentFilterId: agentFilterId);
-  }
-
-  DesignSystemTaskFilterState selectSearchMode(String searchModeId) {
-    if (!hasSearchMode || searchModeId == selectedSearchModeId) {
-      return this;
-    }
-
-    return copyWith(selectedSearchModeId: searchModeId);
   }
 
   DesignSystemTaskFilterState toggleValue(String toggleId) {
@@ -429,11 +408,6 @@ class DesignSystemTaskFilterState {
         .map((option) => option.toJson())
         .toList(growable: false),
     'selectedAgentFilterId': selectedAgentFilterId,
-    'searchModeLabel': searchModeLabel,
-    'searchModeOptions': searchModeOptions
-        .map((option) => option.toJson())
-        .toList(growable: false),
-    'selectedSearchModeId': selectedSearchModeId,
     'toggles': toggles.map((t) => t.toJson()).toList(growable: false),
   };
 }

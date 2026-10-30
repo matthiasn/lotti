@@ -105,47 +105,6 @@ void main() {
     });
   });
 
-  group('TasksFilterSearchModeIds', () {
-    Glados(any.choose(SearchMode.values)).test(
-      'round-trips every SearchMode',
-      (mode) {
-        expect(
-          TasksFilterSearchModeIds.toMode(
-            TasksFilterSearchModeIds.fromMode(mode),
-          ),
-          mode,
-        );
-      },
-      tags: 'glados',
-    );
-
-    test('maps SearchMode to string IDs', () {
-      expect(
-        TasksFilterSearchModeIds.fromMode(SearchMode.fullText),
-        'fullText',
-      );
-      expect(
-        TasksFilterSearchModeIds.fromMode(SearchMode.vector),
-        'vector',
-      );
-    });
-
-    test('maps string IDs back to SearchMode', () {
-      expect(
-        TasksFilterSearchModeIds.toMode('fullText'),
-        SearchMode.fullText,
-      );
-      expect(
-        TasksFilterSearchModeIds.toMode('vector'),
-        SearchMode.vector,
-      );
-      expect(
-        TasksFilterSearchModeIds.toMode('unknown'),
-        SearchMode.fullText,
-      );
-    });
-  });
-
   group('TasksFilterPriorityIds', () {
     Glados(any.choose(['P0', 'P1', 'P2', 'P3'])).test(
       'round-trips every valid priority ID',
@@ -257,7 +216,6 @@ void main() {
       showCreationDate: true,
       showDueDate: false,
       agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
-      searchMode: SearchMode.fullText,
       enableVectorSearch: false,
     );
 
@@ -302,70 +260,11 @@ void main() {
       expect(result.labelField!.options.first.label, 'Unassigned');
       expect(result.hasAgentFilter, isTrue);
       expect(result.selectedAgentFilterId, 'hasAgent');
-      expect(result.hasSearchMode, isFalse);
       expect(result.toggles, hasLength(2));
       expect(result.toggles[0].id, TasksFilterToggleIds.showCreationDate);
       expect(result.toggles[0].value, isTrue);
       expect(result.toggles[1].id, TasksFilterToggleIds.showDueDate);
       expect(result.toggles[1].value, isFalse);
-    });
-
-    testWidgets('hides search mode on mobile even when vector search enabled', (
-      tester,
-    ) async {
-      late DesignSystemTaskFilterState result;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) {
-              result = buildTasksFilterSheetState(
-                context,
-                controllerState: controllerState.copyWith(
-                  enableVectorSearch: true,
-                ),
-                categories: categories,
-                labels: labels,
-                projectsWithCategories: const [],
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-          // Default phone media query (390px wide)
-        ),
-      );
-
-      expect(result.hasSearchMode, isFalse);
-    });
-
-    testWidgets('shows search mode on desktop when vector search enabled', (
-      tester,
-    ) async {
-      late DesignSystemTaskFilterState result;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) {
-              result = buildTasksFilterSheetState(
-                context,
-                controllerState: controllerState.copyWith(
-                  enableVectorSearch: true,
-                ),
-                categories: categories,
-                labels: labels,
-                projectsWithCategories: const [],
-              );
-              return const SizedBox.shrink();
-            },
-          ),
-          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-        ),
-      );
-
-      expect(result.hasSearchMode, isTrue);
-      expect(result.searchModeOptions, hasLength(2));
-      expect(result.selectedSearchModeId, 'fullText');
     });
 
     testWidgets('maps empty priorities to an empty selection set', (

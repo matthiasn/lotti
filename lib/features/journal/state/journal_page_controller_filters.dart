@@ -11,9 +11,6 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
   set _filters(Set<DisplayFilter> value);
   Set<String> get _selectedEntryTypes;
   set _selectedEntryTypes(Set<String> value);
-  bool get _enableVectorSearch;
-  set _searchMode(SearchMode value);
-  set _hasExplicitSearchModeSelection(bool value);
   Set<String> get _selectedCategoryIds;
   set _selectedCategoryIds(Set<String> value);
   set _selectedProjectIds(Set<String> value);
@@ -53,7 +50,6 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
     TaskDueFilter? dueFilter,
-    SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
   }) async {
@@ -67,10 +63,6 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
       _agentAssignmentFilter = agentAssignmentFilter;
     }
     if (dueFilter != null) _dueFilter = dueFilter;
-    if (searchMode != null && _enableVectorSearch) {
-      _hasExplicitSearchModeSelection = true;
-      _searchMode = searchMode;
-    }
     if (showCreationDate != null) _showCreationDate = showCreationDate;
     if (showDueDate != null) _showDueDate = showDueDate;
 
@@ -117,11 +109,5 @@ mixin _JournalPageFilters on Notifier<JournalPageState> {
   void clearSelectedEntryTypes() {
     _selectedEntryTypes = {};
     persistEntryTypes();
-  }
-
-  void setSearchMode(SearchMode mode) {
-    _hasExplicitSearchModeSelection = true;
-    _searchMode = _enableVectorSearch ? mode : SearchMode.fullText;
-    refreshQuery();
   }
 }

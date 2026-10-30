@@ -37,9 +37,10 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
   final pageState = ref.watch(journalPageControllerProvider(true));
   ref.watch(taskDueDayProvider);
   final live = liveTasksFilterFor(pageState);
-  // A pull request lookup keeps only the category and due clauses
-  // (`JournalQueryRunner.runPullRequestSearch`), so its counts drop the rest.
-  final effective = pullRequestSearchRef(pageState.match) != null
+  // A search — a pull request lookup included — keeps only the scope
+  // clauses (ADR 0149; `JournalPageController._buildQueryParams`), so its
+  // counts drop the rest.
+  final effective = pageState.match.trim().isNotEmpty
       ? live.copyWith(
           selectedTaskStatuses: {...allTaskStatuses},
           selectedLabelIds: const {},
@@ -61,9 +62,9 @@ Future<TaskDueViewCounts> taskDueViewCounts(Ref ref) async {
 /// The task ids the live search admits, or null when no search is active.
 ///
 /// Follows `JournalPageController`'s own branch: a pasted pull request link
-/// reads the tasks linked to it; semantic mode with vector search enabled
-/// reads the vector result set the page already holds; any other query runs
-/// the same FTS5 match the list ran.
+/// reads the tasks linked to it; any other query runs the same FTS5 match the
+/// list ran, joined by what search by meaning added, which the page already
+/// holds.
 Future<Set<String>?> _searchRestriction(
   Ref ref,
   JournalPageState pageState,
@@ -75,10 +76,6 @@ Future<Set<String>?> _searchRestriction(
         .read(journalDbProvider)
         .taskIdsHoldingPullRequest(pullRequest.key);
   }
-  if (pageState.enableVectorSearch &&
-      pageState.searchMode == SearchMode.vector) {
-    return pageState.vectorSearchDistances.keys.toSet();
-  }
   final fts = ref.read(fts5DbProvider);
   if (fts == null) return null;
   final hits = await taskFullTextHits(
@@ -87,5 +84,8 @@ Future<Set<String>?> _searchRestriction(
     query: pageState.match,
     selectedCategoryIds: pageState.selectedCategoryIds,
   );
-  return {for (final hit in hits) hit.taskId};
+  return {
+    for (final hit in hits) hit.taskId,
+    ...pageState.relatedByMeaningIds,
+  };
 }

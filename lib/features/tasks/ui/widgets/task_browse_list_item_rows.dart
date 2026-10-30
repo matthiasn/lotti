@@ -534,6 +534,8 @@ String _sectionTitle(BuildContext context, TaskBrowseSectionKey sectionKey) {
 
   return switch (sectionKey.kind) {
     TaskBrowseSectionKind.results => context.messages.tasksSearchResultsSection,
+    TaskBrowseSectionKind.relatedByMeaning =>
+      context.messages.searchRelatedByMeaningSection,
     TaskBrowseSectionKind.createdDate => materialLocalizations.formatMediumDate(
       sectionKey.date!,
     ),

@@ -51,7 +51,6 @@ class _FilterStateScenario {
   bool get hasLabel => structureSeed & 4 != 0;
   bool get hasProject => structureSeed & 8 != 0;
   bool get hasAgentFilter => structureSeed & 16 != 0;
-  bool get hasSearchMode => structureSeed & 32 != 0;
 
   /// 0 disables the priority section entirely.
   int get priorityConcreteCount => (structureSeed >> 6) % 4;
@@ -89,10 +88,6 @@ class _FilterStateScenario {
       for (var i = 0; i < 3; i++)
         DesignSystemTaskFilterOption(id: 'agent-$i', label: 'Agent $i'),
     ];
-    final searchOptions = [
-      for (var i = 0; i < 2; i++)
-        DesignSystemTaskFilterOption(id: 'mode-$i', label: 'Mode $i'),
-    ];
 
     return DesignSystemTaskFilterState(
       title: 'Filter',
@@ -124,13 +119,6 @@ class _FilterStateScenario {
           : const <DesignSystemTaskFilterOption>[],
       selectedAgentFilterId: hasAgentFilter
           ? 'agent-${(selectionSeed >> 16) % 3}'
-          : '',
-      searchModeLabel: hasSearchMode ? 'Search mode' : '',
-      searchModeOptions: hasSearchMode
-          ? searchOptions
-          : const <DesignSystemTaskFilterOption>[],
-      selectedSearchModeId: hasSearchMode
-          ? 'mode-${(selectionSeed >> 18) % 2}'
           : '',
       toggles: [
         for (var i = 0; i < toggleCount; i++)
@@ -302,31 +290,6 @@ void main() {
           1,
           reason: reason,
         );
-      }
-
-      // selectSearchMode ------------------------------------------------
-      if (!state.hasSearchMode) {
-        expect(
-          identical(state.selectSearchMode('mode-1'), state),
-          isTrue,
-          reason: reason,
-        );
-      } else {
-        expect(
-          identical(
-            state.selectSearchMode(state.selectedSearchModeId),
-            state,
-          ),
-          isTrue,
-          reason: reason,
-        );
-        final other = state.selectedSearchModeId == 'mode-0'
-            ? 'mode-1'
-            : 'mode-0';
-        final switched = state.selectSearchMode(other);
-        expect(switched.selectedSearchModeId, other, reason: reason);
-        // Search mode is not a filter: it never affects appliedCount.
-        expect(switched.appliedCount, state.appliedCount, reason: reason);
       }
 
       // toggleValue -----------------------------------------------------

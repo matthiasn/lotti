@@ -80,7 +80,6 @@ class _GatedJournalPageController extends FakeJournalPageController {
     TaskSortOption? sortOption,
     AgentAssignmentFilter? agentAssignmentFilter,
     TaskDueFilter? dueFilter,
-    SearchMode? searchMode,
     bool? showCreationDate,
     bool? showDueDate,
   }) async {
@@ -93,7 +92,6 @@ class _GatedJournalPageController extends FakeJournalPageController {
       sortOption: sortOption,
       agentAssignmentFilter: agentAssignmentFilter,
       dueFilter: dueFilter,
-      searchMode: searchMode,
       showCreationDate: showCreationDate,
       showDueDate: showDueDate,
     );

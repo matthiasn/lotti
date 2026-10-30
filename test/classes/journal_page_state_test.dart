@@ -94,11 +94,9 @@ void main() {
       expect(state.showTasks, isFalse);
       expect(state.pagingController, isNull);
       expect(state.sortOption, TaskSortOption.byPriority);
-      expect(state.searchMode, SearchMode.fullText);
       expect(state.agentAssignmentFilter, AgentAssignmentFilter.all);
-      expect(state.vectorSearchInFlight, isFalse);
-      expect(state.vectorSearchResultCount, 0);
       expect(state.vectorSearchDistances, isEmpty);
+      expect(state.relatedByMeaningIds, isEmpty);
     });
 
     test('copyWith replaces only the requested fields', () {
@@ -108,13 +106,13 @@ void main() {
         match: 'query',
         filters: {DisplayFilter.starredEntriesOnly},
         selectedTaskStatuses: {'OPEN'},
-        searchMode: SearchMode.vector,
+        relatedByMeaningIds: {'fish-census'},
       );
 
       expect(updated.match, 'query');
       expect(updated.filters, {DisplayFilter.starredEntriesOnly});
       expect(updated.selectedTaskStatuses, {'OPEN'});
-      expect(updated.searchMode, SearchMode.vector);
+      expect(updated.relatedByMeaningIds, {'fish-census'});
       // Untouched fields stay at their previous values.
       expect(updated.showTasks, state.showTasks);
       expect(updated.sortOption, state.sortOption);

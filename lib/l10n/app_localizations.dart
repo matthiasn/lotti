@@ -23201,17 +23201,11 @@ abstract class AppLocalizations {
   /// **'Search...'**
   String get searchHint;
 
-  /// No description provided for @searchModeFullText.
+  /// Heading over the search results found by meaning rather than by the words typed; they follow the exact matches.
   ///
   /// In en, this message translates to:
-  /// **'Full Text'**
-  String get searchModeFullText;
-
-  /// No description provided for @searchModeVector.
-  ///
-  /// In en, this message translates to:
-  /// **'Vector'**
-  String get searchModeVector;
+  /// **'Related by meaning'**
+  String get searchRelatedByMeaningSection;
 
   /// No description provided for @searchTasksHint.
   ///
@@ -29243,12 +29237,6 @@ abstract class AppLocalizations {
   /// **'Updated \'{name}\''**
   String tasksSavedFilterToastUpdated(String name);
 
-  /// No description provided for @tasksSearchModeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Search mode'**
-  String get tasksSearchModeLabel;
-
   /// Empty state of the task list when the search is a pasted pull request link that no task is linked to.
   ///
   /// In en, this message translates to:
@@ -29584,12 +29572,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlink Task'**
   String get unlinkTaskTitle;
-
-  /// No description provided for @vectorSearchTiming.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}'**
-  String vectorSearchTiming(int elapsed, int count);
 
   /// No description provided for @viewMenuTitle.
   ///

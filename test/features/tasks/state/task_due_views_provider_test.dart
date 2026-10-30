@@ -147,28 +147,60 @@ void main() {
     ]);
   });
 
-  test('a semantic search restricts to the vector result set', () async {
+  test('a search restricts to its matches and what meaning added', () async {
     final repo = _RecordingRepo(overdue: 1, dueToday: 0);
     final fts = MockFts5Db();
+    when(
+      () => anyMatchHits(fts, 'fish'),
+    ).thenAnswer((_) async => [taskHit('t1')]);
 
     await countsFor(
       const JournalPageState(
         match: 'fish',
         enableVectorSearch: true,
-        searchMode: SearchMode.vector,
-        vectorSearchDistances: {'v1': 0.1, 'v2': 0.3},
+        vectorSearchDistances: {'t1': 0.2, 'v1': 0.1, 'v2': 0.3},
+        relatedByMeaningIds: {'v1', 'v2'},
       ),
       repo,
       fts: fts,
     );
 
-    expect(repo.restrictions.first, {'v1', 'v2'});
-    verifyNever(() => anyMatchHits(fts));
+    expect(repo.restrictions.first, {'t1', 'v1', 'v2'});
   });
 
-  for (final mode in SearchMode.values) {
+  test('a search counts with only the scope clauses, as it lists', () async {
+    final repo = _RecordingRepo(overdue: 1, dueToday: 0);
+    final fts = MockFts5Db();
+    when(
+      () => anyMatchHits(fts, 'fish'),
+    ).thenAnswer((_) async => [taskHit('t1')]);
+
+    await countsFor(
+      const JournalPageState(
+        match: 'fish',
+        selectedCategoryIds: {'colony'},
+        selectedTaskStatuses: {'OPEN'},
+        selectedLabelIds: {'urgent'},
+        selectedPriorities: {'P1'},
+        selectedProjectIds: {'census'},
+        agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+      ),
+      repo,
+      fts: fts,
+    );
+
+    final counted = repo.asked.single;
+    expect(counted.selectedCategoryIds, {'colony'});
+    expect(counted.selectedTaskStatuses, {...allTaskStatuses});
+    expect(counted.selectedLabelIds, isEmpty);
+    expect(counted.selectedPriorities, isEmpty);
+    expect(counted.selectedProjectIds, isEmpty);
+    expect(counted.agentAssignmentFilter, AgentAssignmentFilter.all);
+  });
+
+  for (final meaning in [false, true]) {
     test('a pasted pull request link restricts to the tasks linked to it '
-        '(${mode.name} mode)', () async {
+        '(search by meaning ${meaning ? 'on' : 'off'})', () async {
       const link = 'https://github.com/matthiasn/lotti/pull/42';
       final repo = _RecordingRepo(overdue: 1, dueToday: 0);
       final fts = MockFts5Db();
@@ -179,9 +211,9 @@ void main() {
       await countsFor(
         JournalPageState(
           match: link,
-          enableVectorSearch: true,
-          searchMode: mode,
+          enableVectorSearch: meaning,
           vectorSearchDistances: const {'v1': 0.1},
+          relatedByMeaningIds: const {'v1'},
           selectedCategoryIds: const {'colony'},
           selectedTaskStatuses: const {'OPEN'},
           selectedLabelIds: const {'urgent'},

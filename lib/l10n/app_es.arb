@@ -5351,8 +5351,7 @@
   "saveShortcutTooltip": "Guardar — Ctrl+S (⌘S en Mac)",
   "saveSuccessful": "Guardado correctamente",
   "searchHint": "Buscar...",
-  "searchModeFullText": "Texto completo",
-  "searchModeVector": "Vector",
+  "searchRelatedByMeaningSection": "Relacionados por significado",
   "searchTasksHint": "Buscar tareas…",
   "selectButton": "Seleccionar",
   "selectColor": "Elegir un color",
@@ -6686,7 +6685,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Modo de búsqueda",
   "tasksSearchNoLinkedTasks": "No se encontraron tareas vinculadas a esta pull request.",
   "tasksSearchResultsSection": "Resultados",
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",
@@ -6743,17 +6741,6 @@
   "unlinkTaskConfirmNamed": "¿Desvincular «{title}»? La tarea no se elimina.",
   "unlinkTaskFailedMessage": "No se pudo desvincular la tarea. Inténtalo de nuevo.",
   "unlinkTaskTitle": "Desvincular tarea",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} resultado} other{{elapsed}ms, {count} resultados}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "Vista",
   "viewMenuZoomIn": "Ampliar",
   "viewMenuZoomOut": "Reducir",

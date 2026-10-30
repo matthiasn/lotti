@@ -293,6 +293,141 @@ void main() {
     });
   });
 
+  group('runQuery - a logbook search', () {
+    final newer = hMakeEntry(id: 'newer', createdAt: DateTime(2024, 3, 9));
+    final older = hMakeEntry(id: 'older', createdAt: DateTime(2024, 3, 2));
+    final near = hMakeEntry(id: 'near', createdAt: DateTime(2024, 3, 1));
+    final far = hMakeEntry(id: 'far', createdAt: DateTime(2024, 3, 8));
+
+    /// Answers each entry query with the [entries] it asks for, newest first,
+    /// as the database does.
+    void stubEntries(List<JournalEntity> entries) {
+      when(
+        () => mockJournalDb.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer((invocation) async {
+        final ids = invocation.namedArguments[#ids] as List<String>?;
+        return [
+          for (final entry in [
+            ...entries,
+          ]..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom)))
+            if (ids == null || ids.contains(entry.meta.id)) entry,
+        ];
+      });
+    }
+
+    List<Object?> askedIds() => verify(
+      () => mockJournalDb.getJournalEntities(
+        types: any(named: 'types'),
+        starredStatuses: any(named: 'starredStatuses'),
+        privateStatuses: [true],
+        flaggedStatuses: any(named: 'flaggedStatuses'),
+        ids: captureAny(named: 'ids'),
+        limit: any(named: 'limit'),
+        offset: any(named: 'offset'),
+        categoryIds: any(named: 'categoryIds'),
+      ),
+    ).captured;
+
+    test('is one page: the matches newest first, then what meaning found, '
+        'nearest first, through the same clauses', () async {
+      stubEntries([newer, older, near, far]);
+
+      final page = await runner.runQuery(
+        hDefaultParams(
+          query: 'krill',
+          filters: const {DisplayFilter.privateEntriesOnly},
+        ),
+        0,
+        fullTextMatches: {'older', 'newer'},
+        relatedByMeaning: const ['near', 'newer', 'far'],
+      );
+
+      expect(page.map((e) => e.meta.id), ['newer', 'older', 'near', 'far']);
+      // Both queries keep the page's clauses: here, private entries only.
+      expect(askedIds(), [
+        ['older', 'newer'],
+        ['near', 'far'],
+      ]);
+    });
+
+    test('with nothing related, asks only for the matches', () async {
+      stubEntries([newer, older]);
+
+      final page = await runner.runQuery(
+        hDefaultParams(
+          query: 'krill',
+          filters: const {DisplayFilter.privateEntriesOnly},
+        ),
+        0,
+        fullTextMatches: {'older', 'newer'},
+      );
+
+      expect(page.map((e) => e.meta.id), ['newer', 'older']);
+      expect(askedIds(), [
+        ['older', 'newer'],
+      ]);
+    });
+
+    test('with no word match, lists only what meaning found', () async {
+      stubEntries([near, far]);
+
+      final page = await runner.runQuery(
+        hDefaultParams(
+          query: 'krill',
+          filters: const {DisplayFilter.privateEntriesOnly},
+        ),
+        0,
+        fullTextMatches: const {},
+        relatedByMeaning: const ['far', 'near'],
+      );
+
+      expect(page.map((e) => e.meta.id), ['far', 'near']);
+      expect(askedIds(), [
+        ['far', 'near'],
+      ]);
+    });
+
+    test('a later page, or a search that found nothing, asks for nothing '
+        'and clears the cursor', () async {
+      stubEntries([newer]);
+      for (final (pageKey, matches) in [
+        (50, {'newer'}),
+        (0, <String>{}),
+      ]) {
+        var cleared = false;
+        final page = await runner.runQuery(
+          hDefaultParams(query: 'krill'),
+          pageKey,
+          fullTextMatches: matches,
+          setPostFilterNextRawOffset: (offset) => cleared = offset == null,
+        );
+        expect(page, isEmpty);
+        expect(cleared, isTrue);
+      }
+      verifyNever(
+        () => mockJournalDb.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      );
+    });
+  });
+
   // ADR 0139: a check-in is in the feed and a search result alike — the
   // exclusion ADR 0064 made is gone.
   group('runQuery - check-ins', () {

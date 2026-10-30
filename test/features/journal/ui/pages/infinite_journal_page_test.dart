@@ -20,7 +20,7 @@ import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/logbook_filter_modal.dart';
-import 'package:lotti/features/journal/ui/widgets/logbook_search_mode_row.dart';
+import 'package:lotti/features/journal/ui/widgets/logbook_related_by_meaning_header.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
@@ -779,26 +779,143 @@ void main() {
       expect(find.text('Filter journal'), findsOneWidget);
     });
 
-    // The vector-search row only renders when the config flag is on.
-    for (final enabled in [true, false]) {
+    // ADR 0149: what meaning found follows the word matches, under one
+    // heading over the first of them.
+    for (final related in [
+      {'related-1', 'related-2'},
+      <String>{},
+    ]) {
       testWidgets(
-        'search-mode row is ${enabled ? 'shown' : 'hidden'} when vector '
-        'search is ${enabled ? 'enabled' : 'disabled'}',
+        related.isEmpty
+            ? 'a search meaning added nothing to shows no heading'
+            : 'the heading sits above the first entry meaning found, once',
         (tester) async {
-          await pumpPage(
-            tester,
-            state: JournalPageState(
+          JournalEntity entry(String id) =>
+              testTextEntry.copyWith(meta: testTextEntry.meta.copyWith(id: id));
+          final pagingController =
+              PagingController<int, JournalEntity>(
+                  getNextPageKey: (_) => null,
+                  fetchPage: (_) async => const <JournalEntity>[],
+                )
+                ..value = PagingState<int, JournalEntity>(
+                  pages: [
+                    [entry('match'), entry('related-1'), entry('related-2')],
+                  ],
+                  keys: const [0],
+                  hasNextPage: false,
+                );
+          addTearDown(pagingController.dispose);
+          final fakeController = FakeJournalPageController(
+            JournalPageState(
               showTasks: false,
-              enableVectorSearch: enabled,
+              match: 'krill',
+              pagingController: pagingController,
+              relatedByMeaningIds: related,
             ),
           );
-          expect(
-            find.byType(LogbookSearchModeRow),
-            enabled ? findsOneWidget : findsNothing,
+
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              const InfiniteJournalPage(),
+              overrides: [
+                ...getItServiceOverrides(),
+                journalPageScopeProvider.overrideWithValue(false),
+                journalPageControllerProvider(
+                  false,
+                ).overrideWith(() => fakeController),
+              ],
+            ),
           );
+          await tester.pump();
+
+          Finder headingIn(String id) => find.descendant(
+            of: find.byKey(ValueKey(id)),
+            matching: find.byType(LogbookRelatedByMeaningHeader),
+          );
+          expect(
+            find.byType(LogbookRelatedByMeaningHeader),
+            related.isEmpty ? findsNothing : findsOneWidget,
+          );
+          expect(
+            headingIn('related-1'),
+            related.isEmpty ? findsNothing : findsOneWidget,
+          );
+          expect(headingIn('match'), findsNothing);
+          expect(headingIn('related-2'), findsNothing);
+          expect(find.byType(CardWrapperWidget), findsNWidgets(3));
+          if (related.isNotEmpty) {
+            expect(find.text('Related by meaning'), findsOneWidget);
+          }
         },
       );
     }
+
+    testWidgets('a heading that moves on a reload keeps the cards it passes', (
+      tester,
+    ) async {
+      JournalEntity entry(String id) =>
+          testTextEntry.copyWith(meta: testTextEntry.meta.copyWith(id: id));
+      final pagingController =
+          PagingController<int, JournalEntity>(
+              getNextPageKey: (_) => null,
+              fetchPage: (_) async => const <JournalEntity>[],
+            )
+            ..value = PagingState<int, JournalEntity>(
+              pages: [
+                [entry('match'), entry('edited'), entry('related')],
+              ],
+              keys: const [0],
+              hasNextPage: false,
+            );
+      addTearDown(pagingController.dispose);
+      final fakeController = FakeJournalPageController(
+        JournalPageState(
+          showTasks: false,
+          match: 'krill',
+          pagingController: pagingController,
+          relatedByMeaningIds: const {'edited', 'related'},
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            ...getItServiceOverrides(),
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      Element card(String id) => tester.element(
+        find.descendant(
+          of: find.byKey(ValueKey(id)),
+          matching: find.byType(CardWrapperWidget),
+        ),
+      );
+      Finder headingIn(String id) => find.descendant(
+        of: find.byKey(ValueKey(id)),
+        matching: find.byType(LogbookRelatedByMeaningHeader),
+      );
+      final editedCard = card('edited');
+      final relatedCard = card('related');
+      expect(headingIn('edited'), findsOneWidget);
+
+      // 'edited' now contains the words: the heading moves past it.
+      fakeController.updateState(
+        fakeController.state.copyWith(relatedByMeaningIds: const {'related'}),
+      );
+      await tester.pump();
+
+      expect(headingIn('edited'), findsNothing);
+      expect(headingIn('related'), findsOneWidget);
+      expect(card('edited'), same(editedCard));
+      expect(card('related'), same(relatedCard));
+    });
 
     testWidgets('renders paged list branch when pagingController is present', (
       tester,

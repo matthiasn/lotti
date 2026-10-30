@@ -9102,8 +9102,10 @@
   "saveShortcutTooltip": "Save — Ctrl+S (⌘S on Mac)",
   "saveSuccessful": "Saved successfully",
   "searchHint": "Search...",
-  "searchModeFullText": "Full Text",
-  "searchModeVector": "Vector",
+  "searchRelatedByMeaningSection": "Related by meaning",
+  "@searchRelatedByMeaningSection": {
+    "description": "Heading over the search results found by meaning rather than by the words typed; they follow the exact matches."
+  },
   "searchTasksHint": "Search tasks…",
   "selectButton": "Select",
   "selectColor": "Select a color",
@@ -10913,7 +10915,6 @@
       }
     }
   },
-  "tasksSearchModeLabel": "Search mode",
   "tasksSearchNoLinkedTasks": "No linked tasks found for this pull request.",
   "@tasksSearchNoLinkedTasks": {
     "description": "Empty state of the task list when the search is a pasted pull request link that no task is linked to."
@@ -11056,17 +11057,6 @@
   },
   "unlinkTaskFailedMessage": "Couldn't unlink the task. Please try again.",
   "unlinkTaskTitle": "Unlink Task",
-  "vectorSearchTiming": "{count, plural, =1{{elapsed}ms, {count} result} other{{elapsed}ms, {count} results}}",
-  "@vectorSearchTiming": {
-    "placeholders": {
-      "elapsed": {
-        "type": "int"
-      },
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "viewMenuTitle": "View",
   "viewMenuZoomIn": "Zoom In",
   "viewMenuZoomOut": "Zoom Out",
