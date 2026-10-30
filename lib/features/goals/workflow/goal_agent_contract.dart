@@ -753,8 +753,9 @@ final List<AgentToolDefinition> goalAgentTools = [
         'FACTS already answer, '
         'never about numbers or targets, never twice. They answer in the '
         'chat when they choose. Optionally raise a banner pointing at the '
-        'question; the app writes its words — a question is waiting — and '
-        'you choose only how it looks.',
+        'question, in your words and theirs: it shows them only while the '
+        'user shows private entries, and a plain "a question is waiting" '
+        'otherwise.',
     parameters: {
       'type': 'object',
       'additionalProperties': false,
@@ -770,11 +771,16 @@ final List<AgentToolDefinition> goalAgentTools = [
           'additionalProperties': false,
           'description': 'Optional. Omit unless the question deserves one.',
           'properties': {
+            'headline': {
+              'type': 'string',
+              'description': 'The question, or what it is about, in a line.',
+            },
+            'tagline': {'type': 'string'},
             'tone': {'type': 'string', 'enum': goalQuestionBannerToneNames},
             'animation': {'type': 'string', 'enum': goalBannerAnimationNames},
             'accent': {'type': 'string', 'enum': goalBannerAccentNames},
           },
-          'required': ['tone', 'animation'],
+          'required': ['headline', 'tone', 'animation'],
         },
       },
       'required': ['question'],

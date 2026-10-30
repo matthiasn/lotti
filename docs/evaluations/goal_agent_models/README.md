@@ -991,7 +991,8 @@ samples 2–3), mean latency 6–12 s per case.
 
 ADR 0146 gave an automatic wake `ask_goal_question`, offered only when
 `userVoice` holds check-ins the report has not answered. P22
-(`journal_question_keeps_banner_private`) offers it after check-ins that
+(`journal_question_follows_up`, then `journal_question_keeps_banner_private`)
+offers it after check-ins that
 name an elder, a physio and a knee; the question may use them, its banner
 may not. Tier 1, the six journal scenarios, three samples each.
 
@@ -1004,10 +1005,10 @@ may not. Tier 1, the six journal scenarios, three samples each.
 should wait for the physio — in the user's terms, and glm-5.3 kept all six
 banners generic ("A question about your week"). glm-5.2 leaked once: a
 banner headed "A question about your Saturday plan", which the grader rightly
-failed. Review of this PR drew the conclusion: a question banner's words are
-now the app's own localised copy, and the model chooses only how it looks —
-so P22's banner check can no longer fail in production, whatever the model
-writes.
+failed. Review first made the banner's words fixed copy; ADR 0147 then gave
+them back to the model, shown only while private entries are, with the
+generic copy otherwise. P22 no longer checks the banner for private terms —
+it checks that the question follows up what was said.
 
 **The quiet wake asked anyway.** Restraint scenarios offer every tool, and
 on the first run glm-5.3 used `ask_goal_question` on a wake with nothing new

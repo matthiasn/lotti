@@ -2,6 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-10-30
+- Amended by: [ADR 0147](./0147-a-question-banner-names-its-subject-behind-the-private-switch.md)
+  (decision 2: the banner's words)
 - Builds on: [ADR 0055](./0055-banner-nudge-attention-channel.md) (banners),
   [ADR 0056](./0056-need-to-know-visual-brief-boundary.md) (leakage),
   [ADR 0057](./0057-decade-scale-agent-memory.md) (memory),

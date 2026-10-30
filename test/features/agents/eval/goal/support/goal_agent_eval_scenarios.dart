@@ -53,7 +53,6 @@ class GoalAgentEvalScenario {
     this.forbiddenAssistantContentClaims = const [],
     this.maxToolCallCounts = const {},
     this.memoryHits = const [],
-    this.forbiddenQuestionBannerTerms = const [],
   });
 
   final String id;
@@ -180,11 +179,6 @@ class GoalAgentEvalScenario {
 
   /// What `search_goal_memory` finds on this wake (production format).
   final List<MemoryLogHit> memoryHits;
-
-  /// Terms that must never appear in an `ask_goal_question` banner. The
-  /// question itself may name them — it stays in the goal chat — but the
-  /// banner is seen outside the goal (ADR 0146, ADR 0056's inventory rule).
-  final List<String> forbiddenQuestionBannerTerms;
 
   /// The no-op discriminator: the model must end the wake without any tool
   /// call at all.

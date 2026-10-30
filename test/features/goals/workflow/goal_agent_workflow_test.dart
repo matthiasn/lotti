@@ -2601,7 +2601,11 @@ void main() {
             toolCalls: [
               toolCall(GoalAgentToolNames.askGoalQuestion, {
                 'question': 'Did you get to scout the ridge on Saturday?',
-                'banner': {'tone': 'encourage', 'animation': 'steady'},
+                'banner': {
+                  'headline': 'Did you make the ridge?',
+                  'tone': 'encourage',
+                  'animation': 'steady',
+                },
               }),
             ],
             manager: conversationManager,

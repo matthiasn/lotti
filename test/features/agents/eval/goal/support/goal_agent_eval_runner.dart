@@ -607,17 +607,6 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
       return GoalAgentEvalFailureCategory.missingRequiredToolArguments;
     }
   }
-  for (final call in toolCalls) {
-    if (call.name != GoalAgentToolNames.askGoalQuestion) continue;
-    final banner = call.jsonObjectArguments?['banner'];
-    if (banner is! Map) continue;
-    final copy = jsonEncode(banner).toLowerCase();
-    if (scenario.forbiddenQuestionBannerTerms.any(
-      (term) => copy.contains(term.toLowerCase()),
-    )) {
-      return GoalAgentEvalFailureCategory.forbiddenToolArguments;
-    }
-  }
   for (final entry in scenario.forbiddenToolArgumentTerms.entries) {
     final arguments = _argumentsFor(toolCalls, entry.key).toLowerCase();
     if (entry.value.any((term) => arguments.contains(term.toLowerCase()))) {

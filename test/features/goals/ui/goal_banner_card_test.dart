@@ -2,13 +2,16 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/nudge_models.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/model/nudge_entity_view.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,26 +23,29 @@ import '../../../widget_test_utils.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  NudgeEntityView nudge({List<NudgeRating> ratings = const []}) =>
-      NudgeEntityView.of(
-        AgentDomainEntity.goalNudge(
-          id: 'ad-1',
-          agentId: 'goal-1',
-          status: NudgeStatus.active,
-          brief: const NudgeBrief(
-            headline: 'Your shoes filed a missing person report.',
-            tagline: 'Six days of quiet soles.',
-            cta: 'Lace up now',
-            tone: NudgeTone.nudge,
-            animation: NudgeBannerAnimation.steady,
-          ),
-          briefDigest: 'd',
-          createdAt: DateTime(2026, 8, 9),
-          updatedAt: DateTime(2026, 8, 9),
-          vectorClock: null,
-          ratings: ratings,
-        ),
-      )!;
+  NudgeEntityView nudge({
+    List<NudgeRating> ratings = const [],
+    Map<String, String> provenance = const {},
+  }) => NudgeEntityView.of(
+    AgentDomainEntity.goalNudge(
+      id: 'ad-1',
+      agentId: 'goal-1',
+      status: NudgeStatus.active,
+      brief: const NudgeBrief(
+        headline: 'Your shoes filed a missing person report.',
+        tagline: 'Six days of quiet soles.',
+        cta: 'Lace up now',
+        tone: NudgeTone.nudge,
+        animation: NudgeBannerAnimation.steady,
+      ),
+      briefDigest: 'd',
+      createdAt: DateTime(2026, 8, 9),
+      updatedAt: DateTime(2026, 8, 9),
+      vectorClock: null,
+      ratings: ratings,
+      provenance: provenance,
+    ),
+  )!;
 
   late MockNudgeInteractions interactions;
 
@@ -94,6 +100,51 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  for (final showPrivate in [true, false]) {
+    testWidgets('a banner shows its private words only while private entries '
+        'are shown (showPrivate: $showPrivate)', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: GoalBannerCard(
+              entry: (
+                nudge: nudge(
+                  provenance: const {
+                    nudgePrivateHeadlineKey: 'Did the physio clear the ridge?',
+                    nudgePrivateTaglineKey: 'You asked before Saturday.',
+                  },
+                ),
+                subjectTitle: 'Move more',
+                kind: NudgeBannerKind.goal,
+                tapRoute: '/goals/chat/goal-1',
+              ),
+            ),
+          ),
+          overrides: [
+            ...overrides(),
+            configFlagProvider.overrideWith(
+              (ref, flag) => Stream.value(flag == privateFlag && showPrivate),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Did the physio clear the ridge?'),
+        showPrivate ? findsOneWidget : findsNothing,
+      );
+      expect(
+        find.text('You asked before Saturday.'),
+        showPrivate ? findsOneWidget : findsNothing,
+      );
+      expect(
+        find.text('Your shoes filed a missing person report.'),
+        showPrivate ? findsNothing : findsOneWidget,
+      );
+    });
   }
 
   testWidgets('the quiet Snooze action reveals contextual durations', (

@@ -170,7 +170,8 @@ const goalAgentPolicyMatrix = [
         'ask_goal_question offered after new check-ins with a commitment and '
         'private detail (names, health)',
     expected:
-        'report as usual; at most ONE question, following up what was said; '
-        'a banner with it carries no private detail (ADR 0146)',
+        'report as usual; at most ONE question, following up what was said '
+        '(ADR 0146); its banner may name it, shown only while private '
+        'entries are (ADR 0147)',
   ),
 ];

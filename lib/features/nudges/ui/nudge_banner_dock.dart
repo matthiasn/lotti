@@ -1,8 +1,10 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/nudges/logic/nudge_banner_snooze.dart';
+import 'package:lotti/features/nudges/logic/nudge_private_copy.dart';
 import 'package:lotti/features/nudges/model/nudge_banner_entry.dart';
 import 'package:lotti/features/nudges/service/nudge_interactions.dart';
 import 'package:lotti/features/nudges/state/nudge_banner_providers.dart';
@@ -14,6 +16,7 @@ import 'package:lotti/features/nudges/ui/nudge_banner_quiet_actions.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_style.dart';
 import 'package:lotti/features/nudges/ui/nudge_banner_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// How long one banner holds the dock before the rotation advances — long
@@ -727,7 +730,10 @@ class _DockTenant extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final brief = entry.nudge.brief;
+    final brief = nudgeDisplayBrief(
+      entry.nudge,
+      showPrivate: ref.watch(configFlagProvider(privateFlag)).value ?? false,
+    );
     final ratingDue = NudgeInteractions.ratingDue(entry.nudge);
     void open() => openNudgeBanner(context, ref, entry);
 

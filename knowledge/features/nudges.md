@@ -36,6 +36,9 @@ sources:
     resource: ../../docs/adr/0055-banner-nudge-attention-channel.md
     title: ADR 0055 — The banner nudge attention channel
     last_modified: 2026-08-08
+  - id: private-copy
+    resource: ../../lib/features/nudges/logic/nudge_private_copy.dart
+    title: nudgeDisplayBrief — private banner words behind the private flag
   - id: adr-0060
     resource: ../../docs/adr/0060-banner-dock-as-app-shell-structural-band.md
     title: ADR 0060 — The banner dock as an app-shell structural band
@@ -400,6 +403,20 @@ Every ordering used in that merge is a *total* order over all distinguishing
 fields. Replicas build these sets local-first, so a comparator tie between two
 distinct records would let them serialize differently on two devices and
 diverge permanently under equal-clock sync.
+
+# Private words
+
+A banner is seen outside its subject, so its stored `NudgeBrief` holds words
+safe anywhere. Words drawn from the user's own entries ride beside it in
+provenance under `privateHeadline` and `privateTagline`, and
+`nudgeDisplayBrief` (`logic/nudge_private_copy.dart`) shows them only while the
+`private` config flag ("show private entries") is on (ADR 0147). Both render
+sites — the goal banner card and the dock — call it; anything else that reads
+the brief, from history to an OS alert, shows the safe words.
+
+The swap happens at render time and never on the entity: interactions write
+the view's entity back, and a swapped brief would persist the private words
+into it.
 
 # Gotchas
 

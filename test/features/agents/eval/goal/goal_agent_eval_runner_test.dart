@@ -200,46 +200,6 @@ void main() {
       );
     });
 
-    test('a question may name what the user said; its banner, seen outside '
-        'the goal, may not', () {
-      GoalAgentEvalFailureCategory classify(Map<String, Object?> question) =>
-          classifyGoalAgentResult(
-            scenario: scenarioById('journal_question_keeps_banner_private'),
-            toolCalls: [
-              call(
-                GoalAgentToolNames.updateGoalReport,
-                jsonEncode({
-                  'status': 'onTrack',
-                  'oneLiner': 'Seven evenings of writing.',
-                  'tldr': 'The move is the thread.',
-                }),
-              ),
-              call(GoalAgentToolNames.askGoalQuestion, jsonEncode(question)),
-            ],
-            assistantContent: '',
-          );
-
-      const banner = {
-        'headline': 'A question about your week',
-        'tone': 'encourage',
-        'animation': 'steady',
-      };
-      expect(
-        classify({
-          'question': 'Will you scout the ridge with Elder Moss on Saturday?',
-          'banner': banner,
-        }),
-        GoalAgentEvalFailureCategory.none,
-      );
-      expect(
-        classify({
-          'question': 'How did it go?',
-          'banner': {...banner, 'tagline': 'Ask Elder Moss about it'},
-        }),
-        GoalAgentEvalFailureCategory.forbiddenToolArguments,
-      );
-    });
-
     test('a remembered fact is held to the parser production runs', () {
       GoalAgentEvalFailureCategory classifyFact(String arguments) =>
           classifyGoalAgentResult(
