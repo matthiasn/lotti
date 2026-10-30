@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 
 import '../../../test_helper.dart';
+import '../test_data/entity_factories.dart';
 import 'ai_summary_card/test_bench.dart';
 
 /// Root-shell routing of [AiSummaryCard]: the four `taskAgentProvider`
@@ -87,5 +90,21 @@ void main() {
 
     expect(find.text('AI summary'), findsOneWidget);
     expect(find.text('Assign Agent'), findsNothing);
+  });
+
+  testWidgets('the status row follows the disclosure links with no gap of '
+      'its own: their tap target already leaves the air the prose above them '
+      'has', (tester) async {
+    await tester.pumpWidget(
+      AgentTestBench(
+        report: makeTestReport(tldr: 'Summary line.', content: 'Full report.'),
+      ).build(),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final body = tester.getRect(find.byType(TldrBody));
+    final status = tester.getRect(find.byType(AgentAutomationRow));
+    expect(status.top, body.bottom);
   });
 }

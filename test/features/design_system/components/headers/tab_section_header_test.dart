@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/headers/tab_section_header.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -88,6 +89,42 @@ void main() {
       await pump(tester, header: buildHeader());
       expect(find.byIcon(LottiIcons.notification), findsNothing);
       expect(squares.evaluate().length, withTrailing);
+    });
+
+    testWidgets('the trailing slots reach into the gutter by the header bleed '
+        'and the funnel slot meets the search field, so the glyphs — not '
+        'their blank targets — set the edge', (tester) async {
+      const trailingKey = Key('trailing');
+      const width = 400.0;
+      await pump(
+        tester,
+        size: const Size(width, 800),
+        header: buildHeader(titleTrailing: const SizedBox(key: trailingKey)),
+      );
+      final tokens = tester.element(find.byType(TabSectionHeader)).designTokens;
+      final squares = find.byWidgetPredicate(
+        (widget) =>
+            widget is SizedBox &&
+            widget.width == TapTargets.minimum &&
+            widget.height == TapTargets.minimum,
+      );
+      final bellSlot = find.ancestor(
+        of: find.byKey(trailingKey),
+        matching: squares,
+      );
+      final funnelSlot = find.ancestor(
+        of: find.byIcon(LottiIcons.filter),
+        matching: squares,
+      );
+      final edge =
+          width - (tokens.spacing.step5 - tabHeaderTrailingBleed(tokens));
+
+      expect(tester.getTopRight(bellSlot.first).dx, edge);
+      expect(tester.getTopRight(funnelSlot.first).dx, edge);
+      expect(
+        tester.getTopRight(find.byType(DesignSystemSearch)).dx,
+        tester.getTopLeft(funnelSlot.first).dx,
+      );
     });
 
     testWidgets('fires onSearchChanged as the user types', (tester) async {

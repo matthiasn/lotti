@@ -13,6 +13,8 @@ void main() {
     WidgetTester tester,
     Size size, {
     double? paneWidth,
+    double endBleed = 0,
+    TextDirection direction = TextDirection.ltr,
   }) async {
     setTestSurfaceSize(tester, size);
     late BuildContext captured;
@@ -27,11 +29,15 @@ void main() {
                 captured = context;
                 // Loose constraints inside the column: the child says how
                 // wide it wants to be, and this one wants the whole measure.
-                return const DetailContentWidth(
-                  child: SizedBox(
-                    key: ValueKey('content'),
-                    width: double.infinity,
-                    height: 10,
+                return Directionality(
+                  textDirection: direction,
+                  child: DetailContentWidth(
+                    endBleed: endBleed,
+                    child: const SizedBox(
+                      key: ValueKey('content'),
+                      width: double.infinity,
+                      height: 10,
+                    ),
                   ),
                 );
               },
@@ -149,6 +155,33 @@ void main() {
       final content = find.byKey(const ValueKey('content'));
       expect(tester.getSize(content).width, 848 - 2 * gutter);
       expect(tester.getTopLeft(content).dx, gutter);
+    });
+
+    testWidgets('endBleed gives the trailing gutter away and keeps the '
+        'leading one, so a row of icon slots ends on its glyphs', (
+      tester,
+    ) async {
+      final context = await pump(tester, const Size(400, 800), endBleed: 12);
+
+      final gutter = context.designTokens.spacing.step5;
+      final content = find.byKey(const ValueKey('content'));
+      expect(tester.getTopLeft(content).dx, gutter);
+      expect(tester.getTopRight(content).dx, 400 - (gutter - 12));
+    });
+
+    testWidgets('endBleed follows the reading direction: in RTL it opens the '
+        'left gutter', (tester) async {
+      final context = await pump(
+        tester,
+        const Size(400, 800),
+        endBleed: 12,
+        direction: TextDirection.rtl,
+      );
+
+      final gutter = context.designTokens.spacing.step5;
+      final content = find.byKey(const ValueKey('content'));
+      expect(tester.getTopLeft(content).dx, gutter - 12);
+      expect(tester.getTopRight(content).dx, 400 - gutter);
     });
   });
 }

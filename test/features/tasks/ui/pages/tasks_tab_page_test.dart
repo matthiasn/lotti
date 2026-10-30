@@ -2855,6 +2855,26 @@ void main() {
     );
 
     testWidgets(
+      'stands a header bleed into the gutter while every card keeps one edge',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(state: state()));
+        await tester.pump();
+
+        final tokens = tester.element(find.byKey(toggleKey)).designTokens;
+        final cards = find.byType(TaskBrowseRowShell);
+        expect(cards, findsNWidgets(2));
+        final cardEdge = tester.getRect(cards.first).right;
+        // The first item is laid out wider to host the toggle; its card
+        // hands that back, so it does not stick out past the one below.
+        expect(tester.getRect(cards.last).right, cardEdge);
+        expect(
+          tester.getRect(find.byKey(toggleKey)).right,
+          cardEdge + tabHeaderTrailingBleed(tokens),
+        );
+      },
+    );
+
+    testWidgets(
       'tapping switches the rows to title-only compact mode and persists it',
       (tester) async {
         await tester.pumpWidget(buildSubject(state: state()));

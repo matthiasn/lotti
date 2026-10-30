@@ -705,6 +705,14 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                       return KeyedSubtree(
                                         key: ValueKey(item.meta.id),
                                         child: DetailContentWidth(
+                                          // Room for the density toggle in
+                                          // the gutter; the item insets its
+                                          // card back by the same amount.
+                                          endBleed: entryIndex == 0
+                                              ? tabHeaderTrailingBleed(
+                                                  context.designTokens,
+                                                )
+                                              : 0,
                                           child: TaskBrowseListItem(
                                             entry: entry,
                                             searchHit: state

@@ -206,9 +206,11 @@ class _SectionHeader extends StatelessWidget {
     final actionRadius = BorderRadius.circular(tokens.radii.s);
 
     return Padding(
+      // step3 plus the action's own step2 pad puts the glyph's trailing edge
+      // on the rows' step4 inset, over the counts.
       padding: EdgeInsetsDirectional.only(
         start: tokens.spacing.step4,
-        end: tokens.spacing.step1,
+        end: tokens.spacing.step3,
       ),
       child: Row(
         children: [
@@ -316,11 +318,11 @@ class _FilterRow extends StatelessWidget {
                       ),
                     ),
                   Padding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: tokens.spacing.step4,
-                      top: tokens.spacing.step2,
-                      end: tokens.spacing.step3,
-                      bottom: tokens.spacing.step2,
+                    // Even on both sides, so the selected row's highlight
+                    // frames its content symmetrically.
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step4,
+                      vertical: tokens.spacing.step2,
                     ),
                     child: Row(
                       children: [
@@ -436,11 +438,9 @@ class _DisclosureRow extends StatelessWidget {
             hoverColor: tokens.colors.surface.hover,
             focusColor: tokens.colors.surface.focusPressed,
             child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                start: tokens.spacing.step4,
-                top: tokens.spacing.step2,
-                end: tokens.spacing.step3,
-                bottom: tokens.spacing.step2,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step2,
               ),
               child: Row(
                 children: [

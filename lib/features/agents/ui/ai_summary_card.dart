@@ -713,14 +713,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     // The freshness word sits with the summary it describes, on the same
     // leading edge. The dense trigger is a 24-high box and the word beside it
     // bare text, so the row brings no air of its own: the card pays the
-    // bottom inset, or the status sits four pixels off its edge. The step2
-    // above it makes the gap before the row larger than the one before the
-    // links, so the links group with the prose they open and the status
-    // reads as the card's own band.
+    // bottom inset, or the status sits four pixels off its edge. Nothing
+    // above it: the links' tap target already leaves the same air below
+    // their words as above them, so prose, links and status keep one rhythm.
     final footer = Padding(
       padding: EdgeInsets.only(
         left: tokens.spacing.cardPadding,
-        top: tokens.spacing.step2,
         right: tokens.spacing.cardPadding,
         bottom: tokens.spacing.step4,
       ),

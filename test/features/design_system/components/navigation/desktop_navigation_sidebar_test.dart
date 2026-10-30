@@ -365,6 +365,35 @@ void main() {
       }
     });
 
+    testWidgets('the logo and every destination glyph start on one edge, a '
+        'step3 gutter plus a step4 row inset in from the rail', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 1,
+            onDestinationSelected: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tokens = tester
+          .element(find.byType(DesktopNavigationSidebar))
+          .designTokens;
+      final rail = tester.getRect(find.byType(DesktopNavigationSidebar));
+      final edge = rail.left + tokens.spacing.step3 + tokens.spacing.step4;
+
+      expect(tester.getTopLeft(find.byType(DesignSystemBrandLogo)).dx, edge);
+      for (final icon in [
+        LottiIcons.book,
+        LottiIconsFilled.circle,
+        LottiIcons.repeat,
+      ]) {
+        expect(tester.getTopLeft(find.byIcon(icon)).dx, edge);
+      }
+    });
+
     testWidgets('sidebar has default width of 320', (tester) async {
       await tester.pumpWidget(
         wrap(
@@ -584,8 +613,8 @@ void main() {
       testWidgets(
         'a trailing group wider than the row is clamped, not overflowed',
         (tester) async {
-          // 200 px rail − 2×16 gutter − 2×16 row padding − 32 icon − 8 gap
-          // leaves 96 px. A trailing slot that asks for more than the row has
+          // 200 px rail − 2×8 gutter − 2×12 row padding − 32 icon − 8 gap
+          // leaves 120 px. A trailing slot that asks for more than the row has
           // is where the label has already given up everything it had, so the
           // only remaining choice is to clamp it or to overflow.
           await tester.pumpWidget(
@@ -605,7 +634,7 @@ void main() {
             isNull,
             reason: 'An over-wide trailing group must not overflow the rail',
           );
-          expect(tester.getSize(find.byKey(const Key('count'))).width, 96);
+          expect(tester.getSize(find.byKey(const Key('count'))).width, 120);
         },
       );
 
@@ -615,13 +644,17 @@ void main() {
         await tester.pumpWidget(
           narrowSidebar(
             width: 200,
-            trailing: const SizedBox(width: 96, height: 20, key: Key('count')),
+            trailing: const SizedBox(
+              width: 120,
+              height: 20,
+              key: Key('count'),
+            ),
           ),
         );
         await tester.pump();
 
         expect(tester.takeException(), isNull);
-        expect(tester.getSize(find.byKey(const Key('count'))).width, 96);
+        expect(tester.getSize(find.byKey(const Key('count'))).width, 120);
       });
 
       testWidgets('icon and label share a vertical centre at 1.0 scale', (
@@ -1112,9 +1145,9 @@ void main() {
       expect(
         scroll.padding,
         EdgeInsets.fromLTRB(
-          tokens.spacing.step5,
+          tokens.spacing.step3,
           0,
-          tokens.spacing.step5,
+          tokens.spacing.step3,
           tokens.spacing.step7,
         ),
       );
@@ -1142,7 +1175,7 @@ void main() {
         tester
             .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
             .padding,
-        EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+        EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
       );
     });
 
@@ -1180,8 +1213,8 @@ void main() {
         expect(scrollbar.right, sidebar.right);
         // …while the rows stop a gutter short of it, which is where a count
         // sits — so the thumb cannot cover one.
-        expect(sidebar.right - row.right, tokens.spacing.step5);
-        expect(row.left - sidebar.left, tokens.spacing.step5);
+        expect(sidebar.right - row.right, tokens.spacing.step3);
+        expect(row.left - sidebar.left, tokens.spacing.step3);
       },
     );
 

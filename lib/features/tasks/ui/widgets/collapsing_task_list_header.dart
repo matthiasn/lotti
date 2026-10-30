@@ -344,6 +344,9 @@ class TaskListCompactHeaderBar extends StatelessWidget {
       color: tokens.colors.background.level02,
       child: DetailContentWidth(
         key: CollapsingTaskListHeaderKeys.compactBar,
+        // The expanded header's bleed, so the glyphs hold their edge as the
+        // header collapses.
+        endBleed: tabHeaderTrailingBleed(tokens),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
           child: Row(
