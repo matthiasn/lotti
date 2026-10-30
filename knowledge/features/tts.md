@@ -19,7 +19,7 @@ sources:
   - id: voxtral-service
     resource: ../../lib/features/tts/cloud/voxtral_tts_service.dart
     title: Voxtral speech and voice-catalog client
-    last_modified: 2026-10-28
+    last_modified: 2026-10-30
   - id: voice-catalog
     resource: ../../lib/features/tts/cloud/voxtral_voice_catalog.dart
     title: Voice catalog and per-language voice resolution
@@ -87,13 +87,22 @@ supported **or** a cloud route exists.
 `VoxtralTtsService` is the client: `synthesize` posts `model`, `input`,
 `voice_id` and `response_format: wav` to the provider's `audio/speech` and
 decodes the base64 `audio_data`; `fetchVoices` pages `audio/voices` with
-`type=all`. The provider's base URL and API key come from its inference
-provider config on every call. Failures are typed (`VoxtralTtsFailure`:
-network, timeout, unauthorized, rate limited with `Retry-After`, rejected,
-server, invalid response, no voice) with `isRetryable`. Its logs carry text
-lengths, voice and model ids and byte counts — never the text, the key or a
-response body. It refuses redirects, which would carry the bearer token to
-another host, and plain HTTP anywhere but loopback.
+`type=all` at `limit=100` — the API's maximum, a larger page is a 422. The
+provider's base URL and API key come from its inference provider config on
+every call. Failures are typed (`VoxtralTtsFailure`: network, timeout,
+unauthorized, rate limited with `Retry-After`, rejected, server, invalid
+response, no voice) with `isRetryable`. A non-200 answer also keeps the
+server's own reason (`apiError`: its `message`, or each validation detail as
+`loc: msg`, so a 422 names the field) and its request id. Every failure is
+logged with the call it ended — endpoint, text length, voice, model, format
+or catalog page. Its logs carry text lengths, voice and model ids and byte
+counts — never the text, the key, or the raw response body: a validation
+detail's `input` is dropped because it echoes the rejected value, and a body
+that is not JSON is not kept at all. Failures the client does not log itself —
+a missing voice, the on-device engine, the player — are logged by
+`TtsPlaybackController` before it turns to the error state the toast reports.
+It refuses redirects, which would carry the bearer token to another host, and
+plain HTTP anywhere but loopback.
 
 `CloudSpeechSynthesizer` turns a route and a text into the same temporary WAV
 the on-device engine writes, so everything after synthesis — playback,

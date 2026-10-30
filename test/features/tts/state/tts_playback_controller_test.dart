@@ -116,8 +116,26 @@ void main() {
     verify(file.delete).called(1);
   });
 
+  Future<MockDomainLogger> mockLogger() async {
+    final logger = MockDomainLogger();
+    await getIt.unregister<DomainLogger>();
+    getIt.registerSingleton<DomainLogger>(logger);
+    return logger;
+  }
+
+  List<String?> speakErrorMessages(MockDomainLogger logger) => verify(
+    () => logger.error(
+      LogDomain.speech,
+      any(),
+      subDomain: 'ttsPlayback.speak',
+      stackTrace: any(named: 'stackTrace'),
+      message: captureAny(named: 'message'),
+    ),
+  ).captured.cast<String?>();
+
   test('a failed cloud synthesis ends in an error for its source, without '
-      'playback', () async {
+      'playback, and a missing voice is logged with its route', () async {
+    final logger = await mockLogger();
     final cloud = FakeCloudSpeechSynthesizer(
       error: const VoxtralTtsException(
         VoxtralTtsFailure.noVoice,
@@ -137,6 +155,54 @@ void main() {
     expect(state.sourceId, 'task-1');
     expect(state.errorMessage, contains('noVoice'));
     expect(player.playCount, 0);
+    expect(speakErrorMessages(logger), [
+      'Cloud speech failed (${cloudRoute.cacheKey})',
+    ]);
+  });
+
+  test('a rejected cloud request is not logged twice: the Voxtral client '
+      'already logged it with the server detail', () async {
+    final logger = await mockLogger();
+    final h = harness(
+      cloud: FakeCloudSpeechSynthesizer(
+        error: const VoxtralTtsException(
+          VoxtralTtsFailure.rejected,
+          'Request rejected by the Mistral API',
+          statusCode: 422,
+        ),
+      ),
+    );
+
+    await controllerOf(
+      h.container,
+    ).speak(sourceId: 'task-1', text: 'Hallo', cloudRoute: cloudRoute);
+
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).status,
+      TtsPlaybackStatus.error,
+    );
+    verifyNever(
+      () => logger.error(
+        any(),
+        any(),
+        subDomain: 'ttsPlayback.speak',
+        stackTrace: any(named: 'stackTrace'),
+        message: any(named: 'message'),
+      ),
+    );
+  });
+
+  test('a failed on-device synthesis is logged, not only toasted', () async {
+    final logger = await mockLogger();
+    final h = harness(engine: FakeTtsEngine(throwOnSynthesize: true));
+
+    await controllerOf(h.container).speak(sourceId: 'task-1', text: 'Hello');
+
+    expect(
+      h.container.read(ttsPlaybackControllerProvider).status,
+      TtsPlaybackStatus.error,
+    );
+    expect(speakErrorMessages(logger), ['On-device speech failed']);
   });
 
   test('a stop while the voice catalog loads keeps the text on the '
