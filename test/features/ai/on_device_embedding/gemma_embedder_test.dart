@@ -143,6 +143,16 @@ void main() {
 
       await expectFailure();
     });
+
+    for (final value in [double.nan, double.infinity, 1e39]) {
+      test('a non-finite value ($value)', () async {
+        when(
+          pooled.asFlattenedList,
+        ).thenAnswer((_) async => pooledValues([1, value]));
+
+        await expectFailure();
+      });
+    }
   });
 
   test('disposing the embedder closes its session', () async {

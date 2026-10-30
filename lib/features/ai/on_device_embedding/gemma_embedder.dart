@@ -122,10 +122,17 @@ class GemmaEmbedder {
     final vector = Float32List(values.length);
     var squares = 0.0;
     for (var i = 0; i < values.length; i++) {
-      final value = (values[i] as num).toDouble();
-      vector[i] = value;
+      // Read back as stored, so a value past float32's range counts as the
+      // infinity it became.
+      vector[i] = (values[i] as num).toDouble();
+      final value = vector[i];
+      if (!value.isFinite) {
+        throw StateError('the model gave a non-finite value');
+      }
       squares += value * value;
     }
+    // Finite float32 values cannot overflow a double's sum of squares, so the
+    // length is finite; only zero is left to refuse.
     final norm = sqrt(squares);
     if (norm == 0) throw StateError('the model gave a zero vector');
     for (var i = 0; i < vector.length; i++) {
