@@ -1,4 +1,5 @@
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/media/file_watcher_mixin.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Scrim treatment painted over an event cover photo.
@@ -21,7 +22,12 @@ enum EventCoverScrim {
 ///
 /// The crop math mirrors the task cover-art treatment: [cropX] in `0..1` maps to
 /// a horizontal [Alignment] of `cropX * 2 - 1` under [BoxFit.cover].
-class EventCoverImage extends StatelessWidget {
+///
+/// A synced photo's entry can land before its file does. A [FileImage] whose
+/// file is still missing shows the fallback and is drawn once the file
+/// arrives; decoding it early would park the failed load in the image cache,
+/// where every later card for that photo would find it.
+class EventCoverImage extends StatefulWidget {
   const EventCoverImage({
     required this.image,
     required this.fallbackColor,
@@ -50,12 +56,30 @@ class EventCoverImage extends StatelessWidget {
   final Widget? child;
 
   @override
+  State<EventCoverImage> createState() => _EventCoverImageState();
+}
+
+class _EventCoverImageState extends State<EventCoverImage>
+    with FileWatcherMixin {
+  @override
+  void dispose() {
+    disposeFileWatcher();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cropX = widget.cropX;
+    final fallbackColor = widget.fallbackColor;
+    final icon = widget.icon;
+    final scrim = widget.scrim;
+    final child = widget.child;
+
     // Clamp defensively so malformed crop data can't push the cover alignment
     // outside the visible range.
     final alignmentX = (cropX.clamp(0.0, 1.0) * 2) - 1;
 
-    final provider = _decodeSized(context);
+    final provider = _fileReady() ? _decodeSized(context) : null;
 
     return Stack(
       fit: StackFit.expand,
@@ -112,21 +136,34 @@ class EventCoverImage extends StatelessWidget {
     );
   }
 
-  /// Wraps [image] in a [ResizeImage] that decodes no wider than this cover is
-  /// displayed — the explicit [decodeWidth] when given, otherwise the screen
+  /// Wraps [EventCoverImage.image] in a [ResizeImage] that decodes no wider than this cover is
+  /// displayed — the explicit [EventCoverImage.decodeWidth] when given, otherwise the screen
   /// width — so a wall of covers (the overview can hold hundreds) can't decode
   /// full-resolution photos all at once and OOM-kill the app on phones. Uses
   /// [MediaQuery] rather than a [LayoutBuilder] so the widget still reports
   /// intrinsic dimensions (it's placed inside [IntrinsicHeight] rows). Returns
   /// null when there is no image (the caller paints the fallback).
   ImageProvider? _decodeSized(BuildContext context) {
-    final source = image;
+    final source = widget.image;
     if (source == null) return null;
-    final logicalWidth = decodeWidth ?? MediaQuery.sizeOf(context).width;
+    final logicalWidth = widget.decodeWidth ?? MediaQuery.sizeOf(context).width;
     final cap = (logicalWidth * MediaQuery.devicePixelRatioOf(context))
         .round()
         .clamp(1, 4096);
     return ResizeImage(source, width: cap, policy: ResizeImagePolicy.fit);
+  }
+
+  /// Whether the cover can be decoded now: always for an in-memory provider,
+  /// and for a [FileImage] once its file is on disk — watched until then.
+  bool _fileReady() {
+    final source = widget.image;
+    if (source is! FileImage) {
+      disposeFileWatcher();
+      resetFileWatcher();
+      return true;
+    }
+    setupFileWatcher(source.file.path);
+    return fileExists;
   }
 }
 

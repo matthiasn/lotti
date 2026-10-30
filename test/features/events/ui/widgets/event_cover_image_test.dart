@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
@@ -89,6 +91,34 @@ void main() {
 
       // The error builder swaps the failed image for the fallback glyph.
       expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
+    });
+
+    testWidgets('waits for a synced photo file before decoding it', (
+      tester,
+    ) async {
+      final dir = Directory.systemTemp.createTempSync('event_cover_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}/photo.jpg');
+
+      await pumpEventComponent(
+        tester,
+        EventCoverImage(image: FileImage(file), fallbackColor: Colors.blue),
+        height: 120,
+      );
+
+      // The entry arrived before its bytes: the fallback shows and nothing
+      // is decoded, so no failed load is cached for this path.
+      expect(find.byType(Image), findsNothing);
+      expect(find.byIcon(LottiIcons.calendar), findsOneWidget);
+
+      file.writeAsBytesSync([1]);
+      await tester.pump(const Duration(milliseconds: 150));
+
+      final shown = tester.widget<Image>(find.byType(Image));
+      expect(
+        ((shown.image as ResizeImage).imageProvider as FileImage).file.path,
+        file.path,
+      );
     });
 
     testWidgets('hero scrim adds the global darken + two gradients', (

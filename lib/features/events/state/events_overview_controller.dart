@@ -82,14 +82,21 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final sub = ref.read(updateNotificationsProvider).updateStream.listen((
       affected,
     ) {
-      final loadedEventIds = state.value?.events
+      final loaded = state.value?.events ?? const <ResolvedEvent>[];
+      final loadedEventIds = loaded
           .map((resolved) => resolved.event.meta.id)
           .toSet();
       final affectsLoadedEventLink =
           affected.contains(linkNotification) &&
-          loadedEventIds != null &&
           affected.any(loadedEventIds.contains);
-      if (affected.contains(eventNotification) || affectsLoadedEventLink) {
+      // A cover photo whose link synced in before the photo itself: its
+      // arrival notifies only the photo's own id.
+      final pendingCoverArrived = loaded.any(
+        (resolved) => resolved.pendingCoverIds.any(affected.contains),
+      );
+      if (affected.contains(eventNotification) ||
+          affectsLoadedEventLink ||
+          pendingCoverArrived) {
         unawaited(_refresh());
       }
     });

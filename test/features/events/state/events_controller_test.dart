@@ -223,6 +223,49 @@ void main() {
     );
   });
 
+  test(
+    'reports linked ids whose rows have not synced as pending cover ids',
+    () async {
+      // Sync applied the event→photo link before the photo: the link points
+      // at a row that does not exist yet, beside a note that does.
+      stubEvents([_event(id: 'e1')]);
+      when(() => db.linksFromIds(any())).thenReturn(
+        MockSelectable<LinkedDbEntry>([
+          _link('l1', from: 'e1', to: 'img-pending'),
+          _link('l2', from: 'e1', to: 'img-1'),
+        ]),
+      );
+      when(
+        () => db.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [_image('img-1')]);
+
+      final resolved = await _loadAllResolvedEvents();
+
+      expect(resolved.single.pendingCoverIds, {'img-pending'});
+      expect(
+        (resolved.single.coverImage! as FileImage).file.path,
+        getFullImagePath(_image('img-1'), documentsDirectory: docDir.path),
+      );
+    },
+  );
+
+  test('reports an unsynced coverArtId as a pending cover id', () async {
+    stubEvents([
+      _event(id: 'e1', coverArtId: 'img-pending'),
+      _event(id: 'e2', coverArtId: 'img-1'),
+    ]);
+    when(
+      () => db.getJournalEntitiesForIds(any()),
+    ).thenAnswer((_) async => [_image('img-1')]);
+
+    final resolved = await _loadAllResolvedEvents();
+
+    expect(resolved.first.pendingCoverIds, {'img-pending'});
+    expect(resolved.first.coverImage, isNull);
+    expect(resolved.last.pendingCoverIds, isEmpty);
+    expect(resolved.last.coverImage, isA<FileImage>());
+  });
+
   test('fallback picks the newest linked photo', () async {
     final older = _image('img-old', dateFrom: DateTime(2026, 5, 10));
     final newer = _image('img-new', dateFrom: DateTime(2026, 5, 20));

@@ -573,6 +573,69 @@ void main() {
     },
   );
 
+  test(
+    'a photo whose link synced before it updates the cover when it lands',
+    () async {
+      final event = _event('e1');
+      final photo = _image('photo-1', DateTime(2026, 5, 13));
+      final images = <String, JournalImage>{};
+      stubPaged([event]);
+      when(() => db.linksFromIds(any())).thenAnswer(
+        (_) => MockSelectable<LinkedDbEntry>([_link(event.meta.id, 'photo-1')]),
+      );
+      when(() => db.getJournalEntitiesForIds(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return ids.map((id) => images[id]).whereType<JournalEntity>().toList();
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      var state = await container.read(eventsOverviewControllerProvider.future);
+      expect(state.events.single.coverImage, isNull);
+      expect(state.events.single.pendingCoverIds, {'photo-1'});
+
+      // The photo's own apply notifies only its id and IMAGE — no event id,
+      // no LINK_CHANGED.
+      images[photo.meta.id] = photo;
+      updates.add({photo.meta.id, imageNotification});
+      await pumpEventQueue();
+
+      state = container.read(eventsOverviewControllerProvider).value!;
+      expect(
+        (state.events.single.coverImage! as FileImage).file.path,
+        endsWith('photo-1.jpg'),
+      );
+      expect(state.events.single.pendingCoverIds, isEmpty);
+    },
+  );
+
+  test(
+    'an image notification for an unrelated photo does not reload',
+    () async {
+      final event = _event('e1');
+      final master = [event];
+      stubPaged(master);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(eventsOverviewControllerProvider.future);
+
+      master.insert(0, _event('new'));
+      updates.add({'some-photo', imageNotification});
+      await pumpEventQueue();
+
+      expect(
+        container
+            .read(eventsOverviewControllerProvider)
+            .value!
+            .events
+            .map((resolved) => resolved.event.meta.id),
+        [event.meta.id],
+      );
+    },
+  );
+
   test('unrelated link notifications do not reload event covers', () async {
     final event = _event('e1');
     final master = [event];
