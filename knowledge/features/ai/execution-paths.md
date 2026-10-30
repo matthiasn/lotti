@@ -5,8 +5,8 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
-stale_after: 2026-12-26
+generated: { by: claude-code/opus-5.5, at: 2026-10-30T14:00:00Z }
+stale_after: 2027-01-05
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
