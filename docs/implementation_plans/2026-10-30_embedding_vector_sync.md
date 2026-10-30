@@ -215,6 +215,74 @@ int8 would quarter the size, but it needs its own measurement on
 `tool/embedding_eval`. Leave it as a follow-up, and keep `dims` in the payload
 so a later format can be told apart.
 
+### 1a. The register, its chunks and its entry
+
+**The unit is the entry, never the chunk.**
+
+- An entry's text is cut into chunks (`TextChunker`, about 256 tokens each, 48
+  overlapping), and the store holds one vector per chunk.
+- A register version carries the entry's **complete** chunk set, in order.
+- Storing a version replaces every chunk the entry had, atomically, as
+  `replaceEntityEmbeddings` does locally today.
+- No chunk is tracked, sent or removed on its own, so a receiver can never be
+  left with a mix of an old and a new chunk set, or with an orphan chunk.
+- The receiver does not chunk again; it stores the sender's chunks as they are.
+  Chunking is a function of the text, and the text is pinned by the content
+  hash.
+
+**How a version relates to its indexed entry.**
+
+| Register field | What it ties to |
+|---|---|
+| `entityId` | The journal entity, or the agent report, whose text was embedded |
+| `contentHash` | The exact text that was chunked, label enrichment included; the receiver's admission check (§3) |
+| `sourceVectorClock` | The entry's version at embedding time: older or newer text, even when two devices embedded concurrently |
+| `vectorClock` | The register's own history: sync ordering, receipts, backfill |
+| `categoryId` | Not part of the register's identity. Each device files the chunks in the shard of its own copy's category, as today; a recategorisation moves them locally and sends nothing |
+
+**Removing old embeddings: every removal is a version.**
+
+A tombstone version (a bumped register clock, no chunks) is written and sent
+whenever a device removes an entry's vectors:
+
+- **The entry is deleted.** Today processing finds it gone and deletes its
+  vectors (`EmbeddingProcessor`'s "gone means no vectors").
+- **The text fell under the 20-character minimum.**
+- **An agent report is superseded.** `processAgentReport` deletes every other
+  report vector of the task (#4879). Each of those reports is its own register
+  (`<reportId>|<modelId>`), so each deletion is a tombstone of that register.
+  Without them, a receiver would keep a task's old reports searchable, which is
+  exactly what #4879 fixed locally.
+- **An embed was replaced by a newer one.** That's not a tombstone but the next
+  version of the same register. It replaces the chunk set, so the old chunks are
+  gone on every device that applies it.
+
+Tombstones matter more than they would for a tracked entity. **Receivers do not
+process synced edits** (`EmbeddingService` hears only local writes). A receiver
+therefore never discovers by itself that an entry is gone or too short, and the
+writer's tombstone is how its vectors leave the receiver's index. A deleted
+entry's leftover vector is still skipped at search time, as today. Treat that as
+a backstop, not the mechanism.
+
+**A model change starts new registers.**
+
+- A register is per model, so vectors of a model this device doesn't run
+  (`modelId` differs) are dropped on arrival, with their receipts recorded.
+- The retired store's local deletion (ADR 0148) sends nothing.
+- No tombstones are sent for a whole model.
+
+**Agent reports and their task.**
+
+- A report register is keyed by the report, not the task. Its version carries
+  `taskId` and `subtype` so the receiver files it under the task.
+- The receiver does **not** run the one-report-per-task cleanup itself, and
+  writes no tombstones of its own. The writer already sends a tombstone for each
+  report its cleanup removed, and a receiver that wrote its own would send a
+  duplicate removal from every device. Until those tombstones arrive, a task
+  may briefly have its old and new report on a receiver; search collapses a
+  task's report hits into one result (`agent:<taskId>`), so the user sees one
+  task either way.
+
 ### 2. Who sends
 
 The device that embedded the text, right after the store write:
@@ -263,8 +331,8 @@ implemented in the AI feature. It does not write the journal:
 5. Compares:
    - **Hashes equal:** store under the entity's lock (`EmbeddingProcessor`'s
      per-entity serialization), with the sender's chunks, the register's merged
-     clock, the source clock and the hash. An agent report also runs the task's
-     one-report cleanup (#4879).
+     clock, the source clock and the hash. An agent report is stored alone; the
+     writer's tombstones remove the task's older reports (§1a).
    - **Hashes differ, or the entity is missing:** the vectors describe a text
      this device doesn't have yet. Hold the version, keeping the newest per
      register, in a small persisted table (it must survive a restart now that
