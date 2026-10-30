@@ -4055,7 +4055,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Activeer vector zoeken in taakfilters. Vereist inbeddingen ingeschakeld te zijn en Ollama draait.';
+      'Activeer vector zoeken in taakfilters. Vereist dat inbeddingen zijn ingeschakeld en hun model is gedownload.';
 
   @override
   String get configFlagEnableWhatsNew => 'Toon wat nieuw is';
@@ -6652,6 +6652,38 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Notities invoeren...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Het model op dit apparaat kon niet worden gecontroleerd.';
+
+  @override
+  String get embeddingModelDescription =>
+      'Zoeken op betekenis werkt op dit apparaat. Download het model één keer om het te gebruiken.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Downloaden';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'De download is niet voltooid. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get embeddingModelDownloading => 'Bezig met downloaden';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return '$model downloaden';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'Op dit apparaat';
+
+  @override
+  String get embeddingModelRetry => 'Opnieuw proberen';
+
+  @override
+  String get embeddingModelTerms => 'Gebruiksvoorwaarden van Gemma';
 
   @override
   String get embeddingSelectAll => 'Alles selecteren';
@@ -10467,15 +10499,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Inbeddingen genereren';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Categorieën';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Ja, genereren';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Inbeddingen voor items in geselecteerde categorieën genereren';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Selecteer categorieën om inbeddingen voor te genereren.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

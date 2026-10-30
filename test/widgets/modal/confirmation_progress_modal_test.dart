@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
+import 'package:lotti/themes/modal_theme.dart';
 import 'package:lotti/widgets/modal/confirmation_progress_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -110,6 +111,47 @@ void main() {
       expect(find.text('Continue with this action?'), findsOneWidget);
       expect(find.text('Continue'), findsOneWidget);
       expect(find.byIcon(LottiIcons.warning), findsNothing);
+    });
+
+    testWidgets('a narrower gutter moves the content, never the actions', (
+      tester,
+    ) async {
+      Future<double> contentOffsetFromCancel({
+        double? horizontalPadding,
+      }) async {
+        await _pumpModalHost(
+          tester,
+          showModal: (context) async {
+            await ConfirmationProgressModal.show(
+              context: context,
+              message: 'Continue with this action?',
+              confirmLabel: 'Continue',
+              progressBuilder: (context) => const Text('Progress...'),
+              operation: () async {},
+              isDestructive: false,
+              confirmationContent: const SizedBox(
+                key: Key('content'),
+                width: double.infinity,
+                height: 10,
+              ),
+              horizontalPadding: horizontalPadding ?? ModalTheme.padding,
+            );
+          },
+        );
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+        final offset =
+            tester.getTopLeft(find.text('Cancel')).dx -
+            tester.getTopLeft(find.byKey(const Key('content'))).dx;
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        return offset;
+      }
+
+      final standard = await contentOffsetFromCancel();
+      final narrowed = await contentOffsetFromCancel(horizontalPadding: 16);
+
+      expect(narrowed - standard, moreOrLessEquals(ModalTheme.padding - 16));
     });
 
     testWidgets('cancels operation when cancel button is pressed', (

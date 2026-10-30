@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -9,12 +8,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -34,6 +31,7 @@ Metadata _meta({String id = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'}) =>
 
 const _entityId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const _longText = 'This is a sufficiently long text for embedding generation.';
+const _modelId = 'test-embedding-model';
 
 /// Creates a fake Float32List matching the expected dimensions.
 Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
@@ -41,9 +39,9 @@ Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
 enum _GeneratedEmbeddingPreflightShape {
   enabled,
   disabled,
-  missingBaseUrl,
+  modelMissing,
   flagThrows,
-  baseUrlThrows,
+  installCheckThrows,
   labelResolverThrows,
 }
 
@@ -260,17 +258,17 @@ class _GeneratedEmbeddingServiceScenario {
   bool get embeddingsEnabled =>
       preflightShape != _GeneratedEmbeddingPreflightShape.disabled;
 
-  bool get baseUrlThrows =>
-      preflightShape == _GeneratedEmbeddingPreflightShape.baseUrlThrows;
+  bool get installCheckThrows =>
+      preflightShape == _GeneratedEmbeddingPreflightShape.installCheckThrows;
 
-  bool get hasBaseUrl =>
-      preflightShape != _GeneratedEmbeddingPreflightShape.missingBaseUrl;
+  bool get modelInstalled =>
+      preflightShape != _GeneratedEmbeddingPreflightShape.modelMissing;
 
   bool get labelResolverThrows =>
       preflightShape == _GeneratedEmbeddingPreflightShape.labelResolverThrows;
 
   bool get canProcessEntities =>
-      !flagThrows && embeddingsEnabled && !baseUrlThrows && hasBaseUrl;
+      !flagThrows && embeddingsEnabled && !installCheckThrows && modelInstalled;
 
   @override
   String toString() {
@@ -282,7 +280,7 @@ class _GeneratedEmbeddingServiceScenario {
 
 class _GeneratedEmbeddingExpected {
   int flagChecks = 0;
-  int baseUrlResolutions = 0;
+  int installChecks = 0;
   int labelLookups = 0;
   final entityLookups = <String>[];
   final embedInputs = <String>[];
@@ -365,9 +363,8 @@ extension _AnyGeneratedEmbeddingServiceScenario on glados.Any {
 
 void main() {
   late MockEmbeddingStore mockEmbeddingStore;
-  late MockOllamaEmbeddingRepository mockEmbeddingRepo;
+  late MockOnDeviceEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
-  late MockAiConfigRepository mockAiConfigRepo;
   late MockDomainLogger mockLogger;
   late UpdateNotifications updateNotifications;
   late EmbeddingService service;
@@ -378,9 +375,8 @@ void main() {
 
   setUp(() {
     mockEmbeddingStore = MockEmbeddingStore();
-    mockEmbeddingRepo = MockOllamaEmbeddingRepository();
+    mockEmbeddingRepo = MockOnDeviceEmbeddingRepository();
     mockJournalDb = MockJournalDb();
-    mockAiConfigRepo = MockAiConfigRepository();
     mockLogger = MockDomainLogger();
     updateNotifications = UpdateNotifications();
 
@@ -389,7 +385,6 @@ void main() {
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       updateNotifications: updateNotifications,
-      aiConfigRepository: mockAiConfigRepo,
       domainLogger: mockLogger,
     );
 
@@ -398,10 +393,9 @@ void main() {
       () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
     ).thenAnswer((_) async => true);
 
-    // Default: Ollama provider configured
-    when(
-      () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-    ).thenAnswer((_) async => 'http://localhost:11434');
+    // Default: the model is downloaded
+    when(() => mockEmbeddingRepo.isInstalled()).thenAnswer((_) async => true);
+    when(() => mockEmbeddingRepo.modelId).thenReturn(_modelId);
 
     // Default: no existing content hash
     when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
@@ -441,11 +435,7 @@ void main() {
   /// Helper: stubs the embedding repo to return a fake vector.
   void stubEmbedding() {
     when(
-      () => mockEmbeddingRepo.embed(
-        input: any(named: 'input'),
-        baseUrl: any(named: 'baseUrl'),
-        model: any(named: 'model'),
-      ),
+      () => mockEmbeddingRepo.embedDocument(any()),
     ).thenAnswer((_) async => _fakeEmbedding());
   }
 
@@ -479,17 +469,14 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: _longText,
-            baseUrl: 'http://localhost:11434',
-          ),
+          () => mockEmbeddingRepo.embedDocument(_longText),
         ).called(1);
 
         verify(
           () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: _entityId,
             entityType: kEntityTypeJournalText,
-            modelId: ollamaEmbedDefaultModel,
+            modelId: _modelId,
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
             embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
@@ -518,10 +505,7 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         ).called(1);
 
         stopInZone(async);
@@ -541,11 +525,7 @@ void main() {
       final embedStarted = Completer<void>();
       final embedGate = Completer<Float32List>();
       when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-          model: any(named: 'model'),
-        ),
+        () => mockEmbeddingRepo.embedDocument(any()),
       ).thenAnswer((_) {
         if (!embedStarted.isCompleted) embedStarted.complete();
         return embedGate.future;
@@ -589,11 +569,7 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
@@ -610,11 +586,7 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
@@ -634,11 +606,7 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
@@ -662,22 +630,18 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
       });
     });
 
-    test('skips when no Ollama provider is configured', () {
+    test('skips while the model is not downloaded', () {
       fakeAsync((async) {
         when(
-          () => mockAiConfigRepo.resolveOllamaBaseUrl(),
-        ).thenAnswer((_) async => null);
+          () => mockEmbeddingRepo.isInstalled(),
+        ).thenAnswer((_) async => false);
 
         final entry = JournalEntry(
           meta: _meta(),
@@ -689,11 +653,7 @@ void main() {
         sendAndProcess(async, {_entityId, textEntryNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
@@ -714,11 +674,7 @@ void main() {
         sendAndProcess(async, {_entityId, imageNotification});
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
 
         stopInZone(async);
@@ -748,11 +704,7 @@ void main() {
           // The valid entity was looked up and embedded…
           verify(() => mockJournalDb.journalEntityById(_entityId)).called(1);
           verify(
-            () => mockEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => mockEmbeddingRepo.embedDocument(any()),
           ).called(greaterThanOrEqualTo(1));
           // …while the non-UUID token never reached the database.
           verifyNever(() => mockJournalDb.journalEntityById('NOT-A-UUID'));
@@ -762,7 +714,7 @@ void main() {
       },
     );
 
-    test('continues processing after Ollama error', () {
+    test('continues processing after a model error', () {
       fakeAsync((async) {
         const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';
 
@@ -785,14 +737,10 @@ void main() {
         // First call throws, second succeeds
         var callCount = 0;
         when(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         ).thenAnswer((_) async {
           callCount++;
-          if (callCount == 1) throw Exception('Ollama is down');
+          if (callCount == 1) throw Exception('model failed');
           return _fakeEmbedding();
         });
 
@@ -804,11 +752,7 @@ void main() {
 
         // Both entities were attempted despite first failing
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         ).called(2);
 
         // The failure reached the log, naming only the entity id.
@@ -900,10 +844,7 @@ void main() {
 
           // Should be called exactly once, not twice (no duplicate listener).
           verify(
-            () => mockEmbeddingRepo.embed(
-              input: _longText,
-              baseUrl: 'http://localhost:11434',
-            ),
+            () => mockEmbeddingRepo.embedDocument(_longText),
           ).called(1);
 
           stopInZone(async);
@@ -924,13 +865,9 @@ void main() {
             categoryId: any(named: 'categoryId'),
           );
 
-      Future<Float32List> anyEmbed() => mockEmbeddingRepo.embed(
-        input: any(named: 'input'),
-        baseUrl: any(named: 'baseUrl'),
-        model: any(named: 'model'),
-      );
+      Future<Float32List> anyEmbed() => mockEmbeddingRepo.embedDocument(any());
 
-      test('edits made during an outage are embedded when it ends', () {
+      test('a model removed during a batch stops it, without retries', () {
         fakeAsync((async) {
           stubEntity(
             JournalEntry(
@@ -946,35 +883,19 @@ void main() {
               ),
             ),
           );
-          // The endpoint is in its cooldown: every call fails fast.
-          final retryAt = clock.now().add(const Duration(minutes: 3));
-          when(
-            () => mockEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
-          ).thenAnswer(
-            (_) async => throw EmbeddingEndpointUnavailableException(
-              baseUrl: 'http://localhost:11434',
-              retryAt: retryAt,
+          when(anyEmbed).thenAnswer(
+            (_) async => throw const EmbeddingModelNotInstalledException(
+              _modelId,
             ),
           );
           service.start();
 
           sendAndProcess(async, {_entityId, entityId2, textEntryNotification});
+          async.elapse(EmbeddingService.retryDelay * 2);
 
-          // The first failure parks the other id without calling out.
+          // The first call found the model gone: the other id is not tried,
+          // and nothing is queued for later.
           verify(anyEmbed).called(1);
-          // An open circuit is routine: a warning, never an error.
-          verify(
-            () => mockLogger.log(
-              LogDomain.ai,
-              any(that: startsWith('Embedding for $_entityId deferred')),
-              subDomain: 'EmbeddingService',
-              level: InsightLevel.warn,
-            ),
-          ).called(1);
           verifyNever(
             () => mockLogger.error(
               any(),
@@ -985,22 +906,6 @@ void main() {
               errorType: any(named: 'errorType'),
             ),
           );
-          verifyNever(
-            () => mockEmbeddingStore.replaceEntityEmbeddings(
-              entityId: any(named: 'entityId'),
-              entityType: any(named: 'entityType'),
-              modelId: any(named: 'modelId'),
-              contentHash: any(named: 'contentHash'),
-              embeddings: any(named: 'embeddings'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          );
-
-          stubEmbedding();
-          async.elapse(const Duration(minutes: 3));
-
-          verify(stored(_entityId)).called(1);
-          verify(stored(entityId2)).called(1);
           stopInZone(async);
         });
       });
@@ -1014,11 +919,7 @@ void main() {
             ),
           );
           when(
-            () => mockEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => mockEmbeddingRepo.embedDocument(any()),
           ).thenAnswer((_) async => throw Exception('HTTP 500'));
           service.start();
 
@@ -1090,44 +991,6 @@ void main() {
         });
       });
 
-      test('outage cooldowns do not count toward the attempt limit', () {
-        fakeAsync((async) {
-          stubEntity(
-            JournalEntry(
-              meta: _meta(),
-              entryText: const EntryText(plainText: _longText),
-            ),
-          );
-          var calls = 0;
-          when(anyEmbed).thenAnswer((_) async {
-            calls++;
-            // One ordinary failure short of the limit, then cooldowns, then
-            // the endpoint is back.
-            if (calls < EmbeddingService.maxFailedAttempts) {
-              throw Exception('HTTP 500');
-            }
-            if (calls < EmbeddingService.maxFailedAttempts + 3) {
-              throw EmbeddingEndpointUnavailableException(
-                baseUrl: 'http://localhost:11434',
-                retryAt: clock.now().add(const Duration(minutes: 1)),
-              );
-            }
-            return _fakeEmbedding();
-          });
-          service.start();
-
-          sendAndProcess(async, {_entityId, textEntryNotification});
-          async.elapse(
-            EmbeddingService.retryDelay *
-                (EmbeddingService.maxFailedAttempts + 4),
-          );
-
-          expect(calls, EmbeddingService.maxFailedAttempts + 3);
-          verify(stored(_entityId)).called(1);
-          stopInZone(async);
-        });
-      });
-
       test('stop cancels a scheduled retry', () {
         fakeAsync((async) {
           stubEntity(
@@ -1137,11 +1000,7 @@ void main() {
             ),
           );
           when(
-            () => mockEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => mockEmbeddingRepo.embedDocument(any()),
           ).thenAnswer((_) async => throw Exception('HTTP 500'));
           service.start();
           sendAndProcess(async, {_entityId, textEntryNotification});
@@ -1175,11 +1034,7 @@ void main() {
           ..flushMicrotasks();
 
         verifyNever(
-          () => mockEmbeddingRepo.embed(
-            input: any(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-            model: any(named: 'model'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(any()),
         );
       });
     });
@@ -1192,16 +1047,14 @@ void main() {
       (scenario) {
         fakeAsync((async) {
           final generatedEmbeddingStore = MockEmbeddingStore();
-          final generatedEmbeddingRepo = MockOllamaEmbeddingRepository();
+          final generatedEmbeddingRepo = MockOnDeviceEmbeddingRepository();
           final generatedJournalDb = MockJournalDb();
-          final generatedAiConfigRepo = MockAiConfigRepository();
           final generatedNotifications = UpdateNotifications();
           final generatedService = EmbeddingService(
             embeddingStore: generatedEmbeddingStore,
             embeddingRepository: generatedEmbeddingRepo,
             journalDb: generatedJournalDb,
             updateNotifications: generatedNotifications,
-            aiConfigRepository: generatedAiConfigRepo,
             domainLogger: MockDomainLogger(),
           );
           final actual = _GeneratedEmbeddingExpected();
@@ -1217,14 +1070,17 @@ void main() {
             return scenario.embeddingsEnabled;
           });
           when(
-            generatedAiConfigRepo.resolveOllamaBaseUrl,
+            generatedEmbeddingRepo.isInstalled,
           ).thenAnswer((_) async {
-            actual.baseUrlResolutions += 1;
-            if (scenario.baseUrlThrows) {
-              throw StateError('generated base URL failure');
+            actual.installChecks += 1;
+            if (scenario.installCheckThrows) {
+              throw StateError('generated install check failure');
             }
-            return scenario.hasBaseUrl ? 'http://localhost:11434' : null;
+            return scenario.modelInstalled;
           });
+          when(
+            () => generatedEmbeddingRepo.modelId,
+          ).thenReturn(_modelId);
           when(
             generatedJournalDb.getAllLabelDefinitions,
           ).thenAnswer((_) async {
@@ -1279,13 +1135,9 @@ void main() {
             );
           });
           when(
-            () => generatedEmbeddingRepo.embed(
-              input: any(named: 'input'),
-              baseUrl: any(named: 'baseUrl'),
-              model: any(named: 'model'),
-            ),
+            () => generatedEmbeddingRepo.embedDocument(any()),
           ).thenAnswer((invocation) async {
-            final input = invocation.namedArguments[#input] as String;
+            final input = invocation.positionalArguments.first as String;
             actual.embedInputs.add(input);
             final slot = scenario.entityPlan.slotForText(input);
             if (scenario.entityPlan.shape(slot) ==
@@ -1308,8 +1160,8 @@ void main() {
               return;
             }
 
-            expected.baseUrlResolutions += 1;
-            if (scenario.baseUrlThrows || !scenario.hasBaseUrl) {
+            expected.installChecks += 1;
+            if (scenario.installCheckThrows || !scenario.modelInstalled) {
               return;
             }
 
@@ -1375,8 +1227,8 @@ void main() {
 
             expect(actual.flagChecks, expected.flagChecks, reason: '$scenario');
             expect(
-              actual.baseUrlResolutions,
-              expected.baseUrlResolutions,
+              actual.installChecks,
+              expected.installChecks,
               reason: '$scenario',
             );
             expect(
@@ -1488,10 +1340,7 @@ void main() {
 
         // Verify that the enriched template (with labels) was used
         final captured = verify(
-          () => mockEmbeddingRepo.embed(
-            input: captureAny(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(captureAny()),
         ).captured;
 
         final embeddedText = captured.first as String;
@@ -1554,10 +1403,7 @@ void main() {
         sendAndProcess(async, {_entityId, taskNotification});
 
         final captured = verify(
-          () => mockEmbeddingRepo.embed(
-            input: captureAny(named: 'input'),
-            baseUrl: any(named: 'baseUrl'),
-          ),
+          () => mockEmbeddingRepo.embedDocument(captureAny()),
         ).captured;
 
         final embeddedText = captured.first as String;
@@ -1582,10 +1428,7 @@ void main() {
 
         // For non-task entities, the plain text should be used directly
         verify(
-          () => mockEmbeddingRepo.embed(
-            input: _longText,
-            baseUrl: 'http://localhost:11434',
-          ),
+          () => mockEmbeddingRepo.embedDocument(_longText),
         ).called(1);
 
         stopInZone(async);

@@ -1,11 +1,12 @@
-/// Chunking constants for the mxbai-embed-large embedding model.
+/// Chunking constants for the on-device embedding model, EmbeddingGemma.
 ///
-/// The model has a 512-token context window. We target 256 tokens per chunk
-/// to leave generous headroom for content where the word-based heuristic
-/// undercounts (code, URLs, technical jargon can be 2–3× the estimate).
-/// Overlap is 48 tokens between consecutive chunks.
+/// The model reads at most 512 tokens per embedding (`GemmaEmbedder.maxTokens`,
+/// as ADR 0144 measured it) and cuts anything longer. We target 256 tokens
+/// per chunk to leave generous headroom for content where the word-based
+/// heuristic undercounts (code, URLs, technical jargon can be 2–3× the
+/// estimate). Overlap is 48 tokens between consecutive chunks.
 /// Token counts are estimated using a word-based heuristic (~1.3 tokens
-/// per whitespace-delimited word for WordPiece tokenization).
+/// per whitespace-delimited word).
 const kChunkTargetTokens = 256;
 const kChunkOverlapTokens = 48;
 const int kChunkStrideTokens = kChunkTargetTokens - kChunkOverlapTokens; // 208

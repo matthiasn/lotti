@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/ai/on_device_embedding/embedding_model.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -85,6 +87,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockEntitiesCacheService mockCacheService;
+  late MockOnDeviceEmbeddingRepository mockEmbeddingRepository;
 
   setUp(() async {
     await setUpTestGetIt(
@@ -96,11 +99,50 @@ void main() {
         getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
       },
     );
+    // The model is on this device unless a test says otherwise.
+    mockEmbeddingRepository =
+        getIt<OnDeviceEmbeddingRepository>() as MockOnDeviceEmbeddingRepository;
+    when(() => mockEmbeddingRepository.model).thenReturn(embeddingGemma);
+    when(() => mockEmbeddingRepository.isInstalling).thenReturn(false);
+    when(
+      mockEmbeddingRepository.isInstalled,
+    ).thenAnswer((_) async => true);
   });
 
   tearDown(tearDownTestGetIt);
 
   group('EmbeddingBackfillModal', () {
+    testWidgets('confirm stays disabled until the model is downloaded', (
+      tester,
+    ) async {
+      when(
+        mockEmbeddingRepository.isInstalled,
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockEmbeddingRepository.install(
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {});
+      _setTallSurface(tester);
+      await tester.pumpWidget(_buildTestWidget());
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('EmbeddingGemma 300M'), findsOneWidget);
+      await tester.tap(find.text('Work'));
+      await tester.pump();
+      DesignSystemButton confirm() => tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Yes, generate'),
+      );
+      expect(confirm().onPressed, isNull);
+
+      await tester.tap(find.text('Download'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('On this device'), findsOneWidget);
+      expect(confirm().onPressed, isNotNull);
+    });
+
     testWidgets('shows confirmation page with message and category picker', (
       tester,
     ) async {
@@ -109,10 +151,16 @@ void main() {
       await tester.tap(find.text('Open Modal'));
       await tester.pumpAndSettle();
 
-      // Verify the confirmation message is displayed
+      // The title names the action; the categories have their own heading,
+      // with Select All beside it.
+      expect(find.text('Generate Embeddings'), findsOneWidget);
+      expect(find.text('Categories'), findsOneWidget);
       expect(
-        find.text('Select categories to generate embeddings for.'),
-        findsOneWidget,
+        tester.getCenter(find.text('Select All')).dy,
+        moreOrLessEquals(
+          tester.getCenter(find.text('Categories')).dy,
+          epsilon: 1,
+        ),
       );
 
       // Verify the confirm button label is rendered verbatim.
@@ -335,10 +383,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify modal is open
-      expect(
-        find.text('Select categories to generate embeddings for.'),
-        findsOneWidget,
-      );
+      expect(find.text('Generate Embeddings'), findsOneWidget);
 
       // Tap cancel
       await tester.tap(find.text('Cancel'));

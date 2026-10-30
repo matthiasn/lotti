@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:lotti/features/ai/on_device_embedding/gemma_embedder.dart';
+
 /// The fixed embedding dimension used by the current embedding model.
-const kEmbeddingDimensions = 1024;
+const int kEmbeddingDimensions = GemmaEmbedder.dimensions;
 
 /// One hit from an [EmbeddingStore.search]: the matched entity (and chunk)
 /// plus its [distance] to the query vector (smaller = more similar).

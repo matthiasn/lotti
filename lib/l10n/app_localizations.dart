@@ -6843,7 +6843,7 @@ abstract class AppLocalizations {
   /// No description provided for @configFlagEnableVectorSearchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.'**
+  /// **'Enable vector search in task filters. Requires embeddings to be enabled and their model downloaded.'**
   String get configFlagEnableVectorSearchDescription;
 
   /// No description provided for @configFlagEnableWhatsNew.
@@ -11254,6 +11254,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter notes...'**
   String get editorPlaceholder;
+
+  /// No description provided for @embeddingModelCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check the model on this device.'**
+  String get embeddingModelCheckFailed;
+
+  /// No description provided for @embeddingModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by meaning runs on this device. Download the model once to use it.'**
+  String get embeddingModelDescription;
+
+  /// No description provided for @embeddingModelDownloadAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get embeddingModelDownloadAction;
+
+  /// No description provided for @embeddingModelDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The download didn\'t finish. Check your connection and try again.'**
+  String get embeddingModelDownloadFailed;
+
+  /// No description provided for @embeddingModelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get embeddingModelDownloading;
+
+  /// No description provided for @embeddingModelDownloadSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Download {model}'**
+  String embeddingModelDownloadSemantics(String model);
+
+  /// No description provided for @embeddingModelInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'On this device'**
+  String get embeddingModelInstalled;
+
+  /// No description provided for @embeddingModelRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get embeddingModelRetry;
+
+  /// No description provided for @embeddingModelTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemma Terms of Use'**
+  String get embeddingModelTerms;
 
   /// No description provided for @embeddingSelectAll.
   ///
@@ -17592,6 +17646,12 @@ abstract class AppLocalizations {
   /// **'Generate Embeddings'**
   String get maintenanceGenerateEmbeddings;
 
+  /// No description provided for @maintenanceGenerateEmbeddingsCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get maintenanceGenerateEmbeddingsCategories;
+
   /// No description provided for @maintenanceGenerateEmbeddingsConfirm.
   ///
   /// In en, this message translates to:
@@ -17603,12 +17663,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate embeddings for entries in selected categories'**
   String get maintenanceGenerateEmbeddingsDescription;
-
-  /// No description provided for @maintenanceGenerateEmbeddingsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Select categories to generate embeddings for.'**
-  String get maintenanceGenerateEmbeddingsMessage;
 
   /// No description provided for @maintenanceGenerateEmbeddingsProgress.
   ///

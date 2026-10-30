@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
+import 'package:lotti/features/ai/ui/settings/embedding_model_section.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -12,15 +14,19 @@ import 'package:material_ui/material_ui.dart';
 
 /// Entry point for the "generate embeddings" maintenance flow.
 ///
-/// Lets the user pick which categories to (re)embed, then runs the backfill
+/// Shows the on-device model, to download it first where it is missing, and
+/// lets the user pick which categories to (re)embed, then runs the backfill
 /// through `embeddingBackfillControllerProvider` while showing live progress.
 abstract final class EmbeddingBackfillModal {
-  /// Opens the confirmation + progress modal. Confirm stays disabled until at
-  /// least one category is selected; on confirm it backfills the selected
-  /// categories and keeps the sheet open to show progress until completion.
+  /// Opens the confirmation + progress modal. Confirm stays disabled until
+  /// the model is on this device and at least one category is selected; on
+  /// confirm it backfills the selected categories and keeps the sheet open
+  /// to show progress until completion.
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     final selectedIdsNotifier = ValueNotifier<Set<String>>({});
+    final modelReady = ValueNotifier<bool>(false);
+    final repository = container.read(onDeviceEmbeddingRepositoryProvider);
     final allCategoryIds = getIt<EntitiesCacheService>().sortedCategories
         .map((c) => c.id)
         .toSet();
@@ -28,15 +34,43 @@ abstract final class EmbeddingBackfillModal {
     try {
       await ConfirmationProgressModal.show(
         context: context,
-        message: context.messages.maintenanceGenerateEmbeddingsMessage,
+        message: context.messages.maintenanceGenerateEmbeddings,
         confirmLabel: context.messages.maintenanceGenerateEmbeddingsConfirm,
         isDestructive: false,
         closeOnComplete: false,
-        confirmEnabledListenable: selectedIdsNotifier,
-        isConfirmEnabled: () => selectedIdsNotifier.value.isNotEmpty,
-        confirmationContent: _MultiCategoryPicker(
-          selectedIdsNotifier: selectedIdsNotifier,
-          allCategoryIds: allCategoryIds,
+        // The picker insets its own search field and rows; a full modal
+        // gutter on top of that leaves the list floating in the middle.
+        horizontalPadding: context.designTokens.spacing.step5,
+        confirmEnabledListenable: Listenable.merge([
+          selectedIdsNotifier,
+          modelReady,
+        ]),
+        isConfirmEnabled: () =>
+            modelReady.value && selectedIdsNotifier.value.isNotEmpty,
+        confirmationContent: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (repository != null) ...[
+              Padding(
+                // In line with the picker's search field and rows below.
+                padding: EdgeInsets.symmetric(
+                  horizontal: context.designTokens.spacing.step5,
+                ),
+                child: _ModelCard(
+                  child: EmbeddingModelSection(
+                    repository: repository,
+                    ready: modelReady,
+                  ),
+                ),
+              ),
+              SizedBox(height: context.designTokens.spacing.step6),
+            ],
+            _MultiCategoryPicker(
+              selectedIdsNotifier: selectedIdsNotifier,
+              allCategoryIds: allCategoryIds,
+            ),
+          ],
         ),
         operation: () {
           final categoryIds = selectedIdsNotifier.value;
@@ -49,7 +83,31 @@ abstract final class EmbeddingBackfillModal {
       );
     } finally {
       selectedIdsNotifier.dispose();
+      modelReady.dispose();
     }
+  }
+}
+
+/// The model's block: a quiet surface of its own, so its name, size, status
+/// and terms read as one thing before the categories.
+class _ModelCard extends StatelessWidget {
+  const _ModelCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.surface.enabled,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step4),
+        child: child,
+      ),
+    );
   }
 }
 
@@ -73,18 +131,29 @@ class _MultiCategoryPicker extends StatelessWidget {
             final allSelected =
                 allCategoryIds.isNotEmpty &&
                 allCategoryIds.every(selectedIds.contains);
-            return Align(
-              alignment: Alignment.centerRight,
-              child: DesignSystemButton(
-                variant: DesignSystemButtonVariant.tertiary,
-                label: allSelected
-                    ? context.messages.embeddingUnselectAll
-                    : context.messages.embeddingSelectAll,
-                onPressed: () {
-                  selectedIdsNotifier.value = allSelected
-                      ? {}
-                      : Set.of(allCategoryIds);
-                },
+            final tokens = context.designTokens;
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      context.messages.maintenanceGenerateEmbeddingsCategories,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                  ),
+                  DesignSystemButton(
+                    variant: DesignSystemButtonVariant.tertiary,
+                    label: allSelected
+                        ? context.messages.embeddingUnselectAll
+                        : context.messages.embeddingSelectAll,
+                    onPressed: () {
+                      selectedIdsNotifier.value = allSelected
+                          ? {}
+                          : Set.of(allCategoryIds);
+                    },
+                  ),
+                ],
               ),
             );
           },

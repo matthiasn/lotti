@@ -1,45 +1,61 @@
 ---
 type: Feature Module
 title: Embeddings and semantic search
-description: Local vector search over per-category ObjectBox shards, what gates it, and how the index keeps up with the journal.
+description: Local vector search over per-category ObjectBox shards filled by the on-device EmbeddingGemma model, what gates it, and how the index keeps up with the journal.
 resource: ../../../lib/features/ai/service/embedding_service.dart
-tags: [ai, embeddings, vector-search, objectbox, tla]
+tags: [ai, embeddings, vector-search, objectbox, onnx, on-device, tla]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
-stale_after: 2026-12-26
+generated: { by: claude-code/opus-5.5, at: 2026-10-30T12:00:00Z }
+stale_after: 2027-01-30
 sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
   - id: processor
     resource: ../../../lib/features/ai/service/embedding_processor.dart
     title: EmbeddingProcessor and its per-entity lock
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
   - id: backfill
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
     title: EmbeddingBackfillController
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
   - id: store
     resource: ../../../lib/features/ai/database/objectbox_embedding_store.dart
     title: ObjectBox-backed embedding store
-    last_modified: 2026-03-08
+    last_modified: 2026-10-30
   - id: sharded-store
     resource: ../../../lib/features/ai/database/sharded_embedding_store.dart
-    title: ShardedEmbeddingStore and its index rebuild
-    last_modified: 2026-09-26
+    title: ShardedEmbeddingStore, its index rebuild and its directory
+    last_modified: 2026-10-30
+  - id: retired-stores
+    resource: ../../../lib/features/ai/database/sharded_embedding_store_migration.dart
+    title: The retired model's stores, deleted at start
+    last_modified: 2026-10-30
   - id: search
     resource: ../../../lib/features/ai/repository/vector_search_repository.dart
     title: VectorSearchRepository
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
   - id: embedding-repository
-    resource: ../../../lib/features/ai/repository/ollama_embedding_repository.dart
-    title: OllamaEmbeddingRepository and its per-endpoint availability circuit
-    last_modified: 2026-09-22
+    resource: ../../../lib/features/ai/on_device_embedding/on_device_embedding_repository.dart
+    title: OnDeviceEmbeddingRepository, the one embedding provider
+    last_modified: 2026-10-30
+  - id: embedding-model
+    resource: ../../../lib/features/ai/on_device_embedding/embedding_model.dart
+    title: The pinned EmbeddingGemma files and their terms
+    last_modified: 2026-10-30
+  - id: pinned-files
+    resource: ../../../lib/features/ai/model_files/pinned_model_files.dart
+    title: Verified, coalesced model downloads
+    last_modified: 2026-10-30
+  - id: model-section
+    resource: ../../../lib/features/ai/ui/settings/embedding_model_section.dart
+    title: The model's download in the generate-embeddings flow
+    last_modified: 2026-10-30
   - id: report-writer
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: The task agent's report embedding
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
   - id: gemma-tokenizer
     resource: ../../../lib/features/ai/on_device_embedding/gemma_tokenizer.dart
     title: GemmaTokenizer, EmbeddingGemma's tokenizer in Dart
@@ -51,12 +67,17 @@ sources:
   - id: spec
     resource: ../../../specs/tla/EmbeddingFreshness.tla
     title: EmbeddingFreshness TLA+ model
-    last_modified: 2026-09-26
+    last_modified: 2026-10-30
 ---
 
 The AI feature owns local embeddings and vector search — the one place where the
 app stores data outside Drift. The index is a **regenerable local cache**: each
-device embeds what it holds, and nothing is synced.
+device embeds what it holds, and nothing is synced. The vectors come from one
+model running on the device, EmbeddingGemma-300m
+([ADR 0144](../../../docs/adr/0144-on-device-embeddings-use-embeddinggemma.md)),
+the only embedding provider
+([ADR 0148](../../../docs/adr/0148-embeddings-run-only-on-the-device.md));
+nothing leaves the device to embed text.
 
 ```mermaid
 flowchart LR
@@ -65,9 +86,11 @@ flowchart LR
   Report["Task agent report"] --> Extract
   Service --> Extract["EmbeddingProcessor"]
   Extract --> Chunk["TextChunker.chunk()"]
-  Chunk --> Embed["OllamaEmbeddingRepository.embed()"]
+  Chunk --> Embed["OnDeviceEmbeddingRepository.embedDocument()"]
   Embed --> Store["EmbeddingStore / ShardedEmbeddingStore"]
-  Store --> Search["VectorSearchRepository.search*()"]
+  Query["Search query"] --> QueryEmbed["OnDeviceEmbeddingRepository.embedQuery()"]
+  QueryEmbed --> Search["VectorSearchRepository.search*()"]
+  Store --> Search
   Search --> Resolve["Resolve tasks or entries"]
 ```
 
@@ -76,17 +99,31 @@ flowchart LR
 | `EmbeddingService` | Listens to local update notifications and performs real-time embedding work, retrying ids that failed |
 | `EmbeddingBackfillController` | The manual backfill of whole categories from settings |
 | `EmbeddingProcessor` | Hashes content, chunks text, generates embeddings, writes atomically; one run per entity at a time |
+| `OnDeviceEmbeddingRepository` | The one provider: the model's download and its embeddings, as a document or as a query |
+| `GemmaEmbedder` / `GemmaTokenizer` | The model on the bundled ONNX Runtime, and its tokenizer in Dart |
+| `PinnedModelFiles` | Verified, coalesced downloads of pinned model files, shared with the speech models |
 | `EmbeddingStore` | Storage abstraction |
-| `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** |
-| `VectorSearchRepository` | Embeds the query through Ollama and resolves hits back to tasks or entries |
+| `ShardedEmbeddingStore` | Production implementation, backed by **per-category ObjectBox shards** in one directory per model |
+| `VectorSearchRepository` | Embeds the query and resolves hits back to tasks or entries |
 
 # Constraints
 
-- **Gated by `enableEmbeddingsFlag`.** Off by default.
-- **Requires a resolvable Ollama base URL.** Embeddings currently have no other
-  provider path.
-- **An unreachable Ollama is suppressed, not retried per entry.** See
-  [Endpoint availability](#endpoint-availability).
+- **Gated by `enableEmbeddingsFlag`.** Off by default. Every writer checks it:
+  the service per batch, the backfill per run, and the agent's report writer
+  per report.
+- **Requires the model on this device.** Until the user downloads it, nothing
+  is embedded and vector search finds nothing. See
+  [Model availability](#model-availability).
+- **macOS, iOS, Linux and Android only.** The pipeline starts where the ONNX
+  plugin runs inference off the thread that draws the app
+  (`OnDeviceEmbeddingRepository.isPlatformSupported`). The Windows plugin
+  answers on the platform thread, so there nothing is registered, and the
+  generate-embeddings tile and vector search stay hidden as they do when the
+  store fails to open.
+- **Queries and documents are embedded differently.** The model was trained
+  with a prompt for each (`task: search result | query: ` and
+  `title: none | text: `), so search embeds with `embedQuery` and every writer
+  with `embedDocument`.
 - **Only local writes are embedded as they happen.** The service listens to
   `localUpdateStream`, so an edit that arrives by sync, or one an agent makes
   (routed through `notifyUiOnly`), is not re-embedded until the entry is next
@@ -97,7 +134,7 @@ flowchart LR
 - **A task has at most one report in the index.** Once a new report is
   embedded, every other report embedded for its task is deleted
   (`EmbeddingStore.agentReportIdsForTask`), not just the one it replaced: a
-  report whose own embedding was skipped — endpoint down, text too short —
+  report whose own embedding was skipped — model missing, text too short —
   would otherwise leave the one before it searchable for good. A failed or
   skipped embed deletes nothing, so the task stays findable by its last
   embedded report. The cleanup runs in `EmbeddingProcessor.processAgentReport`
@@ -107,65 +144,76 @@ flowchart LR
   back to the owning task.
 
 Embedding indexing participates in [work attribution](attribution.md): it begins
-before its first chunk, records one interaction per chunk with digests only and
-**no invented monetary cost**, and finalizes a typed `embeddingVector` output
-after the store replacement succeeds.
+before its first chunk and finalizes a typed `embeddingVector` output after the
+store replacement succeeds. It records **no interactions**: no provider is
+called and nothing is consumed.
 
-# Endpoint availability
+# Model availability
 
-Embeddings are optional, and Ollama is often simply not running. Without a
-guard, every entity change, backfill item and report paid the full transport
-retry budget and logged its own failure. `OllamaEmbeddingRepository` therefore
-keeps a circuit per base URL. The app registers one instance, so the circuit is
-shared by `EmbeddingService`, backfills, vector search and agent-report
-embedding alike.
+The model is about 218 MB — `onnx/model_q4.onnx`, its `.onnx_data` weights and
+`tokenizer.json` from `onnx-community/embeddinggemma-300m-ONNX`, pinned by
+revision with each file's size and SHA-256 (`embeddingGemma`). It is downloaded
+only when the user asks, from the "generate embeddings" flow in Maintenance,
+which shows its name, size and the Gemma Terms of Use it is distributed under.
+The backfill there stays disabled until the model is on this device.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Unconfirmed
-  Unconfirmed --> Probing: first embed() call
-  Probing --> Available: any HTTP response
-  Probing --> Cooldown: transport retry budget spent
-  Probing --> Unconfirmed: other failure (probe released)
-  Available --> Cooldown: a call spends its retry budget\n(unless a newer success landed)
-  Cooldown --> Unconfirmed: outageCooldown (5 min) elapsed
+  [*] --> Checking: the flow opens
+  Checking --> Missing: files absent or not matching
+  Checking --> Installed: every file verified
+  Missing --> Downloading: Download
+  Downloading --> Installed: every file verified
+  Downloading --> Failed: request, size or checksum failed
+  Failed --> Downloading: Try again
 ```
 
-- **One probe at a time.** While a URL is unconfirmed, the first caller is the
-  probe; concurrent callers wait on it rather than each opening a connection,
-  then proceed if it reached the endpoint or fail fast if it found an outage.
-- **Only transport failures declare an outage.** A call must spend the existing
-  retry budget on timeouts or socket errors. Any HTTP response — including an
-  error status or a missing model — proves the endpoint reachable.
-- **Cooldown calls never touch the network.** They throw
-  `EmbeddingEndpointUnavailableException` carrying `retryAt`; callers already
-  treat a failed embedding as optional, so a saved agent report is never
-  rolled back and its predecessor's embedding is kept.
-- **Stale failures cannot hide recovery.** Every success and every declared
-  outage bumps a generation, and a failure that began before a newer success is
-  ignored.
-- **Diagnostics stay logarithmic.** The outage and the recovery are each logged
-  once under `LogDomain.ai` (`embedding_availability`); suppressed calls are
-  counted cumulatively per URL and reported only at powers of two. Logs and
-  the exception text name only the URL's scheme, host and port
-  (`redactEndpoint`), never user info, path or query.
-- **Socket failures arrive wrapped.** The production `IOClient` rethrows a
-  `SocketException` as a `ClientException` subtype that still implements
-  `SocketException`, so a refused connection counts against the transport
-  budget; a test drives that real wrapping.
+- **Files are published only when verified.** `PinnedModelFiles` streams each
+  file to a `.part`, refuses one past its pinned size, checks the SHA-256 and
+  only then renames it into
+  `<application support>/embedding_models/<id>/<revision>`. Concurrent installs
+  share one download, and a removal is refused while one runs. Speech models
+  use the same class, under `sherpa_models`.
+- **The embedder is loaded once, on first use.** `OnDeviceEmbeddingRepository`
+  loads `GemmaEmbedder` on the first embedding and keeps it; a load that fails
+  is tried again on the next call. The app registers one instance, so the
+  service, the backfill, search and the report writer share it.
+- **A missing model is routine, not an error.** Every embedding call throws
+  `EmbeddingModelNotInstalledException` until the download is done. The
+  service and the report writer check for the model before they start and do
+  nothing without it; search returns no hits and logs nothing.
 
-What callers do with a suppressed call is theirs to decide and is not part of
-the repository: `EmbeddingService` parks the failed id and every pending one
-until `retryAt`, a manual backfill logs the item and moves on, and a report
-embedding is logged and not retried (the next report replaces it).
+`GemmaEmbedder` decodes the tokenizer in a background isolate, adds the prompt,
+cuts the input at 512 tokens and returns the unit-length 768-dimensional
+`sentence_embedding`, refusing a vector that is zero or not finite. The session
+uses half the cores, at most four. On Linux the plugin runs inference on a
+worker thread (a Lotti patch), because the GTK main thread also runs the app's
+UI isolate; `integration_test/embedder_parity_test.dart` checks its vectors
+against Python's and measures that stall. The tokenizer is ported to Dart, so
+the app needs no native tokenizer library, and
+[`tool/embedding_eval`](../../../tool/embedding_eval/README.md), which chose
+the model and which any later model change runs through first, checks the port
+token for token against Hugging Face `tokenizers`.
+
+# One store per model
+
+A store's HNSW index has the width of the model that filled it
+(`kEmbeddingDimensions`, 768, baked into the ObjectBox entity), so each model
+gets a directory of its own: `objectbox_embeddings_embeddinggemma-300m-q4`. The
+stores of the retired model — mxbai-embed-large through Ollama, 1024 wide, in
+`objectbox_embeddings` and then `objectbox_embeddings_sharded` — cannot be
+opened with the current entity and match no query the current model makes;
+`deleteRetiredEmbeddingStores` removes them at start, and the backfill
+rebuilds the index. Every directory is a `rebuild` store in the
+[backup catalog](../backup-and-restore.md).
 
 # Keeping up with the journal
 
 Three writers feed one store with no shared queue: the service, the manual
 backfill, and the task agent's report writer. Each run reads the journal,
-waits on the network, then writes. Nothing corrects a stale row later, so
-every rule here is about the row a run leaves behind when it is the last one.
-The protocol is model-checked in
+waits on the model, then writes. Nothing corrects a stale row later, so every
+rule here is about the row a run leaves behind when it is the last one. The
+protocol is model-checked in
 [`EmbeddingFreshness`](../../../specs/tla/README.md#embeddingfreshness--the-index-keeps-up-with-the-journal).
 
 - **One run per entity at a time.** `EmbeddingProcessor` holds a per-entity
@@ -181,13 +229,15 @@ The protocol is model-checked in
   its own. The report writer reads the task's category and writes under the
   task's lock, so a recategorisation is either seen by the writer or processed
   after the report is stored.
-- **Failures are retried, in memory.** A failed id is kept and queued again at
-  the cooldown's `retryAt`, or after `EmbeddingService.retryDelay` for any other
-  failure. An id is dropped after `EmbeddingService.maxFailedAttempts` (3)
-  failures in a row that were not the cooldown, so an entity that fails the
-  same way every time is not retried for as long as the app runs; its next
-  edit starts a fresh count. A restart loses the pending and retry sets; the
-  backfill is the repair.
+- **Failures are retried, in memory.** A failed id is kept and queued again
+  after `EmbeddingService.retryDelay` (5 minutes). An id is dropped after
+  `EmbeddingService.maxFailedAttempts` (3) failures in a row, so an entity that
+  fails the same way every time is not retried for as long as the app runs;
+  its next edit starts a fresh count. A restart loses the pending and retry
+  sets; the backfill is the repair.
+- **No model, no work.** A batch that finds the flag off or the model missing
+  drops its pending ids, and one whose model disappears mid-batch stops there.
+  The backfill after the download is the repair.
 - **A crash between two shards keeps the newer copy.** A replace or a move
   writes the new shard before deleting the old copy. If the process dies in
   between, `_rebuildIndexes` keeps the copy whose chunks were written last
@@ -200,41 +250,20 @@ stateDiagram-v2
   Pending --> Processing: _processNext takes the id
   Processing --> Settled: stored, moved, unchanged or deleted
   Processing --> Retrying: processEntity threw
-  Pending --> Retrying: parked by a cooldown failure
-  Retrying --> Pending: retry timer (retryAt or retryDelay)
-  Pending --> [*]: flag off, no Ollama URL, stop() or restart
+  Processing --> [*]: threw for the maxFailedAttempts-th time in a row
+  Retrying --> Pending: retry timer (retryDelay)
+  Pending --> [*]: flag off, model missing, stop() or restart
   Retrying --> [*]: stop() or restart
   Settled --> Pending: next local change
 ```
 
-The model that will run on the device instead of Ollama is chosen in
-[ADR 0144](../../../docs/adr/0144-on-device-embeddings-use-embeddinggemma.md):
-EmbeddingGemma-300m q4 on the bundled ONNX Runtime (1.27.0 on Linux and
-Android, 1.24.2 on iOS, 1.22.0 on Windows), measured against
-multilingual-e5-small and keyword search by
-[`tool/embedding_eval`](../../../tool/embedding_eval/README.md), which any
-later model change runs through first. Its tokenizer is ported to Dart
-(`GemmaTokenizer`), so the app needs no native tokenizer library; the same
-tool checks the port token for token against Hugging Face `tokenizers` on
-every corpus text and paraphrase, with the prompts the app will add, and cut
-at the 512 tokens the app allows.
-
-`GemmaEmbedder` runs the model on the bundled `flutter_onnxruntime`: it decodes
-the tokenizer in a background isolate, adds the query or document prompt, cuts
-the input at 512 tokens and returns the unit-length 768-dimensional
-`sentence_embedding`. The session uses half the cores, at most four. It has no
-caller yet. On Linux the plugin runs inference on a worker thread (a Lotti
-patch), because the GTK main thread also runs the app's UI isolate;
-`integration_test/embedder_parity_test.dart` checks its vectors against
-Python's and measures that stall.
-
 Open questions the model leaves as residuals:
 
-- **Synced edits are not embedded on the receiving device.** The design says
-  each device embeds its own copy, which suggests they should be; embedding
-  every synced write would also re-embed a whole initial sync. Undecided.
-- **The model id is stored with each chunk but never compared**, and the
-  content hash excludes it, so switching to another model of the same
-  dimension leaves old vectors in place until each entry changes; the backfill
-  skips them too, since their hashes still match.
-
+- **Synced edits are not embedded on the receiving device.** Each device embeds
+  its own copy today, which suggests the service should hear synced edits;
+  embedding every synced write would also re-embed a whole initial sync. The
+  direction under consideration is syncing the vectors themselves, keyed by
+  entry, content hash and model, so one device's work serves every device.
+- **The model id is stored with each chunk but never compared.** A store
+  directory per model keeps a change of model from mixing vectors, but within
+  one directory nothing checks the id.

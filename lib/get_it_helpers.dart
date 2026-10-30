@@ -95,55 +95,12 @@ Future<void> _registerLateAndOptionalServices({
     'LabelAssignmentProcessor',
   );
 
-  // Embedding generation pipeline (Ollama-based, local).
-  // If the backend fails to initialize, the pipeline is non-essential
-  // and the app should still start.
+  // Embedding generation pipeline (the on-device model, local), on the
+  // platforms that run the model off the UI thread. If the backend fails to
+  // initialize, the pipeline is non-essential and the app should still start.
   // coverage:ignore-start
-  try {
-    final embeddingStore = await openShardedEmbeddingStore(
-      documentsPath: getIt<Directory>().path,
-    );
-    getIt
-      ..registerSingleton<EmbeddingStore>(
-        embeddingStore,
-        dispose: (store) => store.close(),
-      )
-      // One instance for every caller, so its per-endpoint availability
-      // circuit is shared application-wide.
-      ..registerSingleton<OllamaEmbeddingRepository>(
-        OllamaEmbeddingRepository(domainLogger: getIt<DomainLogger>()),
-        dispose: (repo) => repo.close(),
-      )
-      ..registerSingleton<EmbeddingService>(
-        EmbeddingService(
-          embeddingStore: embeddingStore,
-          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
-          journalDb: getIt<JournalDb>(),
-          updateNotifications: getIt<UpdateNotifications>(),
-          aiConfigRepository: getIt<AiConfigRepository>(),
-          domainLogger: getIt<DomainLogger>(),
-        ),
-        dispose: (svc) async => svc.stop(),
-      )
-      ..registerSingleton<VectorSearchRepository>(
-        VectorSearchRepository(
-          embeddingStore: embeddingStore,
-          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
-          journalDb: getIt<JournalDb>(),
-          aiConfigRepository: getIt<AiConfigRepository>(),
-          domainLogger: getIt<DomainLogger>(),
-        ),
-      );
-
-    getIt<EmbeddingService>().start();
-    _safeLog('Embedding pipeline initialized successfully', isError: false);
-  } catch (e, stackTrace) {
-    getIt<DomainLogger>().error(
-      LogDomain.ai,
-      e,
-      stackTrace: stackTrace,
-      subDomain: 'embedding_pipeline_init',
-    );
+  if (OnDeviceEmbeddingRepository.isPlatformSupported) {
+    await _registerEmbeddingPipeline();
   }
   // coverage:ignore-end
 
@@ -300,3 +257,54 @@ void routeNotificationTap(String payload) {
   }
   unawaited(getIt<NotificationTapHandler>().handleTap(payload));
 }
+
+/// Opens the embedding store and registers the pipeline around it. A store
+/// that fails to open leaves the pipeline out; the app starts without it.
+// coverage:ignore-start
+Future<void> _registerEmbeddingPipeline() async {
+  try {
+    final embeddingStore = await openShardedEmbeddingStore(
+      documentsPath: getIt<Directory>().path,
+    );
+    getIt
+      ..registerSingleton<EmbeddingStore>(
+        embeddingStore,
+        dispose: (store) => store.close(),
+      )
+      // One instance for every caller, so the model is loaded once and its
+      // download is shared application-wide.
+      ..registerSingleton<OnDeviceEmbeddingRepository>(
+        OnDeviceEmbeddingRepository(),
+        dispose: (repo) => repo.close(),
+      )
+      ..registerSingleton<EmbeddingService>(
+        EmbeddingService(
+          embeddingStore: embeddingStore,
+          embeddingRepository: getIt<OnDeviceEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          updateNotifications: getIt<UpdateNotifications>(),
+          domainLogger: getIt<DomainLogger>(),
+        ),
+        dispose: (svc) async => svc.stop(),
+      )
+      ..registerSingleton<VectorSearchRepository>(
+        VectorSearchRepository(
+          embeddingStore: embeddingStore,
+          embeddingRepository: getIt<OnDeviceEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          domainLogger: getIt<DomainLogger>(),
+        ),
+      );
+
+    getIt<EmbeddingService>().start();
+    _safeLog('Embedding pipeline initialized successfully', isError: false);
+  } catch (e, stackTrace) {
+    getIt<DomainLogger>().error(
+      LogDomain.ai,
+      e,
+      stackTrace: stackTrace,
+      subDomain: 'embedding_pipeline_init',
+    );
+  }
+}
+// coverage:ignore-end

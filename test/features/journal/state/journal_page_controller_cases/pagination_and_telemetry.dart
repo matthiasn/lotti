@@ -89,6 +89,191 @@ void _registerPaginationAndTelemetry(JournalControllerTestSetup setup) {
     });
   });
 
+  group('A new query keeps what is shown', () {
+    test('the results, and their distances, until its own land', () {
+      fakeAsync((async) {
+        JournalEntity entry(String id) => JournalEntry(
+          meta: Metadata(
+            id: id,
+            createdAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            updatedAt: DateTime(2024),
+          ),
+        );
+        final first = entry('first');
+        final second = entry('second');
+        final mockVectorSearchRepo = MockVectorSearchRepository();
+        getIt.registerSingleton<VectorSearchRepository>(mockVectorSearchRepo);
+        final pending = Completer<VectorSearchResult>();
+        when(
+          () => mockVectorSearchRepo.searchRelatedTasks(
+            query: 'colony',
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer(
+          (_) async => VectorSearchResult(
+            entities: [first],
+            elapsed: const Duration(milliseconds: 10),
+            distances: const {'first': 0.2},
+          ),
+        );
+        when(
+          () => mockVectorSearchRepo.searchRelatedTasks(
+            query: 'colony counts',
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer((_) => pending.future);
+
+        final controller = setup.container.read(
+          journalPageControllerProvider(true).notifier,
+        );
+        settle(async);
+        setup.configFlagsController.add({enableVectorSearchFlag});
+        settle(async);
+        controller.setSearchMode(SearchMode.vector);
+        settle(async);
+
+        controller.setSearchString('colony');
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+        JournalPageState read() =>
+            setup.container.read(journalPageControllerProvider(true));
+        expect(read().pagingController?.value.items, [first]);
+
+        // The next keystroke's search waits on the model.
+        controller.setSearchString('colony counts');
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+
+        expect(read().vectorSearchInFlight, isTrue);
+        expect(read().pagingController?.value.items, [first]);
+        expect(read().vectorSearchDistances, {'first': 0.2});
+
+        pending.complete(
+          VectorSearchResult(
+            entities: [second],
+            elapsed: const Duration(milliseconds: 12),
+            distances: const {'second': 0.3},
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(read().vectorSearchInFlight, isFalse);
+        expect(read().pagingController?.value.items, [second]);
+        expect(read().vectorSearchDistances, {'second': 0.3});
+
+        getIt.unregister<VectorSearchRepository>();
+      });
+    });
+  });
+
+  group('A slower search for an earlier keystroke', () {
+    JournalEntity entry(String id) => JournalEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime(2024),
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024),
+        updatedAt: DateTime(2024),
+      ),
+    );
+
+    /// Opens the tasks page in vector mode, with [answers] per query.
+    JournalPageController vectorPage(
+      FakeAsync async,
+      Map<String, Future<VectorSearchResult> Function()> answers,
+    ) {
+      final repo = MockVectorSearchRepository();
+      getIt.registerSingleton<VectorSearchRepository>(repo);
+      for (final MapEntry(:key, :value) in answers.entries) {
+        when(
+          () => repo.searchRelatedTasks(
+            query: key,
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenAnswer((_) => value());
+      }
+      final controller = setup.container.read(
+        journalPageControllerProvider(true).notifier,
+      );
+      settle(async);
+      setup.configFlagsController.add({enableVectorSearchFlag});
+      settle(async);
+      controller.setSearchMode(SearchMode.vector);
+      settle(async);
+      return controller;
+    }
+
+    JournalPageState read() =>
+        setup.container.read(journalPageControllerProvider(true));
+
+    test('never lands over the newer one', () {
+      fakeAsync((async) {
+        final slow = Completer<VectorSearchResult>();
+        final controller = vectorPage(async, {
+          'colony': () => slow.future,
+          'colony counts': () async => VectorSearchResult(
+            entities: [entry('newer')],
+            elapsed: const Duration(milliseconds: 5),
+            distances: const {'newer': 0.3},
+          ),
+        });
+
+        controller.setSearchString('colony');
+        async.flushMicrotasks();
+        controller.setSearchString('colony counts');
+        async.elapse(const Duration(milliseconds: 100));
+        async.flushMicrotasks();
+        slow.complete(
+          VectorSearchResult(
+            entities: [entry('older')],
+            elapsed: const Duration(milliseconds: 90),
+            distances: const {'older': 0.1},
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(read().pagingController?.value.items, [entry('newer')]);
+        expect(read().vectorSearchDistances, {'newer': 0.3});
+        expect(read().vectorSearchElapsed, const Duration(milliseconds: 5));
+        expect(read().vectorSearchInFlight, isFalse);
+
+        getIt.unregister<VectorSearchRepository>();
+      });
+    });
+
+    test(
+      'still stops the spinner when the newer query is no vector search',
+      () {
+        fakeAsync((async) {
+          final slow = Completer<VectorSearchResult>();
+          final controller = vectorPage(async, {'colony': () => slow.future});
+
+          controller.setSearchString('colony');
+          async.flushMicrotasks();
+          expect(read().vectorSearchInFlight, isTrue);
+
+          controller.setSearchMode(SearchMode.fullText);
+          settle(async);
+          slow.complete(
+            VectorSearchResult(
+              entities: [entry('older')],
+              elapsed: const Duration(milliseconds: 90),
+              distances: const {'older': 0.1},
+            ),
+          );
+          async.flushMicrotasks();
+
+          expect(read().vectorSearchInFlight, isFalse);
+          expect(read().vectorSearchDistances, isNot(contains('older')));
+
+          getIt.unregister<VectorSearchRepository>();
+        });
+      },
+    );
+  });
+
   group('Published Search Mode', () {
     test('returns fullText by default', () {
       fakeAsync((async) {

@@ -26,10 +26,8 @@ Future<EmbeddingStore> openShardedEmbeddingStore({
       ? objectbox_store.kMacOsObjectBoxApplicationGroup
       : null;
 
-  await sharded_store.migrateFromSingleEmbeddingStore(
+  await sharded_store.deleteRetiredEmbeddingStores(
     documentsPath: documentsPath,
-    shardedBasePath: shardedBasePath,
-    macosApplicationGroup: macosGroup,
   );
 
   return sharded_store.ShardedEmbeddingStore.open(

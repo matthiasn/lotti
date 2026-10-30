@@ -1,5 +1,6 @@
 import 'dart:ui' show CheckedState, SemanticsAction, Tristate;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -64,32 +65,66 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets(
-    'multi selection can rely on its checkbox without tinting the row',
-    (tester) async {
+  group('a multi-select row says it is selected with its checkbox alone', () {
+    Color? fill(WidgetTester tester) =>
+        (tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration)
+            .color;
+
+    DesignSystemSelectionRow row({
+      required DesignSystemSelectionRowType type,
+      Key key = const Key('row'),
+    }) => DesignSystemSelectionRow(
+      key: key,
+      title: 'Labels',
+      type: type,
+      selected: true,
+      onTap: () {},
+    );
+
+    testWidgets('no selected band', (tester) async {
+      await _pump(tester, row(type: DesignSystemSelectionRowType.multiSelect));
+
+      expect(fill(tester), Colors.transparent);
+      final semantics = tester.getSemantics(find.byKey(const Key('row')));
+      expect(semantics.flagsCollection.isChecked, CheckedState.isTrue);
+      expect(find.byType(DesignSystemCheckbox), findsOneWidget);
+    });
+
+    testWidgets('no hover fill, where a single-select row gets one', (
+      tester,
+    ) async {
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(mouse.removePointer);
+      await mouse.addPointer(location: Offset.zero);
+
       await _pump(
         tester,
         DesignSystemSelectionRow(
-          key: const Key('untinted-multi-row'),
+          key: const Key('row'),
           title: 'Labels',
           type: DesignSystemSelectionRowType.multiSelect,
-          selected: true,
-          showSelectedBackground: false,
           onTap: () {},
         ),
       );
+      await mouse.moveTo(tester.getCenter(find.byKey(const Key('row'))));
+      await tester.pump();
+      expect(fill(tester), Colors.transparent);
 
-      final ink = tester.widget<Ink>(find.byType(Ink));
-      final decoration = ink.decoration! as BoxDecoration;
-      expect(decoration.color, Colors.transparent);
-
-      final semantics = tester.getSemantics(
-        find.byKey(const Key('untinted-multi-row')),
+      await _pump(
+        tester,
+        DesignSystemSelectionRow(
+          key: const Key('single'),
+          title: 'Labels',
+          type: DesignSystemSelectionRowType.singleSelect,
+          onTap: () {},
+        ),
       );
-      expect(semantics.flagsCollection.isChecked, CheckedState.isTrue);
-      expect(find.byType(DesignSystemCheckbox), findsOneWidget);
-    },
-  );
+      await mouse.moveTo(Offset.zero);
+      await mouse.moveTo(tester.getCenter(find.byKey(const Key('single'))));
+      await tester.pump();
+      expect(fill(tester), isNot(Colors.transparent));
+    });
+  });
 
   testWidgets('navigation rows use a chevron and activate as one row', (
     tester,

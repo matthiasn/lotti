@@ -3132,11 +3132,12 @@ The local vector index is a cache that nothing reconciles: a row stays as the
 last run left it until the entry is next edited. Three writers feed it with no
 shared queue — `EmbeddingService` (one id at a time from its pending set), the
 manual `EmbeddingBackfillController`, and the task agent's report writer — and
-each run reads the journal, waits on Ollama, then writes. The model has one
-task (text, deleted flag, category; `Short` stands for text under the minimum)
-and one agent report, two category shards, the store's in-memory index and
-the shard written last, an endpoint that goes into its cooldown and comes
-back, and a crash that can split a replace between its two shards. The
+each run reads the journal, waits on the on-device embedding model, then
+writes. The model has one task (text, deleted flag, category; `Short` stands
+for text under the minimum) and one agent report, two category shards, the
+store's in-memory index and the shard written last, embedding calls that fail
+for a while and then work again, and a crash that can split a replace between
+its two shards. The
 runtime rules are in
 [the knowledge concept](../../knowledge/features/ai/embeddings-and-search.md#keeping-up-with-the-journal).
 
@@ -3145,7 +3146,7 @@ runtime rules are in
 | `Fresh` | invariant | once nothing is pending, retrying or running, a live entry has exactly one vector, of its current text, in its category's shard; a deleted or too-short one has none; an embedded report sits in its live task's category |
 | `OneShard` | invariant | the index rebuild leaves every key in at most one shard |
 | `NoRevert` | invariant | the index points at the copy written last: a recovery never brings back older content |
-| `EventuallyFresh` | liveness | with the endpoint back for good, every entry ends up as `Fresh` describes |
+| `EventuallyFresh` | liveness | with embedding calls working for good, every entry ends up as `Fresh` describes |
 
 Ids a crash dropped from memory (the pending and retry sets, a running job)
 are excused by the ghost `lost` until their next local change; see the
@@ -3163,7 +3164,7 @@ temporary copy of `EmbeddingFreshness.cfg` gives:
 | Mutation | Counterexample |
 |----------|----------------|
 | `SerializeEntity = FALSE` | `Fresh` (11 states): the report race below, since the report writer's lock means nothing when `processEntity` takes none. Without the report (`ReportBudget = 0`), 12 states: the user edits, the backfill reads the edit, the user deletes the entry, the service drops its vectors, and the backfill's write lands — a deleted entry that search still finds. Without deletes either, 13 states: the backfill reads an edit, the user undoes it, the service finds the undone text equal to what is stored and skips, and the backfill stores the edit |
-| `RequeueFailures = FALSE` | `Fresh` (7 states): an edit, the service takes the id, the endpoint goes down, the embedding fails and the id is dropped. With `Fresh` removed, `EventuallyFresh` fails the same way: the endpoint recovers and the entry stays stale for good |
+| `RequeueFailures = FALSE` | `Fresh` (7 states): an edit, the service takes the id, the model fails, the embedding fails and the id is dropped. With `Fresh` removed, `EventuallyFresh` fails the same way: the model works again and the entry stays stale for good |
 | `DropStale = FALSE` | `Fresh` (5 states): the user deletes the entry, and the service reads it as gone and returns, leaving its vectors |
 | `ReportUnderTaskLock = FALSE` | `Fresh` (11 states): the report writer reads the task's category, the user moves the task, the service moves the task and its reports — the report is not stored yet — and the report lands in the old category |
 | `ReconcileReports = FALSE` | `Fresh` (11 states): the task's text drops under the minimum, the report is stored, the task moves, and the service, finding nothing to embed, never moves the report |
@@ -3178,34 +3179,39 @@ Residual counterexamples, found by changing constants in temporary copies:
   sync. Left open. Agent writes (`notifyUiOnly`) are missed the same way.
 - **A restart forgets pending and retrying ids.** The sets live in memory;
   `lost` excuses them. The manual backfill is the repair.
+- **Nothing is embedded before the model is downloaded.** The service drops
+  its pending ids while the model is missing, and when it disappears in the
+  middle of a batch, as it does while embeddings are switched off. The model
+  leaves out both preflight checks; the backfill after the download is the
+  repair.
 
 What the model leaves out:
 
 - **Reads inside a run.** The journal read, the length check, both store
   reads and a hash-equal move are one step; under the lock nothing interleaves
   with them, and without it the switch's counterexamples need no finer grain.
-- **Chunks.** A run embeds all chunks before it writes, so one network step
+- **Chunks.** A run embeds all chunks before it writes, so one model step
   stands for them.
 - **A failed report is not retried**, and a report for a deleted task is not
   checked (the code files it under the default shard).
 - **A failure that never clears.** The model's failures are transient. The
   code gives up on an id after `EmbeddingService.maxFailedAttempts` failures
-  in a row that were not the outage cooldown, so `EventuallyFresh` assumes an
-  entity's failures stop before that; its next edit is tried again.
-- **Two reports in flight.** A slow report embedding can land after its
-  successor deleted its predecessor, leaving a stale report vector beside the
-  new one. It needs two wakes of one task whose fire-and-forget embeddings
-  overlap, and is noted here rather than modelled or fixed.
-- **The model id.** Chunks record it but nothing compares it, so a different
-  model of the same dimension leaves old vectors until each entry changes.
+  in a row, so `EventuallyFresh` assumes an entity's failures stop before
+  that; its next edit is tried again.
+- **Two reports in flight.** Not modelled: a report run deletes every other
+  report of its task under the task's lock, so a slower earlier run can no
+  longer leave a stale report beside the new one.
+- **The model id.** Chunks record it but nothing compares it. Each model has
+  a store directory of its own, so a change of model starts from an empty
+  index rather than a mix.
 - **A crash during a move** splits it like a replace; with equal content it
   can only leave the category stale, which `lost` excuses.
 
 `embedding_processor_test.dart` holds each race open on a `Completer` for the
-network call — the stale backfill write, the undone edit, the report racing a
+model call — the stale backfill write, the undone edit, the report racing a
 recategorisation, the short task's reports — and checks the deletion rules;
-`embedding_service_test.dart` retries through a cooldown and after an ordinary
-failure under fake time; `sharded_embedding_store_test.dart` pins the rebuild's
+`embedding_service_test.dart` retries after an ordinary failure under fake
+time; `sharded_embedding_store_test.dart` pins the rebuild's
 choice and a move's re-stamped `createdAt`; `vector_search_repository_test.dart`
 skips a deleted entry's leftover vector. Each fails with its fix reverted.
 ## `ConversationLoop` — the multi-turn tool-calling loop

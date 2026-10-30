@@ -1,3 +1,5 @@
+import 'package:lotti/features/ai/model_files/pinned_model_files.dart';
+
 /// The recognizer configuration key used by the pinned sherpa runtime.
 enum SherpaModelArchitecture {
   whisper,
@@ -16,16 +18,10 @@ enum SherpaModelArchitecture {
 }
 
 /// One immutable, checksum-pinned artifact in an embedded speech model.
-class SherpaModelFile {
-  const SherpaModelFile(this.name, this.bytes, this.sha256);
-
-  final String name;
-  final int bytes;
-  final String sha256;
-}
+typedef SherpaModelFile = PinnedModelFile;
 
 /// A multilingual export supported by the embedded recognizer.
-class SherpaModel {
+class SherpaModel implements PinnedModel {
   const SherpaModel({
     required this.id,
     required this.name,
@@ -56,13 +52,17 @@ class SherpaModel {
       ? '$id-tokens.txt'
       : 'tokens.txt';
 
+  @override
   final String id;
   final String name;
+  @override
   final String revision;
+  @override
   final List<SherpaModelFile> files;
 
-  int get bytes => files.fold(0, (total, file) => total + file.bytes);
+  int get bytes => pinnedModelBytes(this);
 
+  @override
   Uri uri(SherpaModelFile file) => Uri.parse(
     'https://huggingface.co/${repository ?? 'csukuangfj/sherpa-onnx-whisper-$id'}/'
     'resolve/$revision/${file.name}',

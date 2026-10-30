@@ -1031,11 +1031,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The backfill modal shows its confirmation message.
-      expect(
-        find.text('Select categories to generate embeddings for.'),
-        findsOneWidget,
-      );
+      // The backfill modal opens on its categories, with Select All beside
+      // their heading.
+      expect(find.text('Categories'), findsOneWidget);
+      expect(find.text('Select All'), findsOneWidget);
     });
   });
 }

@@ -46,10 +46,10 @@ import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_runtime_settings.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/state/pull_request_context_source_provider.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
@@ -562,10 +562,10 @@ void main() {
 
     test('wires optional embedding dependencies from GetIt', () {
       final mockEmbeddingStore = MockEmbeddingStore();
-      final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+      final mockEmbeddingRepository = MockOnDeviceEmbeddingRepository();
       getIt
         ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
-        ..registerSingleton<OllamaEmbeddingRepository>(
+        ..registerSingleton<OnDeviceEmbeddingRepository>(
           mockEmbeddingRepository,
         );
 

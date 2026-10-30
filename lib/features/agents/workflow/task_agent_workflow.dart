@@ -51,11 +51,11 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/model/pull_request_context_source.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/features/ai/util/forced_tool_choice.dart';
 import 'package:lotti/features/ai/util/image_ai_responses.dart';
@@ -71,6 +71,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -172,7 +173,7 @@ class TaskAgentWorkflow with AgentErrorLogging {
   /// are embedded for vector search after persistence. The pipeline is
   /// non-essential — if unavailable, reports are still persisted normally.
   final EmbeddingStore? embeddingStore;
-  final OllamaEmbeddingRepository? embeddingRepository;
+  final OnDeviceEmbeddingRepository? embeddingRepository;
 
   /// Optional task agent service for auto-assigning agents to follow-up tasks.
   final TaskAgentService? taskAgentService;

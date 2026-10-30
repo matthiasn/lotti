@@ -3,6 +3,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
@@ -28,6 +29,11 @@ final _generated = Expando<bool>('getItServiceOverride');
 List<Override> getItServiceOverrides() => [
   for (final override in <Override>[
     journalDbProvider.overrideWith((ref) => _fromGetIt<JournalDb>()),
+    onDeviceEmbeddingRepositoryProvider.overrideWith(
+      (ref) => getIt.isRegistered<OnDeviceEmbeddingRepository>()
+          ? getIt<OnDeviceEmbeddingRepository>()
+          : null,
+    ),
     settingsDbProvider.overrideWith((ref) => _fromGetIt<SettingsDb>()),
     persistenceLogicProvider.overrideWith(
       (ref) => _fromGetIt<PersistenceLogic>(),

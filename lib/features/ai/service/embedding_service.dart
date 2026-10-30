@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -14,22 +11,20 @@ import 'package:lotti/utils/consts.dart';
 /// Background embedding generation service.
 ///
 /// Listens to [UpdateNotifications.localUpdateStream] for entity changes
-/// and generates embeddings for text-rich entries using Ollama's `/api/embed`.
+/// and generates embeddings for text-rich entries with the on-device model.
 ///
 /// Respects the [enableEmbeddingsFlag] config flag — when disabled, the
-/// service silently drops all notifications.
+/// service silently drops all notifications — and does nothing while the
+/// model is not downloaded: the backfill after the download is the repair.
 ///
 /// Uses content hashing (SHA-256) to skip re-embedding unchanged content.
 /// Processing is single-flight: only one embedding request runs at a time,
 /// with a set for pending entity IDs.
 ///
 /// **A failed id is retried, not dropped.** An id whose processing throws is
-/// kept and queued again once [retryDelay] has passed — or, while the
-/// endpoint is in its outage cooldown, when the cooldown ends. The first
-/// cooldown failure parks every pending id, since each would fail the same
-/// way. An id is dropped after [maxFailedAttempts] failures in a row that
-/// were not the cooldown, so an entity that fails the same way
-/// every time — a store that rejects it, a response of the wrong dimension —
+/// kept and queued again once [retryDelay] has passed. It is dropped after
+/// [maxFailedAttempts] failures in a row, so an entity that fails the same
+/// way every time — a store that rejects it, a model that cannot read it —
 /// is given up on rather than retried for as long as the app runs; its next
 /// edit starts again. The retry set lives in memory: a restart loses it, and
 /// the manual backfill is the repair.
@@ -39,27 +34,23 @@ class EmbeddingService {
     required this.embeddingRepository,
     required this.journalDb,
     required this.updateNotifications,
-    required this.aiConfigRepository,
     required this._domainLogger,
   });
 
   static const _subDomain = 'EmbeddingService';
 
   final EmbeddingStore embeddingStore;
-  final OllamaEmbeddingRepository embeddingRepository;
+  final OnDeviceEmbeddingRepository embeddingRepository;
   final JournalDb journalDb;
   final UpdateNotifications updateNotifications;
-  final AiConfigRepository aiConfigRepository;
 
   /// Receives the failures of a batch and of each entity in it.
   final DomainLogger _domainLogger;
 
-  /// How long a failed id waits before it is retried, unless the failure
-  /// named its own retry time.
-  static const Duration retryDelay = OllamaEmbeddingRepository.outageCooldown;
+  /// How long a failed id waits before it is retried.
+  static const Duration retryDelay = Duration(minutes: 5);
 
-  /// After this many failures in a row, not counting the outage cooldown, an
-  /// id is dropped instead of retried.
+  /// After this many failures in a row an id is dropped instead of retried.
   static const int maxFailedAttempts = 3;
 
   StreamSubscription<Set<String>>? _subscription;
@@ -133,32 +124,20 @@ class EmbeddingService {
     }
   }
 
-  /// Keeps [entityId] for a later attempt and arms the retry timer.
-  ///
-  /// A cooldown failure also parks every pending id — each would fail fast
-  /// the same way — and retries when the cooldown ends. Any other failure
-  /// counts toward [maxFailedAttempts]; at it, the id is dropped.
-  void _retryLater(String entityId, Object error) {
-    if (error is! EmbeddingEndpointUnavailableException) {
-      final attempts = (_failedAttempts[entityId] ?? 0) + 1;
-      if (attempts >= maxFailedAttempts) {
-        // Also out of the retry set: an earlier failure may have parked it
-        // there, and the timer would otherwise try it once more.
-        _failedAttempts.remove(entityId);
-        _retryEntityIds.remove(entityId);
-        return;
-      }
-      _failedAttempts[entityId] = attempts;
+  /// Keeps [entityId] for a later attempt and arms the retry timer; at
+  /// [maxFailedAttempts] failures the id is dropped instead.
+  void _retryLater(String entityId) {
+    final attempts = (_failedAttempts[entityId] ?? 0) + 1;
+    if (attempts >= maxFailedAttempts) {
+      // Also out of the retry set: an earlier failure may have parked it
+      // there, and the timer would otherwise try it once more.
+      _failedAttempts.remove(entityId);
+      _retryEntityIds.remove(entityId);
+      return;
     }
+    _failedAttempts[entityId] = attempts;
     _retryEntityIds.add(entityId);
-    var delay = retryDelay;
-    if (error is EmbeddingEndpointUnavailableException) {
-      _retryEntityIds.addAll(_pendingEntityIds);
-      _pendingEntityIds.clear();
-      final untilRetry = error.retryAt.difference(clock.now());
-      delay = untilRetry.isNegative ? Duration.zero : untilRetry;
-    }
-    _retryTimer ??= Timer(delay, _retryNow);
+    _retryTimer ??= Timer(retryDelay, _retryNow);
   }
 
   void _retryNow() {
@@ -174,16 +153,9 @@ class EmbeddingService {
     _isProcessing = true;
 
     try {
-      // Resolve config flag and base URL once per batch to avoid
-      // redundant DB queries for each entity.
+      // Checked once per batch: the flag, and that the model is downloaded.
       final enabled = await journalDb.getConfigFlag(enableEmbeddingsFlag);
-      if (!enabled) {
-        _pendingEntityIds.clear();
-        return;
-      }
-
-      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) {
+      if (!enabled || !await embeddingRepository.isInstalled()) {
         _pendingEntityIds.clear();
         return;
       }
@@ -213,21 +185,13 @@ class EmbeddingService {
             journalDb: journalDb,
             embeddingStore: embeddingStore,
             embeddingRepository: embeddingRepository,
-            baseUrl: baseUrl,
             labelNameResolver: labelResolver,
           );
           _failedAttempts.remove(entityId);
-        } on EmbeddingEndpointUnavailableException catch (e) {
-          // The circuit is open: routine while Ollama is down. The whole
-          // batch waits for the retry window rather than failing entity by
-          // entity.
-          _domainLogger.log(
-            LogDomain.ai,
-            'Embedding for $entityId deferred: $e',
-            subDomain: _subDomain,
-            level: InsightLevel.warn,
-          );
-          _retryLater(entityId, e);
+        } on EmbeddingModelNotInstalledException {
+          // Removed while the batch ran: like a batch that found it missing.
+          _pendingEntityIds.clear();
+          return;
         } catch (e, stackTrace) {
           _domainLogger.error(
             LogDomain.ai,
@@ -238,7 +202,7 @@ class EmbeddingService {
             message: 'Failed to generate embedding for $entityId',
           );
           // Don't block other entities, but don't lose this one either.
-          _retryLater(entityId, e);
+          _retryLater(entityId);
         }
       }
     } on Object catch (e, stackTrace) {

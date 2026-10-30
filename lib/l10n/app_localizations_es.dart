@@ -4084,7 +4084,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Activa la búsqueda vectorial en los filtros de tareas. Requiere incrustaciones activadas y Ollama en ejecución.';
+      'Activa la búsqueda vectorial en los filtros de tareas. Requiere incrustaciones activadas y su modelo descargado.';
 
   @override
   String get configFlagEnableWhatsNew => 'Mostrar «Novedades»';
@@ -6707,6 +6707,38 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Introducir notas...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'No se pudo comprobar el modelo en este dispositivo.';
+
+  @override
+  String get embeddingModelDescription =>
+      'La búsqueda por significado funciona en este dispositivo. Descarga el modelo una vez para usarla.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Descargar';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'La descarga no se completó. Comprueba tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get embeddingModelDownloading => 'Descargando';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Descargar $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'En este dispositivo';
+
+  @override
+  String get embeddingModelRetry => 'Reintentar';
+
+  @override
+  String get embeddingModelTerms => 'Términos de uso de Gemma';
 
   @override
   String get embeddingSelectAll => 'Seleccionar todo';
@@ -10559,15 +10591,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Generar embeddings';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Categorías';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Sí, generar';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Generar embeddings para las entradas de las categorías seleccionadas';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Selecciona categorías para generar embeddings.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(

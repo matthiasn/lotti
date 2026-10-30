@@ -26,8 +26,9 @@ one.
   tasks.
 - **Powers agent thinking.** Which model an agent uses is a setting, not
   something baked into the code.
-- **Finds things by meaning**, not just by keyword, through local semantic
-  search.
+- **Finds things by meaning**, not just by keyword, through semantic search
+  that runs on the device: the model is downloaded once, and no text leaves
+  the device to be embedded.
 - **Keeps automation opt-in.** Automatic transcription, image analysis and
   recording summaries are off until switched on per area, because choosing a
   model is not the same as agreeing to spend tokens on every recording.
@@ -64,7 +65,8 @@ lib/features/ai/
 ├── helpers/        # prompt building and context injection
 ├── util/           # profile resolution, seeding, locality
 ├── database/       # AiConfigDb, embedding stores
-├── on_device_embedding/  # EmbeddingGemma: its tokenizer in Dart, the ONNX embedder
+├── model_files/   # verified downloads of pinned model files
+├── on_device_embedding/  # EmbeddingGemma: download, tokenizer, ONNX embedder
 └── ui/             # provider, model and profile editors
 ```
 

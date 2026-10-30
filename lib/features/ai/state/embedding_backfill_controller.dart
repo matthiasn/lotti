@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -58,14 +56,12 @@ class _BackfillServices {
     required this.journalDb,
     required this.embeddingStore,
     required this.embeddingRepository,
-    required this.baseUrl,
     required this.domainLogger,
   });
 
   final JournalDb journalDb;
   final EmbeddingStore embeddingStore;
-  final OllamaEmbeddingRepository embeddingRepository;
-  final String baseUrl;
+  final OnDeviceEmbeddingRepository embeddingRepository;
 
   /// Read before the run's first await, while `ref` is certainly alive.
   final DomainLogger domainLogger;
@@ -105,8 +101,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
     try {
       final db = ref.read(journalDbProvider);
       final embeddingStore = getIt<EmbeddingStore>();
-      final embeddingRepository = getIt<OllamaEmbeddingRepository>();
-      final aiConfigRepository = getIt<AiConfigRepository>();
+      final embeddingRepository = getIt<OnDeviceEmbeddingRepository>();
 
       final enabled = await db.getConfigFlag(enableEmbeddingsFlag);
       if (!enabled) {
@@ -117,10 +112,9 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         return;
       }
 
-      final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
-      if (baseUrl == null) {
+      if (!await embeddingRepository.isInstalled()) {
         state = state.copyWith(
-          error: 'No Ollama provider configured',
+          error: 'Embedding model not downloaded',
           isRunning: false,
         );
         return;
@@ -131,7 +125,6 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           journalDb: db,
           embeddingStore: embeddingStore,
           embeddingRepository: embeddingRepository,
-          baseUrl: baseUrl,
           domainLogger: domainLogger,
         ),
       );
@@ -167,18 +160,9 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
           journalDb: services.journalDb,
           embeddingStore: services.embeddingStore,
           embeddingRepository: services.embeddingRepository,
-          baseUrl: services.baseUrl,
           labelNameResolver: labelResolver,
         );
         if (didEmbed) embedded++;
-      } on EmbeddingEndpointUnavailableException catch (e) {
-        // The circuit is open: routine while Ollama is down, not a failure.
-        services.domainLogger.log(
-          LogDomain.ai,
-          'Backfill skipped $entityId: $e',
-          subDomain: _subDomain,
-          level: InsightLevel.warn,
-        );
       } catch (e, stackTrace) {
         services.domainLogger.error(
           LogDomain.ai,

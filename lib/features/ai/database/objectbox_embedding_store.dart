@@ -5,9 +5,6 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 
-/// Sidecar directory name for the ObjectBox embedding store.
-const kObjectBoxEmbeddingsDirectoryName = 'objectbox_embeddings';
-
 /// Short macOS application group ID required by ObjectBox in sandboxed apps.
 ///
 /// ObjectBox uses POSIX semaphores for store coordination on macOS, and the

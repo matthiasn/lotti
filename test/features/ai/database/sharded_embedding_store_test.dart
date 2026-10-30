@@ -1278,4 +1278,50 @@ void main() {
     },
     tags: 'glados',
   );
+
+  test("deleteRetiredEmbeddingStores removes the retired model's stores "
+      'and leaves the current one', () async {
+    final documents = await Directory.systemTemp.createTemp('retired_stores_');
+    addTearDown(() => documents.delete(recursive: true));
+    for (final name in [
+      ...kRetiredEmbeddingsDirectoryNames,
+      kObjectBoxShardedEmbeddingsDirectoryName,
+    ]) {
+      await File(p.join(documents.path, name, 'data.mdb')).create(
+        recursive: true,
+      );
+    }
+
+    await deleteRetiredEmbeddingStores(documentsPath: documents.path);
+    // Nothing left to delete is no error.
+    await deleteRetiredEmbeddingStores(documentsPath: documents.path);
+
+    expect(
+      documents.listSync().map((entry) => p.basename(entry.path)),
+      [kObjectBoxShardedEmbeddingsDirectoryName],
+    );
+    expect(kRetiredEmbeddingsDirectoryNames, [
+      'objectbox_embeddings',
+      'objectbox_embeddings_sharded',
+    ]);
+  });
+
+  test('deleteRetiredEmbeddingStores is best-effort: a store that cannot be '
+      'deleted never stops the others, or the current store', () async {
+    final attempted = <String>[];
+    await IOOverrides.runZoned(
+      () => deleteRetiredEmbeddingStores(documentsPath: '/documents'),
+      createDirectory: (path) {
+        final directory = MockIoDirectory();
+        when(directory.existsSync).thenReturn(true);
+        when(() => directory.delete(recursive: true)).thenAnswer((_) {
+          attempted.add(p.basename(path));
+          throw FileSystemException('locked', path);
+        });
+        return directory;
+      },
+    );
+
+    expect(attempted, kRetiredEmbeddingsDirectoryNames);
+  });
 }

@@ -26,17 +26,17 @@
 (*     Read         journalEntityById, the length check, getCategoryId,    *)
 (*                  getContentHash, and the hash-equal move                *)
 (*                  (moveEntityToShard) as one step                        *)
-(*     Embed(Fail)  OllamaEmbeddingRepository.embed over the network; down *)
-(*                  means the outage cooldown, where every call fails fast *)
-(*                  with EmbeddingEndpointUnavailableException             *)
+(*     Embed(Fail)  OnDeviceEmbeddingRepository.embedDocument, the model *)
+(*                  call; down means calls fail, e.g. a session that does  *)
+(*                  not load until a later call                            *)
 (*     Write        ShardedEmbeddingStore.replaceEntityEmbeddings: the new *)
 (*                  shard first, then the old copy deleted                 *)
 (*     Reports      moveRelatedReportEmbeddings to the category read       *)
 (*   Ag*            TaskAgentPersistenceHelpers._embedAgentReport and      *)
 (*                  EmbeddingProcessor.processAgentReport: the task's      *)
 (*                  category, the hash check, the embedding, the write     *)
-(*   RetryFire      the service's retry timer at the cooldown's retryAt    *)
-(*   Outage/Recover the endpoint's circuit (ollama_embedding_repository)   *)
+(*   RetryFire      the service's retry timer, after its retryDelay        *)
+(*   Outage/Recover the model failing, and working again                   *)
 (*   Crash          process death and ShardedEmbeddingStore.open's         *)
 (*                  _rebuildIndexes; CrashMidWrite dies between the two    *)
 (*                  halves of a replace, leaving the key in two shards.    *)
@@ -49,7 +49,7 @@
 (*                      journal read to its store write, so a slow run     *)
 (*                      cannot land a read older than a later run's        *)
 (*   RequeueFailures    an id whose embedding failed is kept and retried   *)
-(*                      when the cooldown ends, instead of dropped         *)
+(*                      after the retry delay, instead of dropped          *)
 (*   DropStale          a deleted entry, or one whose text fell under the  *)
 (*                      minimum, has its vectors deleted                   *)
 (*   ReportUnderTaskLock the report writer reads the task's category and   *)
@@ -351,7 +351,7 @@ AgWrite ==
     /\ UNCHANGED reports /\ UNCHANGED AgVars
 
 ------------------------------------------------------------------------------
-(* The endpoint and the process *)
+(* The model and the process *)
 
 Outage ==
     /\ up /\ outages < OutageBudget

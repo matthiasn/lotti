@@ -4075,7 +4075,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get configFlagEnableVectorSearchDescription =>
-      'Ative a pesquisa vetorial em filtros de tarefas. Requer que os embeddings estejam habilitados e o Ollama em execução.';
+      'Ativa a pesquisa vetorial nos filtros de tarefas. Requer os embeddings ativados e o respetivo modelo descarregado.';
 
   @override
   String get configFlagEnableWhatsNew => 'Mostrar o que há de novo';
@@ -6691,6 +6691,38 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get editorPlaceholder => 'Insira notas...';
+
+  @override
+  String get embeddingModelCheckFailed =>
+      'Não foi possível verificar o modelo neste dispositivo.';
+
+  @override
+  String get embeddingModelDescription =>
+      'A pesquisa por significado funciona neste dispositivo. Descarrega o modelo uma vez para a usares.';
+
+  @override
+  String get embeddingModelDownloadAction => 'Descarregar';
+
+  @override
+  String get embeddingModelDownloadFailed =>
+      'A transferência não terminou. Verifica a tua ligação e tenta novamente.';
+
+  @override
+  String get embeddingModelDownloading => 'A descarregar';
+
+  @override
+  String embeddingModelDownloadSemantics(String model) {
+    return 'Descarregar $model';
+  }
+
+  @override
+  String get embeddingModelInstalled => 'Neste dispositivo';
+
+  @override
+  String get embeddingModelRetry => 'Tentar novamente';
+
+  @override
+  String get embeddingModelTerms => 'Termos de Utilização do Gemma';
 
   @override
   String get embeddingSelectAll => 'Selecionar tudo';
@@ -10534,15 +10566,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get maintenanceGenerateEmbeddings => 'Gerar incorporações';
 
   @override
+  String get maintenanceGenerateEmbeddingsCategories => 'Categorias';
+
+  @override
   String get maintenanceGenerateEmbeddingsConfirm => 'Sim, gerar';
 
   @override
   String get maintenanceGenerateEmbeddingsDescription =>
       'Gere embeddings para entradas em categorias selecionadas';
-
-  @override
-  String get maintenanceGenerateEmbeddingsMessage =>
-      'Selecione categorias para gerar incorporações.';
 
   @override
   String maintenanceGenerateEmbeddingsProgress(
