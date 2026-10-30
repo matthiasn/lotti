@@ -43,3 +43,19 @@ d('Xenova/multilingual-e5-small', revision='761b726dd34fb83930e26aab4e9ac3899aa1
 ```
 
 `--only NAME` scores the models whose name contains `NAME`.
+
+## Tokenizer parity
+
+The app tokenizes EmbeddingGemma's input in Dart (`GemmaTokenizer`), not
+with Hugging Face `tokenizers`. To check the port, write the ids `tokenizers`
+gives every text the app would feed the model, plus edge cases the corpus
+does not reach, then compare them:
+
+```sh
+/tmp/embed-venv/bin/python tool/embedding_eval/tokenizer_parity.py --models-dir /tmp/models
+EMBEDDING_MODELS_DIR=/tmp/models fvm flutter test tool/embedding_eval/tokenizer_parity_test.dart
+```
+
+Run it whenever the tokenizer or the model revision changes. The unit tests
+in `test/` cover each rule of the port on a small vocabulary, but only this
+check runs the real one.

@@ -64,6 +64,7 @@ lib/features/ai/
 ├── helpers/        # prompt building and context injection
 ├── util/           # profile resolution, seeding, locality
 ├── database/       # AiConfigDb, embedding stores
+├── on_device_embedding/  # EmbeddingGemma's tokenizer, ported to Dart
 └── ui/             # provider, model and profile editors
 ```
 
