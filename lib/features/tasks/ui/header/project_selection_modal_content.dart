@@ -107,7 +107,7 @@ class ProjectSelectionModalBody extends StatefulWidget {
   /// was accepted; a `false` or a throw keeps the picker open.
   final Future<bool> Function(ProjectEntry? project) onProjectSelected;
 
-  /// The project the task is linked to, pinned and ticked at the top.
+  /// The project the task is linked to, pinned and selected at the top.
   final String? currentProjectId;
 
   /// Navigates to a project's page, after the picker has closed. Null hides
@@ -222,7 +222,7 @@ class _ProjectSelectionModalBodyState extends State<ProjectSelectionModalBody> {
     final project = id == _kProjectPickerNoneSentinel
         ? null
         : projects.where((p) => p.meta.id == id).firstOrNull;
-    // A tap on the row that is already ticked changes nothing: close without
+    // A tap on the row that is already selected changes nothing: close without
     // a write rather than re-linking the task to the project it is in.
     if (project?.meta.id == widget.currentProjectId) {
       Navigator.pop(context);
@@ -301,6 +301,9 @@ class _ProjectSelectionModalBodyState extends State<ProjectSelectionModalBody> {
                 ? messages.projectNoProjects
                 : messages.filterSelectionNoMatches,
             selectedId: widget.currentProjectId,
+            // The selected band marks the current project; a check would push
+            // its status chip out of line with every other row's.
+            showSelectedMarker: false,
             onPick: (id) => _onPick(projects, id),
           ),
         ],

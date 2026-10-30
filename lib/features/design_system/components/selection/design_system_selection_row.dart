@@ -61,6 +61,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     this.trailing,
     this.selected = false,
     this.showSelectedBackground = true,
+    this.showSelectedMarker = true,
     this.secondaryLine,
     this.secondaryAction,
     this.selectedLabel,
@@ -99,6 +100,14 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// list into one visual block. Selection semantics are unaffected.
   final bool showSelectedBackground;
 
+  /// Whether a selected single-select row draws the trailing check.
+  ///
+  /// Turn it off where the selected band alone is the selected state and the
+  /// rows carry trailing metadata (a status chip, say): the check would push
+  /// the selected row's metadata out of line with every other row's.
+  /// Selection semantics are unaffected.
+  final bool showSelectedMarker;
+
   /// Optional content rendered on its own line directly below the row,
   /// left-aligned to the row's title inset — the slot for a control that a
   /// narrow row cannot host in its trailing position (a cadence stepper,
@@ -119,11 +128,9 @@ class DesignSystemSelectionRow extends StatelessWidget {
   ///
   /// Each segment has its own ink, so hovering the chevron never lights the
   /// pick and a tap on it never reaches [onTap]. The selected band runs under
-  /// both and is the whole selected state: a single-select split row draws no
-  /// check, so its [trailing] metadata lines up with every other row's. The
-  /// segment is its own button node beside the row's (the row excludes its
-  /// visual subtree from semantics, so a control inside it would be
-  /// unreachable). A disabled row disables it too.
+  /// both. The segment is its own button node beside the row's (the row
+  /// excludes its visual subtree from semantics, so a control inside it would
+  /// be unreachable). A disabled row disables it too.
   final DesignSystemSelectionRowAction? secondaryAction;
 
   /// Optional visible state label displayed before the selected check.
@@ -237,11 +244,7 @@ class DesignSystemSelectionRow extends StatelessWidget {
     final tokens = context.designTokens;
     switch (type) {
       case DesignSystemSelectionRowType.singleSelect:
-        if (!selected) return null;
-        // A split row's selected band already says which row is chosen; a
-        // check there would only push that row's trailing metadata out of
-        // line with every other row's. Selection stays in the semantics.
-        if (secondaryAction != null) return null;
+        if (!selected || !showSelectedMarker) return null;
         return _SelectionMarker(label: selectedLabel);
       case DesignSystemSelectionRowType.multiSelect:
         return ExcludeFocus(

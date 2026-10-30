@@ -43,6 +43,7 @@ void main() {
     Future<String?> Function(String query)? createFromQuery,
     bool Function(String query)? shouldShowCreate,
     int titleMaxLines = 1,
+    bool showSelectedMarker = true,
     Future<void> Function(String query)? onQueryResolve,
   }) async {
     await tester.pumpWidget(
@@ -51,6 +52,7 @@ void main() {
           child: EntityPickerSheet(
             mode: mode,
             titleMaxLines: titleMaxLines,
+            showSelectedMarker: showSelectedMarker,
             entriesBuilder: entriesBuilder,
             searchHintText: 'Search',
             emptyMessage: 'Nothing here',
@@ -267,6 +269,24 @@ void main() {
         ),
         findsNothing,
       );
+    });
+
+    testWidgets('without the selected marker the selected row is selected '
+        'but draws no check', (tester) async {
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        selectedId: 'beta',
+        showSelectedMarker: false,
+        entriesBuilder: (_) => [item('alpha'), item('beta')],
+      );
+
+      final beta = tester.widget<DesignSystemSelectionRow>(
+        find.byKey(const ValueKey('row-beta')),
+      );
+      expect(beta.selected, isTrue);
+      expect(beta.showSelectedMarker, isFalse);
+      expect(find.byIcon(LottiIcons.confirm), findsNothing);
     });
 
     testWidgets('renders row metadata badges before the selection marker', (

@@ -337,12 +337,14 @@ void main() {
       VoidCallback? onAction,
       bool selected = false,
       bool withAction = true,
+      bool showSelectedMarker = true,
       String id = 'action-row',
     }) => DesignSystemSelectionRow(
       key: Key(id),
       title: 'Garden',
       type: DesignSystemSelectionRowType.singleSelect,
       selected: selected,
+      showSelectedMarker: showSelectedMarker,
       trailing: Text('Active', key: Key('badge-$id')),
       secondaryAction: withAction
           ? DesignSystemSelectionRowAction(
@@ -433,8 +435,8 @@ void main() {
       );
     });
 
-    testWidgets('a selected split row lets its band carry the selection, so '
-        'its trailing metadata lines up with an unselected row', (
+    testWidgets('without its marker, a selected row lets its band carry the '
+        'selection, so its trailing metadata lines up with an unselected row', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -446,9 +448,14 @@ void main() {
                 actionRow(
                   onTap: () {},
                   selected: true,
+                  showSelectedMarker: false,
                   id: 'picked',
                 ),
-                actionRow(onTap: () {}, id: 'other'),
+                actionRow(
+                  onTap: () {},
+                  showSelectedMarker: false,
+                  id: 'other',
+                ),
               ],
             ),
           ),

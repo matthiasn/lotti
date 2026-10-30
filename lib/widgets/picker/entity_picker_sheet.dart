@@ -89,6 +89,7 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
     this.titleMaxLines = 1,
     this.topInset = true,
     this.rowSize = DesignSystemListItemSize.medium,
+    this.showSelectedMarker = true,
     super.key,
   }) : assert(
          mode == PickerMode.single || stagedNotifier != null,
@@ -174,6 +175,10 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   /// Row density. Pickers listing the same entity a surrounding surface also
   /// lists should match that surface, so one entity has one rank throughout.
   final DesignSystemListItemSize rowSize;
+
+  /// Whether the single-select row in [selectedId] draws its check; see
+  /// [DesignSystemSelectionRow.showSelectedMarker].
+  final bool showSelectedMarker;
 
   @override
   ConsumerState<EntityPickerSheet> createState() => _EntityPickerSheetState();
@@ -484,6 +489,7 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       selected: selected,
       titleMaxLines: widget.titleMaxLines,
       rowSize: widget.rowSize,
+      showSelectedMarker: widget.showSelectedMarker,
       // Creation is exclusive: while a create is in flight every other row is
       // inert. Left tappable, picking an existing result would commit and pop
       // while the create was still pending, and the create's own completion
@@ -528,6 +534,7 @@ class _PickerItemRow extends StatelessWidget {
     required this.onTap,
     required this.titleMaxLines,
     required this.rowSize,
+    required this.showSelectedMarker,
   });
 
   final PickerItem item;
@@ -536,6 +543,7 @@ class _PickerItemRow extends StatelessWidget {
   final VoidCallback? onTap;
   final int titleMaxLines;
   final DesignSystemListItemSize rowSize;
+  final bool showSelectedMarker;
 
   @override
   Widget build(BuildContext context) {
@@ -555,6 +563,7 @@ class _PickerItemRow extends StatelessWidget {
           ? DesignSystemSelectionRowType.multiSelect
           : DesignSystemSelectionRowType.singleSelect,
       selected: selected,
+      showSelectedMarker: showSelectedMarker,
       semanticLabel: item.semanticLabel,
       secondaryAction: item.action,
       onTap: onTap,
