@@ -17533,6 +17533,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksFilterClearAll => 'Borrar todo';
 
   @override
+  String get tasksFilterIgnoredBySearch =>
+      'La búsqueda no tiene en cuenta este filtro';
+
+  @override
   String get tasksFilterTitle => 'Filtrar tareas';
 
   @override

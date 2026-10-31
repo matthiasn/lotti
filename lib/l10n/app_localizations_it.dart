@@ -17532,6 +17532,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get tasksFilterClearAll => 'Cancella tutto';
 
   @override
+  String get tasksFilterIgnoredBySearch =>
+      'La ricerca non tiene conto di questo filtro';
+
+  @override
   String get tasksFilterTitle => 'Filtra le attività';
 
   @override

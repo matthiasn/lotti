@@ -7227,6 +7227,7 @@
   "taskSetEstimateLabel": "Tilføj estimat",
   "tasksFilterApplyTitle": "Påfør filter",
   "tasksFilterClearAll": "Ryd alt",
+  "tasksFilterIgnoredBySearch": "Søgningen ser bort fra dette filter",
   "tasksFilterTitle": "Filteropgaver",
   "taskShowcaseAudio": "Lyd",
   "taskShowcaseCompletedCount": "{completed} / {total} færdig",

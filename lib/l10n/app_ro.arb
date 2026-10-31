@@ -6557,6 +6557,7 @@
   "taskSetEstimateLabel": "Adăugați o estimare",
   "tasksFilterApplyTitle": "Aplicați filtrul",
   "tasksFilterClearAll": "Ștergeți tot",
+  "tasksFilterIgnoredBySearch": "Căutarea nu ține cont de acest filtru",
   "tasksFilterTitle": "Filtrați sarcinile",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} finalizate",

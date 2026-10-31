@@ -152,5 +152,80 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    group('muted', () {
+      const accent = Color(0xFF00FF88);
+
+      Future<void> pumpChip(
+        WidgetTester tester, {
+        required bool muted,
+        void Function()? onRemove,
+      }) => pump(
+        tester,
+        ActiveFilterChip(
+          label: 'P1',
+          accentColor: accent,
+          leadingIcon: LottiIcons.play,
+          muted: muted,
+          mutedReason: 'Search looks past this filter',
+          onRemove: onRemove ?? () {},
+        ),
+      );
+
+      Color border(WidgetTester tester) =>
+          (tester
+                      .widgetList<Material>(
+                        find.descendant(
+                          of: find.byType(ActiveFilterChip),
+                          matching: find.byType(Material),
+                        ),
+                      )
+                      .first
+                      .shape!
+                  as RoundedRectangleBorder)
+              .side
+              .color;
+
+      testWidgets('keeps its hue at reduced strength and its label low', (
+        tester,
+      ) async {
+        await pumpChip(tester, muted: true);
+        final tokens = tester
+            .element(find.byType(ActiveFilterChip))
+            .designTokens;
+
+        final faded = accent.withValues(alpha: SurfaceAlphas.muted);
+        expect(border(tester), faded);
+        expect(tester.widget<Icon>(find.byIcon(LottiIcons.play)).color, faded);
+        expect(
+          tester.widget<Text>(find.text('P1')).style?.color,
+          tokens.colors.text.lowEmphasis,
+        );
+      });
+
+      testWidgets('says why in a tooltip, and is still removable', (
+        tester,
+      ) async {
+        var removed = 0;
+        await pumpChip(tester, muted: true, onRemove: () => removed++);
+
+        expect(
+          find.byTooltip('Search looks past this filter'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byType(ActiveFilterChip));
+        await tester.pump();
+        expect(removed, 1);
+      });
+
+      testWidgets('an applying chip has full strength and no tooltip', (
+        tester,
+      ) async {
+        await pumpChip(tester, muted: false);
+
+        expect(border(tester), accent);
+        expect(find.byType(Tooltip), findsNothing);
+      });
+    });
   });
 }

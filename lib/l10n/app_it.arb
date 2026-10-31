@@ -7227,6 +7227,7 @@
   "taskSetEstimateLabel": "Aggiungi stima",
   "tasksFilterApplyTitle": "Applica il filtro",
   "tasksFilterClearAll": "Cancella tutto",
+  "tasksFilterIgnoredBySearch": "La ricerca non tiene conto di questo filtro",
   "tasksFilterTitle": "Filtra le attività",
   "taskShowcaseAudio": "Audio audio",
   "taskShowcaseCompletedCount": "{completed} / {total} fatto",

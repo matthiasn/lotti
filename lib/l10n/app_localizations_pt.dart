@@ -17479,6 +17479,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tasksFilterClearAll => 'Limpar tudo';
 
   @override
+  String get tasksFilterIgnoredBySearch => 'A pesquisa ignora este filtro';
+
+  @override
   String get tasksFilterTitle => 'Filtrar tarefas';
 
   @override

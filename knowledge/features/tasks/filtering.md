@@ -5,7 +5,7 @@ description: The browse page's shared query stack, the adaptive filter modal, th
 resource: ../../../lib/features/tasks/state/saved_filters
 tags: [tasks, filters, saved-filters, due-dates, keyboard]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-30T22:00:00Z }
 stale_after: 2027-03-15
 sources:
   - id: saved-filters
@@ -455,6 +455,11 @@ re-expands. The chip row itself never echoes the *default* open-work status
 set — an unfiltered list renders zero chips, keeping the chip count and the
 collapsed badge count in agreement — and once two things are narrowing,
 clauses or the search query, it ends with a "Clear all" chip that resets both.
+While a query is typed, the chips for clauses a task search looks past
+(status, label, priority, project and agent, ADR 0149) are `muted`. Each keeps
+its hue at `SurfaceAlphas.muted`, its label at low emphasis, and a "Search
+looks past this filter" tooltip, and it stays removable. Category chips keep
+full strength, because category still scopes the search.
 Every count comes from the one `taskFilterNarrowingClauseCount` predicate in
 `saved_task_filter_activator.dart`, agent-assignment clause included, so the
 funnel tint, the badge, the collapsed caption and the chip row cannot
