@@ -225,7 +225,9 @@ class CompanionAnimator {
       gaze = Offset.lerp(gaze, Offset(faceGaze.$1, faceGaze.$2), fe)!;
     }
     final bounceEnv = s['bounce']!.step(g.bounce + mood.bounce, dt);
-    final bounce = -bounceEnv * math.sin(2 * math.pi * 1.6 * t).abs();
+    // Up and down three times a second, smoothly: an |sin| bob reversed
+    // with a jolt at every landing.
+    final bounce = -bounceEnv * 0.5 * (1 - math.cos(2 * math.pi * 3.2 * t));
     _breathPhase += dt * 2 * math.pi / 4 * mood.breathRate;
     if (t >= _nextFlick) {
       _flickStart = t;

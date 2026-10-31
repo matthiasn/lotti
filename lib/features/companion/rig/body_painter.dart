@@ -8,7 +8,6 @@ import 'package:lotti/features/companion/rig/hand_painter.dart';
 import 'package:lotti/features/companion/rig/paint_kit.dart';
 import 'package:lotti/features/companion/rig/ribbon.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
-import 'package:lotti/features/companion/rig/rig_math.dart';
 
 /// The body below the head: legs and shoes (an animal's paws), the neck, the
 /// dress with its cardigan and scarf, and the arms with their sleeves and
@@ -22,9 +21,9 @@ const armTension = [0.5, 0.45, 0.28, 0.5];
 void drawLegs(Canvas canvas, RigFrame f, CompanionLook look) {
   final c = look.palette;
   for (final s in [-1, 1]) {
-    final hip = Offset(f.pelvis.dx + s * 15, f.pelvis.dy + 12);
+    final hip = f.hip(s);
     final ankle = f.ankle(s);
-    final knee = twoBoneIk(hip, ankle, thigh, shin, -s.toDouble()).elbow;
+    final knee = f.knee(s);
     if (look.species.isAnimal) {
       fillPath(canvas, tapered(hip, knee, 19, 16), c.limbDeepColor);
       fillPath(canvas, tapered(knee, ankle, 16, 13), c.limbColor);

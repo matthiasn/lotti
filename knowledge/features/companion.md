@@ -5,7 +5,7 @@ description: The animated character rig — a per-frame animator of springs and 
 resource: ../../lib/features/companion
 tags: [companion, avatar, animation, lip-sync, custompainter, widgetbook]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-31T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2027-03-31
 sources:
   - id: goal-companion
@@ -15,7 +15,7 @@ sources:
   - id: animator
     resource: ../../lib/features/companion/animation/companion_animator.dart
     title: CompanionAnimator
-    last_modified: 2026-10-22
+    last_modified: 2026-11-01
   - id: view
     resource: ../../lib/features/companion/ui/companion_view.dart
     title: CompanionView and CompanionController
@@ -60,6 +60,10 @@ sources:
     resource: ../../lib/features/companion/animation/sound_features.dart
     title: SoundFeatures, a voice's brightness per window
     last_modified: 2026-10-31
+  - id: rig-frame
+    resource: ../../lib/features/companion/rig/rig_frame.dart
+    title: RigFrame, the pose resolved into joints, the knees among them
+    last_modified: 2026-11-01
   - id: wav-pcm
     resource: ../../lib/features/companion/animation/wav_pcm.dart
     title: readPcm16, the voices' WAV read once
@@ -210,6 +214,18 @@ eyes and an eye roll half-closes them.
 it is allowed, which hangs; hands on the hips need it out. A `GestureArm`'s
 `elbow` names the direction the upper arm would rather take, and the solver
 weighs its choices against that instead of the hang, inside the same rules.
+
+**Her knees hold their place when she bounces.** A gesture's and a mood's
+`bounce` add (a praise reaction such as `delighted` with `celebrate` reaches
+5) and lift the pelvis smoothly, `(1 − cos)/2` three times a second; an `|sin|`
+bob jolted at every landing. The feet stay planted, so the legs take up the
+bob. She faces us, so a bending knee goes towards us: `RigFrame.knee` keeps
+each knee where the standing leg's solved knee sits — as far down the
+hip-to-ankle line and as far out from it — and a bob foreshortens the leg.
+Solving the knee afresh each frame, with the legs this close to straight
+(153 units of leg, 146 of reach), swung the knees 14 units sideways for a
+6-unit bob, which read as shaking legs; `rig_frame_test` gates that,
+frame by frame, as the dancing_cats rig gates its joints.
 
 `CompanionController` is the owner's handle: `play`, `blink` and `time`
 reach the attached view's animator, and are no-ops while detached. Swapping

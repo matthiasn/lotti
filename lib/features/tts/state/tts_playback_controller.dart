@@ -7,6 +7,7 @@ import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/model/tts_model_option.dart';
 import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
@@ -21,19 +22,24 @@ const String kDefaultTtsLanguage = 'na';
 /// [TtsModelOption.totalBytes] — and answers whether they agreed.
 typedef TtsModelDownloadConsent = Future<bool> Function(TtsModelOption model);
 
-/// One disposable, device-local result. Its key includes every synthesis input;
-/// playback speed is applied by the player and does not change the WAV.
+/// Every input that shapes a synthesized WAV; playback speed is applied by
+/// the player and does not change it.
+typedef _SpeechKey = ({
+  String sourceId,
+  String text,
+  String voice,
+  String model,
+  String language,
+});
+
+/// One disposable, device-local result, keyed by everything that shaped it:
+/// audio prepared ahead of a tap, or the utterance that just finished playing,
+/// kept so playing it again replays the clip instead of synthesizing it — or,
+/// for a cloud voice, uploading the text — a second time.
 class _PreparedSpeech {
   _PreparedSpeech(this.key);
 
-  final ({
-    String sourceId,
-    String text,
-    String voice,
-    String model,
-    String language,
-  })
-  key;
+  final _SpeechKey key;
   final done = Completer<void>();
   File? file;
   bool cancelled = false;
@@ -65,6 +71,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   Future<void> _preparation = Future<void>.value();
   _PreparedSpeech? _prepared;
   File? _file;
+  _SpeechKey? _fileKey;
   TtsAudioPlayer? _player;
   final DomainLogger? _injectedLogger;
   // Captured in build: cleanup can finish after provider disposal, when ref is
@@ -102,13 +109,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   }) async {
     if (!ref.mounted || state.isBusy || cloudRoute != null) return;
     final settings = ref.read(ttsSettingsControllerProvider);
-    final key = (
-      sourceId: sourceId,
-      text: text,
-      voice: settings.voiceId,
-      model: settings.modelId,
-      language: language,
-    );
+    final key = _keyFor(sourceId, text, language, settings, null);
     final existing = _prepared;
     if (existing != null && existing.key == key) return existing.done.future;
     discardPrepared();
@@ -194,15 +195,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
     final settings = ref.read(ttsSettingsControllerProvider);
     final prepared = _prepared;
-    final matches =
-        prepared?.key ==
-        (
-          sourceId: sourceId,
-          text: text,
-          voice: settings.voiceId,
-          model: cloudRoute?.cacheKey ?? settings.modelId,
-          language: language,
-        );
+    final key = _keyFor(sourceId, text, language, settings, cloudRoute);
+    final matches = prepared?.key == key;
     if (!matches) discardPrepared();
     final repo = ref.read(ttsModelRepositoryProvider);
     final previous = _preparation;
@@ -273,6 +267,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
         return;
       }
       _file = file;
+      _fileKey = key;
       final allowed = canPlay == null || await canPlay();
       if (!current() || !allowed) {
         if (identical(_file, file)) _file = null;
@@ -371,7 +366,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
   void _listenToPlayer(TtsAudioPlayer player) {
     _cancelPlayerSubscriptions();
-    _completedSub = player.completedStream.listen((_) => _onPlaybackEnded());
+    _completedSub = player.completedStream.listen((_) => _onPlaybackFinished());
     _positionSub = player.positionStream.listen((position) {
       if (state.status == TtsPlaybackStatus.playing) {
         state = state.copyWith(position: position);
@@ -383,6 +378,45 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       }
     });
   }
+
+  /// The utterance played to its end: its clip is kept as the prepared
+  /// result for its key, so the same words, voice and language play again at
+  /// once. Anything else spoken or prepared, a discard, and disposal delete
+  /// it, as they do any prepared audio; a stop deletes a clip still playing.
+  void _onPlaybackFinished() {
+    final file = _file;
+    final key = _fileKey;
+    if (file != null && key != null && ref.mounted) {
+      _file = null;
+      discardPrepared();
+      _prepared = _PreparedSpeech(key)
+        ..file = file
+        ..done.complete();
+    }
+    // Deletes whatever was not kept.
+    _onPlaybackEnded();
+  }
+
+  /// The key of an utterance: on a cloud route, its voice is the route's or
+  /// the one chosen for its language, so a different voice never replays the
+  /// old one's clip.
+  static _SpeechKey _keyFor(
+    String sourceId,
+    String text,
+    String language,
+    TtsSettings settings,
+    TtsCloudRoute? cloudRoute,
+  ) => (
+    sourceId: sourceId,
+    text: text,
+    voice: cloudRoute == null
+        ? settings.voiceId
+        : cloudRoute.voiceId ??
+              settings.cloudVoiceByLanguage[cloudRoute.languageCode] ??
+              '',
+    model: cloudRoute?.cacheKey ?? settings.modelId,
+    language: language,
+  );
 
   void _onPlaybackEnded() {
     _cancelPlayerSubscriptions();
