@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/overlay_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Stable keys for the mobile navigation drawer.
@@ -228,6 +229,23 @@ class _MobileNavigationDrawerHostState extends State<MobileNavigationDrawerHost>
           )
         : null;
 
+    // Escape closes the drawer as a tap on its scrim does; the page under it
+    // is excluded from focus, so the scope takes it while the drawer shows.
+    return OverlayEscapeScope(
+      active: showing,
+      onDismiss: widget.controller.close,
+      child: _buildSlide(tokens, width, barrier, showing, page, panel),
+    );
+  }
+
+  Widget _buildSlide(
+    DsTokens tokens,
+    double width,
+    Color barrier,
+    bool showing,
+    Widget page,
+    Widget? panel,
+  ) {
     return AnimatedBuilder(
       animation: _slide,
       builder: (context, _) {

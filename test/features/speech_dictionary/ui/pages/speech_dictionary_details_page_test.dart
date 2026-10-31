@@ -22,6 +22,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_timestamps_footer.dart';
 import 'package:material_ui/material_ui.dart';
@@ -319,7 +320,7 @@ void main() {
     await tester.tap(
       find.widgetWithText(SettingsDeleteRow, messages.deleteButton),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(
       find.text(
@@ -332,7 +333,7 @@ void main() {
     await tester.tap(
       find
           .descendant(
-            of: find.byType(AlertDialog),
+            of: find.byKey(confirmationModalKey),
             matching: find.byType(DesignSystemButton),
           )
           .last,
@@ -484,11 +485,11 @@ void main() {
     await tester.tap(
       find.widgetWithText(SettingsDeleteRow, messages.deleteButton),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     await tester.tap(
       find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byKey(confirmationModalKey),
         matching: find.widgetWithText(
           DesignSystemButton,
           messages.cancelButton,
@@ -498,7 +499,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byKey(confirmationModalKey), findsNothing);
     verifyNever(() => repository.delete(any()));
     expect(beamedTo, isEmpty);
   });

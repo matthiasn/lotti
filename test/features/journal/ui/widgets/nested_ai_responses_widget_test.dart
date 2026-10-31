@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -177,7 +178,7 @@ void main() {
 
     await tester.dragFrom(swipeStart, const Offset(-300, 0));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
   }
 
   group('NestedAiResponsesWidget Rendering', () {
@@ -578,8 +579,8 @@ void main() {
       // Swipe to trigger confirmation dialog
       await swipeAiResponseToDelete(tester);
 
-      // Verify AlertDialog is shown with title and content
-      expect(find.byType(AlertDialog), findsOneWidget);
+      // Verify the confirmation modal is shown with title and content
+      expect(find.byKey(confirmationModalKey), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Delete'), findsOneWidget);
     });
@@ -596,10 +597,10 @@ void main() {
       // Tap Cancel button
       await tester.tap(find.text('Cancel'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Dialog should be dismissed
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byKey(confirmationModalKey), findsNothing);
 
       // Delete should NOT have been called
       verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));
@@ -624,7 +625,7 @@ void main() {
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Verify delete was called with correct ID
       verify(
@@ -634,7 +635,7 @@ void main() {
       ).called(1);
 
       // Dialog should be dismissed
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byKey(confirmationModalKey), findsNothing);
     });
 
     testWidgets('shows error snackbar when delete fails', (tester) async {
@@ -654,7 +655,7 @@ void main() {
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Verify delete was called
       verify(
@@ -689,7 +690,7 @@ void main() {
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Error snackbar should be shown
       expect(find.byType(SnackBar), findsOneWidget);
@@ -708,15 +709,15 @@ void main() {
       await swipeAiResponseToDelete(tester);
 
       // Verify dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byKey(confirmationModalKey), findsOneWidget);
 
       // Tap outside the dialog (on the barrier)
       await tester.tapAt(const Offset(10, 10));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Dialog should be dismissed
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byKey(confirmationModalKey), findsNothing);
 
       // Delete should NOT have been called
       verifyNever(() => mockJournalRepository.deleteJournalEntity(any()));

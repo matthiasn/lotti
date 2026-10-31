@@ -35,6 +35,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -143,32 +144,14 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// flips back to Capture for this date without a manual navigate.
   Future<void> _confirmDeletePlan() async {
     final messages = context.messages;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(messages.dailyOsNextDayDeleteDialogTitle),
-        content: Text(messages.dailyOsNextDayDeleteDialogBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(messages.dailyOsNextDayDeleteDialogCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(
-                dialogContext,
-              ).colorScheme.errorContainer,
-              foregroundColor: Theme.of(
-                dialogContext,
-              ).colorScheme.onErrorContainer,
-            ),
-            child: Text(messages.dailyOsNextDayDeleteDialogConfirm),
-          ),
-        ],
-      ),
+      title: messages.dailyOsNextDayDeleteDialogTitle,
+      message: messages.dailyOsNextDayDeleteDialogBody,
+      cancelLabel: messages.dailyOsNextDayDeleteDialogCancel,
+      confirmLabel: messages.dailyOsNextDayDeleteDialogConfirm,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
     final agent = ref.read(dayAgentProvider);
     await agent.deletePlanForDate(widget.draft.dayDate);
   }

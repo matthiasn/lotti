@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/queue/sync_queue_control.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Collapsible group containing every recovery action. Header is
@@ -372,27 +373,15 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     int unresolvable,
   ) async {
     final messages = context.messages;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(messages.backfillAskPeersConfirmTitle),
-        content: Text(
-          messages.backfillAskPeersConfirmContent(unresolvable),
-        ),
-        actions: [
-          DesignSystemButton(
-            label: messages.cancelButton,
-            variant: DesignSystemButtonVariant.tertiary,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          DesignSystemButton(
-            label: messages.backfillAskPeersConfirmAccept,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
-      ),
+      title: messages.backfillAskPeersConfirmTitle,
+      message: messages.backfillAskPeersConfirmContent(unresolvable),
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.backfillAskPeersConfirmAccept,
+      isDestructive: false,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     await ProviderScope.containerOf(
       context,
     ).read(backfillStatsControllerProvider.notifier).resetAllUnresolvable();
@@ -403,27 +392,15 @@ class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     int openCount,
   ) async {
     final messages = context.messages;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(messages.backfillRetireStuckConfirmTitle),
-        content: Text(
-          messages.backfillRetireStuckConfirmContent(openCount),
-        ),
-        actions: [
-          DesignSystemButton(
-            label: messages.cancelButton,
-            variant: DesignSystemButtonVariant.tertiary,
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          DesignSystemButton(
-            label: messages.backfillRetireStuckConfirmAccept,
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
-      ),
+      title: messages.backfillRetireStuckConfirmTitle,
+      message: messages.backfillRetireStuckConfirmContent(openCount),
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.backfillRetireStuckConfirmAccept,
+      isDestructive: false,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
     await ProviderScope.containerOf(
       context,
     ).read(backfillStatsControllerProvider.notifier).retireStuckNow();

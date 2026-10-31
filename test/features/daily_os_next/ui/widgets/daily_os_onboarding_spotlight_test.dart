@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_onboarding_spotlight.dart';
 import 'package:material_ui/material_ui.dart';
@@ -105,6 +106,26 @@ void main() {
 
       expect(actions, 1);
       expect(dismisses, 0);
+    });
+
+    testWidgets('Escape fires onDismiss, as a tap on the scrim does', (
+      tester,
+    ) async {
+      var actions = 0;
+      var dismisses = 0;
+      await pumpSpotlight(
+        tester,
+        onAction: () => actions++,
+        onDismiss: () => dismisses++,
+      );
+      // The spotlight takes focus once it has laid out.
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(dismisses, 1);
+      expect(actions, 0);
     });
 
     testWidgets('the dismiss button fires onDismiss', (tester) async {

@@ -25,6 +25,7 @@ import 'package:lotti/features/keyboard/ui/app_command_host.dart';
 import 'package:lotti/features/settings/ui/pages/categories/category_details_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -622,7 +623,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         // Check dialog appears
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byKey(confirmationModalKey), findsOneWidget);
         expect(find.textContaining('Delete'), findsAtLeastNWidgets(1));
       });
 
@@ -665,7 +666,7 @@ void main() {
           // button inside the dialog (the first is the cancel button).
           final confirmButton = find
               .descendant(
-                of: find.byType(AlertDialog),
+                of: find.byKey(confirmationModalKey),
                 matching: find.byType(DesignSystemButton),
               )
               .last;
@@ -712,7 +713,7 @@ void main() {
         // The first tertiary button inside the dialog is Cancel.
         final cancelInDialog = find
             .descendant(
-              of: find.byType(AlertDialog),
+              of: find.byKey(confirmationModalKey),
               matching: find.byType(DesignSystemButton),
             )
             .first;
@@ -721,7 +722,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         // Dialog should be dismissed and nothing deleted
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byKey(confirmationModalKey), findsNothing);
         verifyNever(() => mockRepository.deleteCategory(any()));
       });
     });

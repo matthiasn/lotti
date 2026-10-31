@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/layout/viewport_stable_animated_size.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Displays AI responses linked to an entry (e.g., audio) in a collapsible
@@ -357,31 +357,15 @@ class _NestedAiResponsesWidgetState
   ) async {
     final errorMessage = context.messages.aiResponseDeleteError;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(dialogContext.messages.aiResponseDeleteTitle),
-          content: Text(dialogContext.messages.aiResponseDeleteWarning),
-          actions: [
-            DesignSystemButton(
-              label: dialogContext.messages.aiResponseDeleteCancel,
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.large,
-            ),
-            DesignSystemButton(
-              label: dialogContext.messages.aiResponseDeleteConfirm,
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              variant: DesignSystemButtonVariant.dangerTertiary,
-              size: DesignSystemButtonSize.large,
-            ),
-          ],
-        );
-      },
+      title: context.messages.aiResponseDeleteTitle,
+      message: context.messages.aiResponseDeleteWarning,
+      cancelLabel: context.messages.aiResponseDeleteCancel,
+      confirmLabel: context.messages.aiResponseDeleteConfirm,
     );
 
-    if (confirmed != true) {
+    if (!confirmed) {
       return false;
     }
 

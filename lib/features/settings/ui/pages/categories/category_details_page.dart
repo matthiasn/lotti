@@ -17,7 +17,6 @@ import 'package:lotti/features/categories/ui/widgets/category_knowledge_brief.da
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/category_icon_data.dart';
 import 'package:lotti/widgets/form/agent_wake_cadence_field.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/language_selection_modal_content.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
@@ -516,36 +516,21 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
   }
 
-  void _showDeleteDialog() {
-    showDialog<bool>(
+  Future<void> _showDeleteDialog() async {
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.messages.categoryDeleteTitle),
-        content: Text(context.messages.categoryDeleteConfirmation),
-        actions: [
-          DesignSystemButton(
-            label: context.messages.cancelButton,
-            variant: DesignSystemButtonVariant.secondary,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          DesignSystemButton(
-            variant: DesignSystemButtonVariant.danger,
-            onPressed: () async {
-              // Pop the confirm dialog first, then beam back to the
-              // list once the row is gone.
-              Navigator.of(context).pop();
-              final controller = ref.read(
-                categoryDetailsControllerProvider(widget.categoryId!).notifier,
-              );
-              await controller.deleteCategory();
-              if (context.mounted) {
-                beamToNamed('/settings/categories');
-              }
-            },
-            label: context.messages.categoryDeleteConfirm,
-          ),
-        ],
-      ),
+      title: messages.categoryDeleteTitle,
+      message: messages.categoryDeleteConfirmation,
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.categoryDeleteConfirm,
     );
+    if (!confirmed || !mounted) return;
+    // Beam back to the list once the row is gone.
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+    await controller.deleteCategory();
+    if (mounted) beamToNamed('/settings/categories');
   }
 }

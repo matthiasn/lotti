@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -541,6 +542,40 @@ void main() {
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
       await route;
+      expect(find.text('AI in the demo is pretend'), findsNothing);
+    });
+
+    testWidgets('Escape closes the route as the outer barrier does, even with '
+        'a control inside the panel focused', (tester) async {
+      late BuildContext hostContext;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              hostContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final route = DemoAiSetupSheet.show(hostContext);
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+      // Tab into the panel, below its own Scaffold.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<Scaffold>(),
+        isNotNull,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+      await route;
+
       expect(find.text('AI in the demo is pretend'), findsNothing);
     });
 

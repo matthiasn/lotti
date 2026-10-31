@@ -7,7 +7,6 @@ import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_hero_banner.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
@@ -127,11 +126,8 @@ abstract final class WhatsNewModal {
         ? Colors.black.withValues(alpha: 0.75)
         : context.colorScheme.outline.withValues(alpha: 0.5);
 
-    await WoltModalSheet.show<void>(
+    await ModalUtils.showWoltModal<void>(
       context: context,
-      useRootNavigator: ModalUtils.shouldUseRootNavigatorForBottomSheet(
-        context,
-      ),
       pageIndexNotifier: pageNotifier,
       pageListBuilder: (modalContext) {
         final screenWidth = MediaQuery.of(modalContext).size.width;
@@ -157,22 +153,19 @@ abstract final class WhatsNewModal {
         ];
       },
       modalTypeBuilder: _modalTypeBuilder,
-      barrierDismissible: true,
       modalBarrierColor: barrierColor,
-      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(
-        (child) => DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
-                spreadRadius: 4,
-              ),
-            ],
-          ),
-          child: child,
+      modalDecorator: (child) => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 32,
+              spreadRadius: 4,
+            ),
+          ],
         ),
+        child: child,
       ),
     );
 

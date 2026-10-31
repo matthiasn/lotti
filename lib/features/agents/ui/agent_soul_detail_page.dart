@@ -14,6 +14,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -426,51 +427,37 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
     }
   }
 
-  void _handleDelete(BuildContext context) {
+  Future<void> _handleDelete(BuildContext context) async {
     final pageContext = context;
-    showDialog<bool>(
+    final messages = pageContext.messages;
+    final confirmed = await showConfirmationModal(
       context: pageContext,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.messages.agentSoulDeleteConfirmTitle),
-        content: Text(dialogContext.messages.agentSoulDeleteConfirmBody),
-        actions: [
-          DesignSystemButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            label: dialogContext.messages.cancelButton,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-          DesignSystemButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final logger = ref.read(domainLoggerProvider);
-              try {
-                final soulService = ref.read(soulDocumentServiceProvider);
-                await soulService.deleteSoul(widget.soulId!);
-                if (!mounted || !pageContext.mounted) return;
-                ref.invalidate(allSoulDocumentsProvider);
-                Navigator.of(pageContext).pop();
-              } catch (e, s) {
-                logger.error(
-                  LogDomain.agentWorkflow,
-                  e,
-                  stackTrace: s,
-                  subDomain: 'AgentSoulDetailPage',
-                  message: 'Delete failed',
-                );
-                if (!mounted || !pageContext.mounted) return;
-                pageContext.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: pageContext.messages.commonError,
-                );
-              }
-            },
-            label: dialogContext.messages.deleteButton,
-            variant: DesignSystemButtonVariant.dangerTertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-        ],
-      ),
+      title: messages.agentSoulDeleteConfirmTitle,
+      message: messages.agentSoulDeleteConfirmBody,
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.deleteButton,
     );
+    if (!confirmed) return;
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      final soulService = ref.read(soulDocumentServiceProvider);
+      await soulService.deleteSoul(widget.soulId!);
+      if (!mounted || !pageContext.mounted) return;
+      ref.invalidate(allSoulDocumentsProvider);
+      Navigator.of(pageContext).pop();
+    } catch (e, s) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: s,
+        subDomain: 'AgentSoulDetailPage',
+        message: 'Delete failed',
+      );
+      if (!mounted || !pageContext.mounted) return;
+      pageContext.showToast(
+        tone: DesignSystemToastTone.error,
+        title: pageContext.messages.commonError,
+      );
+    }
   }
 }

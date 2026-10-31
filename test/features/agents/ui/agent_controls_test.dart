@@ -404,7 +404,7 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Destroy'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Destroy Agent?'), findsOneWidget);
       expect(
@@ -426,11 +426,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Destroy'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Cancel'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
+        expect(find.text('Destroy Agent?'), findsNothing);
         verifyNever(
           () => mockAgentService.destroyAgent(
             any(),
@@ -453,14 +454,14 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Destroy'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Tap the "Destroy" button inside the dialog.
         // There are now two "Destroy" texts: the button behind the dialog
         // and the dialog confirm button. Tap the last one (dialog).
         final destroyButtons = find.text('Destroy');
         await tester.tap(destroyButtons.last);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         verify(
           () => mockAgentService.destroyAgent(testAgentId, byUser: true),
@@ -490,7 +491,7 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Delete permanently'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.text('Delete Agent?'), findsOneWidget);
         expect(
@@ -513,11 +514,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Delete permanently'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Cancel'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
+        expect(find.text('Delete Agent?'), findsNothing);
         verifyNever(
           () =>
               mockAgentService.deleteAgent(any(), byUser: any(named: 'byUser')),
@@ -544,12 +546,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Delete permanently'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Tap the "Delete permanently" button in the dialog.
         final deleteButtons = find.text('Delete permanently');
         await tester.tap(deleteButtons.last);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         verify(
           () => mockAgentService.deleteAgent(testAgentId, byUser: true),

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -326,6 +327,51 @@ void main() {
         // button pops the route instead of beaming to the settings list. The
         // desktop dashboard header has no back button, so this is the only one.
         await tester.tap(find.byType(BackWidget));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Escape closes the desktop side panel while an editor field has focus',
+      (tester) async {
+        stubDefinitionEditor();
+
+        tester.view.physicalSize = const Size(1280, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+            mediaQueryData: desktopMediaQuery,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byIcon(LottiIcons.tune));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // A field inside the editor's own Scaffold — the spot where Escape
+        // used to die on the scaffold's disabled drawer handler.
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(DashboardDefinitionPage),
+                matching: find.byType(EditableText),
+              )
+              .first,
+        );
+        await tester.pump();
+        expect(
+          FocusManager.instance.primaryFocus?.context
+              ?.findAncestorWidgetOfExactType<DashboardDefinitionPage>(),
+          isNotNull,
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 

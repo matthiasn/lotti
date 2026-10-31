@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Info tab: version history + assigned templates + delete action.
@@ -167,52 +167,38 @@ class _VersionTile extends ConsumerWidget {
     );
   }
 
-  void _handleRollback(BuildContext context, WidgetRef ref) {
-    showDialog<bool>(
+  Future<void> _handleRollback(BuildContext context, WidgetRef ref) async {
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.messages.agentSoulRollbackAction),
-        content: Text(
-          dialogContext.messages.agentSoulRollbackConfirm(version.version),
-        ),
-        actions: [
-          DesignSystemButton(
-            label: dialogContext.messages.cancelButton,
-            onPressed: () => Navigator.pop(dialogContext),
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-          DesignSystemButton(
-            label: dialogContext.messages.agentSoulRollbackAction,
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final logger = ref.read(domainLoggerProvider);
-              try {
-                final soulService = ref.read(soulDocumentServiceProvider);
-                await soulService.rollbackToVersion(
-                  soulId: soulId,
-                  versionId: version.id,
-                );
-              } catch (e, s) {
-                logger.error(
-                  LogDomain.agentWorkflow,
-                  e,
-                  stackTrace: s,
-                  subDomain: 'AgentSoulDetailPage',
-                  message: 'Rollback failed',
-                );
-                if (!context.mounted) return;
-                context.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: context.messages.commonError,
-                );
-              }
-            },
-            size: DesignSystemButtonSize.large,
-          ),
-        ],
-      ),
+      title: messages.agentSoulRollbackAction,
+      message: messages.agentSoulRollbackConfirm(version.version),
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.agentSoulRollbackAction,
+      isDestructive: false,
     );
+    if (!confirmed) return;
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      final soulService = ref.read(soulDocumentServiceProvider);
+      await soulService.rollbackToVersion(
+        soulId: soulId,
+        versionId: version.id,
+      );
+    } catch (e, s) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: s,
+        subDomain: 'AgentSoulDetailPage',
+        message: 'Rollback failed',
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+    }
   }
 }
 

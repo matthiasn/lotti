@@ -16,6 +16,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -153,48 +154,29 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       }
     }
 
-    void handleDelete() {
+    Future<void> handleDelete() async {
       final label = existingLabel;
       if (label == null) return;
-      // Capture the page context for navigation/snackbar after dialog closes.
+      // Capture the page context for navigation/toast after the modal closes.
       final pageContext = context;
-      showDialog<bool>(
+      final messages = pageContext.messages;
+      final confirmed = await showConfirmationModal(
         context: pageContext,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(dialogContext.messages.settingsLabelsDeleteConfirmTitle),
-          content: Text(
-            dialogContext.messages.settingsLabelsDeleteConfirmMessage(
-              label.name,
-            ),
-          ),
-          actions: [
-            DesignSystemButton(
-              label: dialogContext.messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              onPressed: () => Navigator.pop(dialogContext),
-            ),
-            DesignSystemButton(
-              variant: DesignSystemButtonVariant.danger,
-              onPressed: () async {
-                // Close the dialog using its own context
-                Navigator.pop(dialogContext);
-                await ref.read(labelsRepositoryProvider).deleteLabel(label.id);
-                if (!mounted || !pageContext.mounted) return;
-                // Beam back to the list rather than popping — see
-                // [handleSave] above for the desktop-vs-mobile rationale.
-                beamToNamed('/settings/labels');
-                if (!mounted || !pageContext.mounted) return;
-                pageContext.showToast(
-                  tone: DesignSystemToastTone.success,
-                  title: pageContext.messages.settingsLabelsDeleteSuccess(
-                    label.name,
-                  ),
-                );
-              },
-              label: dialogContext.messages.settingsLabelsDeleteConfirmAction,
-            ),
-          ],
-        ),
+        title: messages.settingsLabelsDeleteConfirmTitle,
+        message: messages.settingsLabelsDeleteConfirmMessage(label.name),
+        cancelLabel: messages.cancelButton,
+        confirmLabel: messages.settingsLabelsDeleteConfirmAction,
+      );
+      if (!confirmed) return;
+      await ref.read(labelsRepositoryProvider).deleteLabel(label.id);
+      if (!mounted || !pageContext.mounted) return;
+      // Beam back to the list rather than popping — see [handleSave] above
+      // for the desktop-vs-mobile rationale.
+      beamToNamed('/settings/labels');
+      if (!mounted || !pageContext.mounted) return;
+      pageContext.showToast(
+        tone: DesignSystemToastTone.success,
+        title: pageContext.messages.settingsLabelsDeleteSuccess(label.name),
       );
     }
 

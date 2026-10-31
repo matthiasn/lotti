@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart' show kTouchSlop;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
@@ -411,6 +412,65 @@ void main() {
   });
 
   group('MobileNavigationDrawerHost closing', () {
+    testWidgets('Escape closes it, as a tap on the scrim does', (tester) async {
+      final bench = _Bench();
+      await bench.pump(tester);
+      await bench.open(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(bench.controller.isOpen, isFalse);
+
+      await tester.pump(_pastSlide);
+      expect(find.byKey(MobileNavigationDrawerKeys.panel), findsNothing);
+    });
+
+    testWidgets('Escape does nothing while the drawer is shut', (tester) async {
+      final bench = _Bench();
+      await bench.pump(tester);
+      var opened = 0;
+      bench.controller.addListener(() => opened++);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(opened, 0);
+      expect(bench.controller.isOpen, isFalse);
+    });
+
+    testWidgets('closing by Escape hands focus back to the page', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final controller = MobileNavigationDrawerController();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          MobileNavigationDrawerHost(
+            controller: controller,
+            drawerBuilder: (_) => const SizedBox.expand(),
+            child: Material(
+              child: Center(child: TextField(focusNode: focusNode)),
+            ),
+          ),
+          mediaQueryData: phoneMediaQueryData,
+        ),
+      );
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      controller.open();
+      await tester.pump();
+      await tester.pump(_pastSlide);
+      expect(focusNode.hasFocus, isFalse);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      await tester.pump(_pastSlide);
+
+      expect(controller.isOpen, isFalse);
+      expect(focusNode.hasFocus, isTrue);
+    });
+
     testWidgets('a tap on the strip of page left showing closes it', (
       tester,
     ) async {

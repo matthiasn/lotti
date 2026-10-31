@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/widgets/modal/modal_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The guided "enable real AI in the demo" flow.
@@ -97,13 +98,16 @@ class DemoAiSetupSheet {
                 begin: const Offset(0, 0.06),
                 end: Offset.zero,
               ).animate(curved),
-              child: _DemoAiSetupScaffold(
-                onConnected: (wiringFuture) {
-                  connected = true;
-                  wiring = wiringFuture;
-                },
-                onClose: () => Navigator.of(routeContext).pop(),
-                wireWorld: wireWorld,
+              // Escape closes, as a tap outside the panel does.
+              child: ModalEscapeScope(
+                child: _DemoAiSetupScaffold(
+                  onConnected: (wiringFuture) {
+                    connected = true;
+                    wiring = wiringFuture;
+                  },
+                  onClose: () => Navigator.of(routeContext).pop(),
+                  wireWorld: wireWorld,
+                ),
               ),
             ),
           );

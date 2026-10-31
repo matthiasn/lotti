@@ -16,6 +16,7 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:lotti/widgets/celebration/celebration_preferences_controller.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -653,7 +654,7 @@ void main() {
       await tester.tap(find.text('Delete checklist?'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byKey(confirmationModalKey), findsOneWidget);
 
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
@@ -1235,13 +1236,13 @@ void main() {
         // Open the confirmation dialog via the Delete menu entry.
         await tester.tap(find.text('Delete checklist?'));
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byKey(confirmationModalKey), findsOneWidget);
 
         // Tap Cancel → Navigator.pop(false) → onDelete must NOT be called.
         await tester.tap(find.text('Cancel'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byKey(confirmationModalKey), findsNothing);
         expect(deleted, isFalse);
       },
     );

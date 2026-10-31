@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
 import 'package:lotti/features/agents/ui/template_instances_section.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Expandable section showing version history for a template.
@@ -134,59 +134,45 @@ class _VersionTile extends ConsumerWidget {
     );
   }
 
-  void _handleRollback(BuildContext context, WidgetRef ref) {
-    showDialog<bool>(
+  Future<void> _handleRollback(BuildContext context, WidgetRef ref) async {
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.messages.agentTemplateRollbackAction),
-        content: Text(
-          dialogContext.messages.agentTemplateRollbackConfirm(version.version),
-        ),
-        actions: [
-          DesignSystemButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            label: dialogContext.messages.cancelButton,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-          DesignSystemButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final logger = ref.read(domainLoggerProvider);
-              try {
-                final templateService = ref.read(agentTemplateServiceProvider);
-                await templateService.rollbackToVersion(
-                  templateId: templateId,
-                  versionId: version.id,
-                );
-                ref
-                  ..invalidate(
-                    activeTemplateVersionProvider(templateId),
-                  )
-                  ..invalidate(
-                    templateVersionHistoryProvider(templateId),
-                  );
-              } catch (e, s) {
-                logger.error(
-                  LogDomain.agentWorkflow,
-                  e,
-                  stackTrace: s,
-                  subDomain: 'AgentTemplateDetailPage',
-                  message: 'Rollback failed',
-                );
-                if (!context.mounted) return;
-                context.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: context.messages.commonError,
-                );
-              }
-            },
-            label: dialogContext.messages.agentTemplateRollbackAction,
-            size: DesignSystemButtonSize.large,
-          ),
-        ],
-      ),
+      title: messages.agentTemplateRollbackAction,
+      message: messages.agentTemplateRollbackConfirm(version.version),
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.agentTemplateRollbackAction,
+      isDestructive: false,
     );
+    if (!confirmed) return;
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      final templateService = ref.read(agentTemplateServiceProvider);
+      await templateService.rollbackToVersion(
+        templateId: templateId,
+        versionId: version.id,
+      );
+      ref
+        ..invalidate(
+          activeTemplateVersionProvider(templateId),
+        )
+        ..invalidate(
+          templateVersionHistoryProvider(templateId),
+        );
+    } catch (e, s) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: s,
+        subDomain: 'AgentTemplateDetailPage',
+        message: 'Rollback failed',
+      );
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
+      );
+    }
   }
 }
 

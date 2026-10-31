@@ -2,6 +2,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
+import 'package:lotti/widgets/modal/modal_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -219,6 +220,47 @@ class ModalUtils {
     );
   }
 
+  /// The one place the app presents a Wolt sheet — every other helper here,
+  /// `showSideSheetPane` and the feature modals with their own page flows
+  /// call it rather than `WoltModalSheet.show` (an architecture test holds
+  /// that line).
+  ///
+  /// It supplies what every sheet shares: the [LegacyMaterialBridge] surface
+  /// around [modalDecorator], the design-system scrim unless
+  /// [modalBarrierColor] overrides it, the root navigator where
+  /// [shouldUseRootNavigatorForBottomSheet] asks for it unless
+  /// [useRootNavigator] says otherwise, and a [ModalEscapeScope] around the
+  /// page content, so Escape closes a [barrierDismissible] sheet even while
+  /// a field inside it has focus — and leaves a non-dismissible one open.
+  static Future<T?> showWoltModal<T>({
+    required BuildContext context,
+    required WoltModalSheetPageListBuilder pageListBuilder,
+    WoltModalTypeBuilder modalTypeBuilder = ModalUtils.modalTypeBuilder,
+    ValueNotifier<int>? pageIndexNotifier,
+    Widget Function(Widget)? modalDecorator,
+    bool? useRootNavigator,
+    bool barrierDismissible = true,
+    bool? showDragHandle,
+    Color? modalBarrierColor,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return WoltModalSheet.show<T>(
+      context: context,
+      useRootNavigator:
+          useRootNavigator ?? shouldUseRootNavigatorForBottomSheet(context),
+      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
+      pageContentDecorator: (content) => ModalEscapeScope(child: content),
+      modalTypeBuilder: modalTypeBuilder,
+      pageIndexNotifier: pageIndexNotifier,
+      pageListBuilder: pageListBuilder,
+      barrierDismissible: barrierDismissible,
+      showDragHandle: showDragHandle,
+      modalBarrierColor:
+          modalBarrierColor ??
+          getModalBarrierColor(isDark: isDark, context: context),
+    );
+  }
+
   /// Creates an enhanced single page modal with modern styling
   static Future<T?> showSinglePageModal<T>({
     required BuildContext context,
@@ -235,15 +277,11 @@ class ModalUtils {
     bool? useRootNavigator,
     Widget? leadingNavBarWidget,
     WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
-  }) async {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
+  }) {
+    return showWoltModal<T>(
       context: context,
-      useRootNavigator:
-          useRootNavigator ?? shouldUseRootNavigatorForBottomSheet(context),
-      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
+      useRootNavigator: useRootNavigator,
+      modalDecorator: modalDecorator,
       modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageListBuilder: (modalSheetContext) {
         return [
@@ -263,8 +301,6 @@ class ModalUtils {
           ),
         ];
       },
-      barrierDismissible: true,
-      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
     );
   }
 
@@ -277,18 +313,14 @@ class ModalUtils {
     bool barrierDismissible = true,
     Widget Function(Widget)? modalDecorator,
     WoltModalType Function(BuildContext)? modalTypeBuilderOverride,
-  }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
+  }) {
+    return showWoltModal<T>(
       context: context,
-      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
-      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
+      modalDecorator: modalDecorator,
       pageListBuilder: pageListBuilder,
       modalTypeBuilder: modalTypeBuilderOverride ?? modalTypeBuilder,
       pageIndexNotifier: pageIndexNotifier,
       barrierDismissible: barrierDismissible,
-      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
     );
   }
 
@@ -349,16 +381,11 @@ class ModalUtils {
     required SliverWoltModalSheetPage Function(BuildContext) builder,
     Widget Function(Widget)? modalDecorator,
     bool barrierDismissible = true,
-  }) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return WoltModalSheet.show<T>(
+  }) {
+    return showWoltModal<T>(
       context: context,
-      useRootNavigator: shouldUseRootNavigatorForBottomSheet(context),
-      modalBarrierColor: getModalBarrierColor(isDark: isDark, context: context),
       pageListBuilder: (modalSheetContext) => [builder(modalSheetContext)],
-      modalTypeBuilder: modalTypeBuilder,
-      modalDecorator: LegacyMaterialBridge.wrapModalDecorator(modalDecorator),
+      modalDecorator: modalDecorator,
       barrierDismissible: barrierDismissible,
     );
   }

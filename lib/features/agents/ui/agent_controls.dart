@@ -13,6 +13,7 @@ import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Action buttons for controlling an agent's lifecycle.
@@ -236,31 +237,15 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
     required String confirmLabel,
     required Future<void> Function() onConfirmed,
   }) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) {
-        final l10n = dialogContext.messages;
-        return AlertDialog(
-          title: Text(title),
-          content: Text(content),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: dialogContext.colorScheme.error,
-              ),
-              child: Text(confirmLabel),
-            ),
-          ],
-        );
-      },
+      title: title,
+      message: content,
+      cancelLabel: context.messages.cancelButton,
+      confirmLabel: confirmLabel,
     );
 
-    if (confirmed ?? false) {
+    if (confirmed) {
       await _runAction(onConfirmed);
     }
   }

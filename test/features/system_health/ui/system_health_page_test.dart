@@ -245,8 +245,11 @@ void main() {
       tester.element(find.byType(SystemHealthBody)),
     ).read(systemHealthControllerProvider);
     expect(state.preset, SystemHealthPreset.custom);
+    // Six calendar days apart, compared as dates: elapsed hours are 145, not
+    // 144, whenever the window spans a daylight-saving change.
+    DateTime dateOf(DateTime d) => DateTime.utc(d.year, d.month, d.day);
     expect(
-      state.customLastDay!.difference(state.customFirstDay!),
+      dateOf(state.customLastDay!).difference(dateOf(state.customFirstDay!)),
       const Duration(days: 6),
     );
   });

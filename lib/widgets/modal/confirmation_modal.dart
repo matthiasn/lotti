@@ -4,8 +4,21 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Shows a design-system confirmation modal with optional title, message, and
+/// Marks the body of an open [showConfirmationModal], for finding it.
+const confirmationModalKey = Key('confirmation_modal');
+
+/// The app's one confirmation question — "delete this?", "roll back?",
+/// "discard the recording?" — with optional title, message, and
 /// customizable action labels.
+///
+/// Every yes/no confirm goes through here rather than a hand-built
+/// `AlertDialog`: it is a Wolt sheet from [ModalUtils.showSinglePageModal],
+/// so it is a bottom sheet on a phone and a dialog on a wide window, and a
+/// tap outside, Escape, the close button and Cancel all answer `false`.
+///
+/// [isDestructive] (the default) adds the warning icon and the danger
+/// button; pass `false` for a confirm that loses nothing, such as a
+/// rollback that can itself be rolled back.
 ///
 /// [confirmLabel] is rendered exactly as passed — no case transform. A
 /// programmatic `toUpperCase()` is not locale-safe (Turkish dotted i, German
@@ -32,6 +45,7 @@ Future<bool> showConfirmationModal({
       final spacing = tokens.spacing;
 
       return Column(
+        key: confirmationModalKey,
         mainAxisSize: MainAxisSize.min,
         children: [
           // Warning Icon
@@ -68,6 +82,12 @@ Future<bool> showConfirmationModal({
 
           // Action Buttons
           DesignSystemModalActionBar(
+            // A destructive action keeps its own width at the trailing edge,
+            // as in ConfirmationProgressModal: a delete never fills the bar
+            // as if it were the inviting choice.
+            layout: isDestructive
+                ? DesignSystemModalActionBarLayout.compactPrimary
+                : DesignSystemModalActionBarLayout.dominantPrimary,
             secondary: [
               DesignSystemButton(
                 onPressed: () {

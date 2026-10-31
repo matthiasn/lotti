@@ -20,6 +20,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -665,20 +666,24 @@ void main() {
 
     await tester.tap(find.text(messages.dailyOsNextActivityDeleteRecording));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     // Cancelling keeps the recording until the user confirms.
     await tester.tap(find.text(messages.dailyOsNextDayDeleteDialogCancel));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     verifyNever(() => outbox.cancel(any()));
 
     await tester.tap(find.text(messages.dailyOsNextActivityDeleteRecording));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(
-      find.widgetWithText(
-        FilledButton,
-        messages.dailyOsNextDayDeleteDialogConfirm,
+      find.descendant(
+        of: find.byKey(confirmationModalKey),
+        matching: find.text(messages.dailyOsNextDayDeleteDialogConfirm),
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
 
     verify(() => outbox.cancel('job-doomed')).called(1);
     verify(
