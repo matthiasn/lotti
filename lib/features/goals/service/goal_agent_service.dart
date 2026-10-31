@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_checkin_notifier.dart';
 import 'package:lotti/features/goals/service/goal_mirror_service.dart';
@@ -78,7 +79,8 @@ class GoalAgentService {
   /// ([GoalSpecValidator.authoringIssues]),
   /// and [StateError] when a goal already exists for a caller-supplied
   /// [agentId] — spec v1 is immutable and must never be rewritten by a
-  /// repeated create.
+  /// repeated create. [checkInsAreSubstance] is the user's say on whether
+  /// their check-ins are the goal itself; null follows the criteria.
   Future<AgentIdentityEntity> createGoalAgent({
     required String title,
     required String statement,
@@ -88,6 +90,7 @@ class GoalAgentService {
     DateTime? targetDate,
     String? rationale,
     String? agentId,
+    bool? checkInsAreSubstance,
   }) async {
     final issues = GoalSpecValidator.authoringIssues(criteria);
     if (issues.isNotEmpty) {
@@ -95,6 +98,7 @@ class GoalAgentService {
     }
     final now = clock.now();
     AgentIdentityEntity? created;
+    late GoalSpecVersionEntity spec;
     AgentIdentityEntity identity;
     try {
       identity = await _syncService.runInTransaction(() async {
@@ -117,23 +121,25 @@ class GoalAgentService {
           agentId: agentId,
         );
         final versionId = '${identity.agentId}:spec-v1';
-        await _syncService.upsertEntity(
-          AgentDomainEntity.goalSpecVersion(
-            id: versionId,
-            agentId: identity.agentId,
-            version: 1,
-            status: GoalSpecVersionStatus.active,
-            authoredBy: 'user',
-            title: title,
-            statement: statement,
-            criteria: criteria,
-            createdAt: now,
-            vectorClock: null,
-            startDate: startDate,
-            targetDate: targetDate,
-            rationale: rationale,
-          ),
-        );
+        spec =
+            AgentDomainEntity.goalSpecVersion(
+                  id: versionId,
+                  agentId: identity.agentId,
+                  version: 1,
+                  status: GoalSpecVersionStatus.active,
+                  authoredBy: 'user',
+                  title: title,
+                  statement: statement,
+                  criteria: criteria,
+                  createdAt: now,
+                  vectorClock: null,
+                  startDate: startDate,
+                  targetDate: targetDate,
+                  rationale: rationale,
+                  checkInsAreSubstance: checkInsAreSubstance,
+                )
+                as GoalSpecVersionEntity;
+        await _syncService.upsertEntity(spec);
         await _syncService.upsertEntity(
           AgentDomainEntity.goalSpecHead(
             id: goalSpecHeadId(identity.agentId),
@@ -166,12 +172,13 @@ class GoalAgentService {
       final version = await _repository.getEntity(head.versionId);
       if (version is GoalSpecVersionEntity && version.createdAt == now) {
         identity = finished;
+        spec = version;
       } else {
         rethrow;
       }
     }
 
-    registerSignalSubscription(identity.agentId, criteria);
+    registerSignalSubscription(identity.agentId, spec);
     // A goal created while the app is open needs its check-in watch now; the
     // startup sweep is too late for the check-in the user is about to record.
     checkInNotifier?.watch(identity.agentId);
@@ -324,22 +331,24 @@ class GoalAgentService {
   /// evaluates it immediately against the evidence that already exists.
   void refreshAfterRevision({
     required String agentId,
-    required GoalCriterion criteria,
+    required GoalSpecVersionEntity spec,
   }) {
-    registerSignalSubscription(agentId, criteria);
+    registerSignalSubscription(agentId, spec);
     _orchestrator.enqueueManualWake(
       agentId: agentId,
       reason: 'goal revised',
     );
   }
 
-  /// Observes exactly the signals referenced by the goal criteria.
+  /// Observes exactly the signals referenced by [spec]'s criteria, plus the
+  /// goal's own row when its check-ins are its substance.
   ///
   /// Bounded habit and measured-data writes immediately run the deterministic
   /// evaluator. Health samples additionally mark exact report evidence stale,
   /// while high-frequency category-time activity only marks it stale; the
   /// daily cadence or Update now consumes category changes.
-  void registerSignalSubscription(String agentId, GoalCriterion criteria) {
+  void registerSignalSubscription(String agentId, GoalSpecVersionEntity spec) {
+    final criteria = spec.criteria;
     _orchestrator.removeSubscriptions(agentId);
     final goalEntryId = goalEntryIdFor?.call(agentId);
     final immediateTokens = {
@@ -347,7 +356,11 @@ class GoalAgentService {
       // A check-in write notifies the goal's own row (the two are linked),
       // and it is a bounded observation like a habit check-off: evaluating
       // it is free, and the card should move the moment the user is done.
-      if (goalEntryId != null && goalCriteriaMeasureCheckInTime(criteria))
+      // A goal whose check-ins are its substance watches the row for their
+      // words even when no criterion counts their minutes (ADR 0151).
+      if (goalEntryId != null &&
+          (goalCriteriaMeasureCheckInTime(criteria) ||
+              GoalCheckInWeight.of(spec) == GoalCheckInWeight.substance))
         goalEntryId,
     };
     if (immediateTokens.isNotEmpty) {

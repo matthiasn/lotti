@@ -6,6 +6,8 @@ import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/g_counter.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/vector_clock.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
@@ -43,6 +45,39 @@ AgentIdentityEntity makeTestIdentity({
         vectorClock: vectorClock,
       )
       as AgentIdentityEntity;
+}
+
+/// A goal's spec version. [criteria] defaults to an empty composite, which no
+/// signal reads — pass the leaves a test is about.
+GoalSpecVersionEntity makeTestGoalSpecVersion({
+  String id = 'goal-spec-001',
+  String agentId = kTestAgentId,
+  int version = 1,
+  GoalSpecVersionStatus status = GoalSpecVersionStatus.active,
+  String authoredBy = 'user',
+  String title = 'Test goal',
+  String statement = 'Test goal statement',
+  GoalCriterion criteria = const GoalCriterion.allOf(
+    criterionId: 'goal',
+    criteria: [],
+  ),
+  bool? checkInsAreSubstance,
+  DateTime? createdAt,
+}) {
+  return AgentDomainEntity.goalSpecVersion(
+        id: id,
+        agentId: agentId,
+        version: version,
+        status: status,
+        authoredBy: authoredBy,
+        title: title,
+        statement: statement,
+        criteria: criteria,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: null,
+        checkInsAreSubstance: checkInsAreSubstance,
+      )
+      as GoalSpecVersionEntity;
 }
 
 AgentStateEntity makeTestState({

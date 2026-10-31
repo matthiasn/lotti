@@ -126,8 +126,9 @@ class GoalSpecRevisionService {
   ///
   /// Unlike an agent proposal, this path receives the complete authored
   /// shape from the create/edit flow. It may rename the goal, change the
-  /// verbatim intention, replace the observable criteria, and rename the
-  /// goal's conversational persona. History is retained through
+  /// verbatim intention, replace the observable criteria, set whether the
+  /// check-ins are the goal's substance ([checkInsAreSubstance], null to
+  /// follow the criteria), and rename the goal's conversational persona. History is retained through
   /// [GoalSpecVersionEntity.diffFromVersionId]; the active version is never
   /// rewritten in place. [baseVersionId] is the head loaded by the editor;
   /// the save is refused if another writer moved the head in the meantime.
@@ -140,6 +141,7 @@ class GoalSpecRevisionService {
     required String title,
     required String statement,
     required GoalCriterion criteria,
+    bool? checkInsAreSubstance,
   }) async {
     final normalizedDisplayName = displayName.trim();
     final normalizedTitle = title.trim();
@@ -187,7 +189,8 @@ class GoalSpecRevisionService {
         if (identity.displayName == normalizedDisplayName &&
             current.title == normalizedTitle &&
             current.statement == normalizedStatement &&
-            current.criteria == criteria) {
+            current.criteria == criteria &&
+            current.checkInsAreSubstance == checkInsAreSubstance) {
           return const GoalSpecRevisionRefused(ownerNoChangesReason);
         }
 
@@ -197,6 +200,8 @@ class GoalSpecRevisionService {
           if (current.title != normalizedTitle) 'goal name updated',
           if (current.statement != normalizedStatement) 'intention updated',
           if (current.criteria != criteria) 'goal criteria updated',
+          if (current.checkInsAreSubstance != checkInsAreSubstance)
+            'check-in weight updated',
         ];
         return _mintRevision(
           identity: identity,
@@ -206,6 +211,7 @@ class GoalSpecRevisionService {
           title: normalizedTitle,
           statement: normalizedStatement,
           criteria: criteria,
+          checkInsAreSubstance: checkInsAreSubstance,
           authoredBy: AgentAuthors.user,
           rationale: 'Owner edited the goal.',
           sourceThreadId: null,
@@ -285,6 +291,7 @@ class GoalSpecRevisionService {
       title: current.title,
       statement: current.statement,
       criteria: revised,
+      checkInsAreSubstance: current.checkInsAreSubstance,
       authoredBy: AgentKinds.goalAgent,
       rationale: rationale,
       sourceThreadId: sourceThreadId,
@@ -301,6 +308,7 @@ class GoalSpecRevisionService {
     required String title,
     required String statement,
     required GoalCriterion criteria,
+    required bool? checkInsAreSubstance,
     required String authoredBy,
     required String rationale,
     required String? sourceThreadId,
@@ -337,6 +345,7 @@ class GoalSpecRevisionService {
               startDate: current.startDate,
               targetDate: current.targetDate,
               rationale: rationale,
+              checkInsAreSubstance: checkInsAreSubstance,
             )
             as GoalSpecVersionEntity;
 

@@ -27,6 +27,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -77,6 +78,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _measurableDefinitionsLoaded = false;
   var _watchesSteps = false;
   var _watchesCheckInTime = false;
+
+  /// The user's say on whether their check-ins are the goal itself; null
+  /// until they give one, and the goal then follows its criteria.
+  bool? _checkInsAreSubstance;
+  bool get _shownCheckInsAreSubstance =>
+      _checkInsAreSubstance ?? _watchesCheckInTime;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
   final Set<String> _matchedHabitIds = {};
@@ -436,6 +443,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       });
       return;
     }
+    // Stored only where it departs from what the criteria imply, so a goal
+    // nobody decided for keeps following them.
+    final checkInsAreSubstance =
+        _shownCheckInsAreSubstance == _watchesCheckInTime
+        ? null
+        : _shownCheckInsAreSubstance;
     final goalAgentService = container.read(goalAgentServiceProvider);
     try {
       final agentId = widget.agentId;
@@ -445,6 +458,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           displayName: persona,
           statement: statement,
           criteria: criteria,
+          checkInsAreSubstance: checkInsAreSubstance,
         );
         container
           ..invalidate(activeGoalAgentsProvider)
@@ -461,11 +475,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         title: title,
         statement: statement,
         criteria: criteria,
+        checkInsAreSubstance: checkInsAreSubstance,
       );
       if (outcome case GoalSpecRevisionMinted(:final version)) {
         goalAgentService.refreshAfterRevision(
           agentId: agentId,
-          criteria: version.criteria,
+          spec: version,
         );
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
@@ -717,6 +732,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                 _validation = null;
                                 _targetErrors.remove('check-in-time');
                               }),
+                              checkInsAreSubstance: _shownCheckInsAreSubstance,
+                              onCheckInsAreSubstanceChanged: (value) =>
+                                  setState(() => _checkInsAreSubstance = value),
                               onCheckInMinutesChanged: () => setState(() {
                                 _validation = null;
                                 _targetErrors.remove('check-in-time');

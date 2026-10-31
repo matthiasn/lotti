@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/goals/logic/goal_checkin_compaction_strategy.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 
+import '../../../test_data/entity_factories.dart';
 import 'support/goal_compaction_facts.dart';
 import 'support/goal_compaction_fixtures.dart';
 import 'support/goal_compaction_journal_fixtures.dart';
@@ -78,7 +79,9 @@ void main() {
 
       test('is a goal whose check-ins are its substance', () {
         expect(
-          GoalCheckInWeight.of(fixture.criteria),
+          GoalCheckInWeight.of(
+            makeTestGoalSpecVersion(criteria: fixture.criteria),
+          ),
           GoalCheckInWeight.substance,
         );
       });

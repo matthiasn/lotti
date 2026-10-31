@@ -3183,6 +3183,8 @@
   "goalFormCategoryTimeSource": "Tiempo registrado · horas por semana móvil",
   "goalFormCategoryTimeTarget": "Horas por semana móvil",
   "goalFormCheckInMinutesPerDay": "Minutos al día",
+  "goalFormCheckInsAreSubstanceSubtitle": "No solo a si hiciste el registro.",
+  "goalFormCheckInsAreSubstanceTitle": "Responderé a lo que me cuentes",
   "goalFormCheckInTimeCadence": "{minutes} min de registros al día",
   "goalFormCheckInTimeSignal": "minutos dedicados a registros sobre esta meta",
   "goalFormCheckInTimeTitle": "Tiempo de registro",

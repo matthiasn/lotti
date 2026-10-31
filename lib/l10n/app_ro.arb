@@ -3183,6 +3183,8 @@
   "goalFormCategoryTimeSource": "Timp urmărit · ore în ultimele 7 zile",
   "goalFormCategoryTimeTarget": "Ore în ultimele 7 zile",
   "goalFormCheckInMinutesPerDay": "Minute pe zi",
+  "goalFormCheckInsAreSubstanceSubtitle": "Nu doar la faptul că ați raportat.",
+  "goalFormCheckInsAreSubstanceTitle": "Voi răspunde la ce îmi spuneți",
   "goalFormCheckInTimeCadence": "{minutes} min de raportări pe zi",
   "goalFormCheckInTimeSignal": "minute petrecute cu raportările pentru acest obiectiv",
   "goalFormCheckInTimeTitle": "Timp de raportare",

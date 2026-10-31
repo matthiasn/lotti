@@ -205,7 +205,11 @@ void main() {
           )
           as AiConfigModel;
 
-  void stubSpec({DateTime? startDate, GoalCriterion? criteria}) {
+  void stubSpec({
+    DateTime? startDate,
+    GoalCriterion? criteria,
+    bool? checkInsAreSubstance,
+  }) {
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -236,6 +240,7 @@ void main() {
         createdAt: DateTime(2026),
         vectorClock: null,
         startDate: startDate,
+        checkInsAreSubstance: checkInsAreSubstance,
       ),
     );
   }
@@ -2172,8 +2177,12 @@ void main() {
 
     late List<(String, GoalCheckInWeight)> compacted;
 
-    void wire(List<GoalCheckInSource> sources) {
-      stubSpec(criteria: journal);
+    void wire(
+      List<GoalCheckInSource> sources, {
+      GoalCriterion criteria = journal,
+      bool? checkInsAreSubstance,
+    }) {
+      stubSpec(criteria: criteria, checkInsAreSubstance: checkInsAreSubstance);
       stubGlmResolution();
       final compactor = MockGoalCheckInCompactor();
       compacted = [];
@@ -2284,6 +2293,41 @@ void main() {
         ]);
       },
     );
+
+    test('a journal tracked by a habit tick is read for substance once the '
+        'user says its check-ins are the goal (ADR 0151)', () async {
+      wire(
+        stubJournal(count: 2, weight: GoalCheckInWeight.context),
+        criteria: const GoalCriterion.habit(
+          criterionId: 'journal-habit',
+          habitId: 'journal',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 7,
+        ),
+        checkInsAreSubstance: true,
+      );
+      converse();
+
+      await run();
+
+      expect(compacted, [
+        ('entry-0', GoalCheckInWeight.substance),
+        ('entry-1', GoalCheckInWeight.substance),
+      ]);
+    });
+
+    test('and a check-in time goal the user says is not a journal keeps its '
+        'summaries as commentary', () async {
+      wire(
+        stubJournal(count: 2, weight: GoalCheckInWeight.context),
+        checkInsAreSubstance: false,
+      );
+      converse();
+
+      await run();
+
+      expect(compacted, isEmpty);
+    });
 
     test('a check-in held back by its failure backoff does not spend the '
         'budget, so it cannot strand the history behind it', () async {

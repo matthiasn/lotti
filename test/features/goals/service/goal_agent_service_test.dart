@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   setUpAll(() {
@@ -165,6 +166,22 @@ void main() {
     expect(upserts, isEmpty);
   });
 
+  test("creation keeps the user's say on whether the check-ins are the "
+      'goal itself on spec v1', () async {
+    await service.createGoalAgent(
+      title: 'Journal',
+      statement: 'Write in my journal every evening.',
+      criteria: criteria,
+      agentId: agentId,
+      checkInsAreSubstance: true,
+    );
+
+    expect(
+      upserts.whereType<GoalSpecVersionEntity>().single.checkInsAreSubstance,
+      isTrue,
+    );
+  });
+
   test('creation writes spec v1 + head + first cadence tick, then '
       'subscribes to the goal signals', () async {
     final identity = await service.createGoalAgent(
@@ -181,6 +198,8 @@ void main() {
     expect(version.status, GoalSpecVersionStatus.active);
     expect(version.authoredBy, 'user');
     expect(version.criteria, criteria);
+    // Nobody said otherwise: the goal follows its criteria.
+    expect(version.checkInsAreSubstance, isNull);
 
     final head = upserts.whereType<GoalSpecHeadEntity>().single;
     expect(head.id, goalSpecHeadId(agentId));
@@ -614,7 +633,10 @@ void main() {
       criteria: [criteria, categoryTime],
     );
 
-    service.registerSignalSubscription(agentId, mixed);
+    service.registerSignalSubscription(
+      agentId,
+      makeTestGoalSpecVersion(criteria: mixed),
+    );
 
     final subscriptions = verify(
       () => orchestrator.addSubscription(captureAny()),
@@ -657,9 +679,11 @@ void main() {
         'every linked check-in evaluates at once', () {
       withGoalRows().registerSignalSubscription(
         agentId,
-        const GoalCriterion.allOf(
-          criterionId: 'mindful',
-          criteria: [criteria, reflect],
+        makeTestGoalSpecVersion(
+          criteria: const GoalCriterion.allOf(
+            criterionId: 'mindful',
+            criteria: [criteria, reflect],
+          ),
         ),
       );
 
@@ -674,8 +698,43 @@ void main() {
       expect(immediate.drainImmediately, isTrue);
     });
 
+    Set<String> immediateTokens() =>
+        verify(() => orchestrator.addSubscription(captureAny())).captured
+            .cast<AgentSubscription>()
+            .singleWhere(
+              (subscription) =>
+                  subscription.id == goalSignalSubscriptionId(agentId),
+            )
+            .matchEntityIds;
+
+    test('a goal whose check-ins are its substance watches its own row even '
+        'when no criterion counts their minutes', () {
+      withGoalRows().registerSignalSubscription(
+        agentId,
+        makeTestGoalSpecVersion(criteria: criteria, checkInsAreSubstance: true),
+      );
+
+      expect(immediateTokens(), {'gym-habit', 'goal-row-of-$agentId'});
+    });
+
+    test('a check-in time goal the user says is not a journal still watches '
+        'its row, because the minutes are a criterion', () {
+      withGoalRows().registerSignalSubscription(
+        agentId,
+        makeTestGoalSpecVersion(
+          criteria: reflect,
+          checkInsAreSubstance: false,
+        ),
+      );
+
+      expect(immediateTokens(), {'goal-row-of-$agentId'});
+    });
+
     test('a goal that does not measure it never wakes on its check-ins', () {
-      withGoalRows().registerSignalSubscription(agentId, criteria);
+      withGoalRows().registerSignalSubscription(
+        agentId,
+        makeTestGoalSpecVersion(criteria: criteria),
+      );
 
       final immediate = verify(() => orchestrator.addSubscription(captureAny()))
           .captured
@@ -699,7 +758,10 @@ void main() {
       direction: GoalDirection.atMost,
     );
 
-    service.registerSignalSubscription(agentId, weight);
+    service.registerSignalSubscription(
+      agentId,
+      makeTestGoalSpecVersion(criteria: weight),
+    );
 
     final subscriptions = verify(
       () => orchestrator.addSubscription(captureAny()),
@@ -726,7 +788,10 @@ void main() {
       targetCount: 5,
     );
 
-    service.refreshAfterRevision(agentId: agentId, criteria: revised);
+    service.refreshAfterRevision(
+      agentId: agentId,
+      spec: makeTestGoalSpecVersion(criteria: revised),
+    );
 
     final subscription =
         verify(() => orchestrator.addSubscription(captureAny())).captured.single

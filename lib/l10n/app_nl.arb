@@ -3527,6 +3527,8 @@
   "goalFormCategoryTimeSource": "Bijgehouden tijd · uren per voortschrijdende 7 dagen",
   "goalFormCategoryTimeTarget": "Uren per voortschrijdende 7 dagen",
   "goalFormCheckInMinutesPerDay": "Minuten per dag",
+  "goalFormCheckInsAreSubstanceSubtitle": "Niet alleen op of je hebt ingecheckt.",
+  "goalFormCheckInsAreSubstanceTitle": "Ik reageer op wat je me vertelt",
   "goalFormCheckInTimeCadence": "{minutes} min check-ins per dag",
   "goalFormCheckInTimeSignal": "minuten besteed aan check-ins over dit doel",
   "goalFormCheckInTimeTitle": "Check-in-tijd",

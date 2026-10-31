@@ -1865,6 +1865,7 @@ GoalSpecVersionEntity _$GoalSpecVersionEntityFromJson(
       ? null
       : DateTime.parse(json['targetDate'] as String),
   rationale: json['rationale'] as String?,
+  checkInsAreSubstance: json['checkInsAreSubstance'] as bool?,
   deletedAt: json['deletedAt'] == null
       ? null
       : DateTime.parse(json['deletedAt'] as String),
@@ -1889,6 +1890,7 @@ Map<String, dynamic> _$GoalSpecVersionEntityToJson(
   'startDate': instance.startDate?.toIso8601String(),
   'targetDate': instance.targetDate?.toIso8601String(),
   'rationale': instance.rationale,
+  'checkInsAreSubstance': instance.checkInsAreSubstance,
   'deletedAt': instance.deletedAt?.toIso8601String(),
   'runtimeType': instance.$type,
 };

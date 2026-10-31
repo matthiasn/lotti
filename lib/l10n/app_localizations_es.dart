@@ -8062,6 +8062,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalFormCheckInMinutesPerDay => 'Minutos al día';
 
   @override
+  String get goalFormCheckInsAreSubstanceSubtitle =>
+      'No solo a si hiciste el registro.';
+
+  @override
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Responderé a lo que me cuentes';
+
+  @override
   String goalFormCheckInTimeCadence(num minutes) {
     final intl.NumberFormat minutesNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

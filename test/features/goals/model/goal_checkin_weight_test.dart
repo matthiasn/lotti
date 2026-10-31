@@ -4,6 +4,8 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 
+import '../../agents/test_data/entity_factories.dart';
+
 void main() {
   const checkInTime = GoalCriterion.checkInTime(
     criterionId: 'journal',
@@ -18,11 +20,21 @@ void main() {
     targetCount: 3,
   );
 
+  GoalCheckInWeight weightOf(
+    GoalCriterion criteria, {
+    bool? checkInsAreSubstance,
+  }) => GoalCheckInWeight.of(
+    makeTestGoalSpecVersion(
+      criteria: criteria,
+      checkInsAreSubstance: checkInsAreSubstance,
+    ),
+  );
+
   test('check-ins are the substance of a goal measured by them, wherever the '
       'leaf sits in the tree', () {
-    expect(GoalCheckInWeight.of(checkInTime), GoalCheckInWeight.substance);
+    expect(weightOf(checkInTime), GoalCheckInWeight.substance);
     expect(
-      GoalCheckInWeight.of(
+      weightOf(
         const GoalCriterion.anyOf(
           criterionId: 'root',
           criteria: [habit, checkInTime],
@@ -33,6 +45,19 @@ void main() {
   });
 
   test('and context for a goal measured by anything else', () {
-    expect(GoalCheckInWeight.of(habit), GoalCheckInWeight.context);
+    expect(weightOf(habit), GoalCheckInWeight.context);
+  });
+
+  test("the user's say outranks the criteria, in both directions", () {
+    // A journal tracked by a habit tick is still a journal.
+    expect(
+      weightOf(habit, checkInsAreSubstance: true),
+      GoalCheckInWeight.substance,
+    );
+    // Minutes of reflection can be counted without the words being the goal.
+    expect(
+      weightOf(checkInTime, checkInsAreSubstance: false),
+      GoalCheckInWeight.context,
+    );
   });
 }

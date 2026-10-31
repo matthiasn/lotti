@@ -13426,6 +13426,18 @@ abstract class AppLocalizations {
   /// **'Minutes per day'**
   String get goalFormCheckInMinutesPerDay;
 
+  /// No description provided for @goalFormCheckInsAreSubstanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not just whether you checked in.'**
+  String get goalFormCheckInsAreSubstanceSubtitle;
+
+  /// No description provided for @goalFormCheckInsAreSubstanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll answer what you tell me'**
+  String get goalFormCheckInsAreSubstanceTitle;
+
   /// Goal confirmation prose for the check-in time signal.
   ///
   /// In en, this message translates to:

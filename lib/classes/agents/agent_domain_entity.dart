@@ -962,11 +962,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// Immutable version of a goal's spec (ADR 0053 Decision 2).
   ///
   /// The goal is versioned structured state, not prose: [statement] is the
-  /// sentence the agent can always *speak*, [criteria] is the machine-
-  /// evaluable tree the deterministic tier folds. Versions are never edited;
-  /// a revision writes a new version (via ChangeSet approval when
-  /// agent-proposed — there is no auto-accept tier) and moves the head.
-  /// [agentId] is the goal agent; one agent IS one goal.
+  /// sentence the agent can always *speak*, [criteria] the machine-evaluable
+  /// tree the deterministic tier folds. Versions are never edited; a revision
+  /// writes a new version (ChangeSet approval when agent-proposed — no
+  /// auto-accept tier) and moves the head. One agent IS one goal.
+  /// [checkInsAreSubstance]: check-ins are the goal itself (ADR 0151).
   const factory AgentDomainEntity.goalSpecVersion({
     required String id,
     required String agentId,
@@ -988,10 +988,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     String? diffFromVersionId,
     DateTime? startDate,
 
-    /// Optional deadline; when passed, the track policy resolves to
-    /// achieved/offTrack instead of granting grace.
+    /// Optional deadline; once passed, track policy says achieved/offTrack.
     DateTime? targetDate,
     String? rationale,
+    bool? checkInsAreSubstance,
     DateTime? deletedAt,
   }) = GoalSpecVersionEntity;
 

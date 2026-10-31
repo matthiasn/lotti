@@ -19,6 +19,7 @@ import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
+import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
 /// Local hour at which the daily cadence tick fires.
@@ -208,15 +209,16 @@ class GoalAgentPhaseA {
     }
 
     // A write to the goal's own journal row: a check-in recorded, its
-    // transcript landing, an edit. On a goal measured by its check-ins those
-    // words are the substance, and the minutes they add are the least of it —
-    // a transcript that lands after the recording moves no number at all, so
-    // without this the agent first read it on the next morning's briefing.
+    // transcript landing, an edit. On a goal whose check-ins are its
+    // substance those words are the point, and any minutes they add are the
+    // least of it — a transcript that lands after the recording moves no
+    // number at all, so without this the agent first read it on the next
+    // morning's briefing.
     final goalEntryId = _goalEntryIdFor?.call(agentId);
     final checkInWritten =
         goalEntryId != null &&
         triggerTokens.contains(goalEntryId) &&
-        goalCriteriaMeasureCheckInTime(version.criteria);
+        GoalCheckInWeight.of(version) == GoalCheckInWeight.substance;
 
     final startDate = version.startDate;
     if (startDate != null &&

@@ -140,6 +140,12 @@ sources:
     resource: ../../docs/adr/0143-a-goal-agent-answers-what-the-user-said.md
     title: ADR 0143 — A goal agent answers what the user said
     last_modified: 2026-08-18
+  - id: adr-0151
+    resource: ../../docs/adr/0151-the-user-says-whether-a-goals-check-ins-are-its-substance.md
+    title: ADR 0151 — The user says whether a goal's check-ins are its substance
+  - id: checkin-weight-card
+    resource: ../../lib/features/goals/ui/pages/goal_form_check_in_weight_card.dart
+    title: The goal form's "I'll answer what you tell me" switch
   - id: adr-0145
     resource: ../../docs/adr/0145-a-goal-holding-an-unknown-criterion-is-fenced-not-judged.md
     title: ADR 0145 — A goal holding an unknown criterion is fenced, not judged
@@ -294,8 +300,8 @@ flowchart TD
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
     REFREG --> PB
-    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — a wake only\nfor a check-in-time goal, below]
-    CHECKIN -- "goal measures check-in time:\nits goal row is an immediate token;\nPhase A refreshes the report even\nwhen no number moved (ADR 0143)" --> ORCH
+    CHECKIN[check-in linked to the goal\nJournalAudio / JournalEntry] --> CHECKINSTALE[mark report stale\nGoalCheckInNotifier — a wake only\nfor a substance goal, below]
+    CHECKIN -- "goal measures check-in time or its\ncheck-ins are its substance:\nits goal row is an immediate token;\na substance goal's Phase A refreshes\nthe report even when no number moved\n(ADRs 0143, 0151)" --> ORCH
     PB --> COMPACT[automatic report wake only:\ncompact pending check-ins\nminimal reasoning, ≤500 output tokens,\nkeyed by agentId+entryId]
     COMPACT --> FACTS[GoalFactsRenderer\nJSON fence: goal, charter, evaluation,\nreporting, ads, personaTone,\nrecent dialogue + userVoice, new\ncheck-ins marked sinceLastReport\ntarget ≤6k tokens, never transcripts]
     FACTS --> CONV[one bounded conversation\nexplicit setup, Settings fallback,\ntemperature 0, 10-tool contract]
@@ -1869,12 +1875,19 @@ Key pieces:
 - `lib/features/goals/service/goal_mirror_service.dart` — keeps the
   journal-side `GoalEntry` in step with the agent-side spec chain.
 
-### Check-ins as the goal's substance (ADR 0143)
+### Check-ins as the goal's substance (ADRs 0143, 0151)
 
 For most goals a check-in is commentary on progress measured elsewhere. For a
-goal measured by the time spent checking in — a journal — the check-ins are
-the substance, and the agent's job is to answer them. Four mechanisms carry
-that, each keyed on `GoalCheckInWeight.of(criteria)`:
+journal or a reflective practice the check-ins are the substance, and the
+agent's job is to answer them. `GoalCheckInWeight.of(spec)` decides which a
+goal is: the user's say in `GoalSpecVersionEntity.checkInsAreSubstance` when
+they gave one, otherwise `substance` exactly when a criterion measures
+check-in time. The goal form's "I'll answer what you tell me" switch
+(`GoalFormCheckInWeightCard`) shows that value and stores it only where it
+departs from what the criteria imply, so a goal nobody decided for keeps
+following its criteria. Owner revisions compare it like any other field;
+agent proposals carry it over unchanged — an agent never decides what the
+check-ins are. Four mechanisms follow the weight:
 
 - **Compaction.** `GoalCheckInCompactor` and `GoalCheckInDigestService` pick
   their prompt by weight. A `substance` summary keeps up to five sentences of
@@ -1896,9 +1909,13 @@ that, each keyed on `GoalCheckInWeight.of(criteria)`:
   `reporting.newCheckInsSinceLastReport`, make
   `materialChangeSinceLastReport` true, and make the strategy refuse an empty
   reflection. A chat turn records what it was shown but is not held to it.
-- **The wake.** Phase A sees the goal row among its trigger tokens and queues
-  the coalesced refresh even when the register is unchanged — the transcript
-  that lands after a recording moves no number.
+- **The wake.** `registerSignalSubscription` makes the goal row an immediate
+  token when a criterion counts check-in minutes *or* the goal is
+  `substance`, so a check-in time goal the user says is not a journal still
+  evaluates its minutes. Phase A sees the row among its trigger tokens and,
+  on a `substance` goal only, queues the coalesced refresh even when the
+  register is unchanged — the transcript that lands after a recording moves
+  no number.
 - **The tail is not widened.** Longer summaries fit fewer check-ins in the
   1,200-token verbatim tail, but the substance digests carry what it drops:
   measured on two journals, the shipped tail recalls 99% of what the full
@@ -1909,7 +1926,7 @@ that, each keyed on `GoalCheckInWeight.of(criteria)`:
 ```mermaid
 flowchart LR
   W["check-in recorded,<br/>transcribed or edited"] --> PA["Phase A: goal row in<br/>the trigger tokens"]
-  PA -- "check-in-time goal" --> R["coalesced report refresh"]
+  PA -- "substance goal" --> R["coalesced report refresh"]
   R --> PB["Phase B: compact for substance<br/>(newest first, ≤8 redone a wake)"]
   PB --> C{"verbatim check-ins absent from<br/>the standing report's record?"}
   C -- yes --> M["mark sinceLastReport,<br/>material change,<br/>reflection required"]

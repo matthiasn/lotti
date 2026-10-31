@@ -26,6 +26,7 @@ import 'package:lotti/features/design_system/components/buttons/ds_segmented_tog
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
@@ -96,6 +97,7 @@ LabelDefinition _label(String id, String name) => LabelDefinition(
 
 GoalSpecVersionEntity _spec({
   int version = 3,
+  bool? checkInsAreSubstance,
   GoalCriterion criteria = const GoalCriterion.allOf(
     criterionId: 'routine',
     criteria: [
@@ -125,6 +127,7 @@ GoalSpecVersionEntity _spec({
           criteria: criteria,
           createdAt: DateTime(2026, 8, 11),
           vectorClock: null,
+          checkInsAreSubstance: checkInsAreSubstance,
         )
         as GoalSpecVersionEntity;
 
@@ -2540,7 +2543,7 @@ void main() {
       when(
         () => agentService.refreshAfterRevision(
           agentId: 'goal-1',
-          criteria: any(named: 'criteria'),
+          spec: any(named: 'spec'),
         ),
       ).thenReturn(null);
       final measurables = StreamController<List<MeasurableDataType>>();
@@ -2987,7 +2990,7 @@ void main() {
     when(
       () => agentService.refreshAfterRevision(
         agentId: 'goal-1',
-        criteria: any(named: 'criteria'),
+        spec: any(named: 'spec'),
       ),
     ).thenReturn(null);
 
@@ -3181,7 +3184,7 @@ void main() {
     when(
       () => agentService.refreshAfterRevision(
         agentId: 'goal-1',
-        criteria: any(named: 'criteria'),
+        spec: any(named: 'spec'),
       ),
     ).thenReturn(null);
 
@@ -3231,10 +3234,126 @@ void main() {
     verify(
       () => agentService.refreshAfterRevision(
         agentId: 'goal-1',
-        criteria: revised.criteria,
+        spec: revised,
       ),
     ).called(1);
     expect(navigated, contains('/goals/details/goal-1'));
+  });
+
+  group('whether the check-ins are the goal itself (ADR 0151)', () {
+    final substanceToggle = find.byKey(
+      const ValueKey('goal-form-check-ins-are-substance'),
+    );
+
+    bool shown(WidgetTester tester) =>
+        tester.widget<DesignSystemToggle>(substanceToggle).value;
+
+    /// Opens the edit page on [current], flips the switch when [flip], saves,
+    /// and returns what the save said about the check-ins.
+    Future<bool?> saveEdit(
+      WidgetTester tester, {
+      required GoalSpecVersionEntity current,
+      required bool flip,
+      bool? expectShownBefore,
+    }) async {
+      tester.view.physicalSize = const Size(900, 2200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+          checkInsAreSubstance: any(named: 'checkInsAreSubstance'),
+        ),
+      ).thenAnswer(
+        (_) async => GoalSpecRevisionMinted(
+          version: current,
+          changeSummaries: const ['check-in weight updated'],
+        ),
+      );
+      when(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          spec: any(named: 'spec'),
+        ),
+      ).thenReturn(null);
+      beamToNamedOverride = (_) {};
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides(overrides(editSpec: current)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(substanceToggle);
+      if (expectShownBefore != null) {
+        expect(shown(tester), expectShownBefore);
+      }
+      if (flip) {
+        await tester.tap(substanceToggle);
+        await tester.pumpAndSettle();
+        expect(shown(tester), !expectShownBefore!);
+      }
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      return verify(
+            () => revisionService.reviseFromOwner(
+              agentId: 'goal-1',
+              baseVersionId: current.id,
+              displayName: any(named: 'displayName'),
+              title: any(named: 'title'),
+              statement: any(named: 'statement'),
+              criteria: any(named: 'criteria'),
+              checkInsAreSubstance: captureAny(named: 'checkInsAreSubstance'),
+            ),
+          ).captured.single
+          as bool?;
+    }
+
+    testWidgets('a journal tracked by habits starts off and is saved as one '
+        'once switched on', (tester) async {
+      final saved = await saveEdit(
+        tester,
+        current: _spec(),
+        flip: true,
+        expectShownBefore: false,
+      );
+
+      expect(saved, isTrue);
+    });
+
+    testWidgets('a stored choice loads as it was and survives an edit that '
+        'leaves it alone', (tester) async {
+      final saved = await saveEdit(
+        tester,
+        current: _spec(checkInsAreSubstance: true),
+        flip: false,
+        expectShownBefore: true,
+      );
+
+      expect(saved, isTrue);
+    });
+
+    testWidgets('switching back to what the criteria imply stores nothing, so '
+        'the goal follows its criteria again', (tester) async {
+      final saved = await saveEdit(
+        tester,
+        current: _spec(checkInsAreSubstance: true),
+        flip: true,
+        expectShownBefore: true,
+      );
+
+      expect(saved, isNull);
+    });
   });
 
   for (final failure in ['identity', 'health']) {
@@ -3899,7 +4018,7 @@ void main() {
     verifyNever(
       () => agentService.refreshAfterRevision(
         agentId: any(named: 'agentId'),
-        criteria: any(named: 'criteria'),
+        spec: any(named: 'spec'),
       ),
     );
     expect(navigated, ['/goals/details/goal-1']);
@@ -3979,7 +4098,7 @@ void main() {
       when(
         () => agentService.refreshAfterRevision(
           agentId: 'goal-1',
-          criteria: any(named: 'criteria'),
+          spec: any(named: 'spec'),
         ),
       ).thenReturn(null);
 
@@ -4010,7 +4129,7 @@ void main() {
       verify(
         () => agentService.refreshAfterRevision(
           agentId: 'goal-1',
-          criteria: revised.criteria,
+          spec: revised,
         ),
       ).called(1);
     },
@@ -4058,7 +4177,7 @@ void main() {
     verifyNever(
       () => agentService.refreshAfterRevision(
         agentId: any(named: 'agentId'),
-        criteria: any(named: 'criteria'),
+        spec: any(named: 'spec'),
       ),
     );
   });
@@ -4139,7 +4258,7 @@ void main() {
     when(
       () => agentService.refreshAfterRevision(
         agentId: 'goal-1',
-        criteria: any(named: 'criteria'),
+        spec: any(named: 'spec'),
       ),
     ).thenReturn(null);
     final harness = makeTestableWidgetWithContainer(
@@ -6449,10 +6568,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final changeButton = find.widgetWithText(DesignSystemButton, 'Change');
-    await tester.ensureVisible(changeButton);
-    // Past the pinned Continue band, which overlays the bottom edge that
-    // ensureVisible stops at on a screen this short.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -150));
+    // Centred rather than merely visible: the pinned Continue band overlays
+    // the bottom edge that ensureVisible stops at on a screen this short.
+    Scrollable.ensureVisible(tester.element(changeButton), alignment: 0.5);
     await tester.pumpAndSettle();
     await tester.tap(changeButton);
     await tester.pumpAndSettle();

@@ -40,6 +40,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../../../../../tool/goal_compaction_eval_report.dart';
 import '../../../../../../mocks/mocks.dart';
+import '../../../../test_data/entity_factories.dart';
 import '../../support/goal_agent_eval_runner.dart';
 import 'goal_compaction_facts.dart';
 import 'goal_compaction_fixtures.dart';
@@ -536,7 +537,9 @@ class GoalCompactionEvalRunner {
         fixture,
         reference: _reference,
       );
-      final weight = GoalCheckInWeight.of(fixture.criteria);
+      final weight = GoalCheckInWeight.of(
+        makeTestGoalSpecVersion(criteria: fixture.criteria),
+      );
       for (final arm in strategies) {
         // The arm's name stays its own; what it builds follows the goal.
         final strategy = arm is GoalCompactionHierarchicalArm

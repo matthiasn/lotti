@@ -446,7 +446,7 @@ final goalChangeSetConfirmationServiceProvider =
                   .read(goalAgentServiceProvider)
                   .refreshAfterRevision(
                     agentId: changeSet.agentId,
-                    criteria: version.criteria,
+                    spec: version,
                   );
               // The revision sweep superseded the old spec's banners, but
               // the banner provider's per-agent stream dependency is

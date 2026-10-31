@@ -8052,6 +8052,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormCheckInMinutesPerDay => 'Minut denně';
 
   @override
+  String get goalFormCheckInsAreSubstanceSubtitle =>
+      'Nejen na to, jestli máš hlášení hotové.';
+
+  @override
+  String get goalFormCheckInsAreSubstanceTitle => 'Odpovím na to, co mi řekneš';
+
+  @override
   String goalFormCheckInTimeCadence(num minutes) {
     final intl.NumberFormat minutesNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);
