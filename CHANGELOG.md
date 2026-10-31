@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.72]
+
+### Changed
+
+- **Search no longer makes you choose between full text and meaning.** With
+  search by meaning turned on, every search in Tasks and the Logbook lists the
+  exact matches first, as before. Below them, under "Related by meaning", come
+  the entries that say the same thing in other words. The Full Text / Vector
+  switch is gone.
+- **Task search finds done and parked tasks too.** While you type a search,
+  the status, label, priority, project and agent filters step aside, so the
+  task you already finished turns up. Their chips above the list fade, and
+  holding or hovering one says that the search looks past it. Category and
+  the Overdue / Due today views still apply, so category chips stay bright.
+  Clear the search and the list is filtered as before.
+
+### Fixed
+
+- **Tapping a check-in on the Day timeline now opens it.** Events and tracked
+  task time opened their pages from the timeline, but a logged call or meeting
+  with a person did nothing when tapped. It now opens that check-in on the
+  person's People page, as it does from the journal list.
+- **The note after changing a cloud voice reads properly in every language.**
+  It now says "Voice for French: Ada" (in your language) instead of a sentence
+  that could be clipped or ungrammatical.
+- **Speech settings no longer break if a language disappears from the voice
+  list while the page is open.**
+
 ## [1.1.71]
 
 ### Added
