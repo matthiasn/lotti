@@ -296,7 +296,9 @@ class GoalAgentStrategy extends ConversationStrategy
   /// wakes. A section already inside `report` wins, and only one absent there
   /// is taken from beside it, so this adds nothing the model did not write and
   /// a section missing from both places is still refused.
-  static Object? _withSectionsLiftedIntoReport(Map<String, dynamic> args) {
+  ///
+  /// Public so the inference eval parses a report the way production does.
+  static Object? withSectionsLiftedIntoReport(Map<String, dynamic> args) {
     final report = args['report'];
     if (report is! Map<String, dynamic>) return report;
     final lifted = [
@@ -361,7 +363,7 @@ class GoalAgentStrategy extends ConversationStrategy
         : _trimmed(reportMap is Map ? reportMap['oneLiner'] : null);
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
-    final reportArg = _withSectionsLiftedIntoReport(args);
+    final reportArg = withSectionsLiftedIntoReport(args);
     final structured = GoalStructuredReport.tryParse(reportArg);
     // What the RULES read, which is not what gets persisted. A report the
     // strict parser refused still has text in it, and the rules below are the
@@ -464,6 +466,8 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     // Judged on `checkable` like the aggregate rule, so a report the strict
     // parser refused learns about its empty reflection in the same rejection.
+    // Judged independently: a wake gets one forced retry, so a rejection
+    // that withheld the second rule would spend it on the first.
     if (unreflectedCheckInIds.isNotEmpty && hasStructuredReport) {
       if (checkable == null || checkable.reflection.isEmpty) {
         problems.add(
@@ -472,7 +476,8 @@ class GoalAgentStrategy extends ConversationStrategy
           'engage with what the user said in them, not only that they '
           'checked in.',
         );
-      } else if (!checkable.reflectedCheckIns.any(
+      }
+      if (!(checkable?.reflectedCheckIns ?? const <String>[]).any(
         unreflectedCheckInIds.contains,
       )) {
         problems.add(

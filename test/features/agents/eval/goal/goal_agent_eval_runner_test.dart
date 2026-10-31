@@ -65,6 +65,7 @@ void main() {
       GoalAgentEvalFailureCategory classify(
         String reflection, {
         List<String> cited = const ['journal-entry-13'],
+        bool citedBesideReport = false,
       }) => classifyGoalAgentResult(
         scenario: scenarioById('journal_new_checkins_reflected'),
         toolCalls: [
@@ -73,10 +74,11 @@ void main() {
             jsonEncode({
               'status': 'onTrack',
               'oneLiner': 'Seven days of journaling.',
+              if (citedBesideReport) 'reflectedCheckIns': cited,
               'report': {
                 'tldr': '84 minutes this week, above the 70 target.',
                 'reflection': reflection,
-                'reflectedCheckIns': cited,
+                if (!citedBesideReport) 'reflectedCheckIns': cited,
                 'currentPeriod': "Today's 12 minutes are in.",
                 'rollingWindow': '84 of 70 minutes over 7 days.',
                 'latestChange': '',
@@ -108,6 +110,19 @@ void main() {
           cited: ['journal-entry-9'],
         ),
         GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      const answer =
+          'The question has moved from whether to where: the north ridge, '
+          'maybe with a halfway camp at the seal rocks.';
+      // An id that merely starts like a new one is not one.
+      expect(
+        classify(answer, cited: ['journal-entry-120']),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      // Written beside the report, as production lifts it.
+      expect(
+        classify(answer, citedBesideReport: true),
+        GoalAgentEvalFailureCategory.none,
       );
     });
 

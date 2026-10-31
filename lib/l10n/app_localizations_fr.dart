@@ -8594,7 +8594,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String goalReportReflectionAnswers(String dates) {
-    return 'Sur tes points du $dates';
+    return 'Sur tes points : $dates';
   }
 
   @override

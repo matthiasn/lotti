@@ -3313,7 +3313,7 @@
   "goalRecordOfferRecordOne": "Registrar entrada",
   "goalRecordOfferSelectRow": "Seleccionar fila",
   "goalReliabilityWeeks": "{achieved} / 6 semanas",
-  "goalReportReflectionAnswers": "Sobre tus registros del {dates}",
+  "goalReportReflectionAnswers": "Sobre tus registros: {dates}",
   "@goalReportReflectionAnswers": {
     "placeholders": {
       "dates": {

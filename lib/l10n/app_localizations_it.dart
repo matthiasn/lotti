@@ -8573,7 +8573,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String goalReportReflectionAnswers(String dates) {
-    return 'Sui tuoi check-in del $dates';
+    return 'Sui tuoi check-in: $dates';
   }
 
   @override

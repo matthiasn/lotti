@@ -3658,7 +3658,7 @@
   "goalRecordOfferRecordOne": "Registrare la voce",
   "goalRecordOfferSelectRow": "Seleziona riga",
   "goalReliabilityWeeks": "{achieved} / 6 settimane",
-  "goalReportReflectionAnswers": "Sui tuoi check-in del {dates}",
+  "goalReportReflectionAnswers": "Sui tuoi check-in: {dates}",
   "@goalReportReflectionAnswers": {
     "placeholders": {
       "dates": {

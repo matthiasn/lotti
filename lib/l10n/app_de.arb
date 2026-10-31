@@ -3313,7 +3313,7 @@
   "goalRecordOfferRecordOne": "Eintrag aufzeichnen",
   "goalRecordOfferSelectRow": "Zeile auswählen",
   "goalReliabilityWeeks": "{achieved} / 6 Wochen",
-  "goalReportReflectionAnswers": "Zu deinen Check-ins vom {dates}",
+  "goalReportReflectionAnswers": "Zu deinen Check-ins: {dates}",
   "@goalReportReflectionAnswers": {
     "placeholders": {
       "dates": {

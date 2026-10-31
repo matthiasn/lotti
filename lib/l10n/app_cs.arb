@@ -3320,7 +3320,7 @@
   "goalRecordOfferRecordOne": "Záznam záznamu",
   "goalRecordOfferSelectRow": "Vybrat řádek",
   "goalReliabilityWeeks": "{achieved} / 6 týdnů",
-  "goalReportReflectionAnswers": "K tvým hlášením z {dates}",
+  "goalReportReflectionAnswers": "O tvých hlášeních z {dates}",
   "@goalReportReflectionAnswers": {
     "placeholders": {
       "dates": {

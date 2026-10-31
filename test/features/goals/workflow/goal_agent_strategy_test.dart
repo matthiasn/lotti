@@ -2055,9 +2055,16 @@ void main() {
       final target = await submit(reflecting(required: true), report());
 
       expect(target.hasReport, isFalse);
+      // Both rules at once: the wake's one forced retry must not be spent
+      // learning the second.
       expect(
         rejection(),
-        allOf(contains('sinceLastReport'), contains('reflection')),
+        allOf(
+          contains('broke 2 rules'),
+          contains('reflection slot must engage'),
+          contains('reflectedCheckIns must name'),
+          contains('ridge, shelf'),
+        ),
       );
     });
 
@@ -2146,8 +2153,9 @@ void main() {
 
       expect(target.hasReport, isFalse);
       final error = rejection();
-      expect(error, contains('broke 2 rules'));
+      expect(error, contains('broke 3 rules'));
       expect(error, contains('sinceLastReport'));
+      expect(error, contains('reflectedCheckIns must name'));
     });
 
     test(

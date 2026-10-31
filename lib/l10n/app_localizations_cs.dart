@@ -8559,7 +8559,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String goalReportReflectionAnswers(String dates) {
-    return 'K tvým hlášením z $dates';
+    return 'O tvých hlášeních z $dates';
   }
 
   @override

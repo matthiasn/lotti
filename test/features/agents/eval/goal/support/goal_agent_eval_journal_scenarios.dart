@@ -288,7 +288,7 @@ final List<GoalAgentEvalScenario> goalAgentJournalEvalScenarios = [
       ],
       // ...and names at least one of the two new check-ins it answers.
       GoalReportSectionKeys.reflectedCheckIns: [
-        ['journal-entry-12', 'journal-entry-13'],
+        ['[journal-entry-12]', '[journal-entry-13]'],
       ],
     },
   ),
