@@ -17,7 +17,7 @@ class AiVoiceInputShader extends StatefulWidget {
     required this.dbfs,
     required this.size,
     required this.palette,
-    this.dbfsFloor = silence,
+    this.dbfsFloor = -80,
     this.speed = 2,
     this.intensity = 0.78,
     this.lineDensity = 19,
@@ -27,10 +27,6 @@ class AiVoiceInputShader extends StatefulWidget {
     this.semanticsLabel,
     super.key,
   });
-
-  /// The level of silence, in dBFS: the default floor, and what a host
-  /// passes before anything has been heard.
-  static const double silence = -80;
 
   /// Current voice level in dBFS, typically `-80..0`.
   final double dbfs;

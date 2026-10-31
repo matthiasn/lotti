@@ -196,9 +196,8 @@ class _ChatComposer extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        // A voice-first composer gives its disc air above and below — at
-        // rest and live alike, so it never changes height — and room for
-        // the ripples that rise from it while listening.
+        // A voice-first composer gives its disc air above and below, at
+        // rest and live alike, so it never changes height.
         padding: voiceFirst
             ? EdgeInsets.symmetric(
                 horizontal: tokens.spacing.step4,
@@ -209,9 +208,9 @@ class _ChatComposer extends ConsumerWidget {
           ChatRecorderStatus.recording ||
           ChatRecorderStatus.processing when voiceFirst => _VoiceFirstLive(
             processing: status == ChatRecorderStatus.processing,
-            dbfs:
-                recorderState.amplitudeHistory.lastOrNull ??
-                AiVoiceInputShader.silence,
+            amplitudes: ref
+                .read(chatRecorderControllerProvider.notifier)
+                .getNormalizedAmplitudeHistory(),
             onStop: () => ref
                 .read(chatRecorderControllerProvider.notifier)
                 .stopAndTranscribe(),

@@ -8,5 +8,6 @@
 ### Changed
 - **Talking to the companion leads with her.** A chat opens on her, her
   answers read as plain prose, and one large button lets you talk: tap to
-  speak, tap again to send what you said. Typing is a tap away and stays
-  your choice for the session.
+  speak, and the button stretches into a bar showing your voice as you go;
+  tap it again to send what you said. Typing is a tap away and stays your
+  choice for the session.

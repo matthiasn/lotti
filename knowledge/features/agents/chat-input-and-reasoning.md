@@ -41,15 +41,19 @@ log; the front agent uses all three, every other host keeps the defaults.
 state too, so a turn never changes shape on answering), keeps the user's
 words in a soft bubble capped short of the far edge on a phone, and drops the
 author-and-time line, leaving the footer only for what `footerTrailingBuilder`
-adds. `voiceFirst` makes the idle composer one large talk disc with *Type
-instead* under it (`agent_chat_view_voice_first_part.dart`): the disc keeps
-its place, size and teal through recording — where it carries a stop mark
-and sends on tap, while soft ripples rise from its edge, reaching further
-and brighter with the voice level (`_ListeningDisc`, still under reduced
-motion) — and transcription, where it waits. The live composer is laid out
-like the idle one: one caption under the disc, and in the slot *Type
-instead* held, a quiet Cancel (Escape too), kept empty while transcribing so
-the composer never changes height; a finished
+adds. `voiceFirst` makes the idle composer one talk disc (`spacing.step10`
+across, `_talkSize`) with *Type instead* under it
+(`agent_chat_view_voice_first_part.dart`): the disc keeps its height and
+teal through recording, stretching into a pill (`_ListeningPill`, 4.4 discs
+wide at most, opened from the disc
+over `MotionDurations.medium2`, at once under reduced motion) across which
+what it hears scrolls as bars — `WaveformBarsPainter` over the recorder's
+normalised amplitude history, newest at the right, a dot for each quiet
+moment — up to a stop mark at its end; a tap anywhere on it sends. While
+transcribing, the bars hold still and a spinner takes the stop mark's place.
+The live composer is laid out like the idle one: one caption under the
+pill, and in the slot *Type instead* held, a quiet Cancel (Escape too),
+kept empty while transcribing so the composer never changes height; a finished
 transcript is sent as it is (tap to talk, tap to send), and choosing to type
 holds for the session (`agentChatPrefersTypingProvider`, keep-alive) and
 focuses the field. `leading` is a widget that scrolls in above the first

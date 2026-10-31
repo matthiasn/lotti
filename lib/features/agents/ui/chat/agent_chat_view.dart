@@ -5,7 +5,6 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
-import 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
