@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -38,49 +39,55 @@ void main() {
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: width,
-              // The header over the hero, as the pane lays them out.
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FrontChatHeader(onClose: onClose ?? () {}),
-                  const FrontChatHero(),
-                ],
+    // On the fixtures' day: the open conversation is the one that moved
+    // today, whenever the suite runs.
+    await withClock(Clock.fixed(DateTime(2026, 10, 31, 12)), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: width,
+                // The header over the hero, as the pane lays them out.
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FrontChatHeader(onClose: onClose ?? () {}),
+                    const FrontChatHero(),
+                  ],
+                ),
               ),
             ),
           ),
+          overrides: [
+            configFlagProvider.overrideWith(
+              (ref, flag) =>
+                  Stream.value(companion && flag == enableCompanionFlag),
+            ),
+            // The internals panel resolves the identity; it may stay in flight.
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) => Completer<AgentDomainEntity?>().future,
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            frontChatThreadProvider.overrideWith(
+              (ref) async => threadOf?.call() ?? thread,
+            ),
+            // The inbox counts across every conversation.
+            frontAllChatsThreadProvider.overrideWith(
+              (ref) async => threadOf?.call() ?? thread,
+            ),
+            frontConversationsProvider.overrideWith(
+              (ref) async => conversations,
+            ),
+          ],
         ),
-        overrides: [
-          configFlagProvider.overrideWith(
-            (ref, flag) =>
-                Stream.value(companion && flag == enableCompanionFlag),
-          ),
-          // The internals panel resolves the identity; it may stay in flight.
-          agentIdentityProvider.overrideWith(
-            (ref, agentId) => Completer<AgentDomainEntity?>().future,
-          ),
-          agentStateProvider.overrideWith((ref, agentId) async => null),
-          frontChatThreadProvider.overrideWith(
-            (ref) async => threadOf?.call() ?? thread,
-          ),
-          // The inbox counts across every conversation.
-          frontAllChatsThreadProvider.overrideWith(
-            (ref) async => threadOf?.call() ?? thread,
-          ),
-          frontConversationsProvider.overrideWith((ref) async => conversations),
-        ],
-      ),
-    );
-    // Her face animates, so no settle: a few frames let the flag and the
-    // thread land.
-    for (var i = 0; i < 5; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
+      );
+      // Her face animates, so no settle: a few frames let the flag and the
+      // thread land.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+    });
   }
 
   group('conversations', () {
