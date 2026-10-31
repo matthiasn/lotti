@@ -3658,6 +3658,14 @@
   "goalRecordOfferRecordOne": "Registrera post",
   "goalRecordOfferSelectRow": "Markera rad",
   "goalReliabilityWeeks": "{achieved} / 6 veckor",
+  "goalReportReflectionAnswers": "Om dina avstämningar från {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Senaste förändringen",
   "goalReportSectionCoverage": "Datatäckning",
   "goalReportSectionNext": "Nästa steg",

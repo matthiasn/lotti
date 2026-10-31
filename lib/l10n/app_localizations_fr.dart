@@ -8593,6 +8593,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Sur tes points : $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Dernier changement';
 
   @override

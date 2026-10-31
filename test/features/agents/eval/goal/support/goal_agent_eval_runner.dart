@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_knowledge.dart';
 import 'package:lotti/features/goals/workflow/goal_memory_search.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -697,9 +698,14 @@ GoalStructuredReport? _latestStructuredReport(
 ) {
   for (final call in toolCalls.reversed) {
     if (call.name == GoalAgentToolNames.updateGoalReport) {
-      return GoalStructuredReport.tryParse(
-        call.jsonObjectArguments?['report'],
-      );
+      // Lifted as production lifts it, so a section or citation written
+      // beside `report` scores as the strategy would accept it.
+      final arguments = call.jsonObjectArguments;
+      return arguments == null
+          ? null
+          : GoalStructuredReport.tryParse(
+              GoalAgentStrategy.withSectionsLiftedIntoReport(arguments),
+            );
     }
   }
   return null;
@@ -729,6 +735,15 @@ String? _structuredReportSectionText(
   (final GoalStructuredReport value, GoalReportSectionKeys.tldr) => value.tldr,
   (final GoalStructuredReport value, GoalReportSectionKeys.reflection) =>
     value.reflection,
+  // Not a section: the check-ins the reflection names, scored like one so a
+  // scenario can require that it names a new one (ADR 0152).
+  (
+    final GoalStructuredReport value,
+    GoalReportSectionKeys.reflectedCheckIns,
+  ) =>
+    // Bracketed so a term matches an id exactly: `journal-entry-12` must
+    // not be satisfied by a citation of `journal-entry-120`.
+    value.reflectedCheckIns.map((id) => '[$id]').join('\n'),
   (final GoalStructuredReport value, GoalReportSectionKeys.currentPeriod) =>
     value.currentPeriod,
   (final GoalStructuredReport value, GoalReportSectionKeys.rollingWindow) =>

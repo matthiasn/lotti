@@ -3657,6 +3657,14 @@
   "goalRecordOfferRecordOne": "Invoer vastleggen",
   "goalRecordOfferSelectRow": "Rij selecteren",
   "goalReliabilityWeeks": "{achieved} / 6 weken",
+  "goalReportReflectionAnswers": "Over je check-ins van {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Laatste verandering",
   "goalReportSectionCoverage": "Datadekking",
   "goalReportSectionNext": "Wat nu",

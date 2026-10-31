@@ -146,6 +146,9 @@ sources:
   - id: checkin-weight-card
     resource: ../../lib/features/goals/ui/pages/goal_form_check_in_weight_card.dart
     title: The goal form's "I'll answer what you tell me" switch
+  - id: adr-0152
+    resource: ../../docs/adr/0152-a-reflection-names-the-check-ins-it-answers.md
+    title: ADR 0152 — A reflection names the check-ins it answers
   - id: adr-0145
     resource: ../../docs/adr/0145-a-goal-holding-an-unknown-criterion-is-fenced-not-judged.md
     title: ADR 0145 — A goal holding an unknown criterion is fenced, not judged
@@ -1901,14 +1904,21 @@ check-ins are. Four mechanisms follow the weight:
 - **The reflection.** `update_goal_report` has a `reflection` slot — the one
   prose slot that is not a restatement of FACTS — rendered under the summary
   with its own heading, above what comes next.
-- **What is new.** A report persists, under
-  `GoalReportProvenanceKeys.checkInsReflected`, the reflection keys of the
-  check-ins its wake showed verbatim. `goalCheckInReflection` compares the
-  next wake's verbatim check-ins against the standing report's record; on an
-  automatic wake the new ones are marked `sinceLastReport`, counted in
-  `reporting.newCheckInsSinceLastReport`, make
-  `materialChangeSinceLastReport` true, and make the strategy refuse an empty
-  reflection. A chat turn records what it was shown but is not held to it.
+- **What is new.** `goalCheckInReflection` compares the wake's verbatim
+  check-ins against the standing report's record under
+  `GoalReportProvenanceKeys.checkInsReflected`; on an automatic wake the new
+  ones are marked `sinceLastReport`, counted in
+  `reporting.newCheckInsSinceLastReport`, and make
+  `materialChangeSinceLastReport` true.
+- **What was answered (ADR 0152).** The report names the check-ins its
+  reflection answers in `report.reflectedCheckIns`. While any are new, the
+  strategy refuses an empty reflection and one that names none of them. The
+  report records every shown check-in except the new ones it left out
+  (`GoalCheckInReflection.recordedFor`), so an unanswered one stays new for
+  the next report, and stores the recording times of the named, shown ones
+  under `GoalReportProvenanceKeys.checkInsAnswered` — the days the card
+  names under "From your check-ins". A chat turn records the same way but is
+  not held to reflecting.
 - **The wake.** `registerSignalSubscription` makes the goal row an immediate
   token when a criterion counts check-in minutes *or* the goal is
   `substance`, so a check-in time goal the user says is not a journal still
@@ -1929,9 +1939,9 @@ flowchart LR
   PA -- "substance goal" --> R["coalesced report refresh"]
   R --> PB["Phase B: compact for substance<br/>(newest first, ≤8 redone a wake)"]
   PB --> C{"verbatim check-ins absent from<br/>the standing report's record?"}
-  C -- yes --> M["mark sinceLastReport,<br/>material change,<br/>reflection required"]
+  C -- yes --> M["mark sinceLastReport,<br/>material change,<br/>reflection must name one"]
   C -- no --> N["reflection optional"]
-  M --> REP["report persists the<br/>reflection keys it was shown"]
+  M --> REP["report persists what it was<br/>shown, less new ones it skipped,<br/>and the days it answered"]
   N --> REP
 ```
 

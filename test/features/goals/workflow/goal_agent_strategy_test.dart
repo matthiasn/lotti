@@ -2016,15 +2016,19 @@ void main() {
       threadId: 'thread-1',
       runKey: 'run-1',
       knownAdIds: const {},
-      requireReflection: required,
+      unreflectedCheckInIds: required ? const {'ridge', 'shelf'} : const {},
     );
 
-    Map<String, dynamic> report({String reflection = ''}) => {
+    Map<String, dynamic> report({
+      String reflection = '',
+      List<String>? cited,
+    }) => {
       'status': 'onTrack',
       'oneLiner': 'Five check-ins this week.',
       'report': {
         'tldr': 'The question moved from whether to go to when.',
         'reflection': reflection,
+        'reflectedCheckIns': ?cited,
         'currentPeriod': "Today's check-in is in.",
         'rollingWindow': '73 minutes over the last 7 days.',
         'latestChange': '',
@@ -2051,16 +2055,76 @@ void main() {
       final target = await submit(reflecting(required: true), report());
 
       expect(target.hasReport, isFalse);
+      // Both rules at once: the wake's one forced retry must not be spent
+      // learning the second.
       expect(
         rejection(),
-        allOf(contains('sinceLastReport'), contains('reflection')),
+        allOf(
+          contains('broke 2 rules'),
+          contains('reflection slot must engage'),
+          contains('reflectedCheckIns must name'),
+          contains('ridge, shelf'),
+        ),
       );
+    });
+
+    test('is refused when it names none of the new check-ins, and the '
+        'rejection lists the ones it may name', () async {
+      for (final cited in [
+        null,
+        <String>[],
+        ['monday-old'],
+        ['  '],
+      ]) {
+        final target = await submit(
+          reflecting(required: true),
+          report(
+            reflection: 'Keep going, you are doing well.',
+            cited: cited,
+          ),
+        );
+
+        expect(target.hasReport, isFalse, reason: '$cited');
+        expect(
+          rejection(),
+          allOf(contains('reflectedCheckIns'), contains('ridge, shelf')),
+        );
+      }
+    });
+
+    test(
+      'is accepted naming one of them, and hands on what it named',
+      () async {
+        final target = await submit(
+          reflecting(required: true),
+          report(
+            reflection: 'You said the ice shelf feels exposed.',
+            cited: [' shelf ', 'shelf', 'monday-old'],
+          ),
+        );
+
+        expect(target.hasReport, isTrue);
+        // Trimmed and de-duplicated; which ids count is the workflow's call.
+        expect(target.reportReflectedCheckIns, ['shelf', 'monday-old']);
+      },
+    );
+
+    test('a list written beside the report is taken from there', () async {
+      final args = report(reflection: 'You said the ridge is next.');
+      args['reflectedCheckIns'] = ['ridge'];
+      final target = await submit(reflecting(required: true), args);
+
+      expect(target.hasReport, isTrue);
+      expect(target.reportReflectedCheckIns, ['ridge']);
     });
 
     test('is accepted when it engages, and leads the composed body', () async {
       final target = await submit(
         reflecting(required: true),
-        report(reflection: 'You said the ice shelf feels exposed.'),
+        report(
+          reflection: 'You said the ice shelf feels exposed.',
+          cited: ['shelf'],
+        ),
       );
 
       expect(target.hasReport, isTrue);
@@ -2089,8 +2153,9 @@ void main() {
 
       expect(target.hasReport, isFalse);
       final error = rejection();
-      expect(error, contains('broke 2 rules'));
+      expect(error, contains('broke 3 rules'));
       expect(error, contains('sinceLastReport'));
+      expect(error, contains('reflectedCheckIns must name'));
     });
 
     test(

@@ -14,30 +14,57 @@ String goalCheckInReflectionKey(GoalCheckInSummary summary) =>
 /// Which of the check-ins one wake shows verbatim the standing report has
 /// already reflected, and which it has not.
 ///
-/// The report a wake writes records [shown]; the next wake compares its own
-/// verbatim check-ins against that record. Comparing by recording time
+/// The report a wake writes records what it was shown and answered
+/// ([recordedFor]); the next wake compares its own verbatim check-ins against
+/// that record. Comparing by recording time
 /// instead fails the case this exists for: a voice check-in is recorded, its
 /// minutes refresh the report, and the transcript lands after that report —
 /// recorded before it, read after it.
 class GoalCheckInReflection {
   const GoalCheckInReflection({
-    required this.shown,
+    required this.shownByEntryId,
     required this.unreflectedEntryIds,
   });
 
   static const none = GoalCheckInReflection(
-    shown: [],
+    shownByEntryId: {},
     unreflectedEntryIds: {},
   );
-
-  /// Reflection keys of every check-in shown verbatim, oldest first — what a
-  /// report written by this wake persists under
-  /// [GoalReportProvenanceKeys.checkInsReflected].
-  final List<String> shown;
 
   /// Source entry ids of the shown check-ins absent from the standing
   /// report's record.
   final Set<String> unreflectedEntryIds;
+
+  /// Every shown check-in by its source entry id, oldest first.
+  final Map<String, GoalCheckInSummary> shownByEntryId;
+
+  /// What a report whose reflection names [cited] persists under
+  /// [GoalReportProvenanceKeys.checkInsReflected]: every shown check-in but
+  /// the new ones it left out. A new check-in the report did not answer stays
+  /// new, so the next report is held to it instead of the record swallowing
+  /// it because the wake happened to show it.
+  List<String> recordedFor(Iterable<String> cited) {
+    final citedIds = cited.toSet();
+    return [
+      for (final MapEntry(key: entryId, value: summary)
+          in shownByEntryId.entries)
+        if (!unreflectedEntryIds.contains(entryId) ||
+            citedIds.contains(entryId))
+          goalCheckInReflectionKey(summary),
+    ];
+  }
+
+  /// When each shown check-in among [cited] was recorded, oldest first — what
+  /// the card names under the reflection. An id the wake did not show names
+  /// nothing: the model cannot make the card claim words it never read.
+  List<DateTime> answeredAt(Iterable<String> cited) {
+    final citedIds = cited.toSet();
+    return [
+      for (final MapEntry(key: entryId, value: summary)
+          in shownByEntryId.entries)
+        if (citedIds.contains(entryId)) summary.recordedAt,
+    ];
+  }
 
   /// Marks the verbatim `userVoice` entries the report has not reflected, so
   /// the model knows which words are new to it. Every other entry passes
@@ -72,16 +99,12 @@ GoalCheckInReflection goalCheckInReflection({
   final byEntryId = {
     for (final summary in summaries) summary.sourceEntryId: summary,
   };
-  final shown = <String>[];
-  final shownEntryIds = <String, String>{};
-  for (final entry in userVoice) {
-    final summary = byEntryId[entry['sourceEntryId']];
-    if (summary == null) continue;
-    final key = goalCheckInReflectionKey(summary);
-    shown.add(key);
-    shownEntryIds[summary.sourceEntryId] = key;
-  }
-  if (shown.isEmpty) return GoalCheckInReflection.none;
+  final shownByEntryId = <String, GoalCheckInSummary>{
+    for (final entry in userVoice)
+      if (entry['sourceEntryId'] case final String entryId)
+        entryId: ?byEntryId[entryId],
+  };
+  if (shownByEntryId.isEmpty) return GoalCheckInReflection.none;
 
   final recorded =
       standingReport?.provenance[GoalReportProvenanceKeys.checkInsReflected];
@@ -91,10 +114,12 @@ GoalCheckInReflection goalCheckInReflection({
         if (key is String) key,
   };
   return GoalCheckInReflection(
-    shown: shown,
+    shownByEntryId: shownByEntryId,
     unreflectedEntryIds: {
-      for (final MapEntry(key: entryId, value: key) in shownEntryIds.entries)
-        if (!reflected.contains(key) && !answeredEntryIds.contains(entryId))
+      for (final MapEntry(key: entryId, value: summary)
+          in shownByEntryId.entries)
+        if (!reflected.contains(goalCheckInReflectionKey(summary)) &&
+            !answeredEntryIds.contains(entryId))
           entryId,
     },
   );

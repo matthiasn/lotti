@@ -2250,25 +2250,29 @@ void main() {
       return messages;
     }
 
-    Future<void> report(GoalAgentStrategy strategy, {String reflection = ''}) =>
-        strategy.processToolCalls(
-          toolCalls: [
-            toolCall(GoalAgentToolNames.updateGoalReport, {
-              'status': strategy.expectedStatus!.name,
-              'oneLiner': 'The ridge is the question now.',
-              'report': {
-                'tldr': 'The question moved from whether to go to when.',
-                'reflection': reflection,
-                'currentPeriod': "Today's check-in is in.",
-                'rollingWindow': 'Over the last 7 days.',
-                'latestChange': '',
-                'coverage': '',
-                'nextActions': {'now': <Object>[], 'later': <Object>[]},
-              },
-            }),
-          ],
-          manager: conversationManager,
-        );
+    Future<void> report(
+      GoalAgentStrategy strategy, {
+      String reflection = '',
+      List<String> cited = const [],
+    }) => strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': strategy.expectedStatus!.name,
+          'oneLiner': 'The ridge is the question now.',
+          'report': {
+            'tldr': 'The question moved from whether to go to when.',
+            'reflection': reflection,
+            'reflectedCheckIns': cited,
+            'currentPeriod': "Today's check-in is in.",
+            'rollingWindow': 'Over the last 7 days.',
+            'latestChange': '',
+            'coverage': '',
+            'nextActions': {'now': <Object>[], 'later': <Object>[]},
+          },
+        }),
+      ],
+      manager: conversationManager,
+    );
 
     test(
       're-reads its check-ins for substance, newest first and at most '
@@ -2350,7 +2354,8 @@ void main() {
 
     test(
       'marks the check-ins the standing report never answered, requires '
-      'the reflection to answer them, and records what it was shown',
+      'the reflection to name one it answers, and records only what it '
+      'answered among the new ones',
       () async {
         wire(stubJournal(count: 2, weight: GoalCheckInWeight.substance));
         final messages = converse(
@@ -2359,6 +2364,13 @@ void main() {
             // The empty reflection was refused in-conversation.
             expect(strategy.hasReport, isFalse);
             await report(strategy, reflection: 'You keep coming back to it.');
+            // So was one that names none of the new check-ins.
+            expect(strategy.hasReport, isFalse);
+            await report(
+              strategy,
+              reflection: 'You keep coming back to it.',
+              cited: ['entry-0'],
+            );
           },
         );
 
@@ -2381,12 +2393,17 @@ void main() {
               as Map<String, Object?>)[GoalReportSectionKeys.reflection],
           'You keep coming back to it.',
         );
+        // Yesterday's check-in went unanswered, so it is not recorded: the
+        // next report is held to it.
         expect(
           written.provenance[GoalReportProvenanceKeys.checkInsReflected],
           [
-            for (final day in [1, 0])
-              'entry-$day:${goalCheckInSourceDigest('Wrote about the ridge, day $day.', weight: GoalCheckInWeight.substance)}',
+            'entry-0:${goalCheckInSourceDigest('Wrote about the ridge, day 0.', weight: GoalCheckInWeight.substance)}',
           ],
+        );
+        expect(
+          written.provenance[GoalReportProvenanceKeys.checkInsAnswered],
+          ['2026-08-08T20:00:00.000Z'],
         );
       },
     );

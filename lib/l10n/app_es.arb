@@ -3313,6 +3313,14 @@
   "goalRecordOfferRecordOne": "Registrar entrada",
   "goalRecordOfferSelectRow": "Seleccionar fila",
   "goalReliabilityWeeks": "{achieved} / 6 semanas",
+  "goalReportReflectionAnswers": "Sobre tus registros: {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Último cambio",
   "goalReportSectionCoverage": "Cobertura de datos",
   "goalReportSectionNext": "Lo siguiente",

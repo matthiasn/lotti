@@ -16,6 +16,7 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
     String? adCreationDiscriminator,
     String? replyToMessageId,
     List<String> checkInsReflected = const [],
+    List<DateTime> checkInsAnswered = const [],
   }) async {
     final factsReference = evaluationReference ?? now;
     final reportId = strategy.hasReport ? GoalAgentWorkflow._uuid.v4() : null;
@@ -195,6 +196,12 @@ extension _GoalOutputPersistence on GoalAgentWorkflow {
               // tell which of the user's words this report never answered.
               if (checkInsReflected.isNotEmpty)
                 GoalReportProvenanceKeys.checkInsReflected: checkInsReflected,
+              // Which of those its reflection says it answers, for the card.
+              if (checkInsAnswered.isNotEmpty)
+                GoalReportProvenanceKeys.checkInsAnswered: [
+                  for (final at in checkInsAnswered)
+                    at.toUtc().toIso8601String(),
+                ],
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },

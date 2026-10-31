@@ -62,7 +62,7 @@ class GoalAgentStrategy extends ConversationStrategy
     this.expectedRollingAggregates = const [],
     this._memorySearcher,
     this.userMessage,
-    this.requireReflection = false,
+    this.unreflectedCheckInIds = const {},
   }) : _knownAdIds = knownAdIds,
        _activeAdIds = activeAdIds ?? knownAdIds;
 
@@ -103,17 +103,20 @@ class GoalAgentStrategy extends ConversationStrategy
   /// that the report's rolling standing must quote. Empty disables the check.
   final List<String> expectedRollingAggregates;
 
-  /// Whether FACTS carry check-ins the standing report has not reflected yet
-  /// (`reporting.newCheckInsSinceLastReport`). A report that leaves its
-  /// reflection empty then is the failure this exists to refuse: the agent
-  /// counted the user's words and said nothing about them.
-  final bool requireReflection;
+  /// The check-ins FACTS mark `sinceLastReport` — the ones the standing
+  /// report has not reflected yet. While there are any, a report must have a
+  /// reflection that names at least one of them in `reflectedCheckIns`: an
+  /// empty reflection, or one that names none of them, is the failure this
+  /// exists to refuse — the agent counted the user's words and answered
+  /// nothing they said.
+  final Set<String> unreflectedCheckInIds;
 
   GoalTrackStatus? _reportStatus;
   String? _reportOneLiner;
   String? _reportTldr;
   String? _reportContent;
   Map<String, Object?>? _reportSections;
+  List<String> _reportReflectedCheckIns = const [];
   String? _finalResponse;
   String? _replyToUser;
   var _bannerRequested = false;
@@ -161,6 +164,9 @@ class GoalAgentStrategy extends ConversationStrategy
   /// The report's sections as data, for the card to render under localized
   /// headings. Null for a free-form report, which has none.
   Map<String, Object?>? get reportSections => _reportSections;
+
+  /// The check-ins the accepted report's reflection names, as written.
+  List<String> get reportReflectedCheckIns => _reportReflectedCheckIns;
   String? get finalResponse => _finalResponse;
   String? get replyToUser => _replyToUser;
 
@@ -290,11 +296,16 @@ class GoalAgentStrategy extends ConversationStrategy
   /// wakes. A section already inside `report` wins, and only one absent there
   /// is taken from beside it, so this adds nothing the model did not write and
   /// a section missing from both places is still refused.
-  static Object? _withSectionsLiftedIntoReport(Map<String, dynamic> args) {
+  ///
+  /// Public so the inference eval parses a report the way production does.
+  static Object? withSectionsLiftedIntoReport(Map<String, dynamic> args) {
     final report = args['report'];
     if (report is! Map<String, dynamic>) return report;
     final lifted = [
-      for (final key in GoalReportSectionKeys.values)
+      for (final key in [
+        ...GoalReportSectionKeys.values,
+        GoalReportSectionKeys.reflectedCheckIns,
+      ])
         if (!report.containsKey(key) && args.containsKey(key)) key,
     ];
     final withSections = lifted.isEmpty
@@ -352,7 +363,7 @@ class GoalAgentStrategy extends ConversationStrategy
         : _trimmed(reportMap is Map ? reportMap['oneLiner'] : null);
     final content = _trimmed(args['content']);
     final hasStructuredReport = args.containsKey('report');
-    final reportArg = _withSectionsLiftedIntoReport(args);
+    final reportArg = withSectionsLiftedIntoReport(args);
     final structured = GoalStructuredReport.tryParse(reportArg);
     // What the RULES read, which is not what gets persisted. A report the
     // strict parser refused still has text in it, and the rules below are the
@@ -455,14 +466,27 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     // Judged on `checkable` like the aggregate rule, so a report the strict
     // parser refused learns about its empty reflection in the same rejection.
-    if (requireReflection &&
-        hasStructuredReport &&
-        (checkable == null || checkable.reflection.isEmpty)) {
-      problems.add(
-        'userVoice carries check-ins marked sinceLastReport that the '
-        'standing report has not reflected — the reflection slot must engage '
-        'with what the user said in them, not only that they checked in.',
-      );
+    // Judged independently: a wake gets one forced retry, so a rejection
+    // that withheld the second rule would spend it on the first.
+    if (unreflectedCheckInIds.isNotEmpty && hasStructuredReport) {
+      if (checkable == null || checkable.reflection.isEmpty) {
+        problems.add(
+          'userVoice carries check-ins marked sinceLastReport that the '
+          'standing report has not reflected — the reflection slot must '
+          'engage with what the user said in them, not only that they '
+          'checked in.',
+        );
+      }
+      if (!(checkable?.reflectedCheckIns ?? const <String>[]).any(
+        unreflectedCheckInIds.contains,
+      )) {
+        problems.add(
+          'reflectedCheckIns must name the sourceEntryId of at least one '
+          'userVoice entry marked sinceLastReport that the reflection '
+          'answers (${unreflectedCheckInIds.join(', ')}) — and the reflection '
+          'must actually answer what the user said there.',
+        );
+      }
     }
     if (problems.isNotEmpty) {
       await _reject(
@@ -502,6 +526,7 @@ class GoalAgentStrategy extends ConversationStrategy
     _reportSections = structured?.toProvenance(
       allowedCurrentActionCriterionIds: _allowedCurrentActionCriterionIds,
     );
+    _reportReflectedCheckIns = structured?.reflectedCheckIns ?? const [];
     await _accept(call, manager, 'Goal report updated.');
   }
 

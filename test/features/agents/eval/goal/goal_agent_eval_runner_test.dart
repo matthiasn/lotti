@@ -62,29 +62,34 @@ void main() {
 
     test('a journal report is scored on its reflection: a count of minutes '
         'fails, an answer to what the user said passes', () {
-      GoalAgentEvalFailureCategory classify(String reflection) =>
-          classifyGoalAgentResult(
-            scenario: scenarioById('journal_new_checkins_reflected'),
-            toolCalls: [
-              call(
-                GoalAgentToolNames.updateGoalReport,
-                jsonEncode({
-                  'status': 'onTrack',
-                  'oneLiner': 'Seven days of journaling.',
-                  'report': {
-                    'tldr': '84 minutes this week, above the 70 target.',
-                    'reflection': reflection,
-                    'currentPeriod': "Today's 12 minutes are in.",
-                    'rollingWindow': '84 of 70 minutes over 7 days.',
-                    'latestChange': '',
-                    'coverage': '',
-                    'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
-                  },
-                }),
-              ),
-            ],
-            assistantContent: '',
-          );
+      GoalAgentEvalFailureCategory classify(
+        String reflection, {
+        List<String> cited = const ['journal-entry-13'],
+        bool citedBesideReport = false,
+      }) => classifyGoalAgentResult(
+        scenario: scenarioById('journal_new_checkins_reflected'),
+        toolCalls: [
+          call(
+            GoalAgentToolNames.updateGoalReport,
+            jsonEncode({
+              'status': 'onTrack',
+              'oneLiner': 'Seven days of journaling.',
+              if (citedBesideReport) 'reflectedCheckIns': cited,
+              'report': {
+                'tldr': '84 minutes this week, above the 70 target.',
+                'reflection': reflection,
+                if (!citedBesideReport) 'reflectedCheckIns': cited,
+                'currentPeriod': "Today's 12 minutes are in.",
+                'rollingWindow': '84 of 70 minutes over 7 days.',
+                'latestChange': '',
+                'coverage': '',
+                'nextActions': {'now': <Object?>[], 'later': <Object?>[]},
+              },
+            }),
+          ),
+        ],
+        assistantContent: '',
+      );
 
       expect(
         classify('You journaled every day this week.'),
@@ -95,6 +100,28 @@ void main() {
           'The question has moved from whether to where: the north ridge, '
           'maybe with a halfway camp at the seal rocks.',
         ),
+        GoalAgentEvalFailureCategory.none,
+      );
+      // The right words without naming a new check-in still fail (ADR 0152).
+      expect(
+        classify(
+          'The question has moved from whether to where: the north ridge, '
+          'maybe with a halfway camp at the seal rocks.',
+          cited: ['journal-entry-9'],
+        ),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      const answer =
+          'The question has moved from whether to where: the north ridge, '
+          'maybe with a halfway camp at the seal rocks.';
+      // An id that merely starts like a new one is not one.
+      expect(
+        classify(answer, cited: ['journal-entry-120']),
+        GoalAgentEvalFailureCategory.missingRequiredReportContent,
+      );
+      // Written beside the report, as production lifts it.
+      expect(
+        classify(answer, citedBesideReport: true),
         GoalAgentEvalFailureCategory.none,
       );
     });

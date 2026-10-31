@@ -76,6 +76,11 @@ abstract final class GoalReportSectionKeys {
   static const coverage = 'coverage';
   static const nextActions = 'nextActions';
 
+  /// The `sourceEntryId`s of the check-ins [reflection] answers. Beside the
+  /// sections rather than one of them: it names what the reflection is
+  /// about, and the card renders it as dates, never as a heading of its own.
+  static const reflectedCheckIns = 'reflectedCheckIns';
+
   static const List<String> values = [
     tldr,
     reflection,
@@ -105,6 +110,11 @@ abstract final class GoalReportProvenanceKeys {
   /// ones its reflection had in front of it. The next wake compares against
   /// this to find what the standing report has not yet reflected.
   static const checkInsReflected = 'goal_report_check_ins_reflected';
+
+  /// When each check-in the report's reflection answered was recorded, as
+  /// ISO-8601 instants, oldest first — what the card names under the
+  /// reflection, so the user can see which of their words it is about.
+  static const checkInsAnswered = 'goal_report_check_ins_answered';
 }
 
 /// Keys that separate actions proven due in the evaluated period from later
@@ -142,6 +152,7 @@ class GoalStructuredReport {
     required this.now,
     required this.later,
     this.reflection = '',
+    this.reflectedCheckIns = const [],
   });
 
   /// One or two sentences summarising the whole report, shown collapsed.
@@ -153,6 +164,11 @@ class GoalStructuredReport {
   /// the report has not reflected yet. An absent slot parses as empty for the
   /// same reason, so a report written before the slot existed still reads.
   final String reflection;
+
+  /// The check-ins [reflection] says it answers, by `sourceEntryId`, as the
+  /// model wrote them. Unchecked here: which ids count is the strategy's and
+  /// the workflow's call, since only they know what the wake showed.
+  final List<String> reflectedCheckIns;
   final String currentPeriod;
   final String rollingWindow;
   final String latestChange;
@@ -209,6 +225,9 @@ class GoalStructuredReport {
       tldr: tldr,
       reflection:
           _optionalReportString(value[GoalReportSectionKeys.reflection]) ?? '',
+      reflectedCheckIns: _reportIds(
+        value[GoalReportSectionKeys.reflectedCheckIns],
+      ),
       currentPeriod: currentPeriod,
       rollingWindow: rollingWindow,
       latestChange: latestChange,
@@ -245,6 +264,9 @@ class GoalStructuredReport {
       tldr: _optionalReportString(value[GoalReportSectionKeys.tldr]) ?? '',
       reflection:
           _optionalReportString(value[GoalReportSectionKeys.reflection]) ?? '',
+      reflectedCheckIns: _reportIds(
+        value[GoalReportSectionKeys.reflectedCheckIns],
+      ),
       currentPeriod:
           _optionalReportString(value[GoalReportSectionKeys.currentPeriod]) ??
           '',
@@ -314,6 +336,16 @@ class GoalStructuredReport {
     ...later,
   ].join('\n\n');
 }
+
+/// The non-empty strings of a list, trimmed and de-duplicated in order; an
+/// absent or malformed value is no ids rather than a refused report.
+List<String> _reportIds(Object? value) => [
+  ...{
+    if (value is List<dynamic>)
+      for (final item in value)
+        if (_optionalReportString(item) case final id? when id.isNotEmpty) id,
+  },
+];
 
 String? _requiredReportString(Object? value) {
   final trimmed = _optionalReportString(value);
@@ -508,6 +540,16 @@ final List<AgentToolDefinition> goalAgentTools = [
                   'sinceLastReport first. Never only that a check-in happened '
                   'or its length. Empty only when FACTS carry none of the '
                   "three. In the user's language.",
+            },
+            GoalReportSectionKeys.reflectedCheckIns: {
+              'type': 'array',
+              'description':
+                  'The sourceEntryId of every userVoice entry the reflection '
+                  'actually answers, copied exactly. When entries are marked '
+                  'sinceLastReport it must name at least one of them; one it '
+                  'leaves out stays marked for the next report. Empty when '
+                  'the reflection answers no check-in.',
+              'items': {'type': 'string'},
             },
             GoalReportSectionKeys.currentPeriod: {
               'type': 'string',

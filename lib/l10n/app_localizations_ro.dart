@@ -8616,6 +8616,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Despre raportările dumneavoastră din $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Ultima schimbare';
 
   @override

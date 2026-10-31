@@ -148,7 +148,14 @@ Future<void> _capture(
           createdAt: _now.subtract(const Duration(hours: 3)),
           tldr: _journalTldr,
           content: _journalTldr,
-          provenance: {GoalReportProvenanceKeys.sections: _journalSections},
+          provenance: {
+            GoalReportProvenanceKeys.sections: _journalSections,
+            // The Monday and Thursday check-ins its reflection answers.
+            GoalReportProvenanceKeys.checkInsAnswered: const [
+              '2026-08-10T19:00:00.000Z',
+              '2026-08-13T19:00:00.000Z',
+            ],
+          },
         )
       : makeTestReport(
           agentId: _agentId,

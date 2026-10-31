@@ -8558,6 +8558,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'O tvých hlášeních z $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Poslední změna';
 
   @override

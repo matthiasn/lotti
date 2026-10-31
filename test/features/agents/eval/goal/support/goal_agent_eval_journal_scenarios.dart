@@ -286,6 +286,10 @@ final List<GoalAgentEvalScenario> goalAgentJournalEvalScenarios = [
         ['ridge', 'north', 'scout'],
         ['seal rock', 'halfway', 'camp', 'where'],
       ],
+      // ...and names at least one of the two new check-ins it answers.
+      GoalReportSectionKeys.reflectedCheckIns: [
+        ['[journal-entry-12]', '[journal-entry-13]'],
+      ],
     },
   ),
   GoalAgentEvalScenario(

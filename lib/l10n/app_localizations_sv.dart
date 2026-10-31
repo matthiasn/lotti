@@ -8481,6 +8481,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Om dina avstämningar från $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Senaste förändringen';
 
   @override
