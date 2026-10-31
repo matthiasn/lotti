@@ -197,6 +197,50 @@ void main() {
     },
   );
 
+  group('a finished answer kept for a replay', () {
+    MockIoFile clip() {
+      final file = MockIoFile();
+      when(() => file.path).thenReturn('/tmp/answer.wav');
+      when(file.existsSync).thenReturn(true);
+      when(file.delete).thenAnswer((_) async => file);
+      return file;
+    }
+
+    test('replays without reading it again', () async {
+      final file = clip();
+      bench.engine = FakeTtsEngine(output: file);
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
+      bench.speechPlayer.complete();
+      await pumpEventQueue();
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
+      expect(bench.engine.calls, hasLength(1));
+      expect(bench.speechPlayer.playCount, 2);
+      verifyNever(file.delete);
+    });
+
+    test('is deleted when the chat stops, though nothing is playing', () async {
+      final file = clip();
+      bench.engine = FakeTtsEngine(output: file);
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
+      bench.speechPlayer.complete();
+      await pumpEventQueue();
+      verifyNever(file.delete);
+
+      await controller.stop();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+    });
+  });
+
   test('stopping speech does not restart automatic preparation', () async {
     enablePreparation();
     await pumpEventQueue();

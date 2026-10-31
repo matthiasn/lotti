@@ -94,6 +94,11 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   bool _preparationDeferred = false;
   QueryCancellation? _preparationRun;
   ({String sourceId, String text, String voice, String model})? _preparationKey;
+
+  /// The answer this chat last read aloud. The voice keeps a clip that
+  /// played to its end for a replay; the chat owns that clip's privacy, so
+  /// its stop and detach discard it ([_discardSpoken]).
+  String? _spokenSourceId;
   late DomainLogger _logger;
 
   @override
@@ -506,7 +511,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
               fallbackLanguageCode,
         );
         run.check();
-        _ttsSourceId = _answerSourceId(answerId);
+        _ttsSourceId = _spokenSourceId = _answerSourceId(answerId);
         await _tts!.speak(
           sourceId: _ttsSourceId!,
           text: answer.text,
@@ -541,7 +546,18 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   Future<void> stop() {
     _intent++;
     _discardPreparation();
+    _discardSpoken();
     return _cancelCurrent();
+  }
+
+  /// Drops the clip the voice kept of this chat's last answer for a replay:
+  /// a stop, lost access, lockdown or leaving the chat must not leave a
+  /// private answer's audio behind. Playing an answer again goes through
+  /// [_cancelCurrent], not here, so a replay still finds it.
+  void _discardSpoken() {
+    final source = _spokenSourceId;
+    _spokenSourceId = null;
+    if (source != null) _tts?.discardPrepared(sourceId: source);
   }
 
   Future<QueryCancellation?> _start(String actionId) async {
@@ -570,6 +586,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
   void _detach() {
     _attached = false;
     _discardPreparation();
+    _discardSpoken();
     final intent = ++_intent;
     _run?.cancel();
     _run = null;
