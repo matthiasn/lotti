@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 
@@ -79,6 +82,89 @@ void main() {
       expect(back.ownerTitle, 'Pip');
       expect(back.claimedAt, claimedAt);
     }
+  });
+
+  group('a journal answer', () {
+    const source = QuerySourceRef(
+      id: 'feeder-note',
+      private: false,
+      categoryPrivate: false,
+      categoryId: 'colony',
+    );
+    final evidence = QueryEvidence(
+      source: source,
+      kind: QuerySourceKind.text,
+      label: 'Feeder note',
+      sourceDate: DateTime(2026, 10, 20),
+      textVersion: 'entryText',
+      fingerprint: 'f',
+      sourceText: 'The seam walk comes after the feeder repair.',
+      start: 0,
+      end: 13,
+      summary: 'The order of the work',
+    );
+
+    test('round-trips through stored JSON with its evidence and '
+        'dependencies', () {
+      final answer = FrontDoorAnswer(
+        text: 'After the feeder repair [1].',
+        summaryBased: false,
+        incomplete: true,
+        fromJournal: true,
+        private: true,
+        evidence: [evidence],
+        dependencies: const [source],
+      );
+      final stored =
+          jsonDecode(jsonEncode(record(outcome: answer).toJson()))
+              as Map<String, Object?>;
+
+      final back =
+          FrontDoorRecord.fromJson(stored)!.outcome! as FrontDoorAnswer;
+
+      expect(back.fromJournal, isTrue);
+      expect(back.private, isTrue);
+      expect(back.evidence, [evidence]);
+      expect(back.dependencies, [source]);
+      expect(back.toJson(), answer.toJson());
+    });
+
+    test('an owner answer stores none of it, and an older record reads as '
+        'an owner answer', () {
+      const owner = FrontDoorAnswer(
+        text: 't',
+        summaryBased: false,
+        incomplete: false,
+      );
+      expect(
+        owner.toJson().keys,
+        isNot(contains(anyOf('fromJournal', 'evidence', 'dependencies'))),
+      );
+      final back =
+          FrontDoorOutcome.fromJson({'type': 'answer', 'text': 't'})!
+              as FrontDoorAnswer;
+      expect(back.fromJournal, isFalse);
+      expect(back.evidence, isEmpty);
+    });
+
+    test('a malformed piece of evidence is left out, the rest kept', () {
+      final back =
+          FrontDoorOutcome.fromJson({
+                'type': 'answer',
+                'text': 't',
+                'fromJournal': true,
+                'evidence': [
+                  'not a map',
+                  {'label': 'missing everything else'},
+                  jsonDecode(jsonEncode(evidence.toJson())),
+                ],
+                'dependencies': [jsonDecode(jsonEncode(source.toJson())), 7],
+              })!
+              as FrontDoorAnswer;
+
+      expect(back.evidence, [evidence]);
+      expect(back.dependencies, [source]);
+    });
   });
 
   test(

@@ -7016,6 +7016,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontDoorActionFailed => 'Nu a reușit.';
 
   @override
+  String get frontDoorAnswerHidden =>
+      'Ascuns: se bazează pe ceva ce nu mai puteți vedea.';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'De la $owner';
   }
@@ -7042,6 +7046,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get frontDoorFromJournal => 'Din jurnalul dumneavoastră';
+
+  @override
   String get frontDoorInbox => 'Unde ar trebui să ajungă?';
 
   @override
@@ -7054,6 +7061,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String frontDoorInferenceUnavailable(String owner) {
     return '$owner nu are o configurație AI funcțională.';
   }
+
+  @override
+  String get frontDoorJournalUnavailable =>
+      'Nicio configurație AI nu poate răspunde din jurnalul dumneavoastră.';
 
   @override
   String get frontDoorKindGoal => 'obiectivul';
@@ -7106,6 +7117,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontDoorSaveNote => 'Salvați ca notiță';
+
+  @override
+  String get frontDoorSearchingJournal => 'Se caută în jurnalul dumneavoastră…';
 
   @override
   String get frontDoorStartGoal => 'Începeți un obiectiv…';

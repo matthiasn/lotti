@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -342,3 +343,11 @@ class VectorSearchRepository {
     }
   }
 }
+
+/// The app's [VectorSearchRepository], or null when the embedding pipeline did
+/// not start (its store failed to open, or the platform runs no model). The
+/// composition root supplies the registered instance.
+final vectorSearchRepositoryProvider = Provider<VectorSearchRepository?>(
+  (ref) => null,
+  name: 'vectorSearchRepositoryProvider',
+);

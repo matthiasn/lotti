@@ -7,7 +7,11 @@ part of 'query_chat_models.dart';
 // **************************************************************************
 
 _QueryScope _$QueryScopeFromJson(Map<String, dynamic> json) => _QueryScope(
-  kind: $enumDecode(_$QueryScopeKindEnumMap, json['kind']),
+  kind: $enumDecode(
+    _$QueryScopeKindEnumMap,
+    json['kind'],
+    unknownValue: QueryScopeKind.unknown,
+  ),
   id: json['id'] as String,
 );
 
@@ -21,6 +25,8 @@ const _$QueryScopeKindEnumMap = {
   QueryScopeKind.task: 'task',
   QueryScopeKind.project: 'project',
   QueryScopeKind.category: 'category',
+  QueryScopeKind.journal: 'journal',
+  QueryScopeKind.unknown: 'unknown',
 };
 
 _QuerySourceRef _$QuerySourceRefFromJson(Map<String, dynamic> json) =>

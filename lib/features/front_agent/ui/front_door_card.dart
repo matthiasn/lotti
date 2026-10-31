@@ -1,3 +1,5 @@
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
@@ -24,6 +26,7 @@ class FrontDoorActions {
     required this.onSaveNote,
     required this.onStartGoal,
     required this.onNewProject,
+    this.onOpenEvidence,
   });
 
   /// File the proposal under its task — the one tap of decision 1.
@@ -53,6 +56,9 @@ class FrontDoorActions {
 
   /// Open the project creation for an inbox item.
   final ValueChanged<String> onNewProject;
+
+  /// Open the source a journal answer cites.
+  final ValueChanged<QueryEvidence>? onOpenEvidence;
 }
 
 /// What came back through the doors of one routed turn, as a stack of
@@ -65,17 +71,24 @@ class FrontDoorActions {
 /// grey.
 ///
 /// Specialist text is shown as the specialist's, under its owner's name —
-/// never reworded by the front agent (decision 2).
+/// never reworded by the front agent (decision 2). Her own answer from the
+/// journal is shown as hers, with the sources it cites, and only while
+/// [journalAccess] still shows all of them.
 class FrontDoorCard extends StatelessWidget {
   const FrontDoorCard({
     required this.doors,
     this.actions,
     this.busyDoorIds = const {},
     this.failedDoorIds = const {},
+    this.journalAccess,
     super.key,
   });
 
   final List<FrontDoorEntry> doors;
+
+  /// The live visibility of the sources journal answers cite; null until it
+  /// is known, and a journal answer stays hidden until then.
+  final QueryAccessSnapshot? journalAccess;
 
   /// Null renders the cards without their controls.
   final FrontDoorActions? actions;
@@ -115,6 +128,7 @@ class FrontDoorCard extends StatelessWidget {
                 key: ValueKey('front-door-${door.record.segmentIndex}'),
                 door: door,
                 actions: actions,
+                journalAccess: journalAccess,
                 busy: busyDoorIds.contains(door.doorId),
                 failed: failedDoorIds.contains(door.doorId),
               ),
@@ -133,11 +147,13 @@ class _DoorRow extends StatelessWidget {
     required this.actions,
     required this.busy,
     required this.failed,
+    this.journalAccess,
     super.key,
   });
 
   final FrontDoorEntry door;
   final FrontDoorActions? actions;
+  final QueryAccessSnapshot? journalAccess;
   final bool busy;
   final bool failed;
 
@@ -160,6 +176,7 @@ class _DoorRow extends StatelessWidget {
     final String title;
     final String status;
     Widget? action;
+    var sources = const <QueryEvidence>[];
     final menu = <DesignSystemContextMenuItem>[];
 
     DesignSystemContextMenuItem item(
@@ -183,7 +200,24 @@ class _DoorRow extends StatelessWidget {
     switch (record.outcome) {
       case null:
         title = words;
-        status = messages.frontDoorWalking(owner);
+        status = record.kind == FrontDestinationKind.journal
+            ? messages.frontDoorSearchingJournal
+            : messages.frontDoorWalking(owner);
+      case FrontDoorAnswer(fromJournal: true) && final answer:
+        // Shown only while every source it rests on still is, as query chat
+        // does; until that is known it stays hidden too.
+        final visible =
+            journalAccess?.allowsContent(
+              answer.dependencies,
+              private: answer.private,
+            ) ??
+            false;
+        title = visible ? answer.text : messages.frontDoorAnswerHidden;
+        if (visible) sources = answer.evidence;
+        status = [
+          messages.frontDoorFromJournal,
+          if (answer.incomplete) messages.frontDoorIncomplete,
+        ].join(' · ');
       case FrontDoorAnswer(:final text, :final summaryBased, :final incomplete):
         title = text;
         status = [
@@ -201,6 +235,9 @@ class _DoorRow extends StatelessWidget {
         title = words;
         status = switch (reason) {
           FrontDoorSkipReason.noAgent => messages.frontDoorNoAgent(owner),
+          FrontDoorSkipReason.inferenceUnavailable
+              when record.kind == FrontDestinationKind.journal =>
+            messages.frontDoorJournalUnavailable,
           FrontDoorSkipReason.inferenceUnavailable =>
             messages.frontDoorInferenceUnavailable(owner),
           FrontDoorSkipReason.noDoor => messages.frontDoorNoDoor,
@@ -367,6 +404,16 @@ class _DoorRow extends StatelessWidget {
                   color: tokens.colors.text.highEmphasis,
                 ),
               ),
+              for (final (number, source) in sources.indexed)
+                _SourceRow(
+                  key: ValueKey('front-door-source-$index-$number'),
+                  number: number + 1,
+                  evidence: source,
+                  onOpen: switch (acting?.onOpenEvidence) {
+                    final open? => () => open(source),
+                    null => null,
+                  },
+                ),
               SizedBox(height: tokens.spacing.step1),
               Row(
                 children: [
@@ -404,8 +451,10 @@ class _DoorRow extends StatelessWidget {
     FrontDestinationKind.goal => LottiIcons.focus,
     FrontDestinationKind.person => LottiIcons.person,
     FrontDestinationKind.day => LottiIcons.calendar,
+    // A journal question is searched; a journal statement lands in the
+    // inbox, whose glyph replaces this one.
+    FrontDestinationKind.journal => LottiIcons.search,
     FrontDestinationKind.newThing ||
-    FrontDestinationKind.journal ||
     FrontDestinationKind.unrouted => LottiIcons.inbox,
   };
 
@@ -432,6 +481,77 @@ class _DoorRow extends StatelessWidget {
       FrontDestinationKind.journal ||
       FrontDestinationKind.unrouted => messages.frontDoorKindOther,
     };
+  }
+}
+
+/// One source a journal answer cites, numbered as the answer cites it:
+/// its label, and the passage it gave, opening the source on a tap.
+class _SourceRow extends StatelessWidget {
+  const _SourceRow({
+    required this.number,
+    required this.evidence,
+    required this.onOpen,
+    super.key,
+  });
+
+  final int number;
+  final QueryEvidence evidence;
+  final VoidCallback? onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final caption = tokens.typography.styles.others.caption;
+    final quote = evidence.quote.trim();
+    // The card is drawn on a plain box; the ink needs a surface of its own.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$number',
+                // Every digit equally wide, so the passages line up.
+                style: caption.copyWith(
+                  color: tokens.colors.aiCard.accent,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      evidence.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: caption.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                    if (quote.isNotEmpty)
+                      Text(
+                        quote,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

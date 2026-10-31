@@ -113,6 +113,17 @@ class QueryTestBench {
   final taskProjects = <String, String>{};
   final categories = <CategoryDefinition>[categoryMindfulness];
   final searches = <String>[];
+
+  /// What search by meaning answers per query, nearest first; null when it
+  /// is unavailable, so the crawl runs on keywords alone.
+  Map<String, List<String>>? meaningResults;
+
+  /// Every search by meaning the crawler ran, with the categories it was
+  /// narrowed to, sorted and comma-joined (null for every category).
+  final meaningSearches = <(String, String?)>[];
+
+  /// Whether search by meaning throws, as an embedding failure does.
+  bool meaningFails = false;
   bool showPrivate = false;
   int categoryReads = 0;
 
@@ -125,6 +136,17 @@ class QueryTestBench {
     search: (query) async {
       searches.add(query);
       return entries.keys.toList();
+    },
+    meaning: switch (meaningResults) {
+      final results? => (query, categoryIds) async {
+        meaningSearches.add((
+          query,
+          categoryIds == null ? null : (categoryIds.toList()..sort()).join(','),
+        ));
+        if (meaningFails) throw Exception('embedding model unavailable');
+        return results[query] ?? const <String>[];
+      },
+      null => null,
     },
   );
 

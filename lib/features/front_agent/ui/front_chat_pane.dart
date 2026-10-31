@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
@@ -61,6 +63,9 @@ class _Body extends ConsumerWidget {
       final t => AsyncData(t.messages),
     };
     final composer = ref.watch(frontChatControllerProvider);
+    // Kept across a reread (`.value`): an answer is not taken off the screen
+    // while its sources' visibility is checked again.
+    final journalAccess = ref.watch(frontJournalAccessProvider).value;
     final controller = ref.read(frontChatControllerProvider.notifier);
     final latestId = thread?.messages.lastOrNull?.id;
     final locale = Localizations.localeOf(context).toLanguageTag();
@@ -103,6 +108,16 @@ class _Body extends ConsumerWidget {
         beamToNamed(goalCreatePath);
       },
       onNewProject: (_) => showProjectCreateModal(context: context),
+      // A source a journal answer cites opens on its own page.
+      onOpenEvidence: (evidence) {
+        final id = evidence.source.id;
+        Navigator.of(context).maybePop();
+        beamToNamed(switch (evidence.kind) {
+          QuerySourceKind.task => '/tasks/$id',
+          QuerySourceKind.project => '/projects/$id',
+          _ => '/journal/$id',
+        });
+      },
     );
 
     return AgentChatView(
@@ -135,6 +150,7 @@ class _Body extends ConsumerWidget {
                 actions: actions,
                 busyDoorIds: composer.busyDoorIds,
                 failedDoorIds: composer.failedDoorIds,
+                journalAccess: journalAccess,
               );
         // Chips only under her latest question: an older one has been
         // answered, or walked away from, and its options would send a reply

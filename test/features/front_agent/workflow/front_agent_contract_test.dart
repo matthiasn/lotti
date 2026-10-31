@@ -89,6 +89,17 @@ void main() {
       frontAgentSystemPrompt,
       contains('Closed tasks are not destinations'),
     );
+    // A question no single owner holds is hers, answered from the journal;
+    // an owner's question stays the owner's.
+    expect(frontAgentSystemPrompt, contains('you answer it from the journal'));
+    expect(
+      frontAgentSystemPrompt,
+      contains("You never answer an owner's question yourself"),
+    );
+    expect(
+      frontAgentSystemPrompt,
+      contains('keep any category the user names'),
+    );
     expect(frontAgentSystemPrompt, contains('<routing_index>'));
     expect(frontAgentSystemPrompt, contains('<recent_turns>'));
     expect(frontAgentSystemPrompt, contains(frontPendingUserMessageHeader));

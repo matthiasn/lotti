@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 
 /// The tool name under which a walked door is recorded in the front
@@ -70,6 +73,10 @@ sealed class FrontDoorOutcome {
               for (final id in owners)
                 if (id is String) id,
           ],
+          fromJournal: map['fromJournal'] == true,
+          private: map['private'] == true,
+          evidence: _decoded(map['evidence'], QueryEvidence.fromJson),
+          dependencies: _decoded(map['dependencies'], QuerySourceRef.fromJson),
         );
       case 'chat':
         final agentId = map['specialistAgentId'];
@@ -257,20 +264,41 @@ class FrontDoorTaskCreated extends FrontDoorOutcome {
 bool frontDoorAwaitsUser(FrontDoorOutcome? outcome) =>
     outcome is FrontDoorProposal || outcome is FrontDoorInbox;
 
-/// The query pipeline answered a task or project question; the text is
-/// shown in the front thread, attributed to its owner.
+/// The query pipeline answered a question; the text is shown in the front
+/// thread — a task or project question attributed to its owner, a journal
+/// question ([fromJournal]) to the front agent herself, with the passages it
+/// rests on.
 class FrontDoorAnswer extends FrontDoorOutcome {
   const FrontDoorAnswer({
     required this.text,
     required this.summaryBased,
     required this.incomplete,
     this.ownerIds = const [],
+    this.fromJournal = false,
+    this.private = false,
+    this.evidence = const [],
+    this.dependencies = const [],
   });
 
   final String text;
   final bool summaryBased;
   final bool incomplete;
   final List<String> ownerIds;
+
+  /// She answered from the journal herself, rather than an owner.
+  final bool fromJournal;
+
+  /// Asked while private entries were shown: the answer is shown only while
+  /// they are.
+  final bool private;
+
+  /// The verified passages a journal answer cites, numbered as its text
+  /// cites them.
+  final List<QueryEvidence> evidence;
+
+  /// Every source the answer depends on. The surface shows the answer only
+  /// while all of them are still visible, as query chat does.
+  final List<QuerySourceRef> dependencies;
 
   @override
   Map<String, Object?> toJson() => {
@@ -279,7 +307,33 @@ class FrontDoorAnswer extends FrontDoorOutcome {
     'summaryBased': summaryBased,
     'incomplete': incomplete,
     'ownerIds': ownerIds,
+    if (fromJournal) 'fromJournal': true,
+    if (private) 'private': true,
+    // Plain maps all the way down, as the record is stored, so a record
+    // read back before it is stored decodes the same.
+    if (evidence.isNotEmpty) 'evidence': _plain(evidence),
+    if (dependencies.isNotEmpty) 'dependencies': _plain(dependencies),
   };
+}
+
+Object? _plain(Object value) => jsonDecode(jsonEncode(value));
+
+/// The items of a stored list that still decode; a malformed one is left
+/// out rather than failing the whole record.
+List<T> _decoded<T>(Object? json, T Function(Map<String, dynamic>) fromJson) =>
+    [
+      if (json is List)
+        for (final item in json)
+          if (item is Map)
+            ?_tryDecode(() => fromJson(Map<String, dynamic>.from(item))),
+    ];
+
+T? _tryDecode<T>(T Function() decode) {
+  try {
+    return decode();
+  } on Object {
+    return null;
+  }
 }
 
 /// A goal or person agent received the segment as its own chat turn; its

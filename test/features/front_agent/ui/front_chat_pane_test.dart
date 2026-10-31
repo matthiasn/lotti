@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
@@ -32,6 +35,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 import '../../ai_consumption/test_utils.dart';
@@ -69,6 +73,7 @@ void main() {
     WidgetTester tester, {
     Future<FrontChatThread> Function()? thread,
     VoidCallback? onClose,
+    QueryAccessSnapshot? journalAccess,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -93,6 +98,10 @@ void main() {
             frontChatServiceProvider.overrideWithValue(chatService),
             frontAgentServiceProvider.overrideWithValue(agentService),
             frontFilingServiceProvider.overrideWithValue(filing),
+            if (journalAccess != null)
+              frontJournalAccessProvider.overrideWith(
+                (ref) => Stream.value(journalAccess),
+              ),
             configFlagProvider.overrideWith((ref, _) => Stream.value(false)),
             agentConsumptionTotalsProvider(
               frontAgentId,
@@ -529,6 +538,89 @@ void main() {
 
       expect(paths, ['/journal/e-1', '/tasks/t-1']);
     });
+  });
+
+  testWidgets('a source her journal answer cites leaves the sheet and opens '
+      'its own page', (tester) async {
+    final paths = <String>[];
+    beamToNamedOverride = paths.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final category = categoryMindfulness;
+    final cited = [
+      for (final (id, kind) in [
+        ('t-1', QuerySourceKind.task),
+        ('p-1', QuerySourceKind.project),
+        ('e-1', QuerySourceKind.text),
+      ])
+        QueryEvidence(
+          source: QuerySourceRef(
+            id: id,
+            private: false,
+            categoryPrivate: false,
+            categoryId: category.id,
+          ),
+          kind: kind,
+          label: 'Source $id',
+          sourceDate: DateTime(2026, 10, 20),
+          textVersion: 'entryText',
+          fingerprint: id,
+          sourceText: 'The colony counted the fish stores.',
+          start: 0,
+          end: 10,
+          summary: 'Count',
+        ),
+    ];
+    await pumpPane(
+      tester,
+      journalAccess: QueryAccessSnapshot(
+        showPrivate: false,
+        categories: {category.id: category},
+        entries: {
+          for (final e in cited)
+            e.source.id: testTextEntry.copyWith(
+              meta: testTextEntry.meta.copyWith(
+                id: e.source.id,
+                categoryId: category.id,
+                private: false,
+              ),
+            ),
+        },
+      ),
+      thread: () async => FrontChatThread(
+        messages: [
+          message('u1', AgentChatRole.user, 'What about the stores?', now),
+        ],
+        doorsByMessageId: {
+          'u1': [
+            FrontDoorEntry(
+              doorId: 'd:door:0',
+              record: FrontDoorRecord(
+                segmentIndex: 0,
+                text: 'What about the stores?',
+                kind: FrontDestinationKind.journal,
+                status: FrontDoorStatus.done,
+                claimedAt: now.toUtc(),
+                outcome: FrontDoorAnswer(
+                  text: 'Counted [1], planned [2], noted [3].',
+                  summaryBased: false,
+                  incomplete: false,
+                  fromJournal: true,
+                  evidence: cited,
+                  dependencies: [for (final e in cited) e.source],
+                ),
+              ),
+            ),
+          ],
+        },
+      ),
+    );
+
+    for (var i = 0; i < cited.length; i++) {
+      await tester.tap(find.byKey(ValueKey('front-door-source-0-$i')));
+      await tester.pump();
+    }
+
+    expect(paths, ['/tasks/t-1', '/projects/p-1', '/journal/e-1']);
   });
 
   group('the wizard chips', () {

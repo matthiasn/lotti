@@ -203,4 +203,64 @@ void main() {
       isFalse,
     );
   });
+
+  group('allowsScope', () {
+    test('a task or project needs its visible home', () {
+      final task = QueryScope(kind: QueryScopeKind.task, id: note.meta.id);
+      final project = QueryScope(
+        kind: QueryScopeKind.project,
+        id: note.meta.id,
+      );
+
+      expect(snapshot().allowsScope(task), isTrue);
+      expect(snapshot().allowsScope(project), isTrue);
+      expect(
+        snapshot().allowsScope(
+          const QueryScope(kind: QueryScopeKind.task, id: 'gone'),
+        ),
+        isFalse,
+      );
+      expect(
+        snapshot(
+          source: note.copyWith(meta: note.meta.copyWith(private: true)),
+        ).allowsScope(task),
+        isFalse,
+      );
+    });
+
+    test('a category needs to be visible', () {
+      final scope = QueryScope(kind: QueryScopeKind.category, id: category.id);
+
+      expect(snapshot().allowsScope(scope), isTrue);
+      expect(
+        snapshot(
+          sourceCategory: category.copyWith(private: true),
+        ).allowsScope(scope),
+        isFalse,
+      );
+    });
+
+    test('the journal is always readable; only its sources are checked', () {
+      expect(snapshot().allowsScope(QueryScope.journal), isTrue);
+      expect(
+        snapshot().allowsScope(QueryScope.journalIn({category.id})),
+        isTrue,
+      );
+      expect(
+        snapshot().allowsScope(
+          const QueryScope(kind: QueryScopeKind.journal, id: 'another'),
+        ),
+        isFalse,
+      );
+    });
+
+    test('a kind a newer build added never is', () {
+      expect(
+        snapshot().allowsScope(
+          const QueryScope(kind: QueryScopeKind.unknown, id: 'future'),
+        ),
+        isFalse,
+      );
+    });
+  });
 }

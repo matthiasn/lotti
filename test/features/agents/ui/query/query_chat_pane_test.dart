@@ -1053,7 +1053,11 @@ void main() {
     );
   }
 
-  for (final kind in QueryScopeKind.values) {
+  for (final kind in const [
+    QueryScopeKind.task,
+    QueryScopeKind.project,
+    QueryScopeKind.category,
+  ]) {
     testWidgets(
       'empty ${kind.name} chat explains scope and drafts an example',
       (tester) async {
@@ -1065,6 +1069,8 @@ void main() {
             QueryScopeKind.task => 'task',
             QueryScopeKind.project => 'project',
             QueryScopeKind.category => categoryMindfulness.id,
+            QueryScopeKind.journal ||
+            QueryScopeKind.unknown => throw StateError('not looped'),
           },
         );
         bench.entries['project'] = makeTestProject(
@@ -1796,7 +1802,11 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  for (final kind in QueryScopeKind.values) {
+  for (final kind in const [
+    QueryScopeKind.task,
+    QueryScopeKind.project,
+    QueryScopeKind.category,
+  ]) {
     testWidgets('$kind shows its home label and closing preserves its draft', (
       tester,
     ) async {
@@ -1825,6 +1835,8 @@ void main() {
         QueryScopeKind.task => 'Task',
         QueryScopeKind.project => 'Project',
         QueryScopeKind.category => 'Category',
+        QueryScopeKind.journal ||
+        QueryScopeKind.unknown => throw StateError('not looped'),
       };
       expect(find.text(label), findsOneWidget);
       expect(

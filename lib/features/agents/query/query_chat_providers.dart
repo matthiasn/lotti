@@ -28,7 +28,10 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/lockdown/state/lockdown_controller.dart';
@@ -128,14 +131,12 @@ queryChatTargetProvider = FutureProvider.autoDispose
         scope.id,
       ]);
       final home = access.entries[scope.id];
-      if (scope.kind == QueryScopeKind.category
-          ? !access.allowsCategory(scope.id)
-          : home == null || !access.allowsEntry(home)) {
-        throw const QueryScopeUnavailable();
-      }
-      final categoryId = scope.kind == QueryScopeKind.category
-          ? scope.id
-          : home!.meta.categoryId;
+      if (!access.allowsScope(scope)) throw const QueryScopeUnavailable();
+      final categoryId = switch (scope.kind) {
+        QueryScopeKind.category => scope.id,
+        QueryScopeKind.journal || QueryScopeKind.unknown => null,
+        QueryScopeKind.task || QueryScopeKind.project => home!.meta.categoryId,
+      };
       final category = access.categories[categoryId];
       AgentIdentityEntity? agent;
       String label;
@@ -165,6 +166,10 @@ queryChatTargetProvider = FutureProvider.autoDispose
                 allowedCategoryIds: {scope.id},
                 config: AgentConfig(profileId: category.defaultProfileId),
               );
+        case QueryScopeKind.journal || QueryScopeKind.unknown:
+          // A journal question is answered headless, in the front agent's
+          // thread; no query chat is ever opened on it.
+          throw const QueryScopeUnavailable();
       }
       if (agent?.lifecycle == AgentLifecycle.destroyed ||
           agent?.deletedAt != null) {
@@ -212,6 +217,23 @@ queryProfileProvider = FutureProvider.autoDispose
                     .read(profileResolverProvider)
                     .resolveByProfileId(profileId);
         }
+        if (key.scope.kind == QueryScopeKind.journal) {
+          // A journal answer has no owner whose setup it could run on, and no
+          // single category: the Settings default answers it, else the
+          // built-in model. The asking agent's own setup is for its routing.
+          ref.watch(
+            defaultInferenceProfileControllerProvider.select(
+              (value) => value.value,
+            ),
+          );
+          return (await ref
+                  .read(profileResolverProvider)
+                  .resolveStandalone(
+                    agentConfig: const AgentConfig(),
+                    legacyModelId: meliousGlm52ModelId,
+                  ))
+              .profile;
+        }
         return (await ref.watch(
           agentResolvedSetupProvider(key.agentId).future,
         ))?.profile;
@@ -225,11 +247,15 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
   final journal = ref.watch(journalDbProvider);
   final cloud = ref.watch(cloudInferenceRepositoryProvider);
   final agents = ref.watch(agentRepositoryProvider);
+  final vectorSearch = ref.watch(vectorSearchRepositoryProvider);
   return (scope, agentId, chatId) async {
     final current = await access.load([scope.id]);
-    final categoryId = scope.kind == QueryScopeKind.category
-        ? scope.id
-        : current.entries[scope.id]?.meta.categoryId;
+    final categoryId = switch (scope.kind) {
+      QueryScopeKind.category => scope.id,
+      QueryScopeKind.journal || QueryScopeKind.unknown => null,
+      QueryScopeKind.task ||
+      QueryScopeKind.project => current.entries[scope.id]?.meta.categoryId,
+    };
     final profile = await ref.read(
       queryProfileProvider((agentId: agentId, scope: scope)).future,
     );
@@ -240,11 +266,15 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
       readActionContext: scope.kind == QueryScopeKind.task
           ? ref.read(queryActionContextReaderProvider)
           : null,
-      summaryReader: QuerySummaryReader(
-        journal: journal,
-        access: access,
-        repository: agents,
-      ),
+      // Journal-wide questions have no home to read reports from: they
+      // search the journal itself, across every visible category.
+      summaryReader: scope.spansCategories
+          ? null
+          : QuerySummaryReader(
+              journal: journal,
+              access: access,
+              repository: agents,
+            ),
       crawler: QueryJournalCrawler(
         journal: journal,
         access: access,
@@ -253,6 +283,17 @@ final queryBuilderFactoryProvider = Provider<QueryBuilderFactory>((ref) {
           anyTerm: true,
           prefixLastWord: false,
         ),
+        meaning:
+            vectorSearch != null &&
+                await journal.getConfigFlag(enableVectorSearchFlag)
+            ? (query, categoryIds) async => [
+                for (final entity in (await vectorSearch.searchRelatedEntries(
+                  query: query,
+                  categoryIds: categoryIds,
+                )).entities)
+                  entity.meta.id,
+              ]
+            : null,
       ),
       access: access,
       inference: QueryTextInference.forProfile(

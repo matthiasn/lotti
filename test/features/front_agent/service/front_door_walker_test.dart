@@ -608,6 +608,119 @@ void main() {
     );
   });
 
+  group('a journal question', () {
+    const source = QuerySourceRef(
+      id: 'feeder-note',
+      private: false,
+      categoryPrivate: false,
+      categoryId: 'colony',
+    );
+    final evidence = QueryEvidence(
+      source: source,
+      kind: QuerySourceKind.text,
+      label: 'Feeder note',
+      sourceDate: DateTime(2026, 10, 20),
+      textVersion: 'entryText',
+      fingerprint: 'f',
+      sourceText: 'The seam walk comes after the feeder repair.',
+      start: 0,
+      end: 13,
+      summary: 'The order of the work',
+    );
+
+    void answers(QueryChatAnswer answer) =>
+        when(
+          () => builder.build(
+            chat: any(named: 'chat'),
+            question: any(named: 'question'),
+            memories: any(named: 'memories'),
+            cancellation: any(named: 'cancellation'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          final chat = invocation.namedArguments[#chat] as QueryChatHistory;
+          final question =
+              invocation.namedArguments[#question] as AgentQueryChatEventEntity;
+          expect(chat.scope.spansCategories, isTrue);
+          expect(
+            (question.data as QueryChatQuestion).text,
+            'How is the garden?',
+          );
+          expect(question.agentId, frontAgentId);
+          return QueryBuiltAnswer(answer: answer);
+        });
+
+    test('is answered by her from the journal, within her allow-list, and '
+        'kept with its evidence', () async {
+      seedDispatch([
+        segment(start: 0, end: 18, kind: FrontDestinationKind.journal),
+      ]);
+      when(() => repository.getEntity(frontAgentId)).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: frontAgentId,
+          agentId: frontAgentId,
+          kind: AgentKinds.frontAgent,
+          allowedCategoryIds: const {'colony'},
+        ),
+      );
+      answers(
+        QueryChatAnswer(
+          questionId: 'q',
+          text: 'After the feeder repair [1].',
+          coverage: const QueryCoverage(incomplete: true),
+          evidence: [evidence],
+          dependencies: const [source],
+          private: true,
+        ),
+      );
+
+      await walker.walk(messageId);
+
+      expect(factoryCalls, [
+        (QueryScope.journalIn(const {'colony'}), frontAgentId, messageId),
+      ]);
+      final outcome = doors()[0]!.outcome! as FrontDoorAnswer;
+      expect(outcome.fromJournal, isTrue);
+      expect(outcome.text, 'After the feeder repair [1].');
+      expect(outcome.incomplete, isTrue);
+      expect(outcome.private, isTrue);
+      expect(outcome.evidence.single.label, 'Feeder note');
+      expect(outcome.dependencies, [source]);
+      expect(outcome.ownerIds, isEmpty);
+    });
+
+    test('with no allow-list reads every visible category', () async {
+      seedDispatch([
+        segment(start: 0, end: 18, kind: FrontDestinationKind.journal),
+      ]);
+      answers(
+        const QueryChatAnswer(
+          questionId: 'q',
+          text: 'Nothing about it yet.',
+          coverage: QueryCoverage(),
+        ),
+      );
+
+      await walker.walk(messageId);
+
+      expect(factoryCalls.single.$1, QueryScope.journal);
+    });
+
+    test('with no model to answer it is skipped', () async {
+      seedDispatch([
+        segment(start: 0, end: 18, kind: FrontDestinationKind.journal),
+      ]);
+      factoryError = const QueryInferenceUnavailable();
+
+      await walker.walk(messageId);
+
+      expect(
+        (doors()[0]!.outcome! as FrontDoorSkipped).reason,
+        FrontDoorSkipReason.inferenceUnavailable,
+      );
+    });
+  });
+
   test('new, journal and unrouted segments wait in the inbox — a new thing '
       "with what it would become; today's plan has no door yet", () async {
     seedDispatch([

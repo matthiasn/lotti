@@ -5,6 +5,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/query/query_journal_crawler.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../test_data/test_data.dart';
 import '../../projects/test_utils.dart';
@@ -304,6 +305,275 @@ void main() {
     expect(
       corpus.documents.every((d) => d.entry.meta.categoryId == category),
       isTrue,
+    );
+  });
+
+  group('search by meaning', () {
+    final category = categoryMindfulness.id;
+
+    QueryTestBench bench() => QueryTestBench()
+      ..add('a', category: category)
+      ..add('b', category: category)
+      ..add('c', category: category)
+      ..add('d', category: category)
+      ..add('elsewhere', category: 'other-category')
+      ..add('secret', category: category, private: true);
+
+    test('its hits come first, nearest first, within the category and '
+        'what may be shown', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['elsewhere', 'secret', 'd', 'c'],
+          'ledger': ['b'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope(kind: QueryScopeKind.category, id: category),
+        const ['feeder'],
+        searches: const ['fish stores', 'ledger'],
+      );
+
+      expect(corpus.documents.map((d) => d.entry.meta.id), [
+        'd',
+        'c',
+        'b',
+        'a',
+      ]);
+      expect(b.searches, ['feeder'], reason: 'keywords still run');
+    });
+
+    test(
+      'runs each planned search once, at most three, skipping blanks',
+      () async {
+        final b = bench()..meaningResults = {};
+
+        await b.crawler.discover(
+          QueryScope(kind: QueryScopeKind.category, id: category),
+          const [],
+          searches: const [
+            'fish stores',
+            ' ',
+            'fish stores ',
+            'ledger',
+            'x',
+            'y',
+          ],
+        );
+
+        expect(b.meaningSearches, [
+          ('fish stores', category),
+          ('ledger', category),
+          ('x', category),
+        ]);
+      },
+    );
+
+    test('a failing search by meaning leaves the keyword crawl running, '
+        'with coverage marked incomplete', () async {
+      final b = bench()
+        ..meaningResults = {}
+        ..meaningFails = true;
+
+      final corpus = await b.crawler.discover(
+        QueryScope(kind: QueryScopeKind.category, id: category),
+        const ['feeder'],
+        searches: const ['fish stores'],
+      );
+
+      expect(b.meaningSearches, [('fish stores', category)]);
+      expect(b.searches, ['feeder']);
+      expect(corpus.documents.map((d) => d.entry.meta.id), [
+        'a',
+        'b',
+        'c',
+        'd',
+      ]);
+      expect(corpus.coverage.incomplete, isTrue);
+    });
+
+    test('a home-only crawl searches nothing by meaning', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['d'],
+        };
+      b.entries['home'] = testTask.copyWith(
+        meta: testTask.meta.copyWith(id: 'home', categoryId: category),
+      );
+
+      await b.crawler.discover(
+        const QueryScope(kind: QueryScopeKind.task, id: 'home'),
+        const ['feeder'],
+        searches: const ['fish stores'],
+        homeOnly: true,
+      );
+
+      expect(b.meaningSearches, isEmpty);
+    });
+  });
+
+  group('journal-wide', () {
+    QueryTestBench bench() {
+      final b = QueryTestBench();
+      b.categories.addAll([
+        categoryMindfulness.copyWith(id: 'colony', name: 'Colony'),
+        categoryMindfulness.copyWith(
+          id: 'secret',
+          name: 'Secret',
+          private: true,
+        ),
+      ]);
+      return b
+        ..add('calm', category: categoryMindfulness.id)
+        ..add('census', category: 'colony')
+        ..add('hidden', category: 'secret');
+    }
+
+    test('reads every category the reader may see, and searches all of '
+        'them by meaning', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['hidden', 'census', 'calm'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope.journal,
+        const ['feeder'],
+        searches: const ['fish stores'],
+      );
+
+      expect(corpus.documents.map((d) => d.entry.meta.id), [
+        'census',
+        'calm',
+      ]);
+      expect(corpus.homeIds, isEmpty);
+      expect(corpus.categoryId, isNull);
+      expect(b.meaningSearches, [('fish stores', null)]);
+      // Visibility is applied before the limit: the query never asks for
+      // the private category.
+      final asked = verify(
+        () => b.db.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          categoryIds: captureAny(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).captured;
+      for (final categories in asked) {
+        expect(categories, containsAll([categoryMindfulness.id, 'colony']));
+        expect(categories, isNot(contains('secret')));
+      }
+    });
+
+    test("narrowed to the page's categories, reads and searches only "
+        'those', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['census', 'calm'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope.journalIn(const {'colony', 'secret'}),
+        const ['feeder'],
+        searches: const ['fish stores'],
+      );
+
+      expect(corpus.documents.map((d) => d.entry.meta.id), ['census']);
+      expect(b.meaningSearches, [('fish stores', 'colony,secret')]);
+      final access = await b.crawler.access.load(const []);
+      expect(corpus.admits(access, 'colony'), isTrue);
+      expect(corpus.admits(access, categoryMindfulness.id), isFalse);
+      expect(corpus.admits(access, 'secret'), isFalse, reason: 'private');
+    });
+
+    test('categories the question names narrow a selection, never widen '
+        'it', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['census', 'calm'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope.journalIn({'colony', categoryMindfulness.id}),
+        const [],
+        searches: const ['fish stores'],
+        narrowTo: const {'colony', 'elsewhere'},
+      );
+
+      expect(corpus.documents.map((d) => d.entry.meta.id), ['census']);
+      expect(b.meaningSearches, [('fish stores', 'colony')]);
+    });
+
+    test('narrowed to nothing, it reads and searches nothing', () async {
+      final b = bench()
+        ..meaningResults = {
+          'fish stores': ['census', 'calm'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope.journal,
+        const ['fish'],
+        searches: const ['fish stores'],
+        narrowTo: const {},
+      );
+
+      expect(corpus.documents, isEmpty);
+      expect(b.meaningSearches, isEmpty);
+      verifyNever(
+        () => b.db.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      );
+    });
+
+    test('a selection holding the uncategorized bucket searches every shard '
+        'and narrows the hits', () async {
+      final b = bench()
+        ..add('loose')
+        ..meaningResults = {
+          'fish stores': ['census', 'calm'],
+        };
+
+      final corpus = await b.crawler.discover(
+        QueryScope.journalIn(const {'colony', ''}),
+        const [],
+        searches: const ['fish stores'],
+      );
+
+      expect(b.meaningSearches, [('fish stores', null)]);
+      expect(
+        corpus.documents.map((d) => d.entry.meta.id),
+        isNot(contains('calm')),
+      );
+    });
+
+    test(
+      'admits any visible category, and only the journal reads past one',
+      () async {
+        final b = bench();
+        final journal = await b.crawler.discover(QueryScope.journal, const []);
+        final access = await b.crawler.access.load(const []);
+
+        expect(journal.admits(access, 'colony'), isTrue);
+        expect(journal.admits(access, 'secret'), isFalse);
+        expect(journal.isVisibleIn(access), isTrue);
+
+        final category = await b.crawler.discover(
+          QueryScope(kind: QueryScopeKind.category, id: categoryMindfulness.id),
+          const [],
+        );
+        expect(category.admits(access, categoryMindfulness.id), isTrue);
+        expect(category.admits(access, 'colony'), isFalse);
+        expect(category.isVisibleIn(access), isTrue);
+      },
     );
   });
 }

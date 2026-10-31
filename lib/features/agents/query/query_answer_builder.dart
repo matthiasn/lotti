@@ -10,6 +10,8 @@ import 'package:lotti/features/agents/query/query_summary_reader.dart';
 import 'package:lotti/features/agents/query/query_task_action_planner.dart';
 import 'package:lotti/features/agents/query/query_text_inference.dart';
 
+part 'query_answer_builder_prompts_part.dart';
+
 typedef QueryProgress = void Function(int checked, {required bool expanded});
 
 typedef _QueryBatchResult = ({
@@ -108,11 +110,7 @@ class QueryAnswerBuilder {
     cancellation.check();
     if (!initial.allowsEvent(asked)) throw const QueryScopeUnavailable();
     final home = initial.entries[chat.scope.id];
-    if (chat.scope.kind == QueryScopeKind.category
-        ? !initial.allowsCategory(chat.scope.id)
-        : home == null || !initial.allowsEntry(home)) {
-      throw const QueryScopeUnavailable();
-    }
+    if (!initial.allowsScope(chat.scope)) throw const QueryScopeUnavailable();
     final history = precedingEvents
         .where(
           (event) =>
@@ -271,7 +269,7 @@ class QueryAnswerBuilder {
 
     if (maxBatchBytes > _batchSystemBytes &&
         maxSourceCalls > 0 &&
-        chat.scope.kind != QueryScopeKind.category) {
+        chat.scope.hasHome) {
       homeCorpus = await crawler.discover(
         chat.scope,
         const [],
@@ -306,13 +304,19 @@ class QueryAnswerBuilder {
         rememberBatch(homeCorpus, batchPlan);
       }
     }
+    final nameable = _nameableCategories(initial, chat.scope);
     final plan =
         batchPlan ??
         await inference.complete(
           system:
               '${_untrusted}Rephrase the question using only this chat context. '
-              'Return {"question":"standalone question", "terms":["up to 5 specific search terms"]}.',
-          input: {'question': asked.text, 'conversation': context},
+              'Return {"question":"standalone question", "terms":["up to 5 specific search terms"], '
+              '$_searchesField${nameable.isEmpty ? '' : ', $_categoriesField'}}.',
+          input: {
+            'question': asked.text,
+            'conversation': context,
+            if (nameable.isNotEmpty) 'categories': nameable.values.toList(),
+          },
           cancellation: cancellation,
         );
     final effectiveQuestion = plan['question'] is String
@@ -320,6 +324,14 @@ class QueryAnswerBuilder {
         : asked.text;
     final terms =
         (plan['terms'] as List?)?.whereType<String>().toList() ?? [asked.text];
+    // What to search for by meaning; without a plan for it, the question.
+    final plannedSearches = (plan['searches'] as List?)
+        ?.whereType<String>()
+        .where((search) => search.trim().isNotEmpty)
+        .toList();
+    final searches = plannedSearches == null || plannedSearches.isEmpty
+        ? [effectiveQuestion]
+        : plannedSearches;
     final needsExpansion =
         batchPlan == null ||
         batchPlan['sufficient'] != true ||
@@ -334,6 +346,8 @@ class QueryAnswerBuilder {
         : await crawler.discover(
             chat.scope,
             terms,
+            searches: searches,
+            narrowTo: _namedCategoryIds(plan['categories'], nameable),
             homeOnly: restrictToHome,
             ownTaskOnly: summaries != null,
             kind: kind,
@@ -419,7 +433,7 @@ class QueryAnswerBuilder {
         break;
       }
       final outsideHome =
-          chat.scope.kind != QueryScopeKind.category &&
+          chat.scope.hasHome &&
           !corpus.homeIds.contains(document.entry.meta.id);
       // Current activity describes the source about to be inspected, while
       // saved coverage below records whether any wider source was checked.
@@ -449,7 +463,10 @@ class QueryAnswerBuilder {
               [...dependencies.values, ...sourceDependencies],
               private: initial.showPrivate,
             ) ||
-            current.entries[source.id]?.meta.categoryId != corpus.categoryId) {
+            !corpus.admits(
+              current,
+              current.entries[source.id]?.meta.categoryId,
+            )) {
           throw const QueryScopeUnavailable();
         }
         final end = batch != null
@@ -529,8 +546,7 @@ class QueryAnswerBuilder {
                   : '',
               affiliations: affiliations.labels,
               outsideHome:
-                  chat.scope.kind != QueryScopeKind.category &&
-                  !corpus.homeIds.contains(source.id),
+                  chat.scope.hasHome && !corpus.homeIds.contains(source.id),
             ),
           );
           for (final dependency in sourceDependencies) {
@@ -540,8 +556,7 @@ class QueryAnswerBuilder {
         if (end == document.text.length) break;
       }
       checked++;
-      if (chat.scope.kind == QueryScopeKind.category ||
-          corpus.homeIds.contains(source.id)) {
+      if (!chat.scope.hasHome || corpus.homeIds.contains(source.id)) {
         homeChecked++;
       } else {
         categoryChecked++;
@@ -569,9 +584,10 @@ class QueryAnswerBuilder {
           (event) =>
               memoryAccess.allowsEvent(event.data) &&
               queryEventDependencies(event.data).every(
-                (source) =>
-                    memoryAccess.entries[source.id]?.meta.categoryId ==
-                    corpus.categoryId,
+                (source) => corpus.admits(
+                  memoryAccess,
+                  memoryAccess.entries[source.id]?.meta.categoryId,
+                ),
               ),
         )
         .take(40)
@@ -619,10 +635,12 @@ class QueryAnswerBuilder {
     )) {
       throw const QueryScopeUnavailable();
     }
-    if (!current.allowsCategory(corpus.categoryId) ||
+    if (!corpus.isVisibleIn(current) ||
         scopedReferences.any(
-          (source) =>
-              current.entries[source.id]?.meta.categoryId != corpus.categoryId,
+          (source) => !corpus.admits(
+            current,
+            current.entries[source.id]?.meta.categoryId,
+          ),
         )) {
       throw const QueryScopeUnavailable();
     }
@@ -693,10 +711,10 @@ class QueryAnswerBuilder {
     )) {
       throw const QueryScopeUnavailable();
     }
-    if (!last.allowsCategory(corpus.categoryId) ||
+    if (!corpus.isVisibleIn(last) ||
         scopedReferences.any(
           (source) =>
-              last.entries[source.id]?.meta.categoryId != corpus.categoryId,
+              !corpus.admits(last, last.entries[source.id]?.meta.categoryId),
         )) {
       throw const QueryScopeUnavailable();
     }
@@ -727,29 +745,6 @@ class QueryAnswerBuilder {
           : null,
     );
   }
-
-  static const _batchSystem =
-      '${_untrusted}Inspect sources together in this disposable retrieval context. '
-      'Resolve the question using only this chat conversation. Extract relevant exact '
-      'contiguous passages, preserving qualifications and disagreements. Source text '
-      'is complete, not a preview. Return '
-      '{"question":"standalone question","terms":["specific fallback search terms"], '
-      '"passages":[{"sourceId":"supplied source id","quote":"EXACT source text", '
-      '"summary":"short relevance summary","reason":"why relevant"}], '
-      '"sufficient":true,"searchCategory":false,"memoryIds":["useful supplied memory id"]}. '
-      'Use only supplied IDs. Return no passages for irrelevant sources. '
-      'Sharing a topic alone does not establish a missing requested fact. '
-      'Each passage must supply at least one requested fact, or a necessary '
-      'qualification or contradiction of that fact. A shared name, a general '
-      'task instruction, or unrelated activity is not evidence of the requested '
-      'measurement or outcome. Do not include a passage merely to explain that '
-      'it does not contain the answer. Return an empty passages list instead. '
-      'sufficient is true only when accepted passages or relevant memories establish '
-      'all requested facts without hiding uncertainty or disagreement. '
-      'Set searchCategory true when the user asks to search other category entries, '
-      'even if a home passage already answers part of the question. '
-      'Choose relevant memories in this same inspection; a memory is not fresh evidence. '
-      'Do not write the final answer. Never invent a missing fact.';
 
   static final int _batchSystemBytes = QueryTextInference.requestBytes(
     _batchSystem,
@@ -940,7 +935,7 @@ class QueryAnswerBuilder {
         sources.keys.any(
           (id) =>
               !current.allowsEntry(current.entries[id]!) ||
-              current.entries[id]!.meta.categoryId != corpus.categoryId,
+              !corpus.admits(current, current.entries[id]!.meta.categoryId),
         )) {
       throw const QueryScopeUnavailable();
     }

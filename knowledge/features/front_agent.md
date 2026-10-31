@@ -97,9 +97,10 @@ sources:
 # What it is
 
 The front agent is the one agent the user talks to in one place. It owns no
-record and answers for nobody: it reads a bounded index of what exists and
-decides where each part of what the user said belongs. Its one artifact is a
-**dispatch**. After the dispatch, the **door walker** takes each segment to
+record and answers for no owner: it reads a bounded index of what exists and
+decides where each part of what the user said belongs. A question about the
+user's records that no single owner holds is hers to answer, from the journal
+(ADR 0153). Its one artifact is a **dispatch**. After the dispatch, the **door walker** takes each segment to
 its owner and the **chat surface** shows what came back, under the owner's
 name. A statement is never filed by the agent: it becomes a **proposal**
 under the user's turn, and only the user's tap writes — the user's own
@@ -289,11 +290,26 @@ walker died. Outcomes:
 | `goal` / `person`, question or statement, with an active agent | that agent's own chat: `appendMessage` then `enqueueMessage`, **never awaited** | `FrontDoorChatTurn(specialistAgentId, specialistMessageId)`; the reply lands in the specialist's thread with the turn as its `operationId` |
 | `task` statement or instruction | none — the walker writes nothing | `FrontDoorProposal(ownerId)`: waits for the user's tap |
 | `project` statement | none (decision 5: no project door) | `FrontDoorInbox()` |
-| `new`, `journal`, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
+| `journal` question | the journal answer engine, headless: `QueryAnswerBuilder.build` over `QueryScope.journalIn(her allowedCategoryIds)` (empty = every visible category), agent id `front_agent`, the Settings default profile | `FrontDoorAnswer(fromJournal: true, evidence, dependencies, private)` — her own answer, with the passages it cites |
+| `new`, `journal` statement, `unrouted` | none | `FrontDoorInbox(newKind?)` — what the router thought it would become leads the chips |
 | `day` | none yet (slice 4) | `FrontDoorSkipped(noDoor)` |
 | no agent, or a retired one | — | `FrontDoorSkipped(noAgent)` |
 | owner without a usable inference setup | — | `FrontDoorSkipped(inferenceUnavailable)` |
 | a door that throws | — | `FrontDoorFailed(errorType)` — the type, never the text |
+
+**Her journal answers.** A `journal` question runs the query pipeline over
+the journal scope (see
+[scoped query conversations](agents/query-chat.md#journal-wide-questions)):
+the plan step names one to three searches, each run by meaning beside the
+keyword terms, and may name categories the question limits itself to — only
+names within her allow-list are offered, so a named category narrows
+(one she cannot see narrows to nothing) and
+never widens. The door record keeps the answer's evidence and dependencies.
+`frontJournalAccessProvider` rereads their visibility whenever an entry, a
+category, a config flag or lockdown changes, and `FrontDoorCard` shows the
+answer — attributed "From your journal", with its numbered sources that open
+on a tap — only while every dependency is still visible, and hides it until
+that is known.
 
 The walker never awaits a specialist's wake: the goal and person chat
 services' `sendMessage` awaits its own completion and at concurrency 1 that

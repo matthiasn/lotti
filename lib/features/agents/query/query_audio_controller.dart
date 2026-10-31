@@ -292,10 +292,7 @@ class QueryAudioController extends Notifier<QueryAudioState> {
         return false;
       }
     }
-    final home = access.entries[key.home.scope.id];
-    return (key.home.scope.kind == QueryScopeKind.category
-            ? access.allowsCategory(key.home.scope.id)
-            : home != null && access.allowsEntry(home)) &&
+    return access.allowsScope(key.home.scope) &&
         (!chat.private || access.showPrivate) &&
         chat.events.every((e) => access.allowsEvent(e.data));
   }

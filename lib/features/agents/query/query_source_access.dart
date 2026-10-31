@@ -31,6 +31,23 @@ class QueryAccessSnapshot {
       (showPrivate || entry.meta.private != true) &&
       allowsCategory(entry.meta.categoryId);
 
+  /// Whether a conversation's own scope may be read: a visible task or
+  /// project home, a visible category, or the journal (over a category
+  /// selection or every category) — whose sources are each checked on their
+  /// own. A scope of a kind a newer build added never
+  /// may.
+  bool allowsScope(QueryScope scope) => switch (scope.kind) {
+    QueryScopeKind.task ||
+    QueryScopeKind.project => switch (entries[scope.id]) {
+      final home? => allowsEntry(home),
+      null => false,
+    },
+    QueryScopeKind.category => allowsCategory(scope.id),
+    QueryScopeKind.journal =>
+      scope == QueryScope.journal || scope.journalCategoryIds != null,
+    QueryScopeKind.unknown => false,
+  };
+
   /// Unknown sources fail closed. A category move alone does not hide an
   /// otherwise visible historical quote; it only changes its status label.
   bool allowsReference(QuerySourceRef source) {
