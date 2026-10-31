@@ -317,7 +317,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Use category default'), findsNothing);
+    // No goal row was handed in: there is no category to copy from.
+    expect(find.text('Copy category default'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('agent-profile-profile-1')));
     await tester.pumpAndSettle();
 
@@ -327,6 +328,62 @@ void main() {
         profileId: 'profile-1',
       ),
     ).called(1);
+  });
+
+  testWidgets("a goal agent opened from its goal offers the goal's "
+      'category default in the setup sheet', (tester) async {
+    final profile = testInferenceProfile(
+      id: 'profile-1',
+      thinkingModelId: 'model-1',
+    );
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+            ),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          taskAgentSetupOptionsProvider.overrideWith(
+            (ref) async => TaskAgentSetupOptions(
+              profiles: [profile],
+              models: [testAiModel()],
+              providers: [testInferenceProvider()],
+            ),
+          ),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+            subjectEntityId: 'goal-row',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('No AI setup').first,
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    await tester.tap(find.text('No AI setup').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy category default'), findsOneWidget);
   });
 
   testWidgets('goal agent displays its profile without a template', (

@@ -282,6 +282,7 @@ class _GoalActionsMenuButton extends ConsumerWidget {
               context: context,
               agentId: agentId,
               agentName: agentName,
+              subjectEntityId: ref.read(goalEntryIdProvider(agentId)),
             );
           case _GoalDetailMenuAction.delete:
             await _confirmAndDelete(context, ref);

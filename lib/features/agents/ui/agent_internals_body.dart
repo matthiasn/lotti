@@ -35,12 +35,17 @@ class AgentInternalsBody extends StatefulWidget {
     required this.agentId,
     required this.lifecycle,
     required this.stateAsync,
+    this.subjectEntityId,
     super.key,
   });
 
   final String agentId;
   final AgentLifecycle lifecycle;
   final AsyncValue<AgentDomainEntity?> stateAsync;
+
+  /// The goal row a goal's agent serves; see
+  /// `AgentInternalsPanel.subjectEntityId`.
+  final String? subjectEntityId;
 
   @override
   State<AgentInternalsBody> createState() => _AgentInternalsBodyState();
@@ -93,6 +98,7 @@ class _AgentInternalsBodyState extends State<AgentInternalsBody>
               agentId: widget.agentId,
               lifecycle: widget.lifecycle,
               stateAsync: widget.stateAsync,
+              subjectEntityId: widget.subjectEntityId,
             ),
             AgentReportHistoryLog(agentId: widget.agentId),
             AgentConversationLog(agentId: widget.agentId),
@@ -111,11 +117,13 @@ class _StatsTab extends StatelessWidget {
     required this.agentId,
     required this.lifecycle,
     required this.stateAsync,
+    this.subjectEntityId,
   });
 
   final String agentId;
   final AgentLifecycle lifecycle;
   final AsyncValue<AgentDomainEntity?> stateAsync;
+  final String? subjectEntityId;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +134,7 @@ class _StatsTab extends StatelessWidget {
         const Divider(indent: 16, endIndent: 16),
         _TemplateSection(agentId: agentId),
         const Divider(indent: 16, endIndent: 16),
-        _ProfileSection(agentId: agentId),
+        _ProfileSection(agentId: agentId, subjectEntityId: subjectEntityId),
         const Divider(indent: 16, endIndent: 16),
         AgentControls(agentId: agentId, lifecycle: lifecycle),
         const Divider(indent: 16, endIndent: 16),
@@ -295,9 +303,10 @@ class _TemplateSection extends ConsumerWidget {
 
 /// Shows and allows changing the inference profile for this agent.
 class _ProfileSection extends ConsumerWidget {
-  const _ProfileSection({required this.agentId});
+  const _ProfileSection({required this.agentId, this.subjectEntityId});
 
   final String agentId;
+  final String? subjectEntityId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -348,7 +357,8 @@ class _ProfileSection extends ConsumerWidget {
         : () => AgentModelSheet.show(
             context: context,
             agentId: agentId,
-            entityId: taskId,
+            // A goal's row, so *Copy category default* reads its category.
+            entityId: taskId ?? subjectEntityId,
           );
     // This row reports and edits the task/goal/planner setup path. A
     // relationship agent is on none of them: it owns no task and no
