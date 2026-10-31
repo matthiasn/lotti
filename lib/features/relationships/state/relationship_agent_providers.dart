@@ -66,6 +66,7 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     relationshipRepository: ref.watch(relationshipRepositoryProvider),
+    categoryProfileLookup: ref.watch(relationshipCategoryProfileLookupProvider),
   ),
   name: 'relationshipAgentServiceProvider',
 );

@@ -9,8 +9,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_phase_a.dart';
 import 'package:lotti/features/relationships/runtime/relationship_agent_reconciliation.dart';
@@ -66,6 +68,7 @@ class RelationshipAgentService {
     required this._syncService,
     required this._orchestrator,
     required this._relationshipRepository,
+    this._categoryProfileLookup,
   });
 
   final AgentService _agentService;
@@ -73,6 +76,10 @@ class RelationshipAgentService {
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
   final RelationshipRepository _relationshipRepository;
+
+  /// The person's category default profile, snapshotted into a new agent's
+  /// setup. Null leaves a new agent on its live resolution chain.
+  final CategoryProfileLookup? _categoryProfileLookup;
 
   /// Ensures the agent for [relationship] exists and is live: identity,
   /// agent→relationship link and first cadence tick land in ONE
@@ -125,10 +132,23 @@ class RelationshipAgentService {
         }
         await _repository.forgetDeletedAgent(agentId);
       }
+      // Starts on the profile the person's category names now, as a task's
+      // agent does; changeable in the agent's setup sheet afterwards.
+      final lookup = _categoryProfileLookup;
+      final setup = lookup == null
+          ? null
+          : await categorySnapshotSetup(
+              categoryId: relationship.meta.categoryId,
+              lookup: lookup,
+            );
       final created = await _agentService.createAgent(
         kind: AgentKinds.relationshipAgent,
         displayName: relationship.data.title,
-        config: const AgentConfig(automaticUpdatesEnabled: true),
+        config: AgentConfig(
+          automaticUpdatesEnabled: true,
+          profileId: setup?.baseProfileId,
+          inferenceSetup: setup,
+        ),
         agentId: agentId,
       );
       await _syncService.upsertLink(
