@@ -6065,7 +6065,6 @@
   "@inferenceProfileReadAloudHint": {
     "description": "Placeholder of the read-aloud slot when no cloud voice is chosen"
   },
-  "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Choose a model…",
   "inferenceProfileSelectProfile": "Choose a profile…",
   "inferenceProfilesEmpty": "No inference profiles yet",
@@ -6908,7 +6907,6 @@
   "modelEditProviderModelIdLabel": "Provider model ID",
   "modelEditReasoningDescription": "This model uses extended thinking / chain-of-thought.",
   "modelEditReasoningLabel": "Reasoning model",
-  "modelEditSaveButton": "Save",
   "modelEditSectionCapabilities": "Capabilities",
   "modelEditSectionIdentity": "Identity",
   "modelManagementSelectedCount": "{count} model{count, plural, =1{} other{s}} selected",

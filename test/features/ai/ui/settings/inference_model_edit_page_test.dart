@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -309,16 +310,143 @@ void main() {
       });
     });
 
-    testWidgets('Save action is in the AppBar (not a bottom bar)', (
+    testWidgets(
+      'Save sits in the sticky bottom bar, not the AppBar, and the form '
+      'scrolls above the bar instead of behind it',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        final bar = find.byType(FormBottomBar);
+        expect(
+          find.descendant(of: bar, matching: find.text('Save')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: bar, matching: find.text('Cancel')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byType(DesignSystemButton),
+          ),
+          findsNothing,
+        );
+
+        // Anchored to the bottom edge of the 1024x1200 surface…
+        expect(tester.getBottomLeft(bar).dy, 1200);
+        // …and the scroll view ends where the bar begins, so no field —
+        // the last toggle included — can slide underneath it.
+        final list = find.byType(Scrollable).first;
+        expect(tester.getBottomLeft(list).dy, tester.getTopLeft(bar).dy);
+      },
+    );
+
+    testWidgets(
+      'bottom bar status tracks the form: "No unsaved changes" with Save '
+      'disabled until an edit, then Save enables',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));
+        await pumpAndIdle(tester);
+
+        DesignSystemButton save() => tester.widget<DesignSystemButton>(
+          find.ancestor(
+            of: find.text('Save'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+
+        expect(find.text('No unsaved changes'), findsOneWidget);
+        expect(save().onPressed, isNull);
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Test Model'),
+          'Renamed Model',
+        );
+        await tester.pump();
+
+        expect(find.text('No unsaved changes'), findsNothing);
+        expect(find.text('Please fix errors before saving'), findsNothing);
+        expect(save().onPressed, isNotNull);
+      },
+    );
+
+    testWidgets(
+      'a new model without provider or modalities shows the fix-errors hint '
+      'and keeps Save disabled',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await pumpAndIdle(tester);
+
+        // Create mode is always "dirty", so the bar explains the real reason.
+        expect(find.text('No unsaved changes'), findsNothing);
+        expect(find.text('Please fix errors before saving'), findsOneWidget);
+        final save = tester.widget<DesignSystemButton>(
+          find.ancestor(
+            of: find.text('Save'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        expect(save.onPressed, isNull);
+      },
+    );
+
+    testWidgets('bottom bar Cancel leaves the page without saving', (
       tester,
     ) async {
-      await tester.pumpWidget(buildTestWidget());
-      await pumpAndIdle(tester);
+      await tester.binding.setSurfaceSize(const Size(1024, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+          child: MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            theme: ThemeData(
+              useMaterial3: true,
+              extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+            ),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const InferenceModelEditPage(
+                          configId: 'test-model-id',
+                        ),
+                      ),
+                    ),
+                    child: const Text('open-model-edit'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
-      final saveButton = find.text('Save');
-      expect(saveButton, findsOneWidget);
-      // The redesign drops the FormBottomBar — there is no Cancel button.
-      expect(find.text('Cancel'), findsNothing);
+      await tester.tap(find.text('open-model-edit'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Test Model'),
+        'Discarded Name',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(InferenceModelEditPage), findsNothing);
+      expect(find.text('open-model-edit'), findsOneWidget);
+      verifyNever(() => mockRepository.saveConfig(any()));
     });
 
     testWidgets(

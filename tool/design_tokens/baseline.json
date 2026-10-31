@@ -54,7 +54,6 @@
     "lib/features/ai/ui/inference_profile_form.dart": {"spacing":10},
     "lib/features/ai/ui/inference_profile_page.dart": {"spacing":4},
     "lib/features/ai/ui/settings/embedding_backfill_modal.dart": {"spacing":5,"typography":3},
-    "lib/features/ai/ui/settings/form_bottom_bar.dart": {"spacing":5},
     "lib/features/ai/ui/settings/inference_model_edit_page.dart": {"spacing":2},
     "lib/features/ai/ui/settings/inference_provider_form_create.dart": {"spacing":1},
     "lib/features/ai/ui/settings/provider/ai_provider_connection_section.dart": {"spacing":1},

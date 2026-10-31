@@ -9479,9 +9479,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Fără selecție, se folosește vocea de pe dispozitiv';
 
   @override
-  String get inferenceProfileSaveButton => 'Salvați';
-
-  @override
   String get inferenceProfileSelectModel => 'Selectați un model…';
 
   @override
@@ -11182,9 +11179,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Model cu raționament';
-
-  @override
-  String get modelEditSaveButton => 'Salvare';
 
   @override
   String get modelEditSectionCapabilities => 'Capabilități';

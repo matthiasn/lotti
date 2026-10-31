@@ -9418,9 +9418,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Se non impostato, usa la voce sul dispositivo';
 
   @override
-  String get inferenceProfileSaveButton => 'Salva';
-
-  @override
   String get inferenceProfileSelectModel => 'Scegli un modello...';
 
   @override
@@ -11110,9 +11107,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Modello motivante';
-
-  @override
-  String get modelEditSaveButton => 'Salva';
 
   @override
   String get modelEditSectionCapabilities => 'Capacità';

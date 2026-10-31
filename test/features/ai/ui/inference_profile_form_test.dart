@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -371,12 +372,117 @@ void main() {
       }
     });
 
-    testWidgets('shows save button in app bar', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    testWidgets(
+      'Save sits in the sticky bottom bar, not the AppBar, and the form '
+      'scrolls above the bar instead of behind it',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Save'), findsOneWidget);
+        final bar = find.byType(FormBottomBar);
+        expect(
+          find.descendant(of: bar, matching: find.text('Save')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: bar, matching: find.text('Cancel')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byType(DesignSystemButton),
+          ),
+          findsNothing,
+        );
+
+        // Anchored to the page's bottom edge, with the form's scroll view
+        // ending where the bar begins — Desktop Only and everything below it
+        // scroll fully into view above the bar rather than underneath it.
+        final page = find.byType(InferenceProfileForm);
+        expect(tester.getBottomLeft(bar).dy, tester.getBottomLeft(page).dy);
+        final list = find.byType(Scrollable).first;
+        expect(tester.getBottomLeft(list).dy, tester.getTopLeft(bar).dy);
+      },
+    );
+
+    testWidgets(
+      'bottom bar shows "No unsaved changes" on a blank form and clears it '
+      'once dirty — without pre-blocking Save, whose validation runs on tap',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('No unsaved changes'), findsOneWidget);
+
+        // Only a description: the name is still empty, but the bar does not
+        // claim errors — `_save` surfaces them inline when tapped.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Description'),
+          'Just a note',
+        );
+        await tester.pump();
+
+        expect(find.text('No unsaved changes'), findsNothing);
+        expect(find.text('Please fix errors before saving'), findsNothing);
+        final save = tester.widget<DesignSystemButton>(
+          find.widgetWithIcon(DesignSystemButton, LottiIcons.save),
+        );
+        expect(save.onPressed, isNotNull);
+      },
+    );
+
+    testWidgets('bottom bar Cancel leaves the form without saving', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const InferenceProfileForm(),
+                    ),
+                  ),
+                  child: const Text('open-form'),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            inferenceProfileControllerProvider.overrideWith(
+              () => fakeProfileController,
+            ),
+            aiConfigByTypeControllerProvider(
+              AiConfigType.model,
+            ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
+            aiConfigByTypeControllerProvider(
+              AiConfigType.inferenceProvider,
+            ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
+            pairedSyncNodesProvider.overrideWith((_) => Stream.value([])),
+            localVectorClockHostIdProvider.overrideWith((_) async => null),
+          ],
+        ),
+      );
+
+      await tester.tap(find.text('open-form'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Profile Name'),
+        'Discarded',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Create Profile'), findsNothing);
+      expect(find.text('open-form'), findsOneWidget);
+      expect(fakeProfileController.savedProfiles, isEmpty);
     });
 
     testWidgets(

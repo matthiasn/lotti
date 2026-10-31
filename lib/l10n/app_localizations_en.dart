@@ -9280,9 +9280,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Uses the on-device voice when unset';
 
   @override
-  String get inferenceProfileSaveButton => 'Save';
-
-  @override
   String get inferenceProfileSelectModel => 'Choose a model…';
 
   @override
@@ -10928,9 +10925,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Reasoning model';
-
-  @override
-  String get modelEditSaveButton => 'Save';
 
   @override
   String get modelEditSectionCapabilities => 'Capabilities';

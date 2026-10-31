@@ -9308,9 +9308,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Bruger stemmen på enheden, når intet er valgt';
 
   @override
-  String get inferenceProfileSaveButton => 'Gem';
-
-  @override
   String get inferenceProfileSelectModel => 'Vælg en model...';
 
   @override
@@ -10973,9 +10970,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Ræsonnementsmodel';
-
-  @override
-  String get modelEditSaveButton => 'Gem';
 
   @override
   String get modelEditSectionCapabilities => 'Kapaciteter';

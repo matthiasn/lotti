@@ -9434,9 +9434,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sin selección, se usa la voz del dispositivo';
 
   @override
-  String get inferenceProfileSaveButton => 'Guardar';
-
-  @override
   String get inferenceProfileSelectModel => 'Elige un modelo…';
 
   @override
@@ -11118,9 +11115,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Modelo de razonamiento';
-
-  @override
-  String get modelEditSaveButton => 'Guardar';
 
   @override
   String get modelEditSectionCapabilities => 'Capacidades';

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -76,6 +76,64 @@ void main() {
       expect(find.text('Speichern'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    for (final (label, isDirty, isFormValid) in [
+      ('no changes', false, true),
+      ('fix errors', true, false),
+    ]) {
+      testWidgets(
+        'at 320dp in German ($label) Save stays fully on screen and the '
+        'bar lays out without overflow',
+        (tester) async {
+          tester.view
+            ..physicalSize = const Size(320, 640)
+            ..devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              Builder(
+                builder: (context) => Localizations.override(
+                  context: context,
+                  locale: const Locale('de'),
+                  child: FormBottomBar(
+                    onSave: () {},
+                    onCancel: () {},
+                    isFormValid: isFormValid,
+                    isDirty: isDirty,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(tester.takeException(), isNull);
+          final save = tester.getRect(
+            find.widgetWithIcon(DesignSystemButton, LottiIcons.save),
+          );
+          final cancel = tester.getRect(
+            find.ancestor(
+              of: find.text('Abbrechen'),
+              matching: find.byType(DesignSystemButton),
+            ),
+          );
+          for (final rect in [save, cancel]) {
+            expect(rect.left, greaterThanOrEqualTo(0));
+            expect(rect.right, lessThanOrEqualTo(320));
+            expect(rect.bottom, lessThanOrEqualTo(640));
+          }
+          // The status line is still there to explain the disabled Save.
+          expect(
+            find.text(
+              isDirty
+                  ? 'Bitte behebe die Fehler vor dem Speichern'
+                  : 'Keine ungespeicherten Änderungen',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+    }
 
     testWidgets('shows error state when form is invalid', (tester) async {
       await tester.pumpWidget(
@@ -167,34 +225,104 @@ void main() {
       expect(saveButton, findsOneWidget);
     });
 
-    testWidgets('has correct glass effect styling', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          FormBottomBar(
-            onSave: () {},
-            onCancel: () {},
-            isFormValid: true,
-            isDirty: false,
+    testWidgets(
+      'renders on the design-system glass strip, bottom-docked, with the '
+      'actions inside it',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            FormBottomBar(
+              onSave: () {},
+              onCancel: () {},
+              isFormValid: true,
+              isDirty: false,
+            ),
           ),
-        ),
-      );
+        );
 
-      // Check for glass container
-      expect(find.byType(GlassContainer), findsOneWidget);
+        final strip = find.byType(DesignSystemGlassStrip);
+        expect(
+          tester.widget<DesignSystemGlassStrip>(strip).dock,
+          DesignSystemGlassStripDock.bottom,
+        );
+        expect(
+          find.descendant(of: strip, matching: find.byType(DesignSystemButton)),
+          findsNWidgets(2),
+        );
+      },
+    );
 
-      // Check for border decoration container
-      final containers = find
-          .byType(Container)
-          .evaluate()
-          .map((e) => e.widget as Container)
-          .where((container) => container.decoration != null)
-          .toList();
+    testWidgets(
+      'on a wide bar the status leads and Cancel + Save sit together on the '
+      'trailing edge of one row',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
 
-      expect(containers.isNotEmpty, isTrue);
-      final borderContainer = containers.first;
-      final decoration = borderContainer.decoration as BoxDecoration?;
-      expect(decoration?.border?.top, isNotNull);
-    });
+        await tester.pumpWidget(
+          buildTestWidget(
+            FormBottomBar(
+              onSave: () {},
+              onCancel: () {},
+              isFormValid: true,
+              isDirty: false,
+            ),
+          ),
+        );
+
+        final status = tester.getRect(find.text('No unsaved changes'));
+        final cancel = tester.getRect(
+          find.ancestor(
+            of: find.text('Cancel'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        final save = tester.getRect(
+          find.widgetWithIcon(DesignSystemButton, LottiIcons.save),
+        );
+        // One row: all three share a vertical centre.
+        expect(status.center.dy, moreOrLessEquals(save.center.dy, epsilon: 1));
+        expect(cancel.center.dy, moreOrLessEquals(save.center.dy, epsilon: 1));
+        // Status on the leading half, actions adjacent on the trailing half.
+        expect(status.left, lessThan(640));
+        expect(cancel.left, greaterThan(640));
+        expect(save.left, greaterThan(cancel.right));
+      },
+    );
+
+    testWidgets(
+      'a dirty, valid form shows no status and keeps the actions on the '
+      'trailing edge',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            FormBottomBar(
+              onSave: () {},
+              onCancel: () {},
+              isFormValid: true,
+              isDirty: true,
+            ),
+          ),
+        );
+
+        expect(find.text('No unsaved changes'), findsNothing);
+        expect(find.text('Please fix errors before saving'), findsNothing);
+        final cancel = tester.getRect(
+          find.ancestor(
+            of: find.text('Cancel'),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        expect(cancel.left, greaterThan(640));
+      },
+    );
 
     testWidgets('handles null onSave callback', (tester) async {
       await tester.pumpWidget(

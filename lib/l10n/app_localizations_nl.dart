@@ -9336,9 +9336,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Gebruikt de stem op het apparaat als er niets is gekozen';
 
   @override
-  String get inferenceProfileSaveButton => 'Opslaan';
-
-  @override
   String get inferenceProfileSelectModel => 'Kies een model...';
 
   @override
@@ -11005,9 +11002,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Redeneringsmodel';
-
-  @override
-  String get modelEditSaveButton => 'Opslaan';
 
   @override
   String get modelEditSectionCapabilities => 'Mogelijkheden';

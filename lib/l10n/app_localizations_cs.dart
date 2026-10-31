@@ -9408,9 +9408,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Bez výběru se použije hlas v zařízení';
 
   @override
-  String get inferenceProfileSaveButton => 'Uložit';
-
-  @override
   String get inferenceProfileSelectModel => 'Vyber model…';
 
   @override
@@ -11107,9 +11104,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Model pro uvažování';
-
-  @override
-  String get modelEditSaveButton => 'Uložit';
 
   @override
   String get modelEditSectionCapabilities => 'Schopnosti';
