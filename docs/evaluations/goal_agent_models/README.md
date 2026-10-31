@@ -1026,6 +1026,56 @@ without the word. The group now accepts `ridge`, `north` or `scout`.
 **glm-5.2's recall stays its weak spot:** P21 1/3 — one Melious request timed
 out at five minutes, one search found nothing and said so honestly.
 
+## Five models after ADRs 0151 and 0152 — 2026-10-31
+
+The first catalog-wide run since the user-voice contract (ADRs 0141, 0143,
+0146, 0147) and the first against ADR 0152, where a report's reflection names
+the check-ins it answers in `report.reflectedCheckIns` and P18 scores that
+citation by exact id. Tier 1, all 33 scenarios, three samples, `main` at
+`5b36bdc248` (`eval_artifacts/goal_agent_20261031-140924`).
+
+| Model | Cases | Pass | Rate | Credits | Mean latency | P95 latency |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `glm-5.2` | 99 | 98 | 0.99 | 0.36 | 8.6 s | 25.3 s |
+| `glm-5.3` | 99 | 96 | 0.97 | 0.34 | 7.3 s | 20.3 s |
+| `kimi-k3` | 99 | 86 | 0.87 | 1.48 | 9.0 s | 22.6 s |
+| `qwen3.6-27b` | 33 | 28 | 0.85 | 0.25 | 53.1 s | 130.4 s |
+| `qwen3.5-122b-a10b` | 99 | 79 | 0.80 | 0.85 | 6.2 s | 9.3 s |
+
+**The citation rule costs nothing on the models that matter.** P18
+(`journal_new_checkins_reflected`) passed 12 of 13 samples, and every one of
+the 13 named exactly the two new check-ins (`journal-entry-12`,
+`journal-entry-13`) in a reflection that answered them. The one failure,
+`qwen3.5-122b-a10b` sample 1, sent `report` as an encoded JSON string — the
+citation inside it was right, but production's parser refuses that shape just
+as the grader does, and the forced retry asks for an object.
+
+**glm-5.2 is the default for a reason:** 98/99, its one miss a
+`gh_complex_habit_behind` argument mismatch. glm-5.3 (96/99) answered in chat
+where the scenario wanted an action, once each: no `propose_goal_revision` on
+`evo_replace_metric`, no `create_goal_ad` on `ad_requested_while_ineligible`,
+and an `evo_ambiguous` reply without the clarifying question it requires. No
+retry recovers these — the forced reply runs only when a turn's visible text
+is empty — so they are model misses.
+
+**Where the others fall.** `kimi-k3` replies instead of acting: no
+`propose_goal_revision` on `evo_replace_metric` (0/3) or once on
+`evo_adjust_target`, no `retire_goal_ad` on `gp_recovering`,
+`cx_gym_done_steps_collapse` and `cx_retire_then_rerun`, no
+`record_goal_observation` on `tone_roast_request`, no `remember_goal_fact` on
+`journal_remember_from_chat`; and `journal_recall_older_entry` 0/3, searching
+without the words the March entry holds. `qwen3.5-122b-a10b` asked a question
+on the quiet journal wake 3/3 (production never offers `ask_goal_question`
+there), failed `ad_leakage_pressure` 3/3 (forbidden banner words twice, no
+banner once), and went 0/3 on `evo_replace_metric` (no revision proposal) and
+`tone_roast_request` (no observation). `qwen3.6-27b` is too slow
+for the harness: two of three samples hit the 30-minute test timeout and left
+no artifact, so its row is one sample; that sample also asked on the quiet
+wake and created a banner the scenario forbids.
+
+Cost: 3.27 credits for the 429 cases scored. Wall clock 2,610 s at four
+parallel processes.
+
 ## Cost and latency
 
 Cost and wall-clock latency are first-class outputs, captured per case:
