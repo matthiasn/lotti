@@ -729,6 +729,13 @@ String? _structuredReportSectionText(
   (final GoalStructuredReport value, GoalReportSectionKeys.tldr) => value.tldr,
   (final GoalStructuredReport value, GoalReportSectionKeys.reflection) =>
     value.reflection,
+  // Not a section: the check-ins the reflection names, scored like one so a
+  // scenario can require that it names a new one (ADR 0152).
+  (
+    final GoalStructuredReport value,
+    GoalReportSectionKeys.reflectedCheckIns,
+  ) =>
+    value.reflectedCheckIns.join('\n'),
   (final GoalStructuredReport value, GoalReportSectionKeys.currentPeriod) =>
     value.currentPeriod,
   (final GoalStructuredReport value, GoalReportSectionKeys.rollingWindow) =>
