@@ -67,8 +67,8 @@ class _VoiceFirstIdle extends ConsumerWidget {
               child: InkWell(
                 onTap: canRecord ? onStartRecording : null,
                 child: SizedBox.square(
-                  dimension: ControlSizes.avatarHero,
-                  child: Icon(LottiIcons.mic, size: IconSizes.xl, color: ink),
+                  dimension: _talkSize(tokens),
+                  child: Icon(LottiIcons.mic, size: IconSizes.l, color: ink),
                 ),
               ),
             ),
@@ -98,24 +98,24 @@ class _VoiceFirstIdle extends ConsumerWidget {
   }
 }
 
-/// The talk control while it is live, laid out exactly as at rest so
-/// nothing moves: the same disc in the same place, one caption under it,
-/// and in the slot "Type instead" held, one quiet Cancel. Listening, the
-/// disc carries a stop mark and breathes with the voice ([_ListeningDisc]);
-/// one tap sends what was said. Transcribing, it waits, and the Cancel slot
-/// is kept empty so the composer keeps its height. Escape cancels.
+/// The talk control while it is live, laid out as at rest so nothing
+/// else moves: one caption under it, and in the slot "Type instead" held,
+/// one quiet Cancel. The disc stretches into a pill carrying what it hears
+/// ([_ListeningPill]); one tap sends what was said. Transcribing, the pill
+/// holds the words' shape and waits, and the Cancel slot is kept empty so
+/// the composer keeps its height. Escape cancels.
 class _VoiceFirstLive extends StatelessWidget {
   const _VoiceFirstLive({
     required this.processing,
-    required this.dbfs,
+    required this.amplitudes,
     required this.onStop,
     required this.onCancel,
   });
 
   final bool processing;
 
-  /// What it hears now, in dBFS.
-  final double dbfs;
+  /// What it heard, levels in `0..1`, oldest first.
+  final List<double> amplitudes;
   final VoidCallback onStop;
   final VoidCallback onCancel;
 
@@ -140,24 +140,11 @@ class _VoiceFirstLive extends StatelessWidget {
               Semantics(
                 button: !processing,
                 label: caption,
-                child: processing
-                    ? Material(
-                        key: const Key('agent-chat-talk'),
-                        color: tokens.colors.surface.enabled,
-                        shape: const CircleBorder(),
-                        child: SizedBox.square(
-                          dimension: ControlSizes.avatarHero,
-                          child: Center(
-                            child: SizedBox.square(
-                              dimension: IconSizes.xl,
-                              child: CircularProgressIndicator(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    : _ListeningDisc(dbfs: dbfs, onStop: onStop),
+                child: _ListeningPill(
+                  amplitudes: amplitudes,
+                  processing: processing,
+                  onStop: onStop,
+                ),
               ),
               SizedBox(height: tokens.spacing.step3),
               ExcludeSemantics(
@@ -190,171 +177,102 @@ class _VoiceFirstLive extends StatelessWidget {
   }
 }
 
-/// The talk disc while it listens: the same teal disc as "Tap to talk", a
-/// stop mark on it, and soft ripples rising from its edge — reaching
-/// further and glowing brighter while the user speaks, a slow quiet pulse
-/// in the pauses. Still when the platform asks for reduced motion.
-class _ListeningDisc extends StatefulWidget {
-  const _ListeningDisc({required this.dbfs, required this.onStop});
+/// The talk disc, stretched: the same teal and height as "Tap to talk",
+/// widening into a pill as listening starts, the voice scrolling across it
+/// as bars — newest at the right, a dot for each quiet moment — up to the
+/// stop mark at its end. Transcribing, the bars hold still and a spinner
+/// takes the stop mark's place.
+class _ListeningPill extends StatelessWidget {
+  const _ListeningPill({
+    required this.amplitudes,
+    required this.processing,
+    required this.onStop,
+  });
 
-  final double dbfs;
+  /// The widest the pill grows, in talk discs.
+  static const double widthInDiscs = 4.4;
+
+  final List<double> amplitudes;
+  final bool processing;
   final VoidCallback onStop;
-
-  /// Quieter than this is silence; louder than [_loud] is full voice.
-  static const double _quiet = -60;
-  static const double _loud = -15;
-
-  /// One ripple's rise from the disc's edge to gone.
-  static const Duration ripplePeriod = Duration(milliseconds: 2400);
-
-  /// The voice level as a share of full voice.
-  static double levelOf(double dbfs) =>
-      ((dbfs - _quiet) / (_loud - _quiet)).clamp(0.0, 1.0);
-
-  @override
-  State<_ListeningDisc> createState() => _ListeningDiscState();
-}
-
-class _ListeningDiscState extends State<_ListeningDisc>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _clock = AnimationController(
-    vsync: this,
-    duration: _ListeningDisc.ripplePeriod,
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _clock.stop();
-    } else if (!_clock.isAnimating) {
-      _clock.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _clock.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final still = MediaQuery.disableAnimationsOf(context);
-    // The level glides rather than jumps: words come in bursts.
-    return TweenAnimationBuilder<double>(
-      tween: Tween(end: _ListeningDisc.levelOf(widget.dbfs)),
-      duration: MotionDurations.short4,
-      curve: MotionCurves.standard,
-      builder: (context, level, disc) => CustomPaint(
-        key: const Key('agent-chat-talk-ripples'),
-        painter: _RipplePainter(
-          clock: _clock,
-          level: level,
-          still: still,
-          color: tokens.colors.interactive.enabled,
-          reach: tokens.spacing.step6,
-        ),
-        // The disc swells a touch with the voice.
-        child: Transform.scale(scale: 1 + 0.05 * level, child: disc),
-      ),
-      child: Material(
-        key: const Key('agent-chat-talk'),
-        color: tokens.colors.interactive.enabled,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: widget.onStop,
-          child: SizedBox.square(
-            dimension: ControlSizes.avatarHero,
-            // A filled stop mark: the one thing a tap does now.
-            child: Center(
-              child: SizedBox.square(
-                key: const Key('agent-chat-talk-stop'),
-                dimension: IconSizes.m,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: tokens.colors.text.onInteractiveAlert,
-                    borderRadius: BorderRadius.circular(tokens.radii.xs),
-                  ),
-                ),
-              ),
+    final ink = tokens.colors.text.onInteractiveAlert;
+    final height = _talkSize(tokens);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (height * widthInDiscs).clamp(
+          0.0,
+          constraints.maxWidth,
+        );
+        // It opens from the disc it was.
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: height, end: width),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : MotionDurations.medium2,
+          curve: MotionCurves.emphasizedDecelerate,
+          builder: (context, grown, content) => Material(
+            key: const Key('agent-chat-talk'),
+            color: tokens.colors.interactive.enabled,
+            shape: const StadiumBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: processing ? null : onStop,
+              child: SizedBox(width: grown, height: height, child: content),
             ),
           ),
-        ),
-      ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ExcludeSemantics(
+                    child: CustomPaint(
+                      key: const Key('agent-chat-talk-waveform'),
+                      size: Size(double.infinity, tokens.spacing.step8),
+                      painter: WaveformBarsPainter(
+                        amplitudes: amplitudes,
+                        barWidth: tokens.spacing.step2,
+                        barSpacing: tokens.spacing.step1,
+                        color: ink,
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step4),
+                SizedBox.square(
+                  dimension: IconSizes.m,
+                  child: processing
+                      ? CircularProgressIndicator(
+                          key: const Key('agent-chat-talk-transcribing'),
+                          strokeWidth: tokens.spacing.step1,
+                          color: ink,
+                        )
+                      : DecoratedBox(
+                          key: const Key('agent-chat-talk-stop'),
+                          decoration: BoxDecoration(
+                            color: ink,
+                            borderRadius: BorderRadius.circular(
+                              tokens.radii.xs,
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-/// Paints the ripples behind the disc, past its edge: a few soft rings of
-/// light in the disc's own hue, each rising and fading in turn, and a glow
-/// hugging the edge that swells with the voice.
-class _RipplePainter extends CustomPainter {
-  _RipplePainter({
-    required this.clock,
-    required this.level,
-    required this.still,
-    required this.color,
-    required this.reach,
-  }) : super(repaint: clock);
-
-  static const int ripples = 3;
-
-  final Animation<double> clock;
-
-  /// The voice level, 0 (silence) to 1 (full voice).
-  final double level;
-  final bool still;
-  final Color color;
-
-  /// How far past the disc's edge a ripple rises at full voice.
-  final double reach;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final centre = size.center(Offset.zero);
-    final edge = size.shortestSide / 2;
-    // Soft light rather than a drawn line: every stroke is blurred.
-    final blur = MaskFilter.blur(BlurStyle.normal, reach / 10);
-    // The glow at the edge: there in a breath, full with the voice.
-    canvas.drawCircle(
-      centre,
-      edge,
-      Paint()
-        ..color = color.withValues(
-          alpha: SurfaceAlphas.washBorder * (0.3 + 0.7 * level),
-        )
-        ..maskFilter = MaskFilter.blur(BlurStyle.outer, reach / 2),
-    );
-    if (still) return;
-    // Silence keeps a quiet pulse; the voice brings them up bright.
-    final strength =
-        SurfaceAlphas.tint +
-        (SurfaceAlphas.linework - SurfaceAlphas.tint) * level;
-    final ring = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = reach / 8
-      ..maskFilter = blur;
-    for (var i = 0; i < ripples; i++) {
-      final t = (clock.value + i / ripples) % 1;
-      final rise = Curves.easeOut.transform(t);
-      // A ripple rises further the louder the voice, never less than a
-      // breath past the edge.
-      final radius = edge + reach * rise * (0.4 + 0.6 * level);
-      ring.color = color.withValues(alpha: strength * (1 - t) * (1 - t));
-      canvas.drawCircle(centre, radius, ring);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RipplePainter old) =>
-      old.level != level ||
-      old.still != still ||
-      old.color != color ||
-      old.reach != reach;
-}
+/// The talk control's size: the disc's diameter, and the height of the
+/// pill it stretches into while listening.
+double _talkSize(DsTokens tokens) => tokens.spacing.step10;
 
 /// How wide a bubble may grow: the reading width; in a conversation on a
 /// narrow screen the user's words stop short of the far edge, so where a

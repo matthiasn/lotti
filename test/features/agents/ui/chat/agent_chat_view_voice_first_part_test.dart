@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
+import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -42,9 +43,6 @@ class _Recorder extends ChatRecorderController {
     cancels++;
     state = const ChatRecorderState.initial();
   }
-
-  /// What it hears now, in dBFS.
-  void speak(double dbfs) => state = state.copyWith(amplitudeHistory: [dbfs]);
 
   /// What was said, as a finished transcription lands.
   void hear(String text) => state = ChatRecorderState(
@@ -275,26 +273,35 @@ void main() {
       expect(container.read(agentChatPrefersTypingProvider), isTrue);
     });
 
-    testWidgets('while listening the same disc sends what was said; Cancel '
-        'discards', (tester) async {
+    testWidgets('while listening the disc is a pill carrying what it hears; '
+        'a tap sends, Cancel discards', (tester) async {
       final recorder = await pumpView(
         tester,
         status: ChatRecorderStatus.recording,
       );
 
       expect(find.text('Listening — tap when done'), findsOne);
-      // The same teal disc, a stop mark on it, ripples behind it.
-      final disc = tester.widget<Material>(
+      // The talk disc's own teal, stretched into a pill.
+      final pill = tester.widget<Material>(
         find.byKey(const Key('agent-chat-talk')),
       );
+      expect(pill.shape, isA<StadiumBorder>());
       expect(
-        disc.color,
+        pill.color,
         tester
             .element(find.byKey(const Key('agent-chat-talk')))
             .designTokens
             .colors
             .interactive
             .enabled,
+      );
+      // What it heard runs across it, up to the stop mark at its end.
+      final waveform = tester.widget<CustomPaint>(
+        find.byKey(const Key('agent-chat-talk-waveform')),
+      );
+      expect(
+        (waveform.painter! as WaveformBarsPainter).amplitudes,
+        const [0.4, 0.6, 0.5],
       );
       expect(
         find.descendant(
@@ -303,7 +310,6 @@ void main() {
         ),
         findsOne,
       );
-      expect(find.byKey(const Key('agent-chat-talk-ripples')), findsOne);
 
       await tester.tap(find.byKey(const Key('agent-chat-talk')));
       expect(recorder.stops, 1);
@@ -331,65 +337,58 @@ void main() {
       expect(recorder.cancels, 1);
     });
 
-    testWidgets('the disc swells with the voice and settles in silence', (
-      tester,
-    ) async {
-      final recorder = await pumpView(
-        tester,
-        status: ChatRecorderStatus.recording,
-      );
-      double scale() => tester
-          .widget<Transform>(
-            find
-                .ancestor(
-                  of: find.byKey(const Key('agent-chat-talk')),
-                  matching: find.byType(Transform),
-                )
-                .first,
-          )
-          .transform
-          .getMaxScaleOnAxis();
-      expect(scale(), 1);
+    testWidgets('the pill opens from the disc it was, as tall, to 4.4 discs '
+        'wide', (tester) async {
+      await pumpView(tester, status: ChatRecorderStatus.recording);
+      Size size() => tester.getSize(find.byKey(const Key('agent-chat-talk')));
+      final talk = tester
+          .element(find.byKey(const Key('agent-chat-talk')))
+          .designTokens
+          .spacing
+          .step10;
 
-      recorder.speak(-15);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(scale(), closeTo(1.05, 0.001));
-
-      recorder.speak(-80);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(scale(), 1);
+      expect(size().width, lessThan(talk * 2));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(size(), Size(talk * 4.4, talk));
     });
 
-    testWidgets('with reduced motion the ripples hold still', (tester) async {
+    testWidgets('with reduced motion the pill is open at once', (
+      tester,
+    ) async {
       await pumpView(
         tester,
         status: ChatRecorderStatus.recording,
         reducedMotion: true,
       );
+      final talk = tester
+          .element(find.byKey(const Key('agent-chat-talk')))
+          .designTokens
+          .spacing
+          .step10;
 
-      expect(find.byKey(const Key('agent-chat-talk-ripples')), findsOne);
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.binding.hasScheduledFrame, isFalse);
+      expect(
+        tester.getSize(find.byKey(const Key('agent-chat-talk'))).width,
+        talk * 4.4,
+      );
     });
 
-    testWidgets('while transcribing the disc waits and takes no tap', (
-      tester,
-    ) async {
+    testWidgets('while transcribing the pill holds the words and takes no '
+        'tap', (tester) async {
       final recorder = await pumpView(
         tester,
         status: ChatRecorderStatus.processing,
       );
 
       expect(find.text('Transcribing…'), findsOne);
+      expect(find.byKey(const Key('agent-chat-talk-waveform')), findsOne);
+      expect(find.byKey(const Key('agent-chat-talk-transcribing')), findsOne);
+      expect(find.byKey(const Key('agent-chat-talk-stop')), findsNothing);
       // Cancel's slot is kept, so the composer keeps its height, but it
       // takes no tap.
       expect(
         find.byKey(const Key('agent-chat-talk-cancel')).hitTestable(),
         findsNothing,
       );
-      expect(find.byType(CircularProgressIndicator), findsOne);
       await tester.tap(find.byKey(const Key('agent-chat-talk')));
       expect(recorder.stops, 0);
     });
