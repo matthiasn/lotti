@@ -47,6 +47,64 @@ void main() {
     expect(track.mouthAt(_ms(200)).open, Viseme.x.shape.open);
   });
 
+  group('pinned to the pauses of a real voice', () {
+    // The voiced stretches of a cloud voice speaking [line], measured from
+    // the clip at 60 windows a second: it pauses 0.43 s at the comma and
+    // 0.6 s at the full stop; the shorter dips are closures inside words.
+    const line = 'The penguin waddles to the water, then dives. It swims fast!';
+    const runs = [
+      (0.033, 0.133),
+      (0.267, 0.7),
+      (0.733, 1.167),
+      (1.267, 1.833),
+      (2.267, 2.533),
+      (2.6, 2.933),
+      (3.533, 3.633),
+      (3.683, 3.8),
+      (3.833, 4.133),
+      (4.25, 4.517),
+      (4.567, 4.667),
+    ];
+    final voice = SpeechEnvelope([
+      for (var i = 0; i < 293; i++)
+        if (runs.any(
+          (r) => i >= (r.$1 * 60).round() && i < (r.$2 * 60).round(),
+        ))
+          1.0
+        else
+          0.0,
+    ]);
+    final track = VoicedTextTrack(voice, line);
+
+    test('pins the comma and the full stop to where the voice paused', () {
+      expect(track.alignment.matches, [
+        (text: 0, voice: 0),
+        (text: 1, voice: 1),
+      ]);
+    });
+
+    test('each phrase starts as the voice resumes', () {
+      // A single stretch over the clip put "then" at 2.55 s and "It" at
+      // 3.75 s — a quarter to half a second late.
+      expect(
+        track.timeOf(line.indexOf('then')).inMilliseconds,
+        closeTo(2267, 20),
+      );
+      expect(
+        track.timeOf(line.indexOf('It')).inMilliseconds,
+        closeTo(3533, 20),
+      );
+    });
+
+    test('the mouth shapes "then" while the voice says it', () {
+      // 2.33 s, just into "then": the tongue of its "th", where a single
+      // stretch still held the comma's closed lips.
+      final mouth = track.mouthAt(_ms(2330));
+      expect(mouth.tongueUp, greaterThan(0.5));
+      expect(mouth.open, greaterThan(3));
+    });
+  });
+
   test("the words' times are stretched over the voiced part too", () {
     const text = 'mama papa';
     final track = VoicedTextTrack(envelope, text);

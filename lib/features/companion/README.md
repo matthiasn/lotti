@@ -34,8 +34,10 @@ nudges), is
   supplies, so a stall or a seek never puts it out of step with the voice:
   - `SpeechEnvelope`: a 16-bit PCM WAV's loudness, the format the on-device
     voice (`lib/features/tts/`) writes;
-  - `TextLipSync`: the words alone, read into the nine Rhubarb mouth shapes;
-  - `VoicedTextTrack`: both, the words' shapes timed and gated by the voice.
+  - `TextLipSync`: the words alone, read into the eight Rhubarb speaking
+    shapes and the rest;
+  - `VoicedTextTrack`: both, the words' shapes pinned phrase by phrase to the
+    voice's own pauses (`PauseAlignment`) and gated by its loudness.
 - **Her face follows the words.** While she reads, each sentence's tone —
   praise, neither, or something that needs work, read on the device from its
   words, its emoji and its section's heading (`ToneTrack`) — gives her the

@@ -131,6 +131,24 @@ void main() {
       },
     );
 
+    test('the model gets the text without its emoji', () async {
+      await buildEngine().synthesizeToFile(
+        text: 'Well done 👩🏽‍💻!',
+        voiceId: 'F1',
+        modelDirectory: '/models/supertonic',
+        language: 'en',
+      );
+
+      verify(
+        () => session.synthesize(
+          text: 'Well done!',
+          language: 'en',
+          style: voiceStyle,
+          totalStep: any(named: 'totalStep'),
+        ),
+      ).called(1);
+    });
+
     test('reuses the cached session for the same model directory', () async {
       final engine = buildEngine();
       await engine.synthesizeToFile(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/tts/cloud/tts_cloud_route.dart';
 import 'package:lotti/features/tts/cloud/voxtral_tts_service.dart';
 import 'package:lotti/features/tts/cloud/voxtral_voice_catalog_repository.dart';
+import 'package:lotti/features/tts/engine/speech_text.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -32,6 +33,10 @@ class CloudSpeechSynthesizer {
   /// utterance stopped — or content hidden — in the meantime must not be
   /// sent. A `false` answer returns `null` without any request.
   ///
+  /// The voice gets [text] without its emoji ([withoutEmoji]); text that is
+  /// nothing but emoji has nothing to say and returns `null` without any
+  /// request, as a stop does.
+  ///
   /// Throws [VoxtralTtsException] — [VoxtralTtsFailure.noVoice] when the
   /// language has no voice, before any text leaves the device.
   Future<File?> synthesizeToFile({
@@ -51,9 +56,10 @@ class CloudSpeechSynthesizer {
         'No voice for language ${route.languageCode}',
       );
     }
-    if (!await canSend()) return null;
+    final spoken = withoutEmoji(text);
+    if (spoken.isEmpty || !await canSend()) return null;
     final bytes = await _service.synthesize(
-      text: text,
+      text: spoken,
       voiceId: voice.id,
       baseUrl: route.provider.baseUrl,
       apiKey: route.provider.apiKey,

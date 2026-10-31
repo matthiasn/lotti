@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:lotti/features/tts/engine/speech_text.dart';
 import 'package:lotti/features/tts/engine/supertonic_tts_session.dart';
 import 'package:lotti/features/tts/engine/tts_engine.dart';
 import 'package:lotti/features/tts/engine/voice_style_loader.dart';
@@ -74,8 +75,10 @@ class SupertonicOnnxEngine implements TtsEngine {
   }) async {
     final session = await _ensureSession(modelDirectory);
     final style = await _ensureVoice(voiceId);
+    // Stripped before upstream's own preprocessing, which is kept 1:1 with
+    // Supertone's and misses the joiners and selectors emoji are built of.
     final result = await session.synthesize(
-      text: text,
+      text: withoutEmoji(text),
       language: language,
       style: style,
       totalStep: _denoisingSteps,
