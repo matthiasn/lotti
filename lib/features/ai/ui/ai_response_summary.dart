@@ -1,12 +1,8 @@
-import 'package:lotti/classes/ai_attribution.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
-import 'package:lotti/features/ai_consumption/ui/widgets/ai_attribution_summary.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_ui/material_ui.dart';
@@ -25,22 +21,16 @@ const _collapseNewlineThreshold = 6;
 /// [AiResponseSummary.fadeOut] mode (unchanged standalone-entry behavior).
 const _fadeOutPreviewMaxHeight = 200.0;
 
-/// Renders one AI response (image analysis, task summary, …) as a flat,
-/// non-elevated AI surface.
-///
-/// Uses the tinted `aiCard` surface (`background` fill + `borderSoft` accent
-/// hairline, no shadow) — the same color family as the task-agent report
-/// cards, but without their accent-blended fill and badges — so a response
-/// nested inside an entry card reads as recognizably AI-generated content
-/// without becoming a second elevated card.
+/// Renders one AI response (image analysis, task summary, …) on the shared
+/// [AiResponseCard] surface.
 ///
 /// The body and the collapsed TLDR both render through [AgentMarkdownView]
-/// (the TLDR with subordinate headings), so an analysis sits at the
-/// same `body.bodySmall` measure as the entry text it belongs to rather than
-/// shouting over it, and the card's inset is one step tighter than a top-level
-/// card's — it is a nested surface, not a page section.
+/// (the TLDR with subordinate headings) at [AiResponseCard.bodyStyle], so an
+/// analysis sits at the same measure as the entry text it belongs to rather
+/// than shouting over it.
 ///
-/// Prompt-generation responses short-circuit to [GeneratedPromptCard].
+/// Prompt-generation responses short-circuit to [GeneratedPromptCard], which
+/// renders on the same card.
 ///
 /// Collapse modes:
 /// - [collapsible]: binary show-full-or-collapsed. Long content (by
@@ -59,9 +49,6 @@ class AiResponseSummary extends StatefulWidget {
     this.collapsible = false,
     super.key,
   });
-
-  /// Key of the "Show more"/"Show less" toggle — used for testing.
-  static const collapseToggleKey = Key('ai_response_summary_collapse_toggle');
 
   final AiResponseEntry aiResponse;
   final bool fadeOut;
@@ -141,40 +128,6 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
     );
   }
 
-  Widget _collapseToggle(BuildContext context, DsColorsAiCard ai) {
-    final label = _collapsed
-        ? context.messages.aiResponseShowMore
-        : context.messages.aiResponseShowLess;
-    return InkWell(
-      key: AiResponseSummary.collapseToggleKey,
-      onTap: () => setState(() => _collapsed = !_collapsed),
-      borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: AppTheme.spacingXSmall,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              _collapsed ? LottiIcons.expand : LottiIcons.collapse,
-              size: 16,
-              color: ai.accent,
-            ),
-            const SizedBox(width: AppTheme.spacingXSmall),
-            Text(
-              label,
-              style: context.textTheme.labelMedium?.copyWith(
-                color: ai.accent,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final aiResponse = widget.aiResponse;
@@ -186,11 +139,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       );
     }
 
-    final tokens = context.designTokens;
-    final ai = tokens.colors.aiCard;
-    final bodyStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: ai.bodyText,
-    );
+    final bodyStyle = AiResponseCard.bodyStyle(context);
 
     final content = SelectionArea(
       child: AgentMarkdownView(aiResponse.data.response, style: bodyStyle),
@@ -234,35 +183,13 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
       body = null;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        // Half-strength tint: keeps the AI color identity while letting the
-        // entry card's surface blend through, so the nested card stays
-        // clearly subordinate to its parent.
-        color: ai.background.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-        border: Border.all(color: ai.borderSoft),
-      ),
-      // One step tighter than a top-level card: this surface is nested inside
-      // an entry card and should not spend a full card inset on its own.
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ?body,
-          if (_canCollapse) _collapseToggle(context, ai),
-          AiAttributionSummary(
-            artifact: AiArtifactReference(
-              type: AiArtifactType.journalAiResponse,
-              id: aiResponse.meta.id,
-            ),
-            attribution: aiResponse.data.aiAttribution,
-            asCaption: true,
-            // An analysis older than attribution still names its model.
-            unrecordedModel: aiResponse.data.model,
-          ),
-        ],
-      ),
+    return AiResponseCard(
+      aiResponse: aiResponse,
+      body: body,
+      collapsed: _canCollapse ? _collapsed : null,
+      onToggleCollapsed: _canCollapse
+          ? () => setState(() => _collapsed = !_collapsed)
+          : null,
     );
   }
 }

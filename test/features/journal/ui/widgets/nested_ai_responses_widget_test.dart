@@ -6,6 +6,7 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/components/motion/size_fade_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -399,7 +400,7 @@ void main() {
         // The nested card passes collapsible: true, so the long analysis
         // starts as a faded preview with the expand toggle.
         expect(
-          find.byKey(AiResponseSummary.collapseToggleKey),
+          find.byKey(AiResponseCard.collapseToggleKey),
           findsOneWidget,
         );
       },

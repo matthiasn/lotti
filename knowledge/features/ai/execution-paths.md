@@ -614,9 +614,14 @@ knows.
 Images still default to **expanded**; only audio reads a null `collapsed` as
 collapsed. The row renders whenever a user collapses an image themselves.
 
-Image analyses render through `AiResponseSummary` as a tinted, non-elevated AI
+Image analyses render through `AiResponseSummary` on `AiResponseCard`
+(`lib/features/ai/ui/ai_response_card.dart`), a tinted, non-elevated AI
 surface — the report-card colour family without its accent-blended fill and
-badges. In the nested tree the cards collapse binarily, so long analyses (full
+badges. Generated coding and image prompts (`GeneratedPromptCard`) render on
+the same card with their title, copy and expand actions as its header in the
+`aiCard` accent, so every AI response in an entry reads as the same kind of
+output; the card owns the tint, the Show more/Show less toggle and the
+attribution caption. In the nested tree the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
 pill, while short summaries stay visible.
 

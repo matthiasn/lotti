@@ -5,8 +5,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
@@ -67,6 +69,47 @@ Please provide step-by-step guidance.
       // Check for the title text
       expect(find.text('AI Coding Prompt'), findsOneWidget);
     });
+
+    for (final (name, theme, tokens) in [
+      ('light', DesignSystemTheme.light(), dsTokensLight),
+      ('dark', DesignSystemTheme.dark(), dsTokensDark),
+    ]) {
+      testWidgets(
+        'renders on the shared AI response card with the AI accent ($name)',
+        (tester) async {
+          await tester.pumpWidget(
+            WidgetTestBench(
+              theme: theme,
+              child: GeneratedPromptCard(testAiResponseEntry),
+            ),
+          );
+
+          final card = find.descendant(
+            of: find.byType(GeneratedPromptCard),
+            matching: find.byType(AiResponseCard),
+          );
+          expect(card, findsOneWidget);
+          expect(
+            tester.widget<AiResponseCard>(card).aiResponse,
+            testAiResponseEntry,
+          );
+
+          final ai = tokens.colors.aiCard;
+          final headerIcon = tester.widget<Icon>(
+            find.byIcon(AiResponseType.promptGeneration.icon),
+          );
+          expect(headerIcon.color, ai.accent);
+          final copyIcon = tester.widget<Icon>(find.byIcon(LottiIcons.copy));
+          expect(copyIcon.color, ai.accent);
+          final title = tester.widget<Text>(find.text('AI Coding Prompt'));
+          expect(title.style?.color, ai.accent);
+          final summary = tester.widget<AgentMarkdownView>(
+            find.byType(AgentMarkdownView),
+          );
+          expect(summary.style?.color, ai.bodyText);
+        },
+      );
+    }
 
     testWidgets(
       'a prompt generated before attribution was recorded still names its '
