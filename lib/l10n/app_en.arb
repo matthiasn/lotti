@@ -633,6 +633,12 @@
       "language": {}
     }
   },
+  "agentSummarySetProject": "Move to project \"{project}\"",
+  "@agentSummarySetProject": {
+    "placeholders": {
+      "project": {}
+    }
+  },
   "agentSummarySetPriority": "Set priority to {priority}",
   "@agentSummarySetPriority": {
     "placeholders": {

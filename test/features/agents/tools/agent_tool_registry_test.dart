@@ -56,8 +56,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 20 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(20));
+    test('contains exactly 22 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(22));
     });
 
     test('all tools have non-empty name and description', () {
@@ -91,10 +91,18 @@ void main() {
             reason: '${tool.name} must have required list',
           );
           final required = tool.parameters['required'] as List;
+          final properties = tool.parameters['properties'] as Map;
+          // A read-only tool such as get_category_projects takes no
+          // arguments at all; any tool that takes some requires one.
           expect(
-            required,
-            isNotEmpty,
+            required.isNotEmpty || properties.isEmpty,
+            isTrue,
             reason: '${tool.name} must require at least one parameter',
+          );
+          expect(
+            properties.keys,
+            containsAll(required),
+            reason: '${tool.name} may only require declared parameters',
           );
           expect(
             tool.parameters['additionalProperties'],
@@ -154,8 +162,8 @@ void main() {
   });
 
   group('AgentToolRegistry.deferredTools', () {
-    test('contains exactly 14 deferred tool names', () {
-      expect(AgentToolRegistry.deferredTools, hasLength(14));
+    test('contains exactly 15 deferred tool names', () {
+      expect(AgentToolRegistry.deferredTools, hasLength(15));
     });
 
     test('includes all expected deferred tool names', () {
@@ -173,6 +181,7 @@ void main() {
           TaskAgentToolNames.setTaskLanguage,
           TaskAgentToolNames.createFollowUpTask,
           TaskAgentToolNames.linkTask,
+          TaskAgentToolNames.setTaskProject,
           TaskAgentToolNames.migrateChecklistItems,
           TaskAgentToolNames.createTimeEntry,
           TaskAgentToolNames.updateTimeEntry,

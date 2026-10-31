@@ -1065,6 +1065,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummarySetProject(Object project) {
+    return 'Flytta till projektet ”$project”';
+  }
+
+  @override
   String agentSummarySetPriority(Object priority) {
     return 'Sätt prioriteten till $priority';
   }

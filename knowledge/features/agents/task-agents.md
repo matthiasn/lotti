@@ -136,6 +136,14 @@ sources:
     resource: ../../../lib/features/agents/tools/task_agent_tool_gate.dart
     title: TaskAgentWakeFacts / visibleTaskAgentToolNames — the per-wake tool gate
     last_modified: 2026-09-22
+  - id: project-tools
+    resource: ../../../lib/features/agents/tools/task_project_tool_definitions.dart
+    title: get_category_projects and set_task_project — choosing the task's project
+    last_modified: 2026-10-31
+  - id: project-options
+    resource: ../../../lib/features/agents/workflow/task_project_options.dart
+    title: TaskProjectOption — the category's projects, read and matched for the agent
+    last_modified: 2026-10-31
   - id: staged-exposure
     resource: ../../../lib/features/agents/tools/task_agent_staged_tool_exposure.dart
     title: TaskAgentStagedToolExposure — withhold update_report from turn one
@@ -729,6 +737,7 @@ of the payload.
 | `assign_task_labels` | no label definitions exist for the category |
 | `retract_suggestions` | the proposal ledger holds no open proposals |
 | `resolve_attention_request` | this agent holds no active attention claim on the task |
+| `get_category_projects`, `set_task_project` | the task's category has no projects, or the workflow has no `ProjectRepository` |
 
 Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
@@ -771,9 +780,9 @@ default.
 
 ## Locally short-circuited tools
 
-Four tools are short-circuited **locally** in `TaskAgentStrategy` and never reach
+Five tools are short-circuited **locally** in `TaskAgentStrategy` and never reach
 `AgentToolExecutor`: `update_report`, `record_observations`,
-`get_related_task_details`, `retract_suggestions`.
+`get_related_task_details`, `get_category_projects`, `retract_suggestions`.
 
 Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
 
@@ -787,8 +796,8 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `update_task_estimate`, `update_task_due_date`, `update_task_priority`,
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
-`link_task`, `migrate_checklist_items`, `create_time_entry`,
-`update_time_entry`.
+`link_task`, `set_task_project`, `migrate_checklist_items`,
+`create_time_entry`, `update_time_entry`.
 
 `update_time_entry` is also exempt from the one-call-per-wake rule that stops a
 small model burning its turns on one tool: each call names one entry, so the
@@ -829,6 +838,57 @@ audit messages for tool actions and results. A confirmed proposal does not: the
 confirmation service hands it straight to `TaskToolDispatcher.dispatchApproved`,
 so there is no category re-check or audit message at apply time. The change-set
 decision is its record.
+
+## Project assignment tools
+
+A task belongs to at most one project, and only to one of its own category.
+Two tools let the agent choose it:
+
+- `get_category_projects {}` is **read-only**, answered in the strategy from
+  `loadTaskProjectOptions`: every project of the task's category, sorted by
+  title, as JSON with its id, title, status, the `oneLiner` and `tldr` of its
+  project agent's latest report, and `isCurrentProject`. Only projects whose
+  private flag matches the task's are listed, since `linkTaskToProject` refuses
+  any other link. It reads the local database only, through
+  `ProjectRepository`'s privacy filter, so a project hidden from the user is
+  hidden from the agent too.
+- `set_task_project {projectId}` is **deferred** and single-use per wake. It is
+  validated fail-closed at queue time against the same list: a `projectId` that
+  is neither an id nor the unique title of one of the category's projects is
+  rejected, and the task's current project is suppressed rather than queued. A
+  title is resolved to its id, and the queued args carry `projectId` and
+  `projectTitle`, so the review row names the project in the reader's language.
+  The item's `targetBase` records the project the task belonged to then
+  (`{projectId: <id or null>}`).
+  If the list cannot be read, the proposal is kept by id, as `link_task` keeps
+  one whose title lookup failed.
+
+On confirmation `TaskToolDispatcher` calls
+`ProjectRepository.linkTaskToProject`, which replaces any project the task
+had. A project of another category — the task may have moved since the
+proposal — fails the item rather than linking it. Before that, the dispatcher
+compares `targetBase` with the task's live project link
+(`getLinkedProjectForTask`, past the private gate): if it moved on, nothing is
+applied, so a second device confirming late cannot undo a move made since. The query chat's planner
+does not offer `set_task_project`: its task context carries no project ids.
+
+```mermaid
+sequenceDiagram
+  participant M as Model
+  participant S as TaskAgentStrategy
+  participant B as ChangeSetBuilder
+  participant U as User
+  participant D as TaskToolDispatcher
+  participant P as ProjectRepository
+  M->>S: get_category_projects
+  S->>P: projects of the task's category
+  S-->>M: JSON: id, title, status, oneLiner, tldr, isCurrentProject
+  M->>S: set_task_project {projectId}
+  S->>S: match id or title, skip the current project
+  S->>B: addItem(projectId, projectTitle)
+  U->>D: confirm
+  D->>P: linkTaskToProject
+```
 
 ## `get_related_task_details` is disabled
 
@@ -1227,6 +1287,8 @@ ADR 0097), so the second dispatch changes nothing:
 - **labels:** `assign_task_label(s)` adds nothing the user has taken off the
   task, because taking a label off suppresses it;
 - `link_task` needs nothing — one link per endpoints and type.
+- `set_task_project`, when the proposal recorded its `targetBase` — the
+  task's project link is the field it compares.
 
 ```mermaid
 flowchart TD

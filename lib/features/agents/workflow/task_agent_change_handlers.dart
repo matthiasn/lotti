@@ -40,6 +40,12 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return _queueLinkTaskProposal(csBuilder, args);
     }
 
+    // set_task_project likewise: the project must be one of the category's,
+    // and not the one the task already belongs to.
+    if (toolName == TaskAgentToolNames.setTaskProject) {
+      return _queueSetTaskProjectProposal(csBuilder, args);
+    }
+
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
@@ -254,6 +260,86 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'link_task again for a DIFFERENT relationship.';
   }
 
+  /// Validates and queues a `set_task_project` proposal.
+  ///
+  /// Fail-closed on a project outside the task's category — a hallucinated
+  /// id the apply path would reject anyway — and silent on the project the
+  /// task already belongs to, which would be a no-op for the user to review.
+  /// The queued args carry the canonical id, so a proposal named by title and
+  /// one named by id share a fingerprint, and the title, so the review row can
+  /// name the project in the reader's language.
+  Future<String> _queueSetTaskProjectProposal(
+    ChangeSetBuilder csBuilder,
+    Map<String, dynamic> args,
+  ) async {
+    const tool = TaskAgentToolNames.setTaskProject;
+    final rawProject = args['projectId'];
+    final reference = rawProject is String ? rawProject.trim() : '';
+    if (reference.isEmpty) {
+      return 'ERROR: $tool requires a string "projectId" from '
+          '${TaskAgentToolNames.getCategoryProjects}. No proposal was queued.';
+    }
+
+    var projectId = reference;
+    String? projectTitle;
+    // The project the task belonged to when this was proposed, recorded only
+    // when it could be read. A late second confirmation then cannot undo a
+    // move the user made since (ADR 0097).
+    Map<String, dynamic>? targetBase;
+    final resolver = resolveCategoryProjects;
+    if (resolver != null) {
+      List<TaskProjectOption>? options;
+      try {
+        options = await resolver();
+      } catch (_) {
+        // Transient lookup failure — keep conservatively, without a title.
+        options = null;
+      }
+      if (options != null) {
+        final match = matchTaskProjectOption(options, reference);
+        if (match == null) {
+          return 'ERROR: "$reference" is not a project in this task\'s '
+              'category. Call ${TaskAgentToolNames.getCategoryProjects} and '
+              'use one of the ids it returns; do not invent ids. No proposal '
+              'was queued.';
+        }
+        if (match.isCurrent) {
+          return 'Skipped: the task already belongs to project '
+              '"${match.title}". Do NOT propose it again.';
+        }
+        projectId = match.id;
+        projectTitle = match.title;
+        targetBase = {
+          'projectId': options.where((o) => o.isCurrent).firstOrNull?.id,
+        };
+      }
+    }
+
+    final canonicalArgs = <String, dynamic>{
+      'projectId': projectId,
+      'projectTitle': ?projectTitle,
+    };
+    final addRedundancy = await csBuilder.addItem(
+      toolName: tool,
+      args: canonicalArgs,
+      humanSummary: _generateHumanSummary(tool, canonicalArgs),
+      targetBase: targetBase,
+    );
+    if (addRedundancy != null) {
+      return 'Skipped: $addRedundancy';
+    }
+
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'Deferred tool $tool to change set '
+      '(${csBuilder.items.length} items total)',
+      subDomain: 'TaskAgentStrategy',
+    );
+
+    return 'OK — $tool proposal recorded successfully. '
+        'Do NOT call $tool again.${_remainingDeferredToolHint(tool)}';
+  }
+
   /// The stable identity of one stored relationship, for redundancy checks:
   /// canonical `fromId|toId|<linked_entries.type>`.
   ///
@@ -375,6 +461,8 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Set status to ${args['status'] ?? '?'}',
       TaskAgentToolNames.setTaskLanguage =>
         'Set language to "${args['languageCode'] ?? '?'}"',
+      TaskAgentToolNames.setTaskProject =>
+        'Move to project "${args['projectTitle'] ?? args['projectId'] ?? '?'}"',
       TaskAgentToolNames.createFollowUpTask => () {
         final rawRelation = args['relation'];
         final relation = rawRelation is String

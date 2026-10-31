@@ -479,6 +479,7 @@
   "agentSummarySetDueDate": "Definir o prazo para {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Definir a estimativa como 1 minuto} other{Definir a estimativa como {minutes} minutos}}",
   "agentSummarySetLanguage": "Definir o idioma como \"{language}\"",
+  "agentSummarySetProject": "Mover para o projeto \"{project}\"",
   "agentSummarySetPriority": "Definir a prioridade como {priority}",
   "agentSummarySetStatus": "Definir o estado como {status}",
   "agentSummarySetTitle": "Definir o título como \"{title}\"",

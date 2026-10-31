@@ -25,6 +25,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../projects/test_utils.dart' show makeTestProject;
 import '../test_utils.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
@@ -1415,6 +1416,82 @@ void main() {
           // The state, approval and base resolvers each read the item.
           verify(() => mockJournalDb.journalEntityById('cl-new')).called(3);
         });
+      });
+
+      group('get_category_projects through the workflow-wired resolver', () {
+        late MockProjectRepository projectRepository;
+
+        setUp(() {
+          // The shared bench wires no project repository; this wake needs one.
+          projectRepository = MockProjectRepository();
+          final bench = createTaskAgentWorkflowTestBench(
+            projectRepository: projectRepository,
+          );
+          mockAgentRepository = bench.mockAgentRepository;
+          mockSyncService = bench.mockSyncService;
+          mockConversationRepository = bench.mockConversationRepository;
+          mockAiInputRepository = bench.mockAiInputRepository;
+          mockAiConfigRepository = bench.mockAiConfigRepository;
+          mockJournalDb = bench.mockJournalDb;
+          mockConversationManager = bench.mockConversationManager;
+          mockJournalRepository = bench.mockJournalRepository;
+          mockChecklistRepository = bench.mockChecklistRepository;
+          mockLabelsRepository = bench.mockLabelsRepository;
+          workflow = bench.workflow;
+        });
+
+        test(
+          "answers with the task's category projects and their summaries",
+          () async {
+            when(
+              () => projectRepository.getProjectsForCategory('cat-001'),
+            ).thenAnswer(
+              (_) async => [
+                makeTestProject(
+                  id: 'project-colony',
+                  title: 'Colony census',
+                  categoryId: 'cat-001',
+                ),
+              ],
+            );
+            when(
+              () => projectRepository.getLinkedProjectForTask(taskId),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockAgentRepository.getLatestProjectReportForProjectId(
+                'project-colony',
+              ),
+            ).thenAnswer(
+              (_) async => makeTestReport(oneLiner: 'Counting the colony.'),
+            );
+
+            final result = await executeWithToolCallOnRealTask(
+              'get_category_projects',
+              '{}',
+            );
+
+            expect(result.success, isTrue);
+            final response =
+                verify(
+                      () => mockConversationManager.addToolResponse(
+                        toolCallId: 'tc-1',
+                        response: captureAny(named: 'response'),
+                      ),
+                    ).captured.single
+                    as String;
+            final projects =
+                (jsonDecode(response) as Map<String, dynamic>)['projects']
+                    as List<dynamic>;
+            expect(projects.single, {
+              'id': 'project-colony',
+              'title': 'Colony census',
+              'status': 'OPEN',
+              'oneLiner': 'Counting the colony.',
+              'tldr': null,
+              'isCurrentProject': false,
+            });
+          },
+        );
       });
 
       group('link_task through the workflow-wired resolvers', () {

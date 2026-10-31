@@ -72,6 +72,7 @@ String? localizedChangeSummary(
   ),
   TaskAgentToolNames.createFollowUpTask => _followUp(messages, args),
   TaskAgentToolNames.linkTask => _link(messages, args),
+  TaskAgentToolNames.setTaskProject => _project(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
   // The retired running-timer update carried only `summary` (plus a
   // `timerId` this sentence never names), so a proposal persisted under it
@@ -393,6 +394,15 @@ String? _link(AppLocalizations messages, Map<String, dynamic> args) {
   final target = args['targetTitle'];
   if (relation == null || target is! String || target.isEmpty) return null;
   return localizedRelationSentence(messages, relation, '"$target"');
+}
+
+/// A project proposal names its project by title. One queued without a title
+/// (its lookup failed) has no readable subject, so it keeps its persisted
+/// summary.
+String? _project(AppLocalizations messages, Map<String, dynamic> args) {
+  final title = args['projectTitle'];
+  if (title is! String || title.trim().isEmpty) return null;
+  return messages.agentSummarySetProject(title.trim());
 }
 
 /// Presence and validity of `endTime` are separate facts, exactly as they are

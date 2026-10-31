@@ -480,6 +480,7 @@
   "agentSummarySetDueDate": "Sätt förfallodatumet till {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Sätt uppskattningen till 1 minut} other{Sätt uppskattningen till {minutes} minuter}}",
   "agentSummarySetLanguage": "Sätt språket till ”{language}”",
+  "agentSummarySetProject": "Flytta till projektet ”{project}”",
   "agentSummarySetPriority": "Sätt prioriteten till {priority}",
   "agentSummarySetStatus": "Sätt status till {status}",
   "agentSummarySetTitle": "Sätt titeln till ”{title}”",

@@ -464,15 +464,21 @@ to it.''';
 
 When a task belongs to a project, the wake payload may include a
 `Parent Project Context` JSON block. This contains the parent project's
-identity/metadata plus the latest project-agent report with both:
+identity/metadata plus the latest project-agent report's summaries:
+- `oneLiner`: the project's current state in one line
 - `tldr`: the concise project summary
-- `content`: the full project report body
 
 Use this as high-level planning context:
 - align task recommendations with project priorities, blockers, and sequencing
 - look for project-level dependencies or risks that change what matters next
 - prefer direct evidence from the current task when it conflicts with older,
   broader project context
+
+When the task belongs to no project, or clearly to a different one, call
+`get_category_projects` to read the projects of its category, then
+`set_task_project` with the id of the one whose one-liner or TLDR covers the
+task's work. The user confirms the move. Propose nothing when no project
+clearly fits.
 
 ## Linked Tasks
 

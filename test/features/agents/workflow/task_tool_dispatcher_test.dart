@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -20,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart' show makeTestProject;
 import '../test_utils.dart' show makeTestChecklistApproval;
 
 /// The field-level change handed to `ChecklistRepository.updateChecklistItem`.
@@ -446,6 +448,202 @@ void main() {
         },
       );
     }
+  });
+
+  group('dispatch — set_task_project', () {
+    const categoryId = 'category-penguins';
+    late MockProjectRepository projectRepository;
+    late TaskToolDispatcher projectDispatcher;
+    final project = makeTestProject(
+      id: 'project-colony',
+      title: 'Colony census',
+      categoryId: categoryId,
+    );
+
+    setUp(() {
+      projectRepository = MockProjectRepository();
+      projectDispatcher = TaskToolDispatcher(
+        domainLogger: MockDomainLogger(),
+        journalDb: mockJournalDb,
+        journalRepository: mockJournalRepository,
+        checklistRepository: mockChecklistRepository,
+        labelsRepository: mockLabelsRepository,
+        persistenceLogic: mockPersistenceLogic,
+        timeService: mockTimeService,
+        projectRepository: projectRepository,
+      );
+      when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+        (_) async => _makeTestTask(taskId, categoryId: categoryId),
+      );
+      when(
+        () => projectRepository.getProjectById('project-colony'),
+      ).thenAnswer((_) async => project);
+    });
+
+    // The confirmed change item reaches the dispatcher with the title the
+    // review row showed; only the id decides where the task goes.
+    const confirmedArgs = {
+      'projectId': 'project-colony',
+      'projectTitle': 'Colony census',
+    };
+
+    test('links the task to the confirmed project', () async {
+      when(
+        () => projectRepository.linkTaskToProject(
+          projectId: 'project-colony',
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await projectDispatcher.dispatchApproved(
+        TaskAgentToolNames.setTaskProject,
+        confirmedArgs,
+        taskId,
+        null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Task moved to project "Colony census".');
+      expect(result.mutatedEntityId, taskId);
+      verify(
+        () => projectRepository.linkTaskToProject(
+          projectId: 'project-colony',
+          taskId: taskId,
+        ),
+      ).called(1);
+    });
+
+    test('a late confirmation keeps a project the user chose since', () async {
+      // Proposed while the task had no project; since then it was moved to
+      // another one, by the first confirmation or by hand.
+      when(
+        () => projectRepository.getLinkedProjectForTask(taskId),
+      ).thenAnswer(
+        (_) async =>
+            makeTestProject(id: 'project-other', categoryId: categoryId),
+      );
+
+      final result = await projectDispatcher.dispatchApproved(
+        TaskAgentToolNames.setTaskProject,
+        const ChangeEffect(
+          key: 'cs-1:0',
+          targetBase: {'projectId': null},
+        ).addTo(confirmedArgs),
+        taskId,
+        null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, startsWith('Nothing applied'));
+      verifyNever(
+        () => projectRepository.linkTaskToProject(
+          projectId: any(named: 'projectId'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+    });
+
+    test('a confirmation against the unchanged base links the task', () async {
+      when(
+        () => projectRepository.getLinkedProjectForTask(taskId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => projectRepository.linkTaskToProject(
+          projectId: 'project-colony',
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await projectDispatcher.dispatchApproved(
+        TaskAgentToolNames.setTaskProject,
+        const ChangeEffect(
+          key: 'cs-1:0',
+          targetBase: {'projectId': null},
+        ).addTo(confirmedArgs),
+        taskId,
+        null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Task moved to project "Colony census".');
+    });
+
+    test('reports a link the repository rejected as a failure', () async {
+      when(
+        () => projectRepository.linkTaskToProject(
+          projectId: any(named: 'projectId'),
+          taskId: any(named: 'taskId'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final result = await projectDispatcher.dispatch(
+        TaskAgentToolNames.setTaskProject,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Project link rejected');
+    });
+
+    test('refuses a project of another category without linking', () async {
+      when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+        (_) async => _makeTestTask(taskId, categoryId: 'category-seals'),
+      );
+
+      final result = await projectDispatcher.dispatch(
+        TaskAgentToolNames.setTaskProject,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Project category mismatch');
+      verifyNever(
+        () => projectRepository.linkTaskToProject(
+          projectId: any(named: 'projectId'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+    });
+
+    test('refuses a project that no longer exists', () async {
+      when(
+        () => projectRepository.getProjectById('project-gone'),
+      ).thenAnswer((_) async => null);
+
+      final result = await projectDispatcher.dispatch(
+        TaskAgentToolNames.setTaskProject,
+        {'projectId': 'project-gone'},
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Project lookup failed');
+    });
+
+    test('rejects a missing projectId before any lookup', () async {
+      final result = await projectDispatcher.dispatch(
+        TaskAgentToolNames.setTaskProject,
+        {'projectId': 42},
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Type validation failed for projectId');
+      verifyNever(() => projectRepository.getProjectById(any()));
+    });
+
+    test('fails when no project repository is wired', () async {
+      final result = await dispatcher.dispatch(
+        TaskAgentToolNames.setTaskProject,
+        confirmedArgs,
+        taskId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'set_task_project is not configured');
+    });
   });
 
   group('TaskToolDispatcher', () {

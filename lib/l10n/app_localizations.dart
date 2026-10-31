@@ -1873,6 +1873,12 @@ abstract class AppLocalizations {
   /// **'Set language to \"{language}\"'**
   String agentSummarySetLanguage(Object language);
 
+  /// No description provided for @agentSummarySetProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to project \"{project}\"'**
+  String agentSummarySetProject(Object project);
+
   /// No description provided for @agentSummarySetPriority.
   ///
   /// In en, this message translates to:

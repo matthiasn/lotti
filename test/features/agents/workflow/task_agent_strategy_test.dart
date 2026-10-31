@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -171,6 +172,7 @@ ChatCompletionMessageToolCall _toolCall({
   resolveTimeEntryFields,
   Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
   Future<Set<String>> Function()? resolveExistingTaskRelations,
+  Future<List<TaskProjectOption>> Function()? resolveCategoryProjects,
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
@@ -217,6 +219,7 @@ ChatCompletionMessageToolCall _toolCall({
     resolveTimeEntryFields: resolveTimeEntryFields,
     resolveLinkableTaskTitle: resolveLinkableTaskTitle,
     resolveExistingTaskRelations: resolveExistingTaskRelations,
+    resolveCategoryProjects: resolveCategoryProjects,
     flushChangeSet: flushChangeSet,
     stagedToolExposure: stagedToolExposure,
   );
@@ -2442,6 +2445,316 @@ void main() {
             ),
           ),
         ).called(1);
+      });
+    });
+
+    group('project tools', () {
+      const colony = TaskProjectOption(
+        id: 'project-colony',
+        title: 'Colony census',
+        status: 'ACTIVE',
+        oneLiner: 'Counting the colony before winter.',
+        tldr: 'Census of the north colony.',
+        isCurrent: false,
+      );
+      const iceShelf = TaskProjectOption(
+        id: 'project-ice',
+        title: 'Ice shelf survey',
+        status: 'OPEN',
+        isCurrent: true,
+      );
+
+      ChatCompletionMessageToolCall call(
+        String name,
+        Map<String, dynamic> args, {
+        String id = 'call-1',
+      }) => ChatCompletionMessageToolCall(
+        id: id,
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: name,
+          arguments: jsonEncode(args),
+        ),
+      );
+
+      ({TaskAgentStrategy strategy, ChangeSetBuilder builder}) bench({
+        Future<List<TaskProjectOption>> Function()? resolveCategoryProjects,
+      }) => _createStrategy(
+        executor: mockExecutor,
+        syncService: mockSyncService,
+        resolveCategoryProjects: resolveCategoryProjects,
+        // Both tools are handled by the strategy: neither may reach the
+        // journal-domain handlers during the wake.
+        executeToolHandler: (toolName, _, _) =>
+            fail('$toolName must not execute during the wake'),
+      );
+
+      String responseTo(String callId) =>
+          verify(
+                () => mockManager.addToolResponse(
+                  toolCallId: callId,
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+
+      group('get_category_projects', () {
+        test('answers with the projects as parseable JSON', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('get_category_projects', {})],
+            manager: mockManager,
+          );
+
+          expect(jsonDecode(responseTo('call-1')), {
+            'projects': [
+              {
+                'id': 'project-colony',
+                'title': 'Colony census',
+                'status': 'ACTIVE',
+                'oneLiner': 'Counting the colony before winter.',
+                'tldr': 'Census of the north colony.',
+                'isCurrentProject': false,
+              },
+            ],
+          });
+          // Read-only: nothing is proposed to the user.
+          expect(b.builder.items, isEmpty);
+        });
+
+        test('reports an error when the projects cannot be read', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => throw Exception('db down'),
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('get_category_projects', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            'Error: the projects could not be read right now.',
+          );
+        });
+
+        test('reports that the tool is unavailable when unwired', () async {
+          await bench().strategy.processToolCalls(
+            toolCalls: [call('get_category_projects', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            'Error: get_category_projects is not available.',
+          );
+        });
+      });
+
+      group('set_task_project', () {
+        test('queues a confirmable proposal naming the project', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => [colony, iceShelf],
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': ' project-colony '}),
+            ],
+            manager: mockManager,
+          );
+
+          final item = b.builder.items.single;
+          expect(item.toolName, 'set_task_project');
+          expect(item.args, {
+            'projectId': 'project-colony',
+            'projectTitle': 'Colony census',
+          });
+          expect(item.humanSummary, 'Move to project "Colony census"');
+          // The project the task was in when proposed, so a late second
+          // confirmation cannot undo a later move.
+          expect(item.targetBase, {'projectId': 'project-ice'});
+          expect(
+            responseTo('call-1'),
+            startsWith('OK — set_task_project proposal recorded'),
+          );
+        });
+
+        test('resolves a project named by its title to its id', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => [colony, iceShelf],
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'colony CENSUS'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items.single.args['projectId'], 'project-colony');
+        });
+
+        test('records an unassigned task as an empty base', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'project-colony'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items.single.targetBase, {'projectId': null});
+        });
+
+        test(
+          'reports a proposal the builder already holds as skipped',
+          () async {
+            final builder = ChangeSetBuilder(
+              agentId: agentId,
+              taskId: taskId,
+              threadId: 'thread-001',
+              runKey: 'run-key-001',
+            );
+            await builder.addItem(
+              toolName: 'set_task_project',
+              args: const {
+                'projectId': 'project-colony',
+                'projectTitle': 'Colony census',
+              },
+              humanSummary: 'Move to project "Colony census"',
+            );
+            final strategy = _createStrategy(
+              executor: mockExecutor,
+              syncService: mockSyncService,
+              builder: builder,
+              resolveCategoryProjects: () async => [colony, iceShelf],
+            ).strategy;
+
+            await strategy.processToolCalls(
+              toolCalls: [
+                call('set_task_project', {'projectId': 'project-colony'}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(builder.items, hasLength(1));
+            expect(responseTo('call-1'), startsWith('Skipped: Already queued'));
+          },
+        );
+
+        test('rejects a project outside the category fail-closed', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'invented-project'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            allOf(
+              contains('"invented-project" is not a project'),
+              contains('do not invent ids'),
+            ),
+          );
+        });
+
+        test('skips the project the task already belongs to', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => [colony, iceShelf],
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'project-ice'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            'Skipped: the task already belongs to project "Ice shelf survey". '
+            'Do NOT propose it again.',
+          );
+        });
+
+        test('rejects a call without a projectId', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': '  '}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            startsWith('ERROR: set_task_project requires a string "projectId"'),
+          );
+        });
+
+        test(
+          'keeps the proposal by id when the projects cannot be read',
+          () async {
+            final b = bench(
+              resolveCategoryProjects: () async => throw Exception('db down'),
+            );
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('set_task_project', {'projectId': 'project-colony'}),
+              ],
+              manager: mockManager,
+            );
+
+            // A transient failure cannot prove the id fake; with no title to
+            // show, the summary names the id.
+            final item = b.builder.items.single;
+            expect(item.args, {'projectId': 'project-colony'});
+            expect(item.humanSummary, 'Move to project "project-colony"');
+            // Nothing read, so nothing to compare against on apply.
+            expect(item.targetBase, isNull);
+          },
+        );
+
+        test('may be proposed only once per wake', () async {
+          final b = bench(
+            resolveCategoryProjects: () async => [
+              colony,
+              const TaskProjectOption(
+                id: 'project-fish',
+                title: 'Fish stocks',
+                status: 'OPEN',
+                isCurrent: false,
+              ),
+            ],
+          );
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'project-colony'}),
+              call('set_task_project', {
+                'projectId': 'project-fish',
+              }, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items.single.args['projectId'], 'project-colony');
+          expect(
+            responseTo('call-2'),
+            startsWith('ERROR: set_task_project was already called'),
+          );
+        });
       });
     });
 

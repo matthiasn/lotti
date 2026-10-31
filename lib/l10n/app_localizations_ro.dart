@@ -1071,6 +1071,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummarySetProject(Object project) {
+    return 'Mutați în proiectul „$project”';
+  }
+
+  @override
   String agentSummarySetPriority(Object priority) {
     return 'Setați prioritatea la $priority';
   }

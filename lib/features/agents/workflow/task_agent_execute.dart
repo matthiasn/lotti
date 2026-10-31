@@ -645,6 +645,16 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
 
+    // No repository means the project tools are not wired, so they stay
+    // hidden; a task without a category has no projects to choose from.
+    final projects = this.projectRepository;
+    final categoryId = task?.meta.categoryId;
+    final hasCategoryProjects =
+        projects != null &&
+        categoryId != null &&
+        categoryId.isNotEmpty &&
+        (await projects.getProjectsForCategory(categoryId)).isNotEmpty;
+
     return TaskAgentWakeFacts(
       // A null `checklistIds` and an empty one both mean "no checklists"
       // everywhere else in the app, and a task that never had one carries null
@@ -656,6 +666,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       hasLabelDefinitions: labelDefinitions.isNotEmpty,
       hasOpenProposals: ledger.open.isNotEmpty,
       hasActiveAttentionClaims: attentionClaims.isNotEmpty,
+      hasCategoryProjects: hasCategoryProjects,
     );
   }
 
