@@ -4679,7 +4679,15 @@ void main() {
         (bandDecoration.border! as Border).top.color,
         dsTokensLight.colors.decorative.level01,
       );
-      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
+      // As wide as its label, on the band's trailing edge — never a bar
+      // stretched across the column.
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isFalse);
+      final bandBox = tester.getRect(
+        find.ancestor(of: action, matching: find.byType(DecoratedBox)).first,
+      );
+      final actionBox = tester.getRect(action);
+      expect(actionBox.width, lessThan(bandBox.width / 2));
+      expect(actionBox.right, closeTo(bandBox.right, 1));
 
       await tester.enterText(
         find.byKey(const ValueKey('goal-form-intention')),
@@ -4689,14 +4697,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Here’s what I can watch'), findsOneWidget);
 
-      // Desktop demotes the add affordance to an intrinsic tertiary while
-      // the commit action keeps the full column width.
+      // Desktop demotes the add affordance to an intrinsic tertiary; the
+      // commit action stays as wide as its label on every step.
       final addSignal = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('goal-form-add-signal')),
       );
       expect(addSignal.variant, DesignSystemButtonVariant.tertiary);
       expect(addSignal.fullWidth, isFalse);
-      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isFalse);
     },
   );
 

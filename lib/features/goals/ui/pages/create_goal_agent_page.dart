@@ -631,7 +631,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
       },
       isLoading: _saving,
       size: DesignSystemButtonSize.large,
-      fullWidth: true,
     );
     return PopScope(
       canPop: _step == _visibleSteps.first,
@@ -980,7 +979,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
                                 context,
                               ),
                         ),
-                        child: primaryAction,
+                        // As wide as its label, on the trailing edge where a
+                        // form's forward action sits — not a bar to fill.
+                        child: Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: primaryAction,
+                        ),
                       ),
                     ),
                   ],
