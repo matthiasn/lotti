@@ -1373,14 +1373,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.7"
-  glass_kit:
-    dependency: "direct main"
-    description:
-      name: glass_kit
-      sha256: ca071693b6b1c5ddc628aee030df0eb99a4063b55b5928cf84bb82f9bc32595f
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.0.2"
   glob:
     dependency: transitive
     description:

@@ -1,16 +1,23 @@
-import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Sticky glass footer for the AI Settings edit forms.
 ///
-/// Shows a status line on the left — "no changes", a fix-errors hint, or
-/// nothing — and Cancel / Save buttons on the right. Save is only enabled when
-/// the form is both [isDirty] and [isFormValid] (and not [isLoading]); an
+/// Shows a status line on the leading edge — "no changes", a fix-errors hint,
+/// or nothing — and Cancel / Save on the trailing edge. Save is only enabled
+/// when the form is both [isDirty] and [isFormValid] (and not [isLoading]); an
 /// unchanged or invalid form keeps it disabled.
+///
+/// Built from the design system's sticky-bar parts: a [DesignSystemGlassStrip]
+/// surface, and two nested measured [DesignSystemModalActionBar]s. The outer
+/// one keeps the status and the action pair on one row while they fit and
+/// moves the actions below the status when they do not; the inner one does the
+/// same for Cancel and Save. The bar grows instead of overflowing, so Save
+/// stays on screen at narrow widths and in long translations.
 class FormBottomBar extends StatelessWidget {
   const FormBottomBar({
     required this.onSave,
@@ -29,96 +36,104 @@ class FormBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showSaveButton = isDirty && isFormValid;
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final canSave = isDirty && isFormValid && !isLoading;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: context.colorScheme.onSurface.withValues(alpha: 0.1),
-          ),
+    final actions = DesignSystemModalActionBar(
+      layout: DesignSystemModalActionBarLayout.compactPrimary,
+      secondary: [
+        DesignSystemButton(
+          label: messages.aiFormCancel,
+          onPressed: onCancel,
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.large,
+        ),
+      ],
+      // The status line explains a disabled Save to sighted users, but it
+      // isn't linked to the button — mirror the reason into a tooltip +
+      // semantics so it's perceivable on hover and by screen readers.
+      primary: Tooltip(
+        message: !isDirty
+            ? messages.aiFormNoChanges
+            : !isFormValid
+            ? messages.aiFormFixErrors
+            : messages.saveLabel,
+        child: DesignSystemButton(
+          label: messages.saveLabel,
+          onPressed: canSave ? onSave : null,
+          leadingIcon: LottiIcons.save,
+          size: DesignSystemButtonSize.large,
         ),
       ),
-      child: GlassContainer.clearGlass(
-        elevation: 0,
-        height: 64,
-        width: double.infinity,
-        blur: 12,
-        color: context.colorScheme.surface.withAlpha(128),
-        borderWidth: 0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-          child: Row(
-            children: [
-              // Status indicator
-              if (!isDirty) ...[
-                Icon(
-                  LottiIcons.confirmCircled,
-                  size: 20,
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.messages.aiFormNoChanges,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                SizedBox(width: context.designTokens.spacing.step5),
-              ] else if (!isFormValid) ...[
-                Icon(
-                  LottiIcons.info,
-                  size: 20,
-                  color: context.colorScheme.error,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.messages.aiFormFixErrors,
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.error,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ] else ...[
-                const Spacer(),
-              ],
+    );
 
-              // Buttons
-              DesignSystemButton(
-                label: context.messages.aiFormCancel,
-                onPressed: onCancel,
-                variant: DesignSystemButtonVariant.tertiary,
-                size: DesignSystemButtonSize.large,
+    final status = !isDirty
+        ? _StatusLine(
+            icon: LottiIcons.confirmCircled,
+            message: messages.aiFormNoChanges,
+            color: tokens.colors.text.mediumEmphasis,
+          )
+        : !isFormValid
+        ? _StatusLine(
+            icon: LottiIcons.info,
+            message: messages.aiFormFixErrors,
+            color: tokens.colors.alert.error.defaultColor,
+          )
+        : null;
+
+    return DesignSystemGlassStrip(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step3,
+        ),
+        child: status == null
+            // Nothing to explain: the action pair keeps its own width on the
+            // trailing edge rather than spreading across the bar.
+            ? Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: IntrinsicWidth(child: actions),
+              )
+            : DesignSystemModalActionBar(
+                layout: DesignSystemModalActionBarLayout.compactPrimary,
+                secondary: [status],
+                primary: actions,
               ),
-              const SizedBox(width: 20),
-              // The visible status line on the left explains a disabled Save
-              // sighted, but it isn't linked to the button — mirror the reason
-              // into a tooltip + semantics so it's perceivable on hover and by
-              // screen readers (parity with the AppBar forms that have no
-              // status line).
-              Tooltip(
-                message: !isDirty
-                    ? context.messages.aiFormNoChanges
-                    : !isFormValid
-                    ? context.messages.aiFormFixErrors
-                    : context.messages.saveLabel,
-                child: DesignSystemButton(
-                  label: context.messages.saveLabel,
-                  onPressed: showSaveButton && !isLoading ? onSave : null,
-                  leadingIcon: LottiIcons.save,
-                  size: DesignSystemButtonSize.large,
-                ),
-              ),
-            ],
+      ),
+    );
+  }
+}
+
+/// Icon + message explaining the current Save state.
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({
+    required this.icon,
+    required this.message,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: IconSizes.s, color: color),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(
+          child: Text(
+            message,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: color,
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

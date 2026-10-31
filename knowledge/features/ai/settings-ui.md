@@ -124,7 +124,11 @@ which keeps only the back arrow and title. The bar sits below the scroll view in
 a `Column` wrapped in a bottom-only `SafeArea`, so the form scrolls above it
 rather than behind it and Save stays reachable on long forms. Its status line
 reads "no unsaved changes" or "fix errors"; Save enables only when the form is
-both dirty and valid. The profile form passes `isFormValid: true` because it
+both dirty and valid. The bar is the design system's `DesignSystemGlassStrip`
+around two nested measured `DesignSystemModalActionBar`s (compact layout):
+status and actions share a row while their rendered widths fit, otherwise the
+actions drop below the status, and Cancel and Save stack the same way — so the
+bar grows rather than pushing Save off a narrow screen in a long translation. The profile form passes `isFormValid: true` because it
 validates the name and thinking model on tap instead. Provider *create* swaps in
 its three-button connect footer at the same position.
 
