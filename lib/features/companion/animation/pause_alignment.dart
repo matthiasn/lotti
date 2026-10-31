@@ -8,6 +8,15 @@ typedef SilentSpan = ({double start, double end});
 /// that a voice pauses there: a comma weighs less than a full stop.
 typedef TextPause = ({double start, double end, double weight});
 
+/// One stretch of speech between two pins, on the words' clock and on the
+/// voice's, in seconds.
+typedef Phrase = ({
+  double textStart,
+  double textEnd,
+  double voiceStart,
+  double voiceEnd,
+});
+
 /// Maps the words' clock onto a recorded voice's clock, phrase by phrase.
 ///
 /// The words' clock (`TextLipSync`) gives every letter a fixed duration, so
@@ -30,13 +39,16 @@ class PauseAlignment {
   /// and falls silent at [voiceGaps].
   ///
   /// Both lists are in order and do not overlap. Pauses before the first word
-  /// or after [textEnd], and gaps outside the voiced span, pin nothing.
+  /// or after [textEnd], and gaps outside the voiced span, pin nothing; nor
+  /// does a pause weighing less than [minWeight], which a later, finer
+  /// alignment places itself.
   factory PauseAlignment.align({
     required double textEnd,
     required List<TextPause> textPauses,
     required double voiceFrom,
     required double voiceTo,
     required List<SilentSpan> voiceGaps,
+    double minWeight = 0,
   }) {
     final text = _Squeeze(0, [
       for (final p in textPauses)
@@ -56,7 +68,7 @@ class PauseAlignment {
     for (final p in textPauses) {
       if (p.end > p.start && p.start < textEnd) {
         final at = text.positions[index];
-        if (at > 0 && at < textSpeech) {
+        if (at > 0 && at < textSpeech && p.weight >= minWeight) {
           pauses.add((at: at, weight: p.weight));
         }
         index++;
@@ -91,7 +103,8 @@ class PauseAlignment {
   final List<({double text, double voice})> _knots;
 
   /// Which interior text pause was pinned to which voice gap, by their order
-  /// among the pauses and gaps inside the speech.
+  /// among the pauses that may pin (inside the speech, at least the minimum
+  /// weight) and the gaps inside the speech.
   final List<({int text, int voice})> matches;
 
   /// The voice's time, in seconds, for [textTime] on the words' clock. A
@@ -100,6 +113,21 @@ class PauseAlignment {
     final speech = _text.speechAt(textTime);
     return _voice.clockAt(_interpolate(speech, toVoice: true));
   }
+
+  /// The stretches between pins, on both clocks: each phrase runs on the
+  /// words' clock from the end of one pinned pause (or the first word) to
+  /// the start of the next (or the last word's end), and on the voice's
+  /// clock from the end of the matching gap to the start of the next.
+  /// Unpinned pauses and gaps lie inside a phrase.
+  List<Phrase> get phrases => [
+    for (var i = 0; i + 1 < _knots.length; i++)
+      (
+        textStart: _text.clockAt(_knots[i].text),
+        textEnd: _text.clockBefore(_knots[i + 1].text),
+        voiceStart: _voice.clockAt(_knots[i].voice),
+        voiceEnd: _voice.clockBefore(_knots[i + 1].voice),
+      ),
+  ];
 
   /// The words' time, in seconds, for [voiceTime] on the voice's clock.
   /// Inside a gap the words wait at the gap's pause.
@@ -274,6 +302,13 @@ class _Squeeze {
   /// The clock at [speech]: where a silence sits, the moment it ends.
   double clockAt(double speech) {
     final k = _lastAtOrBefore(positions, speech, inclusive: true);
+    final removed = k < 0 ? 0.0 : _before[k] + lengths[k];
+    return origin + speech + removed;
+  }
+
+  /// The clock at [speech]: where a silence sits, the moment it starts.
+  double clockBefore(double speech) {
+    final k = _lastAtOrBefore(positions, speech, inclusive: false);
     final removed = k < 0 ? 0.0 : _before[k] + lengths[k];
     return origin + speech + removed;
   }

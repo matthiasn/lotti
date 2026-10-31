@@ -55,13 +55,15 @@ class _CompanionVoicePreviewState extends State<CompanionVoicePreview> {
       // The page may have been left while the file was read: a player made
       // now would never be disposed.
       if (!mounted) return;
-      final envelope = SpeechEnvelope.fromWav(bytes);
       final text = widget.text.trim();
+      final track = text.isEmpty
+          ? SpeechEnvelope.fromWav(bytes)
+          : VoicedTextTrack.fromWav(bytes, text);
       final player = _player ??= _listen(Player());
       setState(() {
         _error = null;
         _position = null;
-        _track = text.isEmpty ? envelope : VoicedTextTrack(envelope, text);
+        _track = track;
       });
       await player.open(Media(path));
     } on Object catch (e) {

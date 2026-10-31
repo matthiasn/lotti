@@ -6,6 +6,32 @@ import 'package:lotti/features/companion/rig/rig_math.dart';
 /// One mouth shape from its `start`, in seconds, on.
 typedef VisemeCue = ({double start, Viseme viseme});
 
+/// How a letter sounds, broadly enough to be heard in a voice's loudness and
+/// brightness: what `SoundAlignment` matches against the recording.
+enum SoundClass {
+  /// a, e, i, o, u, y, "oo", "ee", "ou", "ow": loud and dark.
+  vowel,
+
+  /// f, v, s, z, x, j, "sh", "ch", "ph": a hiss, bright.
+  fricative,
+
+  /// p, b, t, d, k, g, c, q, h, "ck": a closure, quiet.
+  stop,
+
+  /// m, n, "ng": a hum, darker than a vowel.
+  nasal,
+
+  /// l, r, w, "wh", "th": vowel-like, a little quieter.
+  approximant,
+
+  /// Punctuation: silence, if the voice pauses at all.
+  pause,
+}
+
+/// One sound of the words, on the text's clock: from its `start` to its
+/// `end`, sounding as its class does.
+typedef SoundUnit = ({double start, double end, SoundClass sound});
+
 /// The mouth on the words: the text is read letter by letter into the eight
 /// speaking shapes of the Rhubarb convention plus its rest, timed at a steady
 /// speaking rate.
@@ -36,17 +62,20 @@ class TextLipSync implements MouthTrack {
   factory TextLipSync(String text, {double rate = 1}) {
     final cues = <VisemeCue>[];
     final pauses = <TextPause>[];
+    final sounds = <SoundUnit>[];
     var t = 0.0;
     final s = text.toLowerCase();
     // When each character is reached, so a later reader can time the words.
     final reached = List<double>.filled(s.length + 1, 0);
     // A run of stops ("?!", ".\n") is one pause; any sound ends the run.
     var soundSincePause = true;
-    void add(Viseme v, double seconds) {
+    void add(Viseme v, double seconds, SoundClass sound) {
       if (cues.isEmpty || cues.last.viseme != v) {
         cues.add((start: t, viseme: v));
       }
+      final start = t;
       t += seconds / rate;
+      sounds.add((start: start, end: t, sound: sound));
       soundSincePause = true;
     }
 
@@ -54,7 +83,7 @@ class TextLipSync implements MouthTrack {
       final merge = pauses.isNotEmpty && !soundSincePause;
       final last = merge ? pauses.removeLast() : null;
       final start = last?.start ?? t;
-      add(Viseme.x, seconds);
+      add(Viseme.x, seconds, SoundClass.pause);
       pauses.add((
         start: start,
         end: t,
@@ -69,7 +98,7 @@ class TextLipSync implements MouthTrack {
       final two = i + 1 < s.length ? s.substring(i, i + 2) : '';
       final ch = s[i];
       if (_digraphs.containsKey(two)) {
-        add(_digraphs[two]!, 0.1);
+        add(_digraphs[two]!, 0.1, _soundOf(two));
         reached[i + 1] = reached[i];
         i += 2;
         continue;
@@ -88,27 +117,43 @@ class TextLipSync implements MouthTrack {
         pause(seconds, weight);
       } else if (_isSilentE(s, i)) {
         // Neither a shape nor time: "have" ends on the bite of its v.
+      } else if (i > 0 && s[i - 1] == ch && _isPlainConsonant(ch)) {
+        // A doubled consonant is one sound: "waddle", "little".
       } else if (_vowels.containsKey(ch)) {
-        add(_vowels[ch]!, 0.085);
+        add(_vowels[ch]!, 0.085, SoundClass.vowel);
       } else if (_consonants.containsKey(ch)) {
-        add(_consonants[ch]!, 0.055);
+        add(_consonants[ch]!, 0.055, _soundOf(ch));
       } else if (_letterOrDigit.hasMatch(ch)) {
-        add(Viseme.b, 0.055);
+        add(Viseme.b, 0.055, _soundOf(ch));
       }
       i++;
     }
     reached[s.length] = t;
-    add(Viseme.x, 0.2);
-    return TextLipSync._(cues, pauses, t, reached);
+    // The closing rest is not a sound of the words.
+    if (cues.isEmpty || cues.last.viseme != Viseme.x) {
+      cues.add((start: t, viseme: Viseme.x));
+    }
+    t += 0.2 / rate;
+    return TextLipSync._(cues, pauses, sounds, t, reached);
   }
 
-  TextLipSync._(this.cues, this.pauses, this._end, this._reached);
+  TextLipSync._(
+    this.cues,
+    this.pauses,
+    this.sounds,
+    this._end,
+    this._reached,
+  );
 
   final List<VisemeCue> cues;
 
   /// Where the mouth rests at punctuation, on this track's clock, with how
   /// sure the punctuation is that a voice breathes there.
   final List<TextPause> pauses;
+
+  /// Every sound of the words in order, pauses included, on this track's
+  /// clock. A word break between two sounds is a gap between them.
+  final List<SoundUnit> sounds;
 
   final double _end;
   final List<double> _reached;
@@ -135,7 +180,22 @@ class TextLipSync implements MouthTrack {
 
   /// [mouthAt], for a time in seconds on this track's clock.
   MouthShape mouthAtSeconds(double t) {
-    if (t < 0 || t >= _end || cues.isEmpty) return Viseme.x.shape;
+    final cue = cueAtSeconds(t);
+    if (cue == null) return Viseme.x.shape;
+    return cue.previous.shape.blend(
+      cue.current.shape,
+      smoothstep((t - cue.start) / blendSeconds),
+    );
+  }
+
+  /// The shape the mouth is on at [t] seconds on this track's clock, when it
+  /// started, and the shape it is blending from; null outside the line.
+  ///
+  /// A track that moves the words onto another clock blends on that clock,
+  /// so a shape always takes [blendSeconds] of the voice to form, however
+  /// far its letters were stretched.
+  ({Viseme current, Viseme previous, double start})? cueAtSeconds(double t) {
+    if (t < 0 || t >= _end || cues.isEmpty) return null;
     // The last cue that has started; cues are in time order.
     var lo = 0;
     var hi = cues.length;
@@ -148,11 +208,10 @@ class TextLipSync implements MouthTrack {
       }
     }
     final idx = lo > 0 ? lo - 1 : 0;
-    final current = cues[idx].viseme.shape;
-    final previous = idx > 0 ? cues[idx - 1].viseme.shape : Viseme.x.shape;
-    return previous.blend(
-      current,
-      smoothstep((t - cues[idx].start) / blendSeconds),
+    return (
+      current: cues[idx].viseme,
+      previous: idx > 0 ? cues[idx - 1].viseme : Viseme.x,
+      start: cues[idx].start,
     );
   }
 
@@ -177,16 +236,48 @@ final _letter = RegExp('[a-z]');
 
 /// Whether the e at [i] is a word's silent final e: after a consonant, at the
 /// end of a word of four letters or more ("have", "time", but not "the").
+///
+/// So is the e of a final "-es" or "-ed" after a consonant ("dives",
+/// "waddles", "walked"), except where English says it: after a hiss for
+/// "-es" ("faces", "boxes") and after t or d for "-ed" ("wanted").
 bool _isSilentE(String s, int i) {
-  if (s[i] != 'e') return false;
-  if (i + 1 < s.length && _letter.hasMatch(s[i + 1])) return false;
+  if (s[i] != 'e' || i == 0) return false;
   var start = i;
   while (start > 0 && _letter.hasMatch(s[start - 1])) {
     start--;
   }
-  if (i - start + 1 < 4) return false;
-  return !_vowels.containsKey(s[i - 1]);
+  final before = s[i - 1];
+  if (_vowels.containsKey(before) || !_letter.hasMatch(before)) return false;
+  final next = i + 1 < s.length ? s[i + 1] : '';
+  final afterNext = i + 2 < s.length ? s[i + 2] : '';
+  if (next.isEmpty || !_letter.hasMatch(next)) {
+    return i - start + 1 >= 4;
+  }
+  if (afterNext.isNotEmpty && _letter.hasMatch(afterNext)) return false;
+  if (i + 1 - start + 1 < 5) return false;
+  return switch (next) {
+    's' => !'sxzcgh'.contains(before),
+    'd' => !'td'.contains(before),
+    _ => false,
+  };
 }
+
+/// A consonant with no shape of its own: it reads as teeth together.
+bool _isPlainConsonant(String ch) =>
+    _letter.hasMatch(ch) && !_vowels.containsKey(ch);
+
+/// The class of the letter or digraph [letters], spelling standing in for
+/// sound.
+SoundClass _soundOf(String letters) => switch (letters) {
+  'a' || 'e' || 'i' || 'o' || 'u' || 'y' => SoundClass.vowel,
+  'oo' || 'ee' || 'ou' || 'ow' => SoundClass.vowel,
+  'f' || 'v' || 's' || 'z' || 'x' || 'j' => SoundClass.fricative,
+  'sh' || 'ch' || 'ph' => SoundClass.fricative,
+  'm' || 'n' || 'ng' => SoundClass.nasal,
+  // "th" is mostly the voiced, dark sound of "the", "then", "they".
+  'l' || 'r' || 'w' || 'wh' || 'th' => SoundClass.approximant,
+  _ => SoundClass.stop,
+};
 
 const Map<String, Viseme> _digraphs = {
   'th': Viseme.h,

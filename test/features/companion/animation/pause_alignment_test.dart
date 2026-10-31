@@ -126,6 +126,34 @@ void main() {
       expect(alignment.textTimeOf(0), closeTo(0.4, 1e-9));
     });
 
+    test('a pause lighter than the minimum weight pins nothing', () {
+      PauseAlignment align({double minWeight = 0}) => PauseAlignment.align(
+        textEnd: 3,
+        textPauses: [_pause(1, 1.2, 0.5), _pause(2, 2.3)],
+        voiceFrom: 0,
+        voiceTo: 3.5,
+        voiceGaps: [_gap(1, 1.4), _gap(2.4, 2.9)],
+        minWeight: minWeight,
+      );
+      expect(align().matches, hasLength(2));
+      // Only the full stop: the comma's gap is left inside a phrase.
+      expect(align(minWeight: 1.2).matches, [(text: 0, voice: 1)]);
+    });
+
+    test('the phrases run between pins, on both clocks', () {
+      final alignment = PauseAlignment.align(
+        textEnd: 2.3,
+        textPauses: [_pause(1, 1.3)],
+        voiceFrom: 0.5,
+        voiceTo: 3,
+        voiceGaps: [_gap(1.1, 1.6)],
+      );
+      expect(alignment.phrases, [
+        (textStart: 0.0, textEnd: 1.0, voiceStart: 0.5, voiceEnd: 1.1),
+        (textStart: 1.3, textEnd: 2.3, voiceStart: 1.6, voiceEnd: 3.0),
+      ]);
+    });
+
     glados.Glados2(
       glados.any.listWithLengthInRange(0, 8, glados.any.doubleInRange(0, 1)),
       glados.any.listWithLengthInRange(0, 8, glados.any.doubleInRange(0, 1)),

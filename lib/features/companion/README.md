@@ -36,8 +36,10 @@ nudges), is
     voice (`lib/features/tts/`) writes;
   - `TextLipSync`: the words alone, read into the eight Rhubarb speaking
     shapes and the rest;
-  - `VoicedTextTrack`: both, the words' shapes pinned phrase by phrase to the
-    voice's own pauses (`PauseAlignment`) and gated by its loudness.
+  - `VoicedTextTrack`: both, the words' shapes pinned to the voice's own
+    sentence pauses (`PauseAlignment`) and then each sound to where the
+    voice makes it, by its loudness and brightness (`SoundAlignment`), all
+    in pure Dart on every platform; gated by its loudness.
 - **Her face follows the words.** While she reads, each sentence's tone —
   praise, neither, or something that needs work, read on the device from its
   words, its emoji and its section's heading (`ToneTrack`) — gives her the
