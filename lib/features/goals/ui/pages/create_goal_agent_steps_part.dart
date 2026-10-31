@@ -152,7 +152,9 @@ class _ConfirmationStep extends StatefulWidget {
   /// Where the goal is filed — the row a person's form has, so a goal and a
   /// person are filed alike.
   final String? categoryId;
-  final ValueChanged<String?> onCategoryChanged;
+
+  /// Null while an edit has not read the goal's category yet.
+  final ValueChanged<String?>? onCategoryChanged;
 
   @override
   State<_ConfirmationStep> createState() => _ConfirmationStepState();

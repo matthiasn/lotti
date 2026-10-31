@@ -47,31 +47,51 @@ typedef PersonTimelineActions = ({
   void Function(JournalAudio audio) retryTranscript,
 });
 
-/// The words a check-in row leads with: the text it was saved with, else its
-/// first comment or transcript. Only when nothing it holds has words yet
-/// does the newest recording without them say where its words are
-/// (`awaiting`), so a fresh dictation
-/// never reads as an empty check-in — and a recording still waiting never
-/// hides a comment that has words. Null when the check-in holds no words
-/// at all (only photos).
+/// The newest recording [entries] hold, or null — the one a check-in row
+/// plays, and so the one whose words and status it shows.
+JournalAudio? newestRecordingOf(List<JournalEntity> entries) =>
+    entries.whereType<JournalAudio>().fold<JournalAudio?>(
+      null,
+      (newest, audio) =>
+          newest == null || audio.meta.dateFrom.isAfter(newest.meta.dateFrom)
+          ? audio
+          : newest,
+    );
+
+/// What a check-in row shows: the words it leads with — the text it was
+/// saved with, else its newest recording's words, else its first comment's
+/// — and, while that newest recording has no words, the recording itself
+/// (`awaiting`), so its status and *Retry* show beside them. The row plays
+/// that same newest recording, so what it plays, what it says and where its
+/// words are always belong to one recording; an older recording's words
+/// never stand in for the newer one. Null when the check-in holds no words
+/// and no recording (only photos).
 ({String? text, JournalAudio? awaiting})? checkInSummaryOf(
   CheckInEntry checkIn,
   List<JournalEntity> entries,
 ) {
+  final newest = newestRecordingOf(entries);
+  final newestWords = newest?.entryText?.plainText.trim() ?? '';
+  final awaiting = newest != null && newestWords.isEmpty ? newest : null;
   final saved = checkIn.entryText?.plainText.trim() ?? '';
-  if (saved.isNotEmpty) return (text: saved, awaiting: null);
-  JournalAudio? awaiting;
-  for (final entry in entries) {
-    if (entry is JournalImage) continue;
-    final words = entry.entryText?.plainText.trim() ?? '';
-    if (words.isNotEmpty) return (text: words, awaiting: null);
-    if (entry is JournalAudio &&
-        (awaiting == null ||
-            entry.meta.dateFrom.isAfter(awaiting.meta.dateFrom))) {
-      awaiting = entry;
+  var text = saved.isNotEmpty
+      ? saved
+      : newestWords.isNotEmpty
+      ? newestWords
+      : null;
+  if (text == null) {
+    for (final entry in entries) {
+      // Photos have no words; recordings are spoken for above.
+      if (entry is JournalImage || entry is JournalAudio) continue;
+      final words = entry.entryText?.plainText.trim() ?? '';
+      if (words.isNotEmpty) {
+        text = words;
+        break;
+      }
     }
   }
-  return awaiting == null ? null : (text: null, awaiting: awaiting);
+  if (text == null && awaiting == null) return null;
+  return (text: text, awaiting: awaiting);
 }
 
 /// What a check-in holds, as one quiet line — `2 recordings · 1 photo` — or
@@ -430,6 +450,26 @@ class PersonTimelineRow extends StatelessWidget {
         // A recording whose words are not here yet says where they are the
         // way every check-in recording does — and, past the grace window
         // with nothing on the way, that they are not coming.
+        // A check-in with words of its own and a newest recording still
+        // without them shows both: what was written, then where the
+        // recording's words are.
+        final TimelineCheckIn checkIn
+            when row.awaiting != null && text != null && text.isNotEmpty =>
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FoldedWords(
+                id: checkIn.checkIn.meta.id,
+                words: text,
+                summary: summary,
+              ),
+              _AwaitedWords(
+                recording: row.awaiting!,
+                onRetry: () => actions.retryTranscript(row.awaiting!),
+              ),
+            ],
+          ),
         _ when row.awaiting != null => _AwaitedWords(
           recording: row.awaiting!,
           onRetry: () => actions.retryTranscript(row.awaiting!),
@@ -559,17 +599,10 @@ class _AwaitedWordsState extends ConsumerState<_AwaitedWords>
 }
 
 /// The recording a row plays, when it holds one: a voice note's own, or the
-/// newest a check-in holds — what a goal's rail plays for a spoken check-in.
+/// newest a check-in holds — the one whose words and status it shows.
 JournalAudio? _recordingOf(PersonTimelineItem item) => switch (item) {
   TimelineVoiceNote(:final audio) => audio,
-  TimelineCheckIn(:final entries) =>
-    entries.whereType<JournalAudio>().fold<JournalAudio?>(
-      null,
-      (newest, audio) =>
-          newest == null || audio.meta.dateFrom.isAfter(newest.meta.dateFrom)
-          ? audio
-          : newest,
-    ),
+  TimelineCheckIn(:final entries) => newestRecordingOf(entries),
   _ => null,
 };
 

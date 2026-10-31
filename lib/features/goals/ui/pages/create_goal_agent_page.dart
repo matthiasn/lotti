@@ -46,9 +46,11 @@ part 'create_goal_agent_steps_part.dart';
 part 'create_goal_agent_target_inputs_part.dart';
 part 'create_goal_agent_page_composite_rule_label_part.dart';
 part 'create_goal_agent_page_internals.dart';
+part 'create_goal_agent_page_category_part.dart';
 part 'create_goal_agent_page_form_helpers.dart';
 
-class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
+class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
+    with _GoalFormCategory {
   final _statement = TextEditingController();
   final _title = TextEditingController();
   final _persona = TextEditingController();
@@ -88,10 +90,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   bool get _shownCheckInsAreSubstance =>
       _checkInsAreSubstance ?? _watchesCheckInTime;
 
-  /// The goal's category, and — when editing — the one it was filed in.
-  String? _categoryId;
-  String? _initialCategoryId;
-  var _categoryInitialized = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
   final Set<String> _matchedHabitIds = {};
@@ -125,8 +123,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _derivedLabelsFingerprint;
   late String _baseVersionId;
   String? _validation;
-
-  bool get _editing => widget.agentId != null;
 
   /// The wizard as the user actually walks it. Editing has no separate
   /// intention page — the statement is one field on the mapping page — so the
@@ -957,8 +953,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                   setState(() => _titleError = null),
                               enabled: !_saving,
                               categoryId: _categoryId,
-                              onCategoryChanged: (id) =>
-                                  setState(() => _categoryId = id),
+                              onCategoryChanged: _categoryChanger,
                             ),
                           },
                         ],

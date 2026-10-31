@@ -414,6 +414,84 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets("a check-in row's words, status and playback all belong to "
+        'its newest recording: an older transcript never stands in', (
+      tester,
+    ) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('older-take', DateTime(2026, 8, 1, 12, 44), words: 'Old.'),
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50)),
+            ],
+          },
+        ),
+      );
+
+      final row = find.byKey(const ValueKey('person-timeline-row-call'));
+      expect(
+        find.descendant(of: row, matching: find.text('Old.')),
+        findsNothing,
+      );
+      expect(
+        tester
+            .widget<RecordingPlayback>(
+              find.descendant(
+                of: row,
+                matching: find.byType(RecordingPlayback),
+              ),
+            )
+            .audio
+            .meta
+            .id,
+        'newer-take',
+      );
+      // The newer recording's own status, with its own way to ask again.
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byKey(const ValueKey('transcript-retry-newer-take')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("a check-in's own words stay, with its newest recording's "
+        'status under them while that recording has none', (tester) async {
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [call],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [audio('take', DateTime(2026, 8, 1, 12, 50))],
+          },
+        ),
+      );
+
+      final row = find.byKey(const ValueKey('person-timeline-row-call'));
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.text('Walked through the launch window.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('Not transcribed')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('a check-in holding several wordless recordings waits on the '
         'newest', (tester) async {
       final spoken = call.copyWith(entryText: const EntryText(plainText: ''));

@@ -6632,7 +6632,7 @@ void main() {
 
     void pickCategory(WidgetTester tester, String? id) => tester
         .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-        .onChanged(id);
+        .onChanged!(id);
 
     testWidgets('a new goal is created in the category picked beside its '
         'persona', (tester) async {
@@ -6688,6 +6688,7 @@ void main() {
       required String? stored,
       required String? picked,
       GoalSpecRevisionOutcome? outcome,
+      String? goalRowId = 'goal-row',
     }) async {
       tester.view.physicalSize = const Size(900, 1800);
       tester.view.devicePixelRatio = 1;
@@ -6727,7 +6728,7 @@ void main() {
             goalCategoryIdProvider(
               'goal-1',
             ).overrideWith((ref) async => stored),
-            goalEntryIdProvider('goal-1').overrideWithValue('goal-row'),
+            goalEntryIdProvider('goal-1').overrideWithValue(goalRowId),
             entryCategoryMoveProvider.overrideWithValue(categoryMove),
           ]),
         ),
@@ -6822,6 +6823,64 @@ void main() {
       ).captured;
       expect(bases, ['goal-1:spec-v3', minted.id]);
       expect(moves, 2);
+    });
+
+    testWidgets('a changed category with no goal row to move says the save '
+        'failed rather than leaving as if it had', (tester) async {
+      await editAndSave(
+        tester,
+        stored: 'old',
+        picked: 'fitness',
+        goalRowId: null,
+      );
+
+      verifyNever(() => categoryMove.move(any(), any()));
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("the row cannot be changed until the goal's own category has "
+        'read, so a late read never overwrites a pick', (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final stored = Completer<String?>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides([
+            ...overrides(
+              editSpec: _spec(
+                criteria: const GoalCriterion.categoryTime(
+                  criterionId: 'hours',
+                  categoryId: 'deep-work',
+                  window: GoalWindow.rollingDays(count: 7),
+                  aggregation: GoalAggregation.sum,
+                  targetHours: 5,
+                ),
+              ),
+            ),
+            goalCategoryIdProvider('goal-1').overrideWith(
+              (ref) => stored.future,
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      CategoryFieldRow row() =>
+          tester.widget<CategoryFieldRow>(find.byType(CategoryFieldRow));
+      expect(row().onChanged, isNull, reason: 'still reading the goal row');
+
+      stored.complete('colony-fitness');
+      await tester.pumpAndSettle();
+
+      expect(row().categoryId, 'colony-fitness');
+      expect(row().onChanged, isNotNull);
     });
 
     testWidgets('a move that does not land says so rather than leaving', (

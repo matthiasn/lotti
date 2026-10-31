@@ -2,35 +2,6 @@ part of 'create_goal_agent_page.dart';
 
 /// Private helpers of [_CreateGoalAgentPageState] that hold no state of their own; kept beside the class as an extension so the library stays readable.
 extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
-  /// Seeds the category from the goal's journal row, once it has read: the
-  /// category lives on the row, not on the spec, so a revision never carries
-  /// it.
-  void _initializeCategory(String agentId) {
-    if (_categoryInitialized) return;
-    final category = ref.watch(goalCategoryIdProvider(agentId));
-    if (!category.hasValue) return;
-    _categoryInitialized = true;
-    _categoryId = _initialCategoryId = category.value;
-  }
-
-  /// Files the goal under the category the user picked, with everything it
-  /// holds — its check-ins, recordings, notes and charter — across a crash,
-  /// as a task's category move does (`EntryCategoryMove`).
-  Future<void> _moveCategoryIfChanged(
-    ProviderContainer container,
-    String agentId,
-  ) async {
-    if (_categoryId == _initialCategoryId) return;
-    final goalId = container.read(goalEntryIdProvider(agentId));
-    if (goalId == null) return;
-    if (!await container
-        .read(entryCategoryMoveProvider)
-        .move(goalId, _categoryId)) {
-      throw StateError('the goal could not take its category');
-    }
-    container.invalidate(goalCategoryIdProvider(agentId));
-  }
-
   void _initializeEdit(
     AgentIdentityEntity identity,
     GoalSpecVersionEntity spec,

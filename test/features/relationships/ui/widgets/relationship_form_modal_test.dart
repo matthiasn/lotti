@@ -780,7 +780,7 @@ void main() {
 
       tester
           .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged('cat-1');
+          .onChanged!('cat-1');
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
@@ -1306,7 +1306,7 @@ void main() {
         // the form does with the chosen category.
         tester
             .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-            .onChanged('category-7');
+            .onChanged!('category-7');
         await tester.pumpAndSettle();
 
         await tester.ensureVisible(
@@ -1867,7 +1867,7 @@ void main() {
 
       tester
           .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged(null);
+          .onChanged!(null);
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -1933,7 +1933,7 @@ void main() {
 
       tester
           .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-          .onChanged(null);
+          .onChanged!(null);
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
@@ -2202,7 +2202,7 @@ void main() {
         await dirtyAfter(() async {
           tester
               .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
-              .onChanged('cat-1');
+              .onChanged!('cat-1');
         }),
         isTrue,
         reason: 'category',

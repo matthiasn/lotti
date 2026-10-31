@@ -15,7 +15,8 @@ import 'package:material_ui/material_ui.dart';
 /// Clearing happens through the picker's own no-category row rather than an
 /// inline ×, so there is one way to change this field and one place that
 /// knows what the choices are. [onChanged] reports the picked category's id,
-/// or null for cleared.
+/// or null for cleared; while it is null the row shows its value but cannot
+/// be changed — a host still reading the current one.
 class CategoryFieldRow extends ConsumerWidget {
   const CategoryFieldRow({
     required this.categoryId,
@@ -24,7 +25,7 @@ class CategoryFieldRow extends ConsumerWidget {
   });
 
   final String? categoryId;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String?>? onChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,17 +38,19 @@ class CategoryFieldRow extends ConsumerWidget {
     return InkWell(
       key: const ValueKey('category-field'),
       borderRadius: BorderRadius.circular(tokens.radii.m),
-      onTap: () async {
-        final result = await showCategoryPicker(
-          context: context,
-          title: messages.habitCategoryLabel,
-          currentCategoryId: categoryId,
-        );
-        // null = dismissed (no change); otherwise apply the pick or the
-        // clear, which the picker reports as a category-less result.
-        if (result == null) return;
-        onChanged(result.categoryOrNull?.id);
-      },
+      onTap: onChanged == null
+          ? null
+          : () async {
+              final result = await showCategoryPicker(
+                context: context,
+                title: messages.habitCategoryLabel,
+                currentCategoryId: categoryId,
+              );
+              // null = dismissed (no change); otherwise apply the pick or the
+              // clear, which the picker reports as a category-less result.
+              if (result == null) return;
+              onChanged?.call(result.categoryOrNull?.id);
+            },
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
         child: Row(

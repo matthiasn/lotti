@@ -93,6 +93,24 @@ void main() {
     expect(reported, ['cat-1']);
   });
 
+  testWidgets('without onChanged the row shows its value but opens no picker', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const CategoryFieldRow(categoryId: 'cat-1', onChanged: null),
+        overrides: [entitiesCacheServiceProvider.overrideWithValue(cache)],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Family'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('category-field')));
+    await tester.pumpAndSettle();
+    expect(find.text('Category'), findsOneWidget, reason: 'only the label');
+    expect(reported, isEmpty);
+  });
+
   testWidgets('dismissing the picker changes nothing', (tester) async {
     await pump(tester, 'cat-1');
 
