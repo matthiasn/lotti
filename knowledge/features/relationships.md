@@ -758,7 +758,12 @@ at a day's events, and `resolveTimeEntries` keeps an event linked from a live
 person with the flag off.
 
 Every create writes the entry first, in the person's category and privacy,
-then links it; an entry whose link is refused or throws is deleted again, so
+then links it. **Changing the person's category moves everything they hold**:
+the form saves it through `EntryCategoryMove`, which takes their check-ins
+and what each holds, their notes, voice notes, photos and meetings with them,
+across a crash, while a task linked to them keeps its own category and
+project (see the journal's
+[detail and saving](journal/detail-and-saving.md)). On create, an entry whose link is refused or throws is deleted again, so
 a retry never leaves a second copy, nor the first where the person's page
 cannot reach it.
 

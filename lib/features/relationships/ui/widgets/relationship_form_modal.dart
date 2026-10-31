@@ -32,7 +32,7 @@ import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.da
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -192,7 +192,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // all run past that point — reading through `ref` once the element is
     // unmounted throws and aborts the save mid-way.
     final repository = ref.read(relationshipRepositoryProvider);
-    final journalRepository = ref.read(journalRepositoryProvider);
+    final categoryMove = ref.read(entryCategoryMoveProvider);
     // Only resolved when it will actually be used — `_important` is form
     // state, known before any await, so this stays ahead of the unmount.
     final agentService = _important
@@ -225,17 +225,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         final updated = initial.copyWith(data: data);
         final saved = await repository.updateRelationship(updated);
         // Category lives on the metadata, not the payload: route the change
-        // through the dedicated journal path, which handles clearing (a
-        // freezed copyWith cannot null a field) plus vector clock and sync.
-        // Its result is part of the save's verdict: a swallowed category
-        // write would otherwise pop the modal on a half-saved person, and
-        // the user would see the old category with nothing to retry.
+        // through the category move, which clears too (a freezed copyWith
+        // cannot null a field) and takes everything the person holds with
+        // them — their check-ins and what each holds, their notes, voice
+        // notes, photos and meetings — across a crash, the way a task's move
+        // takes its entries. Its result is part of the save's verdict: a
+        // swallowed category write would otherwise pop the modal on a
+        // half-saved person, and the user would see the old category with
+        // nothing to retry.
         var success = saved;
         if (saved && _categoryId != initial.meta.categoryId) {
-          success = await journalRepository.updateCategoryId(
-            initial.meta.id,
-            categoryId: _categoryId,
-          );
+          success = await categoryMove.move(initial.meta.id, _categoryId);
         }
         // Keyed on the payload write, not the verdict: `important` and the
         // cadence are already persisted, so the agent must be wired even
