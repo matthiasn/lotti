@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -26,12 +27,14 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -84,6 +87,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   bool? _checkInsAreSubstance;
   bool get _shownCheckInsAreSubstance =>
       _checkInsAreSubstance ?? _watchesCheckInTime;
+
+  /// The category the goal is filed in, and — when editing — the one it was.
+  String? _categoryId;
+  String? _initialCategoryId;
+  var _categoryInitialized = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
   final Set<String> _matchedHabitIds = {};
@@ -459,6 +467,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           statement: statement,
           criteria: criteria,
           checkInsAreSubstance: checkInsAreSubstance,
+          categoryId: _categoryId,
         );
         container
           ..invalidate(activeGoalAgentsProvider)
@@ -493,6 +502,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       ) when reason != GoalSpecRevisionService.ownerNoChangesReason) {
         throw StateError(reason);
       }
+      await _moveCategoryIfChanged(container, agentId);
       _invalidateGoalViews(container, agentId);
       if (mounted) beamToNamed(goalDetailPath(agentId));
     } on Object {
@@ -569,6 +579,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           identity is AgentIdentityEntity &&
           identity.kind == AgentKinds.goalAgent &&
           identity.lifecycle == AgentLifecycle.active;
+      _initializeCategory(widget.agentId!);
       if (isActiveGoal && editSpec != null) {
         _initializeEdit(identity, editSpec);
       } else if (identityAsync.hasError ||
@@ -945,6 +956,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               onTitleChanged: () =>
                                   setState(() => _titleError = null),
                               enabled: !_saving,
+                              categoryId: _categoryId,
+                              onCategoryChanged: (id) =>
+                                  setState(() => _categoryId = id),
                             ),
                           },
                         ],

@@ -21,6 +21,7 @@ import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -151,6 +152,7 @@ void main() {
         relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
         journalRepositoryProvider.overrideWithValue(mockJournalRepository),
         entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+        entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
         contactsServiceProvider.overrideWithValue(contactsService),
         clipboardHasImageProvider.overrideWith(
           (ref) async => clipboardHasImage,
@@ -322,6 +324,7 @@ void main() {
             ),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
             entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+            entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
           ],
         ),
       );
@@ -1996,6 +1999,7 @@ void main() {
             ),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
             entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+            entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
             contactsServiceProvider.overrideWithValue(contactsService),
             clipboardHasImageProvider.overrideWith((ref) async => false),
           ],

@@ -1,6 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
+import 'package:lotti/providers/service_providers.dart';
 
 /// The inference setup a subject's agent — a person's or a goal's — starts
 /// with: the profile its category names *at the time*, snapshotted the way a
@@ -26,3 +28,19 @@ Future<AgentInferenceSetup?> categorySnapshotSetup({
     originEntityId: categoryId,
   );
 }
+
+/// A category's default profile, read from the journal's category row — the
+/// read a subject's agent snapshots at creation and the automation resolver
+/// uses for a recording's transcript, so the two agree on what a category
+/// names.
+final categoryProfileLookupProvider = Provider<CategoryProfileLookup>(
+  (ref) => (categoryId) async {
+    final category = await ref
+        .read(journalDbProvider)
+        .getCategoryById(
+          categoryId,
+        );
+    return category?.defaultProfileId;
+  },
+  name: 'categoryProfileLookupProvider',
+);

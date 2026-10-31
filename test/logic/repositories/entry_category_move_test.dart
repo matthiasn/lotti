@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -123,6 +124,9 @@ void main() {
     when(
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
+    when(
+      () => journalDb.charterLinksToGoal(any()),
+    ).thenAnswer((_) async => const []);
     when(
       () => projectRepository.getLinkedProjectForTask(any()),
     ).thenAnswer((_) async => null);
@@ -272,6 +276,59 @@ void main() {
         verifyNoWrite('task_about_them');
       },
     );
+
+    test("a goal's charter — linked into the goal, the other way round — "
+        'moves with it', () async {
+      final goal = JournalEntity.goal(
+        meta: metaIn('goal', 'old_category'),
+        data: const GoalData(
+          title: 'Waddle daily',
+          statement: 'Waddle 2 km every day.',
+          criteria: GoalCriterion.allOf(
+            criterionId: 'all',
+            criteria: <GoalCriterion>[],
+          ),
+          specVersion: 1,
+          specVersionId: 'spec-1',
+        ),
+      );
+      stored(goal);
+      final charterNote = withId(testTextEntryNoGeo, 'charter_note');
+      final charterTask = taskIn('work', id: 'charter_task');
+      when(() => journalDb.charterLinksToGoal('goal')).thenAnswer(
+        (_) async => [
+          for (final from in ['charter_note', 'charter_task'])
+            EntryLink.charter(
+              id: 'link-$from',
+              fromId: from,
+              toId: 'goal',
+              createdAt: at,
+              updatedAt: at,
+              vectorClock: null,
+            ),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIds({
+          'charter_note',
+          'charter_task',
+        }),
+      ).thenAnswer((_) async => [charterNote, charterTask]);
+
+      expect(await categoryMove.move('goal', otherCategoryId), isTrue);
+
+      verifyWrote('charter_note', otherCategoryId);
+      verifyNoWrite('charter_task');
+      expect(await intents.pending(), isEmpty);
+    });
+
+    test("a person's move never asks for a charter", () async {
+      personWithCheckIn();
+
+      await categoryMove.move('person', otherCategoryId);
+
+      verifyNever(() => journalDb.charterLinksToGoal(any()));
+    });
   });
 
   group('move', () {

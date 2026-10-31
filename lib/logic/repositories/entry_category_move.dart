@@ -23,8 +23,8 @@ import 'package:lotti/services/domain_logging.dart';
 ///
 /// A person or a goal is a subject, not a task: moving one moves its own
 /// entries — its check-ins and what they hold, its notes, recordings,
-/// photos and meetings — and never a task, project, person or goal it links
-/// to, which each keep the category they were filed under.
+/// photos and meetings, a goal's charter — and never a task, project, person
+/// or goal it links to, which each keep the category they were filed under.
 ///
 /// The move is recorded before its first write ([CategoryMoveIntents]) and
 /// the record removed once every write is confirmed. An app that dies in
@@ -169,6 +169,9 @@ class EntryCategoryMove {
     for (final checkIn in checkIns) {
       if (!await _heldFollow(checkIn, categoryId)) complete = false;
     }
+    if (entry is GoalEntry && !await _charterFollow(entryId, categoryId)) {
+      complete = false;
+    }
     for (final task in tasks) {
       await _dropCrossCategoryProject(task, categoryId);
     }
@@ -221,6 +224,21 @@ class EntryCategoryMove {
     )) {
       if (!isCheckInEntryKind(held)) continue;
       if (await _setCategory(held, categoryId) == false) complete = false;
+    }
+    return complete;
+  }
+
+  /// Moves [goalId]'s charter — the notes and recordings linked *into* the
+  /// goal, the reverse of a check-in's link (ADR 0140) — to [categoryId];
+  /// whether each took it.
+  Future<bool> _charterFollow(String goalId, String? categoryId) async {
+    final links = await _journalDb.charterLinksToGoal(goalId);
+    final ids = {for (final link in links) link.fromId};
+    if (ids.isEmpty) return true;
+    var complete = true;
+    for (final entry in await _journalDb.getJournalEntitiesForIds(ids)) {
+      if (_isOwnFiling(entry)) continue;
+      if (await _setCategory(entry, categoryId) == false) complete = false;
     }
     return complete;
   }

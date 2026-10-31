@@ -133,6 +133,8 @@ class _ConfirmationStep extends StatefulWidget {
     required this.onPersonaChanged,
     required this.onTitleChanged,
     required this.enabled,
+    required this.categoryId,
+    required this.onCategoryChanged,
   });
 
   final TextEditingController title;
@@ -146,6 +148,11 @@ class _ConfirmationStep extends StatefulWidget {
   final VoidCallback onPersonaChanged;
   final VoidCallback onTitleChanged;
   final bool enabled;
+
+  /// Where the goal is filed — the row a person's form has, so a goal and a
+  /// person are filed alike.
+  final String? categoryId;
+  final ValueChanged<String?> onCategoryChanged;
 
   @override
   State<_ConfirmationStep> createState() => _ConfirmationStepState();
@@ -186,6 +193,14 @@ class _ConfirmationStepState extends State<_ConfirmationStep> {
           errorText: widget.personaError,
           enabled: widget.enabled,
           onChanged: (_) => widget.onPersonaChanged(),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        IgnorePointer(
+          ignoring: !widget.enabled,
+          child: CategoryFieldRow(
+            categoryId: widget.categoryId,
+            onChanged: widget.onCategoryChanged,
+          ),
         ),
         SizedBox(height: tokens.spacing.step4),
         DesignSystemSectionCard(

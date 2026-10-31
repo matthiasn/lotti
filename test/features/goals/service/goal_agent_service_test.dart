@@ -238,6 +238,97 @@ void main() {
     ).called(1);
   });
 
+  group('a goal filed in a category', () {
+    late MockGoalMirrorService mirror;
+    late List<String> looked;
+
+    GoalAgentService filing({required String? profile}) => GoalAgentService(
+      agentService: agentService,
+      repository: repository,
+      syncService: syncService,
+      orchestrator: orchestrator,
+      goalMirrorService: mirror,
+      categoryProfileLookup: (id) async {
+        looked.add(id);
+        return profile;
+      },
+    );
+
+    setUp(() {
+      looked = [];
+      mirror = MockGoalMirrorService();
+      when(
+        () => mirror.mirrorSpec(
+          version: any(named: 'version'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
+      // The mirror reads back what the create wrote.
+      when(() => repository.getEntity(any())).thenAnswer(
+        (invocation) async => upserts
+            .where((e) => e.id == invocation.positionalArguments.first)
+            .lastOrNull,
+      );
+    });
+
+    Future<AgentConfig> created(GoalAgentService service) async {
+      await service.createGoalAgent(
+        title: 'Gym 3×/week',
+        displayName: 'Juno',
+        statement: 'Train at the station gym three times per week.',
+        criteria: criteria,
+        agentId: agentId,
+        categoryId: 'fitness',
+      );
+      return verify(
+            () => agentService.createAgent(
+              kind: AgentKinds.goalAgent,
+              displayName: 'Juno',
+              config: captureAny(named: 'config'),
+              agentId: agentId,
+            ),
+          ).captured.single
+          as AgentConfig;
+    }
+
+    test('its journal row is written in the category, so every check-in '
+        'recorded against it is too', () async {
+      await created(filing(profile: null));
+
+      final version =
+          verify(
+                () => mirror.mirrorSpec(
+                  version: captureAny(named: 'version'),
+                  categoryId: 'fitness',
+                ),
+              ).captured.single
+              as GoalSpecVersionEntity;
+      expect(version.version, 1);
+    });
+
+    test('its agent starts on the profile the category names now, as a '
+        "task's agent does", () async {
+      final config = await created(filing(profile: 'profile-coach'));
+
+      expect(looked, ['fitness']);
+      final setup = config.inferenceSetup!;
+      expect(setup.mode, AgentInferenceSetupMode.configured);
+      expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
+      expect(setup.baseProfileId, 'profile-coach');
+      expect(setup.originEntityId, 'fitness');
+      expect(config.profileId, 'profile-coach');
+      expect(config.automaticUpdatesEnabled, isTrue);
+    });
+
+    test('a category naming no profile leaves the agent on its standalone '
+        'resolution, running', () async {
+      final config = await created(filing(profile: null));
+
+      expect(config.inferenceSetup, isNull);
+      expect(config.automaticUpdatesEnabled, isTrue);
+    });
+  });
+
   test('removeSignalSubscriptions drops the agent from the orchestrator', () {
     when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
     service.removeSignalSubscriptions(agentId);

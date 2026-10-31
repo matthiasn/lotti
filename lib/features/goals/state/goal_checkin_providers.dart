@@ -89,3 +89,15 @@ final FutureProviderFamily<String?, String> goalCaptureTargetProvider =
           ?.mirrorHead(agentId);
       return mirrored?.meta.id;
     }, name: 'goalCaptureTargetProvider');
+
+/// The category the goal is filed in — its journal row's — which every
+/// check-in recorded against it takes, so a goal's recordings and notes sit
+/// in its category the way a person's check-ins sit in theirs. Null when the
+/// goal has none, or no row yet.
+final FutureProviderFamily<String?, String> goalCategoryIdProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, agentId) async {
+      final goal = await ref
+          .watch(goalRepositoryProvider)
+          ?.getGoalForAgent(agentId);
+      return goal?.meta.categoryId;
+    }, name: 'goalCategoryIdProvider');

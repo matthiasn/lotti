@@ -1,8 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -16,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 /// inline ×, so there is one way to change this field and one place that
 /// knows what the choices are. [onChanged] reports the picked category's id,
 /// or null for cleared.
-class CategoryFieldRow extends StatelessWidget {
+class CategoryFieldRow extends ConsumerWidget {
   const CategoryFieldRow({
     required this.categoryId,
     required this.onChanged,
@@ -27,10 +27,12 @@ class CategoryFieldRow extends StatelessWidget {
   final ValueChanged<String?> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+    final category = ref
+        .watch(entitiesCacheServiceProvider)
+        ?.getCategoryById(categoryId);
 
     return InkWell(
       key: const ValueKey('category-field'),
