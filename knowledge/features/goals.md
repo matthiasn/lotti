@@ -2042,12 +2042,14 @@ Invariants worth not breaking:
   support export needs it stable.
 - **A recording nobody picked up is not "in progress".** No transcript, no
   running job and no failure record is the normal first minutes after a
-  recording — and, past `kGoalCheckInTranscriptGrace` (10 minutes), the
+  recording — and, past `kTranscriptGrace` (10 minutes), the
   signature of a recording that was never handed to the pipeline at all. The
-  rail renders the second case as `TimelineTranscriptStatus.stalled`: "Not
-  transcribed", with the same Retry the failed state offers. The rail arms a
-  timer for the soonest grace expiry among its visible beats and rebuilds
-  itself when it fires — nothing else would, because a recording nobody picked
+  rail renders the second case as `TranscriptStatus.notTranscribed`: "Not
+  transcribed", with the same Retry the failed state offers — the shared rule
+  and look every check-in surface uses
+  ([Recording UI](speech/recording-ui.md#the-words-under-a-recording)). The
+  rail arms a timer for the soonest grace expiry among its visible beats
+  (`TranscriptGraceRebuild`) and rebuilds itself when it fires — nothing else would, because a recording nobody picked
   up produces no transcript, no status change and no database notification, so
   the state exists precisely where no other rebuild is coming. It is a separate
   status from `failed` on purpose — nothing ran, so naming it a failure sends
@@ -2211,7 +2213,8 @@ flowchart LR
   the caller, since the recorder's own automation keys on a parent. Its
   transcript is what the agent reads, so `charter()` leaves a recording out
   until it has words; the card plays it and shows the transcript state with
-  the check-in rail's rule (`goalAudioTranscriptStatus`) and Retry. The chat
+  the check-in rail's rule (`transcriptStatusOf`) and Retry, drawn by the
+  shared `RecordingTranscript`; heard words stay its own tap-to-edit text. The chat
   has no write path and the agent no tool for the charter.
 - **A transcript landing marks nothing stale.** It is written to the
   recording, whose parents do not include the goal; linking the recording

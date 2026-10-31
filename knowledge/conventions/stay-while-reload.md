@@ -164,8 +164,9 @@ back shorter above the viewport, which moves the history under them. A row
 holding such state keeps itself alive while it holds it:
 `AutomaticKeepAliveClientMixin` with `wantKeepAlive` true only while opened
 (and `updateKeepAlive()` on each toggle), so folded rows are dropped as usual
-and an opened one is not. The person timeline's `PersonFoldedWords` does
-this.
+and an opened one is not. The shared `FoldedWords`
+(`lib/widgets/transcript/folded_words.dart`) does this, so every check-in
+history — the person timeline, a goal's rail — gets it.
 
 ## Letting a row fetch what decides its height
 

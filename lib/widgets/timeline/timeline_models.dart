@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 
 /// Presentation-only view models for the shared vertical timeline.
 ///
@@ -11,7 +12,7 @@ import 'package:flutter/widgets.dart';
 /// Anything the component cannot render generically — an audio player, a
 /// verdict pill — arrives as a caller-supplied [Widget]. The component owns the
 /// *chrome* (rail, dot, connector, time label, kind label, open affordance) and
-/// the shared behaviours (transcript clamping, transcription status, paging);
+/// the shared behaviours (folded words, transcription status, paging);
 /// the caller owns what its own domain looks like.
 
 /// A single photo on a [TimelineBeatContent.photos] beat.
@@ -21,33 +22,6 @@ class TimelinePhoto {
 
   final ImageProvider image;
   final double cropX;
-}
-
-/// How far a recording's transcript has got.
-///
-/// A recording is saved before it is transcribed — deliberately, so nothing is
-/// lost if transcription fails — which means the beat has to be renderable
-/// while its words do not exist yet. The beat is never dropped for want of a
-/// transcript.
-enum TimelineTranscriptStatus {
-  /// No transcription was expected, or it is present in the body text.
-  none,
-
-  /// Saved and queued: the player works, the words are still coming.
-  pending,
-
-  /// Transcription failed. The player still works; a retry is offered.
-  failed,
-
-  /// No transcript, no job, no failure — the recording was never picked up.
-  ///
-  /// Distinct from [failed] because nothing ran: saying "transcription failed"
-  /// would claim an attempt that never happened. Distinct from [pending]
-  /// because claiming progress that nothing is making is what left recordings
-  /// reading as "Transcribing…" forever, with no way to ask for the words. The
-  /// caller decides when a recording has waited long enough to count as
-  /// stalled; this only renders the state and its retry.
-  stalled,
 }
 
 /// The body of one beat.
@@ -70,12 +44,12 @@ sealed class TimelineBeatContent {
   }) = TimelinePhotosContent;
 
   /// A recording. [player] is supplied by the caller so this library needs no
-  /// audio dependency; the component owns the transcript's clamping and its
-  /// [TimelineTranscriptStatus] affordances.
+  /// audio dependency; the component owns the transcript's fold and its
+  /// [TranscriptStatus] affordances.
   const factory TimelineBeatContent.audio({
     required Widget player,
     String? transcript,
-    TimelineTranscriptStatus transcriptStatus,
+    TranscriptStatus transcriptStatus,
   }) = TimelineAudioContent;
 
   /// A span with a start, an end and an elapsed duration.
@@ -109,12 +83,12 @@ class TimelineAudioContent extends TimelineBeatContent {
   const TimelineAudioContent({
     required this.player,
     this.transcript,
-    this.transcriptStatus = TimelineTranscriptStatus.none,
+    this.transcriptStatus = TranscriptStatus.heard,
   });
 
   final Widget player;
   final String? transcript;
-  final TimelineTranscriptStatus transcriptStatus;
+  final TranscriptStatus transcriptStatus;
 }
 
 @immutable

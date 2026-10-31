@@ -5,6 +5,8 @@ import 'package:lotti/features/design_system/components/inputs/design_system_tex
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_narrative_field.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -310,8 +312,8 @@ void main() {
       length: Duration(seconds: 23),
     );
 
-    testWidgets('a take still transcribing gives its length, its state and '
-        'route, and says Save does not wait', (tester) async {
+    testWidgets('a take still transcribing gives its length and route, then '
+        'the shared status, and says Save does not wait', (tester) async {
       await pump(
         tester,
         phase: const CheckInSpeechIdle(),
@@ -319,11 +321,8 @@ void main() {
         width: 1200,
       );
 
-      expect(
-        find.text('00:23 · Transcribing… · whisper · via Melious'),
-        findsOneWidget,
-      );
-      // A narrow row sheds the route first; the length and state are facts.
+      expect(find.text('00:23 · whisper · via Melious'), findsOneWidget);
+      // A narrow row sheds the route first; the length is the fact.
       expect(
         tester
             .widget<DsTieredText>(
@@ -333,15 +332,23 @@ void main() {
               ),
             )
             .tiers,
-        [
-          '00:23 · Transcribing… · whisper · via Melious',
-          '00:23 · Transcribing…',
-          '00:23',
-        ],
+        ['00:23 · whisper · via Melious', '00:23'],
       );
+      // Where the words are is said once, by the component every check-in
+      // surface shares, with the composer's reassurance as its detail.
+      final status = tester.widget<RecordingTranscript>(
+        find.byType(RecordingTranscript),
+      );
+      expect(status.status, TranscriptStatus.transcribing);
+      expect(status.folded, isFalse);
+      expect(find.text('Transcribing…'), findsOneWidget);
       expect(
-        find.text('You can save now — the words follow.'),
-        findsOneWidget,
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('transcript-detail-audio-1')),
+            )
+            .data,
+        'You can save now — the words follow.',
       );
       expect(
         find.byKey(const ValueKey('check-in-narrative')),
@@ -370,7 +377,7 @@ void main() {
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('check-in-take-transcript')),
+              find.byKey(const ValueKey('transcript-words-audio-1')),
             )
             .data,
         'Pip wants the contract signed before the freeze.',
@@ -391,13 +398,16 @@ void main() {
           phase: const CheckInSpeechIdle(),
           takes: [take.missing(null)],
         );
-        expect(find.text('00:23 · Transcript not received'), findsOneWidget);
+        // Nothing came and nothing said why: not transcribed, in the same
+        // words a goal's rail uses.
+        expect(find.text('00:23'), findsOneWidget);
+        expect(find.text('Not transcribed'), findsOneWidget);
         expect(
           find.textContaining('Your recording is saved in the journal'),
           findsOneWidget,
         );
         await tester.tap(
-          find.byKey(const ValueKey('check-in-retry-transcript')),
+          find.byKey(const ValueKey('transcript-retry-audio-1')),
         );
         expect(calls, ['retry audio-1']);
 
@@ -406,6 +416,8 @@ void main() {
           phase: const CheckInSpeechIdle(),
           takes: [take.missing('HTTP 503 · Transcription service unavailable')],
         );
+        // The provider said why: it failed, and its reason is the detail.
+        expect(find.text('Transcription failed'), findsOneWidget);
         expect(
           find.text('HTTP 503 · Transcription service unavailable'),
           findsOneWidget,
@@ -644,7 +656,7 @@ void main() {
       ],
     );
     final transcript = tester.widget<Text>(
-      find.byKey(const ValueKey('check-in-take-transcript')),
+      find.byKey(const ValueKey('transcript-words-audio-1')),
     );
     expect(transcript.maxLines, isNull);
     expect(transcript.overflow, isNot(TextOverflow.ellipsis));
@@ -676,8 +688,8 @@ void main() {
     );
   });
 
-  testWidgets("the take's header line is the live one: where its words are "
-      'is announced from the card, not the sheet header', (tester) async {
+  testWidgets("where a take's words are is announced from the take itself, "
+      'not the sheet header', (tester) async {
     final semantics = tester.ensureSemantics();
     await pump(
       tester,
@@ -690,51 +702,51 @@ void main() {
       ],
     );
     expect(
-      tester.getSemantics(find.byKey(const ValueKey('check-in-take-meta'))),
+      tester.getSemantics(find.text('Transcribing…')),
       isSemantics(isLiveRegion: true),
     );
     semantics.dispose();
   });
 
-  testWidgets("a take's glyph says where its words are: on their way, "
-      'here, or missing — and its line stays in the quiet ink until it is '
-      'the news', (
+  testWidgets("a take's header is the recording — the waveform and its "
+      'length in every state — and its words speak the shared vocabulary', (
     tester,
   ) async {
     const take = CheckInTake(
       audioEntryId: 'audio-1',
       length: Duration(seconds: 23),
     );
-    for (final (state, glyph) in [
-      (take, 'check-in-take-glyph-transcribing'),
-      (take.heard('Words.'), 'check-in-take-glyph-heard'),
-      (take.missing(null), 'check-in-take-glyph-missing'),
+    for (final (state, expected) in [
+      (take, TranscriptStatus.transcribing),
+      (take.heard('Words.'), TranscriptStatus.heard),
+      (take.missing(null), TranscriptStatus.notTranscribed),
+      (take.missing('HTTP 503'), TranscriptStatus.failed),
     ]) {
       await pump(tester, phase: const CheckInSpeechIdle(), takes: [state]);
-      expect(find.byKey(ValueKey(glyph)), findsOneWidget, reason: glyph);
-      final tokens = tester
-          .element(find.byKey(const ValueKey('check-in-take-meta')))
-          .designTokens;
+      final reason = '${state.words} ${state.detail}';
+      expect(CheckInTakeRow.statusOf(state), expected, reason: reason);
       expect(
         tester
-            .widget<Text>(find.byKey(const ValueKey('check-in-take-meta')))
-            .style
-            ?.color,
-        // Missing words are the news: the line outranks its explanation.
-        state.words == CheckInTakeWords.missing
-            ? tokens.colors.text.highEmphasis
-            : tokens.colors.text.mediumEmphasis,
-        reason: glyph,
+            .widget<RecordingTranscript>(find.byType(RecordingTranscript))
+            .status,
+        expected,
+        reason: reason,
+      );
+      final header = find.ancestor(
+        of: find.byKey(const ValueKey('check-in-take-meta')),
+        matching: find.byType(Row),
+      );
+      expect(
+        tester
+            .widgetList<Icon>(
+              find.descendant(of: header.first, matching: find.byType(Icon)),
+            )
+            .first
+            .icon,
+        LottiIcons.waveform,
+        reason: reason,
       );
     }
-    expect(
-      tester
-          .widget<Icon>(
-            find.byKey(const ValueKey('check-in-take-glyph-missing')),
-          )
-          .icon,
-      LottiIcons.warning,
-    );
   });
 
   group('failed', () {

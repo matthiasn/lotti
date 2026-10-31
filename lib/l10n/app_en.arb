@@ -2352,7 +2352,6 @@
   "checkInStartedLabel": "Started",
   "checkInStatusPaused": "Paused",
   "checkInStatusRecording": "Recording",
-  "checkInStatusTranscriptMissing": "Transcript not received",
   "checkInTakeRemoved": "Recording removed",
   "@checkInTakeRemoved": {
     "description": "Toast after removing a recording from a check-in being written; offers Undo."
@@ -2371,10 +2370,6 @@
   },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
-  "checkInTranscribingLabel": "Transcribing…",
-  "@checkInTranscribingLabel": {
-    "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
-  },
   "checkInTranscriptionUnavailableTitle": "No transcription model set up",
   "checkInTranscriptMissingBody": "Your recording is saved in the journal, even if you cancel this check-in. Try again in a moment.",
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",

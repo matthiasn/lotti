@@ -3,12 +3,13 @@ import 'package:lotti/features/design_system/components/buttons/design_system_ic
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
-import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_speech_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/utils/entry_tools.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The composer's one field (design 2026-09-13): the recordings made so
@@ -371,10 +372,11 @@ class CheckInNarrativeField extends StatelessWidget {
   );
 }
 
-/// One recording above the note: its length and where its words are on
-/// the header line, *Remove recording* at its end, then — at the card's
-/// full width — the words themselves, the promise that they follow, or why
-/// they are missing with the way to ask again.
+/// One recording above the note: the recording on the header line — its
+/// glyph, its length, the route while its words are on their way, and
+/// *Remove recording* at its end — then, at the card's full width, where its
+/// words are, drawn by the shared [RecordingTranscript] exactly as a goal's
+/// rail or a person's timeline draws a recording's words.
 class CheckInTakeRow extends StatelessWidget {
   const CheckInTakeRow({
     required this.take,
@@ -387,48 +389,31 @@ class CheckInTakeRow extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onRemove;
 
+  /// The take's words in the shared vocabulary. A run that ended with the
+  /// provider's own detail failed; one that ended with nothing to say was
+  /// never transcribed.
+  static TranscriptStatus statusOf(CheckInTake take) => switch (take.words) {
+    CheckInTakeWords.transcribing => TranscriptStatus.transcribing,
+    CheckInTakeWords.heard => TranscriptStatus.heard,
+    CheckInTakeWords.missing when take.detail != null =>
+      TranscriptStatus.failed,
+    CheckInTakeWords.missing => TranscriptStatus.notTranscribed,
+  };
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final clock = formatElapsed(take.length);
-    // The state and its explanation share one quiet tier — the glyph and
-    // its tone carry the news, not a bigger size.
-    final note = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
-    final meta = note.copyWith(
-      // A missing take's line is the news, so it outranks the explanation
-      // beneath it; otherwise it stays as quiet as its note.
-      color: take.words == CheckInTakeWords.missing
-          ? tokens.colors.text.highEmphasis
-          : null,
-      // The app's own digit features, not a bare tabular flag: the same
-      // set every People timestamp carries.
-      fontFeatures: numericBadgeFontFeatures,
-    );
-    // What was said, in the typed note's own tier: one voice for the
-    // field's text, whoever put it there.
-    final body = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.highEmphasis,
-    );
-    // The route is the first thing a narrow row sheds; the length and the
-    // state are the facts.
-    final state = switch (take.words) {
-      CheckInTakeWords.transcribing => messages.checkInTranscribingLabel,
-      CheckInTakeWords.heard => null,
-      CheckInTakeWords.missing => messages.checkInStatusTranscriptMissing,
-    };
+    final route = take.route;
+    // The route is the first thing a narrow row sheds, and it only matters
+    // while the words are on their way; the length is the fact.
     final tiers = [
-      if (state != null && take.route != null)
-        '$clock · $state · ${take.route}',
-      if (state != null) '$clock · $state',
+      if (take.words == CheckInTakeWords.transcribing && route != null)
+        '$clock · $route',
       clock,
     ];
 
-    // One header line — the state glyph, the length and state, the remove
-    // action at its end — and the words beneath at the card's full width, so
-    // a take reads as an entry-to-be, not a caption with a hanging indent.
     return DecoratedBox(
       decoration: BoxDecoration(
         // A lift, not a well: the translucent surface reads one step above
@@ -452,43 +437,25 @@ class CheckInTakeRow extends StatelessWidget {
           children: [
             Row(
               children: [
-                // The glyph says where the words are: on their way, here as
-                // a recording, or missing — the line beside it stays quiet.
-                switch (take.words) {
-                  CheckInTakeWords.transcribing => DesignSystemSpinner(
-                    key: const ValueKey('check-in-take-glyph-transcribing'),
-                    // The default style, on its track: a glyph's whole
-                    // silhouette rather than a stray arc.
-                    size: IconSizes.s,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  CheckInTakeWords.heard => Icon(
-                    LottiIcons.waveform,
-                    key: const ValueKey('check-in-take-glyph-heard'),
-                    size: IconSizes.s,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  CheckInTakeWords.missing => Icon(
-                    LottiIcons.warning,
-                    key: const ValueKey('check-in-take-glyph-missing'),
-                    size: IconSizes.s,
-                    color: tokens.colors.alert.warning.defaultColor,
-                  ),
-                },
+                Icon(
+                  LottiIcons.waveform,
+                  size: IconSizes.s,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
                 SizedBox(width: tokens.spacing.step3),
                 Expanded(
-                  // The take owns where its words are, so its line is the
-                  // live one: the header no longer repeats it.
-                  child: Semantics(
-                    liveRegion: true,
-                    child: DsTieredText(
-                      textKey: const ValueKey('check-in-take-meta'),
-                      tiers: tiers,
-                      semanticsLabel: [
-                        checkInSpokenClockLabel(messages, take.length),
-                        ?state,
-                      ].join(' · '),
-                      style: meta,
+                  child: DsTieredText(
+                    textKey: const ValueKey('check-in-take-meta'),
+                    tiers: tiers,
+                    semanticsLabel: checkInSpokenClockLabel(
+                      messages,
+                      take.length,
+                    ),
+                    // The app's own digit features, not a bare tabular flag:
+                    // the same set every People timestamp carries.
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                      fontFeatures: numericBadgeFontFeatures,
                     ),
                   ),
                 ),
@@ -504,55 +471,24 @@ class CheckInTakeRow extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsetsDirectional.only(end: tokens.spacing.step5),
-              child: switch (take.words) {
-                // Status, not words: the small quiet voice, so it can never be
-                // mistaken for what was said.
-                CheckInTakeWords.transcribing => Text(
-                  messages.checkInTakeWordsFollow,
-                  key: const ValueKey('check-in-take-follows'),
-                  style: note,
-                ),
-                CheckInTakeWords.heard => Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    take.transcript ?? '',
-                    key: const ValueKey('check-in-take-transcript'),
-                    style: body,
-                  ),
-                ),
-                CheckInTakeWords.missing => Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // The provider's own detail, when it left any — never a
-                    // cause the service cannot tell apart.
-                    Text(
-                      take.detail ?? messages.checkInTranscriptMissingBody,
-                      key: const ValueKey('check-in-take-missing'),
-                      style: note,
-                    ),
-                    SizedBox(height: tokens.spacing.step3),
-                    // The take's own way forward, quiet on its trailing rail
-                    // so the warning line leads — in the header it would
-                    // push the state off a phone's line. Its label ends on
-                    // the body's edge, the remove glyph's.
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: DesignSystemButton(
-                        key: const ValueKey('check-in-retry-transcript'),
-                        label: messages.relationshipAgentTryAgain,
-                        leadingIcon: LottiIcons.refresh,
-                        variant: DesignSystemButtonVariant.tertiary,
-                        // The explanation's own caption tier: the warning
-                        // line leads, not the button under it.
-                        size: DesignSystemButtonSize.dense,
-                        alignsLabelToTrailingEdge: true,
-                        onPressed: onRetry,
-                      ),
-                    ),
-                  ],
-                ),
-              },
+              // In full, not folded: the user is reviewing what they just
+              // said before they save it.
+              child: RecordingTranscript(
+                id: take.audioEntryId,
+                status: statusOf(take),
+                transcript: take.transcript,
+                folded: false,
+                detail: switch (take.words) {
+                  CheckInTakeWords.transcribing =>
+                    messages.checkInTakeWordsFollow,
+                  CheckInTakeWords.heard => null,
+                  // The provider's own detail, when it left any — never a
+                  // cause the service cannot tell apart.
+                  CheckInTakeWords.missing =>
+                    take.detail ?? messages.checkInTranscriptMissingBody,
+                },
+                onRetry: onRetry,
+              ),
             ),
           ],
         ),

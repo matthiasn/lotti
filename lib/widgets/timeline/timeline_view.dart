@@ -3,6 +3,9 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The app's one vertical timeline: a dated rail of beats.
@@ -13,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 /// body through [TimelineBeatContent.custom] rather than editing this file.
 ///
 /// The component owns the chrome and the shared behaviours: the rail, day
-/// dividers, transcript clamping, transcription status, the open affordance and
+/// dividers, folded words, transcription status, the open affordance and
 /// the paging tail. Ordering is the caller's — Events reads oldest-first, a
 /// goal's check-ins newest-first — because only the caller knows which way its
 /// story runs.
@@ -376,9 +379,11 @@ class _TimelineContent extends StatelessWidget {
     switch (beat.content) {
       case final TimelineTextContent text:
         if (text.text.trim().isEmpty) return const SizedBox.shrink();
-        return Text(
-          text.text,
-          style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+        // Typed words wear the spoken words' tier and fold: on one rail a
+        // note and a recording are the user's words alike.
+        return FoldedWords(
+          id: beat.entryId ?? beat.id ?? beat.timeLabel,
+          words: text.text.trim(),
         );
 
       case final TimelineCustomContent custom:
@@ -430,151 +435,28 @@ class _TimelineContent extends StatelessWidget {
     }
   }
 
-  /// The words under a recording — or an honest account of why they are not
-  /// there yet. The beat itself is never withheld for want of a transcript:
-  /// the recording is the thing the user made, and it plays either way.
+  /// The words under a recording, drawn by the shared [RecordingTranscript]
+  /// so a check-in recording reads the same here as on every People surface.
+  /// The beat itself is never withheld for want of a transcript: the
+  /// recording is the thing the user made, and it plays either way.
   List<Widget> _transcriptSlot(BuildContext context, TimelineAudioContent a) {
-    final tokens = context.designTokens;
     final entryId = beat.entryId;
-
-    switch (a.transcriptStatus) {
-      case TimelineTranscriptStatus.pending:
-        return [
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            context.messages.timelineTranscribing,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ];
-      case TimelineTranscriptStatus.stalled:
-      case TimelineTranscriptStatus.failed:
-        final label = a.transcriptStatus == TimelineTranscriptStatus.stalled
-            ? context.messages.timelineTranscriptMissing
-            : context.messages.timelineTranscriptionFailed;
-        return [
-          SizedBox(height: tokens.spacing.step2),
-          Row(
-            children: [
-              Flexible(
-                child: Text(
-                  label,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ),
-              if (onRetryTranscript != null && entryId != null) ...[
-                SizedBox(width: tokens.spacing.step2),
-                _InlineTextAction(
-                  label: context.messages.timelineRetryTranscription,
-                  onPressed: () => onRetryTranscript!(entryId),
-                ),
-              ],
-            ],
-          ),
-        ];
-      case TimelineTranscriptStatus.none:
-        final transcript = a.transcript;
-        if (transcript == null || transcript.trim().isEmpty) return const [];
-        return [
-          SizedBox(height: tokens.spacing.step2),
-          _ClampedText(text: transcript),
-        ];
+    final transcript = a.transcript;
+    if (a.transcriptStatus == TranscriptStatus.heard &&
+        (transcript == null || transcript.trim().isEmpty)) {
+      return const [];
     }
-  }
-}
-
-/// Two lines with a "Show more" — a rail of long recordings is unreadable
-/// otherwise, and a single ellipsized line says too little to be worth having.
-class _ClampedText extends StatefulWidget {
-  const _ClampedText({required this.text});
-
-  final String text;
-
-  static const int collapsedLines = 2;
-
-  @override
-  State<_ClampedText> createState() => _ClampedTextState();
-}
-
-class _ClampedTextState extends State<_ClampedText> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final style = tokens.typography.styles.body.bodyMedium.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Measure before offering the control: a two-line transcript that
-        // already fits must not carry a "Show more" that reveals nothing.
-        final painter = TextPainter(
-          text: TextSpan(text: widget.text, style: style),
-          maxLines: _ClampedText.collapsedLines,
-          textDirection: Directionality.of(context),
-          textScaler: MediaQuery.textScalerOf(context),
-        )..layout(maxWidth: constraints.maxWidth);
-        final overflows = painter.didExceedMaxLines;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.text,
-              style: style,
-              maxLines: _expanded ? null : _ClampedText.collapsedLines,
-              overflow: _expanded ? null : TextOverflow.ellipsis,
-            ),
-            if (overflows) ...[
-              SizedBox(height: tokens.spacing.step1),
-              _InlineTextAction(
-                label: _expanded
-                    ? context.messages.timelineShowLess
-                    : context.messages.timelineShowMore,
-                onPressed: () => setState(() => _expanded = !_expanded),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// A minimum-target text action that does not carry button chrome — the rail
-/// is dense and a filled button beside every transcript would shout.
-class _InlineTextAction extends StatelessWidget {
-  const _InlineTextAction({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onPressed,
-        hoverColor: tokens.colors.surface.hover,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-          child: Text(
-            label,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.interactive.enabled,
-            ),
-          ),
-        ),
+    return [
+      SizedBox(height: context.designTokens.spacing.step2),
+      RecordingTranscript(
+        id: entryId ?? beat.id ?? beat.timeLabel,
+        status: a.transcriptStatus,
+        transcript: transcript,
+        onRetry: onRetryTranscript != null && entryId != null
+            ? () => onRetryTranscript!(entryId)
+            : null,
       ),
-    );
+    ];
   }
 }
 

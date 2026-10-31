@@ -829,7 +829,7 @@ compares the reload's copy of the person's channels by value (`listEquals`),
 not identity — each reload reads the person again and hands the row a new
 list of the same channels, and compared by identity every write emptied the
 Call, Message and Email buttons and asked the platform again. And a row's
-words opened with *Show more* (`PersonFoldedWords`) keep the row alive in the
+words opened with *Show more* (the shared `FoldedWords`) keep the row alive in the
 lazy list while open (`AutomaticKeepAliveClientMixin`), so a jump down the
 history and back does not build it again folded and shorter.
 
@@ -1819,24 +1819,21 @@ The composer's parts, top to bottom:
   above the note, so the note reads as the field's and not as the card's
   last line; one inset on every side — the remove action's own 48 px
   target sets the header row, and the leading glyph, the body's end and the
-  bottom keep the same step5. Its header line is a state glyph (a spinner
-  on its track while the words are on their way, a waveform once heard, a
-  warning triangle in the warning tone when they never came), then the
-  length and where its words are — a `DsTieredText` ladder, and the take's
-  live region, that sheds the route before the state (`00:23 ·
-  Transcribing… · Whisper large v3 · via Groq` → `00:23 · Transcribing…` →
-  `00:23`) — and *Remove recording* (a circled minus, not the sheet's ✕)
-  at its end. Beneath it at the card's full width: the words themselves, in
-  the typed note's own tier, whole; *You can save now — the words follow*
-  while they are on their way; or, when they never came, the provider's own
-  reason (or *Your recording is saved in the journal…* — the length is the
-  header's to say, once) with a `tertiary`, `dense` *Try again* — the
-  explanation's own caption tier — a step below it on the trailing rail,
-  which asks for the **same** recording's words. The state and its
-  explanation share one caption tier: the glyph and its tone carry the
-  news, not a bigger size — only a missing take's line steps up to high
-  emphasis, so the news outranks its explanation. *Try again* stays out of the header row, where
-  on a phone it pushed the state off the line. The note's word count is
+  bottom keep the same step5. Its header line is the recording: the
+  waveform glyph, then its length — a `DsTieredText` ladder that sheds the
+  route first while the words are on their way (`00:23 · Whisper large v3 ·
+  via Groq` → `00:23`) — and *Remove recording* (a circled minus, not the
+  sheet's ✕) at its end. Beneath it at the card's full width, where its
+  words are, drawn by the shared `RecordingTranscript` exactly as a goal's
+  rail and the person timeline draw it
+  ([Recording UI](speech/recording-ui.md#the-words-under-a-recording)): the
+  words themselves, whole (`folded: false`); *Transcribing…* with *You can
+  save now — the words follow* as its detail; or, when they never came,
+  *Transcription failed* with the provider's own reason, or *Not
+  transcribed* with *Your recording is saved in the journal…*, and *Retry*,
+  which asks for the **same** recording's words (`CheckInTakeRow.statusOf`
+  maps a take onto the shared status). The status line is the take's live
+  region. The note's word count is
   the note's, so beside a take it is not shown at all, and the shortcut
   hint is offered
   with no words typed, since a take alone is enough to save. Once a take
@@ -2703,10 +2700,14 @@ stateDiagram-v2
   names corrected. The transcript becomes the voice note's own words
   (`entryText`).
 - **Its line on the timeline.** A voice note's row
-  ([`PersonFoldedWords`](../../lib/features/relationships/ui/widgets/person_timeline_view.dart))
+  ([`FoldedWords`](../../lib/widgets/transcript/folded_words.dart))
   leads with the recording's newest audio summary (`audioSummaryOneLiner`),
   else the first three lines of the transcript, and opens to the whole
-  transcript in place with *Show more*. A check-in's row folds the same way,
+  transcript in place with *Show more*. A recording with no words yet says
+  where they are through the shared `RecordingTranscript` — *Transcribing…*
+  inside `kTranscriptGrace` of its start, *Not transcribed* after, against
+  the page's `now` — so a recording whose transcription failed last week no
+  longer claims to be transcribing. A check-in's row folds the same way,
   leading with the summary of the first recording it holds, when there is
   one, and opening to its own words. A spoken check-in's recording gets that
   summary when its words land: the composer and the check-in page ask

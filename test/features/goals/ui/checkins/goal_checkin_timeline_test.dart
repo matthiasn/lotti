@@ -14,6 +14,7 @@ import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -222,9 +223,9 @@ void main() {
     // rail does not wake itself, the one case the stalled state exists to
     // catch is the one case nobody ever sees.
     await withClock(
-      Clock.fixed(recordedAt.add(kGoalCheckInTranscriptGrace)),
+      Clock.fixed(recordedAt.add(kTranscriptGrace)),
       () async {
-        await tester.pump(kGoalCheckInTranscriptGrace);
+        await tester.pump(kTranscriptGrace);
         await tester.pump();
       },
     );
@@ -279,7 +280,7 @@ void main() {
     expect(find.text('Transcribing…'), findsNWidgets(2));
 
     await withClock(
-      Clock.fixed(older.add(kGoalCheckInTranscriptGrace)),
+      Clock.fixed(older.add(kTranscriptGrace)),
       () async {
         await tester.pump(const Duration(minutes: 1));
         await tester.pump();

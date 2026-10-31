@@ -3664,9 +3664,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInStatusRecording => 'Nahrává se';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Přepis nedorazil';
-
-  @override
   String get checkInTakeRemoved => 'Nahrávka odebrána';
 
   @override
@@ -3683,9 +3680,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Témata';
-
-  @override
-  String get checkInTranscribingLabel => 'Přepisuje se…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

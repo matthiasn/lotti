@@ -19,6 +19,9 @@ import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.d
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What a person's timeline does when a row is opened.
@@ -38,27 +41,29 @@ typedef PersonTimelineActions = ({
 
 /// The words a check-in row leads with: the text it was saved with, else its
 /// first comment or transcript. Only when nothing it holds has words yet
-/// does a recording without them say so (`pending`), so a fresh dictation
+/// does the newest recording without them say where its words are
+/// (`awaiting`), so a fresh dictation
 /// never reads as an empty check-in — and a recording still waiting never
 /// hides a comment that has words. Null when the check-in holds no words
 /// at all (only photos).
-({String text, bool pending})? checkInSummaryOf(
-  BuildContext context,
+({String? text, JournalAudio? awaiting})? checkInSummaryOf(
   CheckInEntry checkIn,
   List<JournalEntity> entries,
 ) {
   final saved = checkIn.entryText?.plainText.trim() ?? '';
-  if (saved.isNotEmpty) return (text: saved, pending: false);
-  var awaitingWords = false;
+  if (saved.isNotEmpty) return (text: saved, awaiting: null);
+  JournalAudio? awaiting;
   for (final entry in entries) {
     if (entry is JournalImage) continue;
     final words = entry.entryText?.plainText.trim() ?? '';
-    if (words.isNotEmpty) return (text: words, pending: false);
-    if (entry is JournalAudio) awaitingWords = true;
+    if (words.isNotEmpty) return (text: words, awaiting: null);
+    if (entry is JournalAudio &&
+        (awaiting == null ||
+            entry.meta.dateFrom.isAfter(awaiting.meta.dateFrom))) {
+      awaiting = entry;
+    }
   }
-  return awaitingWords
-      ? (text: context.messages.checkInTranscribingLabel, pending: true)
-      : null;
+  return awaiting == null ? null : (text: null, awaiting: awaiting);
 }
 
 /// What a check-in holds, as one quiet line — `2 recordings · 1 photo` — or
@@ -289,7 +294,7 @@ class PersonTimelineRow extends StatelessWidget {
     final row = switch (item) {
       final TimelineCheckIn row => () {
         final checkIn = row.checkIn;
-        final summary = checkInSummaryOf(context, checkIn, row.entries);
+        final summary = checkInSummaryOf(checkIn, row.entries);
         final duration = relationshipDurationLabelOf(
           context,
           checkIn.meta.dateTo.difference(checkIn.meta.dateFrom),
@@ -300,7 +305,7 @@ class PersonTimelineRow extends StatelessWidget {
           time: at(checkIn.meta.dateFrom),
           tail: [?duration, ?checkInHoldsLabelOf(context, row.entries)],
           text: summary?.text,
-          pending: summary?.pending ?? false,
+          awaiting: summary?.awaiting,
           footer: _CheckInFooter(checkIn: checkIn),
           onTap: () => actions.openCheckIn(checkIn),
         );
@@ -311,7 +316,7 @@ class PersonTimelineRow extends StatelessWidget {
         time: at(row.at),
         tail: const <String>[],
         text: row.note.entryText?.plainText.trim(),
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openNote(row.note),
       ),
@@ -327,8 +332,8 @@ class PersonTimelineRow extends StatelessWidget {
               row.audio.data.duration,
             ),
           ],
-          text: words.isEmpty ? messages.checkInTranscribingLabel : words,
-          pending: words.isEmpty,
+          text: words.isEmpty ? null : words,
+          awaiting: words.isEmpty ? row.audio : null,
           footer: null,
           onTap: () => actions.openEntry(row.audio),
         );
@@ -339,7 +344,7 @@ class PersonTimelineRow extends StatelessWidget {
         time: day(row.at),
         tail: const <String>[],
         text: null,
-        pending: false,
+        awaiting: null,
         footer: _PhotoStrip(photos: row.photos, onOpen: actions.openEntry),
         onTap: () => actions.openEntry(row.photos.first),
       ),
@@ -364,7 +369,7 @@ class PersonTimelineRow extends StatelessWidget {
         text: row.task.data.title.trim().isEmpty
             ? messages.taskUntitled
             : row.task.data.title,
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openTask(row.task),
       ),
@@ -376,7 +381,7 @@ class PersonTimelineRow extends StatelessWidget {
           if (row.calledOff) messages.relationshipTimelineMeetingCalledOff,
         ],
         text: row.event.data.title,
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openEntry(row.event),
       ),
@@ -414,37 +419,37 @@ class PersonTimelineRow extends StatelessWidget {
         tailStyle: metaStyle,
       ),
       body: switch (item) {
+        // A recording whose words are not here yet says where they are the
+        // way every check-in recording does — and, past the grace window
+        // with nothing on the way, that they are not coming.
+        _ when row.awaiting != null => RecordingTranscript(
+          id: row.awaiting!.meta.id,
+          status: transcriptStatusOf(
+            hasTranscript: false,
+            graceExpiry: row.awaiting!.meta.dateFrom.add(kTranscriptGrace),
+            now: now,
+          ),
+        ),
         // A voice note leads with its summary, and opens to its words.
-        final TimelineVoiceNote voice when !row.pending => PersonFoldedWords(
+        final TimelineVoiceNote voice => FoldedWords(
           id: voice.audio.meta.id,
           words: voice.audio.entryText?.plainText.trim() ?? '',
           summary: summary,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
         ),
         // A check-in leads with the summary of the recording it holds,
         // and opens to its own words.
-        final TimelineCheckIn checkIn
-            when !row.pending && text != null && text.isNotEmpty =>
-          PersonFoldedWords(
+        final TimelineCheckIn checkIn when text != null && text.isNotEmpty =>
+          FoldedWords(
             id: checkIn.checkIn.meta.id,
             words: text,
             summary: summary,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
           ),
         _ when text == null || text.isEmpty => null,
         _ => Text(
           text,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: row.pending
-              ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
-              : tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+          style: FoldedWords.wordsStyle(context),
         ),
       },
       footer: row.footer,
@@ -491,117 +496,6 @@ class PersonTimelineRow extends StatelessWidget {
     final to = event.meta.dateTo;
     final start = relationshipTimestampLabelOf(context, from, now: now);
     return to.isAfter(from) ? '$start – ${relationshipTimeLabel(to)}' : start;
-  }
-}
-
-/// A row's words, folded: the [summary] of its recording when one was
-/// written (its newest audio summary's one-liner), else the first three
-/// lines of [words] — and, when there is more, *Show more* to read all of
-/// [words] in place, *Show less* to fold them again. A voice note passes its
-/// own recording's summary; a check-in that of the recording it holds. A
-/// minute of speech set out in full made every spoken row the longest on
-/// the page.
-///
-/// The summary is data, not a lookup: a row that fetched its own line was
-/// laid out three lines tall and shrank when the line arrived, on every
-/// reload and every time it scrolled back into view.
-///
-/// Opened, the row keeps itself alive in the lazy list: the list drops rows
-/// that scroll out of its cache extent and builds them again on the way
-/// back, and a row built again is folded — the reader's *Show more* undone,
-/// and a row above the viewport suddenly shorter, which moves the history
-/// under them. Folded rows are dropped as usual; there is nothing to keep.
-class PersonFoldedWords extends StatefulWidget {
-  const PersonFoldedWords({
-    required this.id,
-    required this.words,
-    required this.style,
-    this.summary,
-    super.key,
-  });
-
-  /// The row's entry, naming its keys.
-  final String id;
-  final String words;
-
-  /// The line the row leads with, or null to lead with [words].
-  final String? summary;
-  final TextStyle style;
-
-  @override
-  State<PersonFoldedWords> createState() => _PersonFoldedWordsState();
-}
-
-class _PersonFoldedWordsState extends State<PersonFoldedWords>
-    with AutomaticKeepAliveClientMixin {
-  static const _foldedLines = 3;
-  var _expanded = false;
-
-  @override
-  bool get wantKeepAlive => _expanded;
-
-  void _toggle() {
-    setState(() => _expanded = !_expanded);
-    updateKeepAlive();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final transcript = widget.words;
-    final summary = widget.summary;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // More to read when there is a summary in front of the words, or
-        // when the words run past the fold.
-        final overflows =
-            summary != null ||
-            (TextPainter(
-              text: TextSpan(text: transcript, style: widget.style),
-              maxLines: _foldedLines,
-              textDirection: Directionality.of(context),
-              textScaler: MediaQuery.textScalerOf(context),
-            )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
-        final words = _expanded ? transcript : (summary ?? transcript);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              words,
-              key: ValueKey('person-folded-words-${widget.id}'),
-              maxLines: _expanded ? null : _foldedLines,
-              overflow: _expanded ? null : TextOverflow.ellipsis,
-              style: widget.style,
-            ),
-            if (overflows)
-              DsQuietInk(
-                key: ValueKey('person-folded-more-${widget.id}'),
-                onTap: _toggle,
-                builder: (context, highlighted) => Semantics(
-                  button: true,
-                  expanded: _expanded,
-                  child: Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step1),
-                    child: Text(
-                      _expanded
-                          ? messages.timelineShowLess
-                          : messages.timelineShowMore,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: highlighted
-                            ? tokens.colors.interactive.hover
-                            : tokens.colors.interactive.enabled,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
   }
 }
 

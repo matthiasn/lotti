@@ -13,7 +13,6 @@ import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_audio_transcript_status.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -22,6 +21,7 @@ import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The goal's rail of check-ins and reflections.
@@ -57,20 +57,8 @@ class GoalCheckInTimeline extends ConsumerStatefulWidget {
       _GoalCheckInTimelineState();
 }
 
-/// How long a recording may sit without words before the rail stops claiming
-/// it is being transcribed.
-///
-/// Nothing running and nothing failed is normally the first seconds after a
-/// recording is saved — the entry exists before the transcript, deliberately.
-/// Past this window it means the opposite: nobody ever picked the recording
-/// up, which is the state every check-in made before transcription was wired
-/// is permanently in. Those recordings had no way back, because the retry
-/// only ever appeared on a *failed* run. Generous enough that a slow provider
-/// finishing a long recording is not accused of having stalled.
-const Duration kGoalCheckInTranscriptGrace = Duration(minutes: 10);
-
 class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
-    with GoalTranscriptGraceRebuild {
+    with TranscriptGraceRebuild {
   static const _pageSize = 20;
 
   int _visibleCount = _pageSize;
@@ -185,7 +173,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
         // Absent words are normal, not an error: the recording is saved first
         // and transcribed after. Only once the grace window has closed does
         // the same picture mean nobody picked the recording up.
-        final graceExpiry = checkIn.at.add(kGoalCheckInTranscriptGrace);
+        final graceExpiry = checkIn.at.add(kTranscriptGrace);
         final waiting =
             checkIn.transcript == null &&
             inferenceStatus == InferenceStatus.idle &&
@@ -212,10 +200,11 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
           content: TimelineBeatContent.audio(
             player: AudioPlayerWidget(checkIn.audio),
             transcript: checkIn.transcript,
-            transcriptStatus: goalAudioTranscriptStatus(
+            transcriptStatus: transcriptStatusOf(
               hasTranscript: checkIn.transcript != null,
-              inference: inferenceStatus,
-              durableFailure: durableFailure,
+              running: inferenceStatus == InferenceStatus.running,
+              failed:
+                  inferenceStatus == InferenceStatus.error || durableFailure,
               graceExpiry: graceExpiry,
               now: clock.now(),
             ),

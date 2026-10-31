@@ -3618,9 +3618,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checkInStatusRecording => 'Optager';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Ingen transskription modtaget';
-
-  @override
   String get checkInTakeRemoved => 'Optagelse fjernet';
 
   @override
@@ -3636,9 +3633,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Emner';
-
-  @override
-  String get checkInTranscribingLabel => 'Transskriberer…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

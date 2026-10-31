@@ -6108,12 +6108,6 @@ abstract class AppLocalizations {
   /// **'Recording'**
   String get checkInStatusRecording;
 
-  /// No description provided for @checkInStatusTranscriptMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcript not received'**
-  String get checkInStatusTranscriptMissing;
-
   /// Toast after removing a recording from a check-in being written; offers Undo.
   ///
   /// In en, this message translates to:
@@ -6143,12 +6137,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
-
-  /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribing…'**
-  String get checkInTranscribingLabel;
 
   /// No description provided for @checkInTranscriptionUnavailableTitle.
   ///

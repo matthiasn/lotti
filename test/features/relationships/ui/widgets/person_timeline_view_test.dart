@@ -17,6 +17,9 @@ import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../test_data/test_data.dart';
@@ -299,8 +302,11 @@ void main() {
       ),
     );
 
-    testWidgets('a voice note says how long it ran and what was said, or '
-        'that its words are still coming, in the quiet ink', (tester) async {
+    testWidgets('a voice note says how long it ran and what was said — or, '
+        'through the shared status, that its words are coming while they '
+        'may be, and that they are not once the grace window has closed', (
+      tester,
+    ) async {
       await pump(
         tester,
         timeline(
@@ -308,7 +314,10 @@ void main() {
           tasks: [],
           entries: [
             audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
-            audio('waiting', DateTime(2026, 8, 11, 9)),
+            // Two minutes ago: still inside the window.
+            audio('fresh', now.subtract(const Duration(minutes: 2))),
+            // Two days ago, never transcribed: it must stop promising words.
+            audio('stale', DateTime(2026, 8, 11, 9)),
           ],
         ),
       );
@@ -318,16 +327,31 @@ void main() {
         'Yesterday 19:10 · Voice note · 1 min',
       );
       expect(find.text('Send-off.'), findsOneWidget);
-      final waiting = tester.widget<Text>(
+
+      TranscriptStatus statusOf(String id) => tester
+          .widget<RecordingTranscript>(
+            find.descendant(
+              of: find.byKey(ValueKey('person-timeline-row-$id')),
+              matching: find.byType(RecordingTranscript),
+            ),
+          )
+          .status;
+      expect(statusOf('fresh'), TranscriptStatus.transcribing);
+      expect(
         find.descendant(
-          of: find.byKey(const ValueKey('person-timeline-row-waiting')),
+          of: find.byKey(const ValueKey('person-timeline-row-fresh')),
           matching: find.text('Transcribing…'),
         ),
+        findsOneWidget,
       );
-      final tokens = tester
-          .element(find.byType(PersonTimelineRow).first)
-          .designTokens;
-      expect(waiting.style?.color, tokens.colors.text.lowEmphasis);
+      expect(statusOf('stale'), TranscriptStatus.notTranscribed);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-stale')),
+          matching: find.text('Not transcribed'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
@@ -355,10 +379,10 @@ void main() {
       await tester.pumpAndSettle();
 
       Text words() => tester.widget<Text>(
-        find.byKey(const ValueKey('person-folded-words-spoken')),
+        find.byKey(const ValueKey('folded-words-spoken')),
       );
       expect(words().data, 'Pip wants a crew send-off.');
-      expect(words().maxLines, 3);
+      expect(words().maxLines, FoldedWords.foldedLines);
 
       await tester.tap(find.text('Show more'));
       await tester.pumpAndSettle();
@@ -370,9 +394,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(words().data, 'Pip wants a crew send-off.');
       // A way in, and it says so under a pointer.
-      final tokens = tester
-          .element(find.byType(PersonFoldedWords))
-          .designTokens;
+      final tokens = tester.element(find.byType(FoldedWords)).designTokens;
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
@@ -405,7 +427,7 @@ void main() {
       await tester.pumpAndSettle();
 
       Text words() => tester.widget<Text>(
-        find.byKey(ValueKey('person-folded-words-${spoken.meta.id}')),
+        find.byKey(ValueKey('folded-words-${spoken.meta.id}')),
       );
       expect(words().data, 'Pip is calm about the slip.');
       await tester.tap(find.text('Show more'));
@@ -423,12 +445,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final words = find.byKey(
-        ValueKey('person-folded-words-${typed.meta.id}'),
+        ValueKey('folded-words-${typed.meta.id}'),
       );
       expect(tester.widget<Text>(words).data, longWords);
       expect(tester.widget<Text>(words).maxLines, 3);
       await tester.tap(
-        find.byKey(ValueKey('person-folded-more-${typed.meta.id}')),
+        find.byKey(ValueKey('folded-words-more-${typed.meta.id}')),
       );
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(words).maxLines, isNull);
@@ -453,17 +475,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('person-folded-more-short')),
+        find.byKey(const ValueKey('folded-words-more-short')),
         findsNothing,
       );
-      final more = find.byKey(const ValueKey('person-folded-more-long'));
+      final more = find.byKey(const ValueKey('folded-words-more-long'));
       expect(more, findsOneWidget);
       await tester.tap(more);
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('person-folded-words-long')),
+              find.byKey(const ValueKey('folded-words-long')),
             )
             .maxLines,
         isNull,
@@ -483,7 +505,7 @@ void main() {
         timeline(checkIns: [quiet], tasks: [], entries: [long]),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('person-folded-more-long')));
+      await tester.tap(find.byKey(const ValueKey('folded-words-more-long')));
       await tester.pumpAndSettle();
       Element row(String id) => tester.element(
         find.byKey(ValueKey('person-timeline-row-$id')),
@@ -514,7 +536,7 @@ void main() {
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('person-folded-words-long')),
+              find.byKey(const ValueKey('folded-words-long')),
             )
             .maxLines,
         isNull,
@@ -620,9 +642,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      const words = ValueKey('person-folded-words-many-0');
+      const words = ValueKey('folded-words-many-0');
       const row = ValueKey('person-timeline-row-many-0');
-      await tester.tap(find.byKey(const ValueKey('person-folded-more-many-0')));
+      await tester.tap(find.byKey(const ValueKey('folded-words-more-many-0')));
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(find.byKey(words)).maxLines, isNull);
       final opened = tester.getSize(find.byKey(row)).height;
@@ -714,7 +736,7 @@ void main() {
     });
 
     testWidgets("a check-in saved without words reads its entries' words, and "
-        'says the words are coming while only a recording holds them', (
+        'while only a recording holds them says where its words are', (
       tester,
     ) async {
       final bare = CheckInEntry(
@@ -762,10 +784,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The recording is two days old and nothing transcribed it.
+      final status = tester.widget<RecordingTranscript>(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-pending')),
+          matching: find.byType(RecordingTranscript),
+        ),
+      );
+      expect(status.id, 'take', reason: "the recording's own status");
+      expect(status.status, TranscriptStatus.notTranscribed);
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('person-timeline-row-pending')),
-          matching: find.text('Transcribing…'),
+          matching: find.text('Not transcribed'),
         ),
         findsOneWidget,
       );

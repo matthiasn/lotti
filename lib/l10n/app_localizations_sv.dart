@@ -3626,9 +3626,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInStatusRecording => 'Spelar in';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Ingen transkription mottagen';
-
-  @override
   String get checkInTakeRemoved => 'Inspelningen togs bort';
 
   @override
@@ -3644,9 +3641,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Ämnen';
-
-  @override
-  String get checkInTranscribingLabel => 'Transkriberar…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

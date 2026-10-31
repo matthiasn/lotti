@@ -3650,9 +3650,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkInStatusRecording => 'Aufnahme läuft';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Kein Transkript erhalten';
-
-  @override
   String get checkInTakeRemoved => 'Aufnahme entfernt';
 
   @override
@@ -3669,9 +3666,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Themen';
-
-  @override
-  String get checkInTranscribingLabel => 'Wird transkribiert…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

@@ -393,7 +393,7 @@ class GoalCharterDictation extends ConsumerWidget {
             const DesignSystemSpinner(size: IconSizes.s),
             SizedBox(width: tokens.spacing.step2),
             Text(
-              messages.checkInTranscribingLabel,
+              messages.timelineTranscribing,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.text.mediumEmphasis,
               ),

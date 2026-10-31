@@ -3655,9 +3655,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInStatusRecording => 'A gravar';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Transcrição não recebida';
-
-  @override
   String get checkInTakeRemoved => 'Gravação removida';
 
   @override
@@ -3675,9 +3672,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Assuntos';
-
-  @override
-  String get checkInTranscribingLabel => 'Transcrevendo…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

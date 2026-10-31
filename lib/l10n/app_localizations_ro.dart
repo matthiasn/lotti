@@ -3679,9 +3679,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checkInStatusRecording => 'Se înregistrează';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Transcrierea nu a fost primită';
-
-  @override
   String get checkInTakeRemoved => 'Înregistrarea audio a fost eliminată';
 
   @override
@@ -3699,9 +3696,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Subiecte';
-
-  @override
-  String get checkInTranscribingLabel => 'Se transcrie…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>

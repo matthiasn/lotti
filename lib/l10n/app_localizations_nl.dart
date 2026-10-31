@@ -3637,9 +3637,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get checkInStatusRecording => 'Opname loopt';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Geen transcript ontvangen';
-
-  @override
   String get checkInTakeRemoved => 'Opname verwijderd';
 
   @override
@@ -3656,9 +3653,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Onderwerpen';
-
-  @override
-  String get checkInTranscribingLabel => 'Bezig met transcriberen…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
