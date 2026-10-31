@@ -11509,7 +11509,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Melious.ai este opțiunea implicită recomandată.';
+      'Mistral este opțiunea implicită recomandată.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

@@ -206,8 +206,8 @@ void main() {
       tester
           .widget<OnboardingApiKeyPanel>(find.byType(OnboardingApiKeyPanel))
           .type,
-      onboardingPrimaryProviders.first,
-      reason: 'defaults to the first tile the connect panel lists',
+      InferenceProviderType.mistral,
+      reason: 'defaults to Mistral, the first tile the connect panel lists',
     );
   });
 

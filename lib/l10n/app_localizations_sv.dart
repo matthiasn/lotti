@@ -11312,7 +11312,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Melious.ai är den rekommenderade standarden.';
+      'Mistral är den rekommenderade standarden.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

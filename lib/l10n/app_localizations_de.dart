@@ -11371,7 +11371,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Melious.ai ist die empfohlene Voreinstellung.';
+      'Mistral ist die empfohlene Voreinstellung.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

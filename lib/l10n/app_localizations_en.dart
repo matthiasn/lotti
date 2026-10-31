@@ -11250,8 +11250,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'More options';
 
   @override
-  String get onboardingConnectNotSure =>
-      'Melious.ai is the recommended default.';
+  String get onboardingConnectNotSure => 'Mistral is the recommended default.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

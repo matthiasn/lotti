@@ -11403,7 +11403,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'Mais opções';
 
   @override
-  String get onboardingConnectNotSure => 'Melious.ai é o padrão recomendado.';
+  String get onboardingConnectNotSure => 'Mistral é o padrão recomendado.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

@@ -9,10 +9,11 @@ import 'package:material_ui/material_ui.dart';
 
 /// The primary providers surfaced in the first onboarding row. MLX is
 /// deliberately excluded from the FTUE (a multi-GB download has no place in a
-/// first session); it stays available later in Settings.
+/// first session); it stays available later in Settings. Mistral, the
+/// recommended default, leads — and is the demo AI sheet's starting choice.
 const onboardingPrimaryProviders = <InferenceProviderType>[
-  InferenceProviderType.melious,
   InferenceProviderType.mistral,
+  InferenceProviderType.melious,
   InferenceProviderType.gemini,
   InferenceProviderType.alibaba,
 ];

@@ -633,16 +633,16 @@
       "language": {}
     }
   },
-  "agentSummarySetProject": "Move to project \"{project}\"",
-  "@agentSummarySetProject": {
-    "placeholders": {
-      "project": {}
-    }
-  },
   "agentSummarySetPriority": "Set priority to {priority}",
   "@agentSummarySetPriority": {
     "placeholders": {
       "priority": {}
+    }
+  },
+  "agentSummarySetProject": "Move to project \"{project}\"",
+  "@agentSummarySetProject": {
+    "placeholders": {
+      "project": {}
     }
   },
   "agentSummarySetStatus": "Set status to {status}",
@@ -7090,7 +7090,7 @@
   "onboardingConnectMistralName": "Mistral",
   "onboardingConnectMistralTagline": "European Union",
   "onboardingConnectMoreOptions": "More options",
-  "onboardingConnectNotSure": "Melious.ai is the recommended default.",
+  "onboardingConnectNotSure": "Mistral is the recommended default.",
   "onboardingConnectOllamaName": "Ollama",
   "onboardingConnectOpenAiName": "OpenAI",
   "onboardingConnectQwenName": "Qwen",

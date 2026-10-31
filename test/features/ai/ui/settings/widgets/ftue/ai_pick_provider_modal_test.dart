@@ -11,14 +11,14 @@ import 'ai_pick_provider_modal_test_helpers.dart';
 void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
     test(
-      'lineup matches the design: '
-      'Melious → Mistral → Gemini → Alibaba → OpenAI → Anthropic → sherpa-onnx → oMLX → Ollama → Voxtral',
+      'lineup leads with the Mistral default: '
+      'Mistral → Melious → Gemini → Alibaba → OpenAI → Anthropic → sherpa-onnx → oMLX → Ollama → Voxtral',
       () {
         expect(
           AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
           [
-            InferenceProviderType.melious,
             InferenceProviderType.mistral,
+            InferenceProviderType.melious,
             InferenceProviderType.gemini,
             InferenceProviderType.alibaba,
             InferenceProviderType.openAi,
@@ -32,11 +32,13 @@ void main() {
       },
     );
 
-    test('Melious carries the RECOMMENDED badge (per the design)', () {
-      final spec = AiPickProviderModal.defaultTiles.firstWhere(
-        (t) => t.providerType == InferenceProviderType.melious,
+    test('Mistral, the default, is the only RECOMMENDED tile', () {
+      expect(
+        AiPickProviderModal.defaultTiles
+            .where((t) => t.badge == AiPickProviderBadge.recommended)
+            .map((t) => t.providerType),
+        [InferenceProviderType.mistral],
       );
-      expect(spec.badge, AiPickProviderBadge.recommended);
     });
 
     test('Anthropic carries the NEW badge', () {
@@ -53,9 +55,9 @@ void main() {
       expect(spec.badge, AiPickProviderBadge.newcomer);
     });
 
-    test('Mistral has no badge', () {
+    test('Melious has no badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
-        (t) => t.providerType == InferenceProviderType.mistral,
+        (t) => t.providerType == InferenceProviderType.melious,
       );
       expect(spec.badge, isNull);
     });
@@ -157,9 +159,9 @@ void main() {
 
     testWidgets(
       'renders one DesignSystemBadge per badged tile '
-      '(Melious RECOMMENDED, Alibaba NEW, Anthropic NEW, '
+      '(Mistral RECOMMENDED, Alibaba NEW, Anthropic NEW, '
       'oMLX DESKTOP ONLY, Ollama DESKTOP ONLY, '
-      'Voxtral DESKTOP ONLY) — six badges total because Mistral, '
+      'Voxtral DESKTOP ONLY) — six badges total because Melious, '
       'Gemini, and OpenAI are intentionally un-badged',
       (tester) async {
         await pumpModal(tester);
@@ -233,6 +235,42 @@ void main() {
         expect(captured!.providerType, InferenceProviderType.gemini);
       },
     );
+
+    testWidgets('show() with no initial selection pre-selects Mistral', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1100));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      AiPickProviderResult? captured;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (ctx) => Center(
+              child: TextButton(
+                onPressed: () async {
+                  captured = await AiPickProviderModal.show(context: ctx);
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      final continueButton = find.text(
+        hL10n(tester).aiPickProviderContinueButton,
+      );
+      await tester.ensureVisible(continueButton);
+      await tester.pumpAndSettle();
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      expect(captured, isNotNull);
+      expect(captured!.isConfirmed, isTrue);
+      expect(captured!.providerType, InferenceProviderType.mistral);
+    });
 
     for (final providerType in [
       InferenceProviderType.anthropic,

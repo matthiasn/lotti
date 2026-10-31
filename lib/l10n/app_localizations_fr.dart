@@ -11486,7 +11486,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Melious.ai est le choix par défaut recommandé.';
+      'Mistral est le choix par défaut recommandé.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
