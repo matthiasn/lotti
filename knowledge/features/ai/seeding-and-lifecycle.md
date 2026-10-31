@@ -5,7 +5,7 @@ description: Provider-gated profile seeds, why deletion needed a tombstone, how 
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle, sync, tombstone, last-writer-wins]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T18:00:00Z }
 stale_after: 2026-12-26
 sources:
   - id: seeding
@@ -75,6 +75,17 @@ Operational details of the seeded definitions:
   same Whisper Large v3 and Flux 2 Klein 9B. It seeds ALONGSIDE `Melious.ai`
   rather than replacing it, and carries no seed generation of its own — the
   Melious migrations below are keyed on `profileMeliousId` and never touch it.
+- `Mistral (EU)` uses DeepSeek V4.1 Flash (`deepseek-v4-1-flash-1017`, served
+  by Mistral with reasoning and vision) for **both** thinking and image
+  recognition, Mistral Large 4 (`mistral-large-4-0`) for high-end thinking,
+  Voxtral Mini Transcribe 3 (`voxtral-mini-transcribe-3-0`) for transcription
+  and Voxtral TTS 3 (`voxtral-mini-tts-3-0`) for reading aloud. Mistral FTUE
+  installs exactly those four, so every bound slot resolves to a model row —
+  the read-aloud slot included, which only resolves against an installed row.
+  A profile seeded under the older defaults is not migrated: `upgradeExisting`
+  heals only a slot that resolves neither to a model row nor to a model id
+  curated for *any* provider (`knownModelsByProvider`), and fills it with
+  these values.
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill
   assignments.
 

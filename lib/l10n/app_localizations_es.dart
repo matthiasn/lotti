@@ -11450,7 +11450,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingConnectNotSure =>
-      'Melious.ai es la opción predeterminada recomendada.';
+      'Mistral es la opción predeterminada recomendada.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

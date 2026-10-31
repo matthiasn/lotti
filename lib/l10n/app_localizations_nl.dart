@@ -11328,8 +11328,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get onboardingConnectMoreOptions => 'Meer opties';
 
   @override
-  String get onboardingConnectNotSure =>
-      'Melious.ai is de aanbevolen standaard.';
+  String get onboardingConnectNotSure => 'Mistral is de aanbevolen standaard.';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';

@@ -700,21 +700,34 @@ const List<KnownModel> voxtralModels = [
 /// language models, reasoning models, and audio transcription capabilities.
 /// Audio files (M4A, MP3, WAV, FLAC, OGG) are sent natively without conversion.
 const List<KnownModel> mistralModels = [
-  // Fast model - efficient for quick tasks
+  // The Mistral profile's thinking and image-recognition model: DeepSeek V4.1
+  // Flash, served by Mistral, fast reasoning with vision.
   KnownModel(
-    providerModelId: 'mistral-small-2501',
-    name: 'Mistral Small 3.1',
+    providerModelId: mistralDeepseekV41Flash1017ModelId,
+    name: 'DeepSeek V4.1 Flash',
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
-    isReasoningModel: false,
+    isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Fast and efficient model with vision capabilities. '
-        'Great for summaries, image analysis, and quick tasks.',
+        'Fast reasoning model with vision, hosted by Mistral. Used as the '
+        'default for general tasks, agentic reasoning, and image analysis.',
   ),
-  // Default model for the Mistral profile — general tasks, agentic thinking,
-  // and vision. Tracks the latest Mistral Medium release via the `-latest`
-  // alias.
+  // The Mistral profile's high-end thinking model. Takes graded
+  // `reasoning_effort`, see [mistralGradedReasoningModelIds].
+  KnownModel(
+    providerModelId: mistralLarge4ModelId,
+    name: 'Mistral Large 4',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        "Mistral's frontier multimodal reasoning model. Used for the "
+        'demanding thinking tasks. Supports function calling and vision.',
+  ),
+  // Balanced alternative. Tracks the latest Mistral Medium release via the
+  // `-latest` alias.
   KnownModel(
     providerModelId: 'mistral-medium-latest',
     name: 'Mistral Medium',
@@ -723,27 +736,13 @@ const List<KnownModel> mistralModels = [
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Balanced mid-tier multimodal model. Used as the default for general '
-        'tasks, agentic reasoning, and image analysis. Supports function '
+        'Balanced mid-tier multimodal reasoning model. Supports function '
         'calling and vision.',
   ),
-  // Reasoning model - for complex tasks
-  KnownModel(
-    providerModelId: 'magistral-medium-2509',
-    name: 'Magistral Medium 1.2',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description:
-        'Frontier-class multimodal reasoning model with 128k context. '
-        'Supports function calling, vision, and document AI.',
-  ),
   // Voxtral TTS 3 — speaks text through /v1/audio/speech; the read-aloud
-  // slot's model. Mistral documents no `-latest` alias for it, so the
-  // release id is pinned.
+  // slot's model.
   KnownModel(
-    providerModelId: 'voxtral-mini-tts-3-0',
+    providerModelId: mistralVoxtralTtsModelId,
     name: 'Voxtral TTS 3',
     inputModalities: [Modality.text],
     outputModalities: [Modality.audio],
@@ -752,11 +751,11 @@ const List<KnownModel> mistralModels = [
         'Multilingual text-to-speech with preset and custom voices. Reads '
         'summaries and answers aloud.',
   ),
-  // Transcribe 2 alias — uses /v1/audio/transcriptions with diarization
-  // and speech dictionary context bias.
+  // Transcribe 3 — uses /v1/audio/transcriptions with diarization and
+  // speech dictionary context bias.
   KnownModel(
-    providerModelId: 'voxtral-mini-latest',
-    name: 'Voxtral Mini Transcribe 2',
+    providerModelId: mistralVoxtralMiniTranscribe3ModelId,
+    name: 'Voxtral Mini Transcribe 3',
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,

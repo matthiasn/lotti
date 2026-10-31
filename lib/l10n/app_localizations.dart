@@ -19018,7 +19018,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectNotSure.
   ///
   /// In en, this message translates to:
-  /// **'Melious.ai is the recommended default.'**
+  /// **'Mistral is the recommended default.'**
   String get onboardingConnectNotSure;
 
   /// No description provided for @onboardingConnectOllamaName.

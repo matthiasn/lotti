@@ -994,57 +994,58 @@ void main() {
     });
 
     group('Mistral Models', () {
-      test('should have Fast, Reasoning, and Audio models', () {
-        expect(mistralModels.length, greaterThanOrEqualTo(3));
+      test('curates one model per Mistral (EU) profile slot', () {
+        String nameOf(String id) =>
+            mistralModels.firstWhere((m) => m.providerModelId == id).name;
 
-        final flashModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralFlashModelId,
+        expect(nameOf(ftueMistralThinkingModelId), 'DeepSeek V4.1 Flash');
+        expect(nameOf(ftueMistralHighEndThinkingModelId), 'Mistral Large 4');
+        expect(
+          nameOf(ftueMistralTranscriptionModelId),
+          'Voxtral Mini Transcribe 3',
         );
-        final reasoningModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralReasoningModelId,
-        );
-        final audioModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralAudioModelId,
-        );
-
-        expect(flashModel.name, contains('Mistral Small'));
-        expect(reasoningModel.name, contains('Magistral'));
-        expect(audioModel.name, contains('Voxtral'));
+        expect(nameOf(ftueMistralSpeechModelId), 'Voxtral TTS 3');
       });
 
-      test('Mistral Small should have vision capabilities', () {
-        final flashModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralFlashModelId,
-        );
+      test('drops the retired Mistral releases from the curated list', () {
+        // Neither Small 2501 nor Magistral Medium 2509 is served by the live
+        // catalog any more, and the Mini `latest` alias is Transcribe 2.
         expect(
-          flashModel.inputModalities,
-          contains(Modality.image),
-          reason: 'Mistral Small should accept image input',
-        );
-        expect(flashModel.isReasoningModel, isFalse);
-      });
-
-      test('Magistral Medium should be a reasoning model', () {
-        final reasoningModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralReasoningModelId,
-        );
-        expect(
-          reasoningModel.isReasoningModel,
-          isTrue,
-          reason: 'Magistral Medium should be a reasoning model',
+          mistralModels.map((m) => m.providerModelId),
+          isNot(
+            anyOf(
+              contains('mistral-small-2501'),
+              contains('magistral-medium-2509'),
+              contains('voxtral-mini-latest'),
+            ),
+          ),
         );
       });
 
-      test('Voxtral Mini should have audio input', () {
-        final audioModel = mistralModels.firstWhere(
-          (m) => m.providerModelId == ftueMistralAudioModelId,
-        );
-        expect(
-          audioModel.inputModalities,
-          contains(Modality.audio),
-          reason: 'Voxtral Mini should accept audio input',
-        );
-        expect(audioModel.outputModalities, contains(Modality.text));
+      test('DeepSeek V4.1 Flash reasons and sees', () {
+        final model = findMistralKnownModel(ftueMistralThinkingModelId)!;
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+      });
+
+      test('Mistral Large 4 reasons with graded effort and sees', () {
+        final model = findMistralKnownModel(ftueMistralHighEndThinkingModelId)!;
+        expect(model.isReasoningModel, isTrue);
+        expect(model.inputModalities, contains(Modality.image));
+        expect(isMistralGradedReasoningModelId(model.providerModelId), isTrue);
+      });
+
+      test('Voxtral Mini Transcribe 3 turns audio into text', () {
+        final model = findMistralKnownModel(ftueMistralTranscriptionModelId)!;
+        expect(model.inputModalities, [Modality.audio]);
+        expect(model.outputModalities, [Modality.text]);
+      });
+
+      test('Voxtral TTS 3 turns text into audio', () {
+        final model = findMistralKnownModel(ftueMistralSpeechModelId)!;
+        expect(model.inputModalities, [Modality.text]);
+        expect(model.outputModalities, [Modality.audio]);
       });
 
       test('all Mistral models should have valid configurations', () {
@@ -1283,9 +1284,12 @@ void main() {
 
     group('Mistral FTUE functions', () {
       test('findMistralKnownModel returns model for valid ID', () {
-        final model = findMistralKnownModel(ftueMistralReasoningModelId);
+        final model = findMistralKnownModel(ftueMistralHighEndThinkingModelId);
         expect(model, isNotNull);
-        expect(model!.providerModelId, equals(ftueMistralReasoningModelId));
+        expect(
+          model!.providerModelId,
+          equals(ftueMistralHighEndThinkingModelId),
+        );
         expect(model.isReasoningModel, isTrue);
       });
 
@@ -1294,34 +1298,17 @@ void main() {
         expect(model, isNull);
       });
 
-      test('getMistralFtueKnownModels returns all required models', () {
+      test('getMistralFtueKnownModels returns one model per profile slot', () {
         final models = getMistralFtueKnownModels();
         expect(models, isNotNull);
 
-        // Verify flash model (Mistral Small)
-        expect(models!.flash.providerModelId, equals(ftueMistralFlashModelId));
+        expect(models!.thinking.providerModelId, 'deepseek-v4-1-flash-1017');
+        expect(models.highEndThinking.providerModelId, 'mistral-large-4-0');
         expect(
-          models.flash.inputModalities,
-          contains(Modality.image),
-          reason: 'Flash model should have vision',
+          models.transcription.providerModelId,
+          'voxtral-mini-transcribe-3-0',
         );
-
-        // Verify reasoning model (Magistral Medium)
-        expect(
-          models.reasoning.providerModelId,
-          equals(ftueMistralReasoningModelId),
-        );
-        expect(models.reasoning.isReasoningModel, isTrue);
-
-        // Verify audio model (Voxtral Mini)
-        expect(models.audio.providerModelId, equals(ftueMistralAudioModelId));
-        expect(models.audio.inputModalities, contains(Modality.audio));
-      });
-
-      test('FTUE model constants are valid Mistral model IDs', () {
-        expect(findMistralKnownModel(ftueMistralFlashModelId), isNotNull);
-        expect(findMistralKnownModel(ftueMistralReasoningModelId), isNotNull);
-        expect(findMistralKnownModel(ftueMistralAudioModelId), isNotNull);
+        expect(models.speech.providerModelId, 'voxtral-mini-tts-3-0');
       });
     });
 

@@ -488,12 +488,12 @@ void main() {
         test('never drops a curated model even if chat is disabled', () async {
           final ids = await idsFor([
             {
-              'id': 'mistral-small-2501',
+              'id': 'mistral-large-4-0',
               'capabilities': {'completion_chat': false},
             },
           ]);
 
-          expect(ids, ['mistral-small-2501']);
+          expect(ids, ['mistral-large-4-0']);
         });
       });
 
@@ -520,9 +520,9 @@ void main() {
       group('curated fallback', () {
         test('returns a curated entry verbatim when no live caps', () async {
           final curated = mistralModels.firstWhere(
-            (m) => m.providerModelId == 'voxtral-mini-latest',
+            (m) => m.providerModelId == 'voxtral-mini-transcribe-3-0',
           );
-          final model = await mapSingle({'id': 'voxtral-mini-latest'});
+          final model = await mapSingle({'id': 'voxtral-mini-transcribe-3-0'});
 
           expect(model.name, curated.name);
           expect(model.inputModalities, curated.inputModalities);
@@ -530,20 +530,23 @@ void main() {
         });
 
         test('refines a curated entry when live caps are present', () async {
-          // mistral-small-2501 ships as [text, image]; a live reasoning flag
-          // upgrades it without dropping the curated modalities or the
-          // hand-tuned name/description carried downstream by toAiConfigModel.
+          // Voxtral TTS 3 is curated without function calling; a live
+          // function_calling flag upgrades it without dropping the curated
+          // modalities or the hand-tuned name/description carried downstream
+          // by toAiConfigModel.
           final curated = mistralModels.firstWhere(
-            (m) => m.providerModelId == 'mistral-small-2501',
+            (m) => m.providerModelId == 'voxtral-mini-tts-3-0',
           );
+          expect(curated.supportsFunctionCalling, isFalse);
           final model = await mapSingle({
-            'id': 'mistral-small-2501',
-            'capabilities': {'reasoning': true},
+            'id': 'voxtral-mini-tts-3-0',
+            'capabilities': {'function_calling': true},
           });
 
           expect(model.name, curated.name);
-          expect(model.inputModalities, contains(Modality.image));
-          expect(model.isReasoningModel, isTrue);
+          expect(model.inputModalities, curated.inputModalities);
+          expect(model.outputModalities, curated.outputModalities);
+          expect(model.supportsFunctionCalling, isTrue);
           // Curated metadata survives the live-capability refinement.
           expect(model.description, curated.description);
           expect(model.maxCompletionTokens, curated.maxCompletionTokens);

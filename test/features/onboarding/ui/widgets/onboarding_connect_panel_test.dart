@@ -64,7 +64,22 @@ void main() {
           reason: 'expected primary tile for $type',
         );
       }
-      // Concretely: Melious.ai, Mistral, Gemini, and Qwen.
+      // Concretely, Mistral first as the recommended default, then
+      // Melious.ai, Gemini, and Qwen.
+      expect(onboardingPrimaryProviders, [
+        InferenceProviderType.mistral,
+        InferenceProviderType.melious,
+        InferenceProviderType.gemini,
+        InferenceProviderType.alibaba,
+      ]);
+      expect(
+        find.text('Mistral is the recommended default.'),
+        findsOneWidget,
+      );
+      expect(
+        tester.getTopLeft(find.text('Mistral')).dy,
+        lessThan(tester.getTopLeft(find.text('Melious.ai')).dy),
+      );
       expect(find.text('Melious.ai'), findsOneWidget);
       expect(find.text('Gemini'), findsOneWidget);
       expect(find.text('Mistral'), findsOneWidget);

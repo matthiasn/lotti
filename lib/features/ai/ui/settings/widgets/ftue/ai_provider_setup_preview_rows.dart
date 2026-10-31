@@ -368,7 +368,8 @@ AiProviderSetupPreviewPreset? openAiPreset() {
 }
 
 /// FTUE preset for Mistral: the EU-hosted "Mistral (EU)" profile plus the
-/// flash, reasoning, and audio models. Null when the canonical lookup fails.
+/// thinking, high-end thinking, transcription, and read-aloud models. Null
+/// when the canonical lookup fails.
 AiProviderSetupPreviewPreset? mistralPreset() {
   final known = getMistralFtueKnownModels();
   assert(known != null, 'Mistral FTUE known-model lookup returned null');
@@ -377,7 +378,12 @@ AiProviderSetupPreviewPreset? mistralPreset() {
     providerName: 'Mistral',
     profileName: 'Mistral (EU)',
     categoryName: ftueMistralCategoryName,
-    models: <KnownModel>[known.flash, known.reasoning, known.audio],
+    models: <KnownModel>[
+      known.thinking,
+      known.highEndThinking,
+      known.transcription,
+      known.speech,
+    ],
   );
 }
 
