@@ -2609,6 +2609,42 @@ void main() {
           expect(b.builder.items.single.targetBase, {'projectId': null});
         });
 
+        test(
+          'reports a proposal the builder already holds as skipped',
+          () async {
+            final builder = ChangeSetBuilder(
+              agentId: agentId,
+              taskId: taskId,
+              threadId: 'thread-001',
+              runKey: 'run-key-001',
+            );
+            await builder.addItem(
+              toolName: 'set_task_project',
+              args: const {
+                'projectId': 'project-colony',
+                'projectTitle': 'Colony census',
+              },
+              humanSummary: 'Move to project "Colony census"',
+            );
+            final strategy = _createStrategy(
+              executor: mockExecutor,
+              syncService: mockSyncService,
+              builder: builder,
+              resolveCategoryProjects: () async => [colony, iceShelf],
+            ).strategy;
+
+            await strategy.processToolCalls(
+              toolCalls: [
+                call('set_task_project', {'projectId': 'project-colony'}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(builder.items, hasLength(1));
+            expect(responseTo('call-1'), startsWith('Skipped: Already queued'));
+          },
+        );
+
         test('rejects a project outside the category fail-closed', () async {
           final b = bench(resolveCategoryProjects: () async => [colony]);
 
