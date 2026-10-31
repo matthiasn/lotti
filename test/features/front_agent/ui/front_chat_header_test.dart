@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -22,6 +23,8 @@ import 'package:lotti/features/front_agent/state/front_conversation_providers.da
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -36,6 +39,8 @@ void main() {
     FrontChatThread thread = FrontChatThread.empty,
     FrontChatThread Function()? threadOf,
     FrontConversationIndex conversations = FrontConversationIndex.empty,
+    TtsPlaybackController Function()? voice,
+    bool activeLoading = false,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -79,6 +84,12 @@ void main() {
             frontConversationsProvider.overrideWith(
               (ref) async => conversations,
             ),
+            if (voice != null)
+              ttsPlaybackControllerProvider.overrideWith(voice),
+            if (activeLoading)
+              frontActiveConversationProvider.overrideWith(
+                (ref) => Completer<String>().future,
+              ),
           ],
         ),
       );
@@ -353,6 +364,94 @@ void main() {
     expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
   });
 
+  group('her voice', () {
+    final census = FrontConversationIndex(
+      conversations: [
+        FrontConversation(
+          id: 'c-1',
+          title: 'Plan the census',
+          lastActivity: DateTime(2026, 10, 31, 9),
+          archived: false,
+        ),
+      ],
+    );
+
+    testWidgets('her lips follow her voice in the open conversation', (
+      tester,
+    ) async {
+      await pumpHeader(tester, companion: true, conversations: census);
+
+      final speaker = tester.widget<CompanionSpeaker>(
+        find.descendant(
+          of: find.byKey(FrontChatHeroKeys.figure),
+          matching: find.byType(CompanionSpeaker),
+        ),
+      );
+      expect(speaker.sourceId, 'front-chat:c-1');
+    });
+
+    testWidgets('she stays the same figure as she starts and stops '
+        'speaking — her animator lives through it — and a tap stops her '
+        'only while she speaks', (tester) async {
+      final voice = _Voice(const TtsPlaybackState());
+      await pumpHeader(
+        tester,
+        companion: true,
+        conversations: census,
+        voice: () => voice,
+      );
+      Element figure() => tester.element(find.byType(CompanionSpeaker));
+      final before = figure();
+
+      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
+      expect(voice.stoppedSources, isEmpty, reason: 'nothing to stop');
+
+      voice.play('front-chat:c-1');
+      await tester.pump();
+      expect(figure(), same(before));
+
+      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
+      await tester.pump();
+      expect(voice.stoppedSources, ['front-chat:c-1']);
+      expect(figure(), same(before));
+    });
+
+    testWidgets('before any conversation resolves she simply stands', (
+      tester,
+    ) async {
+      await pumpHeader(tester, companion: true, activeLoading: true);
+
+      expect(
+        find.descendant(
+          of: find.byKey(FrontChatHeroKeys.figure),
+          matching: find.byType(CompanionView),
+        ),
+        findsOne,
+      );
+      expect(find.byType(CompanionSpeaker), findsNothing);
+    });
+
+    testWidgets('a tap on her while she speaks stops her', (tester) async {
+      final voice = _Voice(
+        const TtsPlaybackState(
+          status: TtsPlaybackStatus.playing,
+          sourceId: 'front-chat:c-1',
+        ),
+      );
+      await pumpHeader(
+        tester,
+        companion: true,
+        conversations: census,
+        voice: () => voice,
+      );
+
+      await tester.tap(find.byKey(FrontChatHeroKeys.stop));
+      await tester.pump();
+
+      expect(voice.stoppedSources, ['front-chat:c-1']);
+    });
+  });
+
   group('the inbox dot', () {
     FrontChatThread waiting(int count) => FrontChatThread(
       messages: const [],
@@ -395,4 +494,27 @@ void main() {
       );
     });
   });
+}
+
+/// The voice, playing or not, recording what it was asked to stop.
+class _Voice extends TtsPlaybackController {
+  _Voice(this._initial);
+
+  final TtsPlaybackState _initial;
+  final stoppedSources = <String?>[];
+
+  @override
+  TtsPlaybackState build() => _initial;
+
+  @override
+  Future<void> stop({String? sourceId}) async {
+    stoppedSources.add(sourceId);
+    state = const TtsPlaybackState();
+  }
+
+  /// Starts speaking [sourceId].
+  void play(String sourceId) => state = TtsPlaybackState(
+    status: TtsPlaybackStatus.playing,
+    sourceId: sourceId,
+  );
 }

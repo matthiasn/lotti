@@ -79,8 +79,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               offset: _controller.text.length,
             );
             widget.onDraftChanged(transcript);
-            // Tap to talk, tap to send: what was said goes out as is.
-            if (widget.voiceFirst) widget.onSend();
+            // Tap to talk, tap to send: what was said goes out as is, and
+            // the host hears that it was said, not typed.
+            if (widget.voiceFirst) (widget.onSendSpoken ?? widget.onSend)();
           }
           ref.read(chatRecorderControllerProvider.notifier).clearResult();
         }

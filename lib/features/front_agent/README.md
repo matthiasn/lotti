@@ -1,8 +1,9 @@
 # Front agent
 
-Status: slices 0–2, and slices A and B of the voice-first plan
+Status: slices 0–2, and slices A, B and C1 of the voice-first plan
 (`docs/implementation_plans/2026-10-31_voice_first_front_agent.md`): she
-answers from the journal, and the user keeps many conversations with her. Behind the `enable_front_agent` flag in Advanced
+answers from the journal, the user keeps many conversations with her, and a
+question asked aloud is answered aloud. Behind the `enable_front_agent` flag in Advanced
 settings.
 
 The front agent is the one agent the user talks to in one place. It does not

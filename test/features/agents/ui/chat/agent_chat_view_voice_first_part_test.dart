@@ -89,6 +89,7 @@ void main() {
     Widget? Function(BuildContext, AgentChatMessage)? footerTrailing,
     ValueChanged<ScrollMetrics>? onThreadScrolled,
     bool reducedMotion = false,
+    VoidCallback? onSendSpoken,
   }) async {
     final recorder = _Recorder(status);
     await tester.pumpWidget(
@@ -113,6 +114,7 @@ void main() {
                 leading: leading,
                 footerTrailingBuilder: footerTrailing,
                 onThreadScrolled: onThreadScrolled,
+                onSendSpoken: onSendSpoken,
               ),
             ),
           ),
@@ -280,7 +282,18 @@ void main() {
         status: ChatRecorderStatus.recording,
       );
 
-      expect(find.text('Listening — tap when done'), findsOne);
+      // The waveform says it is listening: no line under it says so too,
+      // but its place is kept and screen readers hear it on the pill.
+      expect(find.text('Listening — tap when done'), findsNothing);
+      expect(find.bySemanticsLabel('Listening — tap when done'), findsOne);
+      final line = tester.widget<Visibility>(
+        find.ancestor(
+          of: find.text('Transcribing…'),
+          matching: find.byType(Visibility),
+        ),
+      );
+      expect(line.visible, isFalse);
+      expect(line.maintainSize, isTrue);
       // The talk disc's own teal, stretched into a pill.
       final pill = tester.widget<Material>(
         find.byKey(const Key('agent-chat-talk')),
@@ -391,6 +404,20 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('agent-chat-talk')));
       expect(recorder.stops, 0);
+    });
+
+    testWidgets('a host that asks hears a transcript went out spoken', (
+      tester,
+    ) async {
+      var spoken = 0;
+      final recorder = await pumpView(tester, onSendSpoken: () => spoken++);
+
+      recorder.hear('And the tagging?');
+      await tester.pump();
+
+      expect(draft, 'And the tagging?');
+      expect(spoken, 1);
+      expect(sends, 0, reason: 'a spoken send is not a typed one');
     });
 
     testWidgets('what was said goes out as it is', (tester) async {

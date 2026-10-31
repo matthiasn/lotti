@@ -12,6 +12,7 @@ import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -394,6 +395,66 @@ void main() {
 
       expect(state().failedMessage, 'Hello');
       expect(state().failedMessageId, isNull);
+    });
+  });
+
+  group('a spoken turn', () {
+    test('marks its conversation for a spoken reply, as of the send', () async {
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenAnswer((_) async {
+        // Her reply can land before the send returns: the mark is there.
+        expect(container.read(frontSpokenTurnProvider)?.conversationId, 'c-1');
+      });
+      controller().updateDraft('Hello');
+
+      await controller().sendSpoken();
+
+      final turn = container.read(frontSpokenTurnProvider);
+      expect(turn?.conversationId, 'c-1');
+      expect(turn?.spokenAt, isNotNull);
+      expect(state().failedMessage, isNull);
+    });
+
+    test('a typed turn after it gets a written reply only', () async {
+      when(
+        () => chatService.sendMessage(
+          text: any(named: 'text'),
+          conversationId: 'c-1',
+        ),
+      ).thenAnswer((_) async {});
+      controller().updateDraft('Hello');
+      await controller().sendSpoken();
+      expect(container.read(frontSpokenTurnProvider), isNotNull);
+
+      controller().updateDraft('And the cave?');
+      await controller().send();
+
+      expect(container.read(frontSpokenTurnProvider), isNull);
+    });
+
+    test('a spoken turn whose wake fails waits for no reply either', () async {
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenThrow(const FrontChatTurnException('boom', messageId: 'm-1'));
+      controller().updateDraft('Hello');
+
+      await controller().sendSpoken();
+
+      expect(container.read(frontSpokenTurnProvider), isNull);
+      expect(state().failedMessageId, 'm-1');
+    });
+
+    test('a spoken turn that cannot be sent waits for no reply', () async {
+      when(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).thenThrow(StateError('db closed'));
+      controller().updateDraft('Hello');
+
+      await controller().sendSpoken();
+
+      expect(container.read(frontSpokenTurnProvider), isNull);
+      expect(state().failedMessage, 'Hello');
     });
   });
 

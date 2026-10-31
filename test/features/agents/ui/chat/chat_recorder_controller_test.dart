@@ -15,6 +15,8 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -221,6 +223,74 @@ void main() {
       await controller.dispose();
     },
   );
+
+  group('talking over the voice', () {
+    Future<({int stopsBeforeMic, _Voice voice})> startWith(
+      TtsPlaybackState playing,
+    ) async {
+      final directory = await Directory.systemTemp.createTemp('barge_');
+      addTearDown(() async {
+        if (await directory.exists()) await directory.delete(recursive: true);
+      });
+      final voice = _Voice(playing);
+      var stopsBeforeMic = -1;
+      final recorder = MockAudioRecorder();
+      when(recorder.hasPermission).thenAnswer((_) async => true);
+      when(recorder.dispose).thenAnswer((_) async {});
+      when(recorder.stop).thenAnswer((_) async => null);
+      when(
+        () => recorder.start(any(), path: any(named: 'path')),
+      ).thenAnswer((_) async => stopsBeforeMic = voice.stops);
+      when(
+        () => recorder.onAmplitudeChanged(any()),
+      ).thenAnswer((_) => const Stream.empty());
+      final container = ProviderContainer(
+        overrides: [
+          ttsPlaybackControllerProvider.overrideWith(() => voice),
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => recorder,
+              nowMillisProvider: () => 1000,
+              tempDirectoryProvider: () async => directory,
+              transcriptionService: MockAudioTranscriptionService(),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        chatRecorderControllerProvider,
+        (_, _) {},
+      );
+      addTearDown(subscription.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+      await controller.start();
+      await controller.cancel();
+      return (stopsBeforeMic: stopsBeforeMic, voice: voice);
+    }
+
+    test('starting to record stops her voice before the microphone opens, '
+        'so it never records what the app says', () async {
+      final run = await startWith(
+        const TtsPlaybackState(
+          status: TtsPlaybackStatus.playing,
+          sourceId: 'front-chat:c-1',
+        ),
+      );
+
+      expect(run.voice.stops, 1);
+      expect(run.stopsBeforeMic, 1);
+    });
+
+    test('a silent voice is left alone', () async {
+      final run = await startWith(const TtsPlaybackState());
+
+      expect(run.voice.stops, 0);
+      expect(run.stopsBeforeMic, 0);
+    });
+  });
 
   group('recording operation ownership', () {
     late ProviderContainer container;
@@ -2911,4 +2981,22 @@ void main() {
       expect(withError.transcript, isNull);
     });
   });
+}
+
+/// The voice as the recorder sees it: busy or not, and how often it was
+/// stopped.
+class _Voice extends TtsPlaybackController {
+  _Voice(this._initial);
+
+  final TtsPlaybackState _initial;
+  int stops = 0;
+
+  @override
+  TtsPlaybackState build() => _initial;
+
+  @override
+  Future<void> stop({String? sourceId}) async {
+    stops++;
+    state = const TtsPlaybackState();
+  }
 }

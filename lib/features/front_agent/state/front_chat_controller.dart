@@ -7,6 +7,7 @@ import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
 
 @immutable
 class FrontChatComposerState {
@@ -91,9 +92,14 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   /// Sends the draft.
   Future<void> send() => sendText(state.draft);
 
+  /// Sends the draft the user spoke — a transcript — so her reply is spoken
+  /// back.
+  Future<void> sendSpoken() => sendText(state.draft, spoken: true);
+
   /// Sends [text] as the user's next turn — the draft, or the label of a
-  /// chip the user tapped under a clarifying question.
-  Future<void> sendText(String text) async {
+  /// chip the user tapped under a clarifying question. A [spoken] turn's
+  /// reply is spoken back; any other turn's only written.
+  Future<void> sendText(String text, {bool spoken = false}) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
     // A send is a new turn, and its conversation is where it lands.
@@ -102,6 +108,10 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     String? conversationId;
     try {
       final landing = conversationId = await _landingConversation();
+      // Marked before the turn is written: her reply can land before the
+      // send returns.
+      final voice = ref.read(frontSpokenTurnProvider.notifier);
+      spoken ? voice.spoke(landing) : voice.settle();
       // The identity is created on first use, with the narrow default
       // allow-list (decision 4).
       await ref.read(frontAgentServiceProvider).getOrCreate();
@@ -112,6 +122,8 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
       _reproject();
       state = state.settled();
     } on FrontChatTurnException catch (error) {
+      // No answer is coming for a turn that did not go through.
+      ref.read(frontSpokenTurnProvider.notifier).settle();
       _reproject();
       state = state.settled(
         draft: state.draft,
@@ -120,6 +132,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedConversationId: conversationId,
       );
     } catch (_) {
+      ref.read(frontSpokenTurnProvider.notifier).settle();
       state = state.settled(
         draft: state.draft,
         failedMessage: message,

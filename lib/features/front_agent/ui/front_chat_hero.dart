@@ -2,10 +2,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/companion/rig/companion_painter.dart';
 import 'package:lotti/features/companion/state/companion_look_controller.dart';
+import 'package:lotti/features/companion/ui/companion_speaker.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
+import 'package:lotti/features/front_agent/state/front_voice_providers.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_voice.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
@@ -18,6 +22,7 @@ abstract final class FrontChatHeroKeys {
   static const Key figure = Key('front-chat-figure');
   static const Key title = Key('front-chat-hero-title');
   static const Key archived = Key('front-chat-archived');
+  static const Key stop = Key('front-chat-stop-voice');
 }
 
 /// Whether the hero has scrolled out of view, so the header carries her
@@ -134,6 +139,7 @@ class FrontCompanionFigure extends ConsumerWidget {
     final tokens = context.designTokens;
     final companionOn =
         ref.watch(configFlagProvider(enableCompanionFlag)).value ?? false;
+    final conversationId = ref.watch(frontActiveConversationProvider).value;
     return ExcludeSemantics(
       child: Container(
         key: size == ControlSizes.avatarHero ? FrontChatHeroKeys.figure : null,
@@ -147,15 +153,64 @@ class FrontCompanionFigure extends ConsumerWidget {
           border: Border.all(color: tokens.colors.aiCard.border),
         ),
         child: companionOn
-            ? CompanionView(
-                look: ref.watch(companionLookProvider),
-                framing: CompanionFraming.bust,
-              )
+            ? _SpeakingFigure(conversationId: conversationId)
             : Icon(
                 LottiIcons.aiSpark,
                 size: size / 2,
                 color: tokens.colors.aiCard.accent,
               ),
+      ),
+    );
+  }
+}
+
+/// Her bust speaking: her lips follow her voice in [conversationId], she
+/// holds a pose for the turn (listening, thinking), and a tap stops her
+/// while she speaks. Before any conversation resolves, she simply stands.
+class _SpeakingFigure extends ConsumerWidget {
+  const _SpeakingFigure({required this.conversationId});
+
+  final String? conversationId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final holding = FrontVoice.holdingOf(ref);
+    final id = conversationId;
+    if (id == null) {
+      return CompanionView(
+        look: ref.watch(companionLookProvider),
+        framing: CompanionFraming.bust,
+        holding: holding,
+      );
+    }
+    final sourceId = frontVoiceSourceId(id);
+    final speaking = ref.watch(
+      ttsPlaybackControllerProvider.select((s) => s.isActiveFor(sourceId)),
+    );
+    // The same tree speaking or not, so her animator — and the sign-off
+    // at the end of an utterance — lives through it: only what a tap does,
+    // and what it is called, come and go. (A tooltip that switches off
+    // re-parents its child, so there is none.)
+    return Semantics(
+      button: speaking,
+      label: speaking ? context.messages.aiSummaryStopTooltip : null,
+      child: MouseRegion(
+        cursor: speaking ? SystemMouseCursors.click : MouseCursor.defer,
+        child: GestureDetector(
+          key: FrontChatHeroKeys.stop,
+          behavior: HitTestBehavior.opaque,
+          onTap: speaking
+              ? () => ref
+                    .read(ttsPlaybackControllerProvider.notifier)
+                    .stop(sourceId: sourceId)
+                    .ignore()
+              : null,
+          child: CompanionSpeaker(
+            sourceId: sourceId,
+            framing: CompanionFraming.bust,
+            holding: holding,
+          ),
+        ),
       ),
     );
   }
