@@ -113,6 +113,16 @@ void main() {
     expect(spoken('uses'), greaterThan(spoken('uss')));
   });
 
+  test('the cue at a time is held to the line', () {
+    final sync = TextLipSync('ma');
+    expect(sync.cueAtSeconds(-1).current, Viseme.a);
+    expect(sync.cueAtSeconds(-1).previous, Viseme.x);
+    final rest = sync.cueAtSeconds(99);
+    expect(rest.current, Viseme.x);
+    expect(rest.previous, Viseme.d);
+    expect(rest.start, sync.spokenSeconds);
+  });
+
   test('a full stop rests the mouth longer than a word break', () {
     final word = TextLipSync('ma ma').length;
     final stop = TextLipSync('ma. ma').length;

@@ -94,5 +94,29 @@ void main() {
       );
       expect(() => readPcm16(_riff([('fmt ', _fmt())])), throwsFormatException);
     });
+
+    test('a truncated or malformed fmt chunk is a FormatException too', () {
+      // Cut off inside the fmt chunk, its declared size still 16.
+      final whole = _riff([('fmt ', _fmt())]);
+      expect(
+        () => readPcm16(Uint8List.sublistView(whole, 0, 30)),
+        throwsFormatException,
+      );
+      // A chunk too small to hold the format.
+      expect(
+        () => readPcm16(_riff([('fmt ', _fmt().sublist(0, 8))])),
+        throwsFormatException,
+      );
+      // No channels: there is nothing to average.
+      expect(
+        () => readPcm16(
+          _riff([
+            ('fmt ', _fmt(channels: 0)),
+            ('data', _samples([1])),
+          ]),
+        ),
+        throwsFormatException,
+      );
+    });
   });
 }

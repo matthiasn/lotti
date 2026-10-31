@@ -111,7 +111,6 @@ class VoicedTextTrack implements MouthTrack {
     if (l < _quiet || !_voiced) return Viseme.x.shape;
     final now = position.inMicroseconds / 1e6;
     final cue = words.cueAtSeconds(_textOf(now));
-    if (cue == null) return Viseme.x.shape;
     // Blended over the voice's own time since the shape began: its letters
     // may be stretched or squeezed to the sound, the lips' speed is not.
     final shape = cue.previous.shape.blend(

@@ -180,22 +180,22 @@ class TextLipSync implements MouthTrack {
 
   /// [mouthAt], for a time in seconds on this track's clock.
   MouthShape mouthAtSeconds(double t) {
+    if (t < 0 || t >= _end) return Viseme.x.shape;
     final cue = cueAtSeconds(t);
-    if (cue == null) return Viseme.x.shape;
     return cue.previous.shape.blend(
       cue.current.shape,
       smoothstep((t - cue.start) / blendSeconds),
     );
   }
 
-  /// The shape the mouth is on at [t] seconds on this track's clock, when it
-  /// started, and the shape it is blending from; null outside the line.
+  /// The shape the mouth is on at [t] seconds on this track's clock (held
+  /// to the line: before it, its first shape; after it, its closing rest),
+  /// when that shape started, and the shape it is blending from.
   ///
   /// A track that moves the words onto another clock blends on that clock,
   /// so a shape always takes [blendSeconds] of the voice to form, however
   /// far its letters were stretched.
-  ({Viseme current, Viseme previous, double start})? cueAtSeconds(double t) {
-    if (t < 0 || t >= _end || cues.isEmpty) return null;
+  ({Viseme current, Viseme previous, double start}) cueAtSeconds(double t) {
     // The last cue that has started; cues are in time order.
     var lo = 0;
     var hi = cues.length;
