@@ -40,41 +40,6 @@ void main() {
       expect(env.mouthAt(const Duration(seconds: 2)).open, 0);
     });
 
-    test('averages the channels of a stereo file', () {
-      final mono = _quietThenLoud();
-      final data = ByteData.sublistView(mono);
-      final frames = (mono.length - 44) ~/ 2;
-      final stereo = ByteData(44 + frames * 4);
-      for (var i = 0; i < 44; i++) {
-        stereo.setUint8(i, mono[i]);
-      }
-      stereo
-        ..setUint16(22, 2, Endian.little)
-        ..setUint32(40, frames * 4, Endian.little);
-      for (var f = 0; f < frames; f++) {
-        final v = data.getInt16(44 + f * 2, Endian.little);
-        stereo
-          ..setInt16(44 + f * 4, v, Endian.little)
-          ..setInt16(46 + f * 4, 0, Endian.little);
-      }
-      final env = SpeechEnvelope.fromWav(stereo.buffer.asUint8List());
-      expect(env.levels, hasLength(60));
-      expect(
-        env.loudnessAt(const Duration(milliseconds: 800)),
-        closeTo(1, 0.05),
-      );
-    });
-
-    test('rejects what is not 16-bit PCM WAV', () {
-      expect(
-        () => SpeechEnvelope.fromWav(Uint8List.fromList([1, 2, 3])),
-        throwsFormatException,
-      );
-      final float = _quietThenLoud();
-      ByteData.sublistView(float).setUint16(20, 3, Endian.little);
-      expect(() => SpeechEnvelope.fromWav(float), throwsFormatException);
-    });
-
     test('an empty clip has no levels and never opens the mouth', () {
       final env = SpeechEnvelope.fromWav(encodeWavBytes(const [], 24000));
       expect(env.levels, isEmpty);

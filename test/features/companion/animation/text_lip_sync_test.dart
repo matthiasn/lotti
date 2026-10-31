@@ -26,7 +26,7 @@ void main() {
     // One sound's time, not two letters'.
     expect(
       TextLipSync('ck').spokenLength,
-      lessThan(TextLipSync('kk').spokenLength),
+      lessThan(TextLipSync('ct').spokenLength),
     );
     expect(shapes('ng'), [Viseme.b, Viseme.x]);
   });
@@ -68,6 +68,59 @@ void main() {
     // Each pause starts where its rest begins.
     expect(track.mouthAtSeconds(comma.start + 0.1).open, 0);
     expect(TextLipSync('no stops here').pauses, isEmpty);
+  });
+
+  test('each sound is kept with its broad class, in order', () {
+    final sync = TextLipSync('ship, me');
+    expect(sync.sounds.map((u) => u.sound), [
+      SoundClass.fricative,
+      SoundClass.vowel,
+      SoundClass.stop,
+      SoundClass.pause,
+      SoundClass.nasal,
+      SoundClass.vowel,
+    ]);
+    for (var i = 1; i < sync.sounds.length; i++) {
+      expect(
+        sync.sounds[i].start,
+        greaterThanOrEqualTo(sync.sounds[i - 1].end),
+      );
+    }
+    // "th" is the dark, voiced sound of "the", not a hiss.
+    expect(TextLipSync('the').sounds.first.sound, SoundClass.approximant);
+    expect(TextLipSync('wall').sounds.last.sound, SoundClass.approximant);
+  });
+
+  test('a doubled consonant is one sound', () {
+    expect(
+      TextLipSync('waddle').sounds,
+      hasLength(TextLipSync('wadle').sounds.length),
+    );
+    expect(TextLipSync('ll').spokenLength, TextLipSync('l').spokenLength);
+    // Vowels are not merged: "aa" is still two.
+    expect(TextLipSync('aa').sounds, hasLength(2));
+  });
+
+  test('the e of a final -es or -ed is silent where English drops it', () {
+    Duration spoken(String w) => TextLipSync(w).spokenLength;
+    expect(spoken('dives'), spoken('divs'));
+    expect(spoken('walked'), spoken('walkd'));
+    expect(spoken('waddles'), spoken('wadls'));
+    // Said after a hiss, or after t or d, and in short words.
+    expect(spoken('faces'), greaterThan(spoken('facs')));
+    expect(spoken('boxes'), greaterThan(spoken('boxs')));
+    expect(spoken('wanted'), greaterThan(spoken('wantd')));
+    expect(spoken('uses'), greaterThan(spoken('uss')));
+  });
+
+  test('the cue at a time is held to the line', () {
+    final sync = TextLipSync('ma');
+    expect(sync.cueAtSeconds(-1).current, Viseme.a);
+    expect(sync.cueAtSeconds(-1).previous, Viseme.x);
+    final rest = sync.cueAtSeconds(99);
+    expect(rest.current, Viseme.x);
+    expect(rest.previous, Viseme.d);
+    expect(rest.start, sync.spokenSeconds);
   });
 
   test('a full stop rests the mouth longer than a word break', () {

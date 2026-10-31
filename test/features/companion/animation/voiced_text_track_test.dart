@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/companion/animation/sound_features.dart';
 import 'package:lotti/features/companion/animation/speech_envelope.dart';
 import 'package:lotti/features/companion/animation/voiced_text_track.dart';
 import 'package:lotti/features/companion/model/mouth_shape.dart';
+import 'package:lotti/features/tts/engine/wav_writer.dart';
+
+import '../companion_test_utils.dart';
 
 Duration _ms(int ms) => Duration(milliseconds: ms);
 
@@ -27,8 +31,8 @@ void main() {
   });
 
   test("the words' shapes are stretched over the voiced part", () {
-    // "a" then "m": open first, closed lips by the end of the voice.
-    final track = VoicedTextTrack(envelope, 'aaaaaaaa mmmmmmmm');
+    // "a" then m/b: open first, closed lips by the end of the voice.
+    final track = VoicedTextTrack(envelope, 'aaaaaaaa mbmbmbmb');
     expect(track.mouthAt(_ms(600)).open, greaterThan(5));
     expect(track.mouthAt(_ms(1350)).open, lessThan(0.5));
   });
@@ -37,7 +41,7 @@ void main() {
     // The text's closing rest is not stretched over the voice: an open
     // vowel ending the line is still open just before the voice stops,
     // rather than the lips closing early on a rest the voice does not have.
-    final track = VoicedTextTrack(envelope, 'mmmmmmmm aaaaaaaa');
+    final track = VoicedTextTrack(envelope, 'mbmbmbmb aaaaaaaa');
     expect(track.mouthAt(_ms(1450)).open, greaterThan(5));
   });
 
@@ -102,6 +106,67 @@ void main() {
       final mouth = track.mouthAt(_ms(2330));
       expect(mouth.tongueUp, greaterThan(0.5));
       expect(mouth.open, greaterThan(3));
+    });
+  });
+
+  group('timed by the sound of the voice', () {
+    // "ma sa": the voice says "ma" for 0.2 s, hisses its s for 0.6 s, and
+    // ends on a 0.2 s "a". The letters give the s barely a sixth of that.
+    final wav = encodeWavBytes(
+      synthSpeech([
+        (Sound.vowel, 0.2),
+        (Sound.hiss, 0.6),
+        (Sound.vowel, 0.2),
+      ]),
+      24000,
+    );
+    const text = 'ma sa';
+
+    test('the hiss starts where the voice starts hissing', () {
+      final track = VoicedTextTrack.fromWav(wav, text);
+      expect(
+        track.timeOf(text.indexOf('s')).inMilliseconds,
+        closeTo(200, 40),
+      );
+      // The last vowel starts as the voice turns back to a vowel.
+      expect(
+        track.timeOf(text.lastIndexOf('a')).inMilliseconds,
+        closeTo(800, 40),
+      );
+    });
+
+    test('mid-hiss the mouth shows the s, not the vowel before it', () {
+      final mouth = VoicedTextTrack.fromWav(wav, text).mouthAt(_ms(500));
+      // Teeth together, barely open; one stretch over the voice still
+      // held the first "a" wide open here.
+      expect(mouth.teethTop, greaterThan(0.5));
+      expect(mouth.open, lessThan(Viseme.b.shape.open + 0.01));
+    });
+
+    test('with the sound, a comma is placed by it rather than pinned', () {
+      // A comma and a full stop, each with a silence in the voice.
+      final levels = SpeechEnvelope([
+        for (var i = 0; i < 20; i++) 1.0,
+        for (var i = 0; i < 20; i++) 0.0,
+        for (var i = 0; i < 20; i++) 1.0,
+        for (var i = 0; i < 20; i++) 0.0,
+        for (var i = 0; i < 20; i++) 1.0,
+      ]);
+      const line = 'ma, ma. ma';
+      final plain = VoicedTextTrack(levels, line);
+      final sounded = VoicedTextTrack(
+        levels,
+        line,
+        sound: SoundFeatures(List.filled(100, 500)),
+      );
+      expect(plain.alignment.matches, hasLength(2));
+      // Only the full stop may pin: it is the first such pause.
+      expect(sounded.alignment.matches, [(text: 0, voice: 1)]);
+      // The comma's silence still lands where the voice is silent.
+      expect(
+        sounded.timeOf(line.indexOf(' ma.') + 1).inMilliseconds,
+        closeTo(667, 40),
+      );
     });
   });
 

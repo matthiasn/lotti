@@ -52,6 +52,18 @@ sources:
     resource: ../../lib/features/companion/animation/pause_alignment.dart
     title: PauseAlignment, the words pinned to the voice's pauses
     last_modified: 2026-10-31
+  - id: sound-alignment
+    resource: ../../lib/features/companion/animation/sound_alignment.dart
+    title: SoundAlignment and ClockWarp, each sound pinned to the voice
+    last_modified: 2026-10-31
+  - id: sound-features
+    resource: ../../lib/features/companion/animation/sound_features.dart
+    title: SoundFeatures, a voice's brightness per window
+    last_modified: 2026-10-31
+  - id: wav-pcm
+    resource: ../../lib/features/companion/animation/wav_pcm.dart
+    title: readPcm16, the voices' WAV read once
+    last_modified: 2026-10-31
   - id: painter
     resource: ../../lib/features/companion/rig/companion_painter.dart
     title: CompanionPainter and the stage painters
@@ -213,16 +225,24 @@ position, so a stall or a seek cannot desync the lips from the voice.
 |-------|-------------|---------------|
 | `TextLipSync` | the text, letter by letter, into the eight Rhubarb speaking shapes and the rest, at a fixed rate | how open the mouth is |
 | `SpeechEnvelope` | the loudness (no words): rest, B, C, D only | a WAV's per-frame RMS |
-| `VoicedTextTrack` | the text, pinned to the voice's pauses | a WAV's envelope, which also gates the shapes |
+| `VoicedTextTrack` | the text, pinned to the voice's sentences and then to each of its sounds | a WAV's envelope, which also gates the shapes |
 
 **The eight shapes and the rest** (`Viseme`, the Rhubarb convention) are all
 reached from the text: A closed lips (m, b, p); B teeth together (every other
 consonant, "ee", "ck", "ng"); C open (e, i, u, y); D wide (a); E rounded (o,
 r, "sh", "ch"); F puckered (w, q, "oo", "ou", "ow", "wh"); G the bite (f, v,
 "ph"); H the tongue up (l, "th"); X rest at punctuation. A word's silent final
-e ("have", "time") takes no shape and no time, so the word ends on the shape
-the voice ends it on. Spelling is not sound; this is a stand-in for Rhubarb,
-a native binary the app cannot ship.
+e ("have", "time"), the e of a final "-es" or "-ed" where English drops it
+("dives", "walked", but not "faces" or "wanted"), and the second of a doubled
+consonant ("waddle") take no shape and no time. Spelling is not sound; this is
+a stand-in for Rhubarb, a native binary the app cannot ship on every
+platform.
+
+`TextLipSync` also keeps every sound in order as a `SoundUnit` with a broad
+`SoundClass` — vowel, fricative (a hiss: f, v, s, z, x, j, "sh", "ch",
+"ph"), stop (a closure), nasal (m, n, "ng"), approximant (l, r, w, "wh", and
+"th", which is mostly the dark, voiced sound of "the") or pause — which is
+what a recorded voice's sound is matched against.
 
 Every track also answers `timeOf(offset)`: when the character at that offset
 of its words is spoken, on the same clock as its shapes — `TextLipSync`
@@ -233,46 +253,89 @@ has no words and answers null. This is how her face is timed to the words.
 ## Pinning the words to the voice
 
 The letters' fixed durations know the order of the shapes, not their timing.
-`VoicedTextTrack` used to stretch the text's whole spoken span over the voice
-in one go, which spread the guess's error over the clip: on a measured cloud
-voice the lips ran 0.3 s behind by the first comma and shaped the end of one
-phrase over the start of the next. Where a voice pauses is plain in its
-loudness, though, and the pauses sit at the text's punctuation.
+A single stretch of the text over the voice spread the guess's error over the
+clip: on a measured cloud voice the lips ran 0.3 s behind by the first comma.
+`VoicedTextTrack` pins the words in two passes, both on the clip's own WAV
+read once (`readPcm16`) into two per-window readings: loudness
+(`SpeechEnvelope`) and brightness (`SoundFeatures`).
 
 ```mermaid
 flowchart LR
-  W[WAV] --> E[SpeechEnvelope<br/>RMS per 1/60 s]
+  W[WAV] --> R[readPcm16]
+  R --> E[SpeechEnvelope<br/>loudness per 1/60 s]
+  R --> B[SoundFeatures<br/>brightness per 1/60 s]
   E --> G["voiced span + gaps<br/>silent ≥ 0.15 s"]
-  T[clip's words] --> L[TextLipSync<br/>cues, pauses, weights]
-  G --> A[PauseAlignment.align<br/>ordered pause ↔ gap match]
+  T[clip's words] --> L[TextLipSync<br/>cues, pauses, sound units]
+  G --> A[PauseAlignment.align<br/>sentence stops ↔ gaps]
   L --> A
-  A --> M[piecewise map<br/>text clock ⇄ voice clock]
+  A --> Ph[phrases]
+  Ph --> S[SoundAlignment.knots<br/>each sound over its windows]
+  L --> S
+  E --> S
+  B --> S
+  S --> M[ClockWarp<br/>text clock ⇄ voice clock]
   P[playhead] --> M
-  M --> S[shape at the text time]
+  M --> C[cue at the text time,<br/>blended on the voice's time]
   E --> Gate[loudness gate]
-  S --> Gate --> F[mouth]
+  C --> Gate --> F[mouth]
 ```
+
+**Pass one: the pauses** (`PauseAlignment`).
 
 - **Both clocks are squeezed to speech.** The text's pauses (punctuation, a
   run of stops and the spaces after them as one) and the voice's gaps
   (silences of at least `VoicedTextTrack.minGapSeconds` inside the voiced
   span; a stop consonant's closure is shorter) are taken out, so each side
   is a clock of speech alone.
-- **Pauses are matched to gaps in order** (`PauseAlignment.align`), at the
-  lowest total cost: a stretch between two pins costs how far its voice length
-  strays from its text length at the clip's overall pace; a pause left
-  unpinned costs its weight (a comma 0.5, a full stop 1.2, a line break 1.5 —
-  a voice often runs through a comma); a gap left unpinned costs more the
-  longer it is. The search is windowed (a stretch passes at most twelve pauses
-  or gaps) and banded (a pin's two positions within 30% of the speech of each
-  other), and the end is always reachable, so a match always exists.
-- **Each pin holds both clocks together.** Between pins the words are
-  stretched linearly; inside a gap the words wait at their pause, and the word
-  after a pinned pause starts the moment the voice resumes. With nothing
-  pinned it falls back to one stretch over the speech, gaps squeezed out.
-- The envelope, the gaps and the match are built in `loadSpokenTrack`'s
-  `Isolate.run`, never on the UI isolate, and the per-frame lookups are binary
-  searches.
+- **Pauses are matched to gaps in order**, at the lowest total cost: a
+  stretch between two pins costs how far its voice length strays from its
+  text length at the clip's overall pace; a pause left unpinned costs its
+  weight (a comma 0.5, a full stop 1.2, a line break 1.5); a gap left
+  unpinned costs more the longer it is. The search is windowed (a stretch
+  passes at most twelve pauses or gaps) and banded (a pin's two positions
+  within 30% of the speech of each other), and the end is always reachable.
+- **Given the sound, only sentences pin** (`minWeight` is
+  `SoundAlignment.minPinWeight`, a full stop's weight). A voice often runs
+  through a comma and breathes a word later; pinning the comma to that breath
+  dragged a phrase half a second late. Commas, semicolons and colons are left
+  for pass two. Without the sound (a track built from an envelope alone),
+  every pause may pin.
+- The pins split the clip into `phrases`, each with its span on both clocks.
+
+**Pass two: the sounds** (`SoundAlignment`), inside each phrase.
+
+- **Brightness** is the voice's root-mean-square frequency, read without a
+  Fourier transform from the energy of the differenced signal over the
+  signal's own (`4·sin²(πf/rate)` for a tone): an s reads 5–9 kHz, a vowel
+  below 1 kHz, a hummed m lower still, true silence 0. It is the same at any
+  sample rate and on every platform.
+- **Each window is scored against each `SoundClass`** (`frameCost`) by its
+  loudness and brightness: a vowel loud and dark, a fricative bright, a stop
+  quiet, a nasal a darker hum, a pause silent.
+- **The phrase's sounds are laid over its windows in order**, each over a
+  run of windows, at the lowest total cost — a segmental search, as forced
+  alignment does. A sound's run may stray from the length its letters give
+  it, at `durationWeight` times the squared log-ratio. Every word break, and
+  every unpinned comma, is a **free silence**: it may take no window or up to
+  `maxSilenceSeconds`, at no price for its length, so a breath the text gave
+  no comma for is a silence rather than a stretched word.
+- The result is a knot at the start of every sound and silence; `ClockWarp`
+  maps between the clocks through them, both ways. A phrase with more sounds
+  than windows, or too large to search (`maxSearchCells`, about a minute
+  without a sentence's end), keeps pass one's timing.
+- **Shapes blend on the voice's clock.** The shape still comes from the
+  letter, but a cue's 60 ms blend is measured in the voice's time since the
+  cue began (`TextLipSync.cueAtSeconds`); measured in text time, a stretched
+  hiss stayed half-blended from the vowel before it.
+
+Measured on six Voxtral clips against word timestamps from a transcription
+(rounded to 0.1 s), with two clips held out of the tuning, the mean error of a
+word's start fell from 159 ms to 65 ms and the 90th percentile from 430 ms to
+100 ms on the held-out words.
+
+Both passes run in `loadSpokenTrack`'s `Isolate.run` (`VoicedTextTrack.fromWav`),
+never on the UI isolate — a dozen seconds of voice take tens of milliseconds —
+and the per-frame lookups are binary searches.
 
 # Speaking with the on-device voice
 

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -77,3 +78,23 @@ bool near(Color a, Color b, {int tolerance = 6}) =>
     ((a.r - b.r) * 255).abs() <= tolerance &&
     ((a.g - b.g) * 255).abs() <= tolerance &&
     ((a.b - b.b) * 255).abs() <= tolerance;
+
+/// A stand-in for a recorded voice, at [rate] samples a second: each part a
+/// [Sound] held for its seconds. A vowel is a loud, dark tone, a hiss is
+/// quiet white noise — bright, as an s is — and silence is zeros. The noise
+/// is seeded, so every run hears the same voice.
+List<double> synthSpeech(List<(Sound, double)> parts, {int rate = 24000}) {
+  final random = math.Random(7);
+  return [
+    for (final (sound, seconds) in parts)
+      for (var i = 0; i < (seconds * rate).round(); i++)
+        switch (sound) {
+          Sound.vowel => 0.5 * math.sin(2 * math.pi * 220 * i / rate),
+          Sound.hiss => 0.15 * (random.nextDouble() * 2 - 1),
+          Sound.silence => 0.0,
+        },
+  ];
+}
+
+/// What [synthSpeech] can say.
+enum Sound { vowel, hiss, silence }
