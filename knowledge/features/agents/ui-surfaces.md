@@ -616,8 +616,13 @@ maintenance band in the agent internals panel owns it. The destructive *Turn
 off AI for this agent* action is isolated below the setup group and swaps in
 place for its own explanation with Cancel/confirm — not another page. The model
 row, *Use profile default*, *Copy category default* and *Turn off AI* appear only
-when the sheet is opened for an entity (`entityId`); goal and other
-profile-only opens show the profile row alone.
+when the sheet is opened for an entity (`entityId`); other profile-only opens
+show the profile row alone. *Copy category default* reads the category of a
+task, a project, a person or a goal — the entities an agent serves that carry
+their own — and snapshots its default profile; reading it for tasks and
+projects alone made it write a disabled setup for a person's or a goal's
+agent. The internals panel passes a goal's row as the entity
+(`AgentInternalsPanel.subjectEntityId`) when the goal page opens it.
 
 ```mermaid
 sequenceDiagram

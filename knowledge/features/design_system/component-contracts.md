@@ -528,7 +528,8 @@ line, and the agent identity region's model route and attribution rows.
 ([timeline/design_system_timeline_row.dart](../../../lib/features/design_system/components/timeline/design_system_timeline_row.dart))
 is one row of a timeline where rows of different kinds share one grammar:
 calls, notes, voice notes, photos, tasks, meetings, agent suggestions. The
-person page is the first host (ADR 0138).
+person page is the first host (ADR 0138); a goal's check-in rail is the
+second, so a goal's check-ins and a person's read as one kind of history.
 
 **Anatomy.**
 
@@ -560,7 +561,10 @@ wrote or suggests is never mistaken for what the user did.
 **Accessibility at construction.**
 
 - `semanticsLabel` is asserted non-blank, and the row speaks as that one
-  sentence: its glyph and text fragments are excluded from semantics.
+  sentence: its tile and meta line — what the sentence already says — are
+  excluded from semantics. The body and footer are not: the words in them,
+  and the actions a row carries there (*Play audio*, *Retry*, *Show more*),
+  stay reachable by a screen reader.
 - With `onTap` the row is a button with tap and long-press actions, and
   hover and focus use `GroupedCardRowSurface`'s fill.
 - The trailing slot keeps its own semantics, because a suggestion's ✓ and ✕

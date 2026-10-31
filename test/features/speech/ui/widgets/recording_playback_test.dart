@@ -73,7 +73,7 @@ void main() {
     expect(play.label, 'Play audio');
     expect(play.leadingIcon, LottiIcons.playCircled);
     expect(play.variant, DesignSystemButtonVariant.tertiary);
-    expect(play.size, DesignSystemButtonSize.small);
+    expect(play.size, DesignSystemButtonSize.dense);
     expect(play.semanticsLabel, 'Play audio, 00:38');
     expect(find.byType(AudioPlayerWidget), findsNothing);
     semantics.dispose();

@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/widgets/transcript
     title: RecordingTranscript, FoldedWords and the shared transcript status
     last_modified: 2026-10-31
+  - id: playback
+    resource: ../../../lib/features/speech/ui/widgets/recording_playback.dart
+    title: RecordingPlayback — a recording played lightly in a history row
+    last_modified: 2026-10-31
   - id: assessment
     resource: ../../../docs/design/check_in_transcripts/assessment.md
     title: Check-in transcripts — the Goals/People assessment behind the shared look
@@ -170,6 +174,19 @@ records why the People patterns became the standard.
   lazy list while open, so scrolling never undoes it. The People composer
   shows a take's words unfolded (`folded: false`), because there the user is
   reviewing what they just said.
+- **Light playback.** A history row plays its recording through
+  `RecordingPlayback`
+  ([`recording_playback.dart`](../../../lib/features/speech/ui/widgets/recording_playback.dart)):
+  closed, one small tertiary *Play audio* action (its length in the
+  semantics label — the row's meta already shows it); tapped, it plays and
+  the row eases open (`AnimatedSize`, motion tokens) to the waveform
+  `AudioPlayerWidget` while that recording is the one the app's single
+  player holds and has not finished, folding back when it stops or another
+  starts. The design panel chose this over a player card under every
+  recording, unanimously: a history is for reading. The person timeline
+  plays a voice note's recording and a check-in's newest; its waiting
+  recordings watch their inference status and offer *Retry*
+  (`PersonTimelineActions.retryTranscript`), as a goal's do.
 
 ```mermaid
 stateDiagram-v2

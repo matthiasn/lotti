@@ -68,11 +68,30 @@ Ranked by how much a user notices them.
   leads with the waveform glyph and the length, the way a Goals beat leads
   with its kind and time. Where the words are is said once, by the shared
   status beneath.
-- **Not changed:** data models, who transcribes, privacy and sync, the two
-  capture flows, and the history row shells (`TimelineView` vs
-  `DesignSystemTimelineRow`). Merging the row shells would restyle every
-  People row and every event beat for no transcript gain. It is the next
-  candidate if the two rails are to read as one.
+- **One row shell.** The first round left the two history shells apart
+  (`TimelineView` on the goal rail, `DesignSystemTimelineRow` on the person
+  timeline). The owner saw that at once: different icons, colours and
+  uppercase eyebrows. The goal rail now draws the person timeline's rows:
+  neutral tiles, a caption meta line, sentence-case section headers, and
+  trailing controls (the time chip, the verdict pill). Nothing is ever upper
+  case.
+- **Light playback, by the panel.** The panel compared a full player card
+  under every recording (A) with a *Play audio* action that opens the
+  waveform player only while it plays (B). All four experts recommended B: a
+  history is for reading, and A made four of five goal rows control panels.
+  Their fixes are in:
+  - a labelled *Play audio* a size up from the dense actions, not a twin of
+    the time chip;
+  - an eased open, folding back once the recording finishes;
+  - *Retry* on People too;
+  - the row's body actions reachable by screen readers.
+- **Filed alike.** A goal now has a category, as a person does, through the
+  same row. Changing either one's category moves everything it holds, across
+  a crash (`EntryCategoryMove`; a second hop takes what a person's check-ins
+  hold, and a goal's charter). Both agents start on the profile their
+  category names, as a task's agent does.
+- **Not changed:** data models, who transcribes, privacy and sync, and the
+  two capture flows.
 
 ## Success criteria
 

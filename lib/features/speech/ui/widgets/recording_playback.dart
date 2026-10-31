@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -59,8 +57,7 @@ class RecordingPlayback extends ConsumerWidget {
 
 /// The closed row's one action: *Play audio*, its own shape — a play glyph
 /// and a word — so it never reads as the time a check-in counts for beside
-/// it, and large enough that a near miss plays rather than opening the
-/// entry. The row already says how long it ran.
+/// it. The row already says how long it ran.
 class _PlayAction extends ConsumerWidget {
   const _PlayAction({required this.audio});
 
@@ -77,16 +74,18 @@ class _PlayAction extends ConsumerWidget {
         label: context.messages.audioPlayerPlay,
         leadingIcon: LottiIcons.playCircled,
         variant: DesignSystemButtonVariant.tertiary,
-        // A size up from the dense metadata actions beside it: a target a
-        // thumb finds, at the body's reading size rather than the caption's.
-        size: DesignSystemButtonSize.small,
+        // The caption tier of the row's other actions: visually light, the
+        // owner's ask — the words stay the loudest thing in the row.
+        size: DesignSystemButtonSize.dense,
         alignsLabelToLeadingEdge: true,
         semanticsLabel:
             '${context.messages.audioPlayerPlay}, '
             '${formatElapsed(audio.data.duration)}',
-        onPressed: () => unawaited(
-          ref.read(audioPlayerControllerProvider.notifier).playAudioNote(audio),
-        ),
+        onPressed: () async {
+          await ref
+              .read(audioPlayerControllerProvider.notifier)
+              .playAudioNote(audio);
+        },
       ),
     );
   }

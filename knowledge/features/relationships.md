@@ -1352,7 +1352,10 @@ removed:
 - **One resolution chain for runtime and status.**
   `resolveRelationshipAgentModel` honors the typed setup saved by the shared
   model picker, including direct thinking-model overrides. Disabled or broken
-  typed setups do not fall through. Legacy agents try the person's profile,
+  typed setups do not fall through. A person's agent is created with the
+  profile their category names at the time snapshotted as its typed setup
+  (`categorySnapshotSetup`, as a task's agent takes its category default);
+  a category naming none leaves the setup untyped. Legacy agents try the person's profile,
   agent profile, category default, then the device's Settings default. The
   validated GLM built-in is used only if no Settings default was selected.
   A selected Settings default that cannot resolve is an error. The generic
