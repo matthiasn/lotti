@@ -9360,9 +9360,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ohne Auswahl wird die Stimme auf dem Gerät verwendet';
 
   @override
-  String get inferenceProfileSaveButton => 'Speichern';
-
-  @override
   String get inferenceProfileSelectModel => 'Modell auswählen…';
 
   @override
@@ -11030,9 +11027,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Reasoning-Modell';
-
-  @override
-  String get modelEditSaveButton => 'Speichern';
 
   @override
   String get modelEditSectionCapabilities => 'Fähigkeiten';

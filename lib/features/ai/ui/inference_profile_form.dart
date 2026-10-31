@@ -8,22 +8,26 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_slot_field.dart';
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/ai/ui/inference_profile_detail_page.dart';
 
 /// Create or edit an inference profile.
+///
+/// Save lives in the AI Settings sticky [FormBottomBar] (status line,
+/// Cancel, Save) below the scrolling form, so it stays reachable on this
+/// long form. It enables once the form is dirty; `_save` then validates the
+/// name and the required thinking model, surfacing inline / toast errors.
 class InferenceProfileForm extends ConsumerStatefulWidget {
   const InferenceProfileForm({this.existingProfile, super.key});
 
@@ -59,9 +63,8 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   void _onFieldChanged() => setState(() {});
 
   /// Whether the form differs from the profile it loaded — or, when creating,
-  /// whether the user has entered anything worth saving. Drives the Save
-  /// button's quiet→active state, mirroring the note editor's toolbar Save
-  /// ("non-active is not primary, on when dirty").
+  /// whether the user has entered anything worth saving. Drives the bottom
+  /// bar's "no changes" status and the Save button's quiet→active state.
   bool get _isDirty {
     final p = widget.existingProfile;
     if (p == null) {
@@ -156,219 +159,213 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             fontWeight: tokens.typography.weight.semiBold,
           ),
         ),
-        actions: [
-          // Save mirrors the note editor's toolbar Save: a primary
-          // design-system button that stays quiet/disabled until the form is
-          // dirty, then wakes to the teal accent. `_save` still validates
-          // (name + thinking model) and surfaces inline / toast errors on tap.
-          // The tooltip explains a quiet Save (no status line in the AppBar).
-          Tooltip(
-            message: _isDirty
-                ? messages.inferenceProfileSaveButton
-                : messages.aiFormNoChanges,
-            child: DesignSystemButton(
-              label: messages.inferenceProfileSaveButton,
-              leadingIcon: LottiIcons.save,
-              onPressed: _isDirty && !_isSaving ? _save : null,
+      ),
+      body: Column(
+        children: [
+          Expanded(child: _buildForm(context)),
+          // Bottom-only `SafeArea` so Save clears the home indicator; the
+          // mobile shell slides its launcher away on AI settings routes, so
+          // this bar owns the bottom edge (same as the provider edit form).
+          SafeArea(
+            top: false,
+            child: FormBottomBar(
+              onSave: _isDirty && !_isSaving ? _save : null,
+              onCancel: () => popAiSettingsDetail(context),
+              // Validity is checked on tap inside `_save` (inline name error,
+              // thinking-model toast), so the bar never pre-blocks Save.
+              isFormValid: true,
+              isDirty: _isDirty,
+              isLoading: _isSaving,
             ),
           ),
-          SizedBox(width: tokens.spacing.step2),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          // Pad the bottom by the height the app's bottom nav bar
-          // occupies (zero on desktop, ~88pt on mobile with the home
-          // indicator) plus the page's normal padding so the last
-          // form section always clears the nav bar on mobile instead
-          // of slipping behind it.
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5 +
-                DesignSystemBottomNavigationBar.occupiedHeight(context),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        children: [
+          TextFormField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: context.messages.inferenceProfileNameLabel,
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return context.messages.inferenceProfileNameRequired;
+              }
+              return null;
+            },
           ),
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: context.messages.inferenceProfileNameLabel,
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _descriptionController,
+            decoration: InputDecoration(
+              labelText: context.messages.inferenceProfileDescriptionLabel,
+              border: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return context.messages.inferenceProfileNameRequired;
-                }
-                return null;
-              },
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: InputDecoration(
-                labelText: context.messages.inferenceProfileDescriptionLabel,
-                border: const OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-              ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 24),
+            maxLines: 2,
+          ),
+          const SizedBox(height: 24),
 
-            // Thinking model (required)
-            ModelSlotField(
-              label: context.messages.inferenceProfileThinking,
-              modelId: _thinkingModelId,
-              required: true,
-              filter: (m) => m.supportsFunctionCalling,
-              onModelSelected: (id) => setState(() => _thinkingModelId = id),
-            ),
-            const SizedBox(height: 16),
+          // Thinking model (required)
+          ModelSlotField(
+            label: context.messages.inferenceProfileThinking,
+            modelId: _thinkingModelId,
+            required: true,
+            filter: (m) => m.supportsFunctionCalling,
+            onModelSelected: (id) => setState(() => _thinkingModelId = id),
+          ),
+          const SizedBox(height: 16),
 
-            // Interactive chat can use a different model from agent work.
-            ModelSlotField(
-              label: messages.inferenceProfileChat,
-              hintText: messages.inferenceProfileChatUsesThinking,
-              modelId: _chatModelId,
-              filter: (m) =>
-                  m.inputModalities.contains(Modality.text) &&
-                  m.outputModalities.contains(Modality.text),
-              onModelSelected: (id) => setState(() => _chatModelId = id),
-            ),
-            SizedBox(height: tokens.spacing.step4),
+          // Interactive chat can use a different model from agent work.
+          ModelSlotField(
+            label: messages.inferenceProfileChat,
+            hintText: messages.inferenceProfileChatUsesThinking,
+            modelId: _chatModelId,
+            filter: (m) =>
+                m.inputModalities.contains(Modality.text) &&
+                m.outputModalities.contains(Modality.text),
+            onModelSelected: (id) => setState(() => _chatModelId = id),
+          ),
+          SizedBox(height: tokens.spacing.step4),
 
-            // High-end thinking model (optional)
-            ModelSlotField(
-              label: context.messages.inferenceProfileThinkingHighEnd,
-              modelId: _thinkingHighEndModelId,
-              filter: (m) => m.inputModalities.contains(Modality.text),
-              onModelSelected: (id) =>
-                  setState(() => _thinkingHighEndModelId = id),
-            ),
-            const SizedBox(height: 16),
+          // High-end thinking model (optional)
+          ModelSlotField(
+            label: context.messages.inferenceProfileThinkingHighEnd,
+            modelId: _thinkingHighEndModelId,
+            filter: (m) => m.inputModalities.contains(Modality.text),
+            onModelSelected: (id) =>
+                setState(() => _thinkingHighEndModelId = id),
+          ),
+          const SizedBox(height: 16),
 
-            // Image recognition model (optional)
-            ModelSlotField(
-              label: context.messages.inferenceProfileImageRecognition,
-              modelId: _imageRecognitionModelId,
-              filter: (m) => m.inputModalities.contains(Modality.image),
-              onModelSelected: (id) =>
-                  setState(() => _imageRecognitionModelId = id),
-            ),
-            const SizedBox(height: 16),
+          // Image recognition model (optional)
+          ModelSlotField(
+            label: context.messages.inferenceProfileImageRecognition,
+            modelId: _imageRecognitionModelId,
+            filter: (m) => m.inputModalities.contains(Modality.image),
+            onModelSelected: (id) =>
+                setState(() => _imageRecognitionModelId = id),
+          ),
+          const SizedBox(height: 16),
 
-            // Transcription model (optional)
-            ModelSlotField(
-              label: context.messages.inferenceProfileTranscription,
-              modelId: _transcriptionModelId,
-              filter: (m) => m.inputModalities.contains(Modality.audio),
-              onModelSelected: (id) =>
-                  setState(() => _transcriptionModelId = id),
-            ),
-            SizedBox(height: tokens.spacing.step4),
+          // Transcription model (optional)
+          ModelSlotField(
+            label: context.messages.inferenceProfileTranscription,
+            modelId: _transcriptionModelId,
+            filter: (m) => m.inputModalities.contains(Modality.audio),
+            onModelSelected: (id) => setState(() => _transcriptionModelId = id),
+          ),
+          SizedBox(height: tokens.spacing.step4),
 
-            // Audio post-processing (optional): corrects a transcript
-            // against the speech dictionary and summarizes the recording,
-            // reading the transcript as text and publishing through a tool
-            // call — hence text input plus Thinking's filter.
-            ModelSlotField(
-              label: messages.inferenceProfileAudioPostProcessing,
-              hintText:
-                  messages.inferenceProfileAudioPostProcessingUsesThinking,
-              modelId: _audioPostProcessingModelId,
-              filter: (m) =>
-                  m.supportsFunctionCalling &&
-                  m.inputModalities.contains(Modality.text),
-              onModelSelected: (id) =>
-                  setState(() => _audioPostProcessingModelId = id),
-            ),
-            const SizedBox(height: 16),
+          // Audio post-processing (optional): corrects a transcript
+          // against the speech dictionary and summarizes the recording,
+          // reading the transcript as text and publishing through a tool
+          // call — hence text input plus Thinking's filter.
+          ModelSlotField(
+            label: messages.inferenceProfileAudioPostProcessing,
+            hintText: messages.inferenceProfileAudioPostProcessingUsesThinking,
+            modelId: _audioPostProcessingModelId,
+            filter: (m) =>
+                m.supportsFunctionCalling &&
+                m.inputModalities.contains(Modality.text),
+            onModelSelected: (id) =>
+                setState(() => _audioPostProcessingModelId = id),
+          ),
+          const SizedBox(height: 16),
 
-            // Image generation model (optional)
-            ModelSlotField(
-              label: context.messages.inferenceProfileImageGeneration,
-              modelId: _imageGenerationModelId,
-              filter: (m) => m.outputModalities.contains(Modality.image),
-              onModelSelected: (id) =>
-                  setState(() => _imageGenerationModelId = id),
-            ),
-            SizedBox(height: tokens.spacing.step4),
+          // Image generation model (optional)
+          ModelSlotField(
+            label: context.messages.inferenceProfileImageGeneration,
+            modelId: _imageGenerationModelId,
+            filter: (m) => m.outputModalities.contains(Modality.image),
+            onModelSelected: (id) =>
+                setState(() => _imageGenerationModelId = id),
+          ),
+          SizedBox(height: tokens.spacing.step4),
 
-            // Read aloud (optional): the cloud voice for summaries and
-            // answers; unset keeps the on-device voice.
-            ModelSlotField(
-              label: messages.inferenceProfileReadAloud,
-              hintText: messages.inferenceProfileReadAloudHint,
-              modelId: _speechModelId,
-              filter: (m) => m.outputModalities.contains(Modality.audio),
-              onModelSelected: (id) => setState(() => _speechModelId = id),
-            ),
-            const SizedBox(height: 24),
+          // Read aloud (optional): the cloud voice for summaries and
+          // answers; unset keeps the on-device voice.
+          ModelSlotField(
+            label: messages.inferenceProfileReadAloud,
+            hintText: messages.inferenceProfileReadAloudHint,
+            modelId: _speechModelId,
+            filter: (m) => m.outputModalities.contains(Modality.audio),
+            onModelSelected: (id) => setState(() => _speechModelId = id),
+          ),
+          const SizedBox(height: 24),
 
-            // Desktop only toggle
-            ListTile(
-              title: Text(context.messages.inferenceProfileDesktopOnly),
-              subtitle: Text(
-                context.messages.inferenceProfileDesktopOnlyDescription,
-              ),
-              trailing: DesignSystemToggle(
-                value: _desktopOnly,
-                semanticsLabel: context.messages.inferenceProfileDesktopOnly,
-                onChanged: (value) => setState(() => _desktopOnly = value),
-              ),
-              onTap: () => setState(() => _desktopOnly = !_desktopOnly),
+          // Desktop only toggle
+          ListTile(
+            title: Text(context.messages.inferenceProfileDesktopOnly),
+            subtitle: Text(
+              context.messages.inferenceProfileDesktopOnlyDescription,
             ),
-            const SizedBox(height: 24),
+            trailing: DesignSystemToggle(
+              value: _desktopOnly,
+              semanticsLabel: context.messages.inferenceProfileDesktopOnly,
+              onChanged: (value) => setState(() => _desktopOnly = value),
+            ),
+            onTap: () => setState(() => _desktopOnly = !_desktopOnly),
+          ),
+          const SizedBox(height: 24),
 
-            // Pinning: which device should auto-trigger this profile on
-            // inbound synced audio?
-            ProfilePinningSelector(
-              pinnedHostId: _pinnedHostId,
-              referencedModelIds: <String>{
-                ?_thinkingModelId,
-                ?_chatModelId,
-                ?_thinkingHighEndModelId,
-                ?_imageRecognitionModelId,
-                ?_transcriptionModelId,
-                ?_audioPostProcessingModelId,
-                ?_imageGenerationModelId,
-              },
-              onChanged: (value) => setState(() => _pinnedHostId = value),
-            ),
-            const SizedBox(height: 24),
+          // Pinning: which device should auto-trigger this profile on
+          // inbound synced audio?
+          ProfilePinningSelector(
+            pinnedHostId: _pinnedHostId,
+            referencedModelIds: <String>{
+              ?_thinkingModelId,
+              ?_chatModelId,
+              ?_thinkingHighEndModelId,
+              ?_imageRecognitionModelId,
+              ?_transcriptionModelId,
+              ?_audioPostProcessingModelId,
+              ?_imageGenerationModelId,
+            },
+            onChanged: (value) => setState(() => _pinnedHostId = value),
+          ),
+          const SizedBox(height: 24),
 
-            // Automated skills section
-            Text(
-              context.messages.inferenceProfileSkillsSection,
-              style: context.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            ...builtInSkills
-                .where(
-                  (s) =>
-                      s.skillType == SkillType.transcription ||
-                      s.skillType == SkillType.imageAnalysis,
-                )
-                .map(
-                  (skill) => _SkillAssignmentTile(
-                    skill: skill,
-                    modelId: _modelIdForSkillType(skill.skillType),
-                    slotName: _slotNameForSkillType(skill.skillType, context),
-                    isAutomated: _skillAssignments.any(
-                      (a) => a.skillId == skill.id && a.automate,
-                    ),
-                    onChanged: (value) => _toggleSkillAssignment(
-                      skill.id,
-                      automate: value,
-                    ),
+          // Automated skills section
+          Text(
+            context.messages.inferenceProfileSkillsSection,
+            style: context.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ...builtInSkills
+              .where(
+                (s) =>
+                    s.skillType == SkillType.transcription ||
+                    s.skillType == SkillType.imageAnalysis,
+              )
+              .map(
+                (skill) => _SkillAssignmentTile(
+                  skill: skill,
+                  modelId: _modelIdForSkillType(skill.skillType),
+                  slotName: _slotNameForSkillType(skill.skillType, context),
+                  isAutomated: _skillAssignments.any(
+                    (a) => a.skillId == skill.id && a.automate,
+                  ),
+                  onChanged: (value) => _toggleSkillAssignment(
+                    skill.id,
+                    automate: value,
                   ),
                 ),
-          ],
-        ),
+              ),
+        ],
       ),
     );
   }

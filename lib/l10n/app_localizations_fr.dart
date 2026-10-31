@@ -9438,9 +9438,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sans choix, la voix de l’appareil est utilisée';
 
   @override
-  String get inferenceProfileSaveButton => 'Enregistrer';
-
-  @override
   String get inferenceProfileSelectModel => 'Choisis un modèle…';
 
   @override
@@ -11140,9 +11137,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Modèle de raisonnement';
-
-  @override
-  String get modelEditSaveButton => 'Enregistrer';
 
   @override
   String get modelEditSectionCapabilities => 'Capacités';

@@ -15588,12 +15588,6 @@ abstract class AppLocalizations {
   /// **'Uses the on-device voice when unset'**
   String get inferenceProfileReadAloudHint;
 
-  /// No description provided for @inferenceProfileSaveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get inferenceProfileSaveButton;
-
   /// No description provided for @inferenceProfileSelectModel.
   ///
   /// In en, this message translates to:
@@ -18456,12 +18450,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reasoning model'**
   String get modelEditReasoningLabel;
-
-  /// No description provided for @modelEditSaveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get modelEditSaveButton;
 
   /// No description provided for @modelEditSectionCapabilities.
   ///

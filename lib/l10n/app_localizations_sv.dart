@@ -9309,9 +9309,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Använder rösten på enheten när inget är valt';
 
   @override
-  String get inferenceProfileSaveButton => 'Spara';
-
-  @override
   String get inferenceProfileSelectModel => 'Välj en modell...';
 
   @override
@@ -10973,9 +10970,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get modelEditReasoningLabel => 'Resonemangsmodell';
-
-  @override
-  String get modelEditSaveButton => 'Spara';
 
   @override
   String get modelEditSectionCapabilities => 'Kapabiliteter';

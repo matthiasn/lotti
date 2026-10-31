@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_model_form_controller.dart';
+import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
@@ -12,22 +13,21 @@ import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.d
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_scope.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Create / edit page for an inference model row. Rewritten in v3 to
 /// match the visual language shipped by the AI Settings v1 → v3 page
 /// redesign: design-system tokens for surfaces and spacing, sections
-/// in level-02 cards, a clean AppBar with a text Save action, and a
-/// provider-tinted header strip when the form has resolved its owning
-/// provider. The form controller wiring (`InferenceModelFormController`,
+/// in level-02 cards, a provider-tinted header strip when the form has
+/// resolved its owning provider, and the AI Settings sticky
+/// [FormBottomBar] (status line, Cancel, Save) shared with the provider
+/// edit form, so Save stays reachable however far the form scrolls. The form controller wiring (`InferenceModelFormController`,
 /// modality / provider selection modals, Cmd+S shortcut) is preserved
 /// verbatim — only the rendering layer changed.
 class InferenceModelEditPage extends ConsumerStatefulWidget {
@@ -84,11 +84,14 @@ class _InferenceModelEditPageState
         formState.isValid &&
         formState.inferenceProviderId.isNotEmpty &&
         formState.inputModalities.isNotEmpty &&
-        formState.outputModalities.isNotEmpty &&
-        (widget.configId == null || formState.isDirty);
+        formState.outputModalities.isNotEmpty;
+    // A new model is always worth saving once valid; an existing one only
+    // after an edit.
+    final isDirty = widget.configId == null || (formState?.isDirty ?? false);
+    final canSave = isFormValid && isDirty;
 
     Future<void> handleSave() async {
-      if (!isFormValid || _isSaving) return;
+      if (!canSave || _isSaving) return;
       setState(() => _isSaving = true);
       try {
         final config = formState.toAiConfig();
@@ -112,7 +115,7 @@ class _InferenceModelEditPageState
     return AppCommandScope(
       handlers: {
         AppCommandId.save: AppCommandHandler(
-          isEnabled: () => isFormValid && !_isSaving,
+          isEnabled: () => canSave && !_isSaving,
           invoke: (_) => handleSave(),
         ),
       },
@@ -136,41 +139,36 @@ class _InferenceModelEditPageState
               fontWeight: tokens.typography.weight.semiBold,
             ),
           ),
-          actions: [
-            // Save mirrors the note editor's toolbar Save: a primary
-            // design-system button that stays quiet/disabled until the
-            // form is saveable (valid, and — when editing — dirty), then
-            // wakes to the teal accent. The leading save glyph keeps the
-            // clean→active change from being carried by hue alone. A tooltip
-            // explains WHY it's disabled (no changes vs fix errors), since the
-            // AppBar has no status line like the provider form's FormBottomBar.
-            Tooltip(
-              message: isFormValid
-                  ? messages.modelEditSaveButton
-                  : (widget.configId != null &&
-                        formState != null &&
-                        !formState.isDirty)
-                  ? messages.aiFormNoChanges
-                  : messages.aiFormFixErrors,
-              child: DesignSystemButton(
-                label: messages.modelEditSaveButton,
-                leadingIcon: LottiIcons.save,
-                onPressed: isFormValid && !_isSaving ? handleSave : null,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: switch (configAsync) {
+                AsyncData() => _buildBody(context, formState),
+                AsyncError() => _buildErrorState(context),
+                _ => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(48),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              },
+            ),
+            // Bottom-only `SafeArea` so Save clears the home indicator; the
+            // mobile shell slides its launcher away on AI settings routes, so
+            // this bar owns the bottom edge (same as the provider edit form).
+            SafeArea(
+              top: false,
+              child: FormBottomBar(
+                onSave: canSave && !_isSaving ? handleSave : null,
+                onCancel: () => popAiSettingsDetail(context),
+                isFormValid: isFormValid,
+                isDirty: isDirty,
+                isLoading: _isSaving,
               ),
             ),
-            SizedBox(width: tokens.spacing.step2),
           ],
         ),
-        body: switch (configAsync) {
-          AsyncData() => _buildBody(context, formState),
-          AsyncError() => _buildErrorState(context),
-          _ => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(48),
-              child: CircularProgressIndicator(),
-            ),
-          ),
-        },
       ),
     );
   }
@@ -200,16 +198,12 @@ class _InferenceModelEditPageState
     );
     final providerName = ownerProvider?.name ?? messages.modelEditProviderHint;
 
-    final bottomInset = DesignSystemBottomNavigationBar.occupiedHeight(
-      context,
-    );
-
     return ListView(
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step5,
         tokens.spacing.step5,
         tokens.spacing.step5,
-        tokens.spacing.step6 + bottomInset,
+        tokens.spacing.step6,
       ),
       children: [
         HeaderStrip(

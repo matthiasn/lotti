@@ -117,6 +117,17 @@ forms have one visual language, one error-display convention and one
 keyboard/screen-reader behaviour. They bridge into
 [the design system](../design_system/) rather than restyling controls locally.
 
+Every edit form — provider edit, model create/edit, inference-profile
+create/edit — saves from the same sticky glass `FormBottomBar`
+(`lib/features/ai/ui/settings/form_bottom_bar.dart`), never from the AppBar,
+which keeps only the back arrow and title. The bar sits below the scroll view in
+a `Column` wrapped in a bottom-only `SafeArea`, so the form scrolls above it
+rather than behind it and Save stays reachable on long forms. Its status line
+reads "no unsaved changes" or "fix errors"; Save enables only when the form is
+both dirty and valid. The profile form passes `isFormValid: true` because it
+validates the name and thinking model on tap instead. Provider *create* swaps in
+its three-button connect footer at the same position.
+
 Provider and model pickers reuse the shared selection rows described in
 [the AI overview](overview.md#configuration-selection-ui), which is what keeps the
 standalone pickers and the embedded task-agent setup flow visually identical.
