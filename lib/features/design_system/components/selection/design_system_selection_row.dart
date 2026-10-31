@@ -123,18 +123,20 @@ class DesignSystemSelectionRow extends StatelessWidget {
   /// own semantics.
   final Widget? secondaryLine;
 
-  /// Optional second target, which splits the row the way
-  /// `DesignSystemSplitButton` splits a button: the row's content stays the
-  /// pick, and a hairline-separated, full-height segment at the trailing edge
-  /// carries the navigation chevron — the same glyph, size and ink as a
-  /// [DesignSystemSelectionRowType.navigation] row's, because it does the same
-  /// thing: open another page.
+  /// Optional second target at the row's trailing edge: a full-height,
+  /// [TapTargets.minimum]-wide button carrying [LottiIcons.openPage], which
+  /// goes to the entity's own page rather than picking it. It is not the
+  /// navigation chevron: that glyph steps deeper into the same flow, while
+  /// this one leaves the picker for another page.
   ///
-  /// Each segment has its own ink, so hovering the chevron never lights the
-  /// pick and a tap on it never reaches [onTap]. The selected band runs under
-  /// both. The segment is its own button node beside the row's (the row
-  /// excludes its visual subtree from semantics, so a control inside it would
-  /// be unreachable). A disabled row disables it too.
+  /// The row stays one surface: its hover fill and selected band run under
+  /// the whole width, the button included, with no rule between them — a
+  /// hairline would bisect the very band that says "this is one row". The
+  /// button adds its own hover and pressed ink on top, so it still reads as a
+  /// target within the row, and a tap on it never reaches [onTap]. It is its
+  /// own button node beside the row's (the row excludes its visual subtree
+  /// from semantics, so a control inside it would be unreachable). A disabled
+  /// row disables it too.
   final DesignSystemSelectionRowAction? secondaryAction;
 
   /// Optional visible state label displayed before the selected check.
@@ -191,8 +193,14 @@ class DesignSystemSelectionRow extends StatelessWidget {
           trailing: trailing,
           trailingExtra: standardTrailing,
           activated: banded,
-          activatedBackgroundColor: tokens.colors.surface.selected,
-          hoverBackgroundColor: isMulti ? Colors.transparent : null,
+          // A split row paints its band and hover fill across both targets
+          // itself.
+          activatedBackgroundColor: secondaryAction != null
+              ? Colors.transparent
+              : tokens.colors.surface.selected,
+          hoverBackgroundColor: isMulti || secondaryAction != null
+              ? Colors.transparent
+              : null,
           onTap: onTap,
           focusNode: focusNode,
           onHoverChanged: onHoverChanged,
@@ -202,17 +210,13 @@ class DesignSystemSelectionRow extends StatelessWidget {
       ),
     );
     if (secondaryAction case final action?) {
-      row = IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: row),
-            _SecondaryActionSegment(
-              action: action,
-              enabled: onTap != null,
-              banded: banded,
-            ),
-          ],
+      row = _SplitRow(
+        banded: banded,
+        hoverable: !isMulti && onTap != null,
+        content: row,
+        action: _SecondaryActionButton(
+          action: action,
+          enabled: onTap != null,
         ),
       );
     }
@@ -273,76 +277,113 @@ class DesignSystemSelectionRow extends StatelessWidget {
   }
 }
 
-/// The trailing segment of a split selection row: a hairline, then a
-/// [TapTargets.minimum]-wide target holding the navigation chevron.
-class _SecondaryActionSegment extends StatelessWidget {
-  const _SecondaryActionSegment({
+/// A row with a [DesignSystemSelectionRow.secondaryAction]: the content and
+/// the trailing button side by side on one surface.
+///
+/// The hover is tracked here, over the full width, rather than by the list
+/// item, whose own fill would stop where the button begins. The selected band
+/// wins over hover, as it does on an unsplit row.
+class _SplitRow extends StatefulWidget {
+  const _SplitRow({
+    required this.banded,
+    required this.hoverable,
+    required this.content,
+    required this.action,
+  });
+
+  final bool banded;
+  final bool hoverable;
+  final Widget content;
+  final Widget action;
+
+  @override
+  State<_SplitRow> createState() => _SplitRowState();
+}
+
+class _SplitRowState extends State<_SplitRow> {
+  bool _hovered = false;
+
+  void _setHovered(bool value) {
+    if (_hovered != value) setState(() => _hovered = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final fill = widget.banded
+        ? tokens.colors.surface.selected
+        : widget.hoverable && _hovered
+        ? tokens.colors.surface.hover
+        : Colors.transparent;
+    return MouseRegion(
+      onEnter: (_) => _setHovered(true),
+      onExit: (_) => _setHovered(false),
+      child: ColoredBox(
+        color: fill,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: widget.content),
+              widget.action,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The trailing button of a split selection row: a [TapTargets.minimum]-wide,
+/// full-height target whose circular ink marks it as its own control inside
+/// the row's surface.
+class _SecondaryActionButton extends StatelessWidget {
+  const _SecondaryActionButton({
     required this.action,
     required this.enabled,
-    required this.banded,
   });
 
   final DesignSystemSelectionRowAction action;
   final bool enabled;
 
-  /// Whether the row wears the selected band, which continues under the
-  /// segment so a selected row reads as one row.
-  final bool banded;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final segment = Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Inset like a list divider is: it separates two targets, it does
-        // not cut the row in two.
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-          child: SizedBox(
-            width: tokens.spacing.step1 / 2,
-            child: ColoredBox(color: tokens.colors.decorative.level01),
-          ),
-        ),
-        Semantics(
-          key: action.key,
-          container: true,
-          button: true,
-          label: action.label,
-          enabled: enabled,
-          onTap: enabled ? action.onPressed : null,
-          child: ExcludeSemantics(
-            child: Tooltip(
-              message: action.label,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: enabled ? action.onPressed : null,
-                  hoverColor: tokens.colors.surface.hover,
-                  highlightColor: tokens.colors.surface.focusPressed,
-                  splashColor: Colors.transparent,
-                  child: SizedBox(
-                    width: TapTargets.minimum,
-                    child: Center(
-                      child: Icon(
-                        LottiIcons.chevronRight,
-                        color: enabled
-                            ? tokens.colors.text.mediumEmphasis
-                            : tokens.colors.text.lowEmphasis,
-                        size: tokens.spacing.step6,
-                      ),
-                    ),
+    return Semantics(
+      key: action.key,
+      container: true,
+      button: true,
+      label: action.label,
+      enabled: enabled,
+      onTap: enabled ? action.onPressed : null,
+      child: ExcludeSemantics(
+        child: Tooltip(
+          message: action.label,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: enabled ? action.onPressed : null,
+              customBorder: const CircleBorder(),
+              hoverColor: tokens.colors.surface.hover,
+              highlightColor: tokens.colors.surface.focusPressed,
+              splashColor: Colors.transparent,
+              child: SizedBox(
+                width: TapTargets.minimum,
+                child: Center(
+                  child: Icon(
+                    LottiIcons.openPage,
+                    color: enabled
+                        ? tokens.colors.text.mediumEmphasis
+                        : tokens.colors.text.lowEmphasis,
+                    size: tokens.spacing.step6,
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
-    if (!banded) return segment;
-    return ColoredBox(color: tokens.colors.surface.selected, child: segment);
   }
 }
 

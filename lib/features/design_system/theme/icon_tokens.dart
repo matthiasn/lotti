@@ -145,6 +145,11 @@ abstract final class LottiIcons {
   /// Leave the app — opens a browser or another application.
   static const IconData openExternal = LucideIcons.externalLink;
 
+  /// Go to an entity's own page inside the app — a picker row's project,
+  /// say. Not [openExternal], which leaves the app, and not [chevronRight],
+  /// which steps deeper into the same flow.
+  static const IconData openPage = LucideIcons.arrowUpRight;
+
   /// A link between two entities.
   static const IconData link = LucideIcons.link;
 

@@ -335,7 +335,7 @@ void main() {
       );
 
       expect(find.text('Alpha'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      expect(find.byIcon(LottiIcons.openPage), findsNothing);
     });
 
     testWidgets('with the Projects page on, every project row offers to open '
@@ -351,7 +351,7 @@ void main() {
 
       expect(openAction(alpha.meta.id), findsOneWidget);
       expect(openAction(beta.meta.id), findsOneWidget);
-      expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+      expect(find.byIcon(LottiIcons.openPage), findsNWidgets(2));
       expect(rowWidget(tester, 'project-none').secondaryAction, isNull);
       // Each arrow is its own button, so its name says which project.
       expect(
@@ -370,7 +370,7 @@ void main() {
       );
 
       expect(find.text('Alpha'), findsOneWidget);
-      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
+      expect(find.byIcon(LottiIcons.openPage), findsNothing);
     });
 
     testWidgets('opening a project closes the picker and beams to the '
