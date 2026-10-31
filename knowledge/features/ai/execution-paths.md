@@ -621,7 +621,10 @@ badges. Generated coding and image prompts (`GeneratedPromptCard`) render on
 the same card with their title, copy and expand actions as its header in the
 `aiCard` accent, so every AI response in an entry reads as the same kind of
 output; the card owns the tint, the Show more/Show less toggle and the
-attribution caption. In the nested tree the cards collapse binarily, so long analyses (full
+attribution caption. A response shown as its own entry — the faded
+`fadeOut` preview, e.g. a coding prompt linked to a task — renders with
+`framed: false`: the same accent and body colours, no tint, border or inset,
+because the entry card already frames it. In the nested tree the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
 caption, while short summaries stay visible.
 
