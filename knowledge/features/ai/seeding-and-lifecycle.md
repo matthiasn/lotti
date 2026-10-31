@@ -5,7 +5,7 @@ description: Provider-gated profile seeds, why deletion needed a tombstone, how 
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle, sync, tombstone, last-writer-wins]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-26T13:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T18:00:00Z }
 stale_after: 2026-12-26
 sources:
   - id: seeding
@@ -83,8 +83,9 @@ Operational details of the seeded definitions:
   installs exactly those four, so every bound slot resolves to a model row —
   the read-aloud slot included, which only resolves against an installed row.
   A profile seeded under the older defaults is not migrated: `upgradeExisting`
-  heals only a slot that resolves neither to a model row nor to a curated
-  `mistralModels` id, and fills it with these values.
+  heals only a slot that resolves neither to a model row nor to a model id
+  curated for *any* provider (`knownModelsByProvider`), and fills it with
+  these values.
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill
   assignments.
 
