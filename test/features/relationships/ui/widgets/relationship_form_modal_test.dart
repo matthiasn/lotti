@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -18,7 +19,9 @@ import 'package:lotti/features/relationships/service/contacts_service.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/relationship_form_modal.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -81,6 +84,7 @@ void main() {
   late MockRelationshipRepository mockRepository;
   late MockRelationshipAgentService mockAgentService;
   late MockJournalRepository mockJournalRepository;
+  late MockEntryCategoryMove mockCategoryMove;
   late MockEntitiesCacheService mockCacheService;
   late _FakeContactsService contactsService;
 
@@ -101,13 +105,14 @@ void main() {
     mockRepository = MockRelationshipRepository();
     mockAgentService = MockRelationshipAgentService();
     mockJournalRepository = MockJournalRepository();
+    mockCategoryMove = MockEntryCategoryMove();
     when(
       () => mockAgentService.ensureAgentForRelationship(any()),
     ).thenAnswer((invocation) async => throw StateError('unstubbed identity'));
     when(
-      () => mockJournalRepository.updateCategoryId(
+      () => mockCategoryMove.move(
         any(),
-        categoryId: any(named: 'categoryId'),
+        any(),
       ),
     ).thenAnswer((_) async => true);
     // The category row (rendered by the form) reads the category name through
@@ -146,6 +151,8 @@ void main() {
         relationshipRepositoryProvider.overrideWithValue(mockRepository),
         relationshipAgentServiceProvider.overrideWithValue(mockAgentService),
         journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+        entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
         contactsServiceProvider.overrideWithValue(contactsService),
         clipboardHasImageProvider.overrideWith(
           (ref) async => clipboardHasImage,
@@ -316,6 +323,8 @@ void main() {
               mockAgentService,
             ),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+            entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
           ],
         ),
       );
@@ -764,19 +773,19 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
         findsNothing,
         reason: 'no category, nothing to tint',
       );
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
-          .onChanged('cat-1');
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+          .onChanged!('cat-1');
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
       final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
       );
       expect(
         (dot.decoration! as BoxDecoration).color,
@@ -906,14 +915,14 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('person-form-category')));
+      await tester.tap(find.byKey(const ValueKey('category-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Family').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
         findsOneWidget,
       );
     });
@@ -1277,40 +1286,40 @@ void main() {
     // The category lives on metadata, not the payload, so it takes a second
     // write through the journal path. Nothing else in this suite reaches that
     // branch, and it is the one the unmount crash aborted.
-    testWidgets('routes a changed category through the journal repository', (
-      tester,
-    ) async {
-      when(
-        () => mockJournalRepository.updateCategoryId(
-          any(),
-          categoryId: any(named: 'categoryId'),
-        ),
-      ).thenAnswer((_) async => true);
+    testWidgets(
+      'routes a changed category through the category move, so everything the person holds follows',
+      (
+        tester,
+      ) async {
+        when(
+          () => mockCategoryMove.move(
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(buildForm(initial: existing()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildForm(initial: existing()));
+        await tester.pumpAndSettle();
 
-      // Drive the row's callback rather than its picker: the picker is a
-      // nested modal with its own harness, and the branch under test is what
-      // the form does with the chosen category.
-      tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
-          .onChanged('category-7');
-      await tester.pumpAndSettle();
+        // Drive the row's callback rather than its picker: the picker is a
+        // nested modal with its own harness, and the branch under test is what
+        // the form does with the chosen category.
+        tester
+            .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+            .onChanged!('category-7');
+        await tester.pumpAndSettle();
 
-      await tester.ensureVisible(
-        find.widgetWithText(DesignSystemButton, 'Save'),
-      );
-      await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
-      await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.widgetWithText(DesignSystemButton, 'Save'),
+        );
+        await tester.tap(find.widgetWithText(DesignSystemButton, 'Save'));
+        await tester.pumpAndSettle();
 
-      verify(
-        () => mockJournalRepository.updateCategoryId(
-          'rel-1',
-          categoryId: 'category-7',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => mockCategoryMove.move('rel-1', 'category-7'),
+        ).called(1);
+      },
+    );
 
     testWidgets('shows the saved names and saves them edited', (
       tester,
@@ -1857,8 +1866,8 @@ void main() {
       await tester.pumpAndSettle();
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
-          .onChanged(null);
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+          .onChanged!(null);
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.text('Save'));
@@ -1866,7 +1875,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('routes the cleared category through the journal path — a '
+    testWidgets('routes the cleared category through the category move — a '
         'freezed copyWith cannot null the field', (tester) async {
       when(
         () => mockRepository.updateRelationship(any()),
@@ -1875,7 +1884,7 @@ void main() {
       await clearCategoryAndSave(tester);
 
       verify(
-        () => mockJournalRepository.updateCategoryId('rel-1', categoryId: null),
+        () => mockCategoryMove.move('rel-1', null),
       ).called(1);
       expect(
         find.text('Could not save the changes. Please try again.'),
@@ -1890,9 +1899,9 @@ void main() {
         () => mockRepository.updateRelationship(any()),
       ).thenAnswer((_) async => true);
       when(
-        () => mockJournalRepository.updateCategoryId(
+        () => mockCategoryMove.move(
           any(),
-          categoryId: any(named: 'categoryId'),
+          any(),
         ),
       ).thenAnswer((_) async => false);
 
@@ -1910,9 +1919,9 @@ void main() {
         () => mockRepository.updateRelationship(any()),
       ).thenAnswer((_) async => true);
       when(
-        () => mockJournalRepository.updateCategoryId(
+        () => mockCategoryMove.move(
           any(),
-          categoryId: any(named: 'categoryId'),
+          any(),
         ),
       ).thenAnswer((_) async => false);
       when(
@@ -1923,8 +1932,8 @@ void main() {
       await tester.pumpAndSettle();
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
-          .onChanged(null);
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+          .onChanged!(null);
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byType(DesignSystemToggle));
       await tester.pumpAndSettle();
@@ -1989,6 +1998,8 @@ void main() {
               mockAgentService,
             ),
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            entryCategoryMoveProvider.overrideWithValue(mockCategoryMove),
+            entitiesCacheServiceProvider.overrideWithValue(mockCacheService),
             contactsServiceProvider.overrideWithValue(contactsService),
             clipboardHasImageProvider.overrideWith((ref) async => false),
           ],
@@ -2190,8 +2201,8 @@ void main() {
       expect(
         await dirtyAfter(() async {
           tester
-              .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
-              .onChanged('cat-1');
+              .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+              .onChanged!('cat-1');
         }),
         isTrue,
         reason: 'category',

@@ -217,7 +217,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Met'), findsOneWidget);
-    await tester.tap(find.text('DAILY REFLECTION'));
+    await tester.tap(find.textContaining('Daily reflection'));
     await tester.pumpAndSettle();
 
     // The same sheet the day strip and the inline preview open, arriving on

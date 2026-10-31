@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -31,10 +32,12 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -4676,7 +4679,15 @@ void main() {
         (bandDecoration.border! as Border).top.color,
         dsTokensLight.colors.decorative.level01,
       );
-      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
+      // As wide as its label, on the band's trailing edge — never a bar
+      // stretched across the column.
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isFalse);
+      final bandBox = tester.getRect(
+        find.ancestor(of: action, matching: find.byType(DecoratedBox)).first,
+      );
+      final actionBox = tester.getRect(action);
+      expect(actionBox.width, lessThan(bandBox.width / 2));
+      expect(actionBox.right, closeTo(bandBox.right, 1));
 
       await tester.enterText(
         find.byKey(const ValueKey('goal-form-intention')),
@@ -4686,14 +4697,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Here’s what I can watch'), findsOneWidget);
 
-      // Desktop demotes the add affordance to an intrinsic tertiary while
-      // the commit action keeps the full column width.
+      // Desktop demotes the add affordance to an intrinsic tertiary; the
+      // commit action stays as wide as its label on every step.
       final addSignal = tester.widget<DesignSystemButton>(
         find.byKey(const ValueKey('goal-form-add-signal')),
       );
       expect(addSignal.variant, DesignSystemButtonVariant.tertiary);
       expect(addSignal.fullWidth, isFalse);
-      expect(tester.widget<DesignSystemButton>(action).fullWidth, isTrue);
+      expect(tester.widget<DesignSystemButton>(action).fullWidth, isFalse);
     },
   );
 
@@ -6615,5 +6626,284 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('the goal is filed in a category', () {
+    late MockEntryCategoryMove categoryMove;
+
+    setUp(() {
+      categoryMove = MockEntryCategoryMove();
+      when(
+        () => categoryMove.move(any(), any()),
+      ).thenAnswer((_) async => true);
+    });
+
+    void pickCategory(WidgetTester tester, String? id) => tester
+        .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+        .onChanged!(id);
+
+    testWidgets('a new goal is created in the category picked beside its '
+        'persona', (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      beamToNamedOverride = (_) {};
+      addTearDown(() => beamToNamedOverride = null);
+      when(
+        () => agentService.createGoalAgent(
+          title: any(named: 'title'),
+          displayName: any(named: 'displayName'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => _identity);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: withServiceOverrides(overrides()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CategoryFieldRow), findsOneWidget);
+      pickCategory(tester, 'fitness');
+      await tester.pump();
+      await tester.tap(find.text('Create agent'));
+      await tester.pump();
+
+      verify(
+        () => agentService.createGoalAgent(
+          title: 'Gym',
+          displayName: 'Juno',
+          statement: 'Gym every week',
+          criteria: any(named: 'criteria'),
+          categoryId: 'fitness',
+        ),
+      ).called(1);
+    });
+
+    Future<void> editAndSave(
+      WidgetTester tester, {
+      required String? stored,
+      required String? picked,
+      GoalSpecRevisionOutcome? outcome,
+      String? goalRowId = 'goal-row',
+    }) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      beamToNamedOverride = (_) {};
+      addTearDown(() => beamToNamedOverride = null);
+      final current = _spec(
+        criteria: const GoalCriterion.categoryTime(
+          criterionId: 'hours',
+          categoryId: 'deep-work',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          targetHours: 5,
+        ),
+      );
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: any(named: 'agentId'),
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            outcome ??
+            const GoalSpecRevisionRefused(
+              GoalSpecRevisionService.ownerNoChangesReason,
+            ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides([
+            ...overrides(editSpec: current),
+            goalCategoryIdProvider(
+              'goal-1',
+            ).overrideWith((ref) async => stored),
+            goalEntryIdProvider('goal-1').overrideWithValue(goalRowId),
+            entryCategoryMoveProvider.overrideWithValue(categoryMove),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
+            .categoryId,
+        stored,
+        reason: "the row starts on the goal row's own category",
+      );
+      pickCategory(tester, picked);
+      await tester.pump();
+      await tester.tap(find.text('Save new version'));
+      // By frames: the saving button spins until the page leaves.
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+    }
+
+    testWidgets('editing moves the goal and everything it holds when the '
+        'category changed — even when the spec did not', (tester) async {
+      await editAndSave(tester, stored: 'old', picked: 'fitness');
+
+      verify(() => categoryMove.move('goal-row', 'fitness')).called(1);
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('clearing the category moves the goal out of it', (
+      tester,
+    ) async {
+      await editAndSave(tester, stored: 'old', picked: null);
+
+      verify(() => categoryMove.move('goal-row', null)).called(1);
+    });
+
+    testWidgets('an unchanged category moves nothing', (tester) async {
+      await editAndSave(tester, stored: 'old', picked: 'old');
+
+      verifyNever(() => categoryMove.move(any(), any()));
+    });
+
+    testWidgets('a move that fails after a revision was minted retries on '
+        'the minted version, not the stale one', (tester) async {
+      final minted = _spec(version: 4);
+      when(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          spec: any(named: 'spec'),
+        ),
+      ).thenReturn(null);
+      var moves = 0;
+      when(
+        () => categoryMove.move(any(), any()),
+      ).thenAnswer((_) async => moves++ > 0);
+
+      await editAndSave(
+        tester,
+        stored: 'old',
+        picked: 'fitness',
+        outcome: GoalSpecRevisionMinted(
+          version: minted,
+          changeSummaries: const [],
+        ),
+      );
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Save new version'));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+
+      final bases = verify(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: captureAny(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).captured;
+      expect(bases, ['goal-1:spec-v3', minted.id]);
+      expect(moves, 2);
+    });
+
+    testWidgets('a changed category with no goal row to move says the save '
+        'failed rather than leaving as if it had', (tester) async {
+      await editAndSave(
+        tester,
+        stored: 'old',
+        picked: 'fitness',
+        goalRowId: null,
+      );
+
+      verifyNever(() => categoryMove.move(any(), any()));
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("the row cannot be changed until the goal's own category has "
+        'read, so a late read never overwrites a pick', (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final stored = Completer<String?>();
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: withServiceOverrides([
+            ...overrides(
+              editSpec: _spec(
+                criteria: const GoalCriterion.categoryTime(
+                  criterionId: 'hours',
+                  categoryId: 'deep-work',
+                  window: GoalWindow.rollingDays(count: 7),
+                  aggregation: GoalAggregation.sum,
+                  targetHours: 5,
+                ),
+              ),
+            ),
+            goalCategoryIdProvider('goal-1').overrideWith(
+              (ref) => stored.future,
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      CategoryFieldRow row() =>
+          tester.widget<CategoryFieldRow>(find.byType(CategoryFieldRow));
+      expect(row().onChanged, isNull, reason: 'still reading the goal row');
+
+      stored.complete('colony-fitness');
+      await tester.pumpAndSettle();
+
+      expect(row().categoryId, 'colony-fitness');
+      expect(row().onChanged, isNotNull);
+    });
+
+    testWidgets('a move that does not land says so rather than leaving', (
+      tester,
+    ) async {
+      when(
+        () => categoryMove.move(any(), any()),
+      ).thenAnswer((_) async => false);
+
+      await editAndSave(tester, stored: 'old', picked: 'fitness');
+
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+    });
   });
 }

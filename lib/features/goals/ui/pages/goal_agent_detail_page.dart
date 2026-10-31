@@ -36,6 +36,7 @@ import 'package:lotti/features/goals/service/goal_habit_completion_service.dart'
 import 'package:lotti/features/goals/service/goal_health_refresh_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_card.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
@@ -497,12 +498,13 @@ class _GoalAgentDetailPageState extends ConsumerState<GoalAgentDetailPage>
         desktopLayout &&
         paneWidth >= kGoalTimelineRailFoldWidth + kGoalTimelineRailWidth;
 
+    // Watched, not read at tap time: an unwatched lookup is still loading.
+    final goalCategoryId = ref.watch(goalCategoryIdProvider(agentId)).value;
     void openComposer() => _openCheckInComposer(
       goalTitle: goalTitle,
       personaName: goalIdentity.displayName,
-      categoryId: spec == null
-          ? null
-          : goalIdentity.allowedCategoryIds.firstOrNull,
+      // The goal row's category, so a check-in is filed with its goal.
+      categoryId: goalCategoryId,
       preparedLine: latestReport?.tldr,
     );
 

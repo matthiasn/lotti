@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -26,12 +27,14 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_check_in_weight_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -43,9 +46,11 @@ part 'create_goal_agent_steps_part.dart';
 part 'create_goal_agent_target_inputs_part.dart';
 part 'create_goal_agent_page_composite_rule_label_part.dart';
 part 'create_goal_agent_page_internals.dart';
+part 'create_goal_agent_page_category_part.dart';
 part 'create_goal_agent_page_form_helpers.dart';
 
-class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
+class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage>
+    with _GoalFormCategory {
   final _statement = TextEditingController();
   final _title = TextEditingController();
   final _persona = TextEditingController();
@@ -84,6 +89,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   bool? _checkInsAreSubstance;
   bool get _shownCheckInsAreSubstance =>
       _checkInsAreSubstance ?? _watchesCheckInTime;
+
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
   final Set<String> _matchedHabitIds = {};
@@ -117,8 +123,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _derivedLabelsFingerprint;
   late String _baseVersionId;
   String? _validation;
-
-  bool get _editing => widget.agentId != null;
 
   /// The wizard as the user actually walks it. Editing has no separate
   /// intention page — the statement is one field on the mapping page — so the
@@ -459,6 +463,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           statement: statement,
           criteria: criteria,
           checkInsAreSubstance: checkInsAreSubstance,
+          categoryId: _categoryId,
         );
         container
           ..invalidate(activeGoalAgentsProvider)
@@ -478,6 +483,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         checkInsAreSubstance: checkInsAreSubstance,
       );
       if (outcome case GoalSpecRevisionMinted(:final version)) {
+        _baseVersionId = version.id; // a failed move retries on this one
         goalAgentService.refreshAfterRevision(
           agentId: agentId,
           spec: version,
@@ -493,6 +499,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       ) when reason != GoalSpecRevisionService.ownerNoChangesReason) {
         throw StateError(reason);
       }
+      await _moveCategoryIfChanged(container, agentId);
       _invalidateGoalViews(container, agentId);
       if (mounted) beamToNamed(goalDetailPath(agentId));
     } on Object {
@@ -624,7 +631,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       },
       isLoading: _saving,
       size: DesignSystemButtonSize.large,
-      fullWidth: true,
     );
     return PopScope(
       canPop: _step == _visibleSteps.first,
@@ -945,6 +951,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               onTitleChanged: () =>
                                   setState(() => _titleError = null),
                               enabled: !_saving,
+                              categoryId: _categoryId,
+                              onCategoryChanged: _categoryChanger,
                             ),
                           },
                         ],
@@ -971,7 +979,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                 context,
                               ),
                         ),
-                        child: primaryAction,
+                        // As wide as its label, on the trailing edge where a
+                        // form's forward action sits — not a bar to fill.
+                        child: Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: primaryAction,
+                        ),
                       ),
                     ),
                   ],

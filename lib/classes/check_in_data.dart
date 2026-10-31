@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/journal_entities.dart';
 
 part 'check_in_data.freezed.dart';
 part 'check_in_data.g.dart';
@@ -49,3 +50,10 @@ abstract class CheckInData with _$CheckInData {
   factory CheckInData.fromJson(Map<String, dynamic> json) =>
       _$CheckInDataFromJson(json);
 }
+
+/// Whether [entity] is something a check-in holds as one of its entries: a
+/// typed comment, a recording or a photo (ADR 0062). Here rather than with
+/// the People feature because moving a person's category moves what their
+/// check-ins hold too (`EntryCategoryMove`), below any feature.
+bool isCheckInEntryKind(JournalEntity entity) =>
+    entity is JournalEntry || entity is JournalAudio || entity is JournalImage;

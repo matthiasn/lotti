@@ -157,6 +157,12 @@ or sync set since the page loaded is kept (see
   category. The move is recorded in the settings database before its first
   write and finished at the next start if the app died in it, while the entry
   still holds that category (`specs/tla/TaskCategoryMove.tla`, ADR 0122).
+  A **person or a goal** moves the same way but as a subject: its own
+  entries follow — check-ins and, a second hop, what each check-in holds
+  (`isCheckInEntryKind`: comments, recordings, photos), notes, voice notes,
+  photos, meetings — while a task, project, person or goal it links to keeps
+  its own category. The person form saves a category change through this
+  move rather than a single-row write.
 - Saving with `stopRecording: true` updates the text and the end first, then
   stops the timer after a short delay, without writing the end again
   (`stop(persistEnd: false)`).

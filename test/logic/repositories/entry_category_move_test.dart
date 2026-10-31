@@ -3,9 +3,14 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
@@ -120,6 +125,9 @@ void main() {
       () => journalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
     when(
+      () => journalDb.charterLinksToGoal(any()),
+    ).thenAnswer((_) async => const []);
+    when(
       () => projectRepository.getLinkedProjectForTask(any()),
     ).thenAnswer((_) async => null);
     when(
@@ -136,6 +144,192 @@ void main() {
     ).thenReturn(null);
   });
   tearDown(() => settingsDb.close());
+
+  group("a person's or a goal's own entries", () {
+    final at = DateTime(2026, 8, 3);
+    Metadata metaIn(String id, String? categoryId) => Metadata(
+      id: id,
+      createdAt: at,
+      updatedAt: at,
+      dateFrom: at,
+      dateTo: at,
+      categoryId: categoryId,
+    );
+    T withId<T extends JournalEntity>(T entity, String id) =>
+        entity.copyWith(meta: metaIn(id, 'old_category')) as T;
+
+    final person = JournalEntity.relationship(
+      meta: metaIn('person', 'old_category'),
+      data: RelationshipData(
+        title: 'Pip',
+        status: RelationshipStatus.active(
+          id: 'status',
+          createdAt: at,
+          utcOffset: 0,
+        ),
+      ),
+    );
+    final checkIn = JournalEntity.checkIn(
+      meta: metaIn('check_in', 'old_category'),
+      data: const CheckInData(
+        relationshipId: 'person',
+        interactionType: CheckInInteractionType.call,
+      ),
+    );
+    final note = withId(testTextEntryNoGeo, 'note');
+    final heldRecording = withId(testAudioEntry, 'held_recording');
+    final heldPhoto = withId(testImageEntry, 'held_photo');
+    final heldComment = withId(testTextEntryNoGeo, 'held_comment');
+    final taskAboutThem = taskIn('work', id: 'task_about_them');
+    final taskFromCheckIn = taskIn('work', id: 'task_from_check_in');
+
+    void personWithCheckIn() {
+      stored(person);
+      linkedFrom('person', [checkIn, note, taskAboutThem]);
+      linkedFrom('check_in', [
+        heldRecording,
+        heldPhoto,
+        heldComment,
+        taskFromCheckIn,
+      ]);
+    }
+
+    test('moving a person moves their check-ins, what each check-in holds '
+        'and their notes — two hops — and clears the record', () async {
+      personWithCheckIn();
+
+      expect(await categoryMove.move('person', otherCategoryId), isTrue);
+
+      for (final id in [
+        'person',
+        'check_in',
+        'note',
+        'held_recording',
+        'held_photo',
+        'held_comment',
+      ]) {
+        verifyWrote(id, otherCategoryId);
+      }
+      expect(await intents.pending(), isEmpty);
+    });
+
+    test('a task linked to the person, or from their check-in, keeps its own '
+        'category and its project', () async {
+      personWithCheckIn();
+      inProject('task_about_them', categoryId: 'work');
+
+      await categoryMove.move('person', otherCategoryId);
+
+      verifyNoWrite('task_about_them');
+      verifyNoWrite('task_from_check_in');
+      verifyNever(() => projectRepository.unlinkTaskFromProject(any()));
+    });
+
+    test('a held entry that does not take the category keeps the move '
+        'recorded for the next start', () async {
+      personWithCheckIn();
+      when(
+        () => journalRepository.updateCategoryId(
+          'held_recording',
+          categoryId: otherCategoryId,
+        ),
+      ).thenAnswer((_) async => false);
+      stored(heldRecording);
+      when(
+        () => domainLogger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+
+      expect(await categoryMove.move('person', otherCategoryId), isTrue);
+
+      expect((await intents.pending()).keys, ['person']);
+    });
+
+    test(
+      'a goal moves its own entries and leaves a linked task alone',
+      () async {
+        final goal = JournalEntity.goal(
+          meta: metaIn('goal', 'old_category'),
+          data: const GoalData(
+            title: 'Waddle daily',
+            statement: 'Waddle 2 km every day.',
+            criteria: GoalCriterion.allOf(
+              criterionId: 'all',
+              criteria: <GoalCriterion>[],
+            ),
+            specVersion: 1,
+            specVersionId: 'spec-1',
+          ),
+        );
+        stored(goal);
+        final spoken = withId(testAudioEntry, 'goal_recording');
+        linkedFrom('goal', [spoken, note, taskAboutThem]);
+
+        expect(await categoryMove.move('goal', otherCategoryId), isTrue);
+
+        verifyWrote('goal', otherCategoryId);
+        verifyWrote('goal_recording', otherCategoryId);
+        verifyWrote('note', otherCategoryId);
+        verifyNoWrite('task_about_them');
+      },
+    );
+
+    test("a goal's charter — linked into the goal, the other way round — "
+        'moves with it', () async {
+      final goal = JournalEntity.goal(
+        meta: metaIn('goal', 'old_category'),
+        data: const GoalData(
+          title: 'Waddle daily',
+          statement: 'Waddle 2 km every day.',
+          criteria: GoalCriterion.allOf(
+            criterionId: 'all',
+            criteria: <GoalCriterion>[],
+          ),
+          specVersion: 1,
+          specVersionId: 'spec-1',
+        ),
+      );
+      stored(goal);
+      final charterNote = withId(testTextEntryNoGeo, 'charter_note');
+      final charterTask = taskIn('work', id: 'charter_task');
+      when(() => journalDb.charterLinksToGoal('goal')).thenAnswer(
+        (_) async => [
+          for (final from in ['charter_note', 'charter_task'])
+            EntryLink.charter(
+              id: 'link-$from',
+              fromId: from,
+              toId: 'goal',
+              createdAt: at,
+              updatedAt: at,
+              vectorClock: null,
+            ),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIds({
+          'charter_note',
+          'charter_task',
+        }),
+      ).thenAnswer((_) async => [charterNote, charterTask]);
+
+      expect(await categoryMove.move('goal', otherCategoryId), isTrue);
+
+      verifyWrote('charter_note', otherCategoryId);
+      verifyNoWrite('charter_task');
+      expect(await intents.pending(), isEmpty);
+    });
+
+    test("a person's move never asks for a charter", () async {
+      personWithCheckIn();
+
+      await categoryMove.move('person', otherCategoryId);
+
+      verifyNever(() => journalDb.charterLinksToGoal(any()));
+    });
+  });
 
   group('move', () {
     test('moves the entry and every entry linked from it, and clears its '

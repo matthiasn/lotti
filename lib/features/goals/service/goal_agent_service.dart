@@ -9,8 +9,10 @@ import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/model/goal_checkin_weight.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
@@ -36,7 +38,13 @@ class GoalAgentService {
     this.checkInNotifier,
     this.offTrackAlerts,
     this.goalEntryIdFor,
+    this.categoryProfileLookup,
   });
+
+  /// The goal's category default profile, snapshotted into a new agent's
+  /// setup as a task's agent takes its category's (`categorySnapshotSetup`).
+  /// Null leaves a new agent on its standalone resolution.
+  final CategoryProfileLookup? categoryProfileLookup;
 
   /// The journal row of the goal coached by an agent. A goal that measures
   /// its check-in time watches that row, so every check-in linked to it runs
@@ -81,6 +89,9 @@ class GoalAgentService {
   /// [agentId] — spec v1 is immutable and must never be rewritten by a
   /// repeated create. [checkInsAreSubstance] is the user's say on whether
   /// their check-ins are the goal itself; null follows the criteria.
+  /// [categoryId] files the goal: its journal row is written in it, so every
+  /// check-in recorded against the goal is too, and its agent starts on the
+  /// profile the category names now.
   Future<AgentIdentityEntity> createGoalAgent({
     required String title,
     required String statement,
@@ -91,11 +102,16 @@ class GoalAgentService {
     String? rationale,
     String? agentId,
     bool? checkInsAreSubstance,
+    String? categoryId,
   }) async {
     final issues = GoalSpecValidator.authoringIssues(criteria);
     if (issues.isNotEmpty) {
       throw ArgumentError('Invalid goal criteria: ${issues.join('; ')}');
     }
+    final lookup = categoryProfileLookup;
+    final setup = lookup == null
+        ? null
+        : await categorySnapshotSetup(categoryId: categoryId, lookup: lookup);
     final now = clock.now();
     AgentIdentityEntity? created;
     late GoalSpecVersionEntity spec;
@@ -117,7 +133,11 @@ class GoalAgentService {
           displayName: displayName?.trim().isNotEmpty ?? false
               ? displayName!.trim()
               : title,
-          config: const AgentConfig(automaticUpdatesEnabled: true),
+          config: AgentConfig(
+            automaticUpdatesEnabled: true,
+            profileId: setup?.baseProfileId,
+            inferenceSetup: setup,
+          ),
           agentId: agentId,
         );
         final versionId = '${identity.agentId}:spec-v1';
@@ -198,7 +218,10 @@ class GoalAgentService {
     if (head is GoalSpecHeadEntity) {
       final version = await _repository.getEntity(head.versionId);
       if (version is GoalSpecVersionEntity) {
-        await goalMirrorService?.mirrorSpec(version: version);
+        await goalMirrorService?.mirrorSpec(
+          version: version,
+          categoryId: categoryId,
+        );
       }
     }
     return identity;

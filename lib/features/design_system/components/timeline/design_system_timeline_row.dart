@@ -140,46 +140,46 @@ class DesignSystemTimelineRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // The row speaks as one sentence ([semanticsLabel]); its glyph and
-          // text fragments would only repeat it in pieces.
+          // meta would only repeat it in pieces, so they alone are hidden.
+          // The body and footer stay reachable: the words, and the actions
+          // in them — play, retry, show more — are not in the sentence.
           Expanded(
-            child: ExcludeSemantics(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  leading,
-                  SizedBox(width: spacing.step4),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Centred on the tile, so the meta reads as the
-                        // tile's label.
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: tile),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            heightFactor: 1,
-                            child: meta,
-                          ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ExcludeSemantics(child: leading),
+                SizedBox(width: spacing.step4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Centred on the tile, so the meta reads as the
+                      // tile's label.
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: tile),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          heightFactor: 1,
+                          child: ExcludeSemantics(child: meta),
                         ),
-                        // Prose at a reading measure, however wide the
-                        // column: the meta and footer may run on.
-                        if (body case final body?)
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: kProseMeasureWidth,
-                            ),
-                            child: body,
+                      ),
+                      // Prose at a reading measure, however wide the
+                      // column: the meta and footer may run on.
+                      if (body case final body?)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: kProseMeasureWidth,
                           ),
-                        if (footer != null) ...[
-                          SizedBox(height: spacing.step2),
-                          footer!,
-                        ],
+                          child: body,
+                        ),
+                      if (footer != null) ...[
+                        SizedBox(height: spacing.step2),
+                        footer!,
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           if (trailing != null) ...[

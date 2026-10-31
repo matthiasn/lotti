@@ -297,7 +297,7 @@ class _AudioRecordingModalContentState
     ThemeData theme,
   ) => DesignSystemButton(
     key: const ValueKey('record'),
-    label: context.messages.audioRecordingRecord.toUpperCase(),
+    label: context.messages.audioRecordingRecord,
     leadingIcon: LottiIcons.mic,
     size: DesignSystemButtonSize.large,
     onPressed: _starting || _terminalActionInProgress ? null : _record,

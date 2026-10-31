@@ -1,24 +1,32 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -99,6 +107,7 @@ void main() {
     openTask: (t) => opened.add('task ${t.meta.id}'),
     unlinkTask: (t) => opened.add('unlink ${t.meta.id}'),
     sortVoiceNote: (a) => opened.add('sort ${a.meta.id}'),
+    retryTranscript: (a) => opened.add('retry ${a.meta.id}'),
   );
 
   setUp(() => opened = []);
@@ -299,17 +308,31 @@ void main() {
       ),
     );
 
-    testWidgets('a voice note says how long it ran and what was said, or '
-        'that its words are still coming, in the quiet ink', (tester) async {
-      await pump(
-        tester,
-        timeline(
-          checkIns: [],
-          tasks: [],
-          entries: [
-            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
-            audio('waiting', DateTime(2026, 8, 11, 9)),
-          ],
+    testWidgets('a voice note says how long it ran and what was said — or, '
+        'through the shared status, that its words are coming while they '
+        'may be, and that they are not once the grace window has closed', (
+      tester,
+    ) async {
+      // The rows read the clock themselves, so the page's `now` is the clock.
+      await withClock(
+        Clock.fixed(now),
+        () => pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [
+              audio(
+                'spoken',
+                DateTime(2026, 8, 12, 19, 10),
+                words: 'Send-off.',
+              ),
+              // Two minutes ago: still inside the window.
+              audio('fresh', now.subtract(const Duration(minutes: 2))),
+              // Two days ago, never transcribed: it must stop promising words.
+              audio('stale', DateTime(2026, 8, 11, 9)),
+            ],
+          ),
         ),
       );
 
@@ -318,19 +341,256 @@ void main() {
         'Yesterday 19:10 · Voice note · 1 min',
       );
       expect(find.text('Send-off.'), findsOneWidget);
-      final waiting = tester.widget<Text>(
+
+      TranscriptStatus statusOf(String id) => tester
+          .widget<RecordingTranscript>(
+            find.descendant(
+              of: find.byKey(ValueKey('person-timeline-row-$id')),
+              matching: find.byType(RecordingTranscript),
+            ),
+          )
+          .status;
+      expect(statusOf('fresh'), TranscriptStatus.transcribing);
+      expect(
         find.descendant(
-          of: find.byKey(const ValueKey('person-timeline-row-waiting')),
+          of: find.byKey(const ValueKey('person-timeline-row-fresh')),
           matching: find.text('Transcribing…'),
         ),
+        findsOneWidget,
       );
-      final tokens = tester
-          .element(find.byType(PersonTimelineRow).first)
-          .designTokens;
-      expect(waiting.style?.color, tokens.colors.text.lowEmphasis);
+      expect(statusOf('stale'), TranscriptStatus.notTranscribed);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-stale')),
+          matching: find.text('Not transcribed'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
+    });
+
+    testWidgets('a page left open turns a waiting recording to Not '
+        'transcribed when its window closes — nothing else would', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [audio('fresh', now.subtract(const Duration(minutes: 2)))],
+          ),
+        );
+        expect(find.text('Transcribing…'), findsOneWidget);
+      });
+
+      // No transcript, no status change, no database write: only the row's
+      // own timer ends the wait.
+      await withClock(Clock.fixed(now.add(kTranscriptGrace)), () async {
+        await tester.pump(kTranscriptGrace);
+        await tester.pump();
+      });
+
+      expect(find.text('Not transcribed'), findsOneWidget);
+      expect(find.text('Transcribing…'), findsNothing);
+    });
+
+    testWidgets("a waiting row's status reaches a screen reader, not only "
+        "the row's sentence", (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Not transcribed'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets("a check-in row's words, status and playback all belong to "
+        'its newest recording: an older transcript never stands in', (
+      tester,
+    ) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('older-take', DateTime(2026, 8, 1, 12, 44), words: 'Old.'),
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50)),
+            ],
+          },
+        ),
+      );
+
+      final row = find.byKey(const ValueKey('person-timeline-row-call'));
+      expect(
+        find.descendant(of: row, matching: find.text('Old.')),
+        findsNothing,
+      );
+      expect(
+        tester
+            .widget<RecordingPlayback>(
+              find.descendant(
+                of: row,
+                matching: find.byType(RecordingPlayback),
+              ),
+            )
+            .audio
+            .meta
+            .id,
+        'newer-take',
+      );
+      // The newer recording's own status, with its own way to ask again.
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.byKey(const ValueKey('transcript-retry-newer-take')),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets("a check-in's own words stay, with its newest recording's "
+        'status under them while that recording has none', (tester) async {
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [call],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [audio('take', DateTime(2026, 8, 1, 12, 50))],
+          },
+        ),
+      );
+
+      final row = find.byKey(const ValueKey('person-timeline-row-call'));
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.text('Walked through the launch window.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('Not transcribed')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a check-in holding several wordless recordings waits on the '
+        'newest', (tester) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50)),
+              audio('older-take', DateTime(2026, 8, 1, 12, 44)),
+            ],
+          },
+        ),
+      );
+
+      expect(
+        tester.widget<RecordingTranscript>(find.byType(RecordingTranscript)).id,
+        'newer-take',
+      );
+    });
+
+    testWidgets('a recording whose words never came offers Retry, which asks '
+        'for that recording again — as a goal rail does', (tester) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('transcript-retry-stale')));
+      expect(opened, ['retry stale']);
+    });
+
+    testWidgets('a transcription running past the window still says it is '
+        'transcribing, and a failed one says so', (tester) async {
+      for (final (status, label) in [
+        (InferenceStatus.running, 'Transcribing…'),
+        (InferenceStatus.error, 'Transcription failed'),
+      ]) {
+        await pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+          ),
+          overrides: [
+            inferenceStatusControllerProvider((
+              id: 'stale',
+              aiResponseType: AiResponseType.audioTranscription,
+            )).overrideWith(() => FixedInferenceStatusController(status)),
+          ],
+        );
+        expect(find.text(label), findsOneWidget, reason: '$status');
+        // A fresh scope for the next status.
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+
+    testWidgets('a voice note and a spoken check-in each play lightly in '
+        'place; a written check-in has nothing to play', (tester) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken, quiet],
+          entries: [
+            audio('spoken-note', DateTime(2026, 8, 12, 19, 10), words: 'Hi.'),
+          ],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('older-take', DateTime(2026, 8, 1, 12, 44), words: 'A.'),
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50), words: 'B.'),
+            ],
+          },
+        ),
+      );
+
+      List<String> played(String rowId) => tester
+          .widgetList<RecordingPlayback>(
+            find.descendant(
+              of: find.byKey(ValueKey('person-timeline-row-$rowId')),
+              matching: find.byType(RecordingPlayback),
+            ),
+          )
+          .map((p) => p.audio.meta.id)
+          .toList();
+      expect(played('spoken-note'), ['spoken-note']);
+      expect(played('call'), ['newer-take'], reason: 'the newest it holds');
+      expect(played('quiet'), isEmpty);
     });
 
     final longWords = [
@@ -355,10 +615,10 @@ void main() {
       await tester.pumpAndSettle();
 
       Text words() => tester.widget<Text>(
-        find.byKey(const ValueKey('person-folded-words-spoken')),
+        find.byKey(const ValueKey('folded-words-spoken')),
       );
       expect(words().data, 'Pip wants a crew send-off.');
-      expect(words().maxLines, 3);
+      expect(words().maxLines, FoldedWords.foldedLines);
 
       await tester.tap(find.text('Show more'));
       await tester.pumpAndSettle();
@@ -370,9 +630,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(words().data, 'Pip wants a crew send-off.');
       // A way in, and it says so under a pointer.
-      final tokens = tester
-          .element(find.byType(PersonFoldedWords))
-          .designTokens;
+      final tokens = tester.element(find.byType(FoldedWords)).designTokens;
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer(location: Offset.zero);
       addTearDown(gesture.removePointer);
@@ -405,7 +663,7 @@ void main() {
       await tester.pumpAndSettle();
 
       Text words() => tester.widget<Text>(
-        find.byKey(ValueKey('person-folded-words-${spoken.meta.id}')),
+        find.byKey(ValueKey('folded-words-${spoken.meta.id}')),
       );
       expect(words().data, 'Pip is calm about the slip.');
       await tester.tap(find.text('Show more'));
@@ -423,12 +681,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final words = find.byKey(
-        ValueKey('person-folded-words-${typed.meta.id}'),
+        ValueKey('folded-words-${typed.meta.id}'),
       );
       expect(tester.widget<Text>(words).data, longWords);
       expect(tester.widget<Text>(words).maxLines, 3);
       await tester.tap(
-        find.byKey(ValueKey('person-folded-more-${typed.meta.id}')),
+        find.byKey(ValueKey('folded-words-more-${typed.meta.id}')),
       );
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(words).maxLines, isNull);
@@ -453,17 +711,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('person-folded-more-short')),
+        find.byKey(const ValueKey('folded-words-more-short')),
         findsNothing,
       );
-      final more = find.byKey(const ValueKey('person-folded-more-long'));
+      final more = find.byKey(const ValueKey('folded-words-more-long'));
       expect(more, findsOneWidget);
       await tester.tap(more);
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('person-folded-words-long')),
+              find.byKey(const ValueKey('folded-words-long')),
             )
             .maxLines,
         isNull,
@@ -483,7 +741,7 @@ void main() {
         timeline(checkIns: [quiet], tasks: [], entries: [long]),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('person-folded-more-long')));
+      await tester.tap(find.byKey(const ValueKey('folded-words-more-long')));
       await tester.pumpAndSettle();
       Element row(String id) => tester.element(
         find.byKey(ValueKey('person-timeline-row-$id')),
@@ -514,7 +772,7 @@ void main() {
       expect(
         tester
             .widget<Text>(
-              find.byKey(const ValueKey('person-folded-words-long')),
+              find.byKey(const ValueKey('folded-words-long')),
             )
             .maxLines,
         isNull,
@@ -620,9 +878,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      const words = ValueKey('person-folded-words-many-0');
+      const words = ValueKey('folded-words-many-0');
       const row = ValueKey('person-timeline-row-many-0');
-      await tester.tap(find.byKey(const ValueKey('person-folded-more-many-0')));
+      await tester.tap(find.byKey(const ValueKey('folded-words-more-many-0')));
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(find.byKey(words)).maxLines, isNull);
       final opened = tester.getSize(find.byKey(row)).height;
@@ -714,7 +972,7 @@ void main() {
     });
 
     testWidgets("a check-in saved without words reads its entries' words, and "
-        'says the words are coming while only a recording holds them', (
+        'while only a recording holds them says where its words are', (
       tester,
     ) async {
       final bare = CheckInEntry(
@@ -762,10 +1020,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The recording is two days old and nothing transcribed it.
+      final status = tester.widget<RecordingTranscript>(
+        find.descendant(
+          of: find.byKey(const ValueKey('person-timeline-row-pending')),
+          matching: find.byType(RecordingTranscript),
+        ),
+      );
+      expect(status.id, 'take', reason: "the recording's own status");
+      expect(status.status, TranscriptStatus.notTranscribed);
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('person-timeline-row-pending')),
-          matching: find.text('Transcribing…'),
+          matching: find.text('Not transcribed'),
         ),
         findsOneWidget,
       );

@@ -14,12 +14,10 @@ import 'package:lotti/features/goals/state/goal_charter_providers.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_recording.dart';
 import 'package:lotti/features/goals/ui/charter/goal_charter_sheet.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_audio_transcript_status.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart'
-    show kGoalCheckInTranscriptGrace;
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/timeline/timeline_models.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// *About this goal*: the goal's charter (ADR 0140) — what the user wrote
@@ -235,7 +233,7 @@ class _GoalCharterNoteTile extends StatelessWidget {
 
 /// A spoken charter entry: the recording, then its transcript — or, until
 /// there is one, the same honest account the check-in rail gives
-/// ([goalAudioTranscriptStatus]), with Retry where nothing is coming. It
+/// ([RecordingTranscript]), with Retry where nothing is coming. It
 /// wakes itself when its grace window closes, as the rail does.
 class _GoalCharterRecordingTile extends ConsumerStatefulWidget {
   const _GoalCharterRecordingTile({
@@ -253,11 +251,10 @@ class _GoalCharterRecordingTile extends ConsumerStatefulWidget {
 
 class _GoalCharterRecordingTileState
     extends ConsumerState<_GoalCharterRecordingTile>
-    with GoalTranscriptGraceRebuild {
+    with TranscriptGraceRebuild {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
     final recording = widget.recording;
     final onEdit = widget.onEdit;
     final id = recording.meta.id;
@@ -272,78 +269,48 @@ class _GoalCharterRecordingTileState
     final durableFailure =
         !hasTranscript &&
         (ref.watch(goalAudioTranscriptionFailedProvider(id)).value ?? false);
-    final graceExpiry = recording.meta.dateFrom.add(
-      kGoalCheckInTranscriptGrace,
-    );
+    final graceExpiry = recording.meta.dateFrom.add(kTranscriptGrace);
     final now = clock.now();
-    final status = goalAudioTranscriptStatus(
+    final status = transcriptStatusOf(
       hasTranscript: hasTranscript,
-      inference: inference,
-      durableFailure: durableFailure,
+      running: inference == InferenceStatus.running,
+      failed: inference == InferenceStatus.error || durableFailure,
       graceExpiry: graceExpiry,
       now: now,
     );
     // Waiting with nothing running is the one state no other rebuild ends.
     armGraceRebuild(
-      status == TimelineTranscriptStatus.pending &&
+      status == TranscriptStatus.transcribing &&
               inference == InferenceStatus.idle &&
               graceExpiry.isAfter(now)
           ? graceExpiry
           : null,
     );
-    final caption = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.lowEmphasis,
-    );
-
     return Column(
       key: ValueKey('goal-charter-recording-$id'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AudioPlayerWidget(recording),
         SizedBox(height: tokens.spacing.step2),
-        switch (status) {
-          TimelineTranscriptStatus.none => _GoalCharterWords(
-            entryId: id,
-            text: transcript,
-            onTap: onEdit,
+        // The charter's words stay editable in place; until there are any,
+        // the recording says why the way every check-in recording does.
+        if (status == TranscriptStatus.heard)
+          _GoalCharterWords(entryId: id, text: transcript, onTap: onEdit)
+        else
+          RecordingTranscript(
+            id: id,
+            status: status,
+            onRetry: () => ref.read(
+              triggerSkillProvider((
+                entityId: id,
+                skillId: skillTranscribeContextId,
+                linkedTaskId: null,
+                referenceImages: null,
+                overrideModelId: null,
+                geminiThinkingMode: null,
+              )).future,
+            ),
           ),
-          TimelineTranscriptStatus.pending => Text(
-            messages.timelineTranscribing,
-            key: ValueKey('goal-charter-transcribing-$id'),
-            style: caption.copyWith(fontStyle: FontStyle.italic),
-          ),
-          TimelineTranscriptStatus.failed ||
-          TimelineTranscriptStatus.stalled => Row(
-            key: ValueKey('goal-charter-untranscribed-$id'),
-            children: [
-              Flexible(
-                child: Text(
-                  status == TimelineTranscriptStatus.stalled
-                      ? messages.timelineTranscriptMissing
-                      : messages.timelineTranscriptionFailed,
-                  style: caption,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              DesignSystemButton(
-                key: ValueKey('goal-charter-retry-$id'),
-                label: messages.timelineRetryTranscription,
-                size: DesignSystemButtonSize.dense,
-                variant: DesignSystemButtonVariant.quiet,
-                onPressed: () => ref.read(
-                  triggerSkillProvider((
-                    entityId: id,
-                    skillId: skillTranscribeContextId,
-                    linkedTaskId: null,
-                    referenceImages: null,
-                    overrideModelId: null,
-                    geminiThinkingMode: null,
-                  )).future,
-                ),
-              ),
-            ],
-          ),
-        },
       ],
     );
   }

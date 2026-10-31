@@ -171,7 +171,6 @@
     "lib/features/relationships/state/relationship_proposal_providers.dart": {"lookups": 1},
     "lib/features/relationships/ui/pages/relationship_details_page.dart": {"lookups": 1},
     "lib/features/relationships/ui/pages/relationships_page.dart": {"lookups": 1},
-    "lib/features/relationships/ui/widgets/relationship_form_modal_person_category_row_part.dart": {"lookups": 1},
     "lib/features/relationships/workflow/relationship_agent_workflow.dart": {"lookups": 1},
     "lib/features/settings/state/health_import_controller.dart": {"lookups": 1},
     "lib/features/settings/ui/pages/advanced/maintenance_page.dart": {"lookups": 2, "isRegistered": 2},

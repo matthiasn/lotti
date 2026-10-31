@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/logic/repositories/category_move_intents.dart';
@@ -15,9 +16,15 @@ import 'package:lotti/services/domain_logging.dart';
 /// The category is on every row, so a move is several writes, in this
 /// order: the entry; every entry linked from it — its timers, recordings
 /// and images, and any task it links to; each moved task's checklists and
-/// their items; and last the project link of each moved task whose project
-/// is no longer in its category (`ProjectRepository.linkTaskToProject`
-/// refuses a cross-category link, but nothing re-checked one afterwards).
+/// their items; what each moved check-in holds; and last the project link
+/// of each moved task whose project is no longer in its category
+/// (`ProjectRepository.linkTaskToProject` refuses a cross-category link,
+/// but nothing re-checked one afterwards).
+///
+/// A person or a goal is a subject, not a task: moving one moves its own
+/// entries — its check-ins and what they hold, its notes, recordings,
+/// photos and meetings, a goal's charter — and never a task, project, person
+/// or goal it links to, which each keep the category they were filed under.
 ///
 /// The move is recorded before its first write ([CategoryMoveIntents]) and
 /// the record removed once every write is confirmed. An app that dies in
@@ -139,13 +146,17 @@ class EntryCategoryMove {
   Future<bool> _follow(String entryId, String? categoryId) async {
     var complete = true;
     final entry = await _journalDb.journalEntityById(entryId);
+    final subject = entry is RelationshipEntry || entry is GoalEntry;
     final tasks = <Task>[if (entry is Task) entry];
+    final checkIns = <CheckInEntry>[];
     for (final linked in await _journalRepository.getLinkedEntities(
       linkedTo: entryId,
     )) {
+      if (subject && _isOwnFiling(linked)) continue;
       switch (await _setCategory(linked, categoryId)) {
         case true:
           if (linked is Task) tasks.add(linked);
+          if (linked is CheckInEntry) checkIns.add(linked);
         case false:
           complete = false;
         // Deleted since: nothing to move, and no project to sweep.
@@ -154,6 +165,12 @@ class EntryCategoryMove {
     }
     for (final task in tasks) {
       if (!await _checklistsFollow(task, categoryId)) complete = false;
+    }
+    for (final checkIn in checkIns) {
+      if (!await _heldFollow(checkIn, categoryId)) complete = false;
+    }
+    if (entry is GoalEntry && !await _charterFollow(entryId, categoryId)) {
+      complete = false;
     }
     for (final task in tasks) {
       await _dropCrossCategoryProject(task, categoryId);
@@ -185,6 +202,43 @@ class EntryCategoryMove {
         }
         if (await _setCategory(item, categoryId) == false) complete = false;
       }
+    }
+    return complete;
+  }
+
+  /// Whether [entity] is filed on its own account, so a subject linking to
+  /// it — a person to a task about them, say — does not move it.
+  static bool _isOwnFiling(JournalEntity entity) =>
+      entity is Task ||
+      entity is ProjectEntry ||
+      entity is RelationshipEntry ||
+      entity is GoalEntry;
+
+  /// Moves what [checkIn] holds — its comments, recordings and photos — to
+  /// [categoryId]; whether each took it. A task the check-in links to is
+  /// not held, and keeps its own category.
+  Future<bool> _heldFollow(CheckInEntry checkIn, String? categoryId) async {
+    var complete = true;
+    for (final held in await _journalRepository.getLinkedEntities(
+      linkedTo: checkIn.meta.id,
+    )) {
+      if (!isCheckInEntryKind(held)) continue;
+      if (await _setCategory(held, categoryId) == false) complete = false;
+    }
+    return complete;
+  }
+
+  /// Moves [goalId]'s charter — the notes and recordings linked *into* the
+  /// goal, the reverse of a check-in's link (ADR 0140) — to [categoryId];
+  /// whether each took it.
+  Future<bool> _charterFollow(String goalId, String? categoryId) async {
+    final links = await _journalDb.charterLinksToGoal(goalId);
+    final ids = {for (final link in links) link.fromId};
+    if (ids.isEmpty) return true;
+    var complete = true;
+    for (final entry in await _journalDb.getJournalEntitiesForIds(ids)) {
+      if (_isOwnFiling(entry)) continue;
+      if (await _setCategory(entry, categoryId) == false) complete = false;
     }
     return complete;
   }

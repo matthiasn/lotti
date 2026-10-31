@@ -1142,9 +1142,8 @@ handler would retract it; that wiring is a follow-up.
   grammar every other card on the page uses), and the automation plumbing
   riding the read card itself. Daily reflections have NO
   main-column card: they render only in the check-ins rail, each as one
-  tight row whose verdict pill rides the timeline header's trailing slot
-  (`TimelineBeat.trailing`) and whose row tap (`TimelineBeat.onTap`)
-  reopens the same reflection sheet the day strip uses; provenance
+  tight row whose verdict pill rides the row's trailing slot and whose row
+  tap reopens the same reflection sheet the day strip uses; provenance
   ("Rated by you" / "suggested, you accepted") stays on the record but is
   not rendered. The retired-banner list ("Interactions" — past ads with
   Superseded/Dismissed outcomes) is gone from the dashboard entirely;
@@ -2042,12 +2041,14 @@ Invariants worth not breaking:
   support export needs it stable.
 - **A recording nobody picked up is not "in progress".** No transcript, no
   running job and no failure record is the normal first minutes after a
-  recording — and, past `kGoalCheckInTranscriptGrace` (10 minutes), the
+  recording — and, past `kTranscriptGrace` (10 minutes), the
   signature of a recording that was never handed to the pipeline at all. The
-  rail renders the second case as `TimelineTranscriptStatus.stalled`: "Not
-  transcribed", with the same Retry the failed state offers. The rail arms a
-  timer for the soonest grace expiry among its visible beats and rebuilds
-  itself when it fires — nothing else would, because a recording nobody picked
+  rail renders the second case as `TranscriptStatus.notTranscribed`: "Not
+  transcribed", with the same Retry the failed state offers — the shared rule
+  and look every check-in surface uses
+  ([Recording UI](speech/recording-ui.md#the-words-under-a-recording)). The
+  rail arms a timer for the soonest grace expiry among its visible beats
+  (`TranscriptGraceRebuild`) and rebuilds itself when it fires — nothing else would, because a recording nobody picked
   up produces no transcript, no status change and no database notification, so
   the state exists precisely where no other rebuild is coming. It is a separate
   status from `failed` on purpose — nothing ran, so naming it a failure sends
@@ -2059,6 +2060,44 @@ Invariants worth not breaking:
   transcription skill on request. The timeline combines the live inference
   state with the latest durable audio-transcription attribution, so the failure
   and Retry action survive provider disposal and app restart.
+
+## The check-in rail, and where a goal is filed
+
+The rail (`GoalCheckInTimeline`) draws the person timeline's rows — the design
+system's `DesignSystemTimelineRow` under a `DesignSystemTimelineSectionHeader`
+per day (*Today*, *Yesterday*, then the date; sentence case, never upper case)
+— so a goal's check-ins and a person's look alike. Each row is a neutral tile
+(mic, note, or the day's verdict glyph), the time and kind on one caption line,
+and in its body:
+
+- a recording: *Play audio* (`RecordingPlayback`), which opens the waveform
+  player in place only while it plays, then the words through the shared
+  `RecordingTranscript` — the status rule and look of
+  [Recording UI](speech/recording-ui.md#the-words-under-a-recording);
+- a written check-in: its words in the same `FoldedWords` tier and fold;
+- a reflection: its note, the verdict pill as the trailing control and the
+  per-dimension count as the footer.
+
+A check-in row opens its journal entry; a reflection reopens its day's sheet.
+The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
+
+**A goal is filed in a category.** The goal form's *meet your agent* step has
+the person form's category row (`CategoryFieldRow`; the form's
+`_GoalFormCategory` mixin holds its state). Editing, the row cannot be
+changed until the goal row's own category has read, so a late read never
+overwrites a pick, and a changed category with no goal row to move fails the
+save rather than reporting success. On create,
+`GoalAgentService.createGoalAgent(categoryId:)` mirrors the goal row into it —
+so every check-in recorded against the goal takes it
+(`goalCategoryIdProvider` feeds both composers) — and snapshots the profile
+the category names into the agent's setup (`categorySnapshotSetup`, origin
+`categorySnapshot`), as a task's agent takes its category default; a category
+naming no profile leaves the agent on its standalone resolution, running. On
+edit, a changed category goes through `EntryCategoryMove`, which takes the goal
+row, everything linked from it and its charter (linked *into* the goal) along,
+across a crash, and never a task it links to. The agent internals panel opened
+from the goal passes the goal row (`subjectEntityId`), so the setup sheet's
+*Copy category default* reads the goal's category.
 
 ## Timed check-ins and check-in time
 
@@ -2211,7 +2250,8 @@ flowchart LR
   the caller, since the recorder's own automation keys on a parent. Its
   transcript is what the agent reads, so `charter()` leaves a recording out
   until it has words; the card plays it and shows the transcript state with
-  the check-in rail's rule (`goalAudioTranscriptStatus`) and Retry. The chat
+  the check-in rail's rule (`transcriptStatusOf`) and Retry, drawn by the
+  shared `RecordingTranscript`; heard words stay its own tap-to-edit text. The chat
   has no write path and the agent no tool for the charter.
 - **A transcript landing marks nothing stale.** It is written to the
   recording, whose parents do not include the goal; linking the recording

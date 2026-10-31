@@ -76,6 +76,9 @@ class GoalCheckInComposer extends ConsumerStatefulWidget {
   /// the composer's job is capture, and the prompt is additive.
   final String? preparedLine;
   final String? personaName;
+
+  /// The goal's category, when the host already has it; otherwise the
+  /// composer reads it from the goal row before it writes anything.
   final String? categoryId;
 
   /// Opens the composer as a bottom sheet.
@@ -181,11 +184,20 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
   /// closes itself instead of leaving a sheet whose only remaining action is
   /// dismissal. A discarded recording returns to the sheet — the user may
   /// still want to write instead.
+  /// The category a check-in is filed in: the host's, or the goal row's,
+  /// read now — a composer opened while the host's lookup was still loading
+  /// would otherwise file it uncategorized.
+  Future<String?> _categoryId() async =>
+      widget.categoryId ??
+      await ref.read(goalCategoryIdProvider(widget.agentId).future);
+
   Future<void> _record(String goalEntryId) async {
+    final categoryId = await _categoryId();
+    if (!mounted) return;
     final createdId = await widget.openRecorder(
       context,
       goalEntryId: goalEntryId,
-      categoryId: widget.categoryId,
+      categoryId: categoryId,
     );
     if (createdId == null) return;
     // Transcription is not asked for here: the recorder's stop path runs the
@@ -206,7 +218,7 @@ class _GoalCheckInComposerState extends ConsumerState<GoalCheckInComposer> {
         goalEntryId: goalEntryId,
         started: _sessionStart ?? clock.now(),
         timeSpent: _timeSpent,
-        categoryId: widget.categoryId,
+        categoryId: await _categoryId(),
       );
       if (created && mounted) Navigator.of(context).pop();
     } finally {

@@ -1260,8 +1260,12 @@ void main() {
       await stopRecording(tester);
 
       expect(take('audio-1'), findsOneWidget);
+      expect(find.text('00:23 · Whisper large v3 · via Groq'), findsOneWidget);
       expect(
-        find.text('00:23 · Transcribing… · Whisper large v3 · via Groq'),
+        find.descendant(
+          of: take('audio-1'),
+          matching: find.text('Transcribing…'),
+        ),
         findsOneWidget,
       );
       expect(
@@ -1309,7 +1313,7 @@ void main() {
               find.descendant(
                 of: take('audio-1'),
                 matching: find.byKey(
-                  const ValueKey('check-in-take-transcript'),
+                  const ValueKey('transcript-words-audio-1'),
                 ),
               ),
             )
@@ -1497,7 +1501,8 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('00:05 · Transcribing…'), findsOneWidget);
+      expect(find.text('00:05'), findsOneWidget);
+      expect(find.text('Transcribing…'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       gate.complete('Landed anyway.');
@@ -1517,10 +1522,9 @@ void main() {
       await tester.pump();
       await stopRecording(tester);
 
-      expect(
-        find.textContaining('00:23 · Transcript not received'),
-        findsOneWidget,
-      );
+      // Nothing came and nothing said why: not transcribed.
+      expect(find.text('00:23'), findsOneWidget);
+      expect(find.text('Not transcribed'), findsOneWidget);
       expect(
         find.textContaining('Your recording is saved in the journal'),
         findsOneWidget,
@@ -1528,7 +1532,7 @@ void main() {
       expect(saveEnabled(tester), isTrue);
 
       await tester.tap(
-        find.byKey(const ValueKey('check-in-retry-transcript')),
+        find.byKey(const ValueKey('transcript-retry-audio-1')),
       );
       await tester.pumpAndSettle();
       expect(
@@ -1554,7 +1558,7 @@ void main() {
       await type(tester, 'Typed only.');
       await startDictation(tester);
       await stopRecording(tester);
-      expect(find.textContaining('00:00 · Transcribing…'), findsOneWidget);
+      expect(find.text('Transcribing…'), findsOneWidget);
 
       ProviderScope.containerOf(tester.element(find.byType(CheckInCaptureForm)))
           .read(
@@ -1567,7 +1571,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.textContaining('00:00 · Transcript not received'),
+        find.text('Transcription failed'),
         findsOneWidget,
         reason: 'must not run out the five-minute timeout',
       );
@@ -1600,12 +1604,12 @@ void main() {
           )
           .setError('HTTP 503 · Transcription service unavailable');
       await tester.pumpAndSettle();
-      expect(find.textContaining('Transcript not received'), findsOneWidget);
+      expect(find.text('Transcription failed'), findsOneWidget);
 
-      await tester.tap(find.byKey(const ValueKey('check-in-retry-transcript')));
+      await tester.tap(find.byKey(const ValueKey('transcript-retry-audio-1')));
       await tester.pump();
-      expect(find.textContaining('Transcribing…'), findsOneWidget);
-      expect(find.textContaining('Transcript not received'), findsNothing);
+      expect(find.text('Transcribing…'), findsOneWidget);
+      expect(find.text('Transcription failed'), findsNothing);
 
       gate.complete('Second time lucky.');
       await tester.pumpAndSettle();
@@ -1634,10 +1638,7 @@ void main() {
       await startDictation(tester);
       await stopRecording(tester);
 
-      expect(
-        find.textContaining('00:00 · Transcript not received'),
-        findsOneWidget,
-      );
+      expect(find.text('Transcription failed'), findsOneWidget);
       expect(stubTranscription.cancelCount, 1);
       expect(
         find.text('cloud request failed while recorder closed'),
@@ -1733,7 +1734,8 @@ void main() {
       recorder.tick(progress: const Duration(seconds: 5));
       await tester.pump();
       await stopRecording(tester);
-      expect(find.text('00:05 · Transcribing…'), findsOneWidget);
+      expect(find.text('00:05'), findsOneWidget);
+      expect(find.text('Transcribing…'), findsOneWidget);
       gate.complete('x');
       await tester.pumpAndSettle();
     });
@@ -1977,7 +1979,7 @@ void main() {
       expect(
         find.descendant(
           of: take('audio-1'),
-          matching: find.textContaining('Transcript not received'),
+          matching: find.text('Not transcribed'),
         ),
         findsOneWidget,
       );

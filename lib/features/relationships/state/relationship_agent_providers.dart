@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/relationship_trigger_tokens.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -66,6 +67,7 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
     relationshipRepository: ref.watch(relationshipRepositoryProvider),
+    categoryProfileLookup: ref.watch(relationshipCategoryProfileLookupProvider),
   ),
   name: 'relationshipAgentServiceProvider',
 );
@@ -78,12 +80,7 @@ final relationshipAgentServiceProvider = Provider<RelationshipAgentService>(
 /// exactly as it routes the transcript.
 final relationshipCategoryProfileLookupProvider =
     Provider<CategoryProfileLookup>(
-      (ref) => (categoryId) async {
-        final category = await ref
-            .read(journalDbProvider)
-            .getCategoryById(categoryId);
-        return category?.defaultProfileId;
-      },
+      (ref) => ref.watch(categoryProfileLookupProvider),
       name: 'relationshipCategoryProfileLookupProvider',
     );
 

@@ -3664,9 +3664,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checkInStatusRecording => 'Nahrává se';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Přepis nedorazil';
-
-  @override
   String get checkInTakeRemoved => 'Nahrávka odebrána';
 
   @override
@@ -3683,9 +3680,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Témata';
-
-  @override
-  String get checkInTranscribingLabel => 'Přepisuje se…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -7749,13 +7743,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInKindNote => 'POZNÁMKA';
+  String get goalCheckInKindNote => 'Poznámka';
 
   @override
-  String get goalCheckInKindReflection => 'DENNÍ OHLÉDNUTÍ';
+  String get goalCheckInKindReflection => 'Denní ohlédnutí';
 
   @override
-  String get goalCheckInKindVoice => 'HLASOVÉ HLÁŠENÍ';
+  String get goalCheckInKindVoice => 'Hlasové hlášení';
 
   @override
   String goalCheckInMinutes(int count) {
@@ -8585,7 +8579,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String goalRecordOfferOverline(String agentName, String measurableName) {
-    return '$agentName NABÍZÍ · ZAZNAMENAT DO $measurableName';
+    return '$agentName nabízí · zaznamenat do $measurableName';
   }
 
   @override

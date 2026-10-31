@@ -3655,9 +3655,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get checkInStatusRecording => 'A gravar';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Transcrição não recebida';
-
-  @override
   String get checkInTakeRemoved => 'Gravação removida';
 
   @override
@@ -3675,9 +3672,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Assuntos';
-
-  @override
-  String get checkInTranscribingLabel => 'Transcrevendo…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -7741,13 +7735,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInKindNote => 'NOTA';
+  String get goalCheckInKindNote => 'Nota';
 
   @override
-  String get goalCheckInKindReflection => 'REFLEXÃO DIÁRIA';
+  String get goalCheckInKindReflection => 'Reflexão diária';
 
   @override
-  String get goalCheckInKindVoice => 'REGISTO DE VOZ';
+  String get goalCheckInKindVoice => 'Registo de voz';
 
   @override
   String goalCheckInMinutes(int count) {
@@ -8576,7 +8570,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String goalRecordOfferOverline(String agentName, String measurableName) {
-    return '$agentName PROPÕE · REGISTAR EM $measurableName';
+    return '$agentName propõe · registar em $measurableName';
   }
 
   @override

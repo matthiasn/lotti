@@ -2432,9 +2432,9 @@ void main() {
 
     // A reflection beat in the check-ins card reopens that day's sheet —
     // the same sheet the strip opens.
-    await tester.ensureVisible(find.text('DAILY REFLECTION'));
+    await tester.ensureVisible(find.textContaining('Daily reflection'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('DAILY REFLECTION'));
+    await tester.tap(find.textContaining('Daily reflection'));
     await tester.pumpAndSettle();
     expect(find.byType(GoalDayAssessmentSheet), findsOneWidget);
   });

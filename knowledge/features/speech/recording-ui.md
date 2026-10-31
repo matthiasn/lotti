@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Recording UI
-description: "Two interchangeable level visualizations over one dBFS stream, plus the controls and indicators around them."
+description: "Two interchangeable level visualizations over one dBFS stream, the controls and indicators around them, and the one way every check-in surface shows a recording's words."
 resource: ../../../lib/features/speech/ui/widgets/recording
 tags: [speech, ui, vu-meter, visualization]
 status: stable
@@ -12,6 +12,18 @@ sources:
     resource: ../../../lib/features/speech/ui/widgets/recording
     title: Recording UI source
     last_modified: 2026-10-02
+  - id: transcript
+    resource: ../../../lib/widgets/transcript
+    title: RecordingTranscript, FoldedWords and the shared transcript status
+    last_modified: 2026-10-31
+  - id: playback
+    resource: ../../../lib/features/speech/ui/widgets/recording_playback.dart
+    title: RecordingPlayback — a recording played lightly in a history row
+    last_modified: 2026-10-31
+  - id: assessment
+    resource: ../../../docs/design/check_in_transcripts/assessment.md
+    title: Check-in transcripts — the Goals/People assessment behind the shared look
+    last_modified: 2026-10-31
 ---
 
 The recording UI offers **a selectable analog VU meter or an energy orb**, plus
@@ -121,3 +133,69 @@ through the state during a recording rebuild neither the button nor the bar
 around it. Both sticky bars render this one widget, which is what keeps the
 app's lead-action mic to one look, one active state and one accessibility
 story.
+
+# The words under a recording
+
+What a recording's words look like after it stops is shared too, in
+[`lib/widgets/transcript/`](../../../lib/widgets/transcript), so a check-in
+recording reads the same on a goal's rail and charter, in the People
+composer and on the person timeline, and on the events rail. The
+[assessment](../../../docs/design/check_in_transcripts/assessment.md)
+records why the People patterns became the standard.
+
+- **One status.** `TranscriptStatus` is `heard`, `transcribing`,
+  `notTranscribed` or `failed`, and `transcriptStatusOf` is the one rule:
+  - words win;
+  - otherwise a running transcription is transcribing and a failure on
+    record is failed;
+  - otherwise a recording is transcribing until `kTranscriptGrace`
+    (10 minutes) after it started, then not transcribed.
+
+  A host that cannot see a run's progress, such as the person timeline,
+  passes neither flag and gets the grace rule alone, so an old recording
+  stops promising words. A host that stays on screen arms
+  `TranscriptGraceRebuild`, so the window closing is itself a rebuild.
+- **One look.** `RecordingTranscript` draws heard words through
+  `FoldedWords`. Every other state is one status line:
+  - a spinner while the words are coming, or the warning glyph in the
+    warning tone when they are not;
+  - the one caption label for that state, at full ink when it is news;
+  - a tertiary dense *Retry* on the two missing states, when the host can
+    honour one;
+  - the host's own detail under the label: a provider's reason, or the
+    composer's *you can save now*.
+
+  The status line is a live region. The host draws the recording above it
+  (a player, or a take's header), and the recording is never withheld for
+  want of words.
+- **One fold.** `FoldedWords` is the user's words, typed or spoken: `bodySmall`
+  at full ink, three lines, then a quiet-ink *Show more* that announces
+  its expanded state and can lead with a summary. It keeps itself alive in a
+  lazy list while open, so scrolling never undoes it. The People composer
+  shows a take's words unfolded (`folded: false`), because there the user is
+  reviewing what they just said.
+- **Light playback.** A history row plays its recording through
+  `RecordingPlayback`
+  ([`recording_playback.dart`](../../../lib/features/speech/ui/widgets/recording_playback.dart)):
+  closed, one small tertiary *Play audio* action (its length in the
+  semantics label — the row's meta already shows it); tapped, it plays and
+  the row eases open (`AnimatedSize`, motion tokens) to the waveform
+  `AudioPlayerWidget` while that recording is the one the app's single
+  player holds and has not finished, folding back when it stops or another
+  starts. The design panel chose this over a player card under every
+  recording, unanimously: a history is for reading. The person timeline
+  plays a voice note's recording and a check-in's newest; its waiting
+  recordings watch their inference status and offer *Retry*
+  (`PersonTimelineActions.retryTranscript`), as a goal's do.
+
+```mermaid
+stateDiagram-v2
+    [*] --> transcribing: recording saved
+    transcribing --> heard: words land
+    transcribing --> failed: run fails (live error or durable failure)
+    transcribing --> notTranscribed: grace window closes, nothing running
+    failed --> transcribing: Retry
+    notTranscribed --> transcribing: Retry
+    notTranscribed --> heard: words land late
+    failed --> heard: words land late
+```

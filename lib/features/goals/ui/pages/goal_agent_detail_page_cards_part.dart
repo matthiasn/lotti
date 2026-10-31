@@ -318,6 +318,7 @@ class _AgentReadCardState extends ConsumerState<_AgentReadCard> {
       context: context,
       agentId: widget.agentId,
       agentName: widget.identity.displayName,
+      subjectEntityId: ref.read(goalEntryIdProvider(widget.agentId)),
     );
   }
 

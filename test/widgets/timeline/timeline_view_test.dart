@@ -2,6 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../test_utils/broken_image_provider.dart';
@@ -291,7 +294,7 @@ void main() {
 
   group('audio beats', () {
     TimelineBeat audioBeat({
-      required TimelineTranscriptStatus status,
+      required TranscriptStatus status,
       String? transcript,
       String? entryId,
     }) => beat(
@@ -311,7 +314,7 @@ void main() {
         TimelineView(
           groups: [
             TimelineGroup(
-              beats: [audioBeat(status: TimelineTranscriptStatus.pending)],
+              beats: [audioBeat(status: TranscriptStatus.transcribing)],
             ),
           ],
         ),
@@ -321,6 +324,12 @@ void main() {
       // its words exist.
       expect(find.text('PLAYER'), findsOneWidget);
       expect(find.text('Transcribing…'), findsOneWidget);
+      // Said by the shared component, as every check-in surface says it.
+      final transcript = tester.widget<RecordingTranscript>(
+        find.byType(RecordingTranscript),
+      );
+      expect(transcript.status, TranscriptStatus.transcribing);
+      expect(transcript.folded, isTrue);
     });
 
     testWidgets('a failed transcript keeps the beat and offers a retry', (
@@ -334,7 +343,7 @@ void main() {
             TimelineGroup(
               beats: [
                 audioBeat(
-                  status: TimelineTranscriptStatus.failed,
+                  status: TranscriptStatus.failed,
                   entryId: 'audio-9',
                 ),
               ],
@@ -361,7 +370,7 @@ void main() {
             TimelineGroup(
               beats: [
                 audioBeat(
-                  status: TimelineTranscriptStatus.stalled,
+                  status: TranscriptStatus.notTranscribed,
                   entryId: 'audio-10',
                 ),
               ],
@@ -391,7 +400,7 @@ void main() {
             TimelineGroup(
               beats: [
                 audioBeat(
-                  status: TimelineTranscriptStatus.failed,
+                  status: TranscriptStatus.failed,
                   entryId: 'audio-9',
                 ),
               ],
@@ -414,7 +423,7 @@ void main() {
             TimelineGroup(
               beats: [
                 audioBeat(
-                  status: TimelineTranscriptStatus.none,
+                  status: TranscriptStatus.heard,
                   transcript: 'Short.',
                 ),
               ],
@@ -427,7 +436,7 @@ void main() {
       expect(find.text('Show more'), findsNothing);
     });
 
-    testWidgets('a long transcript clamps and expands', (tester) async {
+    testWidgets('a long transcript folds and expands', (tester) async {
       final long = List.filled(12, 'walked further than yesterday').join(' ');
       await pump(
         tester,
@@ -436,7 +445,7 @@ void main() {
             TimelineGroup(
               beats: [
                 audioBeat(
-                  status: TimelineTranscriptStatus.none,
+                  status: TranscriptStatus.heard,
                   transcript: long,
                 ),
               ],
@@ -447,7 +456,7 @@ void main() {
 
       expect(find.text('Show more'), findsOneWidget);
       var text = tester.widget<Text>(find.text(long));
-      expect(text.maxLines, 2);
+      expect(text.maxLines, FoldedWords.foldedLines);
 
       await tester.tap(find.text('Show more'));
       await tester.pump();
@@ -455,6 +464,38 @@ void main() {
       text = tester.widget<Text>(find.text(long));
       expect(text.maxLines, isNull, reason: 'expanded shows the whole thing');
       expect(find.text('Show less'), findsOneWidget);
+    });
+  });
+
+  group('text beats', () {
+    testWidgets('typed words fold in the same tier as spoken ones', (
+      tester,
+    ) async {
+      final long = List.filled(14, 'packed the sled the night before').join(
+        ' ',
+      );
+      await pump(
+        tester,
+        TimelineView(
+          groups: [
+            TimelineGroup(
+              beats: [
+                beat(
+                  entryId: 'note-1',
+                  content: TimelineBeatContent.text(long),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      final folded = tester.widget<FoldedWords>(find.byType(FoldedWords));
+      expect(folded.words, long);
+      final text = tester.widget<Text>(find.text(long));
+      expect(text.maxLines, FoldedWords.foldedLines);
+      final context = tester.element(find.text(long));
+      expect(text.style, FoldedWords.wordsStyle(context));
     });
   });
 

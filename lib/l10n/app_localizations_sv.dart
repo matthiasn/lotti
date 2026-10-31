@@ -3626,9 +3626,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checkInStatusRecording => 'Spelar in';
 
   @override
-  String get checkInStatusTranscriptMissing => 'Ingen transkription mottagen';
-
-  @override
   String get checkInTakeRemoved => 'Inspelningen togs bort';
 
   @override
@@ -3644,9 +3641,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkInTopicsLabel => 'Ämnen';
-
-  @override
-  String get checkInTranscribingLabel => 'Transkriberar…';
 
   @override
   String get checkInTranscriptionUnavailableTitle =>
@@ -7679,13 +7673,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInKindNote => 'ANTECKNING';
+  String get goalCheckInKindNote => 'Anteckning';
 
   @override
-  String get goalCheckInKindReflection => 'DAGLIG REFLEKTION';
+  String get goalCheckInKindReflection => 'Daglig reflektion';
 
   @override
-  String get goalCheckInKindVoice => 'RÖSTAVSTÄMNING';
+  String get goalCheckInKindVoice => 'Röstavstämning';
 
   @override
   String goalCheckInMinutes(int count) {
@@ -8507,7 +8501,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String goalRecordOfferOverline(String agentName, String measurableName) {
-    return '$agentName FÖRESLÅR · REGISTRERA I $measurableName';
+    return '$agentName föreslår · registrera i $measurableName';
   }
 
   @override

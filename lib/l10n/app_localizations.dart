@@ -6108,12 +6108,6 @@ abstract class AppLocalizations {
   /// **'Recording'**
   String get checkInStatusRecording;
 
-  /// No description provided for @checkInStatusTranscriptMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcript not received'**
-  String get checkInStatusTranscriptMissing;
-
   /// Toast after removing a recording from a check-in being written; offers Undo.
   ///
   /// In en, this message translates to:
@@ -6143,12 +6137,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Topics'**
   String get checkInTopicsLabel;
-
-  /// Progress label shown on the check-in sheet while a spoken check-in is being transcribed.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribing…'**
-  String get checkInTranscribingLabel;
 
   /// No description provided for @checkInTranscriptionUnavailableTitle.
   ///
@@ -12986,19 +12974,19 @@ abstract class AppLocalizations {
   /// No description provided for @goalCheckInKindNote.
   ///
   /// In en, this message translates to:
-  /// **'NOTE'**
+  /// **'Note'**
   String get goalCheckInKindNote;
 
   /// No description provided for @goalCheckInKindReflection.
   ///
   /// In en, this message translates to:
-  /// **'DAILY REFLECTION'**
+  /// **'Daily reflection'**
   String get goalCheckInKindReflection;
 
   /// No description provided for @goalCheckInKindVoice.
   ///
   /// In en, this message translates to:
-  /// **'VOICE CHECK-IN'**
+  /// **'Voice check-in'**
   String get goalCheckInKindVoice;
 
   /// A goal check-in's time spent, in whole minutes.
@@ -14259,7 +14247,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalRecordOfferOverline.
   ///
   /// In en, this message translates to:
-  /// **'{agentName} OFFERS · RECORD TO {measurableName}'**
+  /// **'{agentName} offers · record to {measurableName}'**
   String goalRecordOfferOverline(String agentName, String measurableName);
 
   /// No description provided for @goalRecordOfferProvenance.

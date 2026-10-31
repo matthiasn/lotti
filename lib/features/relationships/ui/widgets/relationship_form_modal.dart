@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
@@ -30,13 +30,10 @@ import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/repositories/journal_repository.dart';
+import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -192,9 +189,16 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // all run past that point — reading through `ref` once the element is
     // unmounted throws and aborts the save mid-way.
     final repository = ref.read(relationshipRepositoryProvider);
-    final journalRepository = ref.read(journalRepositoryProvider);
-    // Only resolved when it will actually be used — `_important` is form
-    // state, known before any await, so this stays ahead of the unmount.
+    // Both only resolved when they will actually be used — a changed
+    // category on an existing person, `_important` — form state known
+    // before any await, so the reads stay ahead of the unmount, and a save
+    // that moves nothing never builds the move's journal, project and
+    // settings dependencies.
+    final initialPerson = widget.initial;
+    final categoryMove =
+        initialPerson != null && _categoryId != initialPerson.meta.categoryId
+        ? ref.read(entryCategoryMoveProvider)
+        : null;
     final agentService = _important
         ? ref.read(relationshipAgentServiceProvider)
         : null;
@@ -225,17 +229,17 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         final updated = initial.copyWith(data: data);
         final saved = await repository.updateRelationship(updated);
         // Category lives on the metadata, not the payload: route the change
-        // through the dedicated journal path, which handles clearing (a
-        // freezed copyWith cannot null a field) plus vector clock and sync.
-        // Its result is part of the save's verdict: a swallowed category
-        // write would otherwise pop the modal on a half-saved person, and
-        // the user would see the old category with nothing to retry.
+        // through the category move, which clears too (a freezed copyWith
+        // cannot null a field) and takes everything the person holds with
+        // them — their check-ins and what each holds, their notes, voice
+        // notes, photos and meetings — across a crash, the way a task's move
+        // takes its entries. Its result is part of the save's verdict: a
+        // swallowed category write would otherwise pop the modal on a
+        // half-saved person, and the user would see the old category with
+        // nothing to retry.
         var success = saved;
-        if (saved && _categoryId != initial.meta.categoryId) {
-          success = await journalRepository.updateCategoryId(
-            initial.meta.id,
-            categoryId: _categoryId,
-          );
+        if (saved && categoryMove != null) {
+          success = await categoryMove.move(initial.meta.id, _categoryId);
         }
         // Keyed on the payload write, not the verdict: `important` and the
         // cadence are already persisted, so the agent must be wired even
@@ -532,7 +536,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // Category scoping (the ProjectCreateForm precedent): the
               // relationship's category also seeds every check-in created
               // under it.
-              PersonCategoryRow(
+              CategoryFieldRow(
                 categoryId: _categoryId,
                 onChanged: (id) => setState(() => _categoryId = id),
               ),

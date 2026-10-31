@@ -32,6 +32,7 @@ class AgentInternalsPanel extends ConsumerWidget {
     required this.agentId,
     required this.agentName,
     this.maintenance,
+    this.subjectEntityId,
     super.key,
   });
 
@@ -51,6 +52,11 @@ class AgentInternalsPanel extends ConsumerWidget {
   /// govern from here.
   final AgentMaintenanceScope? maintenance;
 
+  /// The entry the agent serves when it is not a task — a goal's journal
+  /// row — so the setup row's sheet can copy that entry's category default,
+  /// as it does a task's.
+  final String? subjectEntityId;
+
   /// Opens the internals for [agentId] in the shared side sheet — the same
   /// host the agent conversations use, so every panel beside a page dims the
   /// page and slides in the same way.
@@ -59,6 +65,7 @@ class AgentInternalsPanel extends ConsumerWidget {
     required String agentId,
     required String? agentName,
     AgentMaintenanceScope? maintenance,
+    String? subjectEntityId,
   }) => showSideSheetPane<void>(
     context: context,
     sideSheet: const SizedWoltSideSheetType(
@@ -70,6 +77,7 @@ class AgentInternalsPanel extends ConsumerWidget {
       agentId: agentId,
       agentName: agentName,
       maintenance: maintenance,
+      subjectEntityId: subjectEntityId,
     ),
   );
 
@@ -148,6 +156,7 @@ class AgentInternalsPanel extends ConsumerWidget {
                           agentId: agentId,
                           lifecycle: identity!.lifecycle,
                           stateAsync: stateAsync,
+                          subjectEntityId: subjectEntityId,
                         ),
                       ],
                     ),

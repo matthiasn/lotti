@@ -15,6 +15,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/nudge_models.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/service/category_snapshot_setup.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -151,6 +152,7 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
     checkInNotifier: ref.watch(goalCheckInNotifierProvider),
     offTrackAlerts: ref.watch(goalOffTrackAlertServiceProvider),
     goalEntryIdFor: ref.watch(goalRepositoryProvider)?.goalIdForAgent,
+    categoryProfileLookup: ref.watch(categoryProfileLookupProvider),
   ),
   name: 'goalAgentServiceProvider',
 );

@@ -80,6 +80,48 @@ void main() {
     });
   });
 
+  group('goalCategoryIdProvider', () {
+    test("is the goal row's category, which its check-ins take", () async {
+      final goal = goalEntry('goal-1');
+      when(() => goals.getGoalForAgent('agent-1')).thenAnswer(
+        (_) async => goal.copyWith(
+          meta: goal.meta.copyWith(categoryId: 'fitness'),
+        ),
+      );
+
+      expect(
+        await container().read(goalCategoryIdProvider('agent-1').future),
+        'fitness',
+      );
+    });
+
+    test('is null for an uncategorized goal, a goal with no row yet, and '
+        'without the journal stack', () async {
+      when(
+        () => goals.getGoalForAgent('agent-1'),
+      ).thenAnswer((_) async => goalEntry('goal-1'));
+      expect(
+        await container().read(goalCategoryIdProvider('agent-1').future),
+        isNull,
+      );
+
+      when(
+        () => goals.getGoalForAgent('agent-1'),
+      ).thenAnswer((_) async => null);
+      expect(
+        await container().read(goalCategoryIdProvider('agent-1').future),
+        isNull,
+      );
+
+      expect(
+        await container(
+          withJournal: false,
+        ).read(goalCategoryIdProvider('agent-1').future),
+        isNull,
+      );
+    });
+  });
+
   group('goalCaptureTargetProvider', () {
     test('returns the existing goal row', () async {
       when(

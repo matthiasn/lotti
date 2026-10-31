@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_assessment_state.dart';
+import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_composer.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
@@ -40,12 +41,15 @@ class GoalTimelinePage extends ConsumerWidget {
     final assessments =
         ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
 
+    // Watched, not read at tap time: an unwatched lookup is still loading.
+    final goalCategoryId = ref.watch(goalCategoryIdProvider(agentId)).value;
     void openComposer() => GoalCheckInComposer.show(
       context,
       agentId: agentId,
       goalTitle: title,
       personaName: goalIdentity?.displayName,
-      categoryId: goalIdentity?.allowedCategoryIds.firstOrNull,
+      // The goal row's category, so a check-in is filed with its goal.
+      categoryId: goalCategoryId,
     );
 
     return Scaffold(

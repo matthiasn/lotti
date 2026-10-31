@@ -1,7 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -17,8 +20,12 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// What a person's timeline does when a row is opened.
@@ -34,31 +41,57 @@ typedef PersonTimelineActions = ({
   /// *Sort this* on a voice note with words: sort them into check-ins,
   /// notes, meetings or tasks, for review.
   void Function(JournalAudio audio) sortVoiceNote,
+
+  /// *Retry* on a recording whose words never came: ask for them again, as
+  /// a goal's rail does.
+  void Function(JournalAudio audio) retryTranscript,
 });
 
-/// The words a check-in row leads with: the text it was saved with, else its
-/// first comment or transcript. Only when nothing it holds has words yet
-/// does a recording without them say so (`pending`), so a fresh dictation
-/// never reads as an empty check-in — and a recording still waiting never
-/// hides a comment that has words. Null when the check-in holds no words
-/// at all (only photos).
-({String text, bool pending})? checkInSummaryOf(
-  BuildContext context,
+/// The newest recording [entries] hold, or null — the one a check-in row
+/// plays, and so the one whose words and status it shows.
+JournalAudio? newestRecordingOf(List<JournalEntity> entries) =>
+    entries.whereType<JournalAudio>().fold<JournalAudio?>(
+      null,
+      (newest, audio) =>
+          newest == null || audio.meta.dateFrom.isAfter(newest.meta.dateFrom)
+          ? audio
+          : newest,
+    );
+
+/// What a check-in row shows: the words it leads with — the text it was
+/// saved with, else its newest recording's words, else its first comment's
+/// — and, while that newest recording has no words, the recording itself
+/// (`awaiting`), so its status and *Retry* show beside them. The row plays
+/// that same newest recording, so what it plays, what it says and where its
+/// words are always belong to one recording; an older recording's words
+/// never stand in for the newer one. Null when the check-in holds no words
+/// and no recording (only photos).
+({String? text, JournalAudio? awaiting})? checkInSummaryOf(
   CheckInEntry checkIn,
   List<JournalEntity> entries,
 ) {
+  final newest = newestRecordingOf(entries);
+  final newestWords = newest?.entryText?.plainText.trim() ?? '';
+  final awaiting = newest != null && newestWords.isEmpty ? newest : null;
   final saved = checkIn.entryText?.plainText.trim() ?? '';
-  if (saved.isNotEmpty) return (text: saved, pending: false);
-  var awaitingWords = false;
-  for (final entry in entries) {
-    if (entry is JournalImage) continue;
-    final words = entry.entryText?.plainText.trim() ?? '';
-    if (words.isNotEmpty) return (text: words, pending: false);
-    if (entry is JournalAudio) awaitingWords = true;
-  }
-  return awaitingWords
-      ? (text: context.messages.checkInTranscribingLabel, pending: true)
+  var text = saved.isNotEmpty
+      ? saved
+      : newestWords.isNotEmpty
+      ? newestWords
       : null;
+  if (text == null) {
+    for (final entry in entries) {
+      // Photos have no words; recordings are spoken for above.
+      if (entry is JournalImage || entry is JournalAudio) continue;
+      final words = entry.entryText?.plainText.trim() ?? '';
+      if (words.isNotEmpty) {
+        text = words;
+        break;
+      }
+    }
+  }
+  if (text == null && awaiting == null) return null;
+  return (text: text, awaiting: awaiting);
 }
 
 /// What a check-in holds, as one quiet line — `2 recordings · 1 photo` — or
@@ -289,7 +322,7 @@ class PersonTimelineRow extends StatelessWidget {
     final row = switch (item) {
       final TimelineCheckIn row => () {
         final checkIn = row.checkIn;
-        final summary = checkInSummaryOf(context, checkIn, row.entries);
+        final summary = checkInSummaryOf(checkIn, row.entries);
         final duration = relationshipDurationLabelOf(
           context,
           checkIn.meta.dateTo.difference(checkIn.meta.dateFrom),
@@ -300,7 +333,7 @@ class PersonTimelineRow extends StatelessWidget {
           time: at(checkIn.meta.dateFrom),
           tail: [?duration, ?checkInHoldsLabelOf(context, row.entries)],
           text: summary?.text,
-          pending: summary?.pending ?? false,
+          awaiting: summary?.awaiting,
           footer: _CheckInFooter(checkIn: checkIn),
           onTap: () => actions.openCheckIn(checkIn),
         );
@@ -311,7 +344,7 @@ class PersonTimelineRow extends StatelessWidget {
         time: at(row.at),
         tail: const <String>[],
         text: row.note.entryText?.plainText.trim(),
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openNote(row.note),
       ),
@@ -327,8 +360,8 @@ class PersonTimelineRow extends StatelessWidget {
               row.audio.data.duration,
             ),
           ],
-          text: words.isEmpty ? messages.checkInTranscribingLabel : words,
-          pending: words.isEmpty,
+          text: words.isEmpty ? null : words,
+          awaiting: words.isEmpty ? row.audio : null,
           footer: null,
           onTap: () => actions.openEntry(row.audio),
         );
@@ -339,7 +372,7 @@ class PersonTimelineRow extends StatelessWidget {
         time: day(row.at),
         tail: const <String>[],
         text: null,
-        pending: false,
+        awaiting: null,
         footer: _PhotoStrip(photos: row.photos, onOpen: actions.openEntry),
         onTap: () => actions.openEntry(row.photos.first),
       ),
@@ -364,7 +397,7 @@ class PersonTimelineRow extends StatelessWidget {
         text: row.task.data.title.trim().isEmpty
             ? messages.taskUntitled
             : row.task.data.title,
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openTask(row.task),
       ),
@@ -376,7 +409,7 @@ class PersonTimelineRow extends StatelessWidget {
           if (row.calledOff) messages.relationshipTimelineMeetingCalledOff,
         ],
         text: row.event.data.title,
-        pending: false,
+        awaiting: null,
         footer: null,
         onTap: () => actions.openEntry(row.event),
       ),
@@ -413,40 +446,56 @@ class PersonTimelineRow extends StatelessWidget {
         ),
         tailStyle: metaStyle,
       ),
-      body: switch (item) {
+      body: _withPlayback(_recordingOf(item), switch (item) {
+        // A recording whose words are not here yet says where they are the
+        // way every check-in recording does — and, past the grace window
+        // with nothing on the way, that they are not coming.
+        // A check-in with words of its own and a newest recording still
+        // without them shows both: what was written, then where the
+        // recording's words are.
+        final TimelineCheckIn checkIn
+            when row.awaiting != null && text != null && text.isNotEmpty =>
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FoldedWords(
+                id: checkIn.checkIn.meta.id,
+                words: text,
+                summary: summary,
+              ),
+              _AwaitedWords(
+                recording: row.awaiting!,
+                onRetry: () => actions.retryTranscript(row.awaiting!),
+              ),
+            ],
+          ),
+        _ when row.awaiting != null => _AwaitedWords(
+          recording: row.awaiting!,
+          onRetry: () => actions.retryTranscript(row.awaiting!),
+        ),
         // A voice note leads with its summary, and opens to its words.
-        final TimelineVoiceNote voice when !row.pending => PersonFoldedWords(
+        final TimelineVoiceNote voice => FoldedWords(
           id: voice.audio.meta.id,
           words: voice.audio.entryText?.plainText.trim() ?? '',
           summary: summary,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
         ),
         // A check-in leads with the summary of the recording it holds,
         // and opens to its own words.
-        final TimelineCheckIn checkIn
-            when !row.pending && text != null && text.isNotEmpty =>
-          PersonFoldedWords(
+        final TimelineCheckIn checkIn when text != null && text.isNotEmpty =>
+          FoldedWords(
             id: checkIn.checkIn.meta.id,
             words: text,
             summary: summary,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
           ),
         _ when text == null || text.isEmpty => null,
         _ => Text(
           text,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: row.pending
-              ? metaStyle.copyWith(color: tokens.colors.text.lowEmphasis)
-              : tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+          style: FoldedWords.wordsStyle(context),
         ),
-      },
+      }),
       footer: row.footer,
       // Words to sort, a way to sort them: a voice note is what a capture
       // stays when it was not filed, and this files it later. Beside the
@@ -494,116 +543,79 @@ class PersonTimelineRow extends StatelessWidget {
   }
 }
 
-/// A row's words, folded: the [summary] of its recording when one was
-/// written (its newest audio summary's one-liner), else the first three
-/// lines of [words] — and, when there is more, *Show more* to read all of
-/// [words] in place, *Show less* to fold them again. A voice note passes its
-/// own recording's summary; a check-in that of the recording it holds. A
-/// minute of speech set out in full made every spoken row the longest on
-/// the page.
+/// Where a recording's words are while it has none, in the shared status:
+/// a transcription running or failed says so; otherwise the grace rule.
+/// *Retry* asks for them again.
 ///
-/// The summary is data, not a lookup: a row that fetched its own line was
-/// laid out three lines tall and shrank when the line arrived, on every
-/// reload and every time it scrolled back into view.
-///
-/// Opened, the row keeps itself alive in the lazy list: the list drops rows
-/// that scroll out of its cache extent and builds them again on the way
-/// back, and a row built again is folded — the reader's *Show more* undone,
-/// and a row above the viewport suddenly shorter, which moves the history
-/// under them. Folded rows are dropped as usual; there is nothing to keep.
-class PersonFoldedWords extends StatefulWidget {
-  const PersonFoldedWords({
-    required this.id,
-    required this.words,
-    required this.style,
-    this.summary,
-    super.key,
-  });
+/// It wakes itself when its grace window closes (`TranscriptGraceRebuild`),
+/// as a goal's rail does: a recording nothing picked up produces no
+/// transcript, no status change and no database write, so on a page left
+/// open nothing else would ever turn its *Transcribing…* into *Not
+/// transcribed*.
+class _AwaitedWords extends ConsumerStatefulWidget {
+  const _AwaitedWords({required this.recording, required this.onRetry});
 
-  /// The row's entry, naming its keys.
-  final String id;
-  final String words;
-
-  /// The line the row leads with, or null to lead with [words].
-  final String? summary;
-  final TextStyle style;
+  final JournalAudio recording;
+  final VoidCallback onRetry;
 
   @override
-  State<PersonFoldedWords> createState() => _PersonFoldedWordsState();
+  ConsumerState<_AwaitedWords> createState() => _AwaitedWordsState();
 }
 
-class _PersonFoldedWordsState extends State<PersonFoldedWords>
-    with AutomaticKeepAliveClientMixin {
-  static const _foldedLines = 3;
-  var _expanded = false;
-
-  @override
-  bool get wantKeepAlive => _expanded;
-
-  void _toggle() {
-    setState(() => _expanded = !_expanded);
-    updateKeepAlive();
-  }
-
+class _AwaitedWordsState extends ConsumerState<_AwaitedWords>
+    with TranscriptGraceRebuild {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final transcript = widget.words;
-    final summary = widget.summary;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // More to read when there is a summary in front of the words, or
-        // when the words run past the fold.
-        final overflows =
-            summary != null ||
-            (TextPainter(
-              text: TextSpan(text: transcript, style: widget.style),
-              maxLines: _foldedLines,
-              textDirection: Directionality.of(context),
-              textScaler: MediaQuery.textScalerOf(context),
-            )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
-        final words = _expanded ? transcript : (summary ?? transcript);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              words,
-              key: ValueKey('person-folded-words-${widget.id}'),
-              maxLines: _expanded ? null : _foldedLines,
-              overflow: _expanded ? null : TextOverflow.ellipsis,
-              style: widget.style,
-            ),
-            if (overflows)
-              DsQuietInk(
-                key: ValueKey('person-folded-more-${widget.id}'),
-                onTap: _toggle,
-                builder: (context, highlighted) => Semantics(
-                  button: true,
-                  expanded: _expanded,
-                  child: Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step1),
-                    child: Text(
-                      _expanded
-                          ? messages.timelineShowLess
-                          : messages.timelineShowMore,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: highlighted
-                            ? tokens.colors.interactive.hover
-                            : tokens.colors.interactive.enabled,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
+    final id = widget.recording.meta.id;
+    final inference = ref.watch(
+      inferenceStatusControllerProvider((
+        id: id,
+        aiResponseType: AiResponseType.audioTranscription,
+      )),
+    );
+    final graceExpiry = widget.recording.meta.dateFrom.add(kTranscriptGrace);
+    final now = clock.now();
+    final status = transcriptStatusOf(
+      hasTranscript: false,
+      running: inference == InferenceStatus.running,
+      failed: inference == InferenceStatus.error,
+      graceExpiry: graceExpiry,
+      now: now,
+    );
+    // Waiting with nothing running is the one state no other rebuild ends.
+    armGraceRebuild(
+      status == TranscriptStatus.transcribing &&
+              inference == InferenceStatus.idle &&
+              graceExpiry.isAfter(now)
+          ? graceExpiry
+          : null,
+    );
+    return RecordingTranscript(
+      id: id,
+      status: status,
+      onRetry: widget.onRetry,
     );
   }
 }
+
+/// The recording a row plays, when it holds one: a voice note's own, or the
+/// newest a check-in holds — the one whose words and status it shows.
+JournalAudio? _recordingOf(PersonTimelineItem item) => switch (item) {
+  TimelineVoiceNote(:final audio) => audio,
+  TimelineCheckIn(:final entries) => newestRecordingOf(entries),
+  _ => null,
+};
+
+/// [words] under the row's [recording], played lightly in place
+/// ([RecordingPlayback]), as a goal's rail carries its recordings.
+Widget? _withPlayback(JournalAudio? recording, Widget? words) =>
+    recording == null
+    ? words
+    : Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [RecordingPlayback(recording), ?words],
+      );
 
 /// How a check-in felt and what it was about, as one caption line: the
 /// feeling's glyph in its colour, then its word — the colour is never the

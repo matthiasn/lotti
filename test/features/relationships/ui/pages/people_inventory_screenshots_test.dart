@@ -120,6 +120,8 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/thumbhash.dart';
 import 'package:lotti/widgets/media/thumb_hash_image.dart';
 import 'package:lotti/widgets/nav_bar/mobile_navigation_launcher.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart'
@@ -2384,7 +2386,7 @@ void main() {
         for (var i = 0; i < 4; i++) {
           await tester.pump(const Duration(milliseconds: 100));
         }
-        expect(find.byKey(const ValueKey('check-in-take-follows')), findsOne);
+        expect(find.text('You can save now — the words follow.'), findsOne);
         expect(
           tester
               .widget<DesignSystemButton>(
@@ -2407,7 +2409,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(
-          find.byKey(const ValueKey('check-in-take-transcript')),
+          find.byWidgetPredicate(
+            (w) =>
+                w is RecordingTranscript && w.status == TranscriptStatus.heard,
+          ),
           findsOne,
         );
         // The note stays the user's: the words are the take's, and beside
@@ -2475,7 +2480,10 @@ void main() {
         }
         await tester.pumpAndSettle();
         expect(
-          find.byKey(const ValueKey('check-in-take-transcript')),
+          find.byWidgetPredicate(
+            (w) =>
+                w is RecordingTranscript && w.status == TranscriptStatus.heard,
+          ),
           findsOne,
         );
         expect(
@@ -2536,11 +2544,8 @@ void main() {
         await tester.pump();
         await tester.tap(find.byKey(const ValueKey('check-in-recorder-stop')));
         await tester.pumpAndSettle();
-        expect(find.textContaining('Transcript not received'), findsOneWidget);
-        expect(
-          find.byKey(const ValueKey('check-in-retry-transcript')),
-          findsOne,
-        );
+        expect(find.text('Not transcribed'), findsOneWidget);
+        expect(find.widgetWithText(DesignSystemButton, 'Retry'), findsOne);
         expect(
           tester
               .widget<DesignSystemButton>(

@@ -38,11 +38,6 @@ extension RelationshipListItemRecency on RelationshipListItem {
   DateTime? get lastCheckInAt => lastCheckIn?.meta.dateFrom;
 }
 
-/// Whether [entity] is something a check-in holds as one of its entries: a
-/// typed comment, a recording or a photo.
-bool isCheckInEntryKind(JournalEntity entity) =>
-    entity is JournalEntry || entity is JournalAudio || entity is JournalImage;
-
 /// Repository for relationship and check-in CRUD (ADR 0038).
 ///
 /// Relationships are [JournalEntity.relationship] entities and check-ins are

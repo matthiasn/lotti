@@ -216,8 +216,8 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
                     Expanded(
                       child: Text(
                         context.messages.goalRecordOfferOverline(
-                          widget.agentName.toUpperCase(),
-                          widget.offer.measurableName.toUpperCase(),
+                          widget.agentName,
+                          widget.offer.measurableName,
                         ),
                         style: tokens.typography.styles.others.overline
                             .copyWith(

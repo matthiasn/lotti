@@ -1,8 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/goals/ui/checkins/goal_audio_transcript_status.dart';
-import 'package:lotti/widgets/timeline/timeline_models.dart';
+import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {
@@ -10,15 +8,15 @@ void main() {
   final graceOpen = now.add(const Duration(minutes: 5));
   final graceClosed = now.subtract(const Duration(minutes: 1));
 
-  TimelineTranscriptStatus status({
+  TranscriptStatus status({
     bool hasTranscript = false,
-    InferenceStatus inference = InferenceStatus.idle,
-    bool durableFailure = false,
+    bool running = false,
+    bool failed = false,
     DateTime? graceExpiry,
-  }) => goalAudioTranscriptStatus(
+  }) => transcriptStatusOf(
     hasTranscript: hasTranscript,
-    inference: inference,
-    durableFailure: durableFailure,
+    running: running,
+    failed: failed,
     graceExpiry: graceExpiry ?? graceOpen,
     now: now,
   );
@@ -27,38 +25,54 @@ void main() {
     expect(
       status(
         hasTranscript: true,
-        inference: InferenceStatus.error,
-        durableFailure: true,
+        running: true,
+        failed: true,
         graceExpiry: graceClosed,
       ),
-      TimelineTranscriptStatus.none,
+      TranscriptStatus.heard,
     );
   });
 
-  test('a running transcription is pending, even past the grace window', () {
+  test('a running transcription is transcribing, even past the grace '
+      'window', () {
     expect(
-      status(inference: InferenceStatus.running, graceExpiry: graceClosed),
-      TimelineTranscriptStatus.pending,
+      status(running: true, graceExpiry: graceClosed),
+      TranscriptStatus.transcribing,
     );
   });
 
-  test('a live or a durable failure is a failure', () {
+  test('a failure on record is a failure, inside the window or not', () {
+    expect(status(failed: true), TranscriptStatus.failed);
     expect(
-      status(inference: InferenceStatus.error),
-      TimelineTranscriptStatus.failed,
+      status(failed: true, graceExpiry: graceClosed),
+      TranscriptStatus.failed,
     );
-    expect(status(durableFailure: true), TimelineTranscriptStatus.failed);
   });
 
-  test('an idle recording waits out the grace window, then has stalled', () {
-    expect(status(), TimelineTranscriptStatus.pending);
+  test('an idle recording waits out the grace window, then is not '
+      'transcribed', () {
+    expect(status(), TranscriptStatus.transcribing);
+    expect(status(graceExpiry: graceClosed), TranscriptStatus.notTranscribed);
+  });
+
+  test('the window closes at its deadline, not a moment later', () {
+    expect(status(graceExpiry: now), TranscriptStatus.notTranscribed);
+  });
+
+  test('a host that cannot see a transcription gets the grace rule alone', () {
+    final recorded = now.subtract(const Duration(days: 3));
     expect(
-      status(graceExpiry: graceClosed),
-      TimelineTranscriptStatus.stalled,
+      transcriptStatusOf(
+        hasTranscript: false,
+        graceExpiry: recorded.add(kTranscriptGrace),
+        now: now,
+      ),
+      TranscriptStatus.notTranscribed,
+      reason: 'a recording from last week is not being transcribed',
     );
   });
 
-  group('GoalTranscriptGraceRebuild', () {
+  group('TranscriptGraceRebuild', () {
     testWidgets('rebuilds once the deadline passes, and only then', (
       tester,
     ) async {
@@ -121,8 +135,7 @@ class _GraceHost extends StatefulWidget {
   State<_GraceHost> createState() => _GraceHostState();
 }
 
-class _GraceHostState extends State<_GraceHost>
-    with GoalTranscriptGraceRebuild {
+class _GraceHostState extends State<_GraceHost> with TranscriptGraceRebuild {
   @override
   Widget build(BuildContext context) {
     widget.onBuild();

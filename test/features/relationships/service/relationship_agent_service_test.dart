@@ -169,6 +169,64 @@ void main() {
       ).called(1);
     });
 
+    group("the person's category profile", () {
+      RelationshipEntry inCategory() {
+        final person = relationship();
+        return person.copyWith(
+          meta: person.meta.copyWith(categoryId: 'category-1'),
+        );
+      }
+
+      Future<AgentConfig> createdConfig(
+        Future<String?> Function(String) lookup,
+      ) async {
+        final looked = RelationshipAgentService(
+          agentService: agentService,
+          repository: repository,
+          syncService: syncService,
+          orchestrator: orchestrator,
+          relationshipRepository: people,
+          categoryProfileLookup: lookup,
+        );
+        await withClock(
+          Clock.fixed(testDate),
+          () => looked.ensureAgentForRelationship(inCategory()),
+        );
+        return verify(
+              () => agentService.createAgent(
+                kind: AgentKinds.relationshipAgent,
+                displayName: 'Anna',
+                config: captureAny(named: 'config'),
+                agentId: agentId,
+              ),
+            ).captured.single
+            as AgentConfig;
+      }
+
+      test('a new agent starts on the profile the category names now, '
+          'snapshotted as a task agent takes its category default', () async {
+        final config = await createdConfig(
+          (id) async => id == 'category-1' ? 'profile-penguin' : null,
+        );
+
+        final setup = config.inferenceSetup!;
+        expect(setup.mode, AgentInferenceSetupMode.configured);
+        expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
+        expect(setup.baseProfileId, 'profile-penguin');
+        expect(setup.originEntityId, 'category-1');
+        expect(config.profileId, 'profile-penguin');
+        expect(config.automaticUpdatesEnabled, isTrue);
+      });
+
+      test('a category naming no profile leaves the agent running on its '
+          'live chain — never a switched-off setup', () async {
+        final config = await createdConfig((_) async => null);
+
+        expect(config.inferenceSetup, isNull);
+        expect(config.profileId, isNull);
+      });
+    });
+
     test('is idempotent: an existing identity short-circuits creation but '
         'still refreshes the subscription and evaluation', () async {
       when(

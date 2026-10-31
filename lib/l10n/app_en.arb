@@ -2352,7 +2352,6 @@
   "checkInStartedLabel": "Started",
   "checkInStatusPaused": "Paused",
   "checkInStatusRecording": "Recording",
-  "checkInStatusTranscriptMissing": "Transcript not received",
   "checkInTakeRemoved": "Recording removed",
   "@checkInTakeRemoved": {
     "description": "Toast after removing a recording from a check-in being written; offers Undo."
@@ -2371,10 +2370,6 @@
   },
   "checkInTopicsHint": "Comma-separated, e.g. work, travel",
   "checkInTopicsLabel": "Topics",
-  "checkInTranscribingLabel": "Transcribing…",
-  "@checkInTranscribingLabel": {
-    "description": "Progress label shown on the check-in sheet while a spoken check-in is being transcribed."
-  },
   "checkInTranscriptionUnavailableTitle": "No transcription model set up",
   "checkInTranscriptMissingBody": "Your recording is saved in the journal, even if you cancel this check-in. Try again in a moment.",
   "checkInTranscriptUnavailable": "Choose a default inference profile with a transcription model in AI settings, or write your check-in.",
@@ -4661,9 +4656,9 @@
       }
     }
   },
-  "goalCheckInKindNote": "NOTE",
-  "goalCheckInKindReflection": "DAILY REFLECTION",
-  "goalCheckInKindVoice": "VOICE CHECK-IN",
+  "goalCheckInKindNote": "Note",
+  "goalCheckInKindReflection": "Daily reflection",
+  "goalCheckInKindVoice": "Voice check-in",
   "goalCheckInMinutes": "{count} min",
   "@goalCheckInMinutes": {
     "description": "A goal check-in's time spent, in whole minutes.",
@@ -5442,7 +5437,7 @@
   "goalRecordOfferIntro": "I found a quantity in what you said. Check the values before anything is recorded.",
   "goalRecordOfferInvalidValue": "Enter a value greater than zero.",
   "goalRecordOfferNothingSelected": "Choose at least one row to record.",
-  "goalRecordOfferOverline": "{agentName} OFFERS · RECORD TO {measurableName}",
+  "goalRecordOfferOverline": "{agentName} offers · record to {measurableName}",
   "@goalRecordOfferOverline": {
     "placeholders": {
       "agentName": {
