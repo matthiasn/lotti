@@ -24,9 +24,12 @@ import 'package:material_ui/material_ui.dart';
 /// - Read-only (no editing)
 /// - Supports both promptGeneration and imagePromptGeneration types
 class GeneratedPromptCard extends StatefulWidget {
-  const GeneratedPromptCard(this.aiResponse, {super.key});
+  const GeneratedPromptCard(this.aiResponse, {this.framed = true, super.key});
 
   final AiResponseEntry aiResponse;
+
+  /// Whether to draw the AI card surface; see [AiResponseCard.framed].
+  final bool framed;
 
   // Static regex patterns compiled once for performance.
   // Public so they can be reused by other widgets (e.g., UnifiedAiProgressView).
@@ -172,6 +175,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
     final bodyStyle = AiResponseCard.bodyStyle(context);
     return AiResponseCard(
       aiResponse: widget.aiResponse,
+      framed: widget.framed,
       // Header row with title and action buttons
       header: Row(
         children: [

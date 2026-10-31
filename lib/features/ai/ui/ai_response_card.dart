@@ -16,6 +16,11 @@ import 'package:material_ui/material_ui.dart';
 /// AI-generated without becoming a second elevated card. Its inset is one
 /// step tighter than a top-level card's for the same reason.
 ///
+/// With [framed] false the same content renders without the tinted surface,
+/// keeping only the AI text treatment. That is for a response shown as its own
+/// entry, where the entry card is already the frame and a second card inside
+/// it would only nest boxes.
+///
 /// Top to bottom it lays out the optional [header], the optional [body], the
 /// "Show more"/"Show less" toggle when [collapsed] is non-null, and always the
 /// attribution caption naming the model that wrote the response.
@@ -26,6 +31,7 @@ class AiResponseCard extends StatelessWidget {
     this.body,
     this.collapsed,
     this.onToggleCollapsed,
+    this.framed = true,
     super.key,
   }) : assert(
          (collapsed == null) == (onToggleCollapsed == null),
@@ -52,6 +58,10 @@ class AiResponseCard extends StatelessWidget {
   /// Flips [collapsed]; required exactly when [collapsed] is set.
   final VoidCallback? onToggleCollapsed;
 
+  /// Whether to draw the tinted card surface. False renders the content bare,
+  /// for a response that is itself an entry inside an entry card.
+  final bool framed;
+
   /// The body text style every AI response uses: the entry editor's
   /// `body.bodySmall` measure in the AI body color, so an analysis never reads
   /// louder than the entry text it belongs to.
@@ -68,6 +78,30 @@ class AiResponseCard extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final isCollapsed = collapsed;
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ?header,
+        ?body,
+        if (isCollapsed != null)
+          _CollapseToggle(
+            collapsed: isCollapsed,
+            onTap: onToggleCollapsed!,
+          ),
+        AiAttributionSummary(
+          artifact: AiArtifactReference(
+            type: AiArtifactType.journalAiResponse,
+            id: aiResponse.meta.id,
+          ),
+          attribution: aiResponse.data.aiAttribution,
+          asCaption: true,
+          // A response older than attribution still names its model.
+          unrecordedModel: aiResponse.data.model,
+        ),
+      ],
+    );
+    if (!framed) return content;
+
     return Container(
       decoration: BoxDecoration(
         // Half-strength tint: keeps the AI color identity while letting the
@@ -78,28 +112,7 @@ class AiResponseCard extends StatelessWidget {
         border: Border.all(color: ai.borderSoft),
       ),
       padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ?header,
-          ?body,
-          if (isCollapsed != null)
-            _CollapseToggle(
-              collapsed: isCollapsed,
-              onTap: onToggleCollapsed!,
-            ),
-          AiAttributionSummary(
-            artifact: AiArtifactReference(
-              type: AiArtifactType.journalAiResponse,
-              id: aiResponse.meta.id,
-            ),
-            attribution: aiResponse.data.aiAttribution,
-            asCaption: true,
-            // A response older than attribution still names its model.
-            unrecordedModel: aiResponse.data.model,
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 }

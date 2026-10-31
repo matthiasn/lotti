@@ -709,6 +709,57 @@ Style: isometric digital art. --ar 16:9
       });
 
       testWidgets(
+        'framed in the nested tree, unframed as its own entry — the entry '
+        'card is already the frame there',
+        (tester) async {
+          await pumpSummary(tester, text: shortSummaryText);
+          expect(
+            tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+            isTrue,
+          );
+
+          await pumpSummary(tester, text: shortSummaryText, fadeOut: true);
+          expect(
+            tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets(
+        'a generated prompt shown as its own entry drops the frame too',
+        (tester) async {
+          for (final fadeOut in [false, true]) {
+            await tester.pumpWidget(
+              WidgetTestBench(
+                child: SingleChildScrollView(
+                  child: AiResponseSummary(
+                    testAiResponseEntry.copyWith(
+                      data: testAiResponseEntry.data.copyWith(
+                        response: '## Summary\nDock at Bay 7.\n## Prompt\nGo.',
+                        type: AiResponseType.promptGeneration,
+                      ),
+                    ),
+                    fadeOut: fadeOut,
+                  ),
+                ),
+              ),
+            );
+            expect(
+              tester
+                  .widget<GeneratedPromptCard>(find.byType(GeneratedPromptCard))
+                  .framed,
+              !fadeOut,
+            );
+            expect(
+              tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+              !fadeOut,
+            );
+          }
+        },
+      );
+
+      testWidgets(
         'collapse thresholds: >500 chars OR >6 newlines, boundaries exact',
         (tester) async {
           final cases = <(String, String, bool)>[

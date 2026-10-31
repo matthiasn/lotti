@@ -39,7 +39,8 @@ const _fadeOutPreviewMaxHeight = 200.0;
 ///   attribution caption identifying the analysis. Short content renders fully
 ///   with no toggle.
 /// - [fadeOut]: legacy always-faded preview without a toggle, used where the
-///   response renders as its own journal entry detail.
+///   response renders as its own journal entry detail. The entry card frames
+///   it there, so it renders unframed — AI text colors, no nested card.
 ///
 /// Double-tap on the body opens the full response in a modal.
 class AiResponseSummary extends StatefulWidget {
@@ -134,9 +135,7 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
 
     // Use specialized card for generated prompts (coding or image)
     if (aiResponse.data.type?.isPromptGenerationType ?? false) {
-      return GeneratedPromptCard(
-        aiResponse,
-      );
+      return GeneratedPromptCard(aiResponse, framed: !widget.fadeOut);
     }
 
     final bodyStyle = AiResponseCard.bodyStyle(context);
@@ -185,6 +184,9 @@ class _AiResponseSummaryState extends State<AiResponseSummary> {
 
     return AiResponseCard(
       aiResponse: aiResponse,
+      // The faded preview is the response shown as its own entry: the entry
+      // card already frames it, so only the AI text treatment remains.
+      framed: !widget.fadeOut,
       body: body,
       collapsed: _canCollapse ? _collapsed : null,
       onToggleCollapsed: _canCollapse

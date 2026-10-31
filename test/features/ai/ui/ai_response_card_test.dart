@@ -142,6 +142,45 @@ void main() {
     expect(caption.unrecordedModel, 'penguin-model-1');
   });
 
+  for (final (name, theme, tokens) in [
+    ('light', DesignSystemTheme.light(), dsTokensLight),
+    ('dark', DesignSystemTheme.dark(), dsTokensDark),
+  ]) {
+    testWidgets(
+      'unframed keeps the AI text treatment but draws no surface ($name)',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            theme: theme,
+            child: AiResponseCard(
+              aiResponse: response,
+              framed: false,
+              body: const Text('Body'),
+              collapsed: true,
+              onToggleCollapsed: () {},
+            ),
+          ),
+        );
+
+        final decorated = find.descendant(
+          of: find.byType(AiResponseCard),
+          matching: find.byWidgetPredicate(
+            (w) => w is Container && w.decoration != null,
+          ),
+        );
+        expect(decorated, findsNothing);
+        expect(
+          tester.getTopLeft(find.text('Body')),
+          tester.getTopLeft(find.byType(AiResponseCard)),
+          reason: 'No inset: the entry card around it already pads it.',
+        );
+        final label = tester.widget<Text>(find.text('Show more'));
+        expect(label.style?.color, tokens.colors.aiCard.accent);
+        expect(find.byType(AiAttributionSummary), findsOneWidget);
+      },
+    );
+  }
+
   testWidgets('without a collapse state there is no toggle', (tester) async {
     await pumpCard(tester, body: const Text('Body'));
 
