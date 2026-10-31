@@ -282,6 +282,10 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
 
     var projectId = reference;
     String? projectTitle;
+    // The project the task belonged to when this was proposed, recorded only
+    // when it could be read. A late second confirmation then cannot undo a
+    // move the user made since (ADR 0097).
+    Map<String, dynamic>? targetBase;
     final resolver = resolveCategoryProjects;
     if (resolver != null) {
       List<TaskProjectOption>? options;
@@ -305,6 +309,9 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         }
         projectId = match.id;
         projectTitle = match.title;
+        targetBase = {
+          'projectId': options.where((o) => o.isCurrent).firstOrNull?.id,
+        };
       }
     }
 
@@ -316,6 +323,7 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       toolName: tool,
       args: canonicalArgs,
       humanSummary: _generateHumanSummary(tool, canonicalArgs),
+      targetBase: targetBase,
     );
     if (addRedundancy != null) {
       return 'Skipped: $addRedundancy';

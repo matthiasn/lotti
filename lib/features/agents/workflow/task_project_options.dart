@@ -47,12 +47,18 @@ class TaskProjectOption {
   };
 }
 
-/// The projects of [taskId]'s category, sorted by title, each with the
-/// one-liner and TLDR of its project agent's latest report.
+/// The projects of [taskId]'s category the task can join, sorted by title,
+/// each with the one-liner and TLDR of its project agent's latest report.
+///
+/// Only projects whose private flag matches the task's are listed: the
+/// repository refuses any other link, so proposing one would leave the user a
+/// suggestion that can never apply.
 ///
 /// Empty when the task cannot be read or has no category. Read from the local
 /// database only; the privacy filter of [ProjectRepository] applies, so a
-/// project hidden from the user is hidden from the agent too.
+/// project hidden from the user is hidden from the agent too. The task's
+/// current project is read past that filter, as integrity work must
+/// (`ProjectRepository.getLinkedProjectForTask`).
 Future<List<TaskProjectOption>> loadTaskProjectOptions({
   required String taskId,
   required JournalDb journalDb,
@@ -63,10 +69,14 @@ Future<List<TaskProjectOption>> loadTaskProjectOptions({
   final categoryId = task is Task ? task.meta.categoryId : null;
   if (categoryId == null || categoryId.isEmpty) return const [];
 
-  final (projects, current) = await (
+  final taskPrivate = task is Task && (task.meta.private ?? false);
+  final (categoryProjects, current) = await (
     projectRepository.getProjectsForCategory(categoryId),
-    projectRepository.getProjectForTask(taskId),
+    projectRepository.getLinkedProjectForTask(taskId),
   ).wait;
+  final projects = categoryProjects
+      .where((project) => (project.meta.private ?? false) == taskPrivate)
+      .toList();
   final reports = await Future.wait(
     projects.map(
       (project) =>

@@ -2572,6 +2572,9 @@ void main() {
             'projectTitle': 'Colony census',
           });
           expect(item.humanSummary, 'Move to project "Colony census"');
+          // The project the task was in when proposed, so a late second
+          // confirmation cannot undo a later move.
+          expect(item.targetBase, {'projectId': 'project-ice'});
           expect(
             responseTo('call-1'),
             startsWith('OK — set_task_project proposal recorded'),
@@ -2591,6 +2594,19 @@ void main() {
           );
 
           expect(b.builder.items.single.args['projectId'], 'project-colony');
+        });
+
+        test('records an unassigned task as an empty base', () async {
+          final b = bench(resolveCategoryProjects: () async => [colony]);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('set_task_project', {'projectId': 'project-colony'}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items.single.targetBase, {'projectId': null});
         });
 
         test('rejects a project outside the category fail-closed', () async {
@@ -2669,6 +2685,8 @@ void main() {
             final item = b.builder.items.single;
             expect(item.args, {'projectId': 'project-colony'});
             expect(item.humanSummary, 'Move to project "project-colony"');
+            // Nothing read, so nothing to compare against on apply.
+            expect(item.targetBase, isNull);
           },
         );
 

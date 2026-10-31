@@ -162,7 +162,7 @@ class TaskToolDispatcher {
     }
     // The same for a proposal that edits a checklist item or a time entry
     // rather than the task (ADR 0097).
-    if (await _targetMovedOn(resolvedName, normalizedArgs, effect)
+    if (await _targetMovedOn(resolvedName, normalizedArgs, effect, taskId)
         case final ToolExecutionResult notApplied) {
       return notApplied;
     }
@@ -294,15 +294,20 @@ class TaskToolDispatcher {
     }
   }
 
-  /// What [effect]'s dispatch reports when the checklist item or time entry
-  /// [toolName] edits no longer holds the fields the proposal was made
-  /// against (`ChangeItem.targetBase`), or `null` when it holds them, when
-  /// nothing was recorded, or when the entity cannot be read — the handler
-  /// then reports that as it always has.
+  /// What [effect]'s dispatch reports when the checklist item, time entry or
+  /// project link [toolName] edits no longer holds the fields the proposal
+  /// was made against (`ChangeItem.targetBase`), or `null` when it holds
+  /// them, when nothing was recorded, or when the entity cannot be read — the
+  /// handler then reports that as it always has.
+  ///
+  /// For `set_task_project` the field is the project task [taskId] is linked
+  /// to, read past the private gate: a task moved to another project since
+  /// the proposal keeps that project when a second device confirms late.
   Future<ToolExecutionResult?> _targetMovedOn(
     String toolName,
     Map<String, dynamic> args,
     ChangeEffect? effect,
+    String taskId,
   ) async {
     if (effect == null || effect.targetBase == null) return null;
     Future<JournalEntity?> read(Object? id) async =>
@@ -318,6 +323,12 @@ class TaskToolDispatcher {
         what = 'time entry';
         final entry = await read(args['entryId']);
         fields = entry is JournalEntry ? timeEntryFields(entry) : null;
+      case TaskAgentToolNames.setTaskProject:
+        final repository = projectRepository;
+        if (repository == null) return null;
+        what = 'task';
+        final linked = await repository.getLinkedProjectForTask(taskId);
+        fields = {'projectId': linked?.meta.id};
       default:
         return null;
     }

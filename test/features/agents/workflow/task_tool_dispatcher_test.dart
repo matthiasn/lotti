@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/change_effect.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -510,6 +511,61 @@ void main() {
           taskId: taskId,
         ),
       ).called(1);
+    });
+
+    test('a late confirmation keeps a project the user chose since', () async {
+      // Proposed while the task had no project; since then it was moved to
+      // another one, by the first confirmation or by hand.
+      when(
+        () => projectRepository.getLinkedProjectForTask(taskId),
+      ).thenAnswer(
+        (_) async =>
+            makeTestProject(id: 'project-other', categoryId: categoryId),
+      );
+
+      final result = await projectDispatcher.dispatchApproved(
+        TaskAgentToolNames.setTaskProject,
+        const ChangeEffect(
+          key: 'cs-1:0',
+          targetBase: {'projectId': null},
+        ).addTo(confirmedArgs),
+        taskId,
+        null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, startsWith('Nothing applied'));
+      verifyNever(
+        () => projectRepository.linkTaskToProject(
+          projectId: any(named: 'projectId'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+    });
+
+    test('a confirmation against the unchanged base links the task', () async {
+      when(
+        () => projectRepository.getLinkedProjectForTask(taskId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => projectRepository.linkTaskToProject(
+          projectId: 'project-colony',
+          taskId: taskId,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await projectDispatcher.dispatchApproved(
+        TaskAgentToolNames.setTaskProject,
+        const ChangeEffect(
+          key: 'cs-1:0',
+          targetBase: {'projectId': null},
+        ).addTo(confirmedArgs),
+        taskId,
+        null,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Task moved to project "Colony census".');
     });
 
     test('reports a link the repository rejected as a failure', () async {

@@ -55,7 +55,7 @@ void main() {
       () => projectRepository.getProjectsForCategory(categoryId),
     ).thenAnswer((_) async => [iceShelf, colony]);
     when(
-      () => projectRepository.getProjectForTask(taskId),
+      () => projectRepository.getLinkedProjectForTask(taskId),
     ).thenAnswer((_) async => iceShelf);
     when(
       () => agentRepository.getLatestProjectReportForProjectId(colony.meta.id),
@@ -97,6 +97,38 @@ void main() {
         expect(iceOption.isCurrent, isTrue);
       },
     );
+
+    test("lists only projects whose privacy matches the task's", () async {
+      // The repository refuses a link across the private flag, so such a
+      // project could only become a suggestion that never applies.
+      final hidden = makeTestProject(
+        id: 'project-hidden',
+        title: 'Hidden rookery',
+        categoryId: categoryId,
+      );
+      final privateProject = hidden.copyWith(
+        meta: hidden.meta.copyWith(private: true),
+      );
+      when(
+        () => projectRepository.getProjectsForCategory(categoryId),
+      ).thenAnswer((_) async => [iceShelf, privateProject, colony]);
+      when(
+        () => agentRepository.getLatestProjectReportForProjectId(
+          'project-hidden',
+        ),
+      ).thenAnswer((_) async => null);
+
+      expect((await load()).map((o) => o.id), [
+        'project-colony',
+        'project-ice',
+      ]);
+
+      // A private task sees only the private project.
+      when(() => journalDb.journalEntityById(taskId)).thenAnswer(
+        (_) async => task.copyWith(meta: task.meta.copyWith(private: true)),
+      );
+      expect((await load()).map((o) => o.id), ['project-hidden']);
+    });
 
     test('is empty for a task without a category, reading nothing', () async {
       when(
