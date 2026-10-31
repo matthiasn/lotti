@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.73]
+
+### Added
+
+- **The front agent answers questions about your journal.** Ask her something
+  no single task or project holds — "what did I decide about the fish stores?"
+  — and she searches your journal by meaning, reads what she finds and
+  answers with the exact passages she relied on; tap one to open it. Name a
+  category in the question to search only there. She only reads the
+  categories she may see, and an answer hides itself if one of its sources
+  turns private. This needs the experimental front agent.
+- **A goal's agent can answer what your check-ins say, not just that they
+  happened.** A journal tracked as a habit ticked once a day used to have its
+  check-ins boiled down to "they checked in", so its agent kept noting that you
+  wrote and never what you wrote. The goal form now has an "I'll answer what
+  you tell me" switch: turned on, the agent keeps the themes, decisions and
+  questions of every check-in, answers them in its report, and refreshes that
+  report minutes after a new one lands. Goals measured by check-in time start
+  with it on; every other goal starts with it off.
+- **The task agent can suggest which project a task belongs to.** It reads the
+  projects of the task's category, each with the one-line summary and TLDR its
+  project agent last wrote, and when one clearly covers the task it proposes
+  moving the task there. The suggestion waits in the task's suggestion list
+  like every other change, and nothing moves until you confirm it.
+
+### Changed
+
+- **A goal's report says which check-ins it is answering.** Under "From your
+  check-ins" the report now names the days of the check-ins it responds to.
+  When you have recorded something new, the agent has to answer at least one
+  of those check-ins by name rather than writing a general note, and any it
+  skipped stay waiting for its next report instead of being quietly marked as
+  read.
+- **Model and inference profile forms save from the bottom bar.** In AI
+  Settings, Save on the Edit Model and Edit Profile pages has moved from the
+  top-right corner to the sticky bar at the bottom, where the provider form
+  already had it. It stays in reach however far you scroll, sits next to
+  Cancel, and says when there is nothing to save yet.
+- **Generated prompts now look like every other AI response.** Coding, design,
+  research and image prompts sit on the same tinted card as an entry's
+  summaries and analyses, with their title and copy button in the AI accent
+  colour, so all AI output reads as one kind of thing in light and dark mode.
+
+### Fixed
+
+- **Save no longer slides off narrow screens in AI Settings.** On small phones,
+  especially in German and other longer languages, the bottom bar of the
+  provider, model and profile forms could push Save past the edge of the
+  screen. The bar now moves its buttons onto a second row when they do not
+  fit.
+- **Image analysis with a Mistral vision model failed straight away.** With
+  Mistral Large 4 (or another Mistral vision model) as a profile's Image
+  Recognition model, every analysis stopped with "type 'List<dynamic>' is not a
+  subtype of type 'String?'". Mistral sends its answer in pieces the generic
+  client could not read; image analysis now goes through Lotti's own Mistral
+  client, the one text generation already uses, and shows the description.
+- **Mistral Large 4 refused requests with "Think before answering" off.** Lotti
+  asked it for no reasoning, a setting Large 4 does not accept, so every request
+  came back as HTTP 400. Large 4 now gets its lowest reasoning level instead,
+  and its middle level when one is asked for; Mistral Small and Medium are
+  unchanged.
+- **Large photos could be too big to analyze.** An image wider or taller than
+  2,000 pixels, or larger than 5 MB, is now scaled down for the upload only;
+  the photo in your journal keeps its full size. A failed Mistral request now
+  also names Mistral's reason (its error type and code) in the error.
+- **Analyses from reasoning models could include the model's thinking.** An
+  image analysis or summary written by a model that reasons out loud, such as
+  Mistral's Magistral, was saved with its reasoning in `<think>` tags; it is
+  now saved without it. Mistral's "Think before answering" switch also now
+  applies to these analyses and summaries, not just to chat.
+- **A project row in the project picker now lights up as one row.** Hovering a
+  project highlighted everything except its open button at the right edge, so
+  the row looked cut in two. The highlight now spans the whole row, the
+  divider before the button is gone, and the button shows an up-right arrow —
+  "open this project" — instead of a chevron, with its own highlight when you
+  point at it.
+
 ## [1.1.72]
 
 ### Changed
