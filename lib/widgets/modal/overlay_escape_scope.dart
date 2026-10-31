@@ -36,7 +36,12 @@ class OverlayEscapeScope extends StatefulWidget {
 }
 
 class _OverlayEscapeScopeState extends State<OverlayEscapeScope> {
-  final FocusNode _node = FocusNode(debugLabel: 'OverlayEscapeScope');
+  // Out of Tab traversal: the scope is mounted while inactive too, and must
+  // not be an invisible stop in the page. requestFocus still reaches it.
+  final FocusNode _node = FocusNode(
+    debugLabel: 'OverlayEscapeScope',
+    skipTraversal: true,
+  );
   FocusNode? _restoreTo;
 
   @override

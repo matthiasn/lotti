@@ -91,6 +91,35 @@ void main() {
       expect(pageField.hasFocus, isTrue);
     });
 
+    testWidgets('is no Tab stop: Tab from the page skips the inactive scope', (
+      tester,
+    ) async {
+      final after = FocusNode();
+      addTearDown(after.dispose);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Column(
+            children: [
+              TextField(focusNode: pageField),
+              OverlayEscapeScope(
+                active: false,
+                onDismiss: () => dismissals++,
+                child: const SizedBox(height: 40),
+              ),
+              TextField(focusNode: after),
+            ],
+          ),
+        ),
+      );
+      pageField.requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(after.hasPrimaryFocus, isTrue);
+    });
+
     testWidgets('leaves focus alone on release when it has moved on', (
       tester,
     ) async {

@@ -1,8 +1,9 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/modal/modal_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../widget_test_utils.dart';
 
 /// A modal whose content sits inside its own [Scaffold] — the shape of every
 /// Wolt sheet — with a focused text field, which is what used to swallow
@@ -34,9 +35,8 @@ Future<Future<Object?>> _open(
 }) async {
   late BuildContext hostContext;
   await tester.pumpWidget(
-    MaterialApp(
-      builder: LegacyMaterialBridge.builder,
-      home: Builder(
+    makeTestableWidgetNoScroll(
+      Builder(
         builder: (context) {
           hostContext = context;
           return const SizedBox.expand();
