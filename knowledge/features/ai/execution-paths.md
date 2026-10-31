@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-30T14:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T12:00:00Z }
 stale_after: 2027-01-05
 sources:
   - id: runner
@@ -614,11 +614,19 @@ knows.
 Images still default to **expanded**; only audio reads a null `collapsed` as
 collapsed. The row renders whenever a user collapses an image themselves.
 
-Image analyses render through `AiResponseSummary` as a tinted, non-elevated AI
+Image analyses render through `AiResponseSummary` on `AiResponseCard`
+(`lib/features/ai/ui/ai_response_card.dart`), a tinted, non-elevated AI
 surface — the report-card colour family without its accent-blended fill and
-badges. In the nested tree the cards collapse binarily, so long analyses (full
+badges. Generated coding and image prompts (`GeneratedPromptCard`) render on
+the same card with their title, copy and expand actions as its header in the
+`aiCard` accent, so every AI response in an entry reads as the same kind of
+output; the card owns the tint, the Show more/Show less toggle and the
+attribution caption. A response shown as its own entry — the faded
+`fadeOut` preview, e.g. a coding prompt linked to a task — renders with
+`framed: false`: the same accent and body colours, no tint, border or inset,
+because the entry card already frames it. In the nested tree the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
-pill, while short summaries stay visible.
+caption, while short summaries stay visible.
 
 The body goes through `AgentMarkdownView`, so an analysis nested in an image or
 audio entry card sits at the editor's own `body.bodySmall` measure with the

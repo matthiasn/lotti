@@ -3,6 +3,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/ui/ai_response_card.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
@@ -399,7 +400,7 @@ Style: isometric digital art. --ar 16:9
       ) async {
         await pumpTiered(tester);
 
-        await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+        await tester.tap(find.byKey(AiResponseCard.collapseToggleKey));
         await tester.pump();
 
         expect(tldrView(bodyText), findsOneWidget);
@@ -414,7 +415,7 @@ Style: isometric digital art. --ar 16:9
           await pumpTiered(tester, response: 'Tiny body.');
 
           expect(
-            find.byKey(AiResponseSummary.collapseToggleKey),
+            find.byKey(AiResponseCard.collapseToggleKey),
             findsOneWidget,
           );
           expect(tldrView(tldrText), findsOneWidget);
@@ -427,7 +428,7 @@ Style: isometric digital art. --ar 16:9
         (tester) async {
           await pumpTiered(tester, tldr: null, response: 'Tiny body.');
 
-          expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+          expect(find.byKey(AiResponseCard.collapseToggleKey), findsNothing);
           expect(find.byType(GptMarkdown), findsOneWidget);
         },
       );
@@ -437,7 +438,7 @@ Style: isometric digital art. --ar 16:9
       ) async {
         await pumpTiered(tester, tldr: '   \n  ', response: 'Tiny body.');
 
-        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byKey(AiResponseCard.collapseToggleKey), findsNothing);
         expect(find.byType(GptMarkdown), findsOneWidget);
       });
 
@@ -650,13 +651,13 @@ Style: isometric digital art. --ar 16:9
           // Collapsed by default: no body at all, just the toggle (and the
           // attribution pill identifying the analysis).
           expect(
-            find.byKey(AiResponseSummary.collapseToggleKey),
+            find.byKey(AiResponseCard.collapseToggleKey),
             findsOneWidget,
           );
           expect(find.text('Show more'), findsOneWidget);
           expect(find.byType(GptMarkdown), findsNothing);
 
-          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.tap(find.byKey(AiResponseCard.collapseToggleKey));
           await tester.pump();
           expect(find.text('Show less'), findsOneWidget);
           expect(find.byType(GptMarkdown), findsOneWidget);
@@ -664,10 +665,10 @@ Style: isometric digital art. --ar 16:9
           // Expanded content pushes the toggle below the fold — scroll it
           // back into view before collapsing again.
           await tester.ensureVisible(
-            find.byKey(AiResponseSummary.collapseToggleKey),
+            find.byKey(AiResponseCard.collapseToggleKey),
           );
           await tester.pump();
-          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.tap(find.byKey(AiResponseCard.collapseToggleKey));
           await tester.pump();
           expect(find.text('Show more'), findsOneWidget);
           expect(find.byType(GptMarkdown), findsNothing);
@@ -679,7 +680,7 @@ Style: isometric digital art. --ar 16:9
       ) async {
         await pumpSummary(tester, text: shortSummaryText, collapsible: true);
 
-        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byKey(AiResponseCard.collapseToggleKey), findsNothing);
         expect(find.byType(GptMarkdown), findsOneWidget);
         expect(find.byType(ShaderMask), findsNothing);
       });
@@ -690,7 +691,7 @@ Style: isometric digital art. --ar 16:9
           await pumpSummary(tester, text: longOcrText);
 
           expect(
-            find.byKey(AiResponseSummary.collapseToggleKey),
+            find.byKey(AiResponseCard.collapseToggleKey),
             findsNothing,
           );
           expect(find.byType(GptMarkdown), findsOneWidget);
@@ -704,8 +705,59 @@ Style: isometric digital art. --ar 16:9
         await pumpSummary(tester, text: longOcrText, fadeOut: true);
 
         expect(find.byType(ShaderMask), findsOneWidget);
-        expect(find.byKey(AiResponseSummary.collapseToggleKey), findsNothing);
+        expect(find.byKey(AiResponseCard.collapseToggleKey), findsNothing);
       });
+
+      testWidgets(
+        'framed in the nested tree, unframed as its own entry — the entry '
+        'card is already the frame there',
+        (tester) async {
+          await pumpSummary(tester, text: shortSummaryText);
+          expect(
+            tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+            isTrue,
+          );
+
+          await pumpSummary(tester, text: shortSummaryText, fadeOut: true);
+          expect(
+            tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+            isFalse,
+          );
+        },
+      );
+
+      testWidgets(
+        'a generated prompt shown as its own entry drops the frame too',
+        (tester) async {
+          for (final fadeOut in [false, true]) {
+            await tester.pumpWidget(
+              WidgetTestBench(
+                child: SingleChildScrollView(
+                  child: AiResponseSummary(
+                    testAiResponseEntry.copyWith(
+                      data: testAiResponseEntry.data.copyWith(
+                        response: '## Summary\nDock at Bay 7.\n## Prompt\nGo.',
+                        type: AiResponseType.promptGeneration,
+                      ),
+                    ),
+                    fadeOut: fadeOut,
+                  ),
+                ),
+              ),
+            );
+            expect(
+              tester
+                  .widget<GeneratedPromptCard>(find.byType(GeneratedPromptCard))
+                  .framed,
+              !fadeOut,
+            );
+            expect(
+              tester.widget<AiResponseCard>(find.byType(AiResponseCard)).framed,
+              !fadeOut,
+            );
+          }
+        },
+      );
 
       testWidgets(
         'collapse thresholds: >500 chars OR >6 newlines, boundaries exact',
@@ -724,7 +776,7 @@ Style: isometric digital art. --ar 16:9
             await tester.pumpWidget(const SizedBox.shrink());
             await pumpSummary(tester, text: text, collapsible: true);
             expect(
-              find.byKey(AiResponseSummary.collapseToggleKey),
+              find.byKey(AiResponseCard.collapseToggleKey),
               collapses ? findsOneWidget : findsNothing,
               reason: label,
             );
@@ -742,7 +794,7 @@ Style: isometric digital art. --ar 16:9
 
         final icon = tester.widget<Icon>(
           find.descendant(
-            of: find.byKey(AiResponseSummary.collapseToggleKey),
+            of: find.byKey(AiResponseCard.collapseToggleKey),
             matching: find.byType(Icon),
           ),
         );
@@ -750,7 +802,7 @@ Style: isometric digital art. --ar 16:9
 
         final label = tester.widget<Text>(
           find.descendant(
-            of: find.byKey(AiResponseSummary.collapseToggleKey),
+            of: find.byKey(AiResponseCard.collapseToggleKey),
             matching: find.text('Show more'),
           ),
         );
@@ -793,7 +845,7 @@ Style: isometric digital art. --ar 16:9
           }
 
           await pumpEntry(responseA);
-          await tester.tap(find.byKey(AiResponseSummary.collapseToggleKey));
+          await tester.tap(find.byKey(AiResponseCard.collapseToggleKey));
           await tester.pump();
           expect(find.text('Show less'), findsOneWidget);
 
