@@ -42,6 +42,9 @@ class DesignSystemContextMenuButton extends StatelessWidget {
   /// the model a briefing would be written with.
   final String? header;
 
+  /// The square the trigger occupies, so a row can reserve its slot.
+  static double extent(DsTokens tokens) => tokens.spacing.step9;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -53,8 +56,8 @@ class DesignSystemContextMenuButton extends StatelessWidget {
       header: header,
       builder: (context, {required toggle, required isOpen}) {
         return SizedBox(
-          width: tokens.spacing.step9,
-          height: tokens.spacing.step9,
+          width: extent(tokens),
+          height: extent(tokens),
           child: Semantics(
             label: accessibleLabel,
             button: true,

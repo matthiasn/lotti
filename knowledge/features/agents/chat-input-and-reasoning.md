@@ -11,7 +11,7 @@ sources:
   - id: chat
     resource: ../../../lib/features/agents/ui/chat
     title: Shared agent chat components
-    last_modified: 2026-10-04
+    last_modified: 2026-10-31
   - id: evolution
     resource: ../../../lib/features/agents/ui/evolution/widgets
     title: Agent improvement conversation widgets
@@ -32,8 +32,31 @@ interactive disclosures. `composerShape` selects the input shell; pill composers
 use an emphasized upward-arrow Send action. Both options default to the existing
 separate attachment and rounded-field treatment for other hosts.
 `footerTrailingBuilder` lets a host tail a bubble's footer line — after the
-author and the time, on the same line — with a widget of its own, such as the
-front agent's per-turn cost, so a turn's metadata stays one row.
+author and the time, on the same line — with a widget of its own, so a turn's
+metadata stays one row.
+
+Three opt-ins turn the surface into a conversation with someone rather than a
+log; the front agent uses all three, every other host keeps the defaults.
+`conversational` sets the agent's replies as unboxed prose (her thinking
+state too, so a turn never changes shape on answering), keeps the user's
+words in a soft bubble capped short of the far edge on a phone, and drops the
+author-and-time line, leaving the footer only for what `footerTrailingBuilder`
+adds. `voiceFirst` makes the idle composer one large talk disc with *Type
+instead* under it (`agent_chat_view_voice_first_part.dart`): the disc keeps
+its place, size and teal through recording — where it carries a stop mark
+and sends on tap, while soft ripples rise from its edge, reaching further
+and brighter with the voice level (`_ListeningDisc`, still under reduced
+motion) — and transcription, where it waits. The live composer is laid out
+like the idle one: one caption under the disc, and in the slot *Type
+instead* held, a quiet Cancel (Escape too), kept empty while transcribing so
+the composer never changes height; a finished
+transcript is sent as it is (tap to talk, tap to send), and choosing to type
+holds for the session (`agentChatPrefersTypingProvider`, keep-alive) and
+focuses the field. `leading` is a widget that scrolls in above the first
+message, with the thread. `onThreadScrolled` reports the thread list's own
+scroll metrics, on every scroll and on layout (a list restored to its saved
+offset moves without a scroll); a scroll nested inside a message or the
+composer is not reported.
 `replyTextStyle` lets the host select its answer typography from design tokens;
 scoped queries use `bodySmall`, while other hosts retain `bodyMedium`.
 Hosts can supply `onLinkTap` to resolve each link against its containing message.

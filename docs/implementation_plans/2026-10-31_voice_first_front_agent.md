@@ -115,6 +115,28 @@ next one. The order is a proposal.
   first page on a phone, as in Claude or ChatGPT.
 - **Tests:** create, switch, rename, archive, delete and forget; migration of
   the existing thread; sync of each event; paging.
+- **As built (ADR 0154), where it differs from the above:**
+  - The conversation id rides on the user turn's payload only; her rows and
+    the doors belong to it through their `operationId`. There is no
+    `created` event: a conversation exists once it holds a turn.
+  - The lifecycle reuses query chat's existing `renamed`, `archived` and
+    `deleted` events, so no event kind is new and none can be unknown to a
+    build that has this one. A kind added later is not decoded by an older
+    build: its sync rejects the event as unrecoverable, as for any agent
+    entity it cannot read, so that build keeps the conversation as it last
+    knew it. Adding one therefore needs the decoder to tolerate unknown
+    kinds first.
+  - No "forget" on delete: the front agent keeps no conversation memories.
+  - No paging yet: the newest fifty messages are now per conversation.
+  - The list opens in place of the thread in the sheet; the list beside the
+    conversation on a wide window comes with slice C's panel.
+  - Pulled forward from slice C at the owner's request, after the first
+    list and header were rejected: her bust leading the conversation (a
+    hero that scrolls with the thread), her replies as prose, one talk
+    disc that keeps its place while listening and sends what was said
+    (`AgentChatView` `conversational`, `voiceFirst`, `leading`). Still for
+    slice C: her spoken replies, her listen and think gestures, barge-in,
+    the personality block and the large panel.
 
 ### C. Voice-first, with her in the layout
 

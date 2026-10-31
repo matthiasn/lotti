@@ -2180,6 +2180,7 @@
   "chatInputHintDefault": "Ask about your tasks and productivity...",
   "chatInputHintSelectModel": "Select a model to start chatting",
   "chatInputListening": "Listening...",
+  "chatInputListeningTapWhenDone": "Listening — tap when done",
   "chatInputNoAudioRecorded": "No audio was recorded. Try again.",
   "chatInputPleaseWait": "Please wait...",
   "chatInputProcessing": "Processing...",
@@ -2190,7 +2191,10 @@
   "chatInputSendTooltip": "Send message",
   "chatInputStopRealtime": "Stop live transcription",
   "chatInputStopTranscribe": "Stop and transcribe",
+  "chatInputTapToTalk": "Tap to talk",
+  "chatInputTranscribing": "Transcribing…",
   "chatInputTranscriptionFailed": "The recording was captured, but transcribing it failed. Please try again.",
+  "chatInputTypeInstead": "Type instead",
   "checkInAddNoteHint": "Add a note…",
   "@checkInAddNoteHint": {
     "description": "The empty note's placeholder beside a recording in the check-in composer"
@@ -4075,6 +4079,17 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
+  "frontChatActionFailed": "That didn't go through. Try again.",
+  "frontChatArchivedRow": "Archived chats · {count}",
+  "@frontChatArchivedRow": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "frontChatArchivedToast": "Chat archived.",
+  "frontChatDeleteExplanation": "Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatInboxChip": "Inbox {count}",
   "@frontChatInboxChip": {
@@ -4085,9 +4100,16 @@
     }
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
+  "frontChatInboxTitle": "Inbox",
+  "frontChatNoChats": "No chats yet. Ask something to start one.",
+  "frontChatNoMatchingChats": "No chat title matches.",
+  "frontChatOlder": "Older",
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
+  "frontChatPrevious7Days": "Previous 7 days",
   "frontChatResponding": "Finding who knows…",
+  "frontChatRowMenuHint": "Chat actions",
+  "frontChatSearchChats": "Search chats",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
   "frontDoorActionFailed": "That did not go through.",

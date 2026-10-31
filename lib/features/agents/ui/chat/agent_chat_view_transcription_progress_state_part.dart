@@ -46,8 +46,29 @@ class AgentChatView extends ConsumerStatefulWidget {
     this.replyTextStyle,
     this.onLinkTap,
     this.resolveTranscriptionTarget,
+    this.conversational = false,
+    this.voiceFirst = false,
+    this.leading,
+    this.onThreadScrolled,
     super.key,
   });
+
+  /// Her replies as unboxed prose and the user's words in a soft bubble,
+  /// with no author-and-time line on each message — a conversation with
+  /// someone rather than a log. The footer line stays only for what
+  /// [footerTrailingBuilder] adds.
+  final bool conversational;
+
+  /// The idle composer leads with one large talk control, typing a tap
+  /// away.
+  final bool voiceFirst;
+
+  /// Scrolls in above the first message, with the thread.
+  final Widget? leading;
+
+  /// Where the thread's list is, on each scroll and layout — its own list
+  /// only, not a scroll inside a message or the composer.
+  final ValueChanged<ScrollMetrics>? onThreadScrolled;
 
   final String agentId;
   final String agentName;
@@ -143,9 +164,11 @@ class _ChatComposer extends ConsumerWidget {
     required this.onDraftChanged,
     required this.onSend,
     required this.shape,
+    this.voiceFirst = false,
     this.resolveTranscriptionTarget,
   });
 
+  final bool voiceFirst;
   final double availableHeight;
   final TextEditingController controller;
   final String hintText;
@@ -173,8 +196,28 @@ class _ChatComposer extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step4),
+        // A voice-first composer gives its disc air above and below — at
+        // rest and live alike, so it never changes height — and room for
+        // the ripples that rise from it while listening.
+        padding: voiceFirst
+            ? EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step6,
+              )
+            : EdgeInsets.all(tokens.spacing.step4),
         child: switch (status) {
+          ChatRecorderStatus.recording ||
+          ChatRecorderStatus.processing when voiceFirst => _VoiceFirstLive(
+            processing: status == ChatRecorderStatus.processing,
+            dbfs:
+                recorderState.amplitudeHistory.lastOrNull ??
+                AiVoiceInputShader.silence,
+            onStop: () => ref
+                .read(chatRecorderControllerProvider.notifier)
+                .stopAndTranscribe(),
+            onCancel: () =>
+                ref.read(chatRecorderControllerProvider.notifier).cancel(),
+          ),
           ChatRecorderStatus.recording => _RecordingControls(
             elapsed: showVoiceDetails ? recorderState.elapsed : null,
             amplitudes: ref
@@ -194,22 +237,32 @@ class _ChatComposer extends ConsumerWidget {
                       ref.read(chatRecorderControllerProvider.notifier).cancel()
                 : null,
           ),
-          _ => _IdleComposer(
-            controller: controller,
-            hintText: hintText,
-            isSending: isSending,
-            allowDraftWhileSending: allowDraftWhileSending,
-            sendingLabel: sendingLabel,
-            draft: draft,
-            onDraftChanged: onDraftChanged,
-            onSend: onSend,
-            shape: shape,
-            onStartRecording: () => ref
+          _ => () {
+            void startRecording() => ref
                 .read(chatRecorderControllerProvider.notifier)
-                .start(
-                  resolveTranscriptionTarget: resolveTranscriptionTarget,
-                ),
-          ),
+                .start(resolveTranscriptionTarget: resolveTranscriptionTarget);
+            final text = _IdleComposer(
+              controller: controller,
+              hintText: hintText,
+              isSending: isSending,
+              allowDraftWhileSending: allowDraftWhileSending,
+              sendingLabel: sendingLabel,
+              draft: draft,
+              onDraftChanged: onDraftChanged,
+              onSend: onSend,
+              shape: shape,
+              onStartRecording: startRecording,
+              autofocus: voiceFirst,
+            );
+            return voiceFirst
+                ? _VoiceFirstIdle(
+                    textComposer: text,
+                    hasDraft: draft.trim().isNotEmpty,
+                    canRecord: !isSending,
+                    onStartRecording: startRecording,
+                  )
+                : text;
+          }(),
         },
       ),
     );
@@ -228,8 +281,10 @@ class _IdleComposer extends StatelessWidget {
     required this.onSend,
     required this.onStartRecording,
     required this.shape,
+    this.autofocus = false,
   });
 
+  final bool autofocus;
   final TextEditingController controller;
   final String hintText;
   final bool isSending;
@@ -253,6 +308,7 @@ class _IdleComposer extends StatelessWidget {
         Expanded(
           child: DesignSystemTextInput(
             controller: controller,
+            autofocus: autofocus,
             shape: shape,
             hintText: hintText,
             helperText: isSending && !allowDraftWhileSending
@@ -598,9 +654,11 @@ class _MessageBubble extends StatelessWidget {
     this.footerTrailing,
     this.replyTextStyle,
     this.onLinkTap,
+    this.conversational = false,
     super.key,
   });
 
+  final bool conversational;
   final AgentChatMessage message;
   final String agentName;
   final Widget? attachment;
@@ -634,19 +692,28 @@ class _MessageBubble extends StatelessWidget {
       child: Align(
         alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: kActionListContentMaxWidth,
+          constraints: BoxConstraints(
+            maxWidth: _bubbleWidth(
+              context,
+              isUser: isUser && conversational,
+            ),
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
+              // In a conversation her words are unboxed prose; the user's
+              // keep a soft bubble.
               color: isUser
                   ? tokens.colors.surface.selected
+                  : conversational
+                  ? null
                   : tokens.colors.background.level02,
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
+                horizontal: conversational && !isUser
+                    ? 0
+                    : tokens.spacing.step4,
                 vertical: tokens.spacing.step3,
               ),
               child: Column(
@@ -676,7 +743,9 @@ class _MessageBubble extends StatelessWidget {
                                 .copyWith(
                                   color: tokens.colors.text.highEmphasis,
                                 ),
-                        fadeColor: tokens.colors.background.level02,
+                        fadeColor: conversational
+                            ? tokens.colors.background.level01
+                            : tokens.colors.background.level02,
                       ),
                     ),
                   if (attachment != null) ...[
@@ -686,20 +755,28 @@ class _MessageBubble extends StatelessWidget {
                       child: attachment,
                     ),
                   ],
-                  SizedBox(height: tokens.spacing.step1),
-                  ExcludeSemantics(
-                    child: Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          context.messages.goalChatMessageFooter(author, time),
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(color: tokens.colors.text.lowEmphasis),
-                        ),
-                        ?footerTrailing,
-                      ],
+                  if (!conversational || footerTrailing != null) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    ExcludeSemantics(
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (!conversational)
+                            Text(
+                              context.messages.goalChatMessageFooter(
+                                author,
+                                time,
+                              ),
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                  ),
+                            ),
+                          ?footerTrailing,
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -893,40 +970,5 @@ class _RenderMeasureHeight extends RenderProxyBox {
       _reported = size.height;
       onHeight(size.height);
     }
-  }
-}
-
-class _ThinkingBubble extends StatelessWidget {
-  const _ThinkingBubble({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Semantics(
-      label: label,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
-            ),
-            child: Text(
-              '•••',
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

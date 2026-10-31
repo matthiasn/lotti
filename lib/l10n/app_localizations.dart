@@ -1873,17 +1873,17 @@ abstract class AppLocalizations {
   /// **'Set language to \"{language}\"'**
   String agentSummarySetLanguage(Object language);
 
-  /// No description provided for @agentSummarySetProject.
-  ///
-  /// In en, this message translates to:
-  /// **'Move to project \"{project}\"'**
-  String agentSummarySetProject(Object project);
-
   /// No description provided for @agentSummarySetPriority.
   ///
   /// In en, this message translates to:
   /// **'Set priority to {priority}'**
   String agentSummarySetPriority(Object priority);
+
+  /// No description provided for @agentSummarySetProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to project \"{project}\"'**
+  String agentSummarySetProject(Object project);
 
   /// No description provided for @agentSummarySetStatus.
   ///
@@ -5652,6 +5652,12 @@ abstract class AppLocalizations {
   /// **'Listening...'**
   String get chatInputListening;
 
+  /// No description provided for @chatInputListeningTapWhenDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening — tap when done'**
+  String get chatInputListeningTapWhenDone;
+
   /// No description provided for @chatInputNoAudioRecorded.
   ///
   /// In en, this message translates to:
@@ -5712,11 +5718,29 @@ abstract class AppLocalizations {
   /// **'Stop and transcribe'**
   String get chatInputStopTranscribe;
 
+  /// No description provided for @chatInputTapToTalk.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to talk'**
+  String get chatInputTapToTalk;
+
+  /// No description provided for @chatInputTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get chatInputTranscribing;
+
   /// No description provided for @chatInputTranscriptionFailed.
   ///
   /// In en, this message translates to:
   /// **'The recording was captured, but transcribing it failed. Please try again.'**
   String get chatInputTranscriptionFailed;
+
+  /// No description provided for @chatInputTypeInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Type instead'**
+  String get chatInputTypeInstead;
 
   /// The empty note's placeholder beside a recording in the check-in composer
   ///
@@ -11705,6 +11729,30 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get filterSelectionNoMatches;
 
+  /// No description provided for @frontChatActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Try again.'**
+  String get frontChatActionFailed;
+
+  /// No description provided for @frontChatArchivedRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived chats · {count}'**
+  String frontChatArchivedRow(int count);
+
+  /// No description provided for @frontChatArchivedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat archived.'**
+  String get frontChatArchivedToast;
+
+  /// No description provided for @frontChatDeleteExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this chat? Its messages are hidden on every device, not erased. Whatever you filed from it stays where it is.'**
+  String get frontChatDeleteExplanation;
+
   /// No description provided for @frontChatEmpty.
   ///
   /// In en, this message translates to:
@@ -11723,6 +11771,30 @@ abstract class AppLocalizations {
   /// **'Nothing is waiting for you.'**
   String get frontChatInboxEmpty;
 
+  /// No description provided for @frontChatInboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get frontChatInboxTitle;
+
+  /// No description provided for @frontChatNoChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet. Ask something to start one.'**
+  String get frontChatNoChats;
+
+  /// No description provided for @frontChatNoMatchingChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No chat title matches.'**
+  String get frontChatNoMatchingChats;
+
+  /// No description provided for @frontChatOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Older'**
+  String get frontChatOlder;
+
   /// No description provided for @frontChatOpen.
   ///
   /// In en, this message translates to:
@@ -11735,11 +11807,29 @@ abstract class AppLocalizations {
   /// **'Ask anything…'**
   String get frontChatPlaceholder;
 
+  /// No description provided for @frontChatPrevious7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous 7 days'**
+  String get frontChatPrevious7Days;
+
   /// No description provided for @frontChatResponding.
   ///
   /// In en, this message translates to:
   /// **'Finding who knows…'**
   String get frontChatResponding;
+
+  /// No description provided for @frontChatRowMenuHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat actions'**
+  String get frontChatRowMenuHint;
+
+  /// No description provided for @frontChatSearchChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats'**
+  String get frontChatSearchChats;
 
   /// No description provided for @frontChatTitle.
   ///

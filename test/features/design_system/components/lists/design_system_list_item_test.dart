@@ -13,6 +13,25 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemListItem', () {
+    for (final size in DesignSystemListItemSize.values) {
+      testWidgets("contentInset is where a ${size.name} row's text starts", (
+        tester,
+      ) async {
+        const itemKey = Key('inset-item');
+        await _pumpListItem(
+          tester,
+          DesignSystemListItem(key: itemKey, title: 'Census', size: size),
+        );
+
+        final tokens = tester.element(find.byKey(itemKey)).designTokens;
+        final offset =
+            tester.getTopLeft(find.text('Census')).dx -
+            tester.getTopLeft(find.byKey(itemKey)).dx;
+
+        expect(offset, DesignSystemListItem.contentInset(tokens, size));
+      });
+    }
+
     testWidgets('renders title text', (tester) async {
       const itemKey = Key('basic-item');
 

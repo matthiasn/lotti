@@ -10,10 +10,13 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
@@ -22,8 +25,9 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The companion's chat: one continuous thread across days (decision 7),
-/// under her header, in the shared [AgentChatView].
+/// The companion's chat: one of the user's conversations with her, under
+/// her header, in the shared [AgentChatView] — or, while the header's list
+/// is open, the list of them all ([FrontConversationList]).
 ///
 /// What differs from a goal's or a person's chat is what hangs off a
 /// message: under a routed turn, the doors it was taken through and what
@@ -37,11 +41,45 @@ class FrontChatPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        FrontChatHeader(onClose: onClose),
-        Expanded(child: _Body()),
-      ],
+    final listOpen = ref.watch(frontConversationListOpenProvider);
+    final inboxOnly = ref.watch(frontInboxFilterProvider);
+    // A thread opens at its top, her bust in view, so the header lets her
+    // go: on another conversation, and on the thread coming back from the
+    // list (it is rebuilt at its top). Listened here, where it is always
+    // mounted, not in the thread, which the list replaces.
+    void letHerGo(Object? previous, Object? next) {
+      if (previous != next) {
+        ref.read(frontHeroScrolledProvider.notifier).reset();
+      }
+    }
+
+    ref
+      ..listen<String?>(
+        frontActiveConversationProvider.select((active) => active.value),
+        letHerGo,
+      )
+      ..listen<bool>(frontConversationListOpenProvider, letHerGo);
+    // The list is a page over the conversation, and the inbox a view of
+    // it: back — the system gesture, the Escape key — leaves the list, then
+    // the inbox, before it closes the sheet.
+    return PopScope(
+      canPop: !listOpen && !inboxOnly,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (listOpen) {
+          ref.read(frontConversationListOpenProvider.notifier).close();
+        } else {
+          ref.read(frontInboxFilterProvider.notifier).clear();
+        }
+      },
+      child: Column(
+        children: [
+          FrontChatHeader(onClose: onClose),
+          Expanded(
+            child: listOpen ? const FrontConversationList() : _Body(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -72,6 +110,7 @@ class _Body extends ConsumerWidget {
     // The inbox is the same thread, filtered to the turns with a door still
     // waiting on the user (decision 7).
     final inboxOnly = ref.watch(frontInboxFilterProvider);
+    final conversationId = ref.watch(frontActiveConversationProvider).value;
     final inboxIds = thread?.inboxMessageIds ?? const <String>{};
     final shown = inboxOnly
         ? history.whenData(
@@ -121,10 +160,40 @@ class _Body extends ConsumerWidget {
     );
 
     return AgentChatView(
+      // The thread's scroll moves her: once her bust has gone by, the
+      // header carries her and the title in a line.
+      onThreadScrolled: (metrics) =>
+          ref.read(frontHeroScrolledProvider.notifier).follow(metrics.pixels),
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
-      conversationId: inboxOnly ? 'front-chat-inbox' : 'front-chat',
+      // Each conversation keeps its own scroll position.
+      conversationId: inboxOnly
+          ? 'front-chat-inbox'
+          : 'front-chat:${conversationId ?? ''}',
       history: shown,
+      // A conversation with her, not a log: her words as prose, the user's
+      // in a soft bubble, and a talk control that leads.
+      conversational: true,
+      voiceFirst: true,
+      // She leads the thread, and scrolls away with it.
+      leading: inboxOnly ? null : const FrontChatHero(),
+      // A conversation not begun opens on her, and what she can do.
+      emptyState: inboxOnly
+          ? null
+          : ListView(
+              padding: EdgeInsets.all(context.designTokens.spacing.step5),
+              children: [
+                const FrontChatHero(),
+                Text(
+                  messages.frontChatEmpty,
+                  textAlign: TextAlign.center,
+                  style: context.designTokens.typography.styles.body.bodyMedium
+                      .copyWith(
+                        color: context.designTokens.colors.text.mediumEmphasis,
+                      ),
+                ),
+              ],
+            ),
       emptyMessage: inboxOnly
           ? messages.frontChatInboxEmpty
           : messages.frontChatEmpty,
@@ -179,10 +248,12 @@ class _Body extends ConsumerWidget {
         return card ?? chips;
       },
       // What her turn cost — the routing calls of the wake that wrote the
-      // row — tails the bubble's footer line.
+      // row — quietly under her words.
       footerTrailingBuilder: (context, message) {
         final runKey = message.runKey;
-        if (message.role != AgentChatRole.agent || runKey == null) return null;
+        if (message.role != AgentChatRole.agent || runKey == null) {
+          return null;
+        }
         return FrontTurnCostLine(runKey: runKey);
       },
       dividerBuilder: (context, message, previous) {

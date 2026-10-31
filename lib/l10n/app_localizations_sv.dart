@@ -1065,13 +1065,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Flytta till projektet ”$project”';
+  String agentSummarySetPriority(Object priority) {
+    return 'Sätt prioriteten till $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Sätt prioriteten till $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Flytta till projektet ”$project”';
   }
 
   @override
@@ -3349,6 +3349,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputListening => 'Lyssnar...';
 
   @override
+  String get chatInputListeningTapWhenDone => 'Lyssnar – tryck när du är klar';
+
+  @override
   String get chatInputNoAudioRecorded => 'Inget ljud spelades in. Försök igen.';
 
   @override
@@ -3382,8 +3385,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stoppa och transkribera';
 
   @override
+  String get chatInputTapToTalk => 'Tryck för att prata';
+
+  @override
+  String get chatInputTranscribing => 'Transkriberar…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'Inspelningen gjordes, men transkriberingen misslyckades. Försök igen.';
+
+  @override
+  String get chatInputTypeInstead => 'Skriv i stället';
 
   @override
   String get checkInAddNoteHint => 'Lägg till en anteckning…';
@@ -6887,6 +6899,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get filterSelectionNoMatches => 'Inga matcher';
 
   @override
+  String get frontChatActionFailed => 'Det gick inte. Försök igen.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Arkiverade chattar · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Chatten arkiverad.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Radera den här chatten? Dess meddelanden döljs på alla enheter men raderas inte. Det du har sparat från chatten stannar där det är.';
+
+  @override
   String get frontChatEmpty =>
       'Fråga om en uppgift, ett mål, ett projekt eller en person, eller berätta vad som hänt. Rätt agent svarar, och inget arkiveras förrän du trycker.';
 
@@ -6899,13 +6926,35 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatInboxEmpty => 'Inget väntar på dig.';
 
   @override
+  String get frontChatInboxTitle => 'Inkorg';
+
+  @override
+  String get frontChatNoChats =>
+      'Inga chattar än. Fråga något för att starta en.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Ingen chattitel matchar.';
+
+  @override
+  String get frontChatOlder => 'Äldre';
+
+  @override
   String get frontChatOpen => 'Fråga följeslagaren';
 
   @override
   String get frontChatPlaceholder => 'Fråga vad som helst…';
 
   @override
+  String get frontChatPrevious7Days => 'Senaste 7 dagarna';
+
+  @override
   String get frontChatResponding => 'Letar efter den som vet…';
+
+  @override
+  String get frontChatRowMenuHint => 'Chattåtgärder';
+
+  @override
+  String get frontChatSearchChats => 'Sök i chattar';
 
   @override
   String get frontChatTitle => 'Följeslagare';
