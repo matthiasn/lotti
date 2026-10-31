@@ -233,9 +233,15 @@ class _AgentSetupFlowController {
     final messages = context.messages;
     final journalDb = container.read(journalDbProvider);
     final entity = await journalDb.journalEntityById(entityId);
-    final categoryId = entity is Task || entity is ProjectEntry
-        ? entity?.meta.categoryId
-        : null;
+    // Every entity an agent serves that carries its own category: a task,
+    // a project, a person or a goal. Anything else has no default to copy.
+    final categoryId = switch (entity) {
+      final Task e => e.meta.categoryId,
+      final ProjectEntry e => e.meta.categoryId,
+      final RelationshipEntry e => e.meta.categoryId,
+      final GoalEntry e => e.meta.categoryId,
+      _ => null,
+    };
     final category = categoryId == null
         ? null
         : await journalDb.getCategoryById(categoryId);

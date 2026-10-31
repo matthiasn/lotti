@@ -5,6 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/relationship_data.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -682,6 +686,81 @@ void main() {
     expect(setup.baseProfileId, profile.id);
     expect(setup.originEntityId, 'category-1');
   });
+
+  // A person's and a goal's agent open this sheet with their own entry as
+  // the entity. Reading the category only for tasks and projects made the
+  // row write a disabled setup for them — switching their agent off.
+  final at = DateTime(2026, 8, 2);
+  final categorized = Metadata(
+    id: 'subject-1',
+    createdAt: at,
+    updatedAt: at,
+    dateFrom: at,
+    dateTo: at,
+    categoryId: 'category-1',
+  );
+  for (final (kind, subject) in <(String, JournalEntity)>[
+    (
+      'person',
+      JournalEntity.relationship(
+        meta: categorized,
+        data: RelationshipData(
+          title: 'Pip',
+          status: RelationshipStatus.active(
+            id: 'status-1',
+            createdAt: at,
+            utcOffset: 0,
+          ),
+        ),
+      ),
+    ),
+    (
+      'goal',
+      JournalEntity.goal(
+        meta: categorized,
+        data: const GoalData(
+          title: 'Waddle daily',
+          statement: 'Waddle 2 km every day.',
+          criteria: GoalCriterion.allOf(
+            criterionId: 'all',
+            criteria: <GoalCriterion>[],
+          ),
+          specVersion: 1,
+          specVersionId: 'spec-1',
+        ),
+      ),
+    ),
+  ]) {
+    testWidgets("a $kind's category default copies its profile, never "
+        'switching the agent off', (tester) async {
+      when(
+        () => journalDb.journalEntityById('subject-1'),
+      ).thenAnswer((_) async => subject);
+      when(() => journalDb.getCategoryById('category-1')).thenAnswer(
+        (_) async => CategoryTestUtils.createTestCategory(
+          id: 'category-1',
+          defaultProfileId: profile.id,
+        ),
+      );
+      await openSheet(tester, taskId: 'subject-1');
+      await openProfilePage(tester);
+      await tester.tap(find.text('Copy category default'));
+      await tester.pump();
+
+      final setup =
+          verify(
+                () => service.updateAgentInferenceSetup(
+                  agentId: 'agent-1',
+                  setup: captureAny(named: 'setup'),
+                ),
+              ).captured.single
+              as AgentInferenceSetup;
+      expect(setup.mode, AgentInferenceSetupMode.configured);
+      expect(setup.baseProfileId, profile.id);
+      expect(setup.origin, AgentInferenceSetupOrigin.categorySnapshot);
+      expect(setup.originEntityId, 'category-1');
+    });
+  }
 
   testWidgets('broken profile routes and empty model state remain explicit', (
     tester,
