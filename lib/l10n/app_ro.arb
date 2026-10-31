@@ -454,6 +454,7 @@
   "agentSummarySetDueDate": "Setați termenul la {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Setați estimarea la 1 minut} few{Setați estimarea la {minutes} minute} other{Setați estimarea la {minutes} de minute}}",
   "agentSummarySetLanguage": "Setați limba la „{language}”",
+  "agentSummarySetProject": "Mutați în proiectul „{project}”",
   "agentSummarySetPriority": "Setați prioritatea la {priority}",
   "agentSummarySetStatus": "Setați starea la {status}",
   "agentSummarySetTitle": "Setați titlul la „{title}”",

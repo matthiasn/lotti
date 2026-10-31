@@ -461,6 +461,7 @@
   "agentSummarySetDueDate": "Nastavit termín na {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Nastavit odhad na 1 minutu} few{Nastavit odhad na {minutes} minuty} many{Nastavit odhad na {minutes} minut} other{Nastavit odhad na {minutes} minut}}",
   "agentSummarySetLanguage": "Nastavit jazyk na „{language}“",
+  "agentSummarySetProject": "Přesunout do projektu „{project}“",
   "agentSummarySetPriority": "Nastavit prioritu na {priority}",
   "agentSummarySetStatus": "Nastavit stav na {status}",
   "agentSummarySetTitle": "Nastavit název na „{title}“",

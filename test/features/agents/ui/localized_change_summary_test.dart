@@ -340,6 +340,41 @@ void main() {
     });
   });
 
+  group('project assignment', () {
+    const args = {'projectId': 'p-1', 'projectTitle': ' Colony census '};
+
+    test("names the project in the reader's language", () {
+      expect(
+        summary(TaskAgentToolNames.setTaskProject, args),
+        'Move to project "Colony census"',
+      );
+      expect(
+        summary(TaskAgentToolNames.setTaskProject, args, messages: de),
+        'In Projekt „Colony census“ verschieben',
+      );
+      expect(
+        summary(TaskAgentToolNames.setTaskProject, args, messages: ro),
+        'Mutați în proiectul „Colony census”',
+      );
+    });
+
+    test('a proposal queued without a title keeps the persisted wording', () {
+      // Queued by id alone when the projects could not be read: the persisted
+      // summary names the id, and rebuilding it would add nothing.
+      expect(
+        summary(TaskAgentToolNames.setTaskProject, {'projectId': 'p-1'}),
+        isNull,
+      );
+      expect(
+        summary(TaskAgentToolNames.setTaskProject, {
+          'projectId': 'p-1',
+          'projectTitle': '  ',
+        }),
+        isNull,
+      );
+    });
+  });
+
   group('time entries', () {
     test('a closed entry states both ends', () {
       expect(

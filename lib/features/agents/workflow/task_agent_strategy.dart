@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
+import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -93,6 +94,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveTimeEntryFields,
     this.resolveLinkableTaskTitle,
     this.resolveExistingTaskRelations,
+    this.resolveCategoryProjects,
     this.flushChangeSet,
     this.stagedToolExposure,
   });
@@ -201,6 +203,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// queued as a no-op the user would have to review.
   final Future<Set<String>> Function()? resolveExistingTaskRelations;
 
+  /// Optional resolver for the projects of the task's category. Backs the
+  /// read-only `get_category_projects` tool, and validates `set_task_project`:
+  /// a project outside this list is rejected as a hallucinated id, and the
+  /// task's current project is suppressed as a no-op. A transient resolver
+  /// failure keeps the proposal (we cannot prove the id is fake).
+  final Future<List<TaskProjectOption>> Function()? resolveCategoryProjects;
+
   String? _reportContent;
   String? _reportTldr;
   String? _reportOneLiner;
@@ -253,6 +262,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Tool name for the read-only related-task drill-down tool.
   static const String relatedTaskDetailsToolName =
       TaskAgentToolNames.getRelatedTaskDetails;
+
+  /// Tool name for the read-only category-projects tool.
+  static const String categoryProjectsToolName =
+      TaskAgentToolNames.getCategoryProjects;
 
   /// Tool name for the agent-autonomous retraction tool.
   static const String retractSuggestionsToolName =
@@ -352,6 +365,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       if (toolName == relatedTaskDetailsToolName) {
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleRelatedTaskDetails(args, call.id, manager);
+        continue;
+      }
+      if (toolName == categoryProjectsToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
+        await _handleCategoryProjects(call.id, manager);
         continue;
       }
       if (toolName == retractSuggestionsToolName) {

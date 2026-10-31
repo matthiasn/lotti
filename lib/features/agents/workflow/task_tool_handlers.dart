@@ -460,6 +460,72 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return handler.handle(sourceTaskId, args);
   }
 
+  /// Moves [task] into the project a confirmed `set_task_project` names.
+  ///
+  /// `ProjectRepository.linkTaskToProject` enforces the one-project rule and
+  /// the category match itself; the category is checked here first only to
+  /// say why a move fails — the task may have changed category since the
+  /// proposal was made.
+  Future<ToolExecutionResult> handleSetTaskProject(
+    Task task,
+    Map<String, dynamic> args,
+  ) async {
+    final repository = projectRepository;
+    if (repository == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: set_task_project is not configured.',
+        errorMessage: 'set_task_project is not configured',
+      );
+    }
+
+    final rawProjectId = args['projectId'];
+    final projectId = rawProjectId is String ? rawProjectId.trim() : '';
+    if (projectId.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "projectId" must be a non-empty string.',
+        errorMessage: 'Type validation failed for projectId',
+      );
+    }
+
+    final project = await repository.getProjectById(projectId);
+    if (project == null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: project $projectId was not found.',
+        errorMessage: 'Project lookup failed',
+      );
+    }
+    if (project.meta.categoryId != task.meta.categoryId) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: project "${project.data.title}" is not in the task\'s '
+            'category.',
+        errorMessage: 'Project category mismatch',
+      );
+    }
+
+    final linked = await repository.linkTaskToProject(
+      projectId: projectId,
+      taskId: task.meta.id,
+    );
+    return linked
+        ? ToolExecutionResult(
+            success: true,
+            output: 'Task moved to project "${project.data.title}".',
+            mutatedEntityId: task.meta.id,
+          )
+        : ToolExecutionResult(
+            success: false,
+            output:
+                'Error: the task could not be moved to project '
+                '"${project.data.title}".',
+            errorMessage: 'Project link rejected',
+          );
+  }
+
   Future<ToolExecutionResult> handleCreateTimeEntry(
     Map<String, dynamic> args,
     String taskId, {

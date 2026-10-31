@@ -86,6 +86,24 @@ void main() {
       );
     });
 
+    test('hides both project tools when the category has no projects', () {
+      final hidden = visibleTaskAgentToolNames(
+        const TaskAgentWakeFacts(hasCategoryProjects: false),
+      );
+      expect(hidden, isNot(contains(TaskAgentToolNames.getCategoryProjects)));
+      expect(hidden, isNot(contains(TaskAgentToolNames.setTaskProject)));
+      // Only those two: everything else the permissive wake offers remains.
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(
+          hidden,
+        ),
+        {
+          TaskAgentToolNames.getCategoryProjects,
+          TaskAgentToolNames.setTaskProject,
+        },
+      );
+    });
+
     test('always offers the field tools that have no precondition', () {
       final visible = visibleTaskAgentToolNames(
         const TaskAgentWakeFacts(

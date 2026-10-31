@@ -942,6 +942,25 @@ void main() {
       expect(names, contains('update_time_entry'));
       expect(names, isNot(contains('update_running_timer')));
     });
+
+    test('withholds set_task_project, whose ids the chat context lacks', () {
+      final names = QueryTaskActionPlanner.tools.map((t) => t.name);
+      // The task context carries no project directory, so any project id
+      // the planner produced would be invented.
+      expect(names, isNot(contains('set_task_project')));
+      expect(names, contains('link_task'));
+    });
+
+    test('rejects a set_task_project action as an unknown tool', () async {
+      await expectLater(
+        QueryTaskActionPlanner.validate(
+          'set_task_project',
+          {'projectId': 'project-1'},
+          context,
+        ),
+        throwsFormatException,
+      );
+    });
   });
 }
 

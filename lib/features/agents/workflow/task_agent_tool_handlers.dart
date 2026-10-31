@@ -186,6 +186,43 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
   }
 
+  /// Handles the read-only `get_category_projects` tool: answers with the
+  /// projects of the task's category as JSON, or with a plain sentence when
+  /// there are none.
+  Future<void> _handleCategoryProjects(
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final resolver = resolveCategoryProjects;
+    String? errorMessage;
+    String? response;
+    if (resolver == null) {
+      errorMessage = 'Error: get_category_projects is not available.';
+    } else {
+      try {
+        response = renderTaskProjectOptions(await resolver());
+      } catch (error, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'TaskAgentStrategy',
+          message: 'Failed to resolve the category projects',
+        );
+        errorMessage = 'Error: the projects could not be read right now.';
+      }
+    }
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: errorMessage ?? response!,
+    );
+    await _recordToolResultMessage(
+      toolName: TaskAgentStrategy.categoryProjectsToolName,
+      errorMessage: errorMessage,
+    );
+  }
+
   /// Handles the `retract_suggestions` tool call: parses the proposals
   /// array, dispatches each retraction to [SuggestionRetractionService],
   /// and feeds a per-entry outcome report back to the LLM.

@@ -324,6 +324,17 @@ extension _TaskAgentExecuteSetup on TaskAgentWorkflow {
         if (entity is! Task || entity.meta.deletedAt != null) return null;
         return entity.data.title;
       },
+      // The projects of the task's category, for `get_category_projects`
+      // and to validate `set_task_project`. Unwired without a repository.
+      resolveCategoryProjects: switch (this.projectRepository) {
+        final ProjectRepository projects => () => loadTaskProjectOptions(
+          taskId: taskId,
+          journalDb: journalDb,
+          projectRepository: projects,
+          agentRepository: agentRepository,
+        ),
+        null => null,
+      },
       // Canonical triples of every live link touching this task, so an
       // already-existing relationship is suppressed instead of re-proposed.
       resolveExistingTaskRelations: () async {

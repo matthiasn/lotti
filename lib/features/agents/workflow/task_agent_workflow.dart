@@ -40,6 +40,7 @@ import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_policy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/task_project_options.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_wake_input_fingerprint.dart';

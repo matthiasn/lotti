@@ -270,6 +270,9 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.linkTask:
         return handleLinkTask(normalizedArgs, taskId);
 
+      case TaskAgentToolNames.setTaskProject:
+        return handleSetTaskProject(taskEntity, normalizedArgs);
+
       case TaskAgentToolNames.createTimeEntry:
         return handleCreateTimeEntry(normalizedArgs, taskId, effect: effect);
 

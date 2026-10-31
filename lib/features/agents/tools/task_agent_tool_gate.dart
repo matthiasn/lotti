@@ -17,6 +17,7 @@ class TaskAgentWakeFacts {
     this.hasOpenProposals = true,
     this.hasActiveAttentionClaims = true,
     this.hasNewerContentThanReport = true,
+    this.hasCategoryProjects = true,
   });
 
   /// Every fact permissive: the tool list is exactly today's.
@@ -53,6 +54,12 @@ class TaskAgentWakeFacts {
   /// timestamps cannot make. This only withholds `update_report` when literally
   /// nothing has arrived since it was written.
   final bool hasNewerContentThanReport;
+
+  /// The task's category has at least one project the task could belong to.
+  ///
+  /// Gates both project tools: with no project to read there is none to
+  /// propose, and offering `set_task_project` would invite an invented id.
+  final bool hasCategoryProjects;
 }
 
 /// The tools a wake with these [facts] may be offered.
@@ -84,6 +91,10 @@ Set<String> visibleTaskAgentToolNames(TaskAgentWakeFacts facts) {
     if (!facts.hasActiveAttentionClaims)
       TaskAgentToolNames.resolveAttentionRequest,
     if (!facts.hasNewerContentThanReport) TaskAgentToolNames.updateReport,
+    if (!facts.hasCategoryProjects) ...{
+      TaskAgentToolNames.getCategoryProjects,
+      TaskAgentToolNames.setTaskProject,
+    },
   };
 
   return {

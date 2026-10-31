@@ -480,6 +480,7 @@
   "agentSummarySetDueDate": "Imposta la scadenza al {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Imposta la stima su 1 minuto} other{Imposta la stima su {minutes} minuti}}",
   "agentSummarySetLanguage": "Imposta la lingua su \"{language}\"",
+  "agentSummarySetProject": "Sposta nel progetto \"{project}\"",
   "agentSummarySetPriority": "Imposta la priorità su {priority}",
   "agentSummarySetStatus": "Imposta lo stato su {status}",
   "agentSummarySetTitle": "Imposta il titolo su \"{title}\"",

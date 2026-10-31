@@ -1058,6 +1058,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentSummarySetProject(Object project) {
+    return 'Flyt til projektet \"$project\"';
+  }
+
+  @override
   String agentSummarySetPriority(Object priority) {
     return 'Sæt prioriteten til $priority';
   }

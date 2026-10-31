@@ -479,6 +479,7 @@
   "agentSummarySetDueDate": "Deadline instellen op {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Schatting instellen op 1 minuut} other{Schatting instellen op {minutes} minuten}}",
   "agentSummarySetLanguage": "Taal instellen op \"{language}\"",
+  "agentSummarySetProject": "Verplaatsen naar project \"{project}\"",
   "agentSummarySetPriority": "Prioriteit instellen op {priority}",
   "agentSummarySetStatus": "Status instellen op {status}",
   "agentSummarySetTitle": "Titel instellen op \"{title}\"",

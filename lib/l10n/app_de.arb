@@ -454,6 +454,7 @@
   "agentSummarySetDueDate": "Fälligkeitsdatum auf {date} setzen",
   "agentSummarySetEstimate": "{minutes, plural, =1{Schätzung auf 1 Minute setzen} other{Schätzung auf {minutes} Minuten setzen}}",
   "agentSummarySetLanguage": "Sprache auf „{language}“ setzen",
+  "agentSummarySetProject": "In Projekt „{project}“ verschieben",
   "agentSummarySetPriority": "Priorität auf {priority} setzen",
   "agentSummarySetStatus": "Status auf {status} setzen",
   "agentSummarySetTitle": "Titel auf „{title}“ setzen",

@@ -12,6 +12,7 @@ export 'package:lotti/features/agents/tools/task_checklist_tool_definitions.dart
 export 'package:lotti/features/agents/tools/task_field_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_link_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_planning_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_project_tool_definitions.dart';
 export 'package:lotti/features/agents/tools/task_time_tool_definitions.dart';
 
 /// Metadata describing a single tool that an agent can call.
@@ -132,6 +133,10 @@ abstract final class TaskAgentToolNames {
   // Task relationship tools.
   static const linkTask = 'link_task';
 
+  // Project assignment tools.
+  static const getCategoryProjects = 'get_category_projects';
+  static const setTaskProject = 'set_task_project';
+
   // Time tracking tools.
   static const createTimeEntry = 'create_time_entry';
   static const updateTimeEntry = 'update_time_entry';
@@ -178,6 +183,7 @@ abstract final class AgentToolRegistry {
     TaskAgentToolNames.setTaskLanguage,
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.linkTask,
+    TaskAgentToolNames.setTaskProject,
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,
     TaskAgentToolNames.updateTimeEntry,

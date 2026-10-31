@@ -1063,6 +1063,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummarySetProject(Object project) {
+    return 'Přesunout do projektu „$project“';
+  }
+
+  @override
   String agentSummarySetPriority(Object priority) {
     return 'Nastavit prioritu na $priority';
   }

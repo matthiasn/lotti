@@ -22,6 +22,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/github/context/pull_request_context_renderer.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -510,8 +511,12 @@ typedef TaskAgentWorkflowTestBench = ({
 /// the wake resolves its gating facts and stages `update_report` (see
 /// `docs/adr/0051-agenda-gated-tool-exposure.md`). Off by default, matching the
 /// shipped wake.
+///
+/// [projectRepository] wires the project tools; without one the wake has no
+/// projects to offer.
 TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
   bool narrowToolSurface = false,
+  ProjectRepository? projectRepository,
 }) {
   const agentId = taskAgentTestAgentId;
   final testTemplate = taskAgentTestTemplate;
@@ -691,6 +696,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     syncService: mockSyncService,
     templateService: mockTemplateService,
     pullRequestContextService: mockPullRequestContextService,
+    projectRepository: projectRepository,
     narrowToolSurface: narrowToolSurface,
     domainLogger: DomainLogger(loggingService: LoggingService())
       ..enabledDomains.add(LogDomain.agentWorkflow),

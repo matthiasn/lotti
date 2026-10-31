@@ -454,6 +454,7 @@
   "agentSummarySetDueDate": "Définir l’échéance au {date}",
   "agentSummarySetEstimate": "{minutes, plural, =1{Définir l’estimation sur 1 minute} other{Définir l’estimation sur {minutes} minutes}}",
   "agentSummarySetLanguage": "Définir la langue sur « {language} »",
+  "agentSummarySetProject": "Déplacer vers le projet « {project} »",
   "agentSummarySetPriority": "Définir la priorité sur {priority}",
   "agentSummarySetStatus": "Définir le statut sur {status}",
   "agentSummarySetTitle": "Définir le titre sur « {title} »",

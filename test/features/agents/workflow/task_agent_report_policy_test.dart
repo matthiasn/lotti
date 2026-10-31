@@ -26,6 +26,7 @@ void main() {
         TaskAgentToolNames.assignTaskLabel,
         TaskAgentToolNames.assignTaskLabels,
         TaskAgentToolNames.setTaskLanguage,
+        TaskAgentToolNames.setTaskProject,
       ];
       expect(
         TaskAgentReportPolicy.requiresReport(

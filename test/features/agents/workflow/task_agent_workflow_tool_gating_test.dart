@@ -13,6 +13,8 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart';
+import '../../projects/test_utils.dart' show makeTestProject;
 import 'task_agent_workflow_test_helpers.dart';
 
 /// Covers the agenda-gated tool surface of a wake: which tools
@@ -141,6 +143,8 @@ void main() {
     TaskAgentToolNames.assignTaskLabels,
     TaskAgentToolNames.retractSuggestions,
     TaskAgentToolNames.resolveAttentionRequest,
+    TaskAgentToolNames.getCategoryProjects,
+    TaskAgentToolNames.setTaskProject,
   ];
 
   group('TaskAgentWorkflow tool exposure', () {
@@ -212,7 +216,18 @@ void main() {
     test(
       'offers each gated tool once the task supplies its precondition',
       () async {
-        final bench = createTaskAgentWorkflowTestBench(narrowToolSurface: true);
+        final projectRepository = MockProjectRepository();
+        when(
+          () => projectRepository.getProjectsForCategory('cat-001'),
+        ).thenAnswer(
+          (_) async => [
+            makeTestProject(id: 'project-1', categoryId: 'cat-001'),
+          ],
+        );
+        final bench = createTaskAgentWorkflowTestBench(
+          narrowToolSurface: true,
+          projectRepository: projectRepository,
+        );
 
         final running = makeLinkedTimeEntry(
           id: 'running-entry',
@@ -308,6 +323,34 @@ void main() {
         final perTurn = await exposedToolNamesPerTurn(bench, task: task);
 
         expect(perTurn.first.handedOver, containsAll(gatedToolNames));
+      },
+    );
+
+    test(
+      'withholds the project tools when the category has no projects',
+      () async {
+        final projectRepository = MockProjectRepository();
+        when(
+          () => projectRepository.getProjectsForCategory('cat-001'),
+        ).thenAnswer((_) async => []);
+        final bench = createTaskAgentWorkflowTestBench(
+          narrowToolSurface: true,
+          projectRepository: projectRepository,
+        );
+
+        final perTurn = await exposedToolNamesPerTurn(bench);
+
+        expect(
+          perTurn.first.handedOver,
+          isNot(contains(TaskAgentToolNames.getCategoryProjects)),
+        );
+        expect(
+          perTurn.first.handedOver,
+          isNot(contains(TaskAgentToolNames.setTaskProject)),
+        );
+        verify(
+          () => projectRepository.getProjectsForCategory('cat-001'),
+        ).called(1);
       },
     );
 
