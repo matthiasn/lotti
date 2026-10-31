@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
@@ -234,6 +235,37 @@ void main() {
         buttonWithLabel(tester, 'Run').variant,
         DesignSystemButtonVariant.primary,
       );
+    });
+  });
+
+  group('confirm width', () {
+    double barWidth(WidgetTester tester) =>
+        tester.getSize(find.byType(DesignSystemModalActionBar)).width;
+    double buttonWidth(WidgetTester tester, String label) =>
+        tester.getSize(find.widgetWithText(DesignSystemButton, label)).width;
+
+    testWidgets('a destructive confirm keeps its own width at the trailing '
+        'edge rather than filling the bar', (tester) async {
+      await pumpAndOpen(tester, confirmLabel: 'Delete');
+
+      expect(buttonWidth(tester, 'Delete'), lessThan(barWidth(tester) / 2));
+      expect(
+        tester
+            .getTopRight(find.widgetWithText(DesignSystemButton, 'Delete'))
+            .dx,
+        moreOrLessEquals(
+          tester.getTopRight(find.byType(DesignSystemModalActionBar)).dx,
+          epsilon: 1,
+        ),
+      );
+    });
+
+    testWidgets('a non-destructive confirm fills the width Cancel leaves', (
+      tester,
+    ) async {
+      await pumpAndOpen(tester, confirmLabel: 'Run', isDestructive: false);
+
+      expect(buttonWidth(tester, 'Run'), greaterThan(barWidth(tester) / 2));
     });
   });
 }

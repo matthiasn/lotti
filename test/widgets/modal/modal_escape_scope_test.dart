@@ -17,7 +17,9 @@ Widget _scaffoldedField({required bool withScope, bool vetoPop = false}) {
   const scaffold = Scaffold(backgroundColor: Colors.transparent, body: field);
   // Around the scaffold, as a route that hosts a whole page wraps it: the
   // scope must not depend on sitting inside every scaffold.
-  final content = withScope ? const ModalEscapeScope(child: scaffold) : scaffold;
+  final content = withScope
+      ? const ModalEscapeScope(child: scaffold)
+      : scaffold;
   return vetoPop ? PopScope<Object?>(canPop: false, child: content) : content;
 }
 

@@ -82,6 +82,12 @@ Future<bool> showConfirmationModal({
 
           // Action Buttons
           DesignSystemModalActionBar(
+            // A destructive action keeps its own width at the trailing edge,
+            // as in ConfirmationProgressModal: a delete never fills the bar
+            // as if it were the inviting choice.
+            layout: isDestructive
+                ? DesignSystemModalActionBarLayout.compactPrimary
+                : DesignSystemModalActionBarLayout.dominantPrimary,
             secondary: [
               DesignSystemButton(
                 onPressed: () {
