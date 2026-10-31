@@ -14178,6 +14178,12 @@ abstract class AppLocalizations {
   /// **'{achieved} / 6 weeks'**
   String goalReliabilityWeeks(int achieved);
 
+  /// No description provided for @goalReportReflectionAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'About your check-ins on {dates}'**
+  String goalReportReflectionAnswers(String dates);
+
   /// No description provided for @goalReportSectionChange.
   ///
   /// In en, this message translates to:

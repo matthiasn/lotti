@@ -44,11 +44,7 @@ void main() {
         standingReport: standingReport,
       );
 
-      expect(reflection.shown, [
-        'monday:digest-monday',
-        'tuesday:digest-tuesday',
-        'legacy:summary-legacy',
-      ]);
+      expect(reflection.shownByEntryId.keys, ['monday', 'tuesday', 'legacy']);
       expect(reflection.unreflectedEntryIds, {'monday', 'tuesday', 'legacy'});
     }
   });
@@ -62,7 +58,7 @@ void main() {
       answeredEntryIds: {'tuesday'},
     );
 
-    expect(reflection.shown, contains('tuesday:digest-tuesday'));
+    expect(reflection.shownByEntryId.keys, contains('tuesday'));
     expect(reflection.unreflectedEntryIds, {'monday', 'legacy'});
   });
 
@@ -85,7 +81,7 @@ void main() {
     );
 
     expect(reflection.unreflectedEntryIds, {'tuesday'});
-    expect(reflection.shown, hasLength(3));
+    expect(reflection.shownByEntryId, hasLength(3));
   });
 
   test('two check-ins that say the same thing word for word are two things '
@@ -134,6 +130,44 @@ void main() {
     expect(marked.first, same(userVoice.first));
   });
 
+  group('what a report records', () {
+    // Monday was answered before; Tuesday and the legacy entry are new.
+    final reflection = goalCheckInReflection(
+      userVoice: userVoice,
+      summaries: summaries,
+      standingReport: makeTestReport(
+        provenance: const {
+          GoalReportProvenanceKeys.checkInsReflected: ['monday:digest-monday'],
+        },
+      ),
+    );
+
+    test('a new check-in the reflection does not name stays new, so the next '
+        'report is held to it', () {
+      expect(reflection.recordedFor(['tuesday']), [
+        'monday:digest-monday',
+        'tuesday:digest-tuesday',
+      ]);
+      expect(reflection.recordedFor(const []), ['monday:digest-monday']);
+    });
+
+    test('naming every new one records everything the wake showed', () {
+      expect(reflection.recordedFor(['legacy', 'tuesday', 'monday']), [
+        'monday:digest-monday',
+        'tuesday:digest-tuesday',
+        'legacy:summary-legacy',
+      ]);
+    });
+
+    test('the card is given the recording times of the named check-ins it '
+        'showed, oldest first — never of an id it did not show', () {
+      expect(reflection.answeredAt(['legacy', 'ghost', 'monday']), [
+        monday.recordedAt,
+        legacy.recordedAt,
+      ]);
+    });
+  });
+
   test(
     'a wake with no verbatim check-ins records nothing and asks nothing',
     () {
@@ -143,7 +177,7 @@ void main() {
         standingReport: null,
       );
 
-      expect(reflection.shown, isEmpty);
+      expect(reflection.shownByEntryId, isEmpty);
       expect(reflection.unreflectedEntryIds, isEmpty);
       // An entry whose summary is no longer live is not shown either.
       expect(
@@ -151,7 +185,7 @@ void main() {
           userVoice: [goalUserVoiceEntry(monday)],
           summaries: const [],
           standingReport: null,
-        ).shown,
+        ).shownByEntryId,
         isEmpty,
       );
     },

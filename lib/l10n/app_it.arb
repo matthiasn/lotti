@@ -3658,6 +3658,14 @@
   "goalRecordOfferRecordOne": "Registrare la voce",
   "goalRecordOfferSelectRow": "Seleziona riga",
   "goalReliabilityWeeks": "{achieved} / 6 settimane",
+  "goalReportReflectionAnswers": "Sui tuoi check-in del {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Ultimo cambiamento",
   "goalReportSectionCoverage": "Copertura dei dati",
   "goalReportSectionNext": "Prossimi passi",

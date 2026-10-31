@@ -317,7 +317,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
     required DateTime reference,
     required bool overdueEscalation,
     required String? userMessage,
-    bool requireReflection = false,
+    Set<String> unreflectedCheckInIds = const {},
   }) {
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
@@ -352,7 +352,7 @@ extension _GoalWakePhases on GoalAgentWorkflow {
       ),
       memorySearcher: _memorySearch.forAgent(agentId),
       userMessage: userMessage,
-      requireReflection: requireReflection,
+      unreflectedCheckInIds: unreflectedCheckInIds,
     );
   }
 

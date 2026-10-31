@@ -470,7 +470,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reference: reference,
       overdueEscalation: overdueEscalation,
       userMessage: pendingUserMessage,
-      requireReflection: unreflected > 0,
+      unreflectedCheckInIds: pendingUserMessage == null
+          ? reflection.unreflectedEntryIds
+          : const {},
     );
 
     final allTools = [
@@ -670,7 +672,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
               ? null
               : 'chat:$chatMessageId',
           replyToMessageId: chatMessageId,
-          checkInsReflected: reflection.shown,
+          checkInsReflected: reflection.recordedFor(
+            strategy.reportReflectedCheckIns,
+          ),
+          checkInsAnswered: reflection.answeredAt(
+            strategy.reportReflectedCheckIns,
+          ),
         );
         attributionFinalized = persistence.attributionFinalized;
         reportHeadAdvanced = persistence.reportHeadAdvanced;
@@ -970,6 +977,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     String? adCreationDiscriminator,
     String? replyToMessageId,
     List<String> checkInsReflected = const [],
+    List<DateTime> checkInsAnswered = const [],
   }) => _persistOutputs(
     agentId: agentId,
     runKey: runKey,
@@ -984,5 +992,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
     adCreationDiscriminator: adCreationDiscriminator,
     replyToMessageId: replyToMessageId,
     checkInsReflected: checkInsReflected,
+    checkInsAnswered: checkInsAnswered,
   );
 }

@@ -102,6 +102,23 @@ class _GoalReportCardState extends State<_GoalReportCard>
               color: tokens.colors.text.highEmphasis,
             ),
           ),
+          // Which of their words it answers, so "From your check-ins"
+          // is checkable rather than taken on trust.
+          if (_answeredOf(report) case final answered?) ...[
+            Text(
+              context.messages.goalReportReflectionAnswers(
+                answered
+                    .map(
+                      DateFormat.MMMd(context.messages.localeName).format,
+                    )
+                    .join(', '),
+              ),
+              key: const ValueKey('goal-report-reflection-answers'),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
           SizedBox(height: tokens.spacing.step1),
           SelectionArea(
             child: AgentMarkdownView(
@@ -382,6 +399,21 @@ String? _reflectionOf(Map<String, Object?>? sections) {
     return text.trim();
   }
   return null;
+}
+
+/// The local dates of the check-ins the report's reflection says it answers,
+/// oldest first and one per day, or null when it names none — a report from
+/// before the record existed, or one whose reflection answered no check-in.
+List<DateTime>? _answeredOf(AgentReportEntity? report) {
+  final raw = report?.provenance[GoalReportProvenanceKeys.checkInsAnswered];
+  if (raw is! List) return null;
+  final days = <DateTime>{
+    for (final value in raw)
+      if (value is String)
+        if (DateTime.tryParse(value)?.toLocal() case final at?)
+          DateTime(at.year, at.month, at.day),
+  };
+  return days.isEmpty ? null : (days.toList()..sort());
 }
 
 /// The structured sections a report carries, or null when it has none —

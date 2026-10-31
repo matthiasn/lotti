@@ -130,11 +130,13 @@ Asking the agent in chat to change its report — shorter, sectioned, less
 repetitive — rewrites the standing report itself rather than only answering in
 chat, and an explicit refusal to change it is respected.
 The report answers what the user said: a "From your check-ins" reflection
-sits with the summary, and a wake that has check-ins the report never
-answered must fill it. For a goal whose check-ins are the point — a journal,
-whether measured by check-in time or ticked off as a habit — they are
-compacted for what they say rather than that they happened, and a transcript
-landing after its recording refreshes the report minutes later (ADR 0143).
+sits with the summary, names the days of the check-ins it answers, and a
+wake that has check-ins the report never answered must answer at least one
+of them by name; the rest stay waiting for the next report (ADR 0152). For
+a goal whose check-ins are the point — a journal, whether measured by
+check-in time or ticked off as a habit — they are compacted for what they
+say rather than that they happened, and a transcript landing after its
+recording refreshes the report minutes later (ADR 0143).
 The goal form's "I'll answer what you tell me" switch says which goals those
 are; left alone, it follows whether the goal measures check-in time
 (ADR 0151).

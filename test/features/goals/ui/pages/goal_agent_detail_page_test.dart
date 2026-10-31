@@ -1612,6 +1612,15 @@ void main() {
                   GoalReportSectionKeys.coverage: '',
                   GoalReportSectionKeys.nextActions: ['Walk on Saturday.'],
                 },
+                // Two check-ins on one day name that day once; junk is
+                // skipped rather than breaking the caption.
+                GoalReportProvenanceKeys.checkInsAnswered: [
+                  '2026-08-09T12:00:00.000Z',
+                  '2026-08-08T12:00:00.000Z',
+                  '2026-08-09T13:00:00.000Z',
+                  'not a date',
+                  42,
+                ],
               },
             )
             as AgentReportEntity;
@@ -1715,6 +1724,21 @@ void main() {
     expect(tester.widget<Text>(reflectionHeading).data, 'From your check-ins');
     final reflection = find.textContaining('stairs feel easier on cool');
     expect(reflection, findsOneWidget);
+    // Which check-ins it answers, oldest first, between heading and text.
+    final answers = find.byKey(
+      const ValueKey('goal-report-reflection-answers'),
+    );
+    expect(
+      tester.widget<Text>(answers).data,
+      'About your check-ins on Aug 8, Aug 9',
+    );
+    expect(
+      tester.getTopLeft(answers).dy,
+      allOf(
+        greaterThan(tester.getTopLeft(reflectionHeading).dy),
+        lessThan(tester.getTopLeft(reflection).dy),
+      ),
+    );
     expect(
       tester.getTopLeft(find.textContaining('Three walks')).dy,
       lessThan(tester.getTopLeft(reflectionHeading).dy),

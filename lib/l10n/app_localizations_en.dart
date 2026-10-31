@@ -8440,6 +8440,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'About your check-ins on $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Latest change';
 
   @override

@@ -8549,6 +8549,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Sobre os teus registos de $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Última alteração';
 
   @override

@@ -8494,6 +8494,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Over je check-ins van $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Laatste verandering';
 
   @override

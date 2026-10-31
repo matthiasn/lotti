@@ -8468,6 +8468,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalReportReflectionAnswers(String dates) {
+    return 'Om dine check-ins fra $dates';
+  }
+
+  @override
   String get goalReportSectionChange => 'Seneste ændring';
 
   @override

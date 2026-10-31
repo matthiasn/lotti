@@ -3313,6 +3313,14 @@
   "goalRecordOfferRecordOne": "Înregistrare intrare",
   "goalRecordOfferSelectRow": "Selectați rândul",
   "goalReliabilityWeeks": "{achieved} / 6 săptămâni",
+  "goalReportReflectionAnswers": "Despre raportările dumneavoastră din {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Ultima schimbare",
   "goalReportSectionCoverage": "Acoperirea datelor",
   "goalReportSectionNext": "Pașii următori",

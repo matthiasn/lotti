@@ -5447,6 +5447,14 @@
       }
     }
   },
+  "goalReportReflectionAnswers": "About your check-ins on {dates}",
+  "@goalReportReflectionAnswers": {
+    "placeholders": {
+      "dates": {
+        "type": "String"
+      }
+    }
+  },
   "goalReportSectionChange": "Latest change",
   "goalReportSectionCoverage": "Data coverage",
   "goalReportSectionNext": "What's next",
