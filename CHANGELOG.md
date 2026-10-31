@@ -4,6 +4,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.74]
+
+### Added
+
+- **Many chats with the companion.** Start a new chat for a new subject and
+  come back to an earlier one: the list groups them by day, each with what she
+  last said, and lets you search, rename, archive or delete them. Each chat
+  keeps its own context, and the inbox still gathers what waits on you from
+  all of them. Your earlier messages are kept as one chat.
+
+### Changed
+
+- **Talking to the companion leads with her.** A chat opens on her, her
+  answers read as plain prose, and one large button lets you talk: tap to
+  speak, and the button stretches into a bar showing your voice as you go; tap
+  it again to send what you said. Typing is a tap away and stays your choice
+  for the session.
+- **Goal and People check-ins look alike.** A goal's check-ins use the same
+  timeline as a person's: the same row icons, one line saying when and what,
+  and day headings in sentence case. While the words are on their way, every
+  recording shows a spinner with *Transcribing…*; when they are not coming, it
+  says *Not transcribed* or *Transcription failed* with one *Retry*. Typed and
+  spoken words share one text size and fold at three lines with *Show more*. A
+  recording in either timeline shows *Play audio*; tapping it opens the
+  waveform player in place while it plays.
+- **Goals have a category.** You choose it on the goal's last step, as for a
+  person. The goal's check-ins and recordings are filed in it.
+- **Changing a person's or a goal's category moves everything with them.**
+  This covers check-ins, recordings, notes, photos and a goal's charter. Tasks
+  linked to them keep their own category.
+- **New agents for people and goals start on the inference profile their
+  category names,** as a task's agent does. You can change it in the agent's
+  setup.
+- **Mistral is now the recommended AI provider.** It leads the provider list
+  in onboarding and is pre-selected in AI Settings. Melious.ai and the other
+  providers are still one tap away.
+- **Connecting Mistral now sets you up with its current models.** The Mistral
+  (EU) profile thinks and reads images with DeepSeek V4.1 Flash, which Mistral
+  hosts. It takes the demanding work to Mistral Large 4, transcribes with
+  Voxtral Mini Transcribe 3, and reads aloud with Voxtral TTS 3. Setup used to
+  install Mistral Small 3.1, Magistral Medium and Voxtral Mini Transcribe 2,
+  and never installed the read-aloud model, so reading aloud through Mistral
+  did not work until you added that model yourself. An existing Mistral
+  profile keeps the models you already use.
+- **Every "are you sure?" question now looks the same.** Deleting a label, a
+  category, a dictionary term, a checklist, a goal, a day plan, a recording,
+  an AI response, an agent, a soul or a template, rolling back a template or a
+  soul, and the backfill recovery confirmations all use the app's standard
+  confirmation sheet. It is a bottom sheet on a phone and a dialog on a wide
+  window, and deletes are marked as destructive throughout. Deleting a
+  checklist used to look like a harmless action.
+
+### Fixed
+
+- **The companion's lips keep pace with her voice.** Her mouth used to drift
+  behind what she was saying, closing for a comma the voice had already left
+  and then shaping the wrong words, by a third of a second within one short
+  line and more over a long summary. She now listens to the recording itself —
+  where it hisses, hums, opens up or goes quiet — and lines each sound of the
+  words up with it: her mouth waits wherever the voice actually pauses, starts
+  each phrase the moment the voice does, and an "s" hisses when the voice
+  does. Words ending in a silent e, like "have" or "time", now end on the
+  right mouth shape. It runs entirely on the device, the same on every
+  platform, with the cloud and the on-device voice alike.
+- **Read aloud no longer makes odd noises at emoji.** The cloud voice turned
+  an emoji in the text into a stray, garbled sound; emoji are now left out of
+  what either voice speaks. The text on screen keeps them.
+- **Escape now closes a sheet even while you are typing in it.** Most sheets
+  and pickers ignored Escape as soon as a text field or button inside them had
+  focus, so the key worked only on a sheet you had not touched yet. Escape now
+  closes any modal that a click outside would close, including the dashboard
+  editor panel, the onboarding welcome and the demo AI setup. The mobile
+  navigation drawer and the Daily OS check-in spotlight close on Escape too. A
+  form with unsaved changes still asks first.
+- **A person's old recordings no longer claim to be transcribing forever.**
+  Ten minutes after it was recorded, a voice note or spoken check-in that
+  nothing transcribed says *Not transcribed*, as on goals, and offers *Retry*.
+- **"Copy category default" in a person's or a goal's agent setup now copies
+  the category's profile.** It used to turn the agent's AI off.
+- **Screen readers can reach the actions inside timeline rows,** such as play,
+  retry and show more.
+
 ## [1.1.73]
 
 ### Added
