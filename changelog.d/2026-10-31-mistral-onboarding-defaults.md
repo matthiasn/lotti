@@ -1,4 +1,7 @@
 ### Changed
+- **Mistral is now the recommended AI provider.** It leads the provider list
+  in onboarding and is pre-selected in AI Settings. Melious.ai and the other
+  providers are still one tap away.
 - **Connecting Mistral now sets you up with its current models.** The Mistral
   (EU) profile thinks and reads images with DeepSeek V4.1 Flash, which Mistral
   hosts. It takes the demanding work to Mistral Large 4, transcribes with Voxtral
