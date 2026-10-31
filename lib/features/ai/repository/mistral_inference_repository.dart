@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/features/ai/repository/mistral_error_body.dart';
 import 'package:lotti/features/ai/repository/mistral_stream_content.dart';
 import 'package:lotti/features/ai/repository/model_catalog_mapping.dart';
 import 'package:lotti/features/ai/repository/temporary_mp3_chat_audio_transcriber.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/speech_synthesis_model_id.dart';
 import 'package:lotti/features/ai/util/temporary_mp3_encoder.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/image_format.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -413,31 +415,13 @@ class MistralInferenceRepository {
     clockSource: _clock,
   );
 
-  /// Generate text using the Mistral API with streaming support.
+  /// Streams a reply to [prompt], parsing Mistral's own stream format: content
+  /// as a string or a list of chunks, and tool calls.
   ///
-  /// This method handles Mistral's specific streaming format, including:
-  /// - Content that may be returned as an array instead of a string
-  /// - Tool calls in streaming responses
-  ///
-  /// Args:
-  ///   prompt: The text prompt to send
-  ///   model: The model identifier (e.g., 'mistral-small-2501')
-  ///   baseUrl: The base URL for the API
-  ///   apiKey: The API key for authentication
-  ///   systemMessage: Optional system message for context
-  ///   temperature: Sampling temperature
-  ///   maxCompletionTokens: Maximum tokens for completion
-  ///   tools: Optional list of tools for function calling
-  ///   toolChoice: Optional tool-selection override (`auto`, required, none,
-  ///     or a specific function).
-  ///   reasoningEffort: The caller's effort for this request; wins over
-  ///     [thinkingMode].
-  ///   thinkingMode: The model row's thinking setting. Both are sent as
-  ///     `reasoning_effort` only for adjustable-reasoning models, see
-  ///     [reasoningEffortWireValue].
-  ///
-  /// Returns:
-  ///   Stream of chat completion responses
+  /// [toolChoice] overrides tool selection (`auto`, required, none, or one
+  /// function). [reasoningEffort], the caller's effort for this request, wins
+  /// over the row's [thinkingMode]; either is sent as `reasoning_effort` only
+  /// for adjustable-reasoning models, see [reasoningEffortWireValue].
   Stream<CreateChatCompletionStreamResponse> generateText({
     required String prompt,
     required String model,
@@ -504,33 +488,83 @@ class MistralInferenceRepository {
     );
   }
 
+  /// Analyzes base64 [images] against [prompt] with a Mistral vision model.
+  ///
+  /// Kept off openai_dart: vision models such as Mistral Large 4 stream
+  /// `delta.content` as a list of chunks, which the SDK's `String?` cast
+  /// rejects on the first chunk. [_generate] parses either shape.
+  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+    required String prompt,
+    required List<String> images,
+    required String model,
+    required String baseUrl,
+    required String apiKey,
+    String? systemMessage,
+    double? temperature,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    GeminiThinkingMode? thinkingMode,
+  }) => _generate(
+    messages: [
+      if (systemMessage != null) {'role': 'system', 'content': systemMessage},
+      {
+        'role': 'user',
+        'content': [
+          {'type': 'text', 'text': prompt},
+          for (final image in images)
+            {
+              'type': 'image_url',
+              'image_url': {'url': imageDataUri(image)},
+            },
+        ],
+      },
+    ],
+    model: model,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    temperature: temperature,
+    maxCompletionTokens: maxCompletionTokens,
+    tools: tools,
+    toolChoice: toolChoice,
+    reasoningEffort: reasoningEffortWireValue(
+      model: model,
+      thinkingMode: thinkingMode,
+    ),
+  );
+
   /// The `reasoning_effort` value to send for [model], or null to omit it.
   ///
   /// Only [isMistralAdjustableReasoningModelId] models take the parameter, and
-  /// they accept just `none` and `high`; sending it elsewhere risks a
-  /// rejected request. [requested] (a caller asking for a cheap background
-  /// call, say) wins over the row's [thinkingMode]. Minimal and low map to
-  /// `none`, medium and high to `high`.
+  /// any value a model does not list is a 400. Graded models
+  /// ([isMistralGradedReasoningModelId]) get `low`, `medium` or `high`, with
+  /// minimal raised to `low`; the others take just `none` (minimal, low) and
+  /// `high` (medium, high). [requested] (a caller asking for a cheap
+  /// background call, say) wins over the row's [thinkingMode].
   static String? reasoningEffortWireValue({
     required String model,
     ReasoningEffort? requested,
     GeminiThinkingMode? thinkingMode,
   }) {
     if (!isMistralAdjustableReasoningModelId(model)) return null;
-    final thinks = switch (requested) {
-      ReasoningEffort.minimal || ReasoningEffort.low => false,
-      ReasoningEffort.medium || ReasoningEffort.high => true,
+    final level = switch (requested) {
+      ReasoningEffort.minimal => 0,
+      ReasoningEffort.low => 1,
+      ReasoningEffort.medium => 2,
+      ReasoningEffort.high => 3,
       null => switch (thinkingMode) {
-        GeminiThinkingMode.minimal || GeminiThinkingMode.low => false,
-        GeminiThinkingMode.medium || GeminiThinkingMode.high => true,
+        GeminiThinkingMode.minimal => 0,
+        GeminiThinkingMode.low => 1,
+        GeminiThinkingMode.medium => 2,
+        GeminiThinkingMode.high => 3,
         null => null,
       },
     };
-    return switch (thinks) {
-      true => 'high',
-      false => 'none',
-      null => null,
-    };
+    if (level == null) return null;
+    if (isMistralGradedReasoningModelId(model)) {
+      return const ['low', 'low', 'medium', 'high'][level];
+    }
+    return level >= 2 ? 'high' : 'none';
   }
 
   /// Convert openai_dart messages to plain maps for manual serialization.
@@ -695,16 +729,16 @@ class MistralInferenceRepository {
 
       if (streamedResponse.statusCode != 200) {
         final body = await streamedResponse.stream.bytesToString();
+        final fields = mistralErrorFields(body);
         _domainLogger.error(
           LogDomain.ai,
           'Mistral API error: HTTP ${streamedResponse.statusCode}',
           subDomain: 'MistralInferenceRepository',
-          message:
-              'body: ${body.length} chars, not logged — it can echo the '
-              'prompt',
+          message: mistralErrorLogMessage(body, fields),
         );
         throw MistralInferenceException(
-          'Mistral API error (HTTP ${streamedResponse.statusCode})',
+          'Mistral API error (HTTP ${streamedResponse.statusCode}'
+          '${fields == null ? '' : ', $fields'})',
         );
       }
 

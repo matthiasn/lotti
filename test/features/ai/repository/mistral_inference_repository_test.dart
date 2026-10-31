@@ -1162,6 +1162,262 @@ void main() {
       });
     });
 
+    group('generateWithImages', () {
+      const model = 'mistral-large-4-0';
+      const baseUrl = 'https://api.mistral.ai/v1';
+      const apiKey = 'test-api-key';
+      // PNG magic bytes, so the data URI must be labelled image/png.
+      final pngBase64 = base64Encode(
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0],
+      );
+
+      /// A stream chunk shaped the way Mistral Large 4 sends vision answers:
+      /// `delta.content` as a list of content parts, not a string.
+      Map<String, dynamic> listContentEvent(List<Map<String, dynamic>> parts) {
+        final event = createSseChunkEvent(model: model, role: 'assistant');
+        final choice = (event['choices'] as List<dynamic>).first as Map;
+        (choice['delta'] as Map)['content'] = parts;
+        return event;
+      }
+
+      test(
+        'openai_dart cannot parse the list-shaped delta, which is why the '
+        'image path must not reach it for Mistral',
+        () {
+          final event = listContentEvent([
+            {'type': 'text', 'text': 'A penguin'},
+          ]);
+          expect(
+            () => CreateChatCompletionStreamResponse.fromJson(event),
+            throwsA(isA<TypeError>()),
+          );
+        },
+      );
+
+      test('flattens list-shaped content parts into plain text', () async {
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(
+            events: [
+              listContentEvent([
+                {'type': 'text', 'text': 'A penguin '},
+                {'type': 'text', 'text': 'on ice.'},
+              ]),
+              listContentEvent([
+                {'type': 'text', 'text': ' It waddles.'},
+              ]),
+              createSseFinalEvent(model: model),
+            ],
+          ),
+        );
+
+        final results = await repository
+            .generateWithImages(
+              prompt: 'Describe the image',
+              images: [pngBase64],
+              model: model,
+              baseUrl: baseUrl,
+              apiKey: apiKey,
+            )
+            .toList();
+
+        final text = results
+            .map((r) => r.choices?.first.delta?.content ?? '')
+            .join();
+        expect(text, 'A penguin on ice. It waddles.');
+        expect(results.last.choices?.first.finishReason, isNotNull);
+      });
+
+      test(
+        'sends system message, text and data-URI image parts, tools and the '
+        "row's thinking mode",
+        () async {
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(
+              events: [
+                createSseChunkEvent(content: 'ok'),
+                createSseFinalEvent(),
+              ],
+            ),
+          );
+
+          await repository
+              .generateWithImages(
+                prompt: 'Describe the image',
+                images: [pngBase64, pngBase64],
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                systemMessage: 'You analyze images.',
+                temperature: 0.3,
+                maxCompletionTokens: 512,
+                tools: [
+                  const ChatCompletionTool(
+                    type: ChatCompletionToolType.function,
+                    function: FunctionObject(name: 'publish_entry_summary'),
+                  ),
+                ],
+                toolChoice: const ChatCompletionToolChoiceOption.mode(
+                  ChatCompletionToolChoiceMode.required,
+                ),
+                thinkingMode: GeminiThinkingMode.high,
+              )
+              .toList();
+
+          final request =
+              verify(() => mockHttpClient.send(captureAny())).captured.single
+                  as http.Request;
+          expect(request.url.toString(), '$baseUrl/chat/completions');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['messages'], [
+            {'role': 'system', 'content': 'You analyze images.'},
+            {
+              'role': 'user',
+              'content': [
+                {'type': 'text', 'text': 'Describe the image'},
+                for (var i = 0; i < 2; i++)
+                  {
+                    'type': 'image_url',
+                    'image_url': {'url': 'data:image/png;base64,$pngBase64'},
+                  },
+              ],
+            },
+          ]);
+          expect(body['model'], model);
+          expect(body['stream'], isTrue);
+          expect(body['temperature'], 0.3);
+          expect(body['max_tokens'], 512);
+          expect(
+            (body['tools'] as List<dynamic>).single,
+            containsPair(
+              'function',
+              containsPair('name', 'publish_entry_summary'),
+            ),
+          );
+          expect(body['tool_choice'], 'any');
+          expect(body['reasoning_effort'], 'high');
+        },
+      );
+
+      test(
+        'omits reasoning_effort for models without adjustable reasoning',
+        () async {
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(
+              events: [createSseFinalEvent()],
+            ),
+          );
+
+          await repository
+              .generateWithImages(
+                prompt: 'Describe the image',
+                images: [pngBase64],
+                model: 'pixtral-large-latest',
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                thinkingMode: GeminiThinkingMode.high,
+              )
+              .toList();
+
+          final request =
+              verify(() => mockHttpClient.send(captureAny())).captured.single
+                  as http.Request;
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body.containsKey('reasoning_effort'), isFalse);
+          expect(body.containsKey('system'), isFalse);
+          expect(
+            (body['messages'] as List<dynamic>).single,
+            containsPair('role', 'user'),
+          );
+        },
+      );
+
+      test(
+        "names Mistral's error type and code in the exception and the log, "
+        'never its message',
+        () async {
+          // Mistral's answer to `reasoning_effort: none` for Large 4.
+          final body = jsonEncode({
+            'object': 'error',
+            'message': 'reasoning_effort none is not supported for this model',
+            'type': 'invalid_request_invalid_args',
+            'param': null,
+            'code': '3051',
+            'raw_status_code': 400,
+          });
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => http.StreamedResponse(
+              Stream.value(utf8.encode(body)),
+              400,
+            ),
+          );
+
+          await expectLater(
+            repository
+                .generateWithImages(
+                  prompt: 'Describe the image',
+                  images: [pngBase64],
+                  model: model,
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                )
+                .toList(),
+            throwsA(
+              isA<MistralInferenceException>().having(
+                (e) => e.message,
+                'message',
+                'Mistral API error (HTTP 400, '
+                    'type: invalid_request_invalid_args, code: 3051)',
+              ),
+            ),
+          );
+          final logged =
+              verify(
+                    () => mockDomainLogger.error(
+                      LogDomain.ai,
+                      'Mistral API error: HTTP 400',
+                      subDomain: 'MistralInferenceRepository',
+                      message: captureAny(named: 'message'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(
+            logged,
+            startsWith('type: invalid_request_invalid_args, code: 3051; '),
+          );
+          expect(logged, isNot(contains('not supported')));
+        },
+      );
+
+      test('surfaces an HTTP error as a MistralInferenceException', () async {
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(
+            events: const [],
+            statusCode: 400,
+            includeDone: false,
+          ),
+        );
+
+        await expectLater(
+          repository
+              .generateWithImages(
+                prompt: 'Describe the image',
+                images: [pngBase64],
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+              )
+              .toList(),
+          throwsA(
+            isA<MistralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('HTTP 400'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('generateTextWithMessages', () {
       const model = 'magistral-medium-2509';
       const baseUrl = 'https://api.mistral.ai/v1';
@@ -2733,6 +2989,30 @@ data: not valid json 5
       expect(wire(null, GeminiThinkingMode.high), 'high');
       expect(wire(null), isNull);
     });
+
+    test(
+      'sends graded low/medium/high to Large 4, which rejects none and '
+      'minimal with a 400',
+      () {
+        String? wire(ReasoningEffort? r, [GeminiThinkingMode? m]) =>
+            MistralInferenceRepository.reasoningEffortWireValue(
+              model: ' Mistral-Large-4-0 ',
+              requested: r,
+              thinkingMode: m,
+            );
+        expect(wire(ReasoningEffort.minimal), 'low');
+        expect(wire(ReasoningEffort.low), 'low');
+        expect(wire(ReasoningEffort.medium), 'medium');
+        expect(wire(ReasoningEffort.high), 'high');
+        expect(wire(null, GeminiThinkingMode.minimal), 'low');
+        expect(wire(null, GeminiThinkingMode.low), 'low');
+        expect(wire(null, GeminiThinkingMode.medium), 'medium');
+        expect(wire(null, GeminiThinkingMode.high), 'high');
+        // The caller's effort wins over the row's thinking mode.
+        expect(wire(ReasoningEffort.low, GeminiThinkingMode.high), 'low');
+        expect(wire(null), isNull);
+      },
+    );
 
     test('is null for a model without adjustable reasoning', () {
       expect(

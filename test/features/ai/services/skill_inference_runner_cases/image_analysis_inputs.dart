@@ -143,6 +143,244 @@ extension _ImageAnalysisInputCases on _SkillInferenceTestSetup {
   }
 
   void registerImageAnalysisInputsAndOverrides() {
+    test('drops <think> reasoning from the stored analysis', () async {
+      await createStubImageFile();
+      when(
+        () => mockAiInputRepo.getEntity('img-1'),
+      ).thenAnswer((_) async => makeImageEntity());
+      when(
+        () => mockTaskSummaryResolver.resolve(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockCloudRepo.generateWithImages(
+          any(),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          images: any(named: 'images'),
+          provider: any(named: 'provider'),
+          systemMessage: any(named: 'systemMessage'),
+          impactCollector: any(named: 'impactCollector'),
+        ),
+      ).thenAnswer(
+        // How MistralStreamContent hands over a reasoning model's trace.
+        (_) => Stream.fromIterable([
+          makeStreamChunk('<think>Orange sky, low sun'),
+          makeStreamChunk(': a sunset.</think>'),
+          makeStreamChunk('A photo of a sunset'),
+        ]),
+      );
+      when(
+        () => mockJournalRepo.updateJournalEntity(any()),
+      ).thenAnswer((_) async => true);
+      stubLoggingEvent();
+
+      await runner.runImageAnalysis(
+        imageEntryId: 'img-1',
+        automationResult: makeImageAnalysisResult(),
+      );
+
+      final updated =
+          verify(
+                () => mockJournalRepo.updateJournalEntity(captureAny()),
+              ).captured.single
+              as JournalImage;
+      expect(updated.entryText?.plainText, 'A photo of a sunset');
+    });
+
+    group('thinking mode sent with the image', () {
+      final cases =
+          <
+            ({
+              String name,
+              InferenceProviderType type,
+              String modelId,
+              GeminiThinkingMode saved,
+              GeminiThinkingMode? expected,
+            })
+          >[
+            (
+              name: "Mistral Large 4 sends the row's Think before answering",
+              type: InferenceProviderType.mistral,
+              modelId: 'mistral-large-4-0',
+              saved: GeminiThinkingMode.high,
+              expected: GeminiThinkingMode.high,
+            ),
+            (
+              name:
+                  'an untouched Mistral Large 4 row sends its off (low) state',
+              type: InferenceProviderType.mistral,
+              modelId: 'mistral-large-4-0',
+              saved: GeminiThinkingMode.low,
+              expected: GeminiThinkingMode.low,
+            ),
+            (
+              name: 'a Mistral model without adjustable reasoning gets none',
+              type: InferenceProviderType.mistral,
+              modelId: 'pixtral-large-latest',
+              saved: GeminiThinkingMode.high,
+              expected: null,
+            ),
+            (
+              name: "Gemini 3 sends the row's saved mode",
+              type: InferenceProviderType.gemini,
+              modelId: 'models/gemini-3-flash-preview',
+              saved: GeminiThinkingMode.medium,
+              expected: GeminiThinkingMode.medium,
+            ),
+          ];
+
+      for (final c in cases) {
+        test(c.name, () async {
+          await createStubImageFile();
+          when(
+            () => mockAiInputRepo.getEntity('img-1'),
+          ).thenAnswer((_) async => makeImageEntity());
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer((_) => Stream.fromIterable([]));
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: AutomationResult(
+              handled: true,
+              resolvedProfile: ResolvedProfile(
+                thinkingModelId: 'models/gemini-3-flash-preview',
+                thinkingProvider: testInferenceProvider(),
+                imageRecognitionModelId: c.modelId,
+                imageRecognitionProvider: testInferenceProvider(
+                  id: 'p-vision',
+                  inferenceProviderType: c.type,
+                ),
+                imageRecognitionModel:
+                    AiConfig.model(
+                          id: 'vision-row',
+                          name: 'Vision',
+                          providerModelId: c.modelId,
+                          inferenceProviderId: 'p-vision',
+                          createdAt: DateTime(2024),
+                          inputModalities: const [
+                            Modality.text,
+                            Modality.image,
+                          ],
+                          outputModalities: const [Modality.text],
+                          isReasoningModel: true,
+                          geminiThinkingMode: c.saved,
+                        )
+                        as AiConfigModel,
+              ),
+              skill: testImageSkill,
+              skillAssignment: const SkillAssignment(
+                skillId: 'skill-vision',
+                automate: true,
+              ),
+            ),
+          );
+
+          final sent = verify(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              model: c.modelId,
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: captureAny(named: 'geminiThinkingMode'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).captured.single;
+          expect(sent, c.expected);
+        });
+      }
+    });
+
+    test(
+      'uploads a downscaled JPEG copy of an oversized image and leaves the '
+      'stored file untouched',
+      () async {
+        // A 4032x3024 photo: over the 2,000 px limit on its longer side.
+        final recorder = ui.PictureRecorder();
+        ui.Canvas(recorder).drawRect(
+          const ui.Rect.fromLTWH(0, 0, 4032, 3024),
+          ui.Paint()..color = const ui.Color(0xFF4080C0),
+        );
+        final picture = recorder.endRecording();
+        final rendered = await picture.toImage(4032, 3024);
+        final png = (await rendered.toByteData(
+          format: ui.ImageByteFormat.png,
+        ))!.buffer.asUint8List();
+        rendered.dispose();
+        picture.dispose();
+        final stored = File('${tempDir.path}/images/test.jpg');
+        await stored.parent.create(recursive: true);
+        await stored.writeAsBytes(png);
+
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => makeImageEntity());
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockCloudRepo.generateWithImages(
+            any(),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+            impactCollector: any(named: 'impactCollector'),
+          ),
+        ).thenAnswer((_) => Stream.fromIterable([]));
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        final uploaded =
+            verify(
+                  () => mockCloudRepo.generateWithImages(
+                    any(),
+                    baseUrl: any(named: 'baseUrl'),
+                    apiKey: any(named: 'apiKey'),
+                    model: any(named: 'model'),
+                    temperature: any(named: 'temperature'),
+                    images: captureAny(named: 'images'),
+                    provider: any(named: 'provider'),
+                    systemMessage: any(named: 'systemMessage'),
+                    impactCollector: any(named: 'impactCollector'),
+                  ),
+                ).captured.single
+                as List<String>;
+        final bytes = base64Decode(uploaded.single);
+        // A 2000x1500 JPEG, not the stored PNG.
+        expect(bytes.take(2), [0xFF, 0xD8]);
+        final jpeg = img.decodeJpg(bytes)!;
+        expect((jpeg.width, jpeg.height), (2000, 1500));
+        expect(stored.readAsBytesSync(), png);
+      },
+    );
+
     test('returns early on empty image analysis response', () async {
       final imageEntity = makeImageEntity();
 

@@ -42,6 +42,7 @@ import 'package:lotti/features/ai/state/pull_request_context_source_provider.dar
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/speech_to_text_route.dart';
+import 'package:lotti/features/ai/util/think_blocks.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/speech_dictionary/repository/speech_dictionary_repository.dart';
@@ -309,7 +310,7 @@ class SkillInferenceRunner {
           profile: profile,
           provider: provider,
           modelId: modelId,
-          effectiveThinkingMode: _geminiThinkingModeForTarget(
+          effectiveThinkingMode: _thinkingModeForTarget(
             target,
             geminiThinkingMode,
           ),
@@ -532,9 +533,10 @@ class SkillInferenceRunner {
     }
   }
 
-  /// Drains a chat-completion stream, concatenating content deltas, capturing
-  /// the last reported [CompletionUsage] (providers emit usage on the final
-  /// chunk), and reassembling any streamed tool calls. Shared by the
+  /// Drains a chat-completion stream, concatenating content deltas (minus any
+  /// `<think>` reasoning blocks, see [stripThinkBlocks]), capturing the last
+  /// reported [CompletionUsage] (providers emit usage on the final chunk),
+  /// and reassembling any streamed tool calls. Shared by the
   /// transcription, image-analysis, prompt-generation and audio-summary paths
   /// so the accumulation logic lives in one place.
   ///
@@ -567,7 +569,9 @@ class SkillInferenceRunner {
       toolCallAccumulator.processChunk(delta);
     }
     return (
-      content: buffer.toString(),
+      // Reasoning arrives inside <think> tags (Mistral, Gemini, Ollama) for
+      // live views only; what a skill stores must not carry it.
+      content: stripThinkBlocks(buffer.toString()) ?? '',
       usage: usage,
       toolCalls: toolCallAccumulator.toToolCalls(),
     );

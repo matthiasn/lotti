@@ -27,7 +27,7 @@ extension _SkillTextRuns on SkillInferenceRunner {
     // target always carries a provider and model id.
     final provider = target.provider!;
     final modelId = target.modelId!;
-    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+    final effectiveThinkingMode = _thinkingModeForTarget(
       target,
       geminiThinkingMode,
     );

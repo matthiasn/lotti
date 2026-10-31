@@ -310,26 +310,31 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     );
   }
 
-  /// Resolves the effective Gemini thinking mode for [target].
+  /// Resolves the effective thinking mode for [target], or null for a model
+  /// whose reasoning cannot be adjusted.
   ///
-  /// Returns null unless the target provider is Gemini and the model is a
-  /// Gemini 3 variant. Otherwise the per-invocation [override] wins, then
-  /// the model row's saved default, then [GeminiThinkingMode.low].
-  GeminiThinkingMode? _geminiThinkingModeForTarget(
+  /// - Gemini 3: the per-invocation [override], then the model row's saved
+  ///   mode, then [GeminiThinkingMode.low].
+  /// - Mistral adjustable-reasoning models: [override], then the row's
+  ///   *Think before answering* setting, which reads as off (low) until it
+  ///   is switched on. Null only for a target without a model row.
+  GeminiThinkingMode? _thinkingModeForTarget(
     _InferenceTarget target,
     GeminiThinkingMode? override,
   ) {
-    final provider = target.provider;
-    if (provider?.inferenceProviderType != InferenceProviderType.gemini) {
-      return null;
-    }
     final modelId = target.model?.providerModelId ?? target.modelId;
-    if (modelId == null || !GeminiThinkingConfig.isGemini3(modelId)) {
-      return null;
-    }
-    return override ??
-        target.model?.geminiThinkingMode ??
-        GeminiThinkingMode.low;
+    if (modelId == null) return null;
+    return switch (target.provider?.inferenceProviderType) {
+      InferenceProviderType.gemini
+          when GeminiThinkingConfig.isGemini3(
+            modelId,
+          ) =>
+        override ?? target.model?.geminiThinkingMode ?? GeminiThinkingMode.low,
+      InferenceProviderType.mistral
+          when isMistralAdjustableReasoningModelId(modelId) =>
+        override ?? target.model?.geminiThinkingMode,
+      _ => null,
+    };
   }
 
   Future<String?> _buildCurrentTaskSummary(
@@ -342,6 +347,10 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
     return _taskSummaryResolver.resolve(taskId);
   }
 
+  /// The base64 payload for [image]'s analysis: the stored file's bytes, or a
+  /// downscaled JPEG copy when it is too large ([downscaleImageForUpload]).
+  /// Empty when the file is missing or resolves outside the documents
+  /// directory.
   Future<List<String>> _prepareImageData(JournalImage image) async {
     final fullPath = getCanonicalImagePath(image);
     final file = File(fullPath);
@@ -376,7 +385,11 @@ extension _SkillInferenceRunnerInternals on SkillInferenceRunner {
       return [];
     }
 
-    final bytes = await file.readAsBytes();
+    final bytes = await downscaleImageForUpload(
+      await file.readAsBytes(),
+      imageId: image.id,
+      domainLogger: _loggingService,
+    );
     return [base64Encode(bytes)];
   }
 }

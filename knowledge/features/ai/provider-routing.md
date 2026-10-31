@@ -84,7 +84,7 @@ streaming while keeping an impact collector for buffered fallback.
 | Operation | Dedicated branches | Fallback |
 |-----------|--------------------|----------|
 | `generate()` | Ollama, Gemini, Mistral, Melious | OpenAI-compatible chat streaming; reasoning effort forwarded where supported (Mistral: adjustable-reasoning models only, see below) |
-| `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`) | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` |
+| `generateWithImages()` | Ollama, Melious, Mistral OCR (`/v1/ocr` for `mistral-ocr-*`), Mistral vision chat | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` |
 | `generateWithAudio()` | embedded sherpa, Whisper, Voxtral, oMLX/OpenAI/Mistral/Melious transcription endpoints, temporary-MP3 Mistral and Melious Voxtral chat audio | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` |
 | `generateWithMessages()` | Gemini, Ollama, Mistral, Melious | OpenAI-compatible full-history chat; reasoning effort as for `generate()` |
 | `generateImage()` | Gemini, Alibaba DashScope, Melious | Unsupported — throws for every other provider type |
@@ -117,7 +117,15 @@ stale image payload before provider routing if the resolved target is OCR-only.
 
 Coding-prompt images are re-encoded to JPEG first (`processReferenceImage`), but
 image analysis sends the stored file's raw bytes, so a pasted screenshot goes
-out as a PNG and demo media as WebP. `imageDataUri` labels each part with the
+out as a PNG and demo media as WebP — unless the image is too large. One whose
+longer side exceeds `kMaxReferenceDimension` (2,000 px) or whose file exceeds
+`kMaxImageUploadBytes` (5 MiB) is scaled to fit 2,000 px and re-encoded as JPEG
+in memory for that upload (`downscaleImageForUpload`); the stored file is never
+changed, and an image that cannot be decoded is sent as it is. The engine
+decodes straight to the target size and the pure-Dart `image` package encodes
+the JPEG in a background isolate, so it works on Linux and Windows too —
+flutter_image_compress, which `processReferenceImage` uses, has no
+implementation there. `imageDataUri` labels each part with the
 format its magic bytes are (PNG, JPEG, GIF or WebP); bytes of no recognised
 format keep `image/jpeg`. The label is not cosmetic: on 2026-10-16 Melious
 answered a PNG or WebP labelled `image/jpeg` with `400 The request was rejected
@@ -363,6 +371,16 @@ routes to `MistralOcrRepository.extractText`, which posts each image as a base64
 single streamed chat-completion chunk so the existing image-analysis runner
 appends the text unchanged.
 
+**Every other Mistral image request goes to `MistralInferenceRepository`, never
+openai_dart.** Vision models such as Mistral Large 4 stream `delta.content` as a
+list of chunks (`[{"type": "text", "text": "…"}]`), and openai_dart 0.6's
+generated stream-delta parser casts `content` as `String?`, so the shared
+fallback failed on the first chunk (`type 'List<dynamic>' is not a subtype of
+type 'String?'`) before any app code saw it. `generateWithImages` on the Mistral
+repository sends the text plus `data:` URI `image_url` parts through the same
+hand-parsed SSE loop as `generateText`, where `MistralStreamContent` flattens
+either shape; tools and the row's thinking mode are forwarded as for text.
+
 Figure regions the model detects are referenced as placeholders like
 `![img-0.jpeg](img-0.jpeg)`, resolved by `pages[].images[]`. The request sets
 `include_image_base64: false` and those entries are never processed, so the
@@ -511,14 +529,22 @@ only ones with a user-facing control; both live in the model row's
 | Gemini | `thinkingConfig` on every native request; `reasoning_effort` on the audio and image paths for Gemini 3 only | Section above |
 | Ollama | `think: true` for model ids starting with `gemma4`, nothing otherwise; the separate `thinking` field comes back wrapped in `<think>` tags so the shared parser can split it out | `OllamaApiClient.shouldEnableThinking` |
 | Melious | The caller's effort unchanged, except for `qwen3.8-27b` and `qwen3.8-max`, which reject a request without one: those get `low` when the caller set nothing and `medium` in place of `high` | `MeliousInferenceRepository.resolveReasoningEffort` |
-| Mistral | `reasoning_effort` only for the [adjustable-reasoning models](https://docs.mistral.ai/studio-api/conversations/reasoning) (`mistral-small-latest`, `mistral-medium-3-5`, `mistral-large-4-0`), which take just `none` or `high`: the caller's effort, else the row's thinking setting (the model page's *Think before answering* switch), with minimal and low sent as `none`, medium and high as `high`. Other Mistral models get nothing. Streamed `thinking` chunks come back wrapped in `<think>` tags, as Ollama's do | `MistralInferenceRepository.reasoningEffortWireValue`, `MistralStreamContent` |
+| Mistral | `reasoning_effort` only for the [adjustable-reasoning models](https://docs.mistral.ai/studio-api/conversations/reasoning) (`mistral-small-latest`, `mistral-medium-3-5`, `mistral-large-4-0`), each of which rejects any value it does not list with a 400: the caller's effort, else the row's thinking setting (the model page's *Think before answering* switch). Small and Medium take just `none` (minimal, low) and `high` (medium, high); Large 4 (`mistralGradedReasoningModelIds`) takes `low` (minimal, low), `medium` and `high`, and rejects `none`. Value sets probed on the live API on 2026-10-31. Other Mistral models get nothing. Streamed `thinking` chunks come back wrapped in `<think>` tags, as Ollama's do | `MistralInferenceRepository.reasoningEffortWireValue`, `MistralStreamContent` |
 | OpenAI, OpenRouter, Anthropic, Alibaba, Nebius, oMLX, generic | The caller's `reasoningEffort` unchanged on the OpenAI-compatible path; Anthropic's native `thinking` block is never sent, and oMLX's catalog only flags which models reason | `CloudInferenceGenerate` |
 
 Every reasoning trace travels inside `<think>` tags in the streamed content, so
 live views (agent internals, the chat) can show it. Whatever is *stored* drops
 it through `stripThinkBlocks`: conversation history, so past reasoning is never
-resent, and one-shot results (`OneShotTextGeneration`), which callers persist
-and display as is — tomorrow's note, for one.
+resent, one-shot results (`OneShotTextGeneration`), which callers persist
+and display as is — tomorrow's note, for one — and every skill run's collected
+text (`SkillInferenceRunner._collectStream`), so an image analysis or summary
+from a reasoning model is saved without its trace.
+
+Skill runs resolve the mode per target (`_thinkingModeForTarget`): Gemini 3 rows
+as above, and Mistral adjustable-reasoning rows from their *Think before
+answering* switch (off is the row's default `low`), which
+`reasoningEffortWireValue` turns into a value the model accepts. Other targets
+get no mode.
 
 On the pass-through providers the effort is whatever the call site asks for, and
 only four call sites ask: the goal check-in compactor, the goal check-in digest,

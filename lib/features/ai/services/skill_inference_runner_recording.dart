@@ -210,7 +210,7 @@ extension _SkillInferenceRunnerRecording on SkillInferenceRunner {
       );
       return null;
     }
-    final effectiveThinkingMode = _geminiThinkingModeForTarget(
+    final effectiveThinkingMode = _thinkingModeForTarget(
       target,
       geminiThinkingMode,
     );

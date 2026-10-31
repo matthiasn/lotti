@@ -1536,4 +1536,21 @@ void main() {
       }
     });
   });
+
+  group('isMistralGradedReasoningModelId', () {
+    test('holds only Large 4, ignoring case and spaces', () {
+      expect(isMistralGradedReasoningModelId(' Mistral-Large-4-0 '), isTrue);
+      expect(isMistralGradedReasoningModelId('mistral-small-latest'), isFalse);
+      expect(isMistralGradedReasoningModelId('mistral-medium-3-5'), isFalse);
+    });
+
+    test('is a subset of the adjustable-reasoning models', () {
+      expect(
+        mistralAdjustableReasoningModelIds.containsAll(
+          mistralGradedReasoningModelIds,
+        ),
+        isTrue,
+      );
+    });
+  });
 }
