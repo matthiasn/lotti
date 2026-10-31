@@ -847,22 +847,29 @@ Two tools let the agent choose it:
 - `get_category_projects {}` is **read-only**, answered in the strategy from
   `loadTaskProjectOptions`: every project of the task's category, sorted by
   title, as JSON with its id, title, status, the `oneLiner` and `tldr` of its
-  project agent's latest report, and `isCurrentProject`. It reads the local
-  database only, through `ProjectRepository`'s privacy filter, so a project
-  hidden from the user is hidden from the agent too.
+  project agent's latest report, and `isCurrentProject`. Only projects whose
+  private flag matches the task's are listed, since `linkTaskToProject` refuses
+  any other link. It reads the local database only, through
+  `ProjectRepository`'s privacy filter, so a project hidden from the user is
+  hidden from the agent too.
 - `set_task_project {projectId}` is **deferred** and single-use per wake. It is
   validated fail-closed at queue time against the same list: a `projectId` that
   is neither an id nor the unique title of one of the category's projects is
   rejected, and the task's current project is suppressed rather than queued. A
   title is resolved to its id, and the queued args carry `projectId` and
   `projectTitle`, so the review row names the project in the reader's language.
+  The item's `targetBase` records the project the task belonged to then
+  (`{projectId: <id or null>}`).
   If the list cannot be read, the proposal is kept by id, as `link_task` keeps
   one whose title lookup failed.
 
 On confirmation `TaskToolDispatcher` calls
 `ProjectRepository.linkTaskToProject`, which replaces any project the task
 had. A project of another category — the task may have moved since the
-proposal — fails the item rather than linking it. The query chat's planner
+proposal — fails the item rather than linking it. Before that, the dispatcher
+compares `targetBase` with the task's live project link
+(`getLinkedProjectForTask`, past the private gate): if it moved on, nothing is
+applied, so a second device confirming late cannot undo a move made since. The query chat's planner
 does not offer `set_task_project`: its task context carries no project ids.
 
 ```mermaid
@@ -1280,8 +1287,8 @@ ADR 0097), so the second dispatch changes nothing:
 - **labels:** `assign_task_label(s)` adds nothing the user has taken off the
   task, because taking a label off suppresses it;
 - `link_task` needs nothing — one link per endpoints and type.
-- `set_task_project` needs nothing — linking a task to the project it already
-  belongs to changes nothing.
+- `set_task_project`, when the proposal recorded its `targetBase` — the
+  task's project link is the field it compares.
 
 ```mermaid
 flowchart TD
