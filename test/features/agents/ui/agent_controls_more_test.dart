@@ -87,11 +87,11 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Delete permanently'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         final deleteButtons = find.text('Delete permanently');
         await tester.tap(deleteButtons.last);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         verify(
           () => mockAgentRepository.getLinksFrom(
@@ -213,12 +213,12 @@ void main() {
 
         // Open destroy dialog
         await tester.tap(find.text('Destroy'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Confirm in dialog
         final destroyButtons = find.text('Destroy');
         await tester.tap(destroyButtons.last);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.textContaining('destroy failed'), findsOneWidget);
       },
@@ -233,7 +233,7 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Destroy'));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         // Dismiss dialog by tapping the barrier (outside the dialog)
         await tester.tapAt(Offset.zero);
@@ -359,15 +359,18 @@ void main() {
           buildSubject(lifecycle: AgentLifecycle.destroyed),
         );
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
 
         // Open delete dialog
         await tester.tap(find.text('Delete permanently'));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
 
         // Confirm in dialog
         final deleteButtons = find.text('Delete permanently');
         await tester.tap(deleteButtons.last);
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
 
         // The Delete permanently button should now be disabled (busy)
         final button = tester.widget<OutlinedButton>(
