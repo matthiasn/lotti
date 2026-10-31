@@ -1071,13 +1071,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Mutați în proiectul „$project”';
+  String agentSummarySetPriority(Object priority) {
+    return 'Setați prioritatea la $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Setați prioritatea la $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Mutați în proiectul „$project”';
   }
 
   @override
@@ -3393,6 +3393,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputListening => 'Ascultă...';
 
   @override
+  String get chatInputListeningTapWhenDone =>
+      'Ascult – atingeți când ați terminat';
+
+  @override
   String get chatInputNoAudioRecorded =>
       'Nu s-a înregistrat niciun sunet. Încercați din nou.';
 
@@ -3427,8 +3431,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get chatInputStopTranscribe => 'Opriți și transcrieți';
 
   @override
+  String get chatInputTapToTalk => 'Atingeți pentru a vorbi';
+
+  @override
+  String get chatInputTranscribing => 'Se transcrie…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'Înregistrarea a fost captată, dar transcrierea a eșuat. Vă rugăm să încercați din nou.';
+
+  @override
+  String get chatInputTypeInstead => 'Scrieți în schimb';
 
   @override
   String get checkInAddNoteHint => 'Adăugați o notă…';
@@ -6991,6 +7004,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get filterSelectionNoMatches => 'Fără rezultate';
 
   @override
+  String get frontChatActionFailed => 'Nu a reușit. Încercați din nou.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Conversații arhivate · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Conversație arhivată.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Ștergeți această conversație? Mesajele ei sunt ascunse pe toate dispozitivele, nu șterse definitiv. Ce ați salvat din această conversație rămâne unde este.';
+
+  @override
   String get frontChatEmpty =>
       'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană, sau spuneți ce s-a întâmplat. Răspunde agentul potrivit și nimic nu se arhivează până nu atingeți.';
 
@@ -7003,13 +7031,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatInboxEmpty => 'Nimic nu vă așteaptă.';
 
   @override
+  String get frontChatInboxTitle => 'Primite';
+
+  @override
+  String get frontChatNoChats =>
+      'Încă nu există conversații. Puneți o întrebare pentru a începe una.';
+
+  @override
+  String get frontChatNoMatchingChats =>
+      'Niciun titlu de conversație nu se potrivește.';
+
+  @override
+  String get frontChatOlder => 'Mai vechi';
+
+  @override
   String get frontChatOpen => 'Întrebați însoțitoarea';
 
   @override
   String get frontChatPlaceholder => 'Întrebați orice…';
 
   @override
+  String get frontChatPrevious7Days => 'Ultimele 7 zile';
+
+  @override
   String get frontChatResponding => 'Caută cine știe…';
+
+  @override
+  String get frontChatRowMenuHint => 'Acțiunile conversației';
+
+  @override
+  String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
   String get frontChatTitle => 'Însoțitoare';

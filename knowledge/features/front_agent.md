@@ -1,7 +1,7 @@
 ---
 type: Feature Module
 title: Front agent
-description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, and what the chat surface renders.
+description: The one agent the user talks to in one place — how a durable user turn becomes a routing wake, what the routing index holds, how the dispatch contract is validated in code, the capped lookups and the repair round, the deterministic records a turn leaves behind, how the door walker takes each segment to its owner and mirrors the answer, how a statement becomes a proposal the user's one tap files, what the inbox is, how an unanswered turn is recovered on any device, how turns form conversations, and what the chat surface renders.
 resource: ../../lib/features/front_agent
 tags: [agents, front-agent, routing, dispatch, doors, filing, inbox, companion, chat]
 status: draft
@@ -66,8 +66,24 @@ sources:
     last_modified: 2026-10-26
   - id: inbox-filter
     resource: ../../lib/features/front_agent/state/front_inbox_filter.dart
-    title: The inbox is the thread filtered
+    title: The inbox is every conversation filtered
     last_modified: 2026-10-26
+  - id: conversations
+    resource: ../../lib/features/front_agent/service/front_conversation_service.dart
+    title: FrontConversationService — which conversations exist, renaming, archiving, deleting
+    last_modified: 2026-10-31
+  - id: conversation-state
+    resource: ../../lib/features/front_agent/state/front_conversation_providers.dart
+    title: The conversation index, the picked and the active conversation
+    last_modified: 2026-10-31
+  - id: conversation-list
+    resource: ../../lib/features/front_agent/ui/front_conversation_list.dart
+    title: FrontConversationList — the list of conversations, grouped by recency
+    last_modified: 2026-10-31
+  - id: adr-0154
+    resource: ../../docs/adr/0154-front-agent-conversations.md
+    title: ADR 0154 — the front agent keeps many conversations
+    last_modified: 2026-10-31
   - id: thread
     resource: ../../lib/features/front_agent/service/front_chat_thread_builder.dart
     title: FrontChatThreadBuilder — the thread with doors, options and mirrored replies
@@ -105,8 +121,8 @@ its owner and the **chat surface** shows what came back, under the owner's
 name. A statement is never filed by the agent: it becomes a **proposal**
 under the user's turn, and only the user's tap writes — the user's own
 words, verbatim (decision 1). What nothing owns waits in the **inbox**,
-which is the same thread filtered (decision 7). The product decisions
-behind it are in the plan, not here.
+which is every **conversation** filtered (ADR 0154). The product decisions
+behind it are in the plans, not here.
 
 # One turn
 
@@ -123,7 +139,7 @@ flowchart TD
   U -->|runCompletions for the run key| V[consume the recovery record]
   X --> M[resolveFrontAgentModel<br/>ProfileResolver.resolveStandalone]
   X --> I[FrontRoutingIndexBuilder.build]
-  X --> T[recent turns: last 6 user / dispatch / ask / reply rows, with content]
+  X --> T[recent turns: last 6 user / dispatch / ask / reply rows<br/>of the pending turn's conversation, with content]
   X --> C[ConversationRepository.sendMessage<br/>turnBudget 3, temperature 0]
   C --> S[FrontAgentStrategy]
   S -->|dispatch / ask_user / reply_to_user| E{terminal?}
@@ -383,8 +399,8 @@ as they are, the words stay in the thread, and the door keeps waiting
 until a chip that writes takes it.
 
 A turn with a door still waiting on the user never leaves the projection:
-`FrontChatThreadBuilder` keeps it beside the newest fifty messages however
-old it is, so the inbox cannot scroll out of existence — and keeps the
+`FrontChatThreadBuilder` keeps it beside the newest fifty messages of its
+conversation however old it is, so the inbox cannot scroll out of existence — and keeps the
 message right after it too, her reply that carries its doors (or the next
 user turn, which says no reply followed), so the doors never ride an
 unrelated reply the window happens to show next.
@@ -392,18 +408,90 @@ unrelated reply the window happens to show next.
 The **inbox** is no entity: `FrontChatThread.inboxMessageIds` is every user
 turn with a door whose outcome is a `FrontDoorProposal` or a
 `FrontDoorInbox` (`frontDoorAwaitsUser`), `inboxCount` the doors, and
-`frontInboxFilterProvider` the switch the header's chip toggles — an
-auto-disposed notifier, so the filter is off every time the sheet opens.
+`frontInboxFilterProvider` the switch the list's *Inbox* row turns on — an
+auto-disposed notifier, so the filter is off every time the sheet opens, and
+Back (or Escape) leaves it before closing the sheet. While something waits,
+a warning-tone dot sits on the header's list button and the *Inbox* row
+counts it with a badge of the same tone.
+The count and the filtered view come from `frontAllChatsThreadProvider`,
+the thread of every conversation not deleted, so what waits in one
+conversation is not lost by opening another.
+
+# Conversations
+
+A **conversation** is the user turns whose payload names it
+(`frontConversationKey`, read by `frontConversationOf`); everything a run
+wrote for a turn — her reply, her question, the doors — belongs to the
+turn's conversation through the `operationId` it carries. There is no
+creation record: a conversation exists once it holds a turn. Turns written
+before conversations name none and form one fixed conversation,
+`earlierConversationId` (`front-chat:earlier`), which every device derives
+alike, so nothing was migrated (ADR 0154).
+
+`FrontConversationService.load` folds the index: the user turns, grouped by
+conversation, give each its title (the first line of its first question)
+and its last activity; query chat's synced `renamed`, `archived` and
+`deleted` events, written under the front agent's id with the conversation
+as the chat, give the rest. A conversation has no `created` event, so query
+chat's projection never lists one, and the headless journal questions the
+door walker writes there (chat id = the turn's message id, no lifecycle
+event) are never taken for a conversation. A deleted conversation leaves
+the index (`deletedIds`) and its turns leave every view, the inbox
+included; its messages are not erased.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Picked: new chat (an id, nothing written)
+  Picked --> Live: first turn sent
+  [*] --> Live: a turn naming it arrives through sync
+  Live --> Live: renamed
+  Live --> Archived: archived
+  Archived --> Live: restored
+  Live --> Deleted: deleted
+  Archived --> Deleted: deleted
+  Deleted --> [*]
+```
+
+Which one shows: `frontPickedConversationProvider` holds the one the user
+picked (keep-alive, like the composer), `frontActiveConversationProvider`
+resolves it — the picked one while it was picked today, else the newest not
+archived while it moved today (`FrontConversationIndex.latest`), else an id
+minted once per session (`frontFreshConversationIdProvider`), so opening the
+sheet on a new day starts a new subject — and a send lands in the active one
+and pins it, so a conversation arriving from another device does not take
+the surface out from under the reply. Archiving or deleting the open one
+moves to a fresh conversation, its draft parked so an undo finds it; each
+conversation keeps its own draft, and talking in an archived one restores
+it. The routing prompt's recent turns come from the
+pending turn's conversation only (`FrontAgentWorkflow._recentTurns`): another
+conversation is another subject.
+
+The header's list button (and a new conversation beside it) opens the list
+(`frontConversationListOpenProvider`), a page over the conversation with its
+own back, *Chats* and close. `FrontConversationList` leads with *New chat*,
+*Inbox* while something waits, and *Search chats*, which opens in place; then
+the history grouped by recency — *Today*, *Yesterday*, *Previous 7 days*,
+*Older* — each group a quiet caption over a `DesignSystemGroupedList` card.
+A row is the title with the time it last moved (the clock today and
+yesterday, the weekday within a week, else the date) and one line of her
+last answer (`FrontConversation.preview`, the first line of her latest
+`reply_to_user` or `ask_user` in it, read by `FrontConversationService`).
+The open one is the brightest fill in its card; a row's rename, archive and
+delete show on the open row and on hover, and a long press offers them on any
+row. Archived ones fold away at the end; a search looks through them too.
 
 # The chat surface
 
 `FrontChatThreadBuilder.build` projects the front thread for the shared
 `AgentChatView`: user turns, `reply_to_user` rows and `ask_user` rows (shown
 as her turn, with the options parsed from the record) are the messages,
-newest fifty; a dispatch is never shown — its door records hang off the user
+newest fifty of one conversation (`build(conversationId:)`), or of every
+conversation but the deleted (`build(excluded:)`); a dispatch is never shown — its door records hang off the user
 turn they answer, in segment order, and for a `FrontDoorChatTurn` the
 specialist's reply is read from that agent's thread by the recorded message
-id. `frontChatThreadProvider` reloads on the front agent's update pings,
+id. `frontChatThreadProvider` is the active conversation, or every
+conversation while the inbox filter is on, and reloads on the front agent's
+update pings,
 whenever a specialist a door handed a turn to finishes a wake here
 (`runCompletions`, by agent id — the sync service pings nobody), and on
 each such specialist's own update pings, which is how a reply written on
@@ -420,7 +508,7 @@ footer line — `Companion · 8:30 AM · 9.8K tokens`, one meta row — through
 the chat view's `footerTrailingBuilder`, read by the reply row's run key
 (`agentRunConsumptionTotalsProvider`, consumption schema v5's
 `idx_consumption_agent_run`). A send clears the inbox filter: the new turn
-lands in the whole thread.
+lands in its conversation, shown whole.
 
 A turn is the user's bubble, her reply, and under her reply the **door
 cards** (`FrontDoorCard`) — her answer, part by part. The doors are keyed
@@ -448,10 +536,20 @@ status says so in the error ink and the tap reads *Try again*
 the sheet for the entry's or the task's page. The inbox filter keeps a
 waiting turn's words and the reply that carries its cards together.
 
-Her header is one row: her face when `enable_companion` is on, her name,
-the inbox chip with its count, and the way into her internals, where the
-thread's cost is accounted — no subtitle and no cost pill; what she does is
-said by the empty thread's invitation and the composer's hint.
+She leads the conversation (`FrontChatHero`): her bust at hero size — the
+spark when `enable_companion` is off — and under it the conversation's title,
+scrolling in above the first message as `AgentChatView`'s `leading`, and
+opening an empty conversation with her invitation. Once the thread
+(`AgentChatView.onThreadScrolled`) is past her bust, `frontHeroScrolledProvider`
+puts her and the title in a line in the header's control row — reset when
+another conversation opens or the list opens or closes, so a thread that
+comes back at its top has her there, which otherwise holds only the list button and a new
+conversation on the left, an overflow (her internals, where the thread's cost
+is accounted, then this conversation's rename, archive and delete) and close
+on the right. The thread is `conversational` and `voiceFirst` (see
+[chat input](agents/chat-input-and-reasoning.md)): her replies as prose with
+their cost as a quiet line under them, one talk disc, and what she was told
+by voice sent as said.
 `showFrontChatSheet` opens it on the root navigator in the
 agent-chat side sheet — a bottom sheet below the page breakpoint — from the
 desktop rail's utility row above Settings, the phone launcher's utility

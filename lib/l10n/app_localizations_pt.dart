@@ -1067,13 +1067,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Mover para o projeto \"$project\"';
+  String agentSummarySetPriority(Object priority) {
+    return 'Definir a prioridade como $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Definir a prioridade como $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Mover para o projeto \"$project\"';
   }
 
   @override
@@ -3373,6 +3373,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputListening => 'Ouvindo...';
 
   @override
+  String get chatInputListeningTapWhenDone =>
+      'A ouvir – toca quando terminares';
+
+  @override
   String get chatInputNoAudioRecorded =>
       'Não foi gravado áudio. Tenta novamente.';
 
@@ -3406,8 +3410,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chatInputStopTranscribe => 'Pare e transcreva';
 
   @override
+  String get chatInputTapToTalk => 'Toca para falar';
+
+  @override
+  String get chatInputTranscribing => 'A transcrever…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'A gravação foi captada, mas a transcrição falhou. Tenta de novo.';
+
+  @override
+  String get chatInputTypeInstead => 'Escrever antes';
 
   @override
   String get checkInAddNoteHint => 'Adiciona uma nota…';
@@ -6948,6 +6961,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get filterSelectionNoMatches => 'Nenhuma correspondência';
 
   @override
+  String get frontChatActionFailed => 'Não foi possível. Tenta outra vez.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Chats arquivados · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Chat arquivado.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Apagar este chat? As mensagens dele ficam ocultas em todos os dispositivos, não são eliminadas. O que guardaste a partir deste chat fica onde está.';
+
+  @override
   String get frontChatEmpty =>
       'Pergunta por uma tarefa, um objetivo, um projeto ou uma pessoa, ou conta o que aconteceu. Responde o agente certo, e nada é arquivado até tocares.';
 
@@ -6960,13 +6988,35 @@ class AppLocalizationsPt extends AppLocalizations {
   String get frontChatInboxEmpty => 'Nada espera por ti.';
 
   @override
+  String get frontChatInboxTitle => 'Caixa de entrada';
+
+  @override
+  String get frontChatNoChats =>
+      'Ainda não há chats. Pergunta algo para começar um.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Nenhum título de chat corresponde.';
+
+  @override
+  String get frontChatOlder => 'Mais antigos';
+
+  @override
   String get frontChatOpen => 'Perguntar à companheira';
 
   @override
   String get frontChatPlaceholder => 'Pergunta o que quiseres…';
 
   @override
+  String get frontChatPrevious7Days => 'Últimos 7 dias';
+
+  @override
   String get frontChatResponding => 'A procurar quem sabe…';
+
+  @override
+  String get frontChatRowMenuHint => 'Ações do chat';
+
+  @override
+  String get frontChatSearchChats => 'Procurar nos chats';
 
   @override
   String get frontChatTitle => 'Companheira';

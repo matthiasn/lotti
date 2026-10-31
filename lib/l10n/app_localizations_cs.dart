@@ -1063,13 +1063,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Přesunout do projektu „$project“';
+  String agentSummarySetPriority(Object priority) {
+    return 'Nastavit prioritu na $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Nastavit prioritu na $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Přesunout do projektu „$project“';
   }
 
   @override
@@ -3383,6 +3383,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputListening => 'Naslouchám...';
 
   @override
+  String get chatInputListeningTapWhenDone =>
+      'Poslouchám – klepni, až budeš hotov';
+
+  @override
   String get chatInputNoAudioRecorded =>
       'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
@@ -3416,8 +3420,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get chatInputStopTranscribe => 'Zastavit a přepsat';
 
   @override
+  String get chatInputTapToTalk => 'Klepni a mluv';
+
+  @override
+  String get chatInputTranscribing => 'Přepisuji…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'Nahrávka se pořídila, ale přepis se nezdařil. Zkus to prosím znovu.';
+
+  @override
+  String get chatInputTypeInstead => 'Raději psát';
 
   @override
   String get checkInAddNoteHint => 'Přidej poznámku…';
@@ -6954,6 +6967,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get filterSelectionNoMatches => 'Žádné shody';
 
   @override
+  String get frontChatActionFailed => 'Nepovedlo se. Zkus to znovu.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Archivované chaty · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Chat archivován.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Smazat tento chat? Jeho zprávy se skryjí na všech zařízeních, nevymažou se. Co sis z tohoto chatu uložil, zůstane, kde je.';
+
+  @override
   String get frontChatEmpty =>
       'Zeptej se na úkol, cíl, projekt nebo osobu, nebo řekni, co se stalo. Odpoví správný agent a nic se neuloží, dokud neťukneš.';
 
@@ -6966,13 +6994,35 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatInboxEmpty => 'Nic na tebe nečeká.';
 
   @override
+  String get frontChatInboxTitle => 'Příchozí';
+
+  @override
+  String get frontChatNoChats =>
+      'Zatím žádné chaty. Na něco se zeptej a jeden začne.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Žádný název chatu neodpovídá.';
+
+  @override
+  String get frontChatOlder => 'Starší';
+
+  @override
   String get frontChatOpen => 'Zeptat se společnice';
 
   @override
   String get frontChatPlaceholder => 'Zeptej se na cokoli…';
 
   @override
+  String get frontChatPrevious7Days => 'Posledních 7 dní';
+
+  @override
   String get frontChatResponding => 'Hledá, kdo to ví…';
+
+  @override
+  String get frontChatRowMenuHint => 'Akce chatu';
+
+  @override
+  String get frontChatSearchChats => 'Hledat v chatech';
 
   @override
   String get frontChatTitle => 'Společnice';

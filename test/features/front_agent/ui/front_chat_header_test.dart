@@ -7,15 +7,20 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/companion/ui/companion_view.dart';
-import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_chat_hero.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -29,6 +34,7 @@ void main() {
     double width = 400,
     FrontChatThread thread = FrontChatThread.empty,
     FrontChatThread Function()? threadOf,
+    FrontConversationIndex conversations = FrontConversationIndex.empty,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -38,7 +44,14 @@ void main() {
           body: Center(
             child: SizedBox(
               width: width,
-              child: FrontChatHeader(onClose: onClose ?? () {}),
+              // The header over the hero, as the pane lays them out.
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FrontChatHeader(onClose: onClose ?? () {}),
+                  const FrontChatHero(),
+                ],
+              ),
             ),
           ),
         ),
@@ -55,6 +68,11 @@ void main() {
           frontChatThreadProvider.overrideWith(
             (ref) async => threadOf?.call() ?? thread,
           ),
+          // The inbox counts across every conversation.
+          frontAllChatsThreadProvider.overrideWith(
+            (ref) async => threadOf?.call() ?? thread,
+          ),
+          frontConversationsProvider.overrideWith((ref) async => conversations),
         ],
       ),
     );
@@ -65,33 +83,232 @@ void main() {
     }
   }
 
-  testWidgets('names her in one row and offers close and the internals', (
-    tester,
-  ) async {
+  group('conversations', () {
+    final census = FrontConversationIndex(
+      conversations: [
+        FrontConversation(
+          id: 'c-1',
+          title: 'Plan the census',
+          lastActivity: DateTime(2026, 10, 31, 9),
+          archived: false,
+        ),
+      ],
+    );
+    String titleOf(WidgetTester tester) => tester
+        .widget<Text>(
+          find.byKey(FrontChatHeaderKeys.title).evaluate().isNotEmpty
+              ? find.byKey(FrontChatHeaderKeys.title)
+              : find.byKey(FrontChatHeroKeys.title),
+        )
+        .data!;
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatHeader)),
+        );
+
+    testWidgets('names the open conversation by its title, whole on hover '
+        'however much of it fades', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      expect(titleOf(tester), 'Plan the census');
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.byKey(FrontChatHeroKeys.title),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, 'Plan the census');
+    });
+
+    testWidgets('once her hero has scrolled away the header carries her '
+        'and the title in a line', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      expect(find.byKey(FrontChatHeaderKeys.title), findsNothing);
+
+      containerOf(tester).read(frontHeroScrolledProvider.notifier).follow(500);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final compact = find.byKey(FrontChatHeaderKeys.title);
+      expect(tester.widget<Text>(compact).data, 'Plan the census');
+      final more = tester.getRect(find.byKey(FrontChatHeaderKeys.more));
+      expect(tester.getRect(compact).top, lessThan(more.bottom));
+
+      // Back at the top, the line gives way to the hero again.
+      containerOf(tester).read(frontHeroScrolledProvider.notifier).follow(0);
+      await tester.pump();
+      expect(find.byKey(FrontChatHeaderKeys.title), findsNothing);
+    });
+
+    testWidgets('names her for a conversation not begun, whose new-chat '
+        'action has nothing to start', (tester) async {
+      await pumpHeader(tester);
+      expect(titleOf(tester), 'Companion');
+      expect(
+        tester
+            .widget<DesignSystemIconAction>(
+              find.byKey(FrontChatHeaderKeys.newChat),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('the title opens the list, whose header is back, Chats and '
+        'close; back returns to the conversation', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+      final listOpen = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(listOpen.close);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
+      await tester.pump();
+      expect(listOpen.read(), isTrue);
+      expect(titleOf(tester), 'Chats');
+      // Nothing that would duplicate the list's own new-chat row.
+      expect(find.byKey(FrontChatHeaderKeys.newChat), findsNothing);
+      expect(find.byKey(FrontChatHeaderKeys.more), findsNothing);
+      expect(find.byKey(FrontChatHeaderKeys.close), findsOneWidget);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.back));
+      await tester.pump();
+      expect(listOpen.read(), isFalse);
+      expect(titleOf(tester), 'Plan the census');
+    });
+
+    testWidgets('the overflow holds her internals, then the open '
+        "conversation's own ways out, the destructive one last", (
+      tester,
+    ) async {
+      await pumpHeader(tester, conversations: census);
+
+      final items = tester
+          .widget<DesignSystemContextMenuButton>(
+            find.byKey(FrontChatHeaderKeys.more),
+          )
+          .items
+          .map((item) => item.label)
+          .toList();
+
+      expect(items, [
+        'Agent internals',
+        'Rename chat',
+        'Archive chat',
+        'Delete chat',
+      ]);
+    });
+
+    testWidgets('a conversation not begun has only her internals in the '
+        'overflow', (tester) async {
+      await pumpHeader(tester);
+
+      final items = tester
+          .widget<DesignSystemContextMenuButton>(
+            find.byKey(FrontChatHeaderKeys.more),
+          )
+          .items;
+
+      expect(items.map((item) => item.label), ['Agent internals']);
+    });
+
+    testWidgets('the inbox, which gathers every conversation, is named and '
+        "offers no single conversation's actions", (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+      final filter = container.listen(frontInboxFilterProvider, (_, _) {});
+      addTearDown(filter.close);
+
+      container.read(frontInboxFilterProvider.notifier).toggle();
+      await tester.pump();
+
+      expect(titleOf(tester), 'Inbox');
+      expect(
+        tester
+            .widget<DesignSystemContextMenuButton>(
+              find.byKey(FrontChatHeaderKeys.more),
+            )
+            .items
+            .map((item) => item.label),
+        ['Agent internals'],
+      );
+    });
+
+    testWidgets('an archived conversation says so before its title', (
+      tester,
+    ) async {
+      await pumpHeader(
+        tester,
+        conversations: FrontConversationIndex(
+          conversations: [
+            FrontConversation(
+              id: 'c-0',
+              title: 'Ice shelf survey',
+              lastActivity: DateTime(2026, 9, 2),
+              archived: true,
+            ),
+          ],
+        ),
+      );
+      containerOf(
+        tester,
+      ).read(frontPickedConversationProvider.notifier).picked = 'c-0';
+      await tester.pump();
+      await tester.pump();
+
+      expect(titleOf(tester), 'Ice shelf survey');
+      final glyph = tester.getRect(find.byKey(FrontChatHeroKeys.archived));
+      final title = tester.getRect(find.byKey(FrontChatHeroKeys.title));
+      expect(glyph.right, lessThanOrEqualTo(title.left));
+    });
+
+    testWidgets('a new chat starts an empty conversation', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.newChat));
+      await tester.pump();
+      await tester.pump();
+
+      final picked = container.read(frontPickedConversationProvider);
+      expect(picked, isNot(anyOf(isNull, 'c-1')));
+      expect(titleOf(tester), 'Companion');
+    });
+  });
+
+  testWidgets('a row of controls — the ways to another conversation lead, '
+      "this conversation's overflow and close trail — over her and the "
+      'title, centred', (tester) async {
     var closed = 0;
     await pumpHeader(tester, onClose: () => closed++);
 
-    final title = tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title));
-    expect(title.data, 'Companion');
-    // One row: the figure, the name and the actions share a line.
-    final figure = tester.getRect(find.byKey(FrontChatHeaderKeys.figure));
-    final titleRect = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
-    final close = tester.getRect(find.byKey(FrontChatHeaderKeys.close));
-    expect(titleRect.top, lessThan(figure.bottom));
-    expect(titleRect.left, greaterThan(figure.right));
-    expect(close.top, lessThan(figure.bottom));
-    expect(find.byKey(FrontChatHeaderKeys.internals), findsOneWidget);
-    expect(find.byTooltip('Agent internals'), findsOneWidget);
+    Rect at(Key key) => tester.getRect(find.byKey(key));
+    final order = [
+      FrontChatHeaderKeys.chats,
+      FrontChatHeaderKeys.newChat,
+      FrontChatHeaderKeys.more,
+      FrontChatHeaderKeys.close,
+    ].map(at).toList();
+    for (var i = 1; i < order.length; i++) {
+      expect(order[i].left, greaterThanOrEqualTo(order[i - 1].right));
+      expect(order[i].top, lessThan(order[0].bottom));
+    }
+    final figure = at(FrontChatHeroKeys.figure);
+    final title = at(FrontChatHeroKeys.title);
+    expect(figure.top, greaterThanOrEqualTo(order[0].bottom));
+    expect(title.top, greaterThanOrEqualTo(figure.bottom));
+    expect(title.center.dx, closeTo(figure.center.dx, 1));
 
     await tester.tap(find.byKey(FrontChatHeaderKeys.close));
     expect(closed, 1);
   });
 
-  testWidgets('the internals action opens her internals panel', (
-    tester,
-  ) async {
+  testWidgets('her internals open from the overflow', (tester) async {
     await pumpHeader(tester);
 
+    await tester.tap(find.byKey(FrontChatHeaderKeys.more));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(FrontChatHeaderKeys.internals));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -104,14 +321,13 @@ void main() {
     expect(panel.agentName, 'Companion');
   });
 
-  testWidgets('wears the spark tile when the companion is off', (
-    tester,
-  ) async {
+  testWidgets('with the companion off the spark every agent wears stands '
+      'in for her', (tester) async {
     await pumpHeader(tester);
     expect(find.byType(CompanionView), findsNothing);
     expect(
       find.descendant(
-        of: find.byKey(FrontChatHeaderKeys.figure),
+        of: find.byKey(FrontChatHeroKeys.figure),
         matching: find.byIcon(LottiIcons.aiSpark),
       ),
       findsOneWidget,
@@ -122,7 +338,7 @@ void main() {
     await pumpHeader(tester, companion: true);
     expect(
       find.descendant(
-        of: find.byKey(FrontChatHeaderKeys.figure),
+        of: find.byKey(FrontChatHeroKeys.figure),
         matching: find.byType(CompanionView),
       ),
       findsOneWidget,
@@ -130,7 +346,7 @@ void main() {
     expect(find.byIcon(LottiIcons.aiSpark), findsNothing);
   });
 
-  group('the inbox chip', () {
+  group('the inbox dot', () {
     FrontChatThread waiting(int count) => FrontChatThread(
       messages: const [],
       doorsByMessageId: {
@@ -156,49 +372,20 @@ void main() {
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
     });
 
-    testWidgets('counts the doors that wait, rides the title row, and '
-        'toggles the inbox filter', (tester) async {
+    testWidgets('a dot on the way to the list says something waits', (
+      tester,
+    ) async {
       await pumpHeader(tester, thread: waiting(2));
-      final chip = find.byKey(FrontChatHeaderKeys.inbox);
-      expect(tester.widget<DesignSystemChip>(chip).label, 'Inbox 2');
-      expect(tester.widget<DesignSystemChip>(chip).selected, isFalse);
-      final chipRect = tester.getRect(chip);
-      final title = tester.getRect(find.byKey(FrontChatHeaderKeys.title));
-      expect(chipRect.left, greaterThan(title.right));
-      expect(chipRect.top, lessThan(title.bottom));
 
-      await tester.tap(chip);
-      await tester.pump();
-
-      expect(tester.widget<DesignSystemChip>(chip).selected, isTrue);
-      final container = ProviderScope.containerOf(tester.element(chip));
-      expect(container.read(frontInboxFilterProvider), isTrue);
-    });
-
-    testWidgets('stays while the filter is on even when nothing waits any '
-        'more, so it can be switched off', (tester) async {
-      var thread = waiting(1);
-      await pumpHeader(tester, threadOf: () => thread);
-      final chip = find.byKey(FrontChatHeaderKeys.inbox);
-      await tester.tap(chip);
-      await tester.pump();
-      final container = ProviderScope.containerOf(tester.element(chip));
-      expect(container.read(frontInboxFilterProvider), isTrue);
-
-      // The last item was taken somewhere.
-      thread = waiting(0);
-      container.invalidate(frontChatThreadProvider);
-      await tester.pump();
-      await tester.pump();
-
-      expect(tester.widget<DesignSystemChip>(chip).label, 'Inbox 0');
-      expect(tester.widget<DesignSystemChip>(chip).selected, isTrue);
-
-      await tester.tap(chip);
-      await tester.pump();
-
-      expect(container.read(frontInboxFilterProvider), isFalse);
-      expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
+      final dot = tester.getRect(find.byKey(FrontChatHeaderKeys.inbox));
+      final list = tester.getRect(find.byKey(FrontChatHeaderKeys.chats));
+      expect(list.overlaps(dot), isTrue);
+      expect(
+        tester
+            .widget<DesignSystemBadge>(find.byKey(FrontChatHeaderKeys.inbox))
+            .semanticLabel,
+        'Inbox 2',
+      );
     });
   });
 }

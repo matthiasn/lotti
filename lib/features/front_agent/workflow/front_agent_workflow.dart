@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_routing_index.dart';
 import 'package:lotti/features/front_agent/service/front_routing_index_builder.dart';
@@ -353,7 +354,9 @@ class FrontAgentWorkflow with AgentErrorLogging {
   }
 
   /// The last [frontRecentTurns] visible turns before the pending message —
-  /// user messages, replies, questions, dispatches — oldest first.
+  /// user messages, replies, questions, dispatches — oldest first, from the
+  /// pending message's own conversation only: another chat is another
+  /// subject, and its turns would steer the routing.
   ///
   /// A persisted output carries the source message as its `operationId`;
   /// the strategy's own tool-call log rows share the tool name but not
@@ -363,12 +366,34 @@ class FrontAgentWorkflow with AgentErrorLogging {
     String sourceMessageId,
   ) async {
     final messages = await _repository.getAgentMessages(agentId);
+    final userTurns = [
+      for (final m in messages)
+        if (m.kind == AgentMessageKind.user &&
+            m.metadata.runKey == null &&
+            m.contentEntryId != null)
+          m,
+    ];
+    final turnPayloads = await _repository.getEntitiesByIds({
+      for (final turn in userTurns) turn.contentEntryId!,
+    });
+    final conversationOf = <String, String>{
+      for (final turn in userTurns)
+        if (turnPayloads[turn.contentEntryId]
+            case final AgentMessagePayloadEntity payload)
+          turn.id: frontConversationOf(payload.content),
+    };
+    final conversation =
+        conversationOf[sourceMessageId] ?? earlierConversationId;
     final visible =
         messages.where((m) {
           if (m.id == sourceMessageId || m.deletedAt != null) return false;
           if (m.contentEntryId == null) return false;
-          if (m.kind == AgentMessageKind.user) return m.metadata.runKey == null;
+          if (m.kind == AgentMessageKind.user) {
+            return m.metadata.runKey == null &&
+                conversationOf[m.id] == conversation;
+          }
           return m.kind == AgentMessageKind.action &&
+              conversationOf[m.metadata.operationId] == conversation &&
               m.metadata.operationId != null &&
               const {
                 FrontAgentToolNames.replyToUser,

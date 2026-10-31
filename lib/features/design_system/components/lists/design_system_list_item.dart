@@ -71,6 +71,13 @@ class DesignSystemListItem extends StatefulWidget {
          'Provide either subtitle or subtitleSpans, not both.',
        );
 
+  /// Where a row's content starts inside it: its horizontal padding plus
+  /// the focus border its decoration reserves. A label set over a list of
+  /// these rows uses it to sit on the row text's own edge.
+  static double contentInset(DsTokens tokens, DesignSystemListItemSize size) =>
+      _ListItemSpec.fromTokens(tokens, size).horizontalPadding +
+      tokens.spacing.step1;
+
   final String? title;
   final String? subtitle;
   final Widget? titleContent;

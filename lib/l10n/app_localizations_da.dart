@@ -1058,13 +1058,13 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Flyt til projektet \"$project\"';
+  String agentSummarySetPriority(Object priority) {
+    return 'Sæt prioriteten til $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Sæt prioriteten til $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Flyt til projektet \"$project\"';
   }
 
   @override
@@ -3340,6 +3340,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputListening => 'Lytter...';
 
   @override
+  String get chatInputListeningTapWhenDone => 'Lytter – tryk, når du er færdig';
+
+  @override
   String get chatInputNoAudioRecorded =>
       'Der blev ikke optaget noget lyd. Prøv igen.';
 
@@ -3373,8 +3376,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stop og transskribér';
 
   @override
+  String get chatInputTapToTalk => 'Tryk for at tale';
+
+  @override
+  String get chatInputTranscribing => 'Transskriberer…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'Optagelsen blev gemt, men transskriptionen mislykkedes. Prøv igen.';
+
+  @override
+  String get chatInputTypeInstead => 'Skriv i stedet';
 
   @override
   String get checkInAddNoteHint => 'Tilføj en note…';
@@ -6878,6 +6890,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get filterSelectionNoMatches => 'Ingen kampe';
 
   @override
+  String get frontChatActionFailed => 'Det gik ikke igennem. Prøv igen.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Arkiverede chats · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Chat arkiveret.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Slet denne chat? Dens beskeder skjules på alle enheder, men slettes ikke. Det, du har gemt fra chatten, bliver, hvor det er.';
+
+  @override
   String get frontChatEmpty =>
       'Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.';
 
@@ -6890,13 +6917,35 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatInboxEmpty => 'Intet venter på dig.';
 
   @override
+  String get frontChatInboxTitle => 'Indbakke';
+
+  @override
+  String get frontChatNoChats =>
+      'Ingen chats endnu. Spørg om noget for at starte en.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Ingen chattitel passer.';
+
+  @override
+  String get frontChatOlder => 'Ældre';
+
+  @override
   String get frontChatOpen => 'Spørg ledsageren';
 
   @override
   String get frontChatPlaceholder => 'Spørg om hvad som helst…';
 
   @override
+  String get frontChatPrevious7Days => 'Seneste 7 dage';
+
+  @override
   String get frontChatResponding => 'Finder den, der ved det…';
+
+  @override
+  String get frontChatRowMenuHint => 'Chathandlinger';
+
+  @override
+  String get frontChatSearchChats => 'Søg i chats';
 
   @override
   String get frontChatTitle => 'Ledsager';

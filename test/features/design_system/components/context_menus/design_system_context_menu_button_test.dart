@@ -8,6 +8,30 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemContextMenuButton', () {
+    testWidgets('extent is the square the trigger occupies', (tester) async {
+      const buttonKey = Key('menu-button');
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const Center(
+            child: DesignSystemContextMenuButton(
+              key: buttonKey,
+              items: [
+                DesignSystemContextMenuItem(
+                  label: 'Edit',
+                  icon: LottiIcons.edit,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final tokens = tester.element(find.byKey(buttonKey)).designTokens;
+      final extent = DesignSystemContextMenuButton.extent(tokens);
+
+      expect(tester.getSize(find.byKey(buttonKey)), Size(extent, extent));
+    });
+
     testWidgets('renders a >=48px trigger; the menu is closed initially', (
       tester,
     ) async {

@@ -1062,13 +1062,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String agentSummarySetProject(Object project) {
-    return 'Verplaatsen naar project \"$project\"';
+  String agentSummarySetPriority(Object priority) {
+    return 'Prioriteit instellen op $priority';
   }
 
   @override
-  String agentSummarySetPriority(Object priority) {
-    return 'Prioriteit instellen op $priority';
+  String agentSummarySetProject(Object project) {
+    return 'Verplaatsen naar project \"$project\"';
   }
 
   @override
@@ -3355,6 +3355,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputListening => 'Luisteren...';
 
   @override
+  String get chatInputListeningTapWhenDone =>
+      'Ik luister – tik als je klaar bent';
+
+  @override
   String get chatInputNoAudioRecorded =>
       'Er is geen audio opgenomen. Probeer het opnieuw.';
 
@@ -3388,8 +3392,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputStopTranscribe => 'Stoppen en transcriberen';
 
   @override
+  String get chatInputTapToTalk => 'Tik om te praten';
+
+  @override
+  String get chatInputTranscribing => 'Bezig met uitschrijven…';
+
+  @override
   String get chatInputTranscriptionFailed =>
       'De opname is gelukt, maar het transcriberen is mislukt. Probeer het opnieuw.';
+
+  @override
+  String get chatInputTypeInstead => 'Liever typen';
 
   @override
   String get checkInAddNoteHint => 'Voeg een notitie toe…';
@@ -6908,6 +6921,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get filterSelectionNoMatches => 'Geen overeenkomsten';
 
   @override
+  String get frontChatActionFailed =>
+      'Dat is niet gelukt. Probeer het opnieuw.';
+
+  @override
+  String frontChatArchivedRow(int count) {
+    return 'Gearchiveerde chats · $count';
+  }
+
+  @override
+  String get frontChatArchivedToast => 'Chat gearchiveerd.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Deze chat verwijderen? Zijn berichten worden op al je apparaten verborgen, niet gewist. Wat je uit deze chat hebt opgeslagen, blijft waar het is.';
+
+  @override
   String get frontChatEmpty =>
       'Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.';
 
@@ -6920,13 +6949,35 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatInboxEmpty => 'Er wacht niets op je.';
 
   @override
+  String get frontChatInboxTitle => 'Inbox';
+
+  @override
+  String get frontChatNoChats =>
+      'Nog geen chats. Stel een vraag om er een te beginnen.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Geen chattitel komt overeen.';
+
+  @override
+  String get frontChatOlder => 'Ouder';
+
+  @override
   String get frontChatOpen => 'Vraag het de metgezel';
 
   @override
   String get frontChatPlaceholder => 'Vraag wat je wilt…';
 
   @override
+  String get frontChatPrevious7Days => 'Afgelopen 7 dagen';
+
+  @override
   String get frontChatResponding => 'Zoekt wie het weet…';
+
+  @override
+  String get frontChatRowMenuHint => 'Chatacties';
+
+  @override
+  String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
   String get frontChatTitle => 'Metgezel';

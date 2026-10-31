@@ -5,6 +5,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/features/front_agent/workflow/front_agent_contract.dart';
@@ -27,12 +28,44 @@ class FrontChatThreadBuilder {
   final AgentRepository _repository;
 
   /// At most this many visible messages, the newest ones — the shared
-  /// projection's bound.
+  /// projection's bound, per conversation.
   static const int maxMessages = 50;
 
-  Future<FrontChatThread> build() async {
+  /// The thread of one conversation, [conversationId] — or with none, of
+  /// every conversation but those [excluded] (the deleted ones), which is
+  /// what the inbox gathers from.
+  ///
+  /// A user turn's conversation is the one its payload names; everything a
+  /// run wrote for the turn — her reply, her question, the doors — is in
+  /// the turn's conversation through its `operationId`.
+  Future<FrontChatThread> build({
+    String? conversationId,
+    Set<String> excluded = const {},
+  }) async {
     final rows = await _repository.getAgentMessages(frontAgentId);
     rows.sort(_chronological);
+
+    // The turns in scope, with their words: read first — in one batch, as
+    // the whole history is scoped — so a reply that reached this device
+    // before its turn is still placed by it.
+    final turnPayloads = await _repository.getEntitiesByIds({
+      for (final row in rows)
+        if (isFrontUserTurn(row)) ?row.contentEntryId,
+    });
+    final turnTexts = <String, String>{};
+    for (final row in rows) {
+      if (!isFrontUserTurn(row)) continue;
+      final payload = turnPayloads[row.contentEntryId];
+      if (payload is! AgentMessagePayloadEntity) continue;
+      final conversation = frontConversationOf(payload.content);
+      final inScope = conversationId == null
+          ? !excluded.contains(conversation)
+          : conversation == conversationId;
+      final text = payload.content['text'];
+      if (inScope && text is String && text.trim().isNotEmpty) {
+        turnTexts[row.id] = text;
+      }
+    }
 
     final messages = <AgentChatMessage>[];
     final options = <String, List<FrontAskOption>>{};
@@ -40,9 +73,12 @@ class FrontChatThreadBuilder {
 
     for (final row in rows) {
       if (isFrontUserTurn(row)) {
-        final text = await _text(row.contentEntryId, 'text');
+        final text = turnTexts[row.id];
         if (text == null) continue;
         messages.add(_message(row, AgentChatRole.user, text));
+      } else if (!turnTexts.containsKey(row.metadata.operationId)) {
+        // Written for a turn of another conversation, or of none.
+        continue;
       } else if (isFrontAnswerRow(row)) {
         switch (row.metadata.toolName) {
           case FrontAgentToolNames.replyToUser:
