@@ -6958,6 +6958,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get filterSelectionNoMatches => 'Nessuna corrispondenza';
 
   @override
+  String get frontChatActionFailed => 'Non è andato a buon fine. Riprova.';
+
+  @override
+  String get frontChatArchivedToast => 'Chat archiviata.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Eliminare questa chat? I suoi messaggi spariscono da tutti i dispositivi. Quello che ne hai salvato resta dov\'è.';
+
+  @override
   String get frontChatEmpty =>
       'Chiedi di un’attività, un obiettivo, un progetto o una persona, o racconta cosa è successo. Risponde l’agente giusto, e nulla viene archiviato finché non tocchi.';
 
@@ -6970,6 +6980,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatInboxEmpty => 'Niente ti aspetta.';
 
   @override
+  String get frontChatNoChats =>
+      'Ancora nessuna chat. Fai una domanda per iniziarne una.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Nessuna chat corrisponde.';
+
+  @override
   String get frontChatOpen => 'Chiedi alla compagna';
 
   @override
@@ -6977,6 +6994,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Sta cercando chi lo sa…';
+
+  @override
+  String get frontChatSearchChats => 'Cerca nelle chat';
 
   @override
   String get frontChatTitle => 'Compagna';

@@ -15,16 +15,19 @@ import 'package:lotti/features/design_system/components/dividers/design_system_d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_pane.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/get_it.dart';
@@ -74,6 +77,7 @@ void main() {
     Future<FrontChatThread> Function()? thread,
     VoidCallback? onClose,
     QueryAccessSnapshot? journalAccess,
+    FrontConversationIndex? conversations,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -94,6 +98,24 @@ void main() {
           overrides: [
             frontChatThreadProvider.overrideWith(
               (ref) => (thread ?? () async => FrontChatThread.empty)(),
+            ),
+            frontAllChatsThreadProvider.overrideWith(
+              (ref) => (thread ?? () async => FrontChatThread.empty)(),
+            ),
+            // Where the user left off: the conversation sends land in.
+            frontConversationsProvider.overrideWith(
+              (ref) async =>
+                  conversations ??
+                  FrontConversationIndex(
+                    conversations: [
+                      FrontConversation(
+                        id: 'c-1',
+                        title: 'Two things.',
+                        lastActivity: now,
+                        archived: false,
+                      ),
+                    ],
+                  ),
             ),
             frontChatServiceProvider.overrideWithValue(chatService),
             frontAgentServiceProvider.overrideWithValue(agentService),
@@ -271,7 +293,7 @@ void main() {
     tester,
   ) async {
     when(
-      () => chatService.sendMessage(text: 'Swim 2 km'),
+      () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
     ).thenAnswer((_) async {});
     await pumpPane(
       tester,
@@ -296,13 +318,15 @@ void main() {
 
     verifyInOrder([
       () => agentService.getOrCreate(),
-      () => chatService.sendMessage(text: 'Swim 2 km'),
+      () => chatService.sendMessage(text: 'Swim 2 km', conversationId: 'c-1'),
     ]);
   });
 
   testWidgets('typing and sending goes through the chat service; a failed '
       'turn offers a retry that re-wakes the same turn', (tester) async {
-    when(() => chatService.sendMessage(text: 'Hello')).thenThrow(
+    when(
+      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+    ).thenThrow(
       const FrontChatTurnException('boom', messageId: 'm-1'),
     );
     when(
@@ -315,7 +339,9 @@ void main() {
     await tester.tap(find.byIcon(LottiIcons.send));
     await tester.pumpAndSettle();
 
-    verify(() => chatService.sendMessage(text: 'Hello')).called(1);
+    verify(
+      () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+    ).called(1);
     expect(find.text("That didn't send."), findsOneWidget);
 
     await tester.tap(find.text('Try Again'));
@@ -323,6 +349,27 @@ void main() {
 
     verify(() => chatService.retryMessage(messageId: 'm-1')).called(1);
     expect(find.text("That didn't send."), findsNothing);
+  });
+
+  testWidgets('the list of conversations takes the thread’s place while it '
+      'is open', (tester) async {
+    await pumpPane(tester);
+    expect(find.byType(AgentChatView), findsOneWidget);
+
+    await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(FrontConversationList), findsOneWidget);
+    expect(find.byType(AgentChatView), findsNothing);
+    expect(find.text('Two things.'), findsOneWidget);
+
+    await tester.tap(find.text('Two things.'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(FrontConversationList), findsNothing);
+    expect(find.byType(AgentChatView), findsOneWidget);
   });
 
   testWidgets('the header close hands back to the host', (tester) async {
@@ -412,7 +459,7 @@ void main() {
     testWidgets('a send leaves the inbox filter, so the new turn lands in '
         'the whole thread', (tester) async {
       when(
-        () => chatService.sendMessage(text: 'Hello'),
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
       ).thenAnswer((_) async {});
       await pumpPane(tester, thread: () async => waiting());
       await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
@@ -426,7 +473,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      verify(() => chatService.sendMessage(text: 'Hello')).called(1);
+      verify(
+        () => chatService.sendMessage(text: 'Hello', conversationId: 'c-1'),
+      ).called(1);
       expect(find.text('Fine.'), findsOneWidget);
       final container = ProviderScope.containerOf(
         tester.element(find.byKey(FrontChatHeaderKeys.inbox)),

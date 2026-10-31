@@ -11699,6 +11699,24 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get filterSelectionNoMatches;
 
+  /// No description provided for @frontChatActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t go through. Try again.'**
+  String get frontChatActionFailed;
+
+  /// No description provided for @frontChatArchivedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat archived.'**
+  String get frontChatArchivedToast;
+
+  /// No description provided for @frontChatDeleteExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this chat? Its messages leave every device. Whatever you filed from it stays where it is.'**
+  String get frontChatDeleteExplanation;
+
   /// No description provided for @frontChatEmpty.
   ///
   /// In en, this message translates to:
@@ -11717,6 +11735,18 @@ abstract class AppLocalizations {
   /// **'Nothing is waiting for you.'**
   String get frontChatInboxEmpty;
 
+  /// No description provided for @frontChatNoChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats yet. Ask something to start one.'**
+  String get frontChatNoChats;
+
+  /// No description provided for @frontChatNoMatchingChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No chat matches.'**
+  String get frontChatNoMatchingChats;
+
   /// No description provided for @frontChatOpen.
   ///
   /// In en, this message translates to:
@@ -11734,6 +11764,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finding who knows…'**
   String get frontChatResponding;
+
+  /// No description provided for @frontChatSearchChats.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats'**
+  String get frontChatSearchChats;
 
   /// No description provided for @frontChatTitle.
   ///

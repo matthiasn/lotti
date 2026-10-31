@@ -1,8 +1,8 @@
 # Front agent
 
-Status: slices 0–2, and the first slice of the voice-first plan
+Status: slices 0–2, and slices A and B of the voice-first plan
 (`docs/implementation_plans/2026-10-31_voice_first_front_agent.md`): she
-answers from the journal. Behind the `enable_front_agent` flag in Advanced
+answers from the journal, and the user keeps many conversations with her. Behind the `enable_front_agent` flag in Advanced
 settings.
 
 The front agent is the one agent the user talks to in one place. It does not
@@ -24,7 +24,10 @@ from the journal, within the categories she may see (a category named in the
 question narrows it), with the passages she relied on, each opening its
 source. A statement under a task is a **proposal**: one tap
 files the user's words verbatim as an entry under the task, and only the
-tap writes. What nothing owns waits in the **inbox** — the same thread,
+tap writes. The user keeps many **conversations** with her, as in a ChatGPT
+or Claude window: each a subject of its own, titled by its first question,
+listed newest first under the header's title, renamed, archived or deleted
+there. What nothing owns waits in the **inbox** — every conversation,
 filtered — with chips that make it a task, start a goal or project, or save
 it as a note, or leave it. Whatever a tap wrote can be opened or undone,
 and a proposal she got wrong goes to the inbox rather than being retyped.
@@ -32,8 +35,8 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 ## What it owns
 
 - `model/` — the fixed identity (`front_agent`), the dispatch shape and its
-  thresholds, the routing index and its caps, the door record, and the
-  thread projection the chat surface renders.
+  thresholds, the routing index and its caps, the door record, the thread
+  projection the chat surface renders, and what a conversation is.
 - `workflow/` — the tool contract and system prompt, the dispatch validator
   (the rules in code), the conversation strategy (count-and-refuse lookups,
   terminal calls), the model resolution (its own setup, never a category's)
@@ -41,14 +44,16 @@ and a proposal she got wrong goes to the inbox rather than being retyped.
 - `service/` — the index builder over existing reads, the singleton's lazy
   creation, the chat service that makes a user turn durable with a recovery
   record and runs the wake, the door walker, the owner titles, the thread
-  builder that mirrors specialists' replies, and the filing service behind
-  every tap under a door.
+  builder that mirrors specialists' replies, the conversation service, and
+  the filing service behind every tap under a door.
 - `runtime/` — the maintenance hook that re-arms an unanswered turn's
   recovery on every device.
-- `state/` — providers, the composer controller, the thread provider, and
+- `state/` — providers, the composer controller, the thread providers, the
+  picked and active conversation, and
   the wake-runner, maintenance and setup-resolver contributions merged in
   `app_bootstrap.dart`.
-- `ui/` — her header with the inbox chip, the door card with its proposals
+- `ui/` — her header with the conversation's title and the inbox chip, the
+  list of conversations, the door card with its proposals
   and inbox chips, the clarifying chips, the per-turn cost line, the pane on
   the shared `AgentChatView`, and the app-shell sheet the sidebar row, the
   phone launcher button and the keyboard command open.

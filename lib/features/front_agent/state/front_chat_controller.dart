@@ -4,6 +4,7 @@ import 'package:lotti/features/front_agent/service/front_chat_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/front_agent/state/front_agent_providers.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 
 @immutable
@@ -64,7 +65,7 @@ class FrontChatComposerState {
 
 /// Keep-alive: a draft survives closing and reopening the sheet (the goal
 /// and person chat controllers' shape). There is one front agent, so there
-/// is one composer.
+/// is one composer, whichever conversation is open.
 final frontChatControllerProvider =
     NotifierProvider<FrontChatController, FrontChatComposerState>(
       FrontChatController.new,
@@ -87,18 +88,21 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
   Future<void> sendText(String text) async {
     final message = text.trim();
     if (state.isSending || message.isEmpty) return;
-    // A send is a new turn, and the whole thread is where it lands.
+    // A send is a new turn, and its conversation is where it lands.
     ref.read(frontInboxFilterProvider.notifier).clear();
     state = state.copyWith(isSending: true);
     try {
+      final conversationId = await _landingConversation();
       // The identity is created on first use, with the narrow default
       // allow-list (decision 4).
       await ref.read(frontAgentServiceProvider).getOrCreate();
-      await ref.read(frontChatServiceProvider).sendMessage(text: message);
-      ref.invalidate(frontChatThreadProvider);
+      await ref
+          .read(frontChatServiceProvider)
+          .sendMessage(text: message, conversationId: conversationId);
+      _reproject();
       state = state.settled();
     } on FrontChatTurnException catch (error) {
-      ref.invalidate(frontChatThreadProvider);
+      _reproject();
       state = state.settled(
         draft: state.draft,
         failedMessage: message,
@@ -117,15 +121,19 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     try {
       final service = ref.read(frontChatServiceProvider);
       if (messageId == null) {
+        final conversationId = await _landingConversation();
         await ref.read(frontAgentServiceProvider).getOrCreate();
-        await service.sendMessage(text: failed);
+        await service.sendMessage(
+          text: failed,
+          conversationId: conversationId,
+        );
       } else {
         await service.retryMessage(messageId: messageId);
       }
-      ref.invalidate(frontChatThreadProvider);
+      _reproject();
       state = state.settled();
     } on FrontChatTurnException catch (error) {
-      ref.invalidate(frontChatThreadProvider);
+      _reproject();
       state = state.settled(
         draft: failed,
         failedMessage: failed,
@@ -138,6 +146,66 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
         failedMessageId: messageId,
       );
     }
+  }
+
+  /// The conversation a send lands in: the active one, pinned, so a newer
+  /// conversation arriving from another device does not take the surface
+  /// out from under the reply.
+  Future<String> _landingConversation() async {
+    final id = await ref.read(frontActiveConversationProvider.future);
+    ref.read(frontPickedConversationProvider.notifier).picked = id;
+    return id;
+  }
+
+  /// Re-reads what a write changed: the shown thread, the inbox it counts
+  /// from, and the conversation list.
+  void _reproject() => ref
+    ..invalidate(frontChatThreadProvider)
+    ..invalidate(frontAllChatsThreadProvider)
+    ..invalidate(frontConversationsProvider);
+
+  /// Opens [conversationId]; the inbox filter, which spans them all, is
+  /// left, and the draft stays with the composer.
+  void openConversation(String conversationId) {
+    ref.read(frontInboxFilterProvider.notifier).clear();
+    ref.read(frontPickedConversationProvider.notifier).picked = conversationId;
+  }
+
+  /// A new, empty conversation.
+  void startConversation() {
+    ref.read(frontInboxFilterProvider.notifier).clear();
+    ref.read(frontPickedConversationProvider.notifier).startNew();
+  }
+
+  Future<void> renameConversation(String conversationId, String title) async {
+    await ref
+        .read(frontConversationServiceProvider)
+        .rename(
+          conversationId,
+          title,
+        );
+    _reproject();
+  }
+
+  Future<void> archiveConversation(
+    String conversationId, {
+    required bool archived,
+  }) async {
+    await ref
+        .read(frontConversationServiceProvider)
+        .archive(conversationId, archived: archived);
+    _reproject();
+  }
+
+  /// Deletes [conversationId]; when it was the open one, the surface goes
+  /// back to where the user left off elsewhere.
+  Future<void> deleteConversation(String conversationId) async {
+    await ref.read(frontConversationServiceProvider).delete(conversationId);
+    final picker = ref.read(frontPickedConversationProvider.notifier);
+    if (ref.read(frontPickedConversationProvider) == conversationId) {
+      picker.reset();
+    }
+    _reproject();
   }
 
   /// Files the proposal under its task — the user's one tap (decision 1).
@@ -182,7 +250,7 @@ class FrontChatController extends Notifier<FrontChatComposerState> {
     } catch (_) {
       state = state.copyWith(failedDoorIds: {...state.failedDoorIds, doorId});
     } finally {
-      ref.invalidate(frontChatThreadProvider);
+      _reproject();
       state = state.copyWith(
         busyDoorIds: {...state.busyDoorIds}..remove(doorId),
       );

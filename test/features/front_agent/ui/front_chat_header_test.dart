@@ -11,9 +11,11 @@ import 'package:lotti/features/design_system/components/chips/design_system_chip
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
 import 'package:lotti/utils/consts.dart';
@@ -29,6 +31,7 @@ void main() {
     double width = 400,
     FrontChatThread thread = FrontChatThread.empty,
     FrontChatThread Function()? threadOf,
+    FrontConversationIndex conversations = FrontConversationIndex.empty,
   }) async {
     await setUpTestGetIt();
     addTearDown(tearDownTestGetIt);
@@ -55,6 +58,11 @@ void main() {
           frontChatThreadProvider.overrideWith(
             (ref) async => threadOf?.call() ?? thread,
           ),
+          // The inbox counts across every conversation.
+          frontAllChatsThreadProvider.overrideWith(
+            (ref) async => threadOf?.call() ?? thread,
+          ),
+          frontConversationsProvider.overrideWith((ref) async => conversations),
         ],
       ),
     );
@@ -64,6 +72,78 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
     }
   }
+
+  group('conversations', () {
+    final census = FrontConversationIndex(
+      conversations: [
+        FrontConversation(
+          id: 'c-1',
+          title: 'Plan the census',
+          lastActivity: DateTime(2026, 10, 31, 9),
+          archived: false,
+        ),
+      ],
+    );
+    String titleOf(WidgetTester tester) =>
+        tester.widget<Text>(find.byKey(FrontChatHeaderKeys.title)).data!;
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(
+          tester.element(find.byType(FrontChatHeader)),
+        );
+
+    testWidgets('names the open conversation by its title', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      expect(titleOf(tester), 'Plan the census');
+    });
+
+    testWidgets('names her for a conversation not begun', (tester) async {
+      await pumpHeader(tester);
+      expect(titleOf(tester), 'Companion');
+    });
+
+    testWidgets('the title opens and closes the list, which it then '
+        'names', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+      final listOpen = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(listOpen.close);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
+      await tester.pump();
+      expect(listOpen.read(), isTrue);
+      expect(titleOf(tester), 'Chats');
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.chats));
+      await tester.pump();
+      expect(listOpen.read(), isFalse);
+      expect(titleOf(tester), 'Plan the census');
+    });
+
+    testWidgets('a new chat starts an empty conversation and closes the '
+        'list', (tester) async {
+      await pumpHeader(tester, conversations: census);
+      final container = containerOf(tester);
+      final listOpen = container.listen(
+        frontConversationListOpenProvider,
+        (_, _) {},
+      );
+      addTearDown(listOpen.close);
+      container.read(frontConversationListOpenProvider.notifier).toggle();
+      await tester.pump();
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.newChat));
+      await tester.pump();
+      await tester.pump();
+
+      final picked = container.read(frontPickedConversationProvider);
+      expect(picked, isNot(anyOf(isNull, 'c-1')));
+      expect(listOpen.read(), isFalse);
+      expect(titleOf(tester), 'Companion');
+    });
+  });
 
   testWidgets('names her in one row and offers close and the internals', (
     tester,
@@ -187,7 +267,7 @@ void main() {
 
       // The last item was taken somewhere.
       thread = waiting(0);
-      container.invalidate(frontChatThreadProvider);
+      container.invalidate(frontAllChatsThreadProvider);
       await tester.pump();
       await tester.pump();
 

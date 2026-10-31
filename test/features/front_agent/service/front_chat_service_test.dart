@@ -103,8 +103,11 @@ void main() {
 
   group('appendMessage', () {
     test('an empty message persists nothing and wakes nothing', () async {
-      expect(await service.appendMessage(text: '   '), isNull);
-      await service.sendMessage(text: '   ');
+      expect(
+        await service.appendMessage(text: '   ', conversationId: 'c-1'),
+        isNull,
+      );
+      await service.sendMessage(text: '   ', conversationId: 'c-1');
       expect(upserts, isEmpty);
       verifyNever(() => repository.getEntity(any()));
     });
@@ -115,7 +118,7 @@ void main() {
       ).thenAnswer((_) async => identity(AgentLifecycle.dormant));
 
       await expectLater(
-        service.appendMessage(text: 'Hello'),
+        service.appendMessage(text: 'Hello', conversationId: 'c-1'),
         throwsA(isA<FrontChatTurnException>()),
       );
       expect(upserts, isEmpty);
@@ -127,13 +130,19 @@ void main() {
       () async {
         final messageId = await withClock(
           Clock.fixed(now),
-          () => service.appendMessage(text: '  Buy the hose  '),
+          () => service.appendMessage(
+            text: '  Buy the hose  ',
+            conversationId: 'c-1',
+          ),
         );
 
         final payload = upserts.whereType<AgentMessagePayloadEntity>().single;
         final message = upserts.whereType<AgentMessageEntity>().single;
         expect(messageId, message.id);
-        expect(payload.content, {'text': 'Buy the hose'});
+        expect(payload.content, {
+          'text': 'Buy the hose',
+          'conversationId': 'c-1',
+        });
         expect(message.kind, AgentMessageKind.user);
         expect(message.contentEntryId, payload.id);
         // The source turn is its own thread; the wake links back by token.
@@ -174,7 +183,10 @@ void main() {
         upserts.add(entity);
       });
 
-      final messageId = await service.appendMessage(text: 'Hello');
+      final messageId = await service.appendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+      );
 
       expect(messageId, isNotNull);
       expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
@@ -200,7 +212,10 @@ void main() {
         return persisted?.id == id ? persisted : null;
       });
 
-      final messageId = await service.appendMessage(text: 'Hello');
+      final messageId = await service.appendMessage(
+        text: 'Hello',
+        conversationId: 'c-1',
+      );
 
       expect(messageId, persisted!.id);
       expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));
@@ -238,7 +253,7 @@ void main() {
         return null;
       });
 
-      await service.sendMessage(text: 'Hello');
+      await service.sendMessage(text: 'Hello', conversationId: 'c-1');
 
       final message = upserts.whereType<AgentMessageEntity>().single;
       final record = recoveryOf(message.id);
@@ -252,7 +267,7 @@ void main() {
 
       Object? thrown;
       try {
-        await service.sendMessage(text: 'Hello');
+        await service.sendMessage(text: 'Hello', conversationId: 'c-1');
       } on FrontChatTurnException catch (e) {
         thrown = e;
       }

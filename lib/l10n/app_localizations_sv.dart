@@ -6882,6 +6882,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get filterSelectionNoMatches => 'Inga matcher';
 
   @override
+  String get frontChatActionFailed => 'Det gick inte. Försök igen.';
+
+  @override
+  String get frontChatArchivedToast => 'Chatten arkiverad.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Radera den här chatten? Dess meddelanden försvinner från alla enheter. Det du har sparat från den stannar där det är.';
+
+  @override
   String get frontChatEmpty =>
       'Fråga om en uppgift, ett mål, ett projekt eller en person, eller berätta vad som hänt. Rätt agent svarar, och inget arkiveras förrän du trycker.';
 
@@ -6894,6 +6904,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get frontChatInboxEmpty => 'Inget väntar på dig.';
 
   @override
+  String get frontChatNoChats =>
+      'Inga chattar än. Fråga något för att starta en.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Ingen chatt matchar.';
+
+  @override
   String get frontChatOpen => 'Fråga följeslagaren';
 
   @override
@@ -6901,6 +6918,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Letar efter den som vet…';
+
+  @override
+  String get frontChatSearchChats => 'Sök i chattar';
 
   @override
   String get frontChatTitle => 'Följeslagare';

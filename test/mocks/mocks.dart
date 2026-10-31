@@ -133,6 +133,7 @@ import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/state/live_world_services.dart';
 import 'package:lotti/features/front_agent/service/front_agent_service.dart';
 import 'package:lotti/features/front_agent/service/front_chat_service.dart';
+import 'package:lotti/features/front_agent/service/front_conversation_service.dart';
 import 'package:lotti/features/front_agent/service/front_filing_service.dart';
 import 'package:lotti/features/github/api/github_client.dart';
 import 'package:lotti/features/github/context/pull_request_context_service.dart';
@@ -1671,6 +1672,9 @@ class MockGoalChatService extends Mock implements GoalChatService {}
 class MockFrontAgentService extends Mock implements FrontAgentService {}
 
 class MockFrontChatService extends Mock implements FrontChatService {}
+
+class MockFrontConversationService extends Mock
+    implements FrontConversationService {}
 
 class MockFrontFilingService extends Mock implements FrontFilingService {}
 

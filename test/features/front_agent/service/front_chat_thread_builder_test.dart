@@ -5,6 +5,8 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/model/front_dispatch.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
@@ -68,13 +70,79 @@ void main() {
     return message;
   }
 
-  AgentMessageEntity userTurn(String id, String text, {DateTime? at}) => row(
+  AgentMessageEntity userTurn(
+    String id,
+    String text, {
+    DateTime? at,
+    String? conversation,
+  }) => row(
     id: id,
     kind: AgentMessageKind.user,
     runKey: null,
-    content: {'text': text},
+    content: {'text': text, frontConversationKey: ?conversation},
     createdAt: at,
   );
+
+  group('conversations', () {
+    void reply(String id, String turnId, String text, DateTime at) => row(
+      id: id,
+      kind: AgentMessageKind.action,
+      toolName: FrontAgentToolNames.replyToUser,
+      operationId: turnId,
+      content: {'text': text},
+      createdAt: at,
+    );
+
+    setUp(() {
+      userTurn('u0', 'From before chats', at: DateTime(2026, 10, 30, 9));
+      reply('r0', 'u0', 'An old answer.', DateTime(2026, 10, 30, 9, 1));
+      userTurn(
+        'u1',
+        'Plan the census',
+        at: DateTime(2026, 10, 31, 9),
+        conversation: 'c-1',
+      );
+      // Reached this device before its turn: a clock behind the writer's.
+      reply('r1', 'u1', 'Census planned.', DateTime(2026, 10, 31, 8, 59));
+      userTurn(
+        'u2',
+        'Count the hatchlings',
+        at: DateTime(2026, 10, 31, 10),
+        conversation: 'c-2',
+      );
+      reply('r2', 'u2', 'Forty-two.', DateTime(2026, 10, 31, 10, 1));
+    });
+
+    List<String> ids(FrontChatThread thread) => [
+      for (final m in thread.messages) m.id,
+    ];
+
+    test('one conversation shows its own turns and what answered them, '
+        'wherever the clocks put them', () async {
+      expect(ids(await builder.build(conversationId: 'c-1')), ['r1', 'u1']);
+      expect(ids(await builder.build(conversationId: 'c-2')), ['u2', 'r2']);
+    });
+
+    test('turns from before conversations are the earlier one', () async {
+      expect(
+        ids(await builder.build(conversationId: earlierConversationId)),
+        ['u0', 'r0'],
+      );
+    });
+
+    test('with none named, every conversation but the excluded', () async {
+      expect(ids(await builder.build(excluded: {'c-2'})), [
+        'u0',
+        'r0',
+        'r1',
+        'u1',
+      ]);
+    });
+
+    test('an unknown conversation is an empty thread', () async {
+      expect(ids(await builder.build(conversationId: 'c-new')), isEmpty);
+    });
+  });
 
   test('an empty thread projects to nothing', () async {
     final thread = await builder.build();
