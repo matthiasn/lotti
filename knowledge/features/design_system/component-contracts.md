@@ -182,14 +182,17 @@ stands for — takes it as `secondaryAction`, never as an interactive widget in
 `trailing`. The row excludes its visual subtree from semantics, so a button
 inside it would be unreachable by assistive tech, and a small glyph squeezed in
 after the trailing marker reads as a stray mark rather than a control. The row
-is split instead, the way `DesignSystemSplitButton` splits a button: the
-content keeps the pick, and an inset hairline (`decorative.level01`) separates
-a full-height, 48dp-wide segment carrying the navigation chevron — the glyph,
-size and ink of a `navigation` row's, because it also opens another page. Each
-segment has its own ink, the selected band runs under both, and the segment is its
-own button node named by the action's label (which names the entity, "Open
-Garden"), and a disabled row disables it. `PickerItem.action` passes it through
-`EntityPickerSheet`.
+keeps the pick across its content and puts a full-height, 48dp-wide button at
+its trailing edge carrying `LottiIcons.openPage` (an up-right arrow) — not the
+navigation chevron, which steps deeper into the same flow, and not
+`openExternal`, which leaves the app. The row stays one surface: its hover fill
+and selected band are painted once, by the split row itself, under the full
+width including the button, and no rule separates the two — a hairline would
+bisect the band that says "this is one row". The button adds its own circular
+hover and pressed ink on top, so it still reads as a target within the row; a
+tap on it never reaches the row's. It is its own button node named by the
+action's label (which names the entity, "Open Garden"), and a disabled row
+disables it. `PickerItem.action` passes it through `EntityPickerSheet`.
 
 `showSelectedMarker: false` (also on `EntityPickerSheet`) drops a single-select
 row's check where the selected band alone is the selected state and the rows

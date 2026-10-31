@@ -66,10 +66,6 @@ void main() {
   });
 
   group('a multi-select row says it is selected with its checkbox alone', () {
-    Color? fill(WidgetTester tester) =>
-        (tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration)
-            .color;
-
     DesignSystemSelectionRow row({
       required DesignSystemSelectionRowType type,
       Key key = const Key('row'),
@@ -452,13 +448,15 @@ void main() {
       );
     });
 
-    testWidgets('splits off a full-height trailing segment with the '
-        "navigation row's chevron", (tester) async {
+    testWidgets('puts a full-height open-page target at the trailing edge, '
+        'not the navigation chevron', (tester) async {
       await _pump(tester, actionRow(onTap: () {}, selected: true));
 
       final rowRect = tester.getRect(find.byKey(const Key('action-row')));
       final target = tester.getRect(find.byKey(actionKey));
-      final chevron = find.byIcon(LottiIcons.chevronRight);
+      final chevron = find.byIcon(LottiIcons.openPage);
+
+      expect(find.byIcon(LottiIcons.chevronRight), findsNothing);
 
       expect(target.right, rowRect.right);
       expect(target.width, TapTargets.minimum);
@@ -528,9 +526,85 @@ void main() {
 
       await _pump(tester, actionRow(onTap: () {}, selected: true));
       expect(bandUnderSegment(), findsOneWidget);
+      // The band is painted once, under both targets: the content's own fill
+      // stays clear, so a translucent band never doubles over the content.
+      expect(fill(tester), Colors.transparent);
 
       await _pump(tester, actionRow(onTap: () {}));
       expect(bandUnderSegment(), findsNothing);
+    });
+
+    testWidgets('no rule separates the action from the row', (tester) async {
+      await _pump(tester, actionRow(onTap: () {}));
+
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is ColoredBox &&
+              w.color == dsTokensLight.colors.decorative.level01,
+        ),
+        findsNothing,
+      );
+    });
+
+    group('hover', () {
+      Finder hoverUnderAction() => find.ancestor(
+        of: find.byKey(actionKey),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is ColoredBox && w.color == dsTokensLight.colors.surface.hover,
+        ),
+      );
+
+      Future<TestGesture> mouseAt(WidgetTester tester, Offset at) async {
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: Offset.zero);
+        await mouse.moveTo(at);
+        await tester.pump();
+        return mouse;
+      }
+
+      testWidgets('over the content, lights the full width, the action '
+          'included, and clears on exit', (tester) async {
+        await _pump(tester, actionRow(onTap: () {}));
+        expect(hoverUnderAction(), findsNothing);
+
+        final mouse = await mouseAt(
+          tester,
+          tester.getCenter(find.text('Garden')),
+        );
+        expect(hoverUnderAction(), findsOneWidget);
+        // One fill, not the content's own on top of the row's.
+        expect(fill(tester), Colors.transparent);
+
+        await mouse.moveTo(
+          tester.getBottomLeft(find.byType(Scaffold)) - const Offset(-1, 1),
+        );
+        await tester.pump();
+        expect(hoverUnderAction(), findsNothing);
+      });
+
+      testWidgets('over the action, keeps the row lit', (tester) async {
+        await _pump(tester, actionRow(onTap: () {}));
+        await mouseAt(tester, tester.getCenter(find.byKey(actionKey)));
+
+        expect(hoverUnderAction(), findsOneWidget);
+      });
+
+      testWidgets('the selected band wins over hover', (tester) async {
+        await _pump(tester, actionRow(onTap: () {}, selected: true));
+        await mouseAt(tester, tester.getCenter(find.text('Garden')));
+
+        expect(hoverUnderAction(), findsNothing);
+      });
+
+      testWidgets('a disabled row does not light', (tester) async {
+        await _pump(tester, actionRow(onTap: null));
+        await mouseAt(tester, tester.getCenter(find.text('Garden')));
+
+        expect(hoverUnderAction(), findsNothing);
+      });
     });
 
     testWidgets('a disabled row disables its action', (tester) async {
@@ -544,12 +618,16 @@ void main() {
       await tester.pump();
       expect(actionTaps, 0);
       expect(
-        tester.widget<Icon>(find.byIcon(LottiIcons.chevronRight)).color,
+        tester.widget<Icon>(find.byIcon(LottiIcons.openPage)).color,
         dsTokensLight.colors.text.lowEmphasis,
       );
     });
   });
 }
+
+/// The list item's own fill — the content target's surface.
+Color? fill(WidgetTester tester) =>
+    (tester.widget<Ink>(find.byType(Ink)).decoration! as BoxDecoration).color;
 
 Future<void> _pump(WidgetTester tester, Widget child) async {
   await tester.pumpWidget(
