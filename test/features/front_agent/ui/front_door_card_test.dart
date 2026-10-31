@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/query_chat_models.dart';
+import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -50,6 +53,7 @@ void main() {
     onSaveNote: (id) => acted.add(('note', id)),
     onStartGoal: (id) => acted.add(('goal', id)),
     onNewProject: (id) => acted.add(('project', id)),
+    onOpenEvidence: (evidence) => acted.add(('source', evidence.source.id)),
   );
 
   setUp(() => acted = []);
@@ -60,6 +64,7 @@ void main() {
     bool withActions = true,
     Set<String> busy = const {},
     Set<String> failed = const {},
+    QueryAccessSnapshot? journalAccess,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -68,6 +73,7 @@ void main() {
           actions: withActions ? actions() : null,
           busyDoorIds: busy,
           failedDoorIds: failed,
+          journalAccess: journalAccess,
         ),
       ),
     );
@@ -104,6 +110,127 @@ void main() {
     await tester.tap(find.byKey(ValueKey('front-door-$name-$index')));
     await tester.pumpAndSettle();
   }
+
+  group('her journal answer', () {
+    final category = categoryMindfulness;
+    final note = testTextEntry.copyWith(
+      meta: testTextEntry.meta.copyWith(
+        id: 'feeder-note',
+        categoryId: category.id,
+        private: false,
+      ),
+    );
+    final source = QuerySourceRef(
+      id: note.meta.id,
+      private: false,
+      categoryPrivate: false,
+      categoryId: category.id,
+    );
+    final evidence = QueryEvidence(
+      source: source,
+      kind: QuerySourceKind.text,
+      label: 'Feeder note',
+      sourceDate: DateTime(2026, 10, 20),
+      textVersion: 'entryText',
+      fingerprint: 'f',
+      sourceText: 'The seam walk comes after the feeder repair.',
+      start: 0,
+      end: 13,
+      summary: 'The order of the work',
+    );
+    QueryAccessSnapshot access({bool privateNote = false}) =>
+        QueryAccessSnapshot(
+          showPrivate: false,
+          categories: {category.id: category},
+          entries: {
+            note.meta.id: note.copyWith(
+              meta: note.meta.copyWith(private: privateNote),
+            ),
+          },
+        );
+    FrontDoorEntry answered({bool incomplete = false}) => entry(
+      record(
+        index: 0,
+        text: 'How is the garden?',
+        kind: FrontDestinationKind.journal,
+        ownerTitle: null,
+        outcome: FrontDoorAnswer(
+          text: 'After the feeder repair [1].',
+          summaryBased: false,
+          incomplete: incomplete,
+          fromJournal: true,
+          evidence: [evidence],
+          dependencies: [source],
+        ),
+      ),
+    );
+
+    testWidgets('shows her answer, attributed to the journal, with the '
+        'passages it cites; a source opens on a tap', (tester) async {
+      await pump(tester, [answered(incomplete: true)], journalAccess: access());
+
+      expect(titleOf(tester, 0), 'After the feeder repair [1].');
+      expect(statusOf(tester, 0), 'From your journal · may be incomplete');
+      expect(glyph(tester, 0).icon, LottiIcons.search);
+      final number = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(const ValueKey('front-door-source-0-0')),
+          matching: find.text('1'),
+        ),
+      );
+      expect(
+        number.style!.fontFeatures,
+        contains(const FontFeature.tabularFigures()),
+        reason: 'numbers of different widths would stagger the passages',
+      );
+      expect(find.text('Feeder note'), findsOneWidget);
+      expect(find.text('The seam walk'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('front-door-source-0-0')));
+      expect(acted, [('source', 'feeder-note')]);
+    });
+
+    testWidgets('is hidden once a source it rests on is no longer visible, '
+        'and until that is known', (tester) async {
+      for (final journalAccess in [access(privateNote: true), null]) {
+        await pump(tester, [answered()], journalAccess: journalAccess);
+
+        expect(
+          titleOf(tester, 0),
+          'Hidden: it draws on something you can no longer see.',
+        );
+        expect(find.text('Feeder note'), findsNothing);
+      }
+    });
+
+    testWidgets('while it searches, and with no model to answer, says so in '
+        "the journal's words", (tester) async {
+      await pump(tester, [
+        entry(
+          record(
+            index: 0,
+            text: 'How is the garden?',
+            kind: FrontDestinationKind.journal,
+            ownerTitle: null,
+          ),
+        ),
+        entry(
+          record(
+            index: 1,
+            text: 'And the feeder?',
+            kind: FrontDestinationKind.journal,
+            ownerTitle: null,
+            outcome: const FrontDoorSkipped(
+              FrontDoorSkipReason.inferenceUnavailable,
+            ),
+          ),
+        ),
+      ]);
+
+      expect(statusOf(tester, 0), 'Searching your journal…');
+      expect(statusOf(tester, 1), 'No AI setup can answer from your journal.');
+    });
+  });
 
   testWidgets('every card is a tile, the words, a status line; an answer is '
       "the owner's text with its attribution and caveats, and offers "
@@ -578,8 +705,14 @@ void main() {
     expect(statusOf(tester, 1), 'Asking the project…');
     expect(statusOf(tester, 2), 'Asking the goal…');
     expect(statusOf(tester, 3), 'Asking the person…');
-    for (final index in [4, 5, 6, 7]) {
+    for (final index in [4, 5, 7]) {
       expect(statusOf(tester, index), 'Asking this…');
+    }
+    // Her own door searches the journal rather than asking anyone.
+    expect(statusOf(tester, 6), 'Searching your journal…');
+    expect(glyph(tester, 6).icon, LottiIcons.search);
+    for (final index in [5, 7]) {
+      expect(glyph(tester, index).icon, LottiIcons.inbox);
     }
     expect(find.textContaining('id-'), findsNothing);
   });

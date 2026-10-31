@@ -4,7 +4,14 @@ import 'package:lotti/classes/agents/change_set.dart';
 part 'query_chat_models.freezed.dart';
 part 'query_chat_models.g.dart';
 
-enum QueryScopeKind { task, project, category }
+/// What a query conversation is about.
+///
+/// [journal] spans the page's category selection, or every category the
+/// reader may see without one; it has no home entry.
+/// [unknown] is what a kind added by a newer build decodes to: such a chat is
+/// unavailable rather than undecodable, so a synced chat of a future kind is
+/// never skipped for good.
+enum QueryScopeKind { task, project, category, journal, unknown }
 
 enum QuerySourceKind { text, recording, task, project, checklist }
 
@@ -12,12 +19,52 @@ enum QuerySourceKind { text, recording, task, project, checklist }
 @freezed
 abstract class QueryScope with _$QueryScope {
   const factory QueryScope({
+    @JsonKey(unknownEnumValue: QueryScopeKind.unknown)
     required QueryScopeKind kind,
     required String id,
   }) = _QueryScope;
 
+  const QueryScope._();
+
   factory QueryScope.fromJson(Map<String, dynamic> json) =>
       _$QueryScopeFromJson(json);
+
+  /// The journal-wide scope over the categories [categoryIds] — the page's
+  /// category selection, where `''` is the uncategorized bucket — or over
+  /// every visible category when the selection is empty. The selection is
+  /// part of the id, so each selection keeps its own chats.
+  factory QueryScope.journalIn(Set<String> categoryIds) => categoryIds.isEmpty
+      ? journal
+      : QueryScope(
+          kind: QueryScopeKind.journal,
+          id: '${journal.id}:${(categoryIds.toList()..sort()).join(',')}',
+        );
+
+  /// The journal-wide conversation scope over every category the reader may
+  /// see.
+  static const journal = QueryScope(
+    kind: QueryScopeKind.journal,
+    id: 'journal',
+  );
+
+  /// Whether the scope is anchored on a home entry (a task or a project).
+  bool get hasHome =>
+      kind == QueryScopeKind.task || kind == QueryScopeKind.project;
+
+  /// Whether the scope reaches past a single category: the journal, over
+  /// the page's category selection or every visible category.
+  bool get spansCategories => kind == QueryScopeKind.journal;
+
+  /// For a journal-wide scope narrowed to a category selection, that
+  /// selection (`''` for uncategorized); null for every other scope, and for
+  /// the journal over every visible category.
+  Set<String>? get journalCategoryIds {
+    if (!spansCategories) return null;
+    final prefix = '${journal.id}:';
+    return id.startsWith(prefix)
+        ? id.substring(prefix.length).split(',').toSet()
+        : null;
+  }
 }
 
 /// Visibility provenance survives source deletion. Current source metadata

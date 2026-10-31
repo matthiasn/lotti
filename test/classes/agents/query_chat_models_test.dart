@@ -140,4 +140,60 @@ void main() {
       expect(saved['sourceDate'], '2026-07-17T00:00:00.000');
     },
   );
+
+  group('QueryScope', () {
+    test('the journal scope round-trips and spans categories', () {
+      final decoded = QueryScope.fromJson(
+        jsonDecode(jsonEncode(QueryScope.journal.toJson()))
+            as Map<String, dynamic>,
+      );
+
+      expect(decoded, QueryScope.journal);
+      expect(decoded.spansCategories, isTrue);
+      expect(decoded.hasHome, isFalse);
+    });
+
+    test('a kind a newer build added decodes as unknown, not as an error', () {
+      final decoded = QueryScope.fromJson({'kind': 'galaxy', 'id': 'm31'});
+
+      expect(decoded.kind, QueryScopeKind.unknown);
+      expect(decoded.id, 'm31');
+      expect(decoded.hasHome, isFalse);
+      expect(decoded.spansCategories, isFalse);
+    });
+
+    test('a journal scope follows the category selection, order aside', () {
+      expect(QueryScope.journalIn(const {}), QueryScope.journal);
+      expect(QueryScope.journal.journalCategoryIds, isNull);
+
+      final narrowed = QueryScope.journalIn(const {'work', ''});
+      expect(narrowed, QueryScope.journalIn(const {'', 'work'}));
+      expect(narrowed.id, 'journal:,work');
+      expect(narrowed.spansCategories, isTrue);
+      expect(narrowed.journalCategoryIds, {'', 'work'});
+      expect(
+        const QueryScope(
+          kind: QueryScopeKind.category,
+          id: 'journal:work',
+        ).journalCategoryIds,
+        isNull,
+      );
+    });
+
+    test('only tasks and projects have a home', () {
+      expect(
+        {
+          for (final kind in QueryScopeKind.values)
+            kind: QueryScope(kind: kind, id: 'x').hasHome,
+        },
+        {
+          QueryScopeKind.task: true,
+          QueryScopeKind.project: true,
+          QueryScopeKind.category: false,
+          QueryScopeKind.journal: false,
+          QueryScopeKind.unknown: false,
+        },
+      );
+    });
+  });
 }

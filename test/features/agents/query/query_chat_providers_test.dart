@@ -22,6 +22,8 @@ import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
+import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -32,6 +34,7 @@ import 'package:lotti/logic/repositories/project_repository.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -203,6 +206,152 @@ void main() {
     },
   );
 
+  test('without the embedding pipeline there is no vector search', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(container.read(vectorSearchRepositoryProvider), isNull);
+  });
+
+  group('journal-wide', () {
+    const id = 'asking-agent';
+
+    test('no query chat opens on it: its answers live in the front '
+        "agent's thread", () async {
+      final bench = QueryTestBench();
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+        ]),
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(
+        queryChatTargetProvider(QueryScope.journal),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      await expectLater(
+        container.read(queryChatTargetProvider(QueryScope.journal).future),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+    });
+
+    test('a scope of a kind a newer build added is unavailable', () async {
+      final bench = QueryTestBench();
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+        ]),
+      );
+      addTearDown(container.dispose);
+      const future = QueryScope(kind: QueryScopeKind.unknown, id: 'future');
+      final sub = container.listen(queryChatTargetProvider(future), (_, _) {});
+      addTearDown(sub.close);
+
+      await expectLater(
+        container.read(queryChatTargetProvider(future).future),
+        throwsA(isA<QueryScopeUnavailable>()),
+      );
+    });
+
+    test(
+      "its profile is the Settings default, never the asking agent's",
+      () async {
+        final resolver = MockProfileResolver();
+        final profile = ResolvedProfile(
+          thinkingModelId: 'journal-model',
+          thinkingProvider: testInferenceProvider(),
+        );
+        when(
+          () => resolver.resolveStandalone(
+            agentConfig: const AgentConfig(),
+            legacyModelId: any(named: 'legacyModelId'),
+          ),
+        ).thenAnswer(
+          (_) async => ResolvedAgentSetup(
+            status: AgentSetupResolutionStatus.resolved,
+            profile: profile,
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: withServiceOverrides([
+            profileResolverProvider.overrideWithValue(resolver),
+            defaultInferenceProfileControllerProvider.overrideWith(
+              _NoDefaultProfile.new,
+            ),
+          ]),
+        );
+        addTearDown(container.dispose);
+
+        final resolved = await container.read(
+          queryProfileProvider((agentId: id, scope: QueryScope.journal)).future,
+        );
+
+        expect(resolved, same(profile));
+      },
+    );
+
+    test('its builder reads no reports and searches every category', () async {
+      final bench = QueryPersistenceBench()
+        ..add('note', category: categoryMindfulness.id);
+      addTearDown(bench.close);
+      final vectorSearch = MockVectorSearchRepository();
+      when(
+        () => bench.db.getConfigFlag(enableVectorSearchFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => vectorSearch.searchRelatedEntries(
+          query: any(named: 'query'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenAnswer(
+        (_) async => VectorSearchResult(
+          entities: [bench.entries['note']!],
+          elapsed: Duration.zero,
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: withServiceOverrides([
+          journalDbProvider.overrideWithValue(bench.db),
+          vectorSearchRepositoryProvider.overrideWithValue(vectorSearch),
+          querySourceAccessProvider.overrideWithValue(bench.crawler.access),
+          agentRepositoryProvider.overrideWithValue(bench.repository),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            MockCloudInferenceRepository(),
+          ),
+          queryProfileProvider((
+            agentId: id,
+            scope: QueryScope.journal,
+          )).overrideWith(
+            (ref) async => ResolvedProfile(
+              thinkingModelId: 'journal-model',
+              thinkingProvider: testInferenceProvider(),
+            ),
+          ),
+        ]),
+      );
+      addTearDown(container.dispose);
+
+      final builder = await container.read(queryBuilderFactoryProvider)(
+        QueryScope.journal,
+        id,
+        'chat',
+      );
+
+      expect(builder.summaryReader, isNull);
+      expect(builder.readActionContext, isNull);
+      expect(await builder.crawler.meaning!('fish stores', null), ['note']);
+      verify(
+        () => vectorSearch.searchRelatedEntries(
+          query: 'fish stores',
+          // ignore: avoid_redundant_argument_values
+          categoryIds: null,
+        ),
+      ).called(1);
+    });
+  });
+
   group('runtime wiring', () {
     setUp(() async {
       await setUpTestGetIt();
@@ -304,7 +453,11 @@ void main() {
       verifyZeroInteractions(cloud);
     });
 
-    for (final kind in QueryScopeKind.values) {
+    for (final kind in const [
+      QueryScopeKind.task,
+      QueryScopeKind.project,
+      QueryScopeKind.category,
+    ]) {
       test(
         '$kind keeps profile loading alive across frames for a query',
         () async {
@@ -399,9 +552,26 @@ void main() {
             }
             return bench.categories;
           });
+          // Search by meaning is on and set up on this device.
+          final vectorSearch = MockVectorSearchRepository();
+          when(
+            () => bench.db.getConfigFlag(enableVectorSearchFlag),
+          ).thenAnswer((_) async => true);
+          when(
+            () => vectorSearch.searchRelatedEntries(
+              query: any(named: 'query'),
+              categoryIds: any(named: 'categoryIds'),
+            ),
+          ).thenAnswer(
+            (_) async => VectorSearchResult(
+              entities: [bench.entries['task']!],
+              elapsed: Duration.zero,
+            ),
+          );
           final container = ProviderContainer(
             overrides: withServiceOverrides([
               journalDbProvider.overrideWithValue(bench.db),
+              vectorSearchRepositoryProvider.overrideWithValue(vectorSearch),
               agentSyncServiceProvider.overrideWithValue(bench.store.sync),
               agentRepositoryProvider.overrideWithValue(bench.repository),
               cloudInferenceRepositoryProvider.overrideWithValue(cloud),
@@ -450,6 +620,17 @@ void main() {
           );
           final corpus = await builder.crawler.discover(scope, ['feeder']);
           expect(corpus.documents.map((d) => d.entry.meta.id), ['task']);
+          // Its crawler searches by meaning, in the scope's own category.
+          expect(
+            await builder.crawler.meaning!('fish stores', {'some-category'}),
+            ['task'],
+          );
+          verify(
+            () => vectorSearch.searchRelatedEntries(
+              query: 'fish stores',
+              categoryIds: {'some-category'},
+            ),
+          ).called(1);
           expect(
             await builder.inference.complete(
               system: 'inspect',
@@ -699,4 +880,9 @@ void main() {
       );
     });
   }
+}
+
+class _NoDefaultProfile extends DefaultInferenceProfileController {
+  @override
+  Future<String?> build() async => null;
 }

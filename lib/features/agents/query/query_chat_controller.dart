@@ -217,8 +217,9 @@ class QueryChatController extends Notifier<QueryChatSession> {
                 (draft.summaryBased &&
                     access.entries[s.id]?.meta.deletedAt != null),
           ) ||
-          (key.scope.kind == QueryScopeKind.category &&
-              !access.allowsCategory(key.scope.id))) {
+          // Only the draft's sources were loaded: a home scope is held by
+          // its sources above, a scope without one is checked here.
+          (!key.scope.hasHome && !access.allowsScope(key.scope))) {
         cancel(id);
       }
     } catch (_) {

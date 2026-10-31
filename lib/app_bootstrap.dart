@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/speech/sherpa_installed_models_provider.dart';
 import 'package:lotti/features/ai/state/ai_action_interceptor.dart';
 import 'package:lotti/features/ai/state/paired_sync_nodes_provider.dart';
@@ -314,6 +315,11 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     onDeviceEmbeddingRepositoryProvider.overrideWithValue(
       getIt.isRegistered<OnDeviceEmbeddingRepository>()
           ? getIt<OnDeviceEmbeddingRepository>()
+          : null,
+    ),
+    vectorSearchRepositoryProvider.overrideWithValue(
+      getIt.isRegistered<VectorSearchRepository>()
+          ? getIt<VectorSearchRepository>()
           : null,
     ),
     syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),

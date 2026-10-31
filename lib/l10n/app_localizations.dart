@@ -11753,6 +11753,12 @@ abstract class AppLocalizations {
   /// **'That did not go through.'**
   String get frontDoorActionFailed;
 
+  /// Shown in place of a journal answer whose sources became private or were deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden: it draws on something you can no longer see.'**
+  String get frontDoorAnswerHidden;
+
   /// No description provided for @frontDoorAttribution.
   ///
   /// In en, this message translates to:
@@ -11789,6 +11795,12 @@ abstract class AppLocalizations {
   /// **'Filed under {owner}'**
   String frontDoorFiledUnder(String owner);
 
+  /// Attribution of an answer the front agent gave from the journal herself.
+  ///
+  /// In en, this message translates to:
+  /// **'From your journal'**
+  String get frontDoorFromJournal;
+
   /// No description provided for @frontDoorInbox.
   ///
   /// In en, this message translates to:
@@ -11812,6 +11824,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{owner} has no working AI setup.'**
   String frontDoorInferenceUnavailable(String owner);
+
+  /// Status when no AI setup can answer a journal question.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI setup can answer from your journal.'**
+  String get frontDoorJournalUnavailable;
 
   /// No description provided for @frontDoorKindGoal.
   ///
@@ -11908,6 +11926,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save as a note'**
   String get frontDoorSaveNote;
+
+  /// Status while the front agent searches the journal for an answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching your journal…'**
+  String get frontDoorSearchingJournal;
 
   /// No description provided for @frontDoorStartGoal.
   ///

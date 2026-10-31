@@ -31,6 +31,9 @@ class QueryAskButton extends ConsumerWidget {
       QueryScopeKind.task => messages.queryAskTask,
       QueryScopeKind.project => messages.queryAskProject,
       QueryScopeKind.category => messages.queryAskCategory,
+      // No pane hosts a journal or unknown scope (it refuses a scope with no
+      // visible home or category); the arm keeps the switch total.
+      QueryScopeKind.journal || QueryScopeKind.unknown => messages.queryAsk,
     };
     void open() => ref.read(queryPaneOpenProvider(scope).notifier).open = true;
     return disc

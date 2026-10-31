@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$QueryScope {
 
- QueryScopeKind get kind; String get id;
+@JsonKey(unknownEnumValue: QueryScopeKind.unknown) QueryScopeKind get kind; String get id;
 /// Create a copy of QueryScope
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $QueryScopeCopyWith<$Res>  {
   factory $QueryScopeCopyWith(QueryScope value, $Res Function(QueryScope) _then) = _$QueryScopeCopyWithImpl;
 @useResult
 $Res call({
- QueryScopeKind kind, String id
+@JsonKey(unknownEnumValue: QueryScopeKind.unknown) QueryScopeKind kind, String id
 });
 
 
@@ -154,7 +154,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( QueryScopeKind kind,  String id)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: QueryScopeKind.unknown)  QueryScopeKind kind,  String id)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QueryScope() when $default != null:
 return $default(_that.kind,_that.id);case _:
@@ -175,7 +175,7 @@ return $default(_that.kind,_that.id);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( QueryScopeKind kind,  String id)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(unknownEnumValue: QueryScopeKind.unknown)  QueryScopeKind kind,  String id)  $default,) {final _that = this;
 switch (_that) {
 case _QueryScope():
 return $default(_that.kind,_that.id);case _:
@@ -195,7 +195,7 @@ return $default(_that.kind,_that.id);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( QueryScopeKind kind,  String id)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(unknownEnumValue: QueryScopeKind.unknown)  QueryScopeKind kind,  String id)?  $default,) {final _that = this;
 switch (_that) {
 case _QueryScope() when $default != null:
 return $default(_that.kind,_that.id);case _:
@@ -209,11 +209,11 @@ return $default(_that.kind,_that.id);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _QueryScope implements QueryScope {
-  const _QueryScope({required this.kind, required this.id});
+class _QueryScope extends QueryScope {
+  const _QueryScope({@JsonKey(unknownEnumValue: QueryScopeKind.unknown) required this.kind, required this.id}): super._();
   factory _QueryScope.fromJson(Map<String, dynamic> json) => _$QueryScopeFromJson(json);
 
-@override final  QueryScopeKind kind;
+@override@JsonKey(unknownEnumValue: QueryScopeKind.unknown) final  QueryScopeKind kind;
 @override final  String id;
 
 /// Create a copy of QueryScope
@@ -249,7 +249,7 @@ abstract mixin class _$QueryScopeCopyWith<$Res> implements $QueryScopeCopyWith<$
   factory _$QueryScopeCopyWith(_QueryScope value, $Res Function(_QueryScope) _then) = __$QueryScopeCopyWithImpl;
 @override @useResult
 $Res call({
- QueryScopeKind kind, String id
+@JsonKey(unknownEnumValue: QueryScopeKind.unknown) QueryScopeKind kind, String id
 });
 
 

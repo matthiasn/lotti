@@ -1,10 +1,12 @@
 # Front agent
 
-Status: slice 2 — statements, filing and the inbox. Behind the
-`enable_front_agent` flag in Advanced settings.
+Status: slices 0–2, and the first slice of the voice-first plan
+(`docs/implementation_plans/2026-10-31_voice_first_front_agent.md`): she
+answers from the journal. Behind the `enable_front_agent` flag in Advanced
+settings.
 
 The front agent is the one agent the user talks to in one place. It does not
-answer for anyone and it never changes the record: it reads a bounded index
+answer for an owner and it never changes the record: it reads a bounded index
 of what exists — open tasks, projects, active goals and, when opted in,
 people — and decides where each part of what the user said belongs. Its one
 artifact is a **dispatch**: ordered, verbatim spans of the input, each with a
@@ -16,7 +18,11 @@ task or project question runs the owner's query pipeline headless and the
 answer comes back attributed to the owner; a goal or person turn, question
 or statement, becomes a turn in that agent's own chat, whose reply the front
 thread mirrors. The user sees each answer under the name of the agent that
-gave it, never reworded. A statement under a task is a **proposal**: one tap
+gave it, never reworded. A question about their records that no single owner
+holds — what was decided, where something was noted — she answers herself
+from the journal, within the categories she may see (a category named in the
+question narrows it), with the passages she relied on, each opening its
+source. A statement under a task is a **proposal**: one tap
 files the user's words verbatim as an entry under the task, and only the
 tap writes. What nothing owns waits in the **inbox** — the same thread,
 filtered — with chips that make it a task, start a goal or project, or save

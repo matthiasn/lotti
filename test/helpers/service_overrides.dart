@@ -4,6 +4,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
+import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/relationship_cascade.dart';
@@ -32,6 +33,11 @@ List<Override> getItServiceOverrides() => [
     onDeviceEmbeddingRepositoryProvider.overrideWith(
       (ref) => getIt.isRegistered<OnDeviceEmbeddingRepository>()
           ? getIt<OnDeviceEmbeddingRepository>()
+          : null,
+    ),
+    vectorSearchRepositoryProvider.overrideWith(
+      (ref) => getIt.isRegistered<VectorSearchRepository>()
+          ? getIt<VectorSearchRepository>()
           : null,
     ),
     settingsDbProvider.overrideWith((ref) => _fromGetIt<SettingsDb>()),

@@ -32,8 +32,10 @@ typedef FrontOwnerAgentLookup =
 /// specialist's wake: a goal or person segment is appended to that agent's
 /// thread and its wake enqueued, and the reply arrives through the
 /// projection when it lands. A task or project question is answered here,
-/// by the query pipeline, headless. Every other segment is recorded as
-/// skipped with its reason; nothing writes to the journal.
+/// by the query pipeline, headless; so is a journal question, which the
+/// front agent answers herself from the journal within her allow-list.
+/// Every other segment is recorded as skipped with its reason; nothing
+/// writes to the journal.
 ///
 /// Each segment is claimed under its deterministic record id before its
 /// door is invoked (the `ChangeDispatchIntents` discipline), so a retry or
@@ -284,6 +286,12 @@ class FrontDoorWalker {
       case FrontDestinationKind.newThing:
         return FrontDoorInbox(newKind: segment.newKind);
       case FrontDestinationKind.journal:
+        // A question about the record that no single owner holds is hers
+        // to answer, from the journal; anything else is kept as a note.
+        if (question) {
+          return _answerFromJournal(segment.text, sourceMessageId);
+        }
+        return const FrontDoorInbox();
       case FrontDestinationKind.unrouted:
         return const FrontDoorInbox();
       case FrontDestinationKind.day:
@@ -313,30 +321,85 @@ class FrontDoorWalker {
           : QueryScopeKind.project,
       id: ownerId,
     );
+    final built = await _build(
+      scope,
+      agentId: agent.agentId,
+      question: question,
+      sourceMessageId: sourceMessageId,
+    );
+    if (built == null) {
+      return const FrontDoorSkipped(FrontDoorSkipReason.inferenceUnavailable);
+    }
+    return FrontDoorAnswer(
+      text: built.answer.text,
+      summaryBased: built.answer.summaryBased,
+      incomplete: built.answer.coverage.incomplete,
+      ownerIds: built.answer.summaryOwnerIds,
+    );
+  }
+
+  /// The front agent answers from the journal herself: the query pipeline
+  /// over every category in her allow-list (decision 4; an empty allow-list
+  /// is unrestricted), which a category named in the question narrows. The
+  /// answer keeps its evidence and its dependencies, so the surface can show
+  /// the passages and hide all of it once a source is no longer visible.
+  Future<FrontDoorOutcome> _answerFromJournal(
+    String question,
+    String sourceMessageId,
+  ) async {
+    final identity = await _repository.getEntity(frontAgentId);
+    final allowed = identity is AgentIdentityEntity
+        ? identity.allowedCategoryIds
+        : const <String>{};
+    final built = await _build(
+      QueryScope.journalIn(allowed),
+      agentId: frontAgentId,
+      question: question,
+      sourceMessageId: sourceMessageId,
+    );
+    if (built == null) {
+      return const FrontDoorSkipped(FrontDoorSkipReason.inferenceUnavailable);
+    }
+    final answer = built.answer;
+    return FrontDoorAnswer(
+      text: answer.text,
+      summaryBased: answer.summaryBased,
+      incomplete: answer.coverage.incomplete,
+      fromJournal: true,
+      private: answer.private,
+      evidence: answer.evidence,
+      dependencies: answer.dependencies,
+    );
+  }
+
+  /// Runs the query pipeline headless for [question] in [scope]: no query
+  /// chat is created and nothing is written. Null when no model can answer.
+  Future<QueryBuiltAnswer?> _build(
+    QueryScope scope, {
+    required String agentId,
+    required String question,
+    required String sourceMessageId,
+  }) async {
     final QueryAnswerBuilder builder;
     try {
       // The front turn's id is the chat id: it only names the consumption
       // thread, and this is the thread the answer belongs to.
-      builder = await _queryBuilderFactory(
-        scope,
-        agent.agentId,
-        sourceMessageId,
-      );
+      builder = await _queryBuilderFactory(scope, agentId, sourceMessageId);
     } on QueryInferenceUnavailable {
-      return const FrontDoorSkipped(FrontDoorSkipReason.inferenceUnavailable);
+      return null;
     }
     final now = clock.now();
     final event =
         AgentDomainEntity.queryChatEvent(
-              id: '$sourceMessageId:${scope.kind.name}:$ownerId:question',
-              agentId: agent.agentId,
+              id: '$sourceMessageId:${scope.kind.name}:${scope.id}:question',
+              agentId: agentId,
               chatId: sourceMessageId,
               data: QueryChatEventData.question(text: question),
               createdAt: now,
               vectorClock: null,
             )
             as AgentQueryChatEventEntity;
-    final built = await builder.build(
+    return builder.build(
       chat: QueryChatHistory(
         id: sourceMessageId,
         scope: scope,
@@ -351,12 +414,6 @@ class FrontDoorWalker {
       memories: const [],
       cancellation: QueryCancellation(),
       onProgress: (_, {required expanded}) {},
-    );
-    return FrontDoorAnswer(
-      text: built.answer.text,
-      summaryBased: built.answer.summaryBased,
-      incomplete: built.answer.coverage.incomplete,
-      ownerIds: built.answer.summaryOwnerIds,
     );
   }
 }

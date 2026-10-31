@@ -6979,6 +6979,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontDoorActionFailed => 'To se nepovedlo.';
 
   @override
+  String get frontDoorAnswerHidden =>
+      'Skryto: vychází z něčeho, co už nevidíš.';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'Od: $owner';
   }
@@ -7005,6 +7009,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get frontDoorFromJournal => 'Z tvého deníku';
+
+  @override
   String get frontDoorInbox => 'Kam s tím?';
 
   @override
@@ -7017,6 +7024,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String frontDoorInferenceUnavailable(String owner) {
     return '$owner nemá funkční nastavení AI.';
   }
+
+  @override
+  String get frontDoorJournalUnavailable =>
+      'Žádné nastavení AI nemůže odpovědět z tvého deníku.';
 
   @override
   String get frontDoorKindGoal => 'cíl';
@@ -7069,6 +7080,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get frontDoorSaveNote => 'Uložit jako poznámku';
+
+  @override
+  String get frontDoorSearchingJournal => 'Prohledávám tvůj deník…';
 
   @override
   String get frontDoorStartGoal => 'Založit cíl…';

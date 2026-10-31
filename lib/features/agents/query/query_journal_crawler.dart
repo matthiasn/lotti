@@ -121,16 +121,32 @@ class QueryCorpus {
   final QueryAccessSnapshot access;
   final QueryCoverage coverage;
   final Map<String, QueryAffiliation> affiliations;
+
+  /// Whether an entry filed in category [id] belongs to this corpus: the
+  /// scope's own category, or for the journal any category [snapshot] shows
+  /// within the page's selection.
+  bool admits(QueryAccessSnapshot snapshot, String? id) => scope.spansCategories
+      ? snapshot.allowsCategory(id) &&
+            (scope.journalCategoryIds?.contains(id ?? '') ?? true)
+      : id == categoryId;
+
+  /// Whether this corpus may still be read under [snapshot]: its category is
+  /// visible, or it spans the journal, whose sources are checked one by one.
+  bool isVisibleIn(QueryAccessSnapshot snapshot) =>
+      scope.spansCategories || snapshot.allowsCategory(categoryId);
 }
 
 /// Bounded read-only crawler. Link discovery begins at the home scope, then
-/// keyword candidates and recent material can expand within the same category.
-/// Every discovered ID is rechecked against live visibility before use.
+/// what the planned searches find by meaning, keyword candidates and recent
+/// material can expand within the same category, in that order — so the
+/// document budget goes to meaning first. Every discovered ID is rechecked
+/// against live visibility before use.
 class QueryJournalCrawler {
   const QueryJournalCrawler({
     required this.journal,
     required this.access,
     required this.search,
+    this.meaning,
     this.maxDocuments = 60,
   });
 
@@ -140,6 +156,17 @@ class QueryJournalCrawler {
   /// The ids of the entries that hold any of the space-separated words in
   /// its argument, best match first.
   final Future<List<String>> Function(String words) search;
+
+  /// The ids of the entries nearest in meaning to `query`, nearest first, in
+  /// the categories `categoryIds` or, when it is null, in every category — or
+  /// null when search by meaning is unavailable on this device, and then the
+  /// crawl is keywords only. Every hit is still read through the crawl's own
+  /// category and visibility filter.
+  final Future<List<String>> Function(String query, Set<String>? categoryIds)?
+  meaning;
+
+  /// At most this many planned searches run by meaning per crawl.
+  static const maxMeaningSearches = 3;
   final int maxDocuments;
 
   static const sourceTypes = [
@@ -155,6 +182,8 @@ class QueryJournalCrawler {
   Future<QueryCorpus> discover(
     QueryScope scope,
     List<String> searchTerms, {
+    List<String> searches = const [],
+    Set<String>? narrowTo,
     bool homeOnly = false,
     bool ownTaskOnly = false,
     QuerySourceKind? kind,
@@ -167,11 +196,29 @@ class QueryJournalCrawler {
     final categoryId = scope.kind == QueryScopeKind.category
         ? scope.id
         : home?.meta.categoryId;
-    if (!initial.allowsCategory(categoryId) ||
-        (scope.kind != QueryScopeKind.category &&
-            (home == null || !initial.allowsEntry(home)))) {
+    if (!initial.allowsScope(scope) ||
+        (!scope.spansCategories && !initial.allowsCategory(categoryId))) {
       throw const QueryScopeUnavailable();
     }
+    // The categories the crawl reads: the scope's own, or for the journal
+    // the page's category selection — every category without one — of those
+    // the reader may see (`''` is the uncategorized bucket).
+    // A journal crawl reads the page's selection, narrowed further to the
+    // categories the question names ([narrowTo]); neither ever widens it.
+    final scoped = scope.journalCategoryIds;
+    final selection = narrowTo == null
+        ? scoped
+        : scoped == null
+        ? narrowTo
+        : scoped.intersection(narrowTo);
+    final categoryIds = scope.spansCategories
+        ? {
+            if (initial.allowsCategory(null)) '',
+            ...initial.categories.keys.where(initial.allowsCategory),
+          }.where((id) => selection == null || selection.contains(id)).toSet()
+        : {categoryId ?? ''};
+    bool inScope(JournalEntity entry) =>
+        scope.spansCategories || entry.meta.categoryId == categoryId;
     final homeIds = <String>{if (home != null) home.meta.id};
     if (scope.kind == QueryScopeKind.project) {
       final taskIds = await journal.getTaskIdsForProjects({scope.id});
@@ -198,8 +245,53 @@ class QueryJournalCrawler {
 
     final candidates = <String>{...homeIds};
     var incomplete = false;
-    final expand = categoryId != null && !homeOnly;
+    // A journal that reads no category — none visible, or narrowed to
+    // nothing — searches nothing.
+    final expand =
+        (categoryId != null ||
+            (scope.spansCategories && categoryIds.isNotEmpty)) &&
+        !homeOnly;
     if (expand || scope.kind == QueryScopeKind.category) {
+      if (meaning case final meaning?) {
+        for (final query
+            in searches
+                .map((query) => query.trim())
+                .where((query) => query.isNotEmpty)
+                .toSet()
+                .take(maxMeaningSearches)) {
+          final List<String> ids;
+          try {
+            // The vector index has no shard for the uncategorized bucket
+            // to name, so a selection holding it searches everywhere and
+            // the filter below narrows the hits.
+            ids = await meaning(
+              query,
+              scope.spansCategories
+                  ? (selection == null || selection.contains('')
+                        ? null
+                        : selection)
+                  : {categoryId!},
+            );
+          } on Exception {
+            // A failed search by meaning narrows the crawl, it does not end
+            // it: the keyword terms and recent material still run.
+            incomplete = true;
+            continue;
+          }
+          if (ids.isEmpty) continue;
+          // The journal query applies scope and privacy BEFORE its limit.
+          final rank = {for (final (i, id) in ids.indexed) id: i};
+          final found = await _categoryEntries(
+            categoryIds,
+            ids: ids,
+            limit: ids.length,
+          );
+          candidates.addAll(
+            found.map((entry) => entry.meta.id).toList()
+              ..sort((a, b) => rank[a]!.compareTo(rank[b]!)),
+          );
+        }
+      }
       final terms = searchTerms
           .expand(
             (term) => RegExp(r'[\p{L}\p{N}]+', unicode: true).allMatches(term),
@@ -215,7 +307,7 @@ class QueryJournalCrawler {
           final end = (offset + 400).clamp(0, ids.length);
           candidates.addAll(
             (await _categoryEntries(
-              categoryId!,
+              categoryIds,
               ids: ids.sublist(offset, end),
               limit: maxDocuments + 1,
             )).map((entry) => entry.meta.id),
@@ -227,7 +319,7 @@ class QueryJournalCrawler {
         }
       }
       final recent = await _categoryEntries(
-        categoryId!,
+        categoryIds,
         limit: maxDocuments + 1,
       );
       candidates.addAll(recent.map((entry) => entry.meta.id));
@@ -239,9 +331,7 @@ class QueryJournalCrawler {
     final unreadableSources = <QuerySourceRef>[];
     for (final id in candidates) {
       final entry = current.entries[id];
-      if (entry == null ||
-          !current.allowsEntry(entry) ||
-          entry.meta.categoryId != categoryId) {
+      if (entry == null || !current.allowsEntry(entry) || !inScope(entry)) {
         continue;
       }
       if (ownTaskOnly &&
@@ -282,7 +372,7 @@ class QueryJournalCrawler {
   }
 
   Future<List<JournalEntity>> _categoryEntries(
-    String categoryId, {
+    Set<String> categoryIds, {
     required int limit,
     List<String>? ids,
   }) async => journal.getJournalEntities(
@@ -293,7 +383,7 @@ class QueryJournalCrawler {
         : const [false],
     flaggedStatuses: const [0, 1, 2, 3],
     ids: ids,
-    categoryIds: {categoryId},
+    categoryIds: categoryIds,
     limit: limit,
   );
 

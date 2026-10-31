@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-09-22T18:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T09:00:00Z }
 stale_after: 2026-11-22
 sources:
   - id: controller
@@ -232,6 +232,63 @@ preparation read its future imperatively without a widget subscription; an
 unretained auto-disposed provider can otherwise fail during a database read
 before a question is saved. The temporary keep-alive link closes in `finally`,
 so completed lookups do not retain unused profiles or their dependencies.
+
+# Journal-wide questions
+
+A journal scope (kind `journal`) has no home. `QueryScope.journalIn` builds it
+from a category selection: `journal` with none, which reads every category the
+reader may see, or `journal:<sorted ids>` (`''` for uncategorized), which
+reads only those (ADR 0153). No query chat pane hosts it —
+`queryChatTargetProvider` throws `QueryScopeUnavailable` for it. It is used
+headless by the [front agent](../front_agent.md): `FrontDoorWalker` answers a
+`journal` question by building `QueryScope.journalIn(her allowedCategoryIds)`
+and calling `QueryAnswerBuilder.build` as `front_agent`.
+
+- **Profile:** no category's profile applies. `queryProfileProvider` resolves
+  it standalone from the Settings default, then the built-in model.
+- **Discovery:** the builder runs without a summary reader, so there is no
+  report-first route and no home batch. The plan step rewrites the question and
+  names one to three `searches`, one for each separate thing the answer needs
+  (without them, the standalone question is the one search). It is also
+  offered the names of the categories the scope can see and may name
+  `categories` the question limits itself to; only offered names count, so
+  they narrow the selection and never widen it; names that match none of
+  them narrow it to nothing, and a journal that reads no category
+  searches nothing.
+  `QueryJournalCrawler` runs each search by meaning (`VectorSearchRepository`,
+  in the selected categories, or in every shard when there is no selection or
+  it holds the uncategorized bucket) while search by meaning is on and set up.
+  It also runs the keyword terms and adds recent material, and every candidate
+  is read through the selected categories the reader may see before the
+  limit. Meaning hits come first in the document budget; a failed meaning
+  search marks the answer incomplete and the crawl goes on.
+- **Privacy:** `QueryCorpus.admits` replaces the single-category check — any
+  category the snapshot shows, within the selection — and every source,
+  passage and memory still passes `QueryAccessSnapshot` live, so a private
+  category never reaches the model. The front agent keeps the answer's
+  dependencies and rechecks them live before showing it.
+
+```mermaid
+flowchart LR
+  Q["journal question<br/>to the front agent"] --> W["FrontDoorWalker<br/>journalIn(allow-list)"]
+  W --> Plan["plan: question, terms,<br/>searches, named categories"]
+  Plan --> M["meaning search per planned search<br/>(selected categories)"]
+  Plan --> K["keyword terms"]
+  M --> C["candidates in visible categories,<br/>meaning first"]
+  K --> C
+  C --> E["shortlist, exact passages"]
+  E --> A["FrontDoorAnswer with<br/>numbered evidence"]
+```
+
+The planned searches feed the crawler for task, project and category scopes
+too, within their own category, wherever the crawl expands past the home
+(the category scope and the summary-less builder).
+
+**Scope kinds decode tolerantly.** `QueryScopeKind` decodes a kind it does not
+know as `unknown` (`@JsonKey(unknownEnumValue:)`), and
+`QueryAccessSnapshot.allowsScope` never admits it, so a chat of a kind a newer
+build adds is unavailable rather than undecodable. Builds before this one
+cannot decode `journal`; no chat of that kind is ever stored.
 
 # Summary-first discovery
 

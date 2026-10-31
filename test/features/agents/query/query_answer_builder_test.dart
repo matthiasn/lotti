@@ -159,6 +159,325 @@ void main() {
     },
   );
 
+  test('a journal-wide question gathers evidence from every visible category, '
+      'found by the searches it planned', () async {
+    final bench = QueryTestBench();
+    bench.categories.addAll([
+      categoryMindfulness.copyWith(id: 'colony', name: 'Colony'),
+      categoryMindfulness.copyWith(id: 'secret', name: 'Secret', private: true),
+    ]);
+    bench
+      ..add('calm', category: categoryMindfulness.id)
+      ..add('census', category: 'colony')
+      ..add('hidden', category: 'secret')
+      ..meaningResults = {
+        'fish stores count': ['hidden', 'census'],
+        'ledger': ['calm'],
+      };
+    final journalChat = QueryChatHistory(
+      id: 'chat',
+      scope: QueryScope.journal,
+      title: 'Fish stores',
+      private: false,
+      archived: false,
+      lastActivity: date,
+      events: [question],
+      unread: false,
+    );
+    final calls = <String>[];
+
+    final result =
+        await QueryAnswerBuilder(
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              final input = jsonDecode(prompt) as Map<String, dynamic>;
+              if (system.contains('Rephrase')) {
+                calls.add('plan');
+                return Stream.value(
+                  jsonEncode({
+                    'question': 'What happened to the fish stores?',
+                    'terms': <String>[],
+                    'searches': ['fish stores count', 'ledger'],
+                  }),
+                );
+              }
+              if (system.contains('Shortlist sources')) {
+                calls.add('shortlist');
+                return Stream.value(
+                  jsonEncode({
+                    'ids': ['census', 'calm'],
+                  }),
+                );
+              }
+              if (system.contains('Extract passages')) {
+                calls.add('extract');
+                return Stream.value(
+                  jsonEncode({
+                    'passages': [
+                      {'quote': input['source']},
+                    ],
+                  }),
+                );
+              }
+              calls.add('answer');
+              return Stream.value(
+                jsonEncode({'answer': 'Both notes agree.', 'conclusion': ''}),
+              );
+            },
+          ),
+        ).build(
+          chat: journalChat,
+          question: question,
+          memories: const [],
+          cancellation: QueryCancellation(),
+          onProgress: (_, {required expanded}) {},
+        );
+
+    expect(calls.first, 'plan');
+    expect(bench.meaningSearches, [
+      ('fish stores count', null),
+      ('ledger', null),
+    ]);
+    expect(
+      result.answer.evidence.map((e) => e.source.id),
+      containsAll(['census', 'calm']),
+    );
+    expect(
+      result.answer.evidence.map((e) => e.source.id),
+      isNot(contains('hidden')),
+    );
+    expect(
+      result.answer.evidence.map((e) => e.source.categoryId).toSet(),
+      {categoryMindfulness.id, 'colony'},
+    );
+    // No home: nothing counts as wider than it.
+    expect(result.answer.evidence.every((e) => !e.outsideHome), isTrue);
+    expect(result.answer.text, 'Both notes agree.');
+  });
+
+  test('a journal question naming a category searches only that one, '
+      'offered only the names it may see', () async {
+    final bench = QueryTestBench();
+    bench.categories.addAll([
+      categoryMindfulness.copyWith(id: 'colony', name: 'Colony'),
+      categoryMindfulness.copyWith(id: 'secret', name: 'Secret', private: true),
+    ]);
+    bench
+      ..add('calm', category: categoryMindfulness.id)
+      ..add('census', category: 'colony')
+      ..meaningResults = {
+        'fish stores': ['calm', 'census'],
+      };
+    final journalChat = QueryChatHistory(
+      id: 'chat',
+      scope: QueryScope.journal,
+      title: 'Fish stores',
+      private: false,
+      archived: false,
+      lastActivity: date,
+      events: [question],
+      unread: false,
+    );
+    String? planSystem;
+    Map<String, dynamic>? planInput;
+
+    final result =
+        await QueryAnswerBuilder(
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              final input = jsonDecode(prompt) as Map<String, dynamic>;
+              if (system.contains('Rephrase')) {
+                planSystem = system;
+                planInput = input;
+                return Stream.value(
+                  jsonEncode({
+                    'question': 'What about the fish stores in the colony?',
+                    'terms': <String>[],
+                    'searches': ['fish stores'],
+                    'categories': [' colony ', 'Secret', 'Nowhere'],
+                  }),
+                );
+              }
+              if (system.contains('Shortlist sources')) {
+                return Stream.value(
+                  jsonEncode({
+                    'ids': ['census', 'calm'],
+                  }),
+                );
+              }
+              if (system.contains('Extract passages')) {
+                return Stream.value(
+                  jsonEncode({
+                    'passages': [
+                      {'quote': input['source']},
+                    ],
+                  }),
+                );
+              }
+              return Stream.value(
+                jsonEncode({'answer': 'Counted twice.', 'conclusion': ''}),
+              );
+            },
+          ),
+        ).build(
+          chat: journalChat,
+          question: question,
+          memories: const [],
+          cancellation: QueryCancellation(),
+          onProgress: (_, {required expanded}) {},
+        );
+
+    expect(planSystem, contains('"categories"'));
+    expect(
+      (planInput!['categories'] as List).toSet(),
+      {categoryMindfulness.name, 'Colony'},
+      reason: 'a private category is never offered',
+    );
+    expect(bench.meaningSearches, [('fish stores', 'colony')]);
+    expect(
+      result.answer.evidence.map((e) => e.source.categoryId).toSet(),
+      {'colony'},
+    );
+  });
+
+  test('a journal question naming only categories it cannot see reads '
+      'nothing rather than everything', () async {
+    final bench = QueryTestBench()
+      ..add('calm', category: categoryMindfulness.id)
+      ..meaningResults = {
+        'fish stores': ['calm'],
+      };
+    String? shortlistPrompt;
+    await QueryAnswerBuilder(
+      crawler: bench.crawler,
+      access: bench.crawler.access,
+      inference: QueryTextInference(
+        generate: (system, prompt) {
+          if (system.contains('Rephrase')) {
+            return Stream.value(
+              jsonEncode({
+                'question': 'Fish stores in the vault?',
+                'terms': ['fish'],
+                'searches': ['fish stores'],
+                'categories': ['Vault'],
+              }),
+            );
+          }
+          if (system.contains('Shortlist sources')) {
+            shortlistPrompt = prompt;
+            return Stream.value(jsonEncode({'ids': <String>[]}));
+          }
+          return Stream.value(
+            jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
+          );
+        },
+      ),
+    ).build(
+      chat: QueryChatHistory(
+        id: 'chat',
+        scope: QueryScope.journal,
+        title: 'Vault',
+        private: false,
+        archived: false,
+        lastActivity: date,
+        events: [question],
+        unread: false,
+      ),
+      question: question,
+      memories: const [],
+      cancellation: QueryCancellation(),
+      onProgress: (_, {required expanded}) {},
+    );
+
+    expect(bench.meaningSearches, isEmpty);
+    expect(shortlistPrompt ?? '', isNot(contains('calm')));
+  });
+
+  test('a narrowed journal offers only the categories it reads', () async {
+    final bench = QueryTestBench();
+    bench.categories.add(
+      categoryMindfulness.copyWith(id: 'colony', name: 'Colony'),
+    );
+    bench.add('census', category: 'colony');
+    Map<String, dynamic>? planInput;
+    await QueryAnswerBuilder(
+      crawler: bench.crawler,
+      access: bench.crawler.access,
+      inference: QueryTextInference(
+        generate: (system, prompt) {
+          if (system.contains('Rephrase')) {
+            planInput = jsonDecode(prompt) as Map<String, dynamic>;
+            return Stream.value(
+              jsonEncode({'question': 'Census?', 'terms': <String>[]}),
+            );
+          }
+          if (system.contains('Shortlist sources')) {
+            return Stream.value(jsonEncode({'ids': <String>[]}));
+          }
+          return Stream.value(
+            jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
+          );
+        },
+      ),
+    ).build(
+      chat: QueryChatHistory(
+        id: 'chat',
+        scope: QueryScope.journalIn(const {'colony'}),
+        title: 'Census',
+        private: false,
+        archived: false,
+        lastActivity: date,
+        events: [question],
+        unread: false,
+      ),
+      question: question,
+      memories: const [],
+      cancellation: QueryCancellation(),
+      onProgress: (_, {required expanded}) {},
+    );
+
+    expect(planInput!['categories'], ['Colony']);
+  });
+
+  test('a question in one scope is never asked for categories', () async {
+    final bench = QueryTestBench()..add('task');
+    String? planSystem;
+    await QueryAnswerBuilder(
+      maxBatchBytes: 1,
+      crawler: bench.crawler,
+      access: bench.crawler.access,
+      inference: QueryTextInference(
+        generate: (system, prompt) {
+          if (system.contains('Rephrase')) {
+            planSystem = system;
+            return Stream.value(
+              jsonEncode({'question': 'Feeder?', 'terms': <String>[]}),
+            );
+          }
+          if (system.contains('Shortlist sources')) {
+            return Stream.value(jsonEncode({'ids': <String>[]}));
+          }
+          return Stream.value(
+            jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
+          );
+        },
+      ),
+    ).build(
+      chat: chat,
+      question: question,
+      memories: const [],
+      cancellation: QueryCancellation(),
+      onProgress: (_, {required expanded}) {},
+    );
+
+    expect(planSystem, isNotNull);
+    expect(planSystem, isNot(contains('"categories"')));
+  });
+
   test(
     'a category chat with a summary reader keeps only history whose sources '
     'belong to the category',
@@ -946,8 +1265,10 @@ void main() {
     void Function()? duringShortlist;
     late QueryCancellation cancellation;
     late List<(int, bool)> progress;
+    List<String>? plannedSearches;
 
     setUp(() {
+      plannedSearches = null;
       bench = QueryTestBench()..add('task');
       for (var i = 1; i < 42; i++) {
         bench
@@ -976,6 +1297,7 @@ void main() {
                   jsonEncode({
                     'question': 'Feeder?',
                     'terms': ['feeder'],
+                    'searches': ?plannedSearches,
                   }),
                 );
               }
@@ -1039,6 +1361,73 @@ void main() {
         expect(jsonEncode(answerInput), isNot(contains('source-40')));
       },
     );
+
+    group('searches by meaning', () {
+      late String category;
+
+      setUp(() {
+        category = categoryMindfulness.id;
+        bench
+          ..entries.updateAll(
+            (_, entry) => entry.copyWith(
+              meta: entry.meta.copyWith(categoryId: category),
+            ),
+          )
+          ..meaningResults = {};
+      });
+
+      test('the plan asks for one search per thing the answer needs, and '
+          'each runs in the category', () async {
+        plannedSearches = ['fish stores count', 'ledger disagreement'];
+
+        await build();
+
+        expect(bench.meaningSearches, [
+          ('fish stores count', category),
+          ('ledger disagreement', category),
+        ]);
+      });
+
+      test('without planned searches the standalone question is the one '
+          'search', () async {
+        await build();
+
+        expect(bench.meaningSearches, [('Feeder?', category)]);
+      });
+
+      test('the planning prompt asks for them', () async {
+        String? planSystem;
+        await QueryAnswerBuilder(
+          maxBatchBytes: 1,
+          crawler: bench.crawler,
+          access: bench.crawler.access,
+          inference: QueryTextInference(
+            generate: (system, prompt) {
+              if (system.contains('Rephrase')) {
+                planSystem = system;
+                return Stream.value(
+                  jsonEncode({'question': 'Feeder?', 'terms': <String>[]}),
+                );
+              }
+              if (system.contains('Shortlist sources')) {
+                return Stream.value(jsonEncode({'ids': <String>[]}));
+              }
+              return Stream.value(
+                jsonEncode({'answer': 'Nothing found.', 'conclusion': ''}),
+              );
+            },
+          ),
+        ).build(
+          chat: chat,
+          question: question,
+          memories: [],
+          cancellation: cancellation,
+          onProgress: (_, {required expanded}) {},
+        );
+
+        expect(planSystem, contains('"searches"'));
+      });
+    });
 
     test(
       'current scope progress changes before wider and home inspections',

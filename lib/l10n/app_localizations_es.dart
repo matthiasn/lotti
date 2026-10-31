@@ -6987,6 +6987,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get frontDoorActionFailed => 'Eso no se completó.';
 
   @override
+  String get frontDoorAnswerHidden =>
+      'Oculto: se basa en algo que ya no puedes ver.';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'De $owner';
   }
@@ -7013,6 +7017,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get frontDoorFromJournal => 'De tu diario';
+
+  @override
   String get frontDoorInbox => '¿Dónde va esto?';
 
   @override
@@ -7025,6 +7032,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String frontDoorInferenceUnavailable(String owner) {
     return '$owner no tiene una configuración de IA que funcione.';
   }
+
+  @override
+  String get frontDoorJournalUnavailable =>
+      'Ninguna configuración de IA puede responder desde tu diario.';
 
   @override
   String get frontDoorKindGoal => 'el objetivo';
@@ -7077,6 +7088,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get frontDoorSaveNote => 'Guardar como nota';
+
+  @override
+  String get frontDoorSearchingJournal => 'Buscando en tu diario…';
 
   @override
   String get frontDoorStartGoal => 'Empezar un objetivo…';

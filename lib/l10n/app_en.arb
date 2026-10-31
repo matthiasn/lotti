@@ -4085,6 +4085,10 @@
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
   "frontDoorActionFailed": "That did not go through.",
+  "frontDoorAnswerHidden": "Hidden: it draws on something you can no longer see.",
+  "@frontDoorAnswerHidden": {
+    "description": "Shown in place of a journal answer whose sources became private or were deleted."
+  },
   "frontDoorAttribution": "From {owner}",
   "@frontDoorAttribution": {
     "placeholders": {
@@ -4119,6 +4123,10 @@
       }
     }
   },
+  "frontDoorFromJournal": "From your journal",
+  "@frontDoorFromJournal": {
+    "description": "Attribution of an answer the front agent gave from the journal herself."
+  },
   "frontDoorInbox": "Where should this go?",
   "frontDoorInboxInstead": "Where should this go instead?",
   "frontDoorIncomplete": "may be incomplete",
@@ -4129,6 +4137,10 @@
         "type": "String"
       }
     }
+  },
+  "frontDoorJournalUnavailable": "No AI setup can answer from your journal.",
+  "@frontDoorJournalUnavailable": {
+    "description": "Status when no AI setup can answer a journal question."
   },
   "frontDoorKindGoal": "the goal",
   "frontDoorKindOther": "this",
@@ -4160,6 +4172,10 @@
   },
   "frontDoorSavedAsNote": "Saved as a note",
   "frontDoorSaveNote": "Save as a note",
+  "frontDoorSearchingJournal": "Searching your journal…",
+  "@frontDoorSearchingJournal": {
+    "description": "Status while the front agent searches the journal for an answer."
+  },
   "frontDoorStartGoal": "Start a goal…",
   "frontDoorSummaryBased": "from summaries",
   "frontDoorTaskCreated": "Made into a task",

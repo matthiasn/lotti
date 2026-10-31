@@ -6933,6 +6933,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontDoorActionFailed => 'Dat is niet gelukt.';
 
   @override
+  String get frontDoorAnswerHidden =>
+      'Verborgen: het steunt op iets wat je niet meer kunt zien.';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'Van $owner';
   }
@@ -6959,6 +6963,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get frontDoorFromJournal => 'Uit je dagboek';
+
+  @override
   String get frontDoorInbox => 'Waar moet dit heen?';
 
   @override
@@ -6971,6 +6978,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String frontDoorInferenceUnavailable(String owner) {
     return '$owner heeft geen werkende AI-instelling.';
   }
+
+  @override
+  String get frontDoorJournalUnavailable =>
+      'Geen AI-instelling kan antwoorden vanuit je dagboek.';
 
   @override
   String get frontDoorKindGoal => 'het doel';
@@ -7023,6 +7034,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontDoorSaveNote => 'Opslaan als notitie';
+
+  @override
+  String get frontDoorSearchingJournal => 'Doorzoekt je dagboek…';
 
   @override
   String get frontDoorStartGoal => 'Doel starten…';

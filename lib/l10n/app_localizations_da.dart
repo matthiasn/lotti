@@ -6903,6 +6903,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontDoorActionFailed => 'Det gik ikke igennem.';
 
   @override
+  String get frontDoorAnswerHidden =>
+      'Skjult: det bygger på noget, du ikke længere kan se.';
+
+  @override
   String frontDoorAttribution(String owner) {
     return 'Fra $owner';
   }
@@ -6929,6 +6933,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get frontDoorFromJournal => 'Fra din journal';
+
+  @override
   String get frontDoorInbox => 'Hvor skal det hen?';
 
   @override
@@ -6941,6 +6948,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String frontDoorInferenceUnavailable(String owner) {
     return '$owner har ingen fungerende AI-opsætning.';
   }
+
+  @override
+  String get frontDoorJournalUnavailable =>
+      'Ingen AI-opsætning kan svare ud fra din journal.';
 
   @override
   String get frontDoorKindGoal => 'målet';
@@ -6993,6 +7004,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontDoorSaveNote => 'Gem som note';
+
+  @override
+  String get frontDoorSearchingJournal => 'Søger i din journal…';
 
   @override
   String get frontDoorStartGoal => 'Start et mål…';

@@ -67,12 +67,7 @@ class QueryChatStore {
 
   Future<QueryAccessSnapshot> _checkHome(QueryScope scope) async {
     final current = await access.load([scope.id]);
-    final home = current.entries[scope.id];
-    if (scope.kind == QueryScopeKind.category
-        ? !current.allowsCategory(scope.id)
-        : home == null || !current.allowsEntry(home)) {
-      throw const QueryScopeUnavailable();
-    }
+    if (!current.allowsScope(scope)) throw const QueryScopeUnavailable();
     return current;
   }
 

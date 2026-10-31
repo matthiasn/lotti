@@ -90,8 +90,9 @@ extension _QueryChatPaneSections on _QueryChatPaneState {
                             messages.queryWelcomeProject(
                               agentName,
                             ),
-                          QueryScopeKind.category =>
-                            messages.queryWelcomeCategory(agentName),
+                          // A category; no pane hosts a journal or
+                          // unknown scope.
+                          _ => messages.queryWelcomeCategory(agentName),
                         },
                         textAlign: TextAlign.center,
                         style: tokens.typography.styles.heading.heading3,
@@ -557,12 +558,13 @@ extension _QueryChatPaneLabels on _QueryChatPaneState {
   String _scopeKind(BuildContext context) => switch (widget.scope.kind) {
     QueryScopeKind.task => context.messages.entryTypeLabelTask,
     QueryScopeKind.project => context.messages.projectFilterLabel,
-    QueryScopeKind.category => context.messages.dashboardCategoryLabel,
+    // A category; no pane hosts a journal or unknown scope.
+    _ => context.messages.dashboardCategoryLabel,
   };
 
   String _agentKind(BuildContext context) => switch (widget.scope.kind) {
     QueryScopeKind.task => context.messages.agentTemplateKindTaskAgent,
     QueryScopeKind.project => context.messages.agentTemplateKindProjectAgent,
-    QueryScopeKind.category => context.messages.queryCategoryAgent,
+    _ => context.messages.queryCategoryAgent,
   };
 }
