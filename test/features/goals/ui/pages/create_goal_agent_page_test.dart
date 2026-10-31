@@ -6687,6 +6687,7 @@ void main() {
       WidgetTester tester, {
       required String? stored,
       required String? picked,
+      GoalSpecRevisionOutcome? outcome,
     }) async {
       tester.view.physicalSize = const Size(900, 1800);
       tester.view.devicePixelRatio = 1;
@@ -6712,9 +6713,11 @@ void main() {
           criteria: any(named: 'criteria'),
         ),
       ).thenAnswer(
-        (_) async => const GoalSpecRevisionRefused(
-          GoalSpecRevisionService.ownerNoChangesReason,
-        ),
+        (_) async =>
+            outcome ??
+            const GoalSpecRevisionRefused(
+              GoalSpecRevisionService.ownerNoChangesReason,
+            ),
       );
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -6772,6 +6775,53 @@ void main() {
       await editAndSave(tester, stored: 'old', picked: 'old');
 
       verifyNever(() => categoryMove.move(any(), any()));
+    });
+
+    testWidgets('a move that fails after a revision was minted retries on '
+        'the minted version, not the stale one', (tester) async {
+      final minted = _spec(version: 4);
+      when(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          spec: any(named: 'spec'),
+        ),
+      ).thenReturn(null);
+      var moves = 0;
+      when(
+        () => categoryMove.move(any(), any()),
+      ).thenAnswer((_) async => moves++ > 0);
+
+      await editAndSave(
+        tester,
+        stored: 'old',
+        picked: 'fitness',
+        outcome: GoalSpecRevisionMinted(
+          version: minted,
+          changeSummaries: const [],
+        ),
+      );
+      expect(
+        find.text('Saving the goal failed — please try again.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Save new version'));
+      for (var i = 0; i < 5; i++) {
+        await tester.pump();
+      }
+
+      final bases = verify(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: captureAny(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).captured;
+      expect(bases, ['goal-1:spec-v3', minted.id]);
+      expect(moves, 2);
     });
 
     testWidgets('a move that does not land says so rather than leaving', (

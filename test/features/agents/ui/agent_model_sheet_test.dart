@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -120,8 +121,10 @@ void main() {
     AgentConfig? config,
     ResolvedAgentSetup? resolvedSetup,
     TaskAgentSetupOptions? setupOptions,
+    String? kind,
   }) {
     final identity = makeTestIdentity().copyWith(
+      kind: kind ?? makeTestIdentity().kind,
       config:
           config ??
           AgentConfig(
@@ -154,6 +157,7 @@ void main() {
     ResolvedAgentSetup? resolvedSetup,
     TaskAgentSetupOptions? setupOptions,
     String? taskId = 'task-1',
+    String? kind,
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -178,6 +182,7 @@ void main() {
             config: config,
             resolvedSetup: resolvedSetup,
             setupOptions: setupOptions,
+            kind: kind,
           ),
         ),
       ),
@@ -335,6 +340,38 @@ void main() {
     );
     expect(profileRow.selected, isTrue);
     expect(find.text('Copy category default'), findsNothing);
+  });
+
+  for (final kind in [AgentKinds.goalAgent, AgentKinds.relationshipAgent]) {
+    testWidgets('a $kind opened for its own row still selects its legacy '
+        'persisted profile', (tester) async {
+      when(
+        () => journalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      await openSheet(
+        tester,
+        taskId: 'subject-row',
+        kind: kind,
+        config: AgentConfig(profileId: profile.id),
+      );
+
+      await openProfilePage(tester);
+      final profileRow = tester.widget<DesignSystemSelectionRow>(
+        find.byKey(const ValueKey('agent-profile-profile-1')),
+      );
+      expect(profileRow.selected, isTrue);
+    });
+  }
+
+  testWidgets("a task's agent opened for its task reads only the typed setup, "
+      'not a legacy profile', (tester) async {
+    await openSheet(tester, config: AgentConfig(profileId: profile.id));
+
+    await openProfilePage(tester);
+    final profileRow = tester.widget<DesignSystemSelectionRow>(
+      find.byKey(const ValueKey('agent-profile-profile-1')),
+    );
+    expect(profileRow.selected, isFalse);
   });
 
   testWidgets('model choice responds immediately, persists, and closes', (

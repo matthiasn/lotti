@@ -19,12 +19,16 @@ void main() {
   >
   saved;
   late List<String> recorded;
+
+  /// The category every save and every recording was filed under.
+  late List<String?> filedUnder;
   var saveSucceeds = true;
   String? recorderResult;
 
   setUp(() {
     saved = [];
     recorded = [];
+    filedUnder = [];
     saveSucceeds = true;
     recorderResult = 'audio-1';
   });
@@ -36,6 +40,8 @@ void main() {
     String? personaName,
     Clock? clockOverride,
     Duration? pickedDuration,
+    String? hostCategory = 'cat-1',
+    String? goalRowCategory,
   }) => withClock(
     clockOverride ?? Clock.fixed(now),
     () => tester.pumpWidget(
@@ -45,7 +51,7 @@ void main() {
           goalTitle: 'Fitness',
           preparedLine: preparedLine,
           personaName: personaName,
-          categoryId: 'cat-1',
+          categoryId: hostCategory,
           saveText:
               ({
                 required text,
@@ -54,6 +60,7 @@ void main() {
                 required timeSpent,
                 categoryId,
               }) async {
+                filedUnder.add(categoryId);
                 saved.add((
                   text: text,
                   goalEntryId: goalEntryId,
@@ -65,6 +72,7 @@ void main() {
           pickDuration: ({required context, required initialDuration}) async =>
               pickedDuration,
           openRecorder: (context, {required goalEntryId, categoryId}) async {
+            filedUnder.add(categoryId);
             recorded.add(goalEntryId);
             return recorderResult;
           },
@@ -73,6 +81,9 @@ void main() {
           goalCaptureTargetProvider(
             'agent-1',
           ).overrideWith((ref) async => captureTarget),
+          goalCategoryIdProvider(
+            'agent-1',
+          ).overrideWith((ref) async => goalRowCategory),
         ],
       ),
     ),
@@ -180,6 +191,46 @@ void main() {
     expect(recorded, ['goal-1']);
     // The composer's job ended with the recording; it closes itself.
     expect(find.byType(GoalCheckInComposer), findsNothing);
+  });
+
+  for (final (path, act) in <(String, Future<void> Function(WidgetTester))>[
+    (
+      'a recording',
+      (tester) async {
+        await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
+        await tester.pumpAndSettle();
+      },
+    ),
+    (
+      'a note',
+      (tester) async {
+        await tester.tap(find.text('Write instead'));
+        await tester.pump();
+        await tester.enterText(find.byType(DesignSystemTextarea), 'Waddled.');
+        await tester.tap(find.text('Save check-in'));
+        await tester.pump();
+      },
+    ),
+  ]) {
+    testWidgets("opened before the host knew the goal's category, the "
+        'composer files $path under the goal row category', (tester) async {
+      await pump(tester, hostCategory: null, goalRowCategory: 'colony-fitness');
+      await tester.pump();
+      await act(tester);
+
+      expect(filedUnder, ['colony-fitness']);
+    });
+  }
+
+  testWidgets("the host's category, when it has one, is the one used", (
+    tester,
+  ) async {
+    await pump(tester, goalRowCategory: 'colony-fitness');
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-checkin-record')));
+    await tester.pumpAndSettle();
+
+    expect(filedUnder, ['cat-1']);
   });
 
   testWidgets('discarding a recording returns to the composer', (tester) async {

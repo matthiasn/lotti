@@ -88,7 +88,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   bool get _shownCheckInsAreSubstance =>
       _checkInsAreSubstance ?? _watchesCheckInTime;
 
-  /// The category the goal is filed in, and — when editing — the one it was.
+  /// The goal's category, and — when editing — the one it was filed in.
   String? _categoryId;
   String? _initialCategoryId;
   var _categoryInitialized = false;
@@ -487,6 +487,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         checkInsAreSubstance: checkInsAreSubstance,
       );
       if (outcome case GoalSpecRevisionMinted(:final version)) {
+        _baseVersionId = version.id; // a failed move retries on this one
         goalAgentService.refreshAfterRevision(
           agentId: agentId,
           spec: version,
@@ -579,7 +580,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           identity is AgentIdentityEntity &&
           identity.kind == AgentKinds.goalAgent &&
           identity.lifecycle == AgentLifecycle.active;
-      _initializeCategory(widget.agentId!);
       if (isActiveGoal && editSpec != null) {
         _initializeEdit(identity, editSpec);
       } else if (identityAsync.hasError ||

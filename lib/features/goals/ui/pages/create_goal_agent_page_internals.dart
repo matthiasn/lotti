@@ -35,6 +35,9 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
     AgentIdentityEntity identity,
     GoalSpecVersionEntity spec,
   ) {
+    // Ahead of the once-only guard: the goal row's category may read after
+    // the spec, and is watched until it has.
+    _initializeCategory(identity.agentId);
     if (_initialized) return;
     _initialized = true;
     _statement.text = spec.statement;

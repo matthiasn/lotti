@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
+import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
@@ -139,9 +140,18 @@ List<String> _providerIdsForModels(TaskAgentSetupOptions options) {
 }
 
 String? _selectedProfileId(
-  AgentConfig? config, {
-  required bool allowLegacyProfile,
+  AgentIdentityEntity? identity, {
+  required String? entityId,
 }) {
+  final config = identity?.config;
+  // A task's or project's agent opened for its entity reads only the typed
+  // setup; a goal's or person's agent keeps its legacy `profileId` as the
+  // selection even when opened for its row, since their runtime still
+  // resolves through it while no typed setup exists.
+  final allowLegacyProfile =
+      entityId == null ||
+      identity?.kind == AgentKinds.goalAgent ||
+      identity?.kind == AgentKinds.relationshipAgent;
   return config?.inferenceSetup?.baseProfileId ??
       (allowLegacyProfile ? config?.profileId : null);
 }
@@ -395,8 +405,8 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
         .value;
     final config = identity?.config;
     final selectedProfileId = _selectedProfileId(
-      config,
-      allowLegacyProfile: controller.entityId == null,
+      identity,
+      entityId: controller.entityId,
     );
     final currentProfile = options?.profiles
         .where((profile) => profile.id == selectedProfileId)
@@ -657,20 +667,19 @@ class _AgentProfilePage extends ConsumerWidget {
         .watch(taskAgentSetupOptionsProvider)
         .unwrapPrevious()
         .value;
-    final config = ref
+    final identity = ref
         .watch(agentIdentityProvider(agentId))
         .unwrapPrevious()
         .value
-        ?.mapOrNull(agent: (value) => value)
-        ?.config;
+        ?.mapOrNull(agent: (value) => value);
     final profiles =
         options?.profiles
             .where((profile) => isDesktop || !profile.desktopOnly)
             .toList() ??
         const <AiConfigInferenceProfile>[];
     final selectedProfileId = _selectedProfileId(
-      config,
-      allowLegacyProfile: controller.entityId == null,
+      identity,
+      entityId: controller.entityId,
     );
 
     return _AgentBusyGuard(
