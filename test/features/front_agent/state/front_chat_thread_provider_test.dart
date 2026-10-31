@@ -7,8 +7,11 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_chat_thread.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/service/front_chat_thread_builder.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
+import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,13 +23,20 @@ class _CountingBuilder extends FrontChatThreadBuilder {
   final Set<String> specialists;
   int builds = 0;
 
+  /// What each build was asked for: the conversation and the excluded.
+  final asked = <(String?, Set<String>)>[];
+
   /// When set, every build after the first waits on it — a re-projection
   /// still in flight.
   Completer<void>? gate;
 
   @override
-  Future<FrontChatThread> build() async {
+  Future<FrontChatThread> build({
+    String? conversationId,
+    Set<String> excluded = const {},
+  }) async {
     builds++;
+    asked.add((conversationId, excluded));
     if (builds > 1 && gate != null) await gate!.future;
     return FrontChatThread(
       messages: const [],
@@ -65,11 +75,37 @@ void main() {
         agentUpdateStreamProvider(
           'goal-swim',
         ).overrideWith((ref) => specialistPings.stream),
+        frontActiveConversationProvider.overrideWith((ref) async => 'c-1'),
+        frontConversationsProvider.overrideWith(
+          (ref) async => const FrontConversationIndex(
+            conversations: [],
+            deletedIds: {'c-gone'},
+          ),
+        ),
       ],
     );
     addTearDown(container.dispose);
     return container;
   }
+
+  test('shows the active conversation; with the inbox filter on, every '
+      'conversation but the deleted', () async {
+    final builder = _CountingBuilder(const {});
+    final container = containerWith(builder);
+    final filter = container.listen(frontInboxFilterProvider, (_, _) {});
+    addTearDown(filter.close);
+    final sub = container.listen(frontChatThreadProvider, (_, _) {});
+    addTearDown(sub.close);
+
+    await container.read(frontChatThreadProvider.future);
+    expect(builder.asked.last.$1, 'c-1');
+    expect(builder.asked.last.$2, isEmpty);
+
+    container.read(frontInboxFilterProvider.notifier).toggle();
+    await container.read(frontChatThreadProvider.future);
+    expect(builder.asked.last.$1, isNull);
+    expect(builder.asked.last.$2, {'c-gone'});
+  });
 
   test('builds from the repository and wires the builder from its leaf', () {
     final container = ProviderContainer(

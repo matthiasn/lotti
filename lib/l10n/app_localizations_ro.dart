@@ -6986,6 +6986,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get filterSelectionNoMatches => 'Fără rezultate';
 
   @override
+  String get frontChatActionFailed => 'Nu a reușit. Încercați din nou.';
+
+  @override
+  String get frontChatArchivedToast => 'Conversație arhivată.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Ștergeți această conversație? Mesajele ei dispar de pe toate dispozitivele. Ce ați salvat din ea rămâne unde este.';
+
+  @override
   String get frontChatEmpty =>
       'Întrebați despre o sarcină, un obiectiv, un proiect sau o persoană, sau spuneți ce s-a întâmplat. Răspunde agentul potrivit și nimic nu se arhivează până nu atingeți.';
 
@@ -6998,6 +7008,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get frontChatInboxEmpty => 'Nimic nu vă așteaptă.';
 
   @override
+  String get frontChatNoChats =>
+      'Încă nu există conversații. Puneți o întrebare pentru a începe una.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Nicio conversație nu se potrivește.';
+
+  @override
   String get frontChatOpen => 'Întrebați însoțitoarea';
 
   @override
@@ -7005,6 +7022,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Caută cine știe…';
+
+  @override
+  String get frontChatSearchChats => 'Căutați în conversații';
 
   @override
   String get frontChatTitle => 'Însoțitoare';

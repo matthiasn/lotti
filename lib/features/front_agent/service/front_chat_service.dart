@@ -9,6 +9,7 @@ import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
+import 'package:lotti/features/front_agent/model/front_conversation.dart';
 import 'package:lotti/features/front_agent/service/front_chat_history_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
@@ -60,21 +61,35 @@ class FrontChatService {
   /// [FrontChatTurnException] when the agent cannot take a turn or the
   /// wake fails; the message is durable either way and [retryMessage]
   /// re-runs it.
-  Future<void> sendMessage({required String text}) async {
-    final messageId = await appendMessage(text: text);
+  Future<void> sendMessage({
+    required String text,
+    required String conversationId,
+  }) async {
+    final messageId = await appendMessage(
+      text: text,
+      conversationId: conversationId,
+    );
     if (messageId == null) return;
     await retryMessage(messageId: messageId);
   }
 
-  /// Makes [text] a durable user turn and arms its recovery record, without
-  /// running anything. Returns the message id, or null for a blank text.
+  /// Makes [text] a durable user turn of [conversationId] and arms its
+  /// recovery record, without running anything. Returns the message id, or
+  /// null for a blank text.
+  ///
+  /// The conversation is named in the turn's payload, which nothing ever
+  /// rewrites — an older build ignores the key and shows the turn in its
+  /// one thread.
   ///
   /// The turn is durable before the wake, so a process that dies while
   /// routing still leaves it a way to be routed — by the lease, after the
   /// grace. A failed recovery write is swallowed on purpose: the record is
   /// only the fallback, and maintenance arms a missing one for the oldest
   /// unanswered turn on its next pass.
-  Future<String?> appendMessage({required String text}) async {
+  Future<String?> appendMessage({
+    required String text,
+    required String conversationId,
+  }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return null;
 
@@ -95,7 +110,10 @@ class FrontChatService {
         agentId: frontAgentId,
         createdAt: now,
         vectorClock: null,
-        content: <String, Object?>{'text': trimmed},
+        content: <String, Object?>{
+          'text': trimmed,
+          frontConversationKey: conversationId,
+        },
       ),
     );
     final message =

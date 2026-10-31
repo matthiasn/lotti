@@ -298,8 +298,9 @@ void main() {
     });
 
     test(
-      'the prompt carries the index, the recent turns and the pending '
-      'message in that order, and the system prompt is the contract',
+      'the prompt carries the index, the recent turns of this '
+      'conversation only and the pending message in that order, and the '
+      'system prompt is the contract',
       () async {
         seedMessage();
         String? system;
@@ -370,6 +371,26 @@ void main() {
               contentEntryId: 'old-reply-payload',
               createdAt: DateTime(2026, 10, 22, 9),
             ),
+            // Another conversation's turn and its reply: another subject.
+            makeTestMessage(
+              id: 'other-user',
+              agentId: frontAgentId,
+              kind: AgentMessageKind.user,
+              contentEntryId: 'other-user-payload',
+              createdAt: DateTime(2026, 10, 22, 10),
+            ),
+            makeTestMessage(
+              id: 'other-reply',
+              agentId: frontAgentId,
+              kind: AgentMessageKind.action,
+              metadata: const AgentMessageMetadata(
+                toolName: 'reply_to_user',
+                runKey: 'run-9',
+                operationId: 'other-user',
+              ),
+              contentEntryId: 'other-reply-payload',
+              createdAt: DateTime(2026, 10, 22, 10, 1),
+            ),
             // The strategy's log row for the same tool: no operationId, so
             // it is not a turn.
             makeTestMessage(
@@ -394,23 +415,46 @@ void main() {
             ),
           ],
         );
-        // The tail's payloads are read in one batch, by the ids it needs.
+        // Payloads are read in batches: the user turns' (for their
+        // conversation), then the tail's.
+        final payloads = {
+          'payload-1': makeTestMessagePayload(
+            id: 'payload-1',
+            agentId: frontAgentId,
+            content: {'text': input},
+          ),
+          'old-user-payload': makeTestMessagePayload(
+            id: 'old-user-payload',
+            agentId: frontAgentId,
+            content: const {'text': 'What about the garden?'},
+          ),
+          'old-reply-payload': makeTestMessagePayload(
+            id: 'old-reply-payload',
+            agentId: frontAgentId,
+            content: const {'text': 'Filed under Garden.'},
+          ),
+          'other-user-payload': makeTestMessagePayload(
+            id: 'other-user-payload',
+            agentId: frontAgentId,
+            content: const {
+              'text': 'Count the hatchlings',
+              'conversationId': 'c-other',
+            },
+          ),
+          'other-reply-payload': makeTestMessagePayload(
+            id: 'other-reply-payload',
+            agentId: frontAgentId,
+            content: const {'text': 'Forty-two.'},
+          ),
+        };
+        final batches = <Set<String>>[];
         when(() => repository.getEntitiesByIds(any())).thenAnswer((
           invocation,
         ) async {
           final ids = invocation.positionalArguments.first as Set<String>;
-          expect(ids, {'old-user-payload', 'old-reply-payload'});
+          batches.add(ids);
           return {
-            'old-user-payload': makeTestMessagePayload(
-              id: 'old-user-payload',
-              agentId: frontAgentId,
-              content: const {'text': 'What about the garden?'},
-            ),
-            'old-reply-payload': makeTestMessagePayload(
-              id: 'old-reply-payload',
-              agentId: frontAgentId,
-              content: const {'text': 'Filed under Garden.'},
-            ),
+            for (final id in ids) id: ?payloads[id],
           };
         });
 
@@ -440,6 +484,9 @@ void main() {
             '- user: What about the garden?\n- reply: Filed under Garden.',
           ),
         );
+        expect(sent, isNot(contains('Count the hatchlings')));
+        expect(sent, isNot(contains('Forty-two')));
+        expect(batches.last, {'old-user-payload', 'old-reply-payload'});
         expect(sent, isNot(contains('old-thought')));
         expect(sent, isNot(contains('old-reply')));
         expect(sent, isNot(contains('old-user')));

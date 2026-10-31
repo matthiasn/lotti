@@ -6903,6 +6903,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get filterSelectionNoMatches => 'Geen overeenkomsten';
 
   @override
+  String get frontChatActionFailed =>
+      'Dat is niet gelukt. Probeer het opnieuw.';
+
+  @override
+  String get frontChatArchivedToast => 'Chat gearchiveerd.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Deze chat verwijderen? Zijn berichten verdwijnen van al je apparaten. Wat je eruit hebt opgeslagen, blijft waar het is.';
+
+  @override
   String get frontChatEmpty =>
       'Vraag naar een taak, een doel, een project of een persoon, of vertel wat er gebeurd is. De juiste agent antwoordt, en er wordt niets opgeborgen tot je tikt.';
 
@@ -6915,6 +6926,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get frontChatInboxEmpty => 'Er wacht niets op je.';
 
   @override
+  String get frontChatNoChats =>
+      'Nog geen chats. Stel een vraag om er een te beginnen.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Geen chat komt overeen.';
+
+  @override
   String get frontChatOpen => 'Vraag het de metgezel';
 
   @override
@@ -6922,6 +6940,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Zoekt wie het weet…';
+
+  @override
+  String get frontChatSearchChats => 'Chats doorzoeken';
 
   @override
   String get frontChatTitle => 'Metgezel';

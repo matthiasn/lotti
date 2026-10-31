@@ -10,10 +10,12 @@ import 'package:lotti/features/front_agent/model/front_agent_identity.dart';
 import 'package:lotti/features/front_agent/model/front_door.dart';
 import 'package:lotti/features/front_agent/state/front_chat_controller.dart';
 import 'package:lotti/features/front_agent/state/front_chat_thread_provider.dart';
+import 'package:lotti/features/front_agent/state/front_conversation_providers.dart';
 import 'package:lotti/features/front_agent/state/front_inbox_filter.dart';
 import 'package:lotti/features/front_agent/state/front_journal_access_provider.dart';
 import 'package:lotti/features/front_agent/ui/front_ask_options_row.dart';
 import 'package:lotti/features/front_agent/ui/front_chat_header.dart';
+import 'package:lotti/features/front_agent/ui/front_conversation_list.dart';
 import 'package:lotti/features/front_agent/ui/front_door_card.dart';
 import 'package:lotti/features/front_agent/ui/front_turn_cost_line.dart';
 import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
@@ -22,8 +24,9 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/goal_routes.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// The companion's chat: one continuous thread across days (decision 7),
-/// under her header, in the shared [AgentChatView].
+/// The companion's chat: one of the user's conversations with her, under
+/// her header, in the shared [AgentChatView] — or, while the header's list
+/// is open, the list of them all ([FrontConversationList]).
 ///
 /// What differs from a goal's or a person's chat is what hangs off a
 /// message: under a routed turn, the doors it was taken through and what
@@ -40,7 +43,11 @@ class FrontChatPane extends ConsumerWidget {
     return Column(
       children: [
         FrontChatHeader(onClose: onClose),
-        Expanded(child: _Body()),
+        Expanded(
+          child: ref.watch(frontConversationListOpenProvider)
+              ? const FrontConversationList()
+              : _Body(),
+        ),
       ],
     );
   }
@@ -72,6 +79,7 @@ class _Body extends ConsumerWidget {
     // The inbox is the same thread, filtered to the turns with a door still
     // waiting on the user (decision 7).
     final inboxOnly = ref.watch(frontInboxFilterProvider);
+    final conversationId = ref.watch(frontActiveConversationProvider).value;
     final inboxIds = thread?.inboxMessageIds ?? const <String>{};
     final shown = inboxOnly
         ? history.whenData(
@@ -123,7 +131,10 @@ class _Body extends ConsumerWidget {
     return AgentChatView(
       agentId: frontAgentId,
       agentName: messages.frontChatTitle,
-      conversationId: inboxOnly ? 'front-chat-inbox' : 'front-chat',
+      // Each conversation keeps its own scroll position.
+      conversationId: inboxOnly
+          ? 'front-chat-inbox'
+          : 'front-chat:${conversationId ?? ''}',
       history: shown,
       emptyMessage: inboxOnly
           ? messages.frontChatInboxEmpty

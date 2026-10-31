@@ -4069,6 +4069,9 @@
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
   "filterSelectionNoMatches": "No matches",
+  "frontChatActionFailed": "That didn't go through. Try again.",
+  "frontChatArchivedToast": "Chat archived.",
+  "frontChatDeleteExplanation": "Delete this chat? Its messages leave every device. Whatever you filed from it stays where it is.",
   "frontChatEmpty": "Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.",
   "frontChatInboxChip": "Inbox {count}",
   "@frontChatInboxChip": {
@@ -4079,9 +4082,12 @@
     }
   },
   "frontChatInboxEmpty": "Nothing is waiting for you.",
+  "frontChatNoChats": "No chats yet. Ask something to start one.",
+  "frontChatNoMatchingChats": "No chat matches.",
   "frontChatOpen": "Ask the companion",
   "frontChatPlaceholder": "Ask anything…",
   "frontChatResponding": "Finding who knows…",
+  "frontChatSearchChats": "Search chats",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",
   "frontDoorActionFailed": "That did not go through.",

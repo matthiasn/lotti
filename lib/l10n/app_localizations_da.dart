@@ -6873,6 +6873,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get filterSelectionNoMatches => 'Ingen kampe';
 
   @override
+  String get frontChatActionFailed => 'Det gik ikke igennem. Prøv igen.';
+
+  @override
+  String get frontChatArchivedToast => 'Chat arkiveret.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Slet denne chat? Dens beskeder forsvinder fra alle enheder. Det, du har gemt fra den, bliver, hvor det er.';
+
+  @override
   String get frontChatEmpty =>
       'Spørg om en opgave, et mål, et projekt eller en person, eller fortæl hvad der er sket. Den rette agent svarer, og intet arkiveres, før du trykker.';
 
@@ -6885,6 +6895,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatInboxEmpty => 'Intet venter på dig.';
 
   @override
+  String get frontChatNoChats =>
+      'Ingen chats endnu. Spørg om noget for at starte en.';
+
+  @override
+  String get frontChatNoMatchingChats => 'Ingen chat passer.';
+
+  @override
   String get frontChatOpen => 'Spørg ledsageren';
 
   @override
@@ -6892,6 +6909,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Finder den, der ved det…';
+
+  @override
+  String get frontChatSearchChats => 'Søg i chats';
 
   @override
   String get frontChatTitle => 'Ledsager';

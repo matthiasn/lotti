@@ -6846,6 +6846,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterSelectionNoMatches => 'No matches';
 
   @override
+  String get frontChatActionFailed => 'That didn\'t go through. Try again.';
+
+  @override
+  String get frontChatArchivedToast => 'Chat archived.';
+
+  @override
+  String get frontChatDeleteExplanation =>
+      'Delete this chat? Its messages leave every device. Whatever you filed from it stays where it is.';
+
+  @override
   String get frontChatEmpty =>
       'Ask about a task, a goal, a project or a person, or tell what happened. The right agent answers, and nothing is filed until you tap.';
 
@@ -6858,6 +6868,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get frontChatInboxEmpty => 'Nothing is waiting for you.';
 
   @override
+  String get frontChatNoChats => 'No chats yet. Ask something to start one.';
+
+  @override
+  String get frontChatNoMatchingChats => 'No chat matches.';
+
+  @override
   String get frontChatOpen => 'Ask the companion';
 
   @override
@@ -6865,6 +6881,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get frontChatResponding => 'Finding who knows…';
+
+  @override
+  String get frontChatSearchChats => 'Search chats';
 
   @override
   String get frontChatTitle => 'Companion';
