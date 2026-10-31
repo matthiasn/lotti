@@ -168,6 +168,22 @@ const String omlxWhisperLargeV3ModelId = 'openai/whisper-large-v3';
 const String omlxWhisperLargeV3MlxModelId = 'whisper-large-v3-mlx';
 const String omlxWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';
 
+/// Canonical Mistral model identifiers bound by the `Mistral (EU)` profile and
+/// installed by the Mistral FTUE, checked against the live `/v1/models`
+/// catalog on 2026-10-31. Each is the pinned `-x-y` release id, not a moving
+/// alias, so a seeded profile keeps the model it was seeded with.
+///
+/// DeepSeek V4.1 Flash is served by Mistral itself, with reasoning and
+/// vision, so one model covers the thinking and image-recognition slots.
+const String mistralDeepseekV41Flash1017ModelId = 'deepseek-v4-1-flash-1017';
+const String mistralLarge4ModelId = 'mistral-large-4-0';
+const String mistralVoxtralMiniTranscribe3ModelId =
+    'voxtral-mini-transcribe-3-0';
+
+/// The Mistral profile's read-aloud model. Mistral documents no `-latest`
+/// alias for it, so the release id is pinned.
+const String mistralVoxtralTtsModelId = 'voxtral-mini-tts-3-0';
+
 /// Whether [providerModelId] identifies Mistral's dedicated OCR endpoint.
 bool isMistralOcrModelId(String providerModelId) =>
     providerModelId.trim().toLowerCase().startsWith('mistral-ocr');
@@ -179,14 +195,14 @@ bool isMistralOcrModelId(String providerModelId) =>
 const Set<String> mistralAdjustableReasoningModelIds = {
   'mistral-small-latest',
   'mistral-medium-3-5',
-  'mistral-large-4-0',
+  mistralLarge4ModelId,
 };
 
 /// The [mistralAdjustableReasoningModelIds] that take graded effort (`low`,
 /// `medium`, `high`) instead of the others' `none` and `high`. Probed on the
 /// live API on 2026-10-31: Large 4 answers `none` and `minimal` with a 400,
 /// and Small and Medium answer `low` and `medium` with one.
-const Set<String> mistralGradedReasoningModelIds = {'mistral-large-4-0'};
+const Set<String> mistralGradedReasoningModelIds = {mistralLarge4ModelId};
 
 /// Whether [providerModelId] is a Mistral model with adjustable reasoning.
 bool isMistralAdjustableReasoningModelId(String providerModelId) =>

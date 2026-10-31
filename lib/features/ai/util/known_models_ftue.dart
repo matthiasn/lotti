@@ -164,10 +164,15 @@ getAlibabaFtueKnownModels() {
 // Mistral FTUE (First Time User Experience) Model Constants
 // =============================================================================
 
-/// Model IDs used for Mistral FTUE automation
-const ftueMistralFlashModelId = 'mistral-small-2501';
-const ftueMistralReasoningModelId = 'magistral-medium-2509';
-const ftueMistralAudioModelId = 'voxtral-mini-latest';
+/// Model IDs installed by Mistral FTUE automation — one per `Mistral (EU)`
+/// profile slot: DeepSeek V4.1 Flash for thinking and image recognition,
+/// Mistral Large 4 for high-end thinking, Voxtral Mini Transcribe 3 for
+/// transcription and Voxtral TTS 3 for reading aloud.
+const String ftueMistralThinkingModelId = mistralDeepseekV41Flash1017ModelId;
+const String ftueMistralHighEndThinkingModelId = mistralLarge4ModelId;
+const String ftueMistralTranscriptionModelId =
+    mistralVoxtralMiniTranscribe3ModelId;
+const String ftueMistralSpeechModelId = mistralVoxtralTtsModelId;
 
 /// Finds a KnownModel by its provider model ID from the mistralModels list.
 /// Returns null if not found.
@@ -177,26 +182,36 @@ KnownModel? findMistralKnownModel(String providerModelId) {
   );
 }
 
-/// Returns the three KnownModel configurations needed for Mistral FTUE.
-/// - Flash model (Mistral Small) for fast processing tasks
-/// - Reasoning model (Magistral Medium) for complex reasoning tasks
-/// - Dedicated transcription model (Voxtral Mini Transcribe 2) for transcription
-/// Note: Mistral does not have a native image generation model.
+/// Returns the four KnownModel configurations needed for Mistral FTUE, named
+/// after the profile slots they fill (see [ftueMistralThinkingModelId]).
+/// Mistral has no native image generation model, so that slot stays unbound.
 ({
-  KnownModel flash,
-  KnownModel reasoning,
-  KnownModel audio,
+  KnownModel thinking,
+  KnownModel highEndThinking,
+  KnownModel transcription,
+  KnownModel speech,
 })?
 getMistralFtueKnownModels() {
-  final flash = findMistralKnownModel(ftueMistralFlashModelId);
-  final reasoning = findMistralKnownModel(ftueMistralReasoningModelId);
-  final audio = findMistralKnownModel(ftueMistralAudioModelId);
+  final thinking = findMistralKnownModel(ftueMistralThinkingModelId);
+  final highEndThinking = findMistralKnownModel(
+    ftueMistralHighEndThinkingModelId,
+  );
+  final transcription = findMistralKnownModel(ftueMistralTranscriptionModelId);
+  final speech = findMistralKnownModel(ftueMistralSpeechModelId);
 
-  if (flash == null || reasoning == null || audio == null) {
+  if (thinking == null ||
+      highEndThinking == null ||
+      transcription == null ||
+      speech == null) {
     return null;
   }
 
-  return (flash: flash, reasoning: reasoning, audio: audio);
+  return (
+    thinking: thinking,
+    highEndThinking: highEndThinking,
+    transcription: transcription,
+    speech: speech,
+  );
 }
 
 // =============================================================================

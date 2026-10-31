@@ -331,6 +331,37 @@ void main() {
       },
     );
 
+    test('Mistral (EU) binds DeepSeek V4.1 Flash, Large 4 and Voxtral 3, '
+        'exactly the models Mistral FTUE installs', () {
+      final profile = ProfileSeedingService.defaultProfiles.singleWhere(
+        (p) => p.id == profileMistralEuId,
+      );
+
+      expect(profile.thinkingModelId, 'deepseek-v4-1-flash-1017');
+      expect(profile.imageRecognitionModelId, 'deepseek-v4-1-flash-1017');
+      expect(profile.thinkingHighEndModelId, 'mistral-large-4-0');
+      expect(profile.transcriptionModelId, 'voxtral-mini-transcribe-3-0');
+      expect(profile.speechModelId, 'voxtral-mini-tts-3-0');
+      expect(profile.imageGenerationModelId, isNull);
+      // Every bound slot must have an FTUE-installed row behind it, or the
+      // slot dangles right after onboarding.
+      expect(
+        {
+          profile.thinkingModelId,
+          profile.thinkingHighEndModelId,
+          profile.imageRecognitionModelId,
+          profile.transcriptionModelId,
+          profile.speechModelId,
+        },
+        {
+          ftueMistralThinkingModelId,
+          ftueMistralHighEndThinkingModelId,
+          ftueMistralTranscriptionModelId,
+          ftueMistralSpeechModelId,
+        },
+      );
+    });
+
     test('Mistral (EU) profile reads aloud with Voxtral TTS 3; other '
         'profiles name no read-aloud model', () async {
       final capturedConfigs = <AiConfig>[];
@@ -344,8 +375,8 @@ void main() {
 
       final profiles = capturedConfigs.whereType<AiConfigInferenceProfile>();
       final mistral = profiles.singleWhere((p) => p.id == profileMistralEuId);
-      expect(mistral.speechModelId, mistralVoxtralTtsModelId);
-      expect(mistral.transcriptionModelId, 'voxtral-mini-latest');
+      expect(mistral.speechModelId, 'voxtral-mini-tts-3-0');
+      expect(mistral.transcriptionModelId, 'voxtral-mini-transcribe-3-0');
       // Everywhere else read-aloud stays on the on-device voice.
       expect(
         profiles

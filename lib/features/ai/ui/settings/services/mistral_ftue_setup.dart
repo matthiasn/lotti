@@ -20,8 +20,9 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// Performs comprehensive FTUE setup for Mistral providers.
   ///
   /// This creates:
-  /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium,
-  ///    Audio/Voxtral Mini)
+  /// 1. Four models (thinking and vision/DeepSeek V4.1 Flash, high-end
+  ///    thinking/Mistral Large 4, transcription/Voxtral Mini Transcribe 3,
+  ///    read aloud/Voxtral TTS 3)
   /// 2. A test category with auto-selection configured
   Future<MistralFtueResult?> performMistralFtueSetup({
     required BuildContext context,
@@ -63,9 +64,16 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       providerId: provider.id,
       providerType: provider.inferenceProviderType,
       modelConfigs: [
-        (known: knownModels.flash, id: ftueMistralFlashModelId),
-        (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
-        (known: knownModels.audio, id: ftueMistralAudioModelId),
+        (known: knownModels.thinking, id: ftueMistralThinkingModelId),
+        (
+          known: knownModels.highEndThinking,
+          id: ftueMistralHighEndThinkingModelId,
+        ),
+        (
+          known: knownModels.transcription,
+          id: ftueMistralTranscriptionModelId,
+        ),
+        (known: knownModels.speech, id: ftueMistralSpeechModelId),
       ],
       excludedProviderModelIds: excludedProviderModelIds,
     );

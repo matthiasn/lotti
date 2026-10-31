@@ -144,12 +144,24 @@ void main() {
       await tester.pump();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, equals(3));
+      expect(result!.modelsCreated, equals(4));
       expect(result!.modelsVerified, equals(0));
       expect(result!.categoryCreated, isTrue);
 
-      // 3 models saved
-      verify(() => mockRepository.saveConfig(any())).called(3);
+      // One model row per Mistral (EU) profile slot, read aloud included.
+      final saved = verify(
+        () => mockRepository.saveConfig(captureAny()),
+      ).captured.cast<AiConfigModel>();
+      expect(saved.map((m) => m.providerModelId), [
+        'deepseek-v4-1-flash-1017',
+        'mistral-large-4-0',
+        'voxtral-mini-transcribe-3-0',
+        'voxtral-mini-tts-3-0',
+      ]);
+      expect(
+        saved.map((m) => m.inferenceProviderId).toSet(),
+        {mistralProvider.id},
+      );
     });
 
     testWidgets('should verify existing models and skip creation', (
@@ -157,21 +169,27 @@ void main() {
     ) async {
       final existingModels = [
         AiTestDataFactory.createTestModel(
-          id: 'existing-flash',
-          name: 'Mistral Small',
-          providerModelId: ftueMistralFlashModelId,
+          id: 'existing-thinking',
+          name: 'DeepSeek V4.1 Flash',
+          providerModelId: ftueMistralThinkingModelId,
           inferenceProviderId: mistralProvider.id,
         ),
         AiTestDataFactory.createTestModel(
-          id: 'existing-reasoning',
-          name: 'Magistral Medium',
-          providerModelId: ftueMistralReasoningModelId,
+          id: 'existing-high-end',
+          name: 'Mistral Large 4',
+          providerModelId: ftueMistralHighEndThinkingModelId,
           inferenceProviderId: mistralProvider.id,
         ),
         AiTestDataFactory.createTestModel(
-          id: 'existing-audio',
-          name: 'Voxtral Small',
-          providerModelId: ftueMistralAudioModelId,
+          id: 'existing-transcription',
+          name: 'Voxtral Mini Transcribe 3',
+          providerModelId: ftueMistralTranscriptionModelId,
+          inferenceProviderId: mistralProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'existing-speech',
+          name: 'Voxtral TTS 3',
+          providerModelId: ftueMistralSpeechModelId,
           inferenceProviderId: mistralProvider.id,
         ),
       ];
@@ -226,7 +244,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, equals(0));
-      expect(result!.modelsVerified, equals(3));
+      expect(result!.modelsVerified, equals(4));
     });
 
     testWidgets('should reuse existing category instead of creating new one', (

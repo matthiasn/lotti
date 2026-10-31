@@ -379,12 +379,17 @@ class ProfileSeedingService {
       isDefault: true,
       createdAt: DateTime(2026),
     ),
+    // DeepSeek V4.1 Flash (served by Mistral) thinks and sees, Large 4 takes
+    // the demanding work. Like every slot here, the read-aloud model reaches
+    // new profiles only: an existing profile gets it when the user picks it,
+    // so no synced profile is rewritten behind anyone's back.
     AiConfigInferenceProfile(
       id: profileMistralEuId,
       name: 'Mistral (EU)',
-      thinkingModelId: 'mistral-medium-latest',
-      imageRecognitionModelId: 'mistral-medium-latest',
-      transcriptionModelId: 'voxtral-mini-latest',
+      thinkingModelId: mistralDeepseekV41Flash1017ModelId,
+      thinkingHighEndModelId: mistralLarge4ModelId,
+      imageRecognitionModelId: mistralDeepseekV41Flash1017ModelId,
+      transcriptionModelId: mistralVoxtralMiniTranscribe3ModelId,
       speechModelId: mistralVoxtralTtsModelId,
       skillAssignments: _mistralSkillAssignments,
       isDefault: true,

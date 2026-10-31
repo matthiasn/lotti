@@ -61,8 +61,14 @@ void main() {
       );
       expect(preset, isNotNull);
       expect(preset!.providerName, equals('Mistral'));
-      // Flash + Reasoning + Audio (no image gen).
-      expect(preset.models, hasLength(3));
+      // Thinking + high-end thinking + transcription + read aloud; Mistral
+      // has no image generation.
+      expect(preset.models.map((m) => m.providerModelId), [
+        'deepseek-v4-1-flash-1017',
+        'mistral-large-4-0',
+        'voxtral-mini-transcribe-3-0',
+        'voxtral-mini-tts-3-0',
+      ]);
     });
 
     test('returns models for Melious', () {
