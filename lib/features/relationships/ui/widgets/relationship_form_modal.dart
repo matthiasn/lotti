@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
-import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
@@ -30,13 +30,10 @@ import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_card.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_photo_surfaces.dart';
 import 'package:lotti/features/speech_dictionary/domain/speech_dictionary_terms.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/entry_category_move.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -532,7 +529,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
               // Category scoping (the ProjectCreateForm precedent): the
               // relationship's category also seeds every check-in created
               // under it.
-              PersonCategoryRow(
+              CategoryFieldRow(
                 categoryId: _categoryId,
                 onChanged: (id) => setState(() => _categoryId = id),
               ),

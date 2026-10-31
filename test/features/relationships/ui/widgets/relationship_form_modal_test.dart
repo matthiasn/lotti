@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/relationship_data.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field_row.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -769,19 +770,19 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
         findsNothing,
         reason: 'no category, nothing to tint',
       );
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
           .onChanged('cat-1');
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
       final dot = tester.widget<Container>(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
       );
       expect(
         (dot.decoration! as BoxDecoration).color,
@@ -911,14 +912,14 @@ void main() {
       await tester.pumpWidget(buildForm());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('person-form-category')));
+      await tester.tap(find.byKey(const ValueKey('category-field')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Family').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Family'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('person-form-category-dot')),
+        find.byKey(const ValueKey('category-field-dot')),
         findsOneWidget,
       );
     });
@@ -1301,7 +1302,7 @@ void main() {
         // nested modal with its own harness, and the branch under test is what
         // the form does with the chosen category.
         tester
-            .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+            .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
             .onChanged('category-7');
         await tester.pumpAndSettle();
 
@@ -1862,7 +1863,7 @@ void main() {
       await tester.pumpAndSettle();
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
           .onChanged(null);
       await tester.pumpAndSettle();
 
@@ -1928,7 +1929,7 @@ void main() {
       await tester.pumpAndSettle();
 
       tester
-          .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+          .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
           .onChanged(null);
       await tester.pumpAndSettle();
       await tapVisible(tester, find.byType(DesignSystemToggle));
@@ -2196,7 +2197,7 @@ void main() {
       expect(
         await dirtyAfter(() async {
           tester
-              .widget<PersonCategoryRow>(find.byType(PersonCategoryRow))
+              .widget<CategoryFieldRow>(find.byType(CategoryFieldRow))
               .onChanged('cat-1');
         }),
         isTrue,
