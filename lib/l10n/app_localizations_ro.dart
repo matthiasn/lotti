@@ -7787,13 +7787,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInKindNote => 'NOTĂ';
+  String get goalCheckInKindNote => 'Notă';
 
   @override
-  String get goalCheckInKindReflection => 'REFLECȚIE ZILNICĂ';
+  String get goalCheckInKindReflection => 'Reflecție zilnică';
 
   @override
-  String get goalCheckInKindVoice => 'RAPORTARE VOCALĂ';
+  String get goalCheckInKindVoice => 'Raportare vocală';
 
   @override
   String goalCheckInMinutes(int count) {
@@ -8638,7 +8638,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalRecordOfferOverline(String agentName, String measurableName) {
-    return '$agentName PROPUNE · ÎNREGISTRARE ÎN $measurableName';
+    return '$agentName propune · înregistrare în $measurableName';
   }
 
   @override

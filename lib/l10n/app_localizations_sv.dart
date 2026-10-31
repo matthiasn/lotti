@@ -7673,13 +7673,13 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalCheckInKindNote => 'ANTECKNING';
+  String get goalCheckInKindNote => 'Anteckning';
 
   @override
-  String get goalCheckInKindReflection => 'DAGLIG REFLEKTION';
+  String get goalCheckInKindReflection => 'Daglig reflektion';
 
   @override
-  String get goalCheckInKindVoice => 'RÖSTAVSTÄMNING';
+  String get goalCheckInKindVoice => 'Röstavstämning';
 
   @override
   String goalCheckInMinutes(int count) {
@@ -8501,7 +8501,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String goalRecordOfferOverline(String agentName, String measurableName) {
-    return '$agentName FÖRESLÅR · REGISTRERA I $measurableName';
+    return '$agentName föreslår · registrera i $measurableName';
   }
 
   @override

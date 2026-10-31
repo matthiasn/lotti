@@ -12974,19 +12974,19 @@ abstract class AppLocalizations {
   /// No description provided for @goalCheckInKindNote.
   ///
   /// In en, this message translates to:
-  /// **'NOTE'**
+  /// **'Note'**
   String get goalCheckInKindNote;
 
   /// No description provided for @goalCheckInKindReflection.
   ///
   /// In en, this message translates to:
-  /// **'DAILY REFLECTION'**
+  /// **'Daily reflection'**
   String get goalCheckInKindReflection;
 
   /// No description provided for @goalCheckInKindVoice.
   ///
   /// In en, this message translates to:
-  /// **'VOICE CHECK-IN'**
+  /// **'Voice check-in'**
   String get goalCheckInKindVoice;
 
   /// A goal check-in's time spent, in whole minutes.
@@ -14247,7 +14247,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalRecordOfferOverline.
   ///
   /// In en, this message translates to:
-  /// **'{agentName} OFFERS · RECORD TO {measurableName}'**
+  /// **'{agentName} offers · record to {measurableName}'**
   String goalRecordOfferOverline(String agentName, String measurableName);
 
   /// No description provided for @goalRecordOfferProvenance.

@@ -17,6 +17,7 @@ import 'package:lotti/features/relationships/ui/shared/relationship_timestamps.d
 import 'package:lotti/features/relationships/ui/shared/sentiment.dart';
 import 'package:lotti/features/relationships/ui/widgets/check_in_capture_sheet.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_page_cards.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/check_in_interaction_icon.dart';
 import 'package:lotti/widgets/transcript/folded_words.dart';
@@ -418,7 +419,7 @@ class PersonTimelineRow extends StatelessWidget {
         ),
         tailStyle: metaStyle,
       ),
-      body: switch (item) {
+      body: _withPlayback(_recordingOf(item), switch (item) {
         // A recording whose words are not here yet says where they are the
         // way every check-in recording does — and, past the grace window
         // with nothing on the way, that they are not coming.
@@ -451,7 +452,7 @@ class PersonTimelineRow extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: FoldedWords.wordsStyle(context),
         ),
-      },
+      }),
       footer: row.footer,
       // Words to sort, a way to sort them: a voice note is what a capture
       // stays when it was not filed, and this files it later. Beside the
@@ -498,6 +499,32 @@ class PersonTimelineRow extends StatelessWidget {
     return to.isAfter(from) ? '$start – ${relationshipTimeLabel(to)}' : start;
   }
 }
+
+/// The recording a row plays, when it holds one: a voice note's own, or the
+/// newest a check-in holds — what a goal's rail plays for a spoken check-in.
+JournalAudio? _recordingOf(PersonTimelineItem item) => switch (item) {
+  TimelineVoiceNote(:final audio) => audio,
+  TimelineCheckIn(:final entries) =>
+    entries.whereType<JournalAudio>().fold<JournalAudio?>(
+      null,
+      (newest, audio) =>
+          newest == null || audio.meta.dateFrom.isAfter(newest.meta.dateFrom)
+          ? audio
+          : newest,
+    ),
+  _ => null,
+};
+
+/// [words] under the row's [recording], played lightly in place
+/// ([RecordingPlayback]), as a goal's rail carries its recordings.
+Widget? _withPlayback(JournalAudio? recording, Widget? words) =>
+    recording == null
+    ? words
+    : Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [RecordingPlayback(recording), ?words],
+      );
 
 /// How a check-in felt and what it was about, as one caption line: the
 /// feeling's glyph in its colour, then its word — the colour is never the

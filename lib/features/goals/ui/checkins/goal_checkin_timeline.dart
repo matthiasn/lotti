@@ -8,29 +8,33 @@ import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/logic/goal_timeline_projection.dart';
-import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_duration.dart';
-import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
 import 'package:lotti/widgets/day_indicators/day_mark_styles.dart';
-import 'package:lotti/widgets/timeline/timeline_models.dart';
-import 'package:lotti/widgets/timeline/timeline_view.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
+import 'package:lotti/widgets/transcript/recording_transcript.dart';
 import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The goal's rail of check-ins and reflections.
 ///
 /// Presentation only: the merge and the day grouping are pure functions
-/// (`goalTimelineItems`, `groupGoalItemsByDay`), and this turns their output
-/// into the shared timeline's vocabulary. Every beat kind here rides the shared
-/// component's escape hatch or its built-in audio shape, so adding one never
-/// means editing `lib/widgets/timeline/`.
+/// (`goalTimelineItems`, `groupGoalItemsByDay`), and this draws their output
+/// with the design system's timeline rows — the person timeline's anatomy —
+/// and the shared transcript and fold, so a goal's check-ins and a person's
+/// look alike.
 class GoalCheckInTimeline extends ConsumerStatefulWidget {
   const GoalCheckInTimeline({
     required this.agentId,
@@ -81,6 +85,7 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
   Widget build(BuildContext context) {
     final items = ref.watch(goalTimelineItemsProvider(widget.agentId));
     _nextGraceExpiry = null;
+    if (items.isEmpty) return _Empty(action: widget.emptyAction);
     final cap = widget.maxBeats ?? _visibleCount;
     final visible = items.length <= cap ? items : items.sublist(0, cap);
     final hasOlder = widget.maxBeats == null && visible.length < items.length;
@@ -88,71 +93,106 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
     final locale = Localizations.localeOf(context).toLanguageTag();
     final groups = groupGoalItemsByDay(
       visible,
-      labelForDay: (day) => _dayLabel(context, day, locale),
+      labelForDay: (day) => _dayLabel(context, day),
     );
 
-    final built = [
-      for (final group in groups)
-        TimelineGroup(
-          label: group.label,
-          beats: [for (final item in group.items) _beat(context, item, locale)],
-        ),
+    // The person timeline's own anatomy — section headers, a tile on a
+    // rail, a caption meta line, the body, a trailing control — so a goal's
+    // check-ins and a person's read as one kind of history.
+    final rows = <Widget>[
+      for (final group in groups) ...[
+        DesignSystemTimelineSectionHeader(label: group.label),
+        for (final (index, item) in group.items.indexed)
+          _row(
+            context,
+            item,
+            locale,
+            last: index == group.items.length - 1,
+          ),
+      ],
     ];
-    // After the beats, because building them is what discovers the deadline.
+    // After the rows, because building them is what discovers the deadline.
     // Arming only changes a timer, so it is safe from inside build.
     armGraceRebuild(_nextGraceExpiry);
 
-    return TimelineView(
-      groups: built,
-      onLoadOlder: hasOlder
-          ? () => setState(
-              () => _visibleCount = math.min(
-                items.length,
-                _visibleCount + _pageSize,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ...rows,
+        if (hasOlder)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: DesignSystemButton(
+              key: const ValueKey('goal-checkin-load-older'),
+              label: context.messages.timelineLoadOlder,
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.dense,
+              onPressed: () => setState(
+                () => _visibleCount = math.min(
+                  items.length,
+                  _visibleCount + _pageSize,
+                ),
               ),
-            )
-          : null,
-      // Every check-in beat is a journal entry, so the rail offers what the
-      // event timeline already does: open the entry itself. The rail shows a
-      // clamped transcript and a player; the full entry is where the text can
-      // be read whole, edited, or deleted.
-      onOpenBeat: (entryId) => beamToNamed('/journal/$entryId'),
-      onRetryTranscript: (entryId) => unawaited(
-        ref.read(
-          triggerSkillProvider((
-            entityId: entryId,
-            skillId: skillTranscribeContextId,
-            linkedTaskId: null,
-            referenceImages: null,
-            overrideModelId: null,
-            geminiThinkingMode: null,
-          )).future,
-        ),
-      ),
-      empty: _Empty(action: widget.emptyAction),
+            ),
+          ),
+      ],
     );
   }
 
   /// Today and yesterday read as words; anything older carries its date, so a
-  /// rail spanning months stays navigable.
-  String _dayLabel(BuildContext context, DateTime day, String locale) {
+  /// rail spanning months stays navigable. Sentence case, as the person
+  /// timeline's sections are.
+  String _dayLabel(BuildContext context, DateTime day) {
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final difference = today.difference(day).inDays;
-    if (difference == 0) return context.messages.timelineDayToday.toUpperCase();
-    if (difference == 1) {
-      return context.messages.timelineDayYesterday.toUpperCase();
-    }
-    return DateFormat('EEEE · d MMM', locale).format(day).toUpperCase();
+    if (difference == 0) return context.messages.timelineDayToday;
+    if (difference == 1) return context.messages.timelineDayYesterday;
+    return DateFormat(
+      'EEEE · d MMM',
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(day);
   }
 
-  TimelineBeat _beat(
+  /// The meta line every row leads with — the time, then the kind — in the
+  /// person timeline's caption grammar.
+  Widget _meta(BuildContext context, String time, String kind) {
+    final tokens = context.designTokens;
+    final style = tokens.typography.styles.others.caption.copyWith(
+      fontFeatures: dateFigureFontFeatures,
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    // Both at every width, as the person timeline keeps its time and kind.
+    return DsTieredText(tiers: ['$time · $kind'], style: style);
+  }
+
+  /// Opens a check-in's own entry, where its words can be read whole,
+  /// edited or deleted.
+  void _open(String entryId) => beamToNamed('/journal/$entryId');
+
+  void _retry(String entryId) => unawaited(
+    ref.read(
+      triggerSkillProvider((
+        entityId: entryId,
+        skillId: skillTranscribeContextId,
+        linkedTaskId: null,
+        referenceImages: null,
+        overrideModelId: null,
+        geminiThinkingMode: null,
+      )).future,
+    ),
+  );
+
+  Widget _row(
     BuildContext context,
     GoalTimelineItem item,
-    String locale,
-  ) {
+    String locale, {
+    required bool last,
+  }) {
     final tokens = context.designTokens;
-    final timeLabel = DateFormat.Hm(locale).format(item.at.toLocal());
+    final messages = context.messages;
+    final time = DateFormat.Hm(locale).format(item.at.toLocal());
 
     switch (item) {
       case final GoalAudioCheckIn checkIn:
@@ -186,109 +226,87 @@ class _GoalCheckInTimelineState extends ConsumerState<GoalCheckInTimeline>
               ? graceExpiry
               : _nextGraceExpiry;
         }
-
-        return TimelineBeat(
-          id: checkIn.id,
-          entryId: checkIn.id,
-          timeLabel: timeLabel,
-          kindLabel: context.messages.goalCheckInKindVoice,
-          glyph: LottiIcons.mic,
-          accent: tokens.colors.interactive.enabled,
+        final kind = messages.goalCheckInKindVoice;
+        return DesignSystemTimelineRow(
+          key: ValueKey('goal-checkin-row-${checkIn.id}'),
+          leading: const DesignSystemTimelineTile(icon: LottiIcons.mic),
+          meta: _meta(context, time, kind),
+          semanticsLabel: '$kind, $time',
           // The time this check-in counts for, correctable in place — the
           // recording's own length until the user says otherwise.
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
-          content: TimelineBeatContent.audio(
-            player: AudioPlayerWidget(checkIn.audio),
-            transcript: checkIn.transcript,
-            transcriptStatus: transcriptStatusOf(
-              hasTranscript: checkIn.transcript != null,
-              running: inferenceStatus == InferenceStatus.running,
-              failed:
-                  inferenceStatus == InferenceStatus.error || durableFailure,
-              graceExpiry: graceExpiry,
-              now: clock.now(),
-            ),
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RecordingPlayback(checkIn.audio),
+              RecordingTranscript(
+                id: checkIn.id,
+                status: transcriptStatusOf(
+                  hasTranscript: checkIn.transcript != null,
+                  running: inferenceStatus == InferenceStatus.running,
+                  failed:
+                      inferenceStatus == InferenceStatus.error ||
+                      durableFailure,
+                  graceExpiry: graceExpiry,
+                  now: clock.now(),
+                ),
+                transcript: checkIn.transcript,
+                onRetry: () => _retry(checkIn.id),
+              ),
+            ],
           ),
+          onTap: () => _open(checkIn.id),
+          last: last,
         );
 
       case final GoalTextCheckIn checkIn:
-        return TimelineBeat(
-          id: checkIn.id,
-          entryId: checkIn.id,
-          timeLabel: timeLabel,
-          kindLabel: context.messages.goalCheckInKindNote,
-          glyph: LottiIcons.editNote,
-          accent: tokens.colors.text.mediumEmphasis,
+        final kind = messages.goalCheckInKindNote;
+        return DesignSystemTimelineRow(
+          key: ValueKey('goal-checkin-row-${checkIn.id}'),
+          leading: const DesignSystemTimelineTile(icon: LottiIcons.note),
+          meta: _meta(context, time, kind),
+          semanticsLabel: '$kind, $time',
           trailing: GoalCheckInTimeChip(checkIn: checkIn),
-          content: TimelineBeatContent.text(checkIn.text),
+          body: FoldedWords(id: checkIn.id, words: checkIn.text.trim()),
+          onTap: () => _open(checkIn.id),
+          last: last,
         );
 
       case final GoalReflectionItem reflection:
         final record = reflection.record;
-        final rating = record.rating;
         final note = record.note?.trim();
         final onOpen = widget.onOpenReflection;
-        return TimelineBeat(
-          id: reflection.id,
-          timeLabel: timeLabel,
-          kindLabel: context.messages.goalCheckInKindReflection,
-          glyph: dayVerdictGlyph(rating),
-          // The verdict's own colour, so the rail agrees with the day strip
-          // and the reflection sheet rather than inventing a third vocabulary.
-          accent: dayVerdictSurfaceInk(tokens, rating),
-          // One tight row: the verdict rides the header's trailing slot,
-          // fully right-aligned, instead of stacking beneath the label. No
-          // "Rated by you"-style attribution — the provenance stays on the
-          // record, it is not day-to-day reading.
-          trailing: _ReflectionTrailing(record: record),
-          onTap: onOpen == null ? null : () => onOpen(record.day),
-          content: note == null || note.isEmpty
-              ? const TimelineBeatContent.text('')
-              : TimelineBeatContent.custom(
-                  Text(
-                    note,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
+        final dimensions = record.dimensionRatings.length;
+        final kind = messages.goalCheckInKindReflection;
+        return DesignSystemTimelineRow(
+          key: ValueKey('goal-checkin-row-${reflection.id}'),
+          // The verdict's glyph names the day; its colour is the pill's, so
+          // the tile stays the one neutral tile every row wears.
+          leading: DesignSystemTimelineTile(
+            icon: dayVerdictGlyph(record.rating),
+          ),
+          meta: _meta(context, time, kind),
+          semanticsLabel:
+              '$kind, $time, ${dayVerdictLabel(context, record.rating)}',
+          // No "Rated by you"-style attribution — the provenance stays on
+          // the record, it is not day-to-day reading.
+          trailing: _VerdictPill(rating: record.rating),
+          body: note == null || note.isEmpty
+              ? null
+              : FoldedWords(id: reflection.id, words: note),
+          footer: dimensions == 0
+              ? null
+              : Text(
+                  messages.goalCheckInDimensionsRated(dimensions),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
                   ),
                 ),
+          onTap: onOpen == null ? null : () => onOpen(record.day),
+          last: last,
         );
     }
-  }
-}
-
-/// The reflection row's trailing slot: the day's verdict pill, prefixed by
-/// the per-dimension count when the user rated dimensions individually.
-class _ReflectionTrailing extends StatelessWidget {
-  const _ReflectionTrailing({required this.record});
-
-  final GoalAssessmentRecord record;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final dimensions = record.dimensionRatings.length;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (dimensions > 0) ...[
-          // The caption yields first under width pressure — the verdict pill
-          // is the part of this slot that must survive a narrow card.
-          Flexible(
-            child: Text(
-              context.messages.goalCheckInDimensionsRated(dimensions),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-        ],
-        _VerdictPill(rating: record.rating),
-      ],
-    );
   }
 }
 
@@ -325,38 +343,18 @@ class _VerdictPill extends StatelessWidget {
 }
 
 /// An invitation, not an apology: the empty rail says what a check-in is for
-/// and offers the one action that fixes it.
+/// and offers the one action that fixes it — in the design system's empty
+/// state, as the person timeline's is.
 class _Empty extends StatelessWidget {
   const _Empty({this.action});
 
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-      child: Column(
-        children: [
-          Icon(
-            LottiIcons.micIdle,
-            size: IconSizes.l,
-            color: tokens.colors.text.lowEmphasis,
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.goalCheckInsEmptyInvitation,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          if (action != null) ...[
-            SizedBox(height: tokens.spacing.step4),
-            action!,
-          ],
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => DesignSystemEmptyState(
+    key: const ValueKey('goal-checkin-empty'),
+    icon: LottiIcons.micIdle,
+    hint: context.messages.goalCheckInsEmptyInvitation,
+    action: action,
+  );
 }

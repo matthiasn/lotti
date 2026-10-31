@@ -6,14 +6,17 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
+import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
+import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_assessment.dart';
 import 'package:lotti/features/goals/model/goal_timeline_item.dart';
 import 'package:lotti/features/goals/state/goal_checkin_providers.dart';
 import 'package:lotti/features/goals/ui/checkins/goal_checkin_timeline.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/day_indicators/day_mark.dart';
-import 'package:lotti/widgets/timeline/timeline_view.dart';
+import 'package:lotti/widgets/transcript/folded_words.dart';
 import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -142,7 +145,9 @@ void main() {
       find.textContaining('Tell your agent what is actually going on'),
       findsOneWidget,
     );
-    expect(find.byType(TimelineView), findsOneWidget);
+    // The design system's empty state, as the person timeline's is.
+    expect(find.byType(DesignSystemEmptyState), findsOneWidget);
+    expect(find.byType(DesignSystemTimelineRow), findsNothing);
   });
 
   testWidgets('a recording without a transcript still plays, and says why', (
@@ -157,7 +162,26 @@ void main() {
 
     // The recording is saved before it is transcribed; withholding the beat
     // would hide what the user just made.
-    expect(find.text('VOICE CHECK-IN'), findsOneWidget);
+    // The person timeline's row: a tile, then time and kind on one caption
+    // line — sentence case, never the old upper-case eyebrow.
+    final row = find.byKey(const ValueKey('goal-checkin-row-a1'));
+    expect(
+      tester.widget<DesignSystemTimelineRow>(row).leading,
+      isA<DesignSystemTimelineTile>().having(
+        (t) => t.icon,
+        'icon',
+        LottiIcons.mic,
+      ),
+    );
+    expect(
+      find.descendant(of: row, matching: find.text('11:59 · Voice check-in')),
+      findsOneWidget,
+    );
+    // Played lightly in place, not under a full player card.
+    expect(
+      find.descendant(of: row, matching: find.byType(RecordingPlayback)),
+      findsOneWidget,
+    );
     expect(find.text('Transcribing…'), findsOneWidget);
   });
 
@@ -362,18 +386,27 @@ void main() {
       onOpenReflection: (d) => reopened = d,
     );
 
-    expect(find.text('DAILY REFLECTION'), findsOneWidget);
     expect(find.text('Mixed'), findsOneWidget);
-    expect(find.text('2 dimensions rated'), findsOneWidget);
     expect(
       find.text('Cutoff held, but the evening was scattered.'),
       findsOneWidget,
     );
-    // One tight row: the verdict pill rides the header's trailing slot,
-    // level with the kind label and to its right — never stacked beneath it.
-    final kind = tester.getRect(find.text('DAILY REFLECTION'));
+    // The verdict rides the row's trailing slot, level with the meta line
+    // and to its right; the per-dimension count is the row's footer.
+    final row = tester.widget<DesignSystemTimelineRow>(
+      find.byKey(const ValueKey('goal-checkin-row-r1')),
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-checkin-row-r1')),
+        matching: find.textContaining('Daily reflection'),
+      ),
+      findsOneWidget,
+    );
+    expect((row.footer! as Text).data, '2 dimensions rated');
+    final kind = tester.getRect(find.textContaining('Daily reflection'));
     final pill = tester.getRect(find.text('Mixed'));
-    expect(pill.center.dy, closeTo(kind.center.dy, 2));
+    expect(pill.center.dy, closeTo(kind.center.dy, 4));
     expect(pill.left, greaterThan(kind.right));
 
     await tester.tap(find.text('Mixed'));
@@ -496,7 +529,8 @@ void main() {
     expect(find.text('Load older'), findsOneWidget);
   });
 
-  testWidgets('a written check-in shows its words under a NOTE label', (
+  testWidgets('a written check-in shows its words under a Note label, in '
+      'the fold spoken words use', (
     tester,
   ) async {
     await pump(tester, [
@@ -508,8 +542,11 @@ void main() {
       ),
     ]);
 
-    expect(find.text('NOTE'), findsOneWidget);
-    expect(find.text('Gym bag is packed.'), findsOneWidget);
+    expect(find.textContaining('Note'), findsOneWidget);
+    expect(
+      tester.widget<FoldedWords>(find.byType(FoldedWords)).words,
+      'Gym bag is packed.',
+    );
     // A written check-in is not a recording: no player, no pending marker.
     expect(find.text('Transcribing…'), findsNothing);
   });
@@ -539,13 +576,19 @@ void main() {
       ),
     ]);
 
-    // The rail shows a clamped transcript and a player; the entry itself is
-    // where the words can be read whole. The chevron is the shared timeline's
-    // contract for "this row opens something" — it is drawn only when both an
-    // entry id and an open handler are present, so two of the three beats
-    // carry it and the agent-side reflection, which is no journal entry,
-    // does not.
-    expect(find.byIcon(LottiIcons.chevronRight), findsNWidgets(2));
+    // The rail shows folded words and a play glyph; the entry itself is
+    // where the words can be read whole. Every check-in row opens its entry;
+    // the reflection, which is no journal entry, opens nothing here.
+    Finder rowOf(String id) => find.byKey(ValueKey('goal-checkin-row-$id'));
+    expect(
+      tester.widget<DesignSystemTimelineRow>(rowOf('a1')).onTap,
+      isNotNull,
+    );
+    expect(
+      tester.widget<DesignSystemTimelineRow>(rowOf('n1')).onTap,
+      isNotNull,
+    );
+    expect(tester.widget<DesignSystemTimelineRow>(rowOf('r1')).onTap, isNull);
 
     final routes = <String>[];
     beamToNamedOverride = routes.add;
@@ -572,14 +615,22 @@ void main() {
       ),
     ]);
 
-    // TODAY/YESTERDAY stop being useful past two days; a rail spanning months
-    // has to stay navigable.
-    expect(find.text('TODAY'), findsNothing);
-    expect(find.text('YESTERDAY'), findsNothing);
-    expect(find.textContaining('AUG'), findsOneWidget);
+    // Today/Yesterday stop being useful past two days; a rail spanning months
+    // has to stay navigable. Sentence case, never upper case.
+    expect(find.text('Today'), findsNothing);
+    expect(find.text('Yesterday'), findsNothing);
+    expect(
+      tester
+          .widget<DesignSystemTimelineSectionHeader>(
+            find.byType(DesignSystemTimelineSectionHeader),
+          )
+          .label,
+      'Saturday · 15 Aug',
+    );
   });
 
-  testWidgets('beats are grouped under a day divider', (tester) async {
+  testWidgets('beats are grouped under a section header per day, the '
+      "person timeline's", (tester) async {
     await pump(tester, [
       GoalAudioCheckIn(audio('today', today, transcript: 'today note')),
       GoalAudioCheckIn(
@@ -591,7 +642,22 @@ void main() {
       ),
     ]);
 
-    expect(find.text('TODAY'), findsOneWidget);
-    expect(find.text('YESTERDAY'), findsOneWidget);
+    expect(
+      tester
+          .widgetList<DesignSystemTimelineSectionHeader>(
+            find.byType(DesignSystemTimelineSectionHeader),
+          )
+          .map((h) => h.label),
+      ['Today', 'Yesterday'],
+    );
+    // The last row of a day ends its rail there.
+    expect(
+      tester
+          .widget<DesignSystemTimelineRow>(
+            find.byKey(const ValueKey('goal-checkin-row-today')),
+          )
+          .last,
+      isTrue,
+    );
   });
 }

@@ -4656,9 +4656,9 @@
       }
     }
   },
-  "goalCheckInKindNote": "NOTE",
-  "goalCheckInKindReflection": "DAILY REFLECTION",
-  "goalCheckInKindVoice": "VOICE CHECK-IN",
+  "goalCheckInKindNote": "Note",
+  "goalCheckInKindReflection": "Daily reflection",
+  "goalCheckInKindVoice": "Voice check-in",
   "goalCheckInMinutes": "{count} min",
   "@goalCheckInMinutes": {
     "description": "A goal check-in's time spent, in whole minutes.",
@@ -5437,7 +5437,7 @@
   "goalRecordOfferIntro": "I found a quantity in what you said. Check the values before anything is recorded.",
   "goalRecordOfferInvalidValue": "Enter a value greater than zero.",
   "goalRecordOfferNothingSelected": "Choose at least one row to record.",
-  "goalRecordOfferOverline": "{agentName} OFFERS · RECORD TO {measurableName}",
+  "goalRecordOfferOverline": "{agentName} offers · record to {measurableName}",
   "@goalRecordOfferOverline": {
     "placeholders": {
       "agentName": {

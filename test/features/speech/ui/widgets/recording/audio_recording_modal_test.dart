@@ -1281,7 +1281,9 @@ void main() {
 
         final recordButton = find.byKey(const ValueKey('record'));
         expect(recordButton, findsOneWidget);
-        expect(find.text('RECORD'), findsOneWidget);
+        // Sentence case: no label is ever upper-cased.
+        expect(find.text('Record'), findsOneWidget);
+        expect(find.text('RECORD'), findsNothing);
 
         await tester.tap(recordButton);
         await tester.pump();
@@ -1415,7 +1417,7 @@ void main() {
         await pumpModalContent(tester, locale: const Locale('de'));
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('AUFNEHMEN'), findsOneWidget);
+        expect(find.text('Aufnehmen'), findsOneWidget);
       });
     });
 
