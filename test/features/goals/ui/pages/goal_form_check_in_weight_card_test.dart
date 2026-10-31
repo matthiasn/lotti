@@ -24,10 +24,10 @@ void main() {
   ) async {
     await pumpCard(tester, value: true);
 
-    expect(find.text('My check-ins are the point'), findsOneWidget);
+    expect(find.text("I'll answer what you tell me"), findsOneWidget);
     expect(
       find.text(
-        'Your agent answers what you write, not only that you checked in.',
+        'Not just whether you checked in.',
       ),
       findsOneWidget,
     );
@@ -43,7 +43,7 @@ void main() {
     final changes = await pumpCard(tester, value: false);
 
     await tester.tap(find.byType(DesignSystemToggle));
-    await tester.tap(find.text('My check-ins are the point'));
+    await tester.tap(find.text("I'll answer what you tell me"));
 
     expect(changes, [true, true]);
   });

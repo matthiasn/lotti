@@ -34,8 +34,8 @@ criteria can recover it.
    check-in time. Every caller that keyed on the criteria — the wake's
    compaction, Phase A's refresh on a write to the goal's row — keys on the
    spec instead.
-2. **The goal form asks.** Below the signals sits "My check-ins are the
-   point", showing the value the goal has now. The form stores a value only
+2. **The goal form asks.** Below the signals sits a switch in the agent's
+   voice, "I'll answer what you tell me", showing the value the goal has now. The form stores a value only
    where the user's choice departs from what the criteria imply; a goal
    nobody decided for keeps null and goes on following its criteria.
 3. **Only the owner decides.** An owner revision compares the flag like any

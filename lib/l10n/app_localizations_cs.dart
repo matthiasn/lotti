@@ -8053,10 +8053,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Tvůj agent odpovídá na to, co píšeš, ne jen na to, že máš hlášení za sebou.';
+      'Nejen na to, jestli máš hlášení hotové.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'Hlášení jsou to podstatné';
+  String get goalFormCheckInsAreSubstanceTitle => 'Odpovím na to, co mi řekneš';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

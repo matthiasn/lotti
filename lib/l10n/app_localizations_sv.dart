@@ -7979,11 +7979,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Din agent svarar på det du skriver, inte bara på att du har stämt av.';
+      'Inte bara på om du har stämt av.';
 
   @override
   String get goalFormCheckInsAreSubstanceTitle =>
-      'Mina avstämningar är det viktiga';
+      'Jag svarar på det du berättar för mig';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

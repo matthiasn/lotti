@@ -8066,11 +8066,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Il tuo agente risponde a ciò che scrivi, non solo al fatto che hai fatto il check-in.';
+      'Non solo al fatto che hai fatto il check-in.';
 
   @override
   String get goalFormCheckInsAreSubstanceTitle =>
-      'I miei check-in sono il punto';
+      'Risponderò a ciò che mi racconti';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

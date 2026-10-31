@@ -8108,10 +8108,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Agentul răspunde la ce scrieți, nu doar la faptul că ați raportat.';
+      'Nu doar la faptul că ați raportat.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'Raportările sunt esențialul';
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Voi răspunde la ce îmi spuneți';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

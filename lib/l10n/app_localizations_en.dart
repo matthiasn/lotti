@@ -7939,10 +7939,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Your agent answers what you write, not only that you checked in.';
+      'Not just whether you checked in.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'My check-ins are the point';
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'I\'ll answer what you tell me';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

@@ -8087,10 +8087,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Ton agent répond à ce que tu écris, pas seulement au fait que tu as fait le point.';
+      'Pas seulement au fait que tu as fait le point.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'Mes points sont l’essentiel';
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Je réponds à ce que tu me racontes';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

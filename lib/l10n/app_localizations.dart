@@ -13429,13 +13429,13 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormCheckInsAreSubstanceSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Your agent answers what you write, not only that you checked in.'**
+  /// **'Not just whether you checked in.'**
   String get goalFormCheckInsAreSubstanceSubtitle;
 
   /// No description provided for @goalFormCheckInsAreSubstanceTitle.
   ///
   /// In en, this message translates to:
-  /// **'My check-ins are the point'**
+  /// **'I\'ll answer what you tell me'**
   String get goalFormCheckInsAreSubstanceTitle;
 
   /// Goal confirmation prose for the check-in time signal.

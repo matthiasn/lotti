@@ -135,7 +135,7 @@ answered must fill it. For a goal whose check-ins are the point — a journal,
 whether measured by check-in time or ticked off as a habit — they are
 compacted for what they say rather than that they happened, and a transcript
 landing after its recording refreshes the report minutes later (ADR 0143).
-The goal form's "My check-ins are the point" switch says which goals those
+The goal form's "I'll answer what you tell me" switch says which goals those
 are; left alone, it follows whether the goal measures check-in time
 (ADR 0151).
 When a check-in leaves something open, the agent may ask one question in the

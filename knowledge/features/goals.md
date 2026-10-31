@@ -145,7 +145,7 @@ sources:
     title: ADR 0151 — The user says whether a goal's check-ins are its substance
   - id: checkin-weight-card
     resource: ../../lib/features/goals/ui/pages/goal_form_check_in_weight_card.dart
-    title: The goal form's "My check-ins are the point" switch
+    title: The goal form's "I'll answer what you tell me" switch
   - id: adr-0145
     resource: ../../docs/adr/0145-a-goal-holding-an-unknown-criterion-is-fenced-not-judged.md
     title: ADR 0145 — A goal holding an unknown criterion is fenced, not judged
@@ -1882,7 +1882,7 @@ journal or a reflective practice the check-ins are the substance, and the
 agent's job is to answer them. `GoalCheckInWeight.of(spec)` decides which a
 goal is: the user's say in `GoalSpecVersionEntity.checkInsAreSubstance` when
 they gave one, otherwise `substance` exactly when a criterion measures
-check-in time. The goal form's "My check-ins are the point" switch
+check-in time. The goal form's "I'll answer what you tell me" switch
 (`GoalFormCheckInWeightCard`) shows that value and stores it only where it
 departs from what the criteria imply, so a goal nobody decided for keeps
 following its criteria. Owner revisions compare it like any other field;

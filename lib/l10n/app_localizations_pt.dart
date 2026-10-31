@@ -8046,11 +8046,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'O teu agente responde ao que escreves, não só ao facto de teres feito o registo.';
+      'Não só ao facto de teres feito o registo.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle =>
-      'Os meus registos são o essencial';
+  String get goalFormCheckInsAreSubstanceTitle => 'Respondo ao que me contas';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

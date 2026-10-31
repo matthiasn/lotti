@@ -7968,10 +7968,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Din agent svarer på det, du skriver — ikke kun på, at du har tjekket ind.';
+      'Ikke kun på, om du har tjekket ind.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'Mine check-ins er pointen';
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Jeg svarer på det, du fortæller mig';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

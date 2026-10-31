@@ -5020,8 +5020,8 @@
   "@goalFormCheckInMinutesPerDay": {
     "description": "Label of the daily minutes input of the check-in time signal."
   },
-  "goalFormCheckInsAreSubstanceSubtitle": "Your agent answers what you write, not only that you checked in.",
-  "goalFormCheckInsAreSubstanceTitle": "My check-ins are the point",
+  "goalFormCheckInsAreSubstanceSubtitle": "Not just whether you checked in.",
+  "goalFormCheckInsAreSubstanceTitle": "I'll answer what you tell me",
   "goalFormCheckInTimeCadence": "{minutes} min of check-ins a day",
   "@goalFormCheckInTimeCadence": {
     "description": "Goal confirmation prose for the check-in time signal.",

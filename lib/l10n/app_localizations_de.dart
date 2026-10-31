@@ -8020,11 +8020,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Dein Agent geht auf das ein, was du schreibst — nicht nur darauf, dass du eingecheckt hast.';
+      'Nicht nur darauf, ob du eingecheckt hast.';
 
   @override
   String get goalFormCheckInsAreSubstanceTitle =>
-      'Meine Check-ins sind der Kern';
+      'Ich gehe auf das ein, was du mir erzählst';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {

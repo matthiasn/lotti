@@ -7996,10 +7996,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormCheckInsAreSubstanceSubtitle =>
-      'Je agent reageert op wat je schrijft, niet alleen op dát je hebt ingecheckt.';
+      'Niet alleen op of je hebt ingecheckt.';
 
   @override
-  String get goalFormCheckInsAreSubstanceTitle => 'Mijn check-ins zijn de kern';
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Ik reageer op wat je me vertelt';
 
   @override
   String goalFormCheckInTimeCadence(num minutes) {
