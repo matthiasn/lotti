@@ -189,9 +189,16 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
     // all run past that point — reading through `ref` once the element is
     // unmounted throws and aborts the save mid-way.
     final repository = ref.read(relationshipRepositoryProvider);
-    final categoryMove = ref.read(entryCategoryMoveProvider);
-    // Only resolved when it will actually be used — `_important` is form
-    // state, known before any await, so this stays ahead of the unmount.
+    // Both only resolved when they will actually be used — a changed
+    // category on an existing person, `_important` — form state known
+    // before any await, so the reads stay ahead of the unmount, and a save
+    // that moves nothing never builds the move's journal, project and
+    // settings dependencies.
+    final initialPerson = widget.initial;
+    final categoryMove =
+        initialPerson != null && _categoryId != initialPerson.meta.categoryId
+        ? ref.read(entryCategoryMoveProvider)
+        : null;
     final agentService = _important
         ? ref.read(relationshipAgentServiceProvider)
         : null;
@@ -231,7 +238,7 @@ class _RelationshipFormState extends ConsumerState<RelationshipForm> {
         // half-saved person, and the user would see the old category with
         // nothing to retry.
         var success = saved;
-        if (saved && _categoryId != initial.meta.categoryId) {
+        if (saved && categoryMove != null) {
           success = await categoryMove.move(initial.meta.id, _categoryId);
         }
         // Keyed on the payload write, not the verdict: `important` and the
