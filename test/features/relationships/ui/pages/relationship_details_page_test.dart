@@ -1079,6 +1079,49 @@ void main() {
       );
     });
 
+    testWidgets('Retry on a voice note nothing transcribed asks for its words '
+        "again, with the person's names and a summary", (tester) async {
+      final stale =
+          JournalEntity.journalAudio(
+                meta: at('voice-stale', DateTime(2026, 8, 1, 9)),
+                data: AudioData(
+                  dateFrom: DateTime(2026, 8, 1, 9),
+                  dateTo: DateTime(2026, 8, 1, 9, 1),
+                  audioFile: 'voice-stale.aac',
+                  audioDirectory: '/audio/',
+                  duration: const Duration(minutes: 1),
+                ),
+              )
+              as JournalAudio;
+      when(() => mockRepository.getRelationshipById('rel-1')).thenAnswer(
+        (_) async => relationship(),
+      );
+      when(
+        () => mockRepository.getCheckInsForRelationship('rel-1'),
+      ).thenAnswer((_) async => []);
+      final transcription = StubCheckInTranscriptionService(
+        gate: Completer<String?>(),
+      );
+      setTestSurfaceSize(tester, phone);
+      await pumpPage(
+        tester,
+        timelineEntries: [stale],
+        mediaQueryData: const MediaQueryData(size: phone),
+        overrides: [
+          checkInTranscriptionServiceProvider.overrideWithValue(transcription),
+        ],
+      );
+
+      final retry = find.byKey(const ValueKey('transcript-retry-voice-stale'));
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pump();
+
+      expect(transcription.transcribeCalls, ['voice-stale']);
+      expect(transcription.transcribePeople, ['rel-1']);
+      expect(transcription.summarizeCalls, ['voice-stale']);
+    });
+
     testWidgets('Sort this on a voice note opens Speak about the person on '
         'its words, not on the recorder', (tester) async {
       final voiceNote =

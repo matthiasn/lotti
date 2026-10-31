@@ -58,6 +58,28 @@ class FoldedWords extends StatefulWidget {
   State<FoldedWords> createState() => _FoldedWordsState();
 }
 
+/// Whether [words] run past the fold at [maxWidth]. The painter holds
+/// native paragraph memory, so it is released at once rather than left for
+/// the finalizer — a long history measures a row on every layout.
+bool _overflows(
+  BuildContext context,
+  String words,
+  TextStyle style,
+  double maxWidth,
+) {
+  final painter = TextPainter(
+    text: TextSpan(text: words, style: style),
+    maxLines: FoldedWords.foldedLines,
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout(maxWidth: maxWidth);
+  try {
+    return painter.didExceedMaxLines;
+  } finally {
+    painter.dispose();
+  }
+}
+
 class _FoldedWordsState extends State<FoldedWords>
     with AutomaticKeepAliveClientMixin {
   var _expanded = false;
@@ -85,12 +107,7 @@ class _FoldedWordsState extends State<FoldedWords>
         // fit never carry a *Show more* that reveals nothing.
         final overflows =
             summary != null ||
-            (TextPainter(
-              text: TextSpan(text: words, style: style),
-              maxLines: FoldedWords.foldedLines,
-              textDirection: Directionality.of(context),
-              textScaler: MediaQuery.textScalerOf(context),
-            )..layout(maxWidth: constraints.maxWidth)).didExceedMaxLines;
+            _overflows(context, words, style, constraints.maxWidth);
         final shown = _expanded ? words : (summary ?? words);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

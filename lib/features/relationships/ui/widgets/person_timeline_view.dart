@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/ai_response_type.dart';
@@ -431,7 +432,6 @@ class PersonTimelineRow extends StatelessWidget {
         // with nothing on the way, that they are not coming.
         _ when row.awaiting != null => _AwaitedWords(
           recording: row.awaiting!,
-          now: now,
           onRetry: () => actions.retryTranscript(row.awaiting!),
         ),
         // A voice note leads with its summary, and opens to its words.
@@ -504,38 +504,56 @@ class PersonTimelineRow extends StatelessWidget {
 }
 
 /// Where a recording's words are while it has none, in the shared status:
-/// a transcription running or failed says so; otherwise the grace rule
-/// against the page's [now]. *Retry* asks for them again.
-class _AwaitedWords extends ConsumerWidget {
-  const _AwaitedWords({
-    required this.recording,
-    required this.now,
-    required this.onRetry,
-  });
+/// a transcription running or failed says so; otherwise the grace rule.
+/// *Retry* asks for them again.
+///
+/// It wakes itself when its grace window closes (`TranscriptGraceRebuild`),
+/// as a goal's rail does: a recording nothing picked up produces no
+/// transcript, no status change and no database write, so on a page left
+/// open nothing else would ever turn its *Transcribing…* into *Not
+/// transcribed*.
+class _AwaitedWords extends ConsumerStatefulWidget {
+  const _AwaitedWords({required this.recording, required this.onRetry});
 
   final JournalAudio recording;
-  final DateTime now;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final id = recording.meta.id;
+  ConsumerState<_AwaitedWords> createState() => _AwaitedWordsState();
+}
+
+class _AwaitedWordsState extends ConsumerState<_AwaitedWords>
+    with TranscriptGraceRebuild {
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.recording.meta.id;
     final inference = ref.watch(
       inferenceStatusControllerProvider((
         id: id,
         aiResponseType: AiResponseType.audioTranscription,
       )),
     );
+    final graceExpiry = widget.recording.meta.dateFrom.add(kTranscriptGrace);
+    final now = clock.now();
+    final status = transcriptStatusOf(
+      hasTranscript: false,
+      running: inference == InferenceStatus.running,
+      failed: inference == InferenceStatus.error,
+      graceExpiry: graceExpiry,
+      now: now,
+    );
+    // Waiting with nothing running is the one state no other rebuild ends.
+    armGraceRebuild(
+      status == TranscriptStatus.transcribing &&
+              inference == InferenceStatus.idle &&
+              graceExpiry.isAfter(now)
+          ? graceExpiry
+          : null,
+    );
     return RecordingTranscript(
       id: id,
-      status: transcriptStatusOf(
-        hasTranscript: false,
-        running: inference == InferenceStatus.running,
-        failed: inference == InferenceStatus.error,
-        graceExpiry: recording.meta.dateFrom.add(kTranscriptGrace),
-        now: now,
-      ),
-      onRetry: onRetry,
+      status: status,
+      onRetry: widget.onRetry,
     );
   }
 }

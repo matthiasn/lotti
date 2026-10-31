@@ -596,10 +596,13 @@ void main() {
 
     await tester.tap(find.text('Gym bag is packed.'));
     await tester.pump();
+    await tester.tap(find.text('Ran 5k.'));
+    await tester.pump();
 
     // The logbook route for that entry, not a goal-local surface that would
-    // then have to reimplement editing and deletion.
-    expect(routes, ['/journal/n1']);
+    // then have to reimplement editing and deletion — a note's and a
+    // recording's alike.
+    expect(routes, ['/journal/n1', '/journal/a1']);
   });
 
   testWidgets('an older day carries its date, not a relative word', (

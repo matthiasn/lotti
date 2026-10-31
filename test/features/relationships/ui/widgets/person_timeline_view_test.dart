@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -312,18 +313,26 @@ void main() {
         'may be, and that they are not once the grace window has closed', (
       tester,
     ) async {
-      await pump(
-        tester,
-        timeline(
-          checkIns: [],
-          tasks: [],
-          entries: [
-            audio('spoken', DateTime(2026, 8, 12, 19, 10), words: 'Send-off.'),
-            // Two minutes ago: still inside the window.
-            audio('fresh', now.subtract(const Duration(minutes: 2))),
-            // Two days ago, never transcribed: it must stop promising words.
-            audio('stale', DateTime(2026, 8, 11, 9)),
-          ],
+      // The rows read the clock themselves, so the page's `now` is the clock.
+      await withClock(
+        Clock.fixed(now),
+        () => pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [
+              audio(
+                'spoken',
+                DateTime(2026, 8, 12, 19, 10),
+                words: 'Send-off.',
+              ),
+              // Two minutes ago: still inside the window.
+              audio('fresh', now.subtract(const Duration(minutes: 2))),
+              // Two days ago, never transcribed: it must stop promising words.
+              audio('stale', DateTime(2026, 8, 11, 9)),
+            ],
+          ),
         ),
       );
 
@@ -360,6 +369,74 @@ void main() {
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
+    });
+
+    testWidgets('a page left open turns a waiting recording to Not '
+        'transcribed when its window closes — nothing else would', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(now), () async {
+        await pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [audio('fresh', now.subtract(const Duration(minutes: 2)))],
+          ),
+        );
+        expect(find.text('Transcribing…'), findsOneWidget);
+      });
+
+      // No transcript, no status change, no database write: only the row's
+      // own timer ends the wait.
+      await withClock(Clock.fixed(now.add(kTranscriptGrace)), () async {
+        await tester.pump(kTranscriptGrace);
+        await tester.pump();
+      });
+
+      expect(find.text('Not transcribed'), findsOneWidget);
+      expect(find.text('Transcribing…'), findsNothing);
+    });
+
+    testWidgets("a waiting row's status reaches a screen reader, not only "
+        "the row's sentence", (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Not transcribed'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('a check-in holding several wordless recordings waits on the '
+        'newest', (tester) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken],
+          entries: const [],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50)),
+              audio('older-take', DateTime(2026, 8, 1, 12, 44)),
+            ],
+          },
+        ),
+      );
+
+      expect(
+        tester.widget<RecordingTranscript>(find.byType(RecordingTranscript)).id,
+        'newer-take',
+      );
     });
 
     testWidgets('a recording whose words never came offers Retry, which asks '
