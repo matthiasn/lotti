@@ -17,6 +17,59 @@ void main() {
     expect(TextLipSync('the').cues.first.viseme, Viseme.h);
   });
 
+  test('ph, wh, ck and ng each read as one sound', () {
+    List<Viseme> shapes(String text) =>
+        TextLipSync(text).cues.map((c) => c.viseme).toList();
+    expect(shapes('ph'), [Viseme.g, Viseme.x]);
+    expect(shapes('wh'), [Viseme.f, Viseme.x]);
+    expect(shapes('ck'), [Viseme.b, Viseme.x]);
+    // One sound's time, not two letters'.
+    expect(
+      TextLipSync('ck').spokenLength,
+      lessThan(TextLipSync('kk').spokenLength),
+    );
+    expect(shapes('ng'), [Viseme.b, Viseme.x]);
+  });
+
+  test('a silent final e takes no shape and no time', () {
+    // "have" ends on the bite of its v, not an open e.
+    final have = TextLipSync('have').cues.map((c) => c.viseme).toList();
+    expect(have, [Viseme.b, Viseme.d, Viseme.g, Viseme.x]);
+    expect(TextLipSync('have').spokenLength, TextLipSync('hav').spokenLength);
+    expect(
+      TextLipSync('time, then').spokenLength,
+      TextLipSync('tim, then').spokenLength,
+    );
+    // Short words keep their e, and so does a vowel's e.
+    expect(TextLipSync('the').cues.map((c) => c.viseme), contains(Viseme.c));
+    expect(
+      TextLipSync('free').spokenLength,
+      greaterThan(TextLipSync('fr').spokenLength),
+    );
+    expect(
+      TextLipSync('canoe').spokenLength,
+      greaterThan(TextLipSync('cano').spokenLength),
+    );
+  });
+
+  test('the pauses are kept where the mouth rests, a run of stops as one', () {
+    final track = TextLipSync('Hi, you?! Me.');
+    expect(track.pauses, hasLength(3));
+    final comma = track.pauses[0];
+    expect(comma.weight, 0.5);
+    // "?!" is one pause, as long as both stops and as sure as the surer.
+    // The space after a stop belongs to its pause.
+    expect(comma.end - comma.start, closeTo(0.25, 1e-9));
+    final question = track.pauses[1];
+    expect(question.end - question.start, closeTo(0.79, 1e-9));
+    expect(question.weight, 1.2);
+    // A trailing stop begins where the words end.
+    expect(track.pauses[2].start, track.spokenSeconds);
+    // Each pause starts where its rest begins.
+    expect(track.mouthAtSeconds(comma.start + 0.1).open, 0);
+    expect(TextLipSync('no stops here').pauses, isEmpty);
+  });
+
   test('a full stop rests the mouth longer than a word break', () {
     final word = TextLipSync('ma ma').length;
     final stop = TextLipSync('ma. ma').length;

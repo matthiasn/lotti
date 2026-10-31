@@ -5,8 +5,8 @@ description: The animated character rig — a per-frame animator of springs and 
 resource: ../../lib/features/companion
 tags: [companion, avatar, animation, lip-sync, custompainter, widgetbook]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-14T12:00:00Z }
-stale_after: 2027-02-22
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T12:00:00Z }
+stale_after: 2027-03-31
 sources:
   - id: goal-companion
     resource: ../../lib/features/goals/ui/unified/goal_companion.dart
@@ -43,7 +43,15 @@ sources:
   - id: voiced-text
     resource: ../../lib/features/companion/animation/voiced_text_track.dart
     title: VoicedTextTrack
-    last_modified: 2026-10-14
+    last_modified: 2026-10-31
+  - id: text-lip-sync
+    resource: ../../lib/features/companion/animation/text_lip_sync.dart
+    title: TextLipSync, the letters read into mouth shapes
+    last_modified: 2026-10-31
+  - id: pause-alignment
+    resource: ../../lib/features/companion/animation/pause_alignment.dart
+    title: PauseAlignment, the words pinned to the voice's pauses
+    last_modified: 2026-10-31
   - id: painter
     resource: ../../lib/features/companion/rig/companion_painter.dart
     title: CompanionPainter and the stage painters
@@ -59,7 +67,7 @@ sources:
   - id: spoken-track
     resource: ../../lib/features/companion/state/spoken_track.dart
     title: loadSpokenTrack and spokenTrackLoaderProvider
-    last_modified: 2026-10-15
+    last_modified: 2026-10-31
   - id: tone-reader
     resource: ../../lib/features/companion/animation/tone_reader.dart
     title: readTones, the on-device tone of each sentence
@@ -203,21 +211,68 @@ position, so a stall or a seek cannot desync the lips from the voice.
 
 | Track | Shapes from | Loudness from |
 |-------|-------------|---------------|
-| `TextLipSync` | the text, letter by letter, into nine Rhubarb visemes at a fixed rate | how open the mouth is |
-| `SpeechEnvelope` | the loudness (no words) | a WAV's per-frame RMS |
-| `VoicedTextTrack` | the text | a WAV's envelope, which also gates the shapes |
+| `TextLipSync` | the text, letter by letter, into the eight Rhubarb speaking shapes and the rest, at a fixed rate | how open the mouth is |
+| `SpeechEnvelope` | the loudness (no words): rest, B, C, D only | a WAV's per-frame RMS |
+| `VoicedTextTrack` | the text, pinned to the voice's pauses | a WAV's envelope, which also gates the shapes |
+
+**The eight shapes and the rest** (`Viseme`, the Rhubarb convention) are all
+reached from the text: A closed lips (m, b, p); B teeth together (every other
+consonant, "ee", "ck", "ng"); C open (e, i, u, y); D wide (a); E rounded (o,
+r, "sh", "ch"); F puckered (w, q, "oo", "ou", "ow", "wh"); G the bite (f, v,
+"ph"); H the tongue up (l, "th"); X rest at punctuation. A word's silent final
+e ("have", "time") takes no shape and no time, so the word ends on the shape
+the voice ends it on. Spelling is not sound; this is a stand-in for Rhubarb,
+a native binary the app cannot ship.
 
 Every track also answers `timeOf(offset)`: when the character at that offset
 of its words is spoken, on the same clock as its shapes — `TextLipSync`
-records the time it reaches each character, and `VoicedTextTrack` stretches
-that over the voice as it does the shapes. A voice alone (`SpeechEnvelope`)
+records the time it reaches each character, and `VoicedTextTrack` carries
+that onto the voice as it does the shapes. A voice alone (`SpeechEnvelope`)
 has no words and answers null. This is how her face is timed to the words.
 
-`VoicedTextTrack` stretches the text's **spoken** span — up to
-`TextLipSync.spokenLength`, the start of the closing rest every line ends
-on — over the voiced part of the clip, first sound to last. Stretching the
-full `length` instead would squeeze the words into the front of the voice and
-close the lips early.
+## Pinning the words to the voice
+
+The letters' fixed durations know the order of the shapes, not their timing.
+`VoicedTextTrack` used to stretch the text's whole spoken span over the voice
+in one go, which spread the guess's error over the clip: on a measured cloud
+voice the lips ran 0.3 s behind by the first comma and shaped the end of one
+phrase over the start of the next. Where a voice pauses is plain in its
+loudness, though, and the pauses sit at the text's punctuation.
+
+```mermaid
+flowchart LR
+  W[WAV] --> E[SpeechEnvelope<br/>RMS per 1/60 s]
+  E --> G["voiced span + gaps<br/>silent ≥ 0.15 s"]
+  T[clip's words] --> L[TextLipSync<br/>cues, pauses, weights]
+  G --> A[PauseAlignment.align<br/>ordered pause ↔ gap match]
+  L --> A
+  A --> M[piecewise map<br/>text clock ⇄ voice clock]
+  P[playhead] --> M
+  M --> S[shape at the text time]
+  E --> Gate[loudness gate]
+  S --> Gate --> F[mouth]
+```
+
+- **Both clocks are squeezed to speech.** The text's pauses (punctuation, a
+  run of stops and the spaces after them as one) and the voice's gaps
+  (silences of at least `VoicedTextTrack.minGapSeconds` inside the voiced
+  span; a stop consonant's closure is shorter) are taken out, so each side
+  is a clock of speech alone.
+- **Pauses are matched to gaps in order** (`PauseAlignment.align`), at the
+  lowest total cost: a stretch between two pins costs how far its voice length
+  strays from its text length at the clip's overall pace; a pause left
+  unpinned costs its weight (a comma 0.5, a full stop 1.2, a line break 1.5 —
+  a voice often runs through a comma); a gap left unpinned costs more the
+  longer it is. The search is windowed (a stretch passes at most twelve pauses
+  or gaps) and banded (a pin's two positions within 30% of the speech of each
+  other), and the end is always reachable, so a match always exists.
+- **Each pin holds both clocks together.** Between pins the words are
+  stretched linearly; inside a gap the words wait at their pause, and the word
+  after a pinned pause starts the moment the voice resumes. With nothing
+  pinned it falls back to one stretch over the speech, gaps squeezed out.
+- The envelope, the gaps and the match are built in `loadSpokenTrack`'s
+  `Isolate.run`, never on the UI isolate, and the per-frame lookups are binary
+  searches.
 
 # Speaking with the on-device voice
 

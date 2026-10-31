@@ -24,8 +24,8 @@ final spokenTrackLoaderProvider = Provider<SpokenTrackLoader>(
 /// [clipPath]: the words' shapes, timed and gated by the clip's loudness
 /// ([VoicedTextTrack]).
 ///
-/// The loudness is computed off the UI isolate, because a long summary is
-/// minutes of samples. If the clip cannot be read (deleted because playback
+/// The loudness, and the pinning of the voice's pauses to the words', are
+/// computed off the UI isolate, because a long summary is minutes of samples. If the clip cannot be read (deleted because playback
 /// already ended) or is not the 16-bit PCM the voice writes, the mouth falls
 /// back to the words alone ([TextLipSync]). The voice still plays, so she
 /// keeps talking, only less exactly in time with it.
@@ -36,8 +36,9 @@ Future<MouthTrack> loadSpokenTrack(
 }) async {
   try {
     final bytes = await (readBytes ?? _readFile)(clipPath);
-    final envelope = await Isolate.run(() => SpeechEnvelope.fromWav(bytes));
-    return VoicedTextTrack(envelope, text);
+    return await Isolate.run(
+      () => VoicedTextTrack(SpeechEnvelope.fromWav(bytes), text),
+    );
   } on FileSystemException {
     return TextLipSync(text);
   } on FormatException {

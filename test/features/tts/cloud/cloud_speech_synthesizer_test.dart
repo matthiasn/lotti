@@ -145,6 +145,48 @@ void main() {
     ).called(1);
   });
 
+  test('the voice gets the text without its emoji', () async {
+    await synthesizer.synthesizeToFile(
+      route: route,
+      text: 'Gut gemacht 🎉! Weiter 🐧',
+      voiceByLanguage: const {},
+      canSend: allow,
+    );
+
+    verify(
+      () => service.synthesize(
+        text: 'Gut gemacht! Weiter',
+        voiceId: 'v-de-f',
+        baseUrl: provider.baseUrl,
+        apiKey: 'key',
+        model: 'voxtral-mini-tts-2603',
+      ),
+    ).called(1);
+  });
+
+  test('nothing but emoji sends nothing and makes no file', () async {
+    var asked = false;
+    final file = await synthesizer.synthesizeToFile(
+      route: route,
+      text: '🎉 👍🏽',
+      voiceByLanguage: const {},
+      canSend: () async => asked = true,
+    );
+
+    expect(file, isNull);
+    expect(asked, isFalse);
+    verifyNever(
+      () => service.synthesize(
+        text: any(named: 'text'),
+        voiceId: any(named: 'voiceId'),
+        baseUrl: any(named: 'baseUrl'),
+        apiKey: any(named: 'apiKey'),
+        model: any(named: 'model'),
+      ),
+    );
+    expect(temp.listSync(), isEmpty);
+  });
+
   test('withdrawn permission after the catalog loads sends nothing', () async {
     final loaded = <String>[];
     final file = await synthesizer.synthesizeToFile(
