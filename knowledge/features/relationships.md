@@ -2713,11 +2713,14 @@ stateDiagram-v2
   else the first three lines of the transcript, and opens to the whole
   transcript in place with *Show more*. A recording with no words yet says
   where they are through the shared `RecordingTranscript` — *Transcribing…*
-  inside `kTranscriptGrace` of its start, *Not transcribed* after, against
-  the page's `now` — so a recording whose transcription failed last week no
-  longer claims to be transcribing. A check-in's row folds the same way,
-  leading with the summary of the first recording it holds, when there is
-  one, and opening to its own words. A spoken check-in's recording gets that
+  inside `kTranscriptGrace` of its start, *Not transcribed* after, the row
+  waking itself at that deadline (`TranscriptGraceRebuild`) — so a recording
+  whose transcription failed last week no longer claims to be transcribing.
+  A check-in's row folds the same way, and its newest recording governs it
+  (`checkInSummaryOf`, `newestRecordingOf`): the row plays that recording,
+  leads with its summary and words (after the check-in's own text), and
+  while it has none shows its status and *Retry* under whatever words the
+  check-in has — an older recording's words never stand in for it. A spoken check-in's recording gets that
   summary when its words land: the composer and the check-in page ask
   `CheckInTranscriptionService.transcribe(summarize: true)`, which hands the
   words to `PersonRecordingSummarizer`

@@ -2082,7 +2082,11 @@ A check-in row opens its journal entry; a reflection reopens its day's sheet.
 The time chip (`GoalCheckInTimeChip`) is the check-in rows' trailing control.
 
 **A goal is filed in a category.** The goal form's *meet your agent* step has
-the person form's category row (`CategoryFieldRow`). On create,
+the person form's category row (`CategoryFieldRow`; the form's
+`_GoalFormCategory` mixin holds its state). Editing, the row cannot be
+changed until the goal row's own category has read, so a late read never
+overwrites a pick, and a changed category with no goal row to move fails the
+save rather than reporting success. On create,
 `GoalAgentService.createGoalAgent(categoryId:)` mirrors the goal row into it —
 so every check-in recorded against the goal takes it
 (`goalCategoryIdProvider` feeds both composers) — and snapshots the profile
