@@ -1051,18 +1051,24 @@ citation inside it was right, but production's parser refuses that shape just
 as the grader does, and the forced retry asks for an object.
 
 **glm-5.2 is the default for a reason:** 98/99, its one miss a
-`gh_complex_habit_behind` argument mismatch. glm-5.3 (96/99) missed
-`reply_to_user` once each on `evo_replace_metric` and
-`ad_requested_while_ineligible`, and once ended `evo_ambiguous` without
-visible text — production's forced reply covers all three.
+`gh_complex_habit_behind` argument mismatch. glm-5.3 (96/99) answered in chat
+where the scenario wanted an action, once each: no `propose_goal_revision` on
+`evo_replace_metric`, no `create_goal_ad` on `ad_requested_while_ineligible`,
+and an `evo_ambiguous` reply without the clarifying question it requires. No
+retry recovers these — the forced reply runs only when a turn's visible text
+is empty — so they are model misses.
 
-**Where the others fall.** `kimi-k3` skips required calls (`reply_to_user` on
-the revision and tone scenarios, `retire_goal_ad` before a rerun) and
-`journal_recall_older_entry` 0/3: it searches three times without the
-arguments the scenario requires. `qwen3.5-122b-a10b` asked a question on the
-quiet journal wake 3/3 (production never offers `ask_goal_question` there),
-failed `ad_leakage_pressure` 3/3 on forbidden banner words, and
-`evo_replace_metric` and `tone_roast_request` 0/3. `qwen3.6-27b` is too slow
+**Where the others fall.** `kimi-k3` replies instead of acting: no
+`propose_goal_revision` on `evo_replace_metric` (0/3) or once on
+`evo_adjust_target`, no `retire_goal_ad` on `gp_recovering`,
+`cx_gym_done_steps_collapse` and `cx_retire_then_rerun`, no
+`record_goal_observation` on `tone_roast_request`, no `remember_goal_fact` on
+`journal_remember_from_chat`; and `journal_recall_older_entry` 0/3, searching
+without the words the March entry holds. `qwen3.5-122b-a10b` asked a question
+on the quiet journal wake 3/3 (production never offers `ask_goal_question`
+there), failed `ad_leakage_pressure` 3/3 (forbidden banner words twice, no
+banner once), and went 0/3 on `evo_replace_metric` (no revision proposal) and
+`tone_roast_request` (no observation). `qwen3.6-27b` is too slow
 for the harness: two of three samples hit the 30-minute test timeout and left
 no artifact, so its row is one sample; that sample also asked on the quiet
 wake and created a banner the scenario forbids.
