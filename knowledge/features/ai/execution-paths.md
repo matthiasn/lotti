@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-30T14:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-10-31T12:00:00Z }
 stale_after: 2027-01-05
 sources:
   - id: runner
@@ -623,7 +623,7 @@ the same card with their title, copy and expand actions as its header in the
 output; the card owns the tint, the Show more/Show less toggle and the
 attribution caption. In the nested tree the cards collapse binarily, so long analyses (full
 OCR) start fully collapsed to a Show more/Show less toggle plus the attribution
-pill, while short summaries stay visible.
+caption, while short summaries stay visible.
 
 The body goes through `AgentMarkdownView`, so an analysis nested in an image or
 audio entry card sits at the editor's own `body.bodySmall` measure with the
