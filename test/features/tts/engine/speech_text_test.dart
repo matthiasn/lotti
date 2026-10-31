@@ -13,10 +13,10 @@ void main() {
       // A zero-width-joined profession, a toned thumb, a flag and a heart
       // with its variation selector leave nothing a voice could stumble on.
       expect(withoutEmoji('Done 👩🏽‍💻 👍🏽 🇩🇪 ❤️ now'), 'Done now');
-      expect(withoutEmoji('a‍b'), 'ab');
+      expect(withoutEmoji('a\u200Db'), 'ab');
     });
 
-    test("a keycap keeps its digit, plain digits and symbols stay", () {
+    test('a keycap keeps its digit, plain digits and symbols stay', () {
       expect(withoutEmoji('Step 1️⃣ first'), 'Step 1 first');
       expect(withoutEmoji('Room #4, 2 * 3'), 'Room #4, 2 * 3');
     });
