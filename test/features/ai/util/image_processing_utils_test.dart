@@ -9,6 +9,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart'
         FlutterImageCompressValidator,
         XFile;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:lotti/classes/ai/ai_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -455,6 +456,135 @@ void main() {
         expect(result.base64Data, isNotEmpty);
       },
     );
+  });
+
+  group('downscaleImageForUpload', () {
+    /// Decodes [jpeg] for real, so the tests check what would be uploaded.
+    img.Image decodeJpeg(Uint8List jpeg) {
+      expect(jpeg.take(2), [0xFF, 0xD8], reason: 'JPEG SOI marker');
+      return img.decodeJpg(jpeg)!;
+    }
+
+    test('returns an image within both limits unchanged', () async {
+      final png = await _makePngBytes(2000, 1500);
+
+      final result = await downscaleImageForUpload(
+        png,
+        imageId: 'fits',
+        domainLogger: mockLogger,
+      );
+
+      expect(identical(result, png), isTrue);
+    });
+
+    test(
+      'scales a landscape image over 2,000 px to fit, as a real JPEG',
+      () async {
+        final png = await _makePngBytes(4032, 3024);
+
+        final result = await downscaleImageForUpload(
+          png,
+          imageId: 'photo',
+          domainLogger: mockLogger,
+        );
+
+        final jpeg = decodeJpeg(result);
+        expect((jpeg.width, jpeg.height), (2000, 1500));
+        // The fixture's colour survives the round trip (JPEG is lossy).
+        final pixel = jpeg.getPixel(1000, 750);
+        expect(pixel.r, closeTo(0x40, 4));
+        expect(pixel.g, closeTo(0x80, 4));
+        expect(pixel.b, closeTo(0xC0, 4));
+        final logged =
+            verify(
+                  () => mockLogger.log(
+                    LogDomain.ai,
+                    captureAny(),
+                    subDomain: 'ImageProcessingUtils',
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          logged,
+          'Downscaled image photo for upload: 4032x3024, ${png.length} bytes '
+          '-> 2000x1500 JPEG, ${result.length} bytes',
+        );
+      },
+    );
+
+    test('scales a portrait image by its height', () async {
+      final png = await _makePngBytes(1000, 4000);
+
+      final result = await downscaleImageForUpload(
+        png,
+        imageId: 'portrait',
+        domainLogger: mockLogger,
+      );
+
+      final jpeg = decodeJpeg(result);
+      expect((jpeg.width, jpeg.height), (500, 2000));
+    });
+
+    test('re-encodes an image over the byte cap at its own size', () async {
+      final png = await _makePngBytes(100, 80);
+
+      final result = await downscaleImageForUpload(
+        png,
+        imageId: 'heavy',
+        domainLogger: mockLogger,
+        maxBytes: png.length - 1,
+      );
+
+      final jpeg = decodeJpeg(result);
+      expect((jpeg.width, jpeg.height), (100, 80));
+    });
+
+    test('needs no image-compression plugin, so it works on Linux and '
+        'Windows too', () async {
+      // The default platform instance has no native side in tests, exactly
+      // as on Linux and Windows, where flutter_image_compress has none.
+      final png = await _makePngBytes(2400, 600);
+
+      final result = await downscaleImageForUpload(
+        png,
+        imageId: 'desktop',
+        domainLogger: mockLogger,
+      );
+
+      final jpeg = decodeJpeg(result);
+      expect((jpeg.width, jpeg.height), (2000, 500));
+      verifyNever(
+        () => mockLogger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      );
+    });
+
+    test('uploads the original when the bytes cannot be decoded, and '
+        'reports why', () async {
+      final garbage = Uint8List.fromList(List.filled(64, 7));
+
+      final result = await downscaleImageForUpload(
+        garbage,
+        imageId: 'broken',
+        domainLogger: mockLogger,
+      );
+
+      expect(identical(result, garbage), isTrue);
+      verify(
+        () => mockLogger.error(
+          LogDomain.ai,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'ImageProcessingUtils',
+          message: 'Could not downscale image broken; uploading the original',
+        ),
+      ).called(1);
+    });
   });
 
   group('imagePathSupportsTools', () {

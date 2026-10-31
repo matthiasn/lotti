@@ -204,13 +204,6 @@ class CloudInferenceGenerate {
     if (provider?.inferenceProviderType == InferenceProviderType.sherpa) {
       throw UnsupportedError('sherpa-onnx supports audio transcription only');
     }
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
     // For Ollama, use the dedicated repository.
     //
     // NOTE: this path carries no `tools` / `toolChoice` — the Ollama image
@@ -258,6 +251,24 @@ class CloudInferenceGenerate {
       );
     }
 
+    // Mistral's vision chat streams `delta.content` as a list of chunks,
+    // which openai_dart's `String?` cast rejects; its own client parses both.
+    if (provider?.inferenceProviderType == InferenceProviderType.mistral) {
+      return _mistralRepository.generateWithImages(
+        prompt: prompt,
+        images: images,
+        model: model,
+        baseUrl: baseUrl,
+        apiKey: apiKey,
+        systemMessage: systemMessage,
+        temperature: temperature,
+        maxCompletionTokens: maxCompletionTokens,
+        tools: tools,
+        toolChoice: toolChoice,
+        thinkingMode: geminiThinkingMode,
+      );
+    }
+
     // For other providers, use the standard OpenAI-compatible format
     final reasoningEffort =
         provider?.inferenceProviderType == InferenceProviderType.gemini &&
@@ -277,6 +288,12 @@ class CloudInferenceGenerate {
       );
     }
 
+    final client =
+        overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
     final res = client.createChatCompletionStream(
       request: _helpers.createBaseRequest(
         messages: [

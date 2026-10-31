@@ -26,7 +26,7 @@ extension _SkillMediaRuns on SkillInferenceRunner {
       );
       final provider = target.provider;
       final modelId = target.modelId;
-      final effectiveThinkingMode = _geminiThinkingModeForTarget(
+      final effectiveThinkingMode = _thinkingModeForTarget(
         target,
         geminiThinkingMode,
       );

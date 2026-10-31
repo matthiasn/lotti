@@ -173,17 +173,31 @@ bool isMistralOcrModelId(String providerModelId) =>
     providerModelId.trim().toLowerCase().startsWith('mistral-ocr');
 
 /// Mistral models that take `reasoning_effort` on chat completions, as listed
-/// in Mistral's reasoning docs on 2026-10-28. They accept only `none` and
-/// `high`; other Mistral models are not documented to take the parameter.
+/// in Mistral's reasoning docs on 2026-10-28; other Mistral models are not
+/// documented to take the parameter. Each accepts only some values, see
+/// [mistralGradedReasoningModelIds].
 const Set<String> mistralAdjustableReasoningModelIds = {
   'mistral-small-latest',
   'mistral-medium-3-5',
   'mistral-large-4-0',
 };
 
+/// The [mistralAdjustableReasoningModelIds] that take graded effort (`low`,
+/// `medium`, `high`) instead of the others' `none` and `high`. Probed on the
+/// live API on 2026-10-31: Large 4 answers `none` and `minimal` with a 400,
+/// and Small and Medium answer `low` and `medium` with one.
+const Set<String> mistralGradedReasoningModelIds = {'mistral-large-4-0'};
+
 /// Whether [providerModelId] is a Mistral model with adjustable reasoning.
 bool isMistralAdjustableReasoningModelId(String providerModelId) =>
     mistralAdjustableReasoningModelIds.contains(
+      providerModelId.trim().toLowerCase(),
+    );
+
+/// Whether [providerModelId] takes graded `reasoning_effort`, see
+/// [mistralGradedReasoningModelIds].
+bool isMistralGradedReasoningModelId(String providerModelId) =>
+    mistralGradedReasoningModelIds.contains(
       providerModelId.trim().toLowerCase(),
     );
 
