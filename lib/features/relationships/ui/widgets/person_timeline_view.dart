@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
@@ -38,6 +40,10 @@ typedef PersonTimelineActions = ({
   /// *Sort this* on a voice note with words: sort them into check-ins,
   /// notes, meetings or tasks, for review.
   void Function(JournalAudio audio) sortVoiceNote,
+
+  /// *Retry* on a recording whose words never came: ask for them again, as
+  /// a goal's rail does.
+  void Function(JournalAudio audio) retryTranscript,
 });
 
 /// The words a check-in row leads with: the text it was saved with, else its
@@ -423,13 +429,10 @@ class PersonTimelineRow extends StatelessWidget {
         // A recording whose words are not here yet says where they are the
         // way every check-in recording does — and, past the grace window
         // with nothing on the way, that they are not coming.
-        _ when row.awaiting != null => RecordingTranscript(
-          id: row.awaiting!.meta.id,
-          status: transcriptStatusOf(
-            hasTranscript: false,
-            graceExpiry: row.awaiting!.meta.dateFrom.add(kTranscriptGrace),
-            now: now,
-          ),
+        _ when row.awaiting != null => _AwaitedWords(
+          recording: row.awaiting!,
+          now: now,
+          onRetry: () => actions.retryTranscript(row.awaiting!),
         ),
         // A voice note leads with its summary, and opens to its words.
         final TimelineVoiceNote voice => FoldedWords(
@@ -497,6 +500,43 @@ class PersonTimelineRow extends StatelessWidget {
     final to = event.meta.dateTo;
     final start = relationshipTimestampLabelOf(context, from, now: now);
     return to.isAfter(from) ? '$start – ${relationshipTimeLabel(to)}' : start;
+  }
+}
+
+/// Where a recording's words are while it has none, in the shared status:
+/// a transcription running or failed says so; otherwise the grace rule
+/// against the page's [now]. *Retry* asks for them again.
+class _AwaitedWords extends ConsumerWidget {
+  const _AwaitedWords({
+    required this.recording,
+    required this.now,
+    required this.onRetry,
+  });
+
+  final JournalAudio recording;
+  final DateTime now;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = recording.meta.id;
+    final inference = ref.watch(
+      inferenceStatusControllerProvider((
+        id: id,
+        aiResponseType: AiResponseType.audioTranscription,
+      )),
+    );
+    return RecordingTranscript(
+      id: id,
+      status: transcriptStatusOf(
+        hasTranscript: false,
+        running: inference == InferenceStatus.running,
+        failed: inference == InferenceStatus.error,
+        graceExpiry: recording.meta.dateFrom.add(kTranscriptGrace),
+        now: now,
+      ),
+      onRetry: onRetry,
+    );
   }
 }
 

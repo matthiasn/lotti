@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/audio_player_state.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -10,15 +11,15 @@ import 'package:lotti/providers/audio_player_controller.dart';
 import 'package:lotti/utils/entry_tools.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A recording in a history row, kept light: until it plays, only a play
-/// glyph and its length — on a goal's rail and a person's timeline alike. A
-/// history is for reading, and a waveform card under every recording made
-/// each one the heaviest thing on the page.
+/// A recording in a history row, kept light: until it plays, only *Play
+/// audio* — on a goal's rail and a person's timeline alike. A history is
+/// for reading, and a waveform card under every recording made each one the
+/// heaviest thing on the page (design panel 2026-10-31, unanimous).
 ///
-/// Tapping plays it, and the row opens the app's waveform player
-/// ([AudioPlayerWidget]) for as long as this recording is the one the
-/// player holds; when another recording starts, this one folds back to its
-/// glyph. One player for the app, so only one row is ever open.
+/// Tapping plays it, and the row eases open to the app's waveform player
+/// ([AudioPlayerWidget]) while this recording is the one the player holds
+/// and has not finished; when it finishes, or another recording starts, it
+/// folds back. One player for the app, so only one row is ever open.
 class RecordingPlayback extends ConsumerWidget {
   const RecordingPlayback(this.audio, {super.key});
 
@@ -27,30 +28,62 @@ class RecordingPlayback extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = audio.meta.id;
-    final isActive = ref.watch(
+    // Open while this recording is the one the player holds and has not run
+    // to its end: a finished recording folds back to its glyph.
+    final isOpen = ref.watch(
       audioPlayerControllerProvider.select(
-        (state) => state.audioNote?.meta.id == id,
+        (state) =>
+            state.audioNote?.meta.id == id &&
+            state.status != AudioPlayerStatus.stopped,
       ),
     );
-    if (isActive) {
-      return AudioPlayerWidget(audio, key: ValueKey('recording-player-$id'));
-    }
+    final tokens = context.designTokens;
+    // Eased, not snapped: the rows below move down with the player rather
+    // than jumping, so a reader keeps their place.
+    return AnimatedSize(
+      duration: MotionDurations.medium1,
+      curve: MotionCurves.standard,
+      alignment: AlignmentDirectional.topStart,
+      child: isOpen
+          ? Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+              child: AudioPlayerWidget(
+                audio,
+                key: ValueKey('recording-player-$id'),
+              ),
+            )
+          : _PlayAction(audio: audio),
+    );
+  }
+}
 
-    // The time chip's own shape: a glyph and a figure in the action ink,
-    // ending on the row's leading edge, so the recording reads as one quiet
-    // action rather than a control panel.
-    final length = formatElapsed(audio.data.duration);
+/// The closed row's one action: *Play audio*, its own shape — a play glyph
+/// and a word — so it never reads as the time a check-in counts for beside
+/// it, and large enough that a near miss plays rather than opening the
+/// entry. The row already says how long it ran.
+class _PlayAction extends ConsumerWidget {
+  const _PlayAction({required this.audio});
+
+  final JournalAudio audio;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = audio.meta.id;
+
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: DesignSystemButton(
         key: ValueKey('recording-playback-play-$id'),
-        label: length,
+        label: context.messages.audioPlayerPlay,
         leadingIcon: LottiIcons.playCircled,
         variant: DesignSystemButtonVariant.tertiary,
-        size: DesignSystemButtonSize.dense,
-        tabularFigures: true,
+        // A size up from the dense metadata actions beside it: a target a
+        // thumb finds, at the body's reading size rather than the caption's.
+        size: DesignSystemButtonSize.small,
         alignsLabelToLeadingEdge: true,
-        semanticsLabel: '${context.messages.audioPlayerPlay}, $length',
+        semanticsLabel:
+            '${context.messages.audioPlayerPlay}, '
+            '${formatElapsed(audio.data.duration)}',
         onPressed: () => unawaited(
           ref.read(audioPlayerControllerProvider.notifier).playAudioNote(audio),
         ),

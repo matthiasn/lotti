@@ -69,6 +69,29 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('the sentence replaces the tile and meta, but the actions and '
+      'words in the body and footer stay reachable', (tester) async {
+    final semantics = tester.ensureSemantics();
+    var played = 0;
+    await pumpRow(
+      tester,
+      onTap: () {},
+      body: TextButton(
+        onPressed: () => played++,
+        child: const Text('Play audio'),
+      ),
+      footer: const Text('Good · launch window'),
+    );
+
+    // What the sentence already says is not read twice.
+    expect(find.bySemanticsLabel('Sat 1 Aug 12:44 · Call'), findsNothing);
+    // A play or retry inside the row is an action a screen reader can reach.
+    final play = tester.getSemantics(find.text('Play audio'));
+    expect(play.flagsCollection.isButton, isTrue);
+    expect(find.bySemanticsLabel('Good · launch window'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('a row without a tap is not a button', (tester) async {
     final handle = tester.ensureSemantics();
     await pumpRow(tester);

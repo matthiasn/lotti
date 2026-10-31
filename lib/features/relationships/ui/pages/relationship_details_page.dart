@@ -16,6 +16,7 @@ import 'package:lotti/features/relationships/model/person_name.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/model/relationship_agent_identity.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
+import 'package:lotti/features/relationships/service/check_in_transcription_service.dart';
 import 'package:lotti/features/relationships/service/person_photo_timeline_trigger.dart';
 import 'package:lotti/features/relationships/state/relationship_agent_providers.dart';
 import 'package:lotti/features/relationships/state/relationships_providers.dart';
@@ -299,6 +300,15 @@ class _RelationshipDetailsPageState
           transcript: audio.entryText?.plainText ?? '',
         ),
       ),
+      // The person's names corrected, and the one-line summary the row
+      // leads with — what a check-in's recording asks for in the first place.
+      retryTranscript: (JournalAudio audio) => ref
+          .read(checkInTranscriptionServiceProvider)
+          .transcribe(
+            audioEntryId: audio.meta.id,
+            relationshipId: relationshipId,
+            summarize: true,
+          ),
     );
 
     Future<void> create() async {

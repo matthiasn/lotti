@@ -4,24 +4,28 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/check_in_data.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/design_system/components/captions/ds_tiered_text.dart';
 import 'package:lotti/features/design_system/components/timeline/design_system_timeline_row.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/relationships/model/person_timeline.dart';
 import 'package:lotti/features/relationships/state/relationship_proposal_providers.dart';
 import 'package:lotti/features/relationships/ui/widgets/person_timeline_view.dart';
+import 'package:lotti/features/speech/ui/widgets/recording_playback.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/transcript/folded_words.dart';
 import 'package:lotti/widgets/transcript/recording_transcript.dart';
 import 'package:lotti/widgets/transcript/transcript_status.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -102,6 +106,7 @@ void main() {
     openTask: (t) => opened.add('task ${t.meta.id}'),
     unlinkTask: (t) => opened.add('unlink ${t.meta.id}'),
     sortVoiceNote: (a) => opened.add('sort ${a.meta.id}'),
+    retryTranscript: (a) => opened.add('retry ${a.meta.id}'),
   );
 
   setUp(() => opened = []);
@@ -355,6 +360,82 @@ void main() {
 
       await tester.tap(find.text('Send-off.'));
       expect(opened, ['entry spoken']);
+    });
+
+    testWidgets('a recording whose words never came offers Retry, which asks '
+        'for that recording again — as a goal rail does', (tester) async {
+      await pump(
+        tester,
+        timeline(
+          checkIns: [],
+          tasks: [],
+          entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+        ),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('transcript-retry-stale')));
+      expect(opened, ['retry stale']);
+    });
+
+    testWidgets('a transcription running past the window still says it is '
+        'transcribing, and a failed one says so', (tester) async {
+      for (final (status, label) in [
+        (InferenceStatus.running, 'Transcribing…'),
+        (InferenceStatus.error, 'Transcription failed'),
+      ]) {
+        await pump(
+          tester,
+          timeline(
+            checkIns: [],
+            tasks: [],
+            entries: [audio('stale', DateTime(2026, 8, 11, 9))],
+          ),
+          overrides: [
+            inferenceStatusControllerProvider((
+              id: 'stale',
+              aiResponseType: AiResponseType.audioTranscription,
+            )).overrideWith(() => FixedInferenceStatusController(status)),
+          ],
+        );
+        expect(find.text(label), findsOneWidget, reason: '$status');
+        // A fresh scope for the next status.
+        await tester.pumpWidget(const SizedBox.shrink());
+      }
+    });
+
+    testWidgets('a voice note and a spoken check-in each play lightly in '
+        'place; a written check-in has nothing to play', (tester) async {
+      final spoken = call.copyWith(entryText: const EntryText(plainText: ''));
+      await pump(
+        tester,
+        buildPersonTimeline(
+          now: now,
+          checkIns: [spoken, quiet],
+          entries: [
+            audio('spoken-note', DateTime(2026, 8, 12, 19, 10), words: 'Hi.'),
+          ],
+          tasks: const [],
+          checkInEntries: {
+            'call': [
+              audio('older-take', DateTime(2026, 8, 1, 12, 44), words: 'A.'),
+              audio('newer-take', DateTime(2026, 8, 1, 12, 50), words: 'B.'),
+            ],
+          },
+        ),
+      );
+
+      List<String> played(String rowId) => tester
+          .widgetList<RecordingPlayback>(
+            find.descendant(
+              of: find.byKey(ValueKey('person-timeline-row-$rowId')),
+              matching: find.byType(RecordingPlayback),
+            ),
+          )
+          .map((p) => p.audio.meta.id)
+          .toList();
+      expect(played('spoken-note'), ['spoken-note']);
+      expect(played('call'), ['newer-take'], reason: 'the newest it holds');
+      expect(played('quiet'), isEmpty);
     });
 
     final longWords = [
