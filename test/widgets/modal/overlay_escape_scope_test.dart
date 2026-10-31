@@ -91,6 +91,19 @@ void main() {
       expect(pageField.hasFocus, isTrue);
     });
 
+    testWidgets('gives focus up on release when nothing held it before', (
+      tester,
+    ) async {
+      String? primaryLabel() => FocusManager.instance.primaryFocus?.debugLabel;
+      await pump(tester, showing: true);
+      expect(primaryLabel(), 'OverlayEscapeScope');
+
+      await pump(tester, showing: false);
+
+      expect(primaryLabel(), isNot('OverlayEscapeScope'));
+      expect(pageField.hasFocus, isFalse);
+    });
+
     testWidgets('is no Tab stop: Tab from the page skips the inactive scope', (
       tester,
     ) async {
