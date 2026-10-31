@@ -25,6 +25,8 @@ class _MappingStep extends StatelessWidget {
     required this.watchesCheckInTime,
     required this.checkInMinutes,
     required this.onCheckInTimeChanged,
+    required this.checkInsAreSubstance,
+    required this.onCheckInsAreSubstanceChanged,
     required this.onCheckInMinutesChanged,
     required this.chosenSignalOrder,
     required this.suggestedSignalOrder,
@@ -83,6 +85,10 @@ class _MappingStep extends StatelessWidget {
   final bool watchesCheckInTime;
   final TextEditingController checkInMinutes;
   final ValueChanged<bool> onCheckInTimeChanged;
+
+  /// Whether the goal's check-ins are its substance, as it stands now.
+  final bool checkInsAreSubstance;
+  final ValueChanged<bool> onCheckInsAreSubstanceChanged;
   final VoidCallback onCheckInMinutesChanged;
   final TextEditingController title;
 
@@ -842,6 +848,11 @@ class _MappingStep extends StatelessWidget {
               ),
             ),
           ],
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          GoalFormCheckInWeightCard(
+            value: checkInsAreSubstance,
+            onChanged: onCheckInsAreSubstanceChanged,
+          ),
           SizedBox(height: tokens.spacing.sectionGap),
           // The goal's NAME is authored here, after the signals that shape
           // it — the derived value keeps following the selection until the

@@ -7995,6 +7995,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormCheckInMinutesPerDay => 'Minuten per dag';
 
   @override
+  String get goalFormCheckInsAreSubstanceSubtitle =>
+      'Je agent reageert op wat je schrijft, niet alleen op dát je hebt ingecheckt.';
+
+  @override
+  String get goalFormCheckInsAreSubstanceTitle => 'Mijn check-ins zijn de kern';
+
+  @override
   String goalFormCheckInTimeCadence(num minutes) {
     final intl.NumberFormat minutesNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

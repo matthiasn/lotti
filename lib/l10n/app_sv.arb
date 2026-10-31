@@ -3528,6 +3528,8 @@
   "goalFormCategoryTimeSource": "Registrerad tid · timmar per rullande 7 dagar",
   "goalFormCategoryTimeTarget": "Timmar per rullande 7 dagar",
   "goalFormCheckInMinutesPerDay": "Minuter per dag",
+  "goalFormCheckInsAreSubstanceSubtitle": "Din agent svarar på det du skriver, inte bara på att du har stämt av.",
+  "goalFormCheckInsAreSubstanceTitle": "Mina avstämningar är det viktiga",
   "goalFormCheckInTimeCadence": "{minutes} min avstämningar per dag",
   "goalFormCheckInTimeSignal": "minuter du lägger på avstämningar för det här målet",
   "goalFormCheckInTimeTitle": "Avstämningstid",

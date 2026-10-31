@@ -3527,6 +3527,8 @@
   "goalFormCategoryTimeSource": "Tempo registrado · horas por semana móvel",
   "goalFormCategoryTimeTarget": "Horas por semana móvel",
   "goalFormCheckInMinutesPerDay": "Minutos por dia",
+  "goalFormCheckInsAreSubstanceSubtitle": "O teu agente responde ao que escreves, não só ao facto de teres feito o registo.",
+  "goalFormCheckInsAreSubstanceTitle": "Os meus registos são o essencial",
   "goalFormCheckInTimeCadence": "{minutes} min de registos por dia",
   "goalFormCheckInTimeSignal": "minutos dedicados aos registos desta meta",
   "goalFormCheckInTimeTitle": "Tempo de registo",

@@ -8019,6 +8019,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormCheckInMinutesPerDay => 'Minuten pro Tag';
 
   @override
+  String get goalFormCheckInsAreSubstanceSubtitle =>
+      'Dein Agent geht auf das ein, was du schreibst — nicht nur darauf, dass du eingecheckt hast.';
+
+  @override
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Meine Check-ins sind der Kern';
+
+  @override
   String goalFormCheckInTimeCadence(num minutes) {
     final intl.NumberFormat minutesNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

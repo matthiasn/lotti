@@ -3190,6 +3190,8 @@
   "goalFormCategoryTimeSource": "Zaznamenaný čas · hodiny za klouzavých 7 dní",
   "goalFormCategoryTimeTarget": "Hodiny za klouzavých 7 dní",
   "goalFormCheckInMinutesPerDay": "Minut denně",
+  "goalFormCheckInsAreSubstanceSubtitle": "Tvůj agent odpovídá na to, co píšeš, ne jen na to, že máš hlášení za sebou.",
+  "goalFormCheckInsAreSubstanceTitle": "Hlášení jsou to podstatné",
   "goalFormCheckInTimeCadence": "{minutes} min hlášení denně",
   "goalFormCheckInTimeSignal": "minuty strávené hlášeními k tomuto cíli",
   "goalFormCheckInTimeTitle": "Čas na hlášení",

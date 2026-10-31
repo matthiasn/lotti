@@ -21,6 +21,8 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/journal_page_state.dart';
@@ -442,6 +444,24 @@ void registerAllFallbackValues() {
     ),
   );
   registerFallbackValue(_fallbackAgentStateUpdate);
+  registerFallbackValue(
+    AgentDomainEntity.goalSpecVersion(
+          id: 'fallback-goal-spec-id',
+          agentId: 'fallback-agent-id',
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Fallback goal',
+          statement: 'Fallback goal',
+          criteria: const GoalCriterion.allOf(
+            criterionId: 'fallback',
+            criteria: [],
+          ),
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          vectorClock: null,
+        )
+        as GoalSpecVersionEntity,
+  );
   registerFallbackValue(
     agent_model.AgentLink.basic(
       id: 'fallback-link-id',

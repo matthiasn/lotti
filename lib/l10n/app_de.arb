@@ -3183,6 +3183,8 @@
   "goalFormCategoryTimeSource": "Erfasste Zeit · Stunden pro rollierende 7 Tage",
   "goalFormCategoryTimeTarget": "Stunden pro rollierende 7 Tage",
   "goalFormCheckInMinutesPerDay": "Minuten pro Tag",
+  "goalFormCheckInsAreSubstanceSubtitle": "Dein Agent geht auf das ein, was du schreibst — nicht nur darauf, dass du eingecheckt hast.",
+  "goalFormCheckInsAreSubstanceTitle": "Meine Check-ins sind der Kern",
   "goalFormCheckInTimeCadence": "{minutes} Min. Check-ins pro Tag",
   "goalFormCheckInTimeSignal": "Minuten für Check-ins zu diesem Ziel",
   "goalFormCheckInTimeTitle": "Check-in-Zeit",

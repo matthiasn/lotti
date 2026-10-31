@@ -3528,6 +3528,8 @@
   "goalFormCategoryTimeSource": "Tempo registrato · ore ogni 7 giorni mobili",
   "goalFormCategoryTimeTarget": "Ore ogni 7 giorni mobili",
   "goalFormCheckInMinutesPerDay": "Minuti al giorno",
+  "goalFormCheckInsAreSubstanceSubtitle": "Il tuo agente risponde a ciò che scrivi, non solo al fatto che hai fatto il check-in.",
+  "goalFormCheckInsAreSubstanceTitle": "I miei check-in sono il punto",
   "goalFormCheckInTimeCadence": "{minutes} min di check-in al giorno",
   "goalFormCheckInTimeSignal": "minuti dedicati ai check-in su questo obiettivo",
   "goalFormCheckInTimeTitle": "Tempo di check-in",

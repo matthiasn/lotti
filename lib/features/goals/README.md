@@ -131,10 +131,13 @@ repetitive — rewrites the standing report itself rather than only answering in
 chat, and an explicit refusal to change it is respected.
 The report answers what the user said: a "From your check-ins" reflection
 sits with the summary, and a wake that has check-ins the report never
-answered must fill it. For a goal measured by its check-ins — a journal —
-they are compacted for what they say rather than that they happened, and a
-transcript landing after its recording refreshes the report minutes later
-(ADR 0143).
+answered must fill it. For a goal whose check-ins are the point — a journal,
+whether measured by check-in time or ticked off as a habit — they are
+compacted for what they say rather than that they happened, and a transcript
+landing after its recording refreshes the report minutes later (ADR 0143).
+The goal form's "My check-ins are the point" switch says which goals those
+are; left alone, it follows whether the goal measures check-in time
+(ADR 0151).
 When a check-in leaves something open, the agent may ask one question in the
 goal chat, at most once a day and never while its last one is unanswered,
 optionally with a banner that only says a question is waiting and opens the

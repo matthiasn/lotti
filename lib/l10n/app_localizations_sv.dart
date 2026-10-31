@@ -7978,6 +7978,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormCheckInMinutesPerDay => 'Minuter per dag';
 
   @override
+  String get goalFormCheckInsAreSubstanceSubtitle =>
+      'Din agent svarar på det du skriver, inte bara på att du har stämt av.';
+
+  @override
+  String get goalFormCheckInsAreSubstanceTitle =>
+      'Mina avstämningar är det viktiga';
+
+  @override
   String goalFormCheckInTimeCadence(num minutes) {
     final intl.NumberFormat minutesNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

@@ -87,7 +87,7 @@ void main() {
     );
   });
 
-  void stubSpec({int version = 1}) {
+  void stubSpec({int version = 1, bool? checkInsAreSubstance}) {
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -110,6 +110,7 @@ void main() {
         createdAt: DateTime(2026, 8),
         vectorClock: null,
         startDate: DateTime(2026, 8),
+        checkInsAreSubstance: checkInsAreSubstance,
       ),
     );
   }
@@ -300,6 +301,48 @@ void main() {
       'the owner edit does not change the goal',
     );
     expect(upserts, isEmpty);
+  });
+
+  test('an owner edit that only says the check-ins are the goal itself is a '
+      'change of its own (ADR 0151)', () async {
+    stubSpec();
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
+      displayName: 'Steps',
+      title: 'Steps',
+      statement: 'Average 10,000 steps per day.',
+      criteria: criteria,
+      checkInsAreSubstance: true,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.checkInsAreSubstance,
+      isTrue,
+    );
+    expect(outcome.changeSummaries, ['check-in weight updated']);
+  });
+
+  test("an approved proposal keeps the user's say on the check-ins — an "
+      'agent never decides what they are', () async {
+    stubSpec(checkInsAreSubstance: true);
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        changes: {'targetValue': 8000},
+        rationale: 'eased off',
+      ),
+    );
+
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.checkInsAreSubstance,
+      isTrue,
+    );
   });
 
   test('an owner edit based on a stale version is refused', () async {

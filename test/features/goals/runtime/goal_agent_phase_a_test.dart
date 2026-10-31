@@ -921,6 +921,28 @@ void main() {
         expect(result.stale, isEmpty);
       }
     });
+
+    test('follows what the user said the check-ins are, not only the '
+        'criteria (ADR 0151)', () async {
+      // A journal tracked by a habit tick: the words are still the point.
+      final habitJournal = await tick(
+        version: specVersion.copyWith(
+          checkInsAreSubstance: true,
+        ),
+        triggerTokens: const {goalRow},
+      );
+      expect(habitJournal.refreshes, [agentId]);
+
+      refreshRequests.clear();
+      events.clear();
+      // Minutes counted, words not the goal: the row is a number again.
+      final countedOnly = await tick(
+        version: journalVersion.copyWith(checkInsAreSubstance: false),
+        triggerTokens: const {goalRow},
+      );
+      expect(countedOnly.refreshes, isEmpty);
+      expect(countedOnly.stale, isEmpty);
+    });
   });
 
   test('a goal holding a criterion this build cannot read is never judged '

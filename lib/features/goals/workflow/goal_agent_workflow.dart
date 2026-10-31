@@ -355,7 +355,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     // in — and return the summaries whose sources are still live. Non-fatal: a
     // check-in that fails to compact simply is not in this wake's context, and
     // the next wake retries.
-    final checkInWeight = GoalCheckInWeight.of(version.criteria);
+    final checkInWeight = GoalCheckInWeight.of(version);
     final reconciled = await _reconcileCheckIns(
       agentId: agentId,
       goalStatement: version.statement,

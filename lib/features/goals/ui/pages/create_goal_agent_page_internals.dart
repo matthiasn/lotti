@@ -15,6 +15,7 @@ extension _CreateGoalAgentPageStateInternals on _CreateGoalAgentPageState {
     _mapping = GoalFormMapping.fromCriteria(spec.criteria);
     _watchesSteps = _mapping.watchesSteps;
     _watchesCheckInTime = _mapping.watchesCheckInTime;
+    _checkInsAreSubstance = spec.checkInsAreSubstance;
     _checkInMinutes.text = NumberFormat.decimalPattern(
       context.messages.localeName,
     ).format(_mapping.checkInMinutesTarget);

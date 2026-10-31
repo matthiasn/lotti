@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
-import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
@@ -85,12 +84,9 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         // temporarily unavailable head must not leave a durable user message
         // unanswered until some unrelated future wake happens to arrive.
         await _goalChatService.restoreOldestPendingMessage(identity.agentId);
-        final criteria = await _headCriteria(identity.agentId);
-        if (criteria == null) continue;
-        _goalAgentService.registerSignalSubscription(
-          identity.agentId,
-          criteria,
-        );
+        final spec = await _headSpec(identity.agentId);
+        if (spec == null) continue;
+        _goalAgentService.registerSignalSubscription(identity.agentId, spec);
         // Restore the pending refresh BEFORE the recompute: a refresh the
         // recompute queues then merges into the restored job instead of
         // standing beside it with its deadline overwritten. A failing state
@@ -213,30 +209,26 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         await _goalAgentService.offTrackAlerts?.clearFor(identity.agentId);
         return;
       }
-      // Before the criteria gate: a synced identity can arrive ahead of its
+      // Before the spec gate: a synced identity can arrive ahead of its
       // spec head, and returning for want of criteria left the goal unwatched
       // until a restart — reintroducing the startup-snapshot bug by placement
       // rather than by logic. Watching needs only the agent id.
       _checkInNotifier?.watch(identity.agentId);
       await _goalChatService.restoreOldestPendingMessage(identity.agentId);
 
-      final criteria = await _headCriteria(identity.agentId);
-      if (criteria == null) return;
-      _goalAgentService.registerSignalSubscription(
-        identity.agentId,
-        criteria,
-      );
+      final spec = await _headSpec(identity.agentId);
+      if (spec == null) return;
+      _goalAgentService.registerSignalSubscription(identity.agentId, spec);
     } catch (error, stackTrace) {
       _log('onIdentityReceived', identity.agentId, error, stackTrace);
     }
   }
 
-  Future<GoalCriterion?> _headCriteria(String agentId) async {
+  Future<GoalSpecVersionEntity?> _headSpec(String agentId) async {
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) return null;
     final version = await _repository.getEntity(head.versionId);
-    if (version is! GoalSpecVersionEntity) return null;
-    return version.criteria;
+    return version is GoalSpecVersionEntity ? version : null;
   }
 
   void _startRecompute(AgentIdentityEntity identity) {
