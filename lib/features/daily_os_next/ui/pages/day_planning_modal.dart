@@ -23,7 +23,6 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_sh
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/side_sheet.dart';
@@ -78,20 +77,13 @@ Future<DayPlanningResult?> showDayPlanningModal({
   required DateTime dayDate,
   required DayPlanningIntent intent,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
   final day = DateTime(dayDate.year, dayDate.month, dayDate.day);
 
-  return WoltModalSheet.show<DayPlanningResult>(
-    modalDecorator: LegacyMaterialBridge.modalSurface,
+  return ModalUtils.showWoltModal<DayPlanningResult>(
     context: context,
     useRootNavigator: true,
     modalTypeBuilder: (modalContext) =>
         _dayPlanningModalType(modalContext, intent),
-    barrierDismissible: true,
-    modalBarrierColor: ModalUtils.getModalBarrierColor(
-      isDark: isDark,
-      context: context,
-    ),
     pageListBuilder: (modalContext) => [
       switch (intent) {
         DayPlanningCreate() => _captureStepPage(modalContext, day),

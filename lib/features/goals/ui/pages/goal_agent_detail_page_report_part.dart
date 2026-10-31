@@ -332,29 +332,15 @@ class _GoalActionsMenuButton extends ConsumerWidget {
   }
 
   Future<void> _confirmAndDelete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) {
-        final messages = dialogContext.messages;
-        return AlertDialog(
-          title: Text(messages.goalDeleteDialogTitle),
-          content: Text(messages.goalDeleteDialogContent),
-          actions: [
-            DesignSystemButton(
-              label: messages.cancelButton,
-              variant: DesignSystemButtonVariant.tertiary,
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-            ),
-            DesignSystemButton(
-              label: messages.goalDeleteConfirmButton,
-              variant: DesignSystemButtonVariant.danger,
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-            ),
-          ],
-        );
-      },
+      title: messages.goalDeleteDialogTitle,
+      message: messages.goalDeleteDialogContent,
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.goalDeleteConfirmButton,
     );
-    if (confirmed ?? false) {
+    if (confirmed) {
       try {
         final deleted = await ref
             .read(goalAgentServiceProvider)

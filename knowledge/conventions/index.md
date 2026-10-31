@@ -7,6 +7,7 @@ Rules this repository holds itself to, and the reasoning behind them.
 * [Localization](localization.md) - ARB catalogs, the informal register, and where localization happens.
 * [Code style and analysis](code-style.md) - the zero-warning gate, generated code, and mandatory design tokens.
 * [Stay while reload](stay-while-reload.md) - the hard rule against loading states over shown content, and against rebuilding it when a list shifts.
+* [Modal dismissal](modal-dismissal.md) - a modal that closes on a tap outside closes on Escape too, with the same result, and which shared helpers guarantee it.
 * [Screenshots](screenshots.md) - why captured images publish to immutable R2 keys and never live here, and why a UI pull request carries a before/after pair.
 
 One more set of rules binds every UI change but is documented with the code it

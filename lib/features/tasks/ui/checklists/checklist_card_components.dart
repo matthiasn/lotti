@@ -1,4 +1,3 @@
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/ds_quiet_ink.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Checklist card header row: the (tappable, inline-editable) title, the
@@ -472,28 +472,14 @@ class _HeaderMenu extends StatelessWidget {
         position: PopupMenuPosition.under,
         onSelected: (value) async {
           Future<void> deleteAction() async {
-            final confirmed = await showDialog<bool>(
+            final confirmed = await showConfirmationModal(
               context: context,
-              builder: (ctx) => AlertDialog(
-                title: Text(context.messages.checklistDelete),
-                content: Text(context.messages.checklistItemDeleteWarning),
-                actions: [
-                  DesignSystemButton(
-                    label: context.messages.checklistItemDeleteCancel,
-                    onPressed: () => Navigator.of(ctx).pop(false),
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.large,
-                  ),
-                  DesignSystemButton(
-                    label: context.messages.checklistItemDeleteConfirm,
-                    onPressed: () => Navigator.of(ctx).pop(true),
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.large,
-                  ),
-                ],
-              ),
+              title: context.messages.checklistDelete,
+              message: context.messages.checklistItemDeleteWarning,
+              cancelLabel: context.messages.checklistItemDeleteCancel,
+              confirmLabel: context.messages.checklistItemDeleteConfirm,
             );
-            if (confirmed ?? false) onDelete?.call();
+            if (confirmed) onDelete?.call();
           }
 
           if (value == 'export') {

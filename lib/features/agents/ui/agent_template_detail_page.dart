@@ -18,6 +18,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -491,57 +492,43 @@ class _AgentTemplateDetailPageState
     }
   }
 
-  void _handleDelete(BuildContext context) {
+  Future<void> _handleDelete(BuildContext context) async {
     final pageContext = context;
-    showDialog<bool>(
+    final messages = pageContext.messages;
+    final confirmed = await showConfirmationModal(
       context: pageContext,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.messages.deleteButton),
-        content: Text(dialogContext.messages.agentTemplateDeleteConfirm),
-        actions: [
-          DesignSystemButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            label: dialogContext.messages.cancelButton,
-            variant: DesignSystemButtonVariant.tertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-          DesignSystemButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final logger = ref.read(domainLoggerProvider);
-              try {
-                final templateService = ref.read(agentTemplateServiceProvider);
-                await templateService.deleteTemplate(widget.templateId!);
-                if (!mounted || !pageContext.mounted) return;
-                ref.invalidate(agentTemplatesProvider);
-                Navigator.of(pageContext).pop();
-              } on TemplateInUseException {
-                if (!mounted || !pageContext.mounted) return;
-                pageContext.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: pageContext.messages.agentTemplateDeleteHasInstances,
-                );
-              } catch (e, s) {
-                logger.error(
-                  LogDomain.agentWorkflow,
-                  e,
-                  stackTrace: s,
-                  subDomain: 'AgentTemplateDetailPage',
-                  message: 'Delete failed',
-                );
-                if (!mounted || !pageContext.mounted) return;
-                pageContext.showToast(
-                  tone: DesignSystemToastTone.error,
-                  title: pageContext.messages.commonError,
-                );
-              }
-            },
-            label: dialogContext.messages.deleteButton,
-            variant: DesignSystemButtonVariant.dangerTertiary,
-            size: DesignSystemButtonSize.large,
-          ),
-        ],
-      ),
+      title: messages.deleteButton,
+      message: messages.agentTemplateDeleteConfirm,
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.deleteButton,
     );
+    if (!confirmed) return;
+    final logger = ref.read(domainLoggerProvider);
+    try {
+      final templateService = ref.read(agentTemplateServiceProvider);
+      await templateService.deleteTemplate(widget.templateId!);
+      if (!mounted || !pageContext.mounted) return;
+      ref.invalidate(agentTemplatesProvider);
+      Navigator.of(pageContext).pop();
+    } on TemplateInUseException {
+      if (!mounted || !pageContext.mounted) return;
+      pageContext.showToast(
+        tone: DesignSystemToastTone.error,
+        title: pageContext.messages.agentTemplateDeleteHasInstances,
+      );
+    } catch (e, s) {
+      logger.error(
+        LogDomain.agentWorkflow,
+        e,
+        stackTrace: s,
+        subDomain: 'AgentTemplateDetailPage',
+        message: 'Delete failed',
+      );
+      if (!mounted || !pageContext.mounted) return;
+      pageContext.showToast(
+        tone: DesignSystemToastTone.error,
+        title: pageContext.messages.commonError,
+      );
+    }
   }
 }

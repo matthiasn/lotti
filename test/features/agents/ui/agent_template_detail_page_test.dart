@@ -24,6 +24,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -712,12 +713,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // The rollback confirmation dialog is open.
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byKey(confirmationModalKey), findsOneWidget);
 
       // Tap Cancel in the dialog (the dialog's cancelButton, not anywhere else).
       await tester.tap(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byKey(confirmationModalKey),
           matching: find.text(context.messages.cancelButton),
         ),
       );
@@ -725,7 +726,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Dialog dismissed and no rollback was performed.
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byKey(confirmationModalKey), findsNothing);
       verifyNever(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
@@ -808,12 +809,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Confirmation dialog is open.
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byKey(confirmationModalKey), findsOneWidget);
 
       // Tap Cancel inside the dialog.
       await tester.tap(
         find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byKey(confirmationModalKey),
           matching: find.text(context.messages.cancelButton),
         ),
       );
@@ -821,7 +822,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Dialog dismissed, nothing deleted.
-      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.byKey(confirmationModalKey), findsNothing);
       verifyNever(() => mockTemplateService.deleteTemplate(any()));
     });
 

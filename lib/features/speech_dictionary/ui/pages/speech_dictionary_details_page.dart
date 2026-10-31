@@ -17,6 +17,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -285,42 +286,28 @@ class _SpeechDictionaryDetailsPageState
     );
   }
 
-  void _confirmDelete(BuildContext pageContext, SpeechDictionaryEntry entry) {
-    showDialog<bool>(
+  Future<void> _confirmDelete(
+    BuildContext pageContext,
+    SpeechDictionaryEntry entry,
+  ) async {
+    final messages = pageContext.messages;
+    final confirmed = await showConfirmationModal(
       context: pageContext,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          dialogContext.messages.settingsSpeechDictionaryDeleteConfirmTitle,
-        ),
-        content: Text(
-          dialogContext.messages.settingsSpeechDictionaryDeleteConfirmMessage(
-            entry.term,
-          ),
-        ),
-        actions: [
-          DesignSystemButton(
-            label: dialogContext.messages.cancelButton,
-            variant: DesignSystemButtonVariant.secondary,
-            onPressed: () => Navigator.pop(dialogContext),
-          ),
-          DesignSystemButton(
-            variant: DesignSystemButtonVariant.danger,
-            label: dialogContext.messages.deleteButton,
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              await ref
-                  .read(speechDictionaryRepositoryProvider)
-                  .delete(entry.id);
-              if (!mounted || !pageContext.mounted) return;
-              beamToNamed(_listUrl);
-              pageContext.showToast(
-                tone: DesignSystemToastTone.success,
-                title: pageContext.messages
-                    .settingsSpeechDictionaryDeleteSuccess(entry.term),
-              );
-            },
-          ),
-        ],
+      title: messages.settingsSpeechDictionaryDeleteConfirmTitle,
+      message: messages.settingsSpeechDictionaryDeleteConfirmMessage(
+        entry.term,
+      ),
+      cancelLabel: messages.cancelButton,
+      confirmLabel: messages.deleteButton,
+    );
+    if (!confirmed) return;
+    await ref.read(speechDictionaryRepositoryProvider).delete(entry.id);
+    if (!mounted || !pageContext.mounted) return;
+    beamToNamed(_listUrl);
+    pageContext.showToast(
+      tone: DesignSystemToastTone.success,
+      title: pageContext.messages.settingsSpeechDictionaryDeleteSuccess(
+        entry.term,
       ),
     );
   }

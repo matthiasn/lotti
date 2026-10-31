@@ -25,6 +25,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/onboarding_metrics_repository.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/modal/modal_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The seeded inference profile attached to categories created for a freshly
@@ -114,32 +115,36 @@ class OnboardingWelcomeModal {
                 begin: const Offset(0, 0.06),
                 end: Offset.zero,
               ).animate(curved),
-              child: _OnboardingScaffold(
-                heroStyle: heroStyle,
-                onProviderModalShown: () => unawaited(
-                  repo?.recordEvent(OnboardingEventName.providerModalShown),
+              // Escape skips, as a tap outside the panel does — through
+              // the panel's own Scaffold, which would otherwise eat it.
+              child: ModalEscapeScope(
+                child: _OnboardingScaffold(
+                  heroStyle: heroStyle,
+                  onProviderModalShown: () => unawaited(
+                    repo?.recordEvent(OnboardingEventName.providerModalShown),
+                  ),
+                  // The connection succeeded (provider + models created) — record
+                  // it now so it counts even if the user dismisses on the success
+                  // beat; the route stays open to show that beat.
+                  onConnected: (type) => connectedType = type,
+                  // The in-panel first-task step landed a real task — remember
+                  // its id and pop the modal; the task page is opened below once
+                  // the modal route is gone.
+                  onTaskCreated: (taskId) {
+                    createdTaskId = taskId;
+                    Navigator.of(routeContext).pop();
+                  },
+                  // Reached when the first-task step cannot produce a task at
+                  // all (a total structuring failure) — finish onboarding.
+                  onComplete: () => Navigator.of(routeContext).pop(),
+                  onSkip: () => Navigator.of(routeContext).pop(),
+                  // Demo entry: pop the modal; the demo world opens below,
+                  // once the route is gone.
+                  onExploreDemo: () {
+                    demoRequested = true;
+                    Navigator.of(routeContext).pop();
+                  },
                 ),
-                // The connection succeeded (provider + models created) — record
-                // it now so it counts even if the user dismisses on the success
-                // beat; the route stays open to show that beat.
-                onConnected: (type) => connectedType = type,
-                // The in-panel first-task step landed a real task — remember
-                // its id and pop the modal; the task page is opened below once
-                // the modal route is gone.
-                onTaskCreated: (taskId) {
-                  createdTaskId = taskId;
-                  Navigator.of(routeContext).pop();
-                },
-                // Reached when the first-task step cannot produce a task at
-                // all (a total structuring failure) — finish onboarding.
-                onComplete: () => Navigator.of(routeContext).pop(),
-                onSkip: () => Navigator.of(routeContext).pop(),
-                // Demo entry: pop the modal; the demo world opens below,
-                // once the route is gone.
-                onExploreDemo: () {
-                  demoRequested = true;
-                  Navigator.of(routeContext).pop();
-                },
               ),
             ),
           );

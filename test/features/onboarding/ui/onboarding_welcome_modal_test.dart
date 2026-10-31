@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -389,6 +390,27 @@ void main() {
     await tester.ensureVisible(find.text('Look around first'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Look around first'));
+    await tester.pumpAndSettle();
+
+    expect(dismissed, isTrue);
+    final state = await repo.funnelState();
+    expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+  });
+
+  testWidgets('Escape skips like a tap outside the panel, even with a '
+      'control inside it focused', (tester) async {
+    var dismissed = false;
+    await openWelcome(tester, child: host(onDismiss: () => dismissed = true));
+    // Tab into the panel, below its own Scaffold.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<Scaffold>(),
+      isNotNull,
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
 
     expect(dismissed, isTrue);

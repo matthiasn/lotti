@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/legacy_material_bridge.dart';
@@ -884,6 +885,127 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.text('Second page'), findsNothing);
+      });
+    });
+
+    group('showWoltModal', () {
+      const fieldKey = ValueKey('sheet-field');
+
+      /// Pumps a host at [size], opens a sheet holding a focused text field
+      /// and returns the sheet's result future.
+      Future<Future<String?>> openSheetWithFocusedField(
+        WidgetTester tester, {
+        required Size size,
+        bool barrierDismissible = true,
+        Color? modalBarrierColor,
+        NavigatorObserver? observer,
+      }) async {
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        late BuildContext hostContext;
+        await tester.pumpWidget(
+          MaterialApp(
+            builder: LegacyMaterialBridge.builder,
+            navigatorObservers: [?observer],
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  hostContext = context;
+                  return const SizedBox.expand();
+                },
+              ),
+            ),
+          ),
+        );
+        final result = ModalUtils.showWoltModal<String>(
+          context: hostContext,
+          barrierDismissible: barrierDismissible,
+          modalBarrierColor: modalBarrierColor,
+          pageListBuilder: (modalContext) => [
+            ModalUtils.modalSheetPage(
+              context: modalContext,
+              title: 'Sheet',
+              child: const TextField(key: fieldKey, autofocus: true),
+            ),
+          ],
+        );
+        await tester.pumpAndSettle();
+        expect(
+          FocusManager.instance.primaryFocus?.context
+              ?.findAncestorWidgetOfExactType<TextField>()
+              ?.key,
+          fieldKey,
+        );
+        return result;
+      }
+
+      for (final (label, size) in [
+        ('phone', const Size(390, 800)),
+        ('desktop', const Size(1400, 900)),
+      ]) {
+        testWidgets(
+          'Escape closes a dismissible sheet while its field has focus '
+          '($label)',
+          (tester) async {
+            final result = await openSheetWithFocusedField(tester, size: size);
+            String? popped = 'not popped';
+            result.then((value) => popped = value).ignore();
+
+            await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+            await tester.pumpAndSettle();
+
+            expect(find.byKey(fieldKey), findsNothing);
+            // Same as a barrier tap: no result.
+            expect(popped, isNull);
+          },
+        );
+      }
+
+      testWidgets('Escape leaves a non-dismissible sheet open', (tester) async {
+        await openSheetWithFocusedField(
+          tester,
+          size: const Size(1400, 900),
+          barrierDismissible: false,
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(fieldKey), findsOneWidget);
+      });
+
+      testWidgets('uses the design-system scrim unless one is passed', (
+        tester,
+      ) async {
+        final observer = _TestNavigatorObserver();
+        await openSheetWithFocusedField(
+          tester,
+          size: const Size(1400, 900),
+          observer: observer,
+        );
+        final defaultScrim = ModalUtils.getModalBarrierColor(
+          isDark: false,
+          context: tester.element(find.byKey(fieldKey)),
+        );
+        expect(
+          (observer.pushedRoutes.last as WoltModalSheetRoute<String>)
+              .modalBarrierColor,
+          defaultScrim,
+        );
+
+        final overrideObserver = _TestNavigatorObserver();
+        await tester.pumpWidget(const SizedBox.shrink());
+        await openSheetWithFocusedField(
+          tester,
+          size: const Size(1400, 900),
+          modalBarrierColor: Colors.purple,
+          observer: overrideObserver,
+        );
+        expect(
+          (overrideObserver.pushedRoutes.last as WoltModalSheetRoute<String>)
+              .modalBarrierColor,
+          Colors.purple,
+        );
       });
     });
 

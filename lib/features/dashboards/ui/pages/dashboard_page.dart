@@ -12,6 +12,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/layout/empty_scaffold.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/modal/modal_escape_scope.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -277,7 +278,9 @@ class _DefinitionSidePanelRoute<T> extends PageRouteBuilder<T> {
              child: SizedBox(
                width: width,
                height: double.infinity,
-               child: child,
+               // The editor brings its own Scaffold; without this a
+               // focused field would swallow Escape.
+               child: ModalEscapeScope(child: child),
              ),
            );
          },

@@ -1,6 +1,7 @@
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/overlay_escape_scope.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A full-screen coaching spotlight that dims the surface, cuts a highlight
@@ -105,6 +106,27 @@ class _DailyOsOnboardingSpotlightState extends State<DailyOsOnboardingSpotlight>
     final cutoutPadding = tokens.spacing.step2;
     final cutoutRadius = tokens.radii.m;
 
+    // Escape dismisses the spotlight as a tap on its scrim does.
+    return OverlayEscapeScope(
+      active: true,
+      onDismiss: widget.onDismiss,
+      child: _buildOverlay(
+        context,
+        tokens,
+        scrimColor,
+        cutoutPadding,
+        cutoutRadius,
+      ),
+    );
+  }
+
+  Widget _buildOverlay(
+    BuildContext context,
+    DsTokens tokens,
+    Color scrimColor,
+    double cutoutPadding,
+    double cutoutRadius,
+  ) {
     return Stack(
       children: [
         Positioned.fill(

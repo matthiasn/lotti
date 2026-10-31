@@ -15,6 +15,7 @@ import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:material_ui/material_ui.dart';
 
 class DayActivityView extends ConsumerWidget {
@@ -83,40 +84,15 @@ class DayActivityView extends ConsumerWidget {
     WidgetRef ref,
     DayActivityEntry entry,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final messages = context.messages;
+    final confirmed = await showConfirmationModal(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          dialogContext.messages.dailyOsNextActivityDeleteDialogTitle,
-        ),
-        content: Text(
-          dialogContext.messages.dailyOsNextActivityDeleteDialogBody,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              dialogContext.messages.dailyOsNextDayDeleteDialogCancel,
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(
-                dialogContext,
-              ).colorScheme.errorContainer,
-              foregroundColor: Theme.of(
-                dialogContext,
-              ).colorScheme.onErrorContainer,
-            ),
-            child: Text(
-              dialogContext.messages.dailyOsNextDayDeleteDialogConfirm,
-            ),
-          ),
-        ],
-      ),
+      title: messages.dailyOsNextActivityDeleteDialogTitle,
+      message: messages.dailyOsNextActivityDeleteDialogBody,
+      cancelLabel: messages.dailyOsNextDayDeleteDialogCancel,
+      confirmLabel: messages.dailyOsNextDayDeleteDialogConfirm,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     // Cancel first so a background worker cannot attach a transcript to an
     // entry that is about to disappear; the journal soft delete then hides
     // the recording from every day projection.

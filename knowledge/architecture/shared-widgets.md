@@ -97,29 +97,34 @@ stateDiagram-v2
     ViewerOpen --> PortraitOnly: final image viewer disposes
 ```
 
-# Modal presentation is mostly centralized
+# Every Wolt sheet opens through one entry point
 
 `ModalUtils` is the **only public export** of `lib/widgets/modal/`, and it is how
-most adaptive sheets are presented: a draggable bottom sheet on narrow layouts, a
+every adaptive sheet is presented: a draggable bottom sheet on narrow layouts, a
 centred dialog on wide ones, from one call. It backs the single-page pickers and
 the multi-page settings flows.
 
 Centralizing it is what keeps the responsive contract consistent — a feature that
 builds its own sheet has to re-derive the breakpoint, the insets, the barrier
-behaviour and the glass footer treatment, and will drift.
+behaviour and the glass footer treatment, and will drift. It is also what keeps
+**Escape** working: `ModalUtils.showWoltModal` is the one call to
+`WoltModalSheet.show` in `lib/`, and it wraps every page in a `ModalEscapeScope`,
+without which a focused field inside a sheet swallows Escape
+([modal dismissal](../conventions/modal-dismissal.md) has the mechanism).
+`test/architecture/wolt_modal_entry_point_test.dart` fails on any other direct
+call.
 
-**Three hosts own their own Wolt presentation** and are worth knowing about
-before assuming a single entry point:
+Flows whose layout genuinely differs still go through it, passing their own type
+or decorator rather than calling Wolt themselves:
 
-| Flow | Why |
+| Flow | What it supplies |
 |------|-----|
 | The shared side sheet ([`side_sheet.dart`](../../lib/widgets/modal/side_sheet.dart)) | A right-anchored, full-height **side panel** over the scrim on a wide window, a bottom sheet on a phone. `sideSheetModalType` is the responsive type; `showSideSheetPane` hosts a pane that draws its own chrome — agent internals, the goal and person agent chats. Because the pane owns its header, the host shows **no drag handle**: Wolt lays the handle over the page as an opaque hit target 48 px tall and the full sheet width, which would swallow the pane's close button. Drag to dismiss still works on the whole sheet |
-| [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Calls `WoltModalSheet.show` directly so it can push its step pages, but takes its type from the shared `sideSheetModalType`, full height on a phone. It borrows `ModalUtils` helpers for the barrier colour and its sliver pages |
-| [What's New](../features/whats_new.md) | Invokes Wolt directly for its own presentation |
+| [The Daily OS planning modal](../features/daily_os_next/ui-surfaces.md) | Its own step pages, pushed with `WoltModalSheet.of(context)`, and a type from the shared `sideSheetModalType`, full height on a phone |
+| [What's New](../features/whats_new.md) | One page per release, its own tall dialog type, a darker scrim and a shadowed decorator |
 
-So the accurate rule is: `ModalUtils` owns the shared styling and navigation
-helpers, and a flow may own its presentation when its layout genuinely differs —
-but it should still reuse those helpers rather than re-deriving them.
+Every yes/no question — delete, roll back, discard — is `showConfirmationModal`,
+built on the same sheet, rather than a hand-built `AlertDialog`.
 
 # Selection primitives exist to stop duplication
 

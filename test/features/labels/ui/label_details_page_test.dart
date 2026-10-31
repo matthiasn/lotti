@@ -22,6 +22,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -281,17 +282,17 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Confirm in the dialog (destructive tertiary button)
       final confirmButton = find
           .descendant(
-            of: find.byType(AlertDialog),
+            of: find.byKey(confirmationModalKey),
             matching: find.byType(DesignSystemButton),
           )
           .last;
       await tester.tap(confirmButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verify(() => repo.deleteLabel('label-1')).called(1);
     });
@@ -915,12 +916,12 @@ void main() {
         await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.byKey(confirmationModalKey), findsOneWidget);
 
         // The first tertiary button inside the dialog is Cancel.
         final cancelButton = find
             .descendant(
-              of: find.byType(AlertDialog),
+              of: find.byKey(confirmationModalKey),
               matching: find.byType(DesignSystemButton),
             )
             .first;
@@ -929,7 +930,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Dialog is dismissed, nothing deleted, and no navigation happened.
-        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byKey(confirmationModalKey), findsNothing);
         verifyNever(() => repo.deleteLabel(any()));
         expect(beamedTo, isNull);
       },

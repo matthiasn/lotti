@@ -1,5 +1,4 @@
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
-import 'package:lotti/themes/legacy_material_bridge.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
@@ -46,24 +45,17 @@ Future<T?> showSideSheetPane<T>({
   required WidgetBuilder builder,
   SizedWoltSideSheetType sideSheet = const SizedWoltSideSheetType(),
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return WoltModalSheet.show<T>(
+  return ModalUtils.showWoltModal<T>(
     context: context,
     // The root navigator, always: the desktop tabs each run a nested
     // navigator, and a sheet pushed there would dim only the tab.
     useRootNavigator: true,
-    modalDecorator: LegacyMaterialBridge.wrapModalDecorator(null),
     modalTypeBuilder: (modalContext) => sideSheetModalType(
       modalContext,
       sideSheet: sideSheet,
       fullHeightOnPhone: true,
     ),
     showDragHandle: false,
-    barrierDismissible: true,
-    modalBarrierColor: ModalUtils.getModalBarrierColor(
-      isDark: isDark,
-      context: context,
-    ),
     pageListBuilder: (modalContext) => [
       NonScrollingWoltModalSheetPage(
         backgroundColor: ModalUtils.getModalBackgroundColor(modalContext),
