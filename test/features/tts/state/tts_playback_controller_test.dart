@@ -794,6 +794,168 @@ void main() {
     expect(state.sourceId, isNull);
   });
 
+  group('replay', () {
+    test('a clip that played to its end plays again without a second '
+        'synthesis', () async {
+      final file = preparedFile();
+      final engine = FakeTtsEngine(output: file);
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+
+      await controller.speak(sourceId: 'task-1', text: 'Summary');
+      player.complete();
+      await pumpEventQueue();
+      verifyNever(file.delete);
+
+      await controller.speak(sourceId: 'task-1', text: 'Summary');
+      expect(engine.calls, hasLength(1));
+      expect(player.playCount, 2);
+      expect(
+        h.container.read(ttsPlaybackControllerProvider).clip?.path,
+        '/tmp/tts_clip.wav',
+      );
+    });
+
+    test('a cloud voice is not asked again for the same words, but is for '
+        'another voice', () async {
+      final file = preparedFile();
+      final cloud = FakeCloudSpeechSynthesizer(output: file);
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(player: player, cloud: cloud);
+      final controller = controllerOf(h.container);
+      Future<void> speak() => controller.speak(
+        sourceId: 'task-1',
+        text: 'Zwei offen.',
+        cloudRoute: cloudRoute,
+      );
+
+      await speak();
+      player.complete();
+      await pumpEventQueue();
+      await speak();
+      expect(cloud.calls, hasLength(1));
+      expect(player.playCount, 2);
+
+      // A different voice for the language is a different clip.
+      player.complete();
+      await pumpEventQueue();
+      h.container
+          .read(ttsSettingsControllerProvider.notifier)
+          .setCloudVoice('de', 'v-de-2');
+      await speak();
+      expect(cloud.calls, hasLength(2));
+    });
+
+    test('a replay still asks whether it may play, and drops the clip when '
+        'it may not', () async {
+      final file = preparedFile();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      final controller = controllerOf(h.container);
+
+      await controller.speak(sourceId: 'chat', text: 'Private answer');
+      player.complete();
+      await pumpEventQueue();
+      await controller.speak(
+        sourceId: 'chat',
+        text: 'Private answer',
+        canPlay: () async => false,
+      );
+
+      expect(player.playCount, 1);
+      verify(file.delete).called(1);
+    });
+
+    test('a clip its caller no longer allows when it ends is deleted, not '
+        'kept', () async {
+      final file = preparedFile();
+      final engine = FakeTtsEngine(output: file);
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+      var allowed = true;
+      Future<void> speak() => controller.speak(
+        sourceId: 'chat',
+        text: 'Private answer',
+        canPlay: () async => allowed,
+      );
+
+      await speak();
+      // Access is lost while it plays; the owner's cleanup may run before or
+      // after the completion, and either way nothing is left behind.
+      allowed = false;
+      player.complete();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+
+      allowed = true;
+      await speak();
+      expect(engine.calls, hasLength(2));
+    });
+
+    test('while its caller is still asked, the clip stays where disposal '
+        'reaches it', () async {
+      final file = preparedFile();
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(
+        engine: FakeTtsEngine(output: file),
+        player: player,
+      );
+      var asked = 0;
+      // Allowed at play; the question at completion never gets an answer.
+      final never = Completer<bool>();
+      await controllerOf(h.container).speak(
+        sourceId: 'chat',
+        text: 'Private answer',
+        canPlay: () => ++asked == 1 ? Future.value(true) : never.future,
+      );
+      player.complete();
+      await pumpEventQueue();
+      expect(asked, 2);
+      verifyNever(file.delete);
+
+      h.container.dispose();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+    });
+
+    test('other words, or disposal, delete the kept clip', () async {
+      final kept = preparedFile();
+      final next = MockIoFile();
+      when(() => next.path).thenReturn('/tmp/tts_next.wav');
+      when(next.existsSync).thenReturn(true);
+      when(next.delete).thenAnswer((_) async => next);
+      final engine = FakeTtsEngine(output: kept);
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+
+      await controller.speak(sourceId: 'task-1', text: 'Summary');
+      player.complete();
+      await pumpEventQueue();
+      engine.output = next;
+      await controller.speak(sourceId: 'task-1', text: 'A new summary');
+      await pumpEventQueue();
+      verify(kept.delete).called(1);
+
+      player.complete();
+      await pumpEventQueue();
+      h.container.dispose();
+      await pumpEventQueue();
+      verify(next.delete).called(1);
+    });
+  });
+
   test('missing model: asks with the model, then downloads with progress '
       'before synthesizing', () async {
     final repo = FakeTtsModelRepository(installed: false);

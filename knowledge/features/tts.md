@@ -5,13 +5,13 @@ description: Speech for task summaries, goal reports and query answers — the o
 resource: ../../lib/features/tts
 tags: [tts, onnx, on-device, cloud, voxtral, ios, macos]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2027-04-26
 sources:
   - id: src
     resource: ../../lib/features/tts
     title: Text-to-speech source
-    last_modified: 2026-10-28
+    last_modified: 2026-11-01
   - id: cloud-route
     resource: ../../lib/features/tts/cloud/tts_cloud_route.dart
     title: The cloud route a profile's read-aloud slot names
@@ -225,8 +225,9 @@ but the resulting file is deleted without playback. A caller may provide a
 [privacy and lifecycle rules](agents/query-chat.md#audio-evidence-and-spoken-answers)
 use that boundary. Source-specific stopping cannot stop another surface's
 utterance. `MediaKitTtsAudioPlayer` also invalidates in-flight open/rate changes
-on stop or disposal. Temporary utterance WAV files are removed after playback,
-cancellation or disposal; model weights remain installed. Cleanup reports
+on stop or disposal. Temporary utterance WAV files are removed on stop,
+cancellation, error or disposal; one that plays to its end is kept as the
+prepared result (below) for a replay. Model weights remain installed. Cleanup reports
 native shutdown failures and still attempts file deletion. It ignores only a
 confirmed missing-file error; other filesystem failures are reported through
 the speech logging domain without including the temporary file path or content.
@@ -242,8 +243,23 @@ so answer text reaches a provider only on an explicit play.
 
 `prepare` keeps at most one disposable result outside playback state, sharing
 `_preparation` with explicit speech so the ONNX session is never used concurrently.
-Its key includes source ID, exact answer text, voice, model and language. Speed
-is applied at playback and does not invalidate the WAV. `speak` waits for a
+Its key includes source ID, exact answer text, voice, model and language; on a
+cloud route the model is the route's `cacheKey` and the voice the route's own or
+the one chosen for its language, so another voice never replays the old one's
+clip. Speed is applied at playback and does not invalidate the WAV.
+
+**A replay plays the kept clip.** The same slot holds the WAV of an utterance
+that played to its end, under that utterance's key, so pressing play again on
+the same words starts at once — no second synthesis and, for a cloud voice, no
+second upload of the text. When playback ends the clip goes into the slot at
+once, so a discard, other speech and disposal reach it from then on, and the
+utterance's own `canPlay` is asked again; a no takes it out and deletes it. An
+owner that lost access or let go of the utterance never leaves a clip behind,
+however its cleanup and the completion interleave, and a question that is
+never answered leaves the clip where disposal still deletes it. A replay
+rechecks `canPlay` too, and a denied replay deletes the clip. Anything else spoken or prepared, `discardPrepared`
+and disposal delete it like any prepared result; a stop while playing deletes
+the clip it stopped, as before. `speak` waits for a
 matching job and takes ownership of its file instead of synthesizing again;
 `canPlay` still rechecks live access. A speculative failure remains silent and a
 later tap retries normally. `discardPrepared` invalidates a pending job and
@@ -263,6 +279,7 @@ stateDiagram-v2
   preparing --> consumed: explicit Play waits for matching WAV
   discarded --> empty: delete any late result
   consumed --> empty: playback owns cleanup
+  consumed --> ready: played to its end, kept for replay
 ```
 
 The selected query chat owns scheduling and access checks; see its
@@ -296,9 +313,10 @@ synthesized from. The two travel as one record, so a reader never pairs a clip
 with words the screen shows now but the voice was never given. The
 [companion](companion.md) reads that clip once to shape her mouth and follows
 `position` each frame. The voice imports nothing of hers. `clip` is cleared on
-stop, completion and error, because the file is deleted then, and a reader
-that gets there late finds no file — the companion falls back to the words
-alone.
+stop, completion and error, because the utterance is over — on stop and error
+its file is deleted, on completion it is only kept for a replay — and a reader
+that gets there late may find no file; the companion then falls back to the
+words alone.
 
 A failure never reaches the caller of `speak` as an exception: it is the
 `error` status above. A surface that asks the voice to speak calls

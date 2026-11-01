@@ -25,13 +25,15 @@ class FakeTtsEngine implements TtsEngine {
     this.pendingSynthesis,
     this.onSynthesize,
     File? output,
-  }) : _output = output ?? File('/tmp/fake_tts_output.wav');
+  }) : output = output ?? File('/tmp/fake_tts_output.wav');
 
   final bool supported;
   final bool throwOnSynthesize;
   final Future<File>? pendingSynthesis;
   final void Function()? onSynthesize;
-  final File _output;
+
+  /// What the next synthesis answers with; a test may swap it.
+  File output;
   final List<SynthesisCall> calls = <SynthesisCall>[];
 
   @override
@@ -54,7 +56,7 @@ class FakeTtsEngine implements TtsEngine {
       language: language,
     ));
     onSynthesize?.call();
-    return pendingSynthesis ?? _output;
+    return pendingSynthesis ?? output;
   }
 
   @override
@@ -167,7 +169,8 @@ typedef CloudSynthesisCall = ({
 class FakeCloudSpeechSynthesizer implements CloudSpeechSynthesizer {
   FakeCloudSpeechSynthesizer({this.output, this.error, this.catalogLoaded});
 
-  final File? output;
+  /// What a sent synthesis answers with; a test may set it later.
+  File? output;
   final Exception? error;
 
   /// Awaited before `canSend` is asked, standing in for a voice catalog that

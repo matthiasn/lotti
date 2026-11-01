@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/companion/animation/companion_animator.dart';
+import 'package:lotti/features/companion/model/companion_gesture.dart';
+import 'package:lotti/features/companion/model/companion_mood.dart';
 import 'package:lotti/features/companion/model/companion_pose.dart';
 import 'package:lotti/features/companion/rig/arm_solver.dart';
 import 'package:lotti/features/companion/rig/rig_frame.dart';
@@ -37,6 +40,64 @@ void main() {
     final f = RigFrame(const CompanionPose());
     expect(f.ankle(-1).dx, -f.ankle(1).dx);
     expect(f.ankle(1).dy, f.ankle(-1).dy);
+  });
+
+  group('legs', () {
+    test('at rest each knee sits between its hip and ankle, bowed out', () {
+      final f = RigFrame(const CompanionPose());
+      for (final side in [-1, 1]) {
+        final hip = f.hip(side);
+        final ankle = f.ankle(side);
+        final knee = f.knee(side);
+        expect(knee.dy, inExclusiveRange(hip.dy, ankle.dy));
+        // Outward of the hip-ankle line, on its own side.
+        final lineX =
+            hip.dx +
+            (ankle.dx - hip.dx) * (knee.dy - hip.dy) / (ankle.dy - hip.dy);
+        expect((knee.dx - lineX) * side, greaterThan(5));
+        expect((knee - hip).distance, closeTo(thigh, 1));
+      }
+    });
+
+    // The gate the dancing_cats rig keeps for its own joints: sampled frame
+    // by frame, a bounce must not turn into knees pumping sideways.
+    test('a bounce keeps her knees steady sideways', () {
+      final animator = CompanionAnimator()..play(GestureName.celebrate);
+      final minX = <int, double>{-1: double.infinity, 1: double.infinity};
+      final maxX = <int, double>{
+        -1: double.negativeInfinity,
+        1: double.negativeInfinity,
+      };
+      var worstStep = 0.0;
+      var minY = double.infinity;
+      var maxY = double.negativeInfinity;
+      Map<int, double>? last;
+      for (var i = 0; i < 90; i++) {
+        final f = RigFrame(
+          animator.step(1 / 60, mood: CompanionMood.delighted),
+        );
+        final now = {
+          for (final s in [-1, 1]) s: f.knee(s).dx,
+        };
+        for (final s in [-1, 1]) {
+          minX[s] = now[s]! < minX[s]! ? now[s]! : minX[s]!;
+          maxX[s] = now[s]! > maxX[s]! ? now[s]! : maxX[s]!;
+          if (last != null) {
+            final step = (now[s]! - last[s]!).abs();
+            if (step > worstStep) worstStep = step;
+          }
+        }
+        minY = f.pelvis.dy < minY ? f.pelvis.dy : minY;
+        maxY = f.pelvis.dy > maxY ? f.pelvis.dy : maxY;
+        last = now;
+      }
+      // She does bounce...
+      expect(maxY - minY, greaterThan(3));
+      for (final s in [-1, 1]) {
+        expect(maxX[s]! - minX[s]!, lessThan(3), reason: 'side $s');
+      }
+      expect(worstStep, lessThan(0.2));
+    });
   });
 
   group('armSpine', () {

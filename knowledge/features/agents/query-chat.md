@@ -5,7 +5,7 @@ description: Task, project and category conversations with isolated source check
 resource: ../../../lib/features/agents/query
 tags: [agents, chat, retrieval, evidence, privacy, sync]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-31T09:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
 stale_after: 2026-11-22
 sources:
   - id: controller
@@ -71,7 +71,7 @@ sources:
   - id: audio-controller
     resource: ../../../lib/features/agents/query/query_audio_controller.dart
     title: Chat-owned audio and live authorization
-    last_modified: 2026-09-11
+    last_modified: 2026-11-01
   - id: audio-controls
     resource: ../../../lib/features/agents/ui/query/query_audio_controls.dart
     title: Playback, preparation and adjacent recovery actions
@@ -912,6 +912,14 @@ not resynthesize the same reply. A reply deferred during playback is prepared
 after completion; Stop invalidates queued preparation and does not restart it.
 Tapping Play reuses a matching result or joins
 its pending synthesis, with another fresh access check; it never autoplays.
+An answer that played to its end stays with the voice as its replay clip, so
+playing it again starts at once; the chat discards that clip itself on every
+stop and detach (leaving or switching the chat, lost visibility, lockdown, the
+private flag, recording, disabling TTS), because nothing is playing then for a
+source-specific voice stop to reach, and whenever it reads another answer —
+the voice may refuse the new one before replacing the clip itself. A clip is
+only kept while the chat's access check still passes at completion, so one
+finishing just as the chat detaches is deleted too.
 The shared TTS controller serializes native synthesis and owns temporary-file
 cleanup, including late results from cancelled work. No prepared audio enters
 chat persistence or sync.
