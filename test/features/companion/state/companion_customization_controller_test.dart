@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync/sync_message.dart';
 import 'package:lotti/features/companion/model/companion_customization.dart';
 import 'package:lotti/features/companion/model/companion_parts.dart';
+import 'package:lotti/features/companion/model/companion_reaction.dart';
 import 'package:lotti/features/companion/state/companion_customization_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -175,6 +176,186 @@ void main() {
         final c = start(async);
         settle(async);
         expect(c.read(companionCustomizationProvider.notifier).loaded, isFalse);
+      });
+    });
+
+    test('a change made while the load is out is laid over what it finds: '
+        'a stored mute is kept, and only that is written', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer(
+          (invocation) async => (
+            updatedAt: 9,
+            values: Map<String, String>.from(
+              invocation.positionalArguments.first as Map,
+            ),
+          ),
+        );
+        final c = start(async);
+        final controller = c.read(companionCustomizationProvider.notifier)
+          ..set(const CompanionCustomization(sass: CompanionSass.warm));
+        // Shown at once, written only once the read lands.
+        expect(c.read(companionCustomizationProvider).sass, CompanionSass.warm);
+        verifyNever(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        );
+
+        load.complete({
+          companionCustomizationKey: _json(
+            const CompanionCustomization(speaksReplies: false),
+          ),
+        });
+        async.flushMicrotasks();
+
+        expect(
+          c.read(companionCustomizationProvider),
+          const CompanionCustomization(
+            sass: CompanionSass.warm,
+            speaksReplies: false,
+          ),
+        );
+        expect(controller.loaded, isTrue);
+        final written =
+            verify(
+                  () => db.saveLocalSettingsGroup(
+                    captureAny(),
+                    stampKey: any(named: 'stampKey'),
+                    timestamp: any(named: 'timestamp'),
+                  ),
+                ).captured.single
+                as Map<String, String>;
+        expect(
+          written[companionCustomizationKey],
+          contains('"speaksReplies":false'),
+        );
+        expect(written[companionCustomizationKey], contains('"sass":"warm"'));
+      });
+    });
+
+    test('a part switched off and back on while the load is out counts as '
+        'set: the stored mute gives way to the last choice', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              (updatedAt: 9, values: {companionCustomizationKey: '{}'}),
+        );
+        final c = start(async);
+        c.read(companionCustomizationProvider.notifier)
+          ..set(const CompanionCustomization(speaksReplies: false))
+          ..set(const CompanionCustomization());
+
+        load.complete({
+          companionCustomizationKey: _json(
+            const CompanionCustomization(
+              speaksReplies: false,
+              sass: CompanionSass.sassy,
+            ),
+          ),
+        });
+        async.flushMicrotasks();
+
+        expect(
+          c.read(companionCustomizationProvider),
+          const CompanionCustomization(sass: CompanionSass.sassy),
+        );
+      });
+    });
+
+    test('a reload sync asks for while the load is out waits, and does not '
+        'undo a change made meanwhile', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        // Storage as it stands: the default, until the change is written.
+        var storedJson = _json(const CompanionCustomization());
+        when(
+          () => db.itemByKey(companionCustomizationKey),
+        ).thenAnswer((_) async => storedJson);
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer((invocation) async {
+          final values = Map<String, String>.from(
+            invocation.positionalArguments.first as Map,
+          );
+          storedJson = values[companionCustomizationKey]!;
+          return (updatedAt: 9, values: values);
+        });
+        final c = start(async);
+        c
+            .read(companionCustomizationProvider.notifier)
+            .set(const CompanionCustomization(speaksReplies: false));
+        updates.add({settingsNotification});
+        async.flushMicrotasks();
+        verifyNever(() => db.itemByKey(companionCustomizationKey));
+        expect(c.read(companionCustomizationProvider).speaksReplies, isFalse);
+
+        load.complete(const {});
+        async.flushMicrotasks();
+
+        // The change is written, and the reload asked for runs after it.
+        expect(c.read(companionCustomizationProvider).speaksReplies, isFalse);
+        verify(() => db.itemByKey(companionCustomizationKey)).called(1);
+        verify(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).called(1);
+      });
+    });
+
+    test('a change made while a read fails is still stored', () {
+      fakeAsync((async) {
+        final load = Completer<Map<String, String>>();
+        when(() => db.itemsByKeys(any())).thenAnswer((_) => load.future);
+        when(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              (updatedAt: 9, values: {companionCustomizationKey: '{}'}),
+        );
+        final c = start(async);
+        c.read(companionCustomizationProvider.notifier).set(_locs);
+
+        load.completeError(StateError('disk'));
+        async.flushMicrotasks();
+
+        expect(c.read(companionCustomizationProvider), _locs);
+        verify(
+          () => db.saveLocalSettingsGroup(
+            any(),
+            stampKey: any(named: 'stampKey'),
+            timestamp: any(named: 'timestamp'),
+          ),
+        ).called(1);
       });
     });
 

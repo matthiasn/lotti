@@ -97,6 +97,28 @@ void main() {
     );
   });
 
+  test('changedParts names what differs; adopting takes only those parts', () {
+    const stored = CompanionCustomization(
+      sass: CompanionSass.sassy,
+      speaksReplies: false,
+    );
+    const shown = CompanionCustomization();
+    final changed = shown.copyWith(hairStyle: CompanionHairStyle.locs);
+
+    expect(CompanionCustomization.changedParts(shown, changed), {'hairStyle'});
+    expect(CompanionCustomization.changedParts(shown, shown), isEmpty);
+    expect(
+      stored.adopting(changed, {'hairStyle'}),
+      const CompanionCustomization(
+        hairStyle: CompanionHairStyle.locs,
+        sass: CompanionSass.sassy,
+        speaksReplies: false,
+      ),
+    );
+    // A part named is taken even where it equals the default shown.
+    expect(stored.adopting(shown, {'speaksReplies'}).speaksReplies, isTrue);
+  });
+
   test('a part a newer version wrote falls back to its default', () {
     final read = CompanionCustomization.fromJson(const {
       'skinTone': 'tone9',

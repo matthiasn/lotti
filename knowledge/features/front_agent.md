@@ -628,8 +628,11 @@ shared playback toast.
 
 She speaks only while her customization lets her
 (`CompanionCustomization.speaksReplies`, Settings › Preferences ›
-Companion › Her voice, synced): muted, a spoken question is answered in
-writing like a typed one.
+Companion › Her voice, synced) and only once that is known
+(`CompanionCustomizationController.loaded`): muted, a spoken question is
+answered in writing like a typed one. The check is made again as playback
+starts (`canPlay`), and a mute while she speaks stops whichever of her
+sources is playing (`isFrontVoiceSourceId`) — never another voice.
 
 Her bust is a `CompanionSpeaker` on that source, so her lips follow only her
 own words in the conversation on screen. She holds `listen` while the user

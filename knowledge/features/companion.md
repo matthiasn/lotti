@@ -459,7 +459,15 @@ flowchart LR
 - **The customization** (`companionCustomizationProvider`): her skin tone,
   hairstyle, hair colour, outfit, sass (default `cheeky`) and whether she
   answers a spoken question aloud (`speaksReplies`, default on; only an
-  explicit false mutes her), stored as JSON
+  explicit false mutes her). `loaded` says whether that is known yet — the
+  stored value read (nothing stored counts) or set. It stays false while the
+  read is out, and after it failed unless a change made meanwhile was then
+  stored; her voice never guesses at a mute. A change made while the read is
+  out shows at once and is kept apart, with every part any change touched; once
+  the read lands only those parts are laid over what it found
+  (`CompanionCustomization.adopting`), so a stored part never touched — a
+  mute — survives, and a part switched and switched back still counts. A
+  reload sync asks for meanwhile waits until then. Stored as JSON
   under
   `COMPANION_CUSTOMIZATION` in `SettingsDb` (the keys are in
   `lib/utils/companion_settings_keys.dart`, which sync reads too). It starts at

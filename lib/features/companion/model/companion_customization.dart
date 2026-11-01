@@ -109,6 +109,35 @@ class CompanionCustomization {
     speaksReplies: speaksReplies ?? this.speaksReplies,
   );
 
+  /// The parts — named as [toJson] names them — in which [a] and [b] differ.
+  static Set<String> changedParts(
+    CompanionCustomization a,
+    CompanionCustomization b,
+  ) => {
+    if (a.skinTone != b.skinTone) 'skinTone',
+    if (a.hairStyle != b.hairStyle) 'hairStyle',
+    if (a.hairColour != b.hairColour) 'hairColour',
+    if (a.outfitId != b.outfitId) 'outfit',
+    if (a.sass != b.sass) 'sass',
+    if (a.speaksReplies != b.speaksReplies) 'speaksReplies',
+  };
+
+  /// This, with [parts] taken from [other]: edits laid over another value
+  /// without undoing what that value holds in the parts left alone.
+  CompanionCustomization adopting(
+    CompanionCustomization other,
+    Set<String> parts,
+  ) => CompanionCustomization(
+    skinTone: parts.contains('skinTone') ? other.skinTone : skinTone,
+    hairStyle: parts.contains('hairStyle') ? other.hairStyle : hairStyle,
+    hairColour: parts.contains('hairColour') ? other.hairColour : hairColour,
+    outfitId: parts.contains('outfit') ? other.outfitId : outfitId,
+    sass: parts.contains('sass') ? other.sass : sass,
+    speaksReplies: parts.contains('speaksReplies')
+        ? other.speaksReplies
+        : speaksReplies,
+  );
+
   Map<String, dynamic> toJson() => {
     'skinTone': skinTone.name,
     'hairStyle': hairStyle.name,

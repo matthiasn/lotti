@@ -80,11 +80,13 @@ abstract final class FrontVoice {
     ref.listen(
       companionCustomizationProvider.select((c) => c.speaksReplies),
       (_, speaks) {
-        final id = ref.read(frontActiveConversationProvider).value;
-        if (!speaks && id != null) {
+        // Whichever conversation she is speaking in — the user may have
+        // opened another since — never another source.
+        final playing = ref.read(ttsPlaybackControllerProvider).sourceId;
+        if (!speaks && playing != null && isFrontVoiceSourceId(playing)) {
           ref
               .read(ttsPlaybackControllerProvider.notifier)
-              .stop(sourceId: frontVoiceSourceId(id))
+              .stop(sourceId: playing)
               .ignore();
         }
       },
