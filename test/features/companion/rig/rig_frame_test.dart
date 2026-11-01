@@ -84,27 +84,33 @@ void main() {
     // by frame, a bounce of joy moves her upper body and never her legs.
     test('a bounce lifts her upper body and leaves her knees still', () {
       final animator = CompanionAnimator()..play(GestureName.celebrate);
-      final knees = <Offset>[];
+      final knees = {
+        for (final side in [-1, 1]) side: <Offset>[],
+      };
       final heads = <double>[];
       for (var i = 0; i < 90; i++) {
         final f = RigFrame(
           animator.step(1 / 60, mood: CompanionMood.delighted),
         );
-        knees.add(f.knee(1));
+        for (final side in knees.keys) {
+          knees[side]!.add(f.knee(side));
+        }
         heads.add(f.head.origin.dy);
       }
       double range(Iterable<double> v) =>
           v.reduce(math.max) - v.reduce(math.min);
       // She does bounce...
       expect(range(heads), greaterThan(3));
-      // ...and her knees only drift with her slow sway and breath.
-      expect(range(knees.map((k) => k.dx)), lessThan(1));
-      expect(range(knees.map((k) => k.dy)), lessThan(1));
-      var worst = 0.0;
-      for (var i = 1; i < knees.length; i++) {
-        worst = math.max(worst, (knees[i] - knees[i - 1]).distance);
+      // ...and both knees only drift with her slow sway and breath.
+      for (final MapEntry(key: side, value: path) in knees.entries) {
+        expect(range(path.map((k) => k.dx)), lessThan(1), reason: '$side');
+        expect(range(path.map((k) => k.dy)), lessThan(1), reason: '$side');
+        var worst = 0.0;
+        for (var i = 1; i < path.length; i++) {
+          worst = math.max(worst, (path[i] - path[i - 1]).distance);
+        }
+        expect(worst, lessThan(0.05), reason: '$side');
       }
-      expect(worst, lessThan(0.05));
     });
   });
 
