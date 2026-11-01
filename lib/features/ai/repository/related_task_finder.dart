@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/link_suggestions/task_link_suggestion.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+
+/// One related task a search by meaning found, before it is read back: its
+/// id and cosine distance.
+typedef RelatedTaskHit = ({String taskId, double distance});
 
 /// One task a search by meaning found close enough to a query.
 @immutable
@@ -33,14 +36,13 @@ class RelatedTaskSearch {
   /// Nearest first; equally near tasks by id, so the order never reshuffles.
   final List<RelatedTaskMatch> matches;
 
-  /// Hits by query, for the next search of the same queries to reuse (see
-  /// [TaskLinkSuggestionScan.searches]).
+  /// Hits by query, for a later search of the same queries to reuse. Only
+  /// searches that ran are kept: empty means none did.
   final Map<String, List<RelatedTaskHit>> searches;
 }
 
 /// Finds the tasks related by meaning to some text about a task, on the
-/// device: the one place both the link suggestions and the task agent's
-/// related-task search go through, so they agree on what "related" means.
+/// device — what the task agent's `find_related_tasks` tool searches with.
 ///
 /// A task counts when it is within [maxDistance] of a query, is not the task
 /// itself, holds no live link to it — any type, either direction, hidden

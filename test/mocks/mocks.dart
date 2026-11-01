@@ -83,7 +83,6 @@ import 'package:lotti/features/ai/embedding_sync/synced_embedding_sink.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
-import 'package:lotti/features/ai/link_suggestions/task_link_suggestion_detector.dart';
 import 'package:lotti/features/ai/model_files/pinned_model_files.dart';
 import 'package:lotti/features/ai/on_device_embedding/gemma_embedder.dart';
 import 'package:lotti/features/ai/on_device_embedding/on_device_embedding_repository.dart';
@@ -1934,9 +1933,6 @@ class MockSkillInferenceRunner extends Mock implements SkillInferenceRunner {}
 
 class MockInferenceBackfillDetector extends Mock
     implements InferenceBackfillDetector {}
-
-class MockTaskLinkSuggestionDetector extends Mock
-    implements TaskLinkSuggestionDetector {}
 
 class MockRelatedTaskLookup extends Mock implements RelatedTaskLookup {}
 

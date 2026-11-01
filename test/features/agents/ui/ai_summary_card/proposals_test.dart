@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -26,8 +25,6 @@ import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../helpers/entity_factories.dart' as journal;
-import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -41,7 +38,6 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   setUpAll(() {
-    registerAllFallbackValues();
     registerFallbackValue(makeTestChangeSet());
     registerFallbackValue(<String>{});
     registerFallbackValue(StackTrace.empty);
@@ -310,168 +306,6 @@ void main() {
       // Only the persisted set goes to the confirmation service.
       verify(() => service.confirmAll(cs)).called(1);
       verifyNever(() => service.confirmAll(any()));
-    });
-
-    testWidgets('Confirm-all writes each link suggestion through the link '
-        'handler, beside the backfill and the change sets', (tester) async {
-      final cs = makeTestChangeSet(
-        id: 'cs-a',
-        items: const [
-          ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'GROOMED'},
-            humanSummary: 'Set status to GROOMED',
-          ),
-        ],
-      );
-      final service = MockChangeSetConfirmationService();
-      when(() => service.confirmAll(any())).thenAnswer(
-        (_) async => const [ToolExecutionResult(success: true, output: 'ok')],
-      );
-      final queue = RecordingBackfillQueue();
-      final persistenceLogic = MockPersistenceLogic();
-      final journalDb = MockJournalDb();
-      for (final id in ['census', 'relay']) {
-        when(() => journalDb.journalEntityById(id)).thenAnswer(
-          (_) async => journal.TestTaskFactory.create(id: id, title: id),
-        );
-      }
-      when(
-        () => journalDb.typedLinksForTaskIds(
-          any(),
-          types: any(named: 'types'),
-        ),
-      ).thenAnswer((_) async => []);
-      // The relay link is refused, as a blocking cycle would be.
-      when(
-        () => persistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-          linkType: any(named: 'linkType'),
-        ),
-      ).thenAnswer(
-        (invocation) async => invocation.namedArguments[#toId] != 'relay',
-      );
-
-      final bench = AgentTestBench(
-        confirmationService: service,
-        updateNotifications: MockUpdateNotifications(),
-        suggestions: UnifiedSuggestionList(
-          open: [
-            PendingSuggestion(
-              changeSet: cs,
-              itemIndex: 0,
-              item: cs.items.first,
-              fingerprint: 'fp-a',
-            ),
-            makeLinkPending('census'),
-            makeLinkPending('relay', title: 'Repair the relay'),
-            makeBackfillPending('img-1'),
-          ],
-          activity: const [],
-        ),
-        extraOverrides: [
-          ...backfillOverrides(queue: queue),
-          ...linkSuggestionOverrides(
-            persistenceLogic: persistenceLogic,
-            journalDb: journalDb,
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.text('Confirm all'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final written = verify(
-        () => persistenceLogic.createLink(
-          fromId: AgentTestBench.taskId,
-          toId: captureAny(named: 'toId'),
-          linkType: EntryLinkType.followsUp,
-        ),
-      ).captured;
-      expect(written, ['census', 'relay']);
-      expect(queue.queued.map((job) => job.candidate.entryId), ['img-1']);
-      verify(() => service.confirmAll(cs)).called(1);
-      verifyNever(() => service.confirmAll(any()));
-      // One refused link is enough for the batch to say it did not all apply.
-      expect(find.text('Failed to apply change'), findsOneWidget);
-    });
-
-    testWidgets('Confirm-all keeps going past a link write that throws, and '
-        "refreshes the card's own agent even with no change set", (
-      tester,
-    ) async {
-      final service = MockChangeSetConfirmationService();
-      final persistenceLogic = MockPersistenceLogic();
-      final journalDb = MockJournalDb();
-      final notifier = MockUpdateNotifications();
-      for (final id in ['census', 'relay']) {
-        when(() => journalDb.journalEntityById(id)).thenAnswer(
-          (_) async => journal.TestTaskFactory.create(id: id, title: id),
-        );
-      }
-      when(
-        () => journalDb.typedLinksForTaskIds(
-          any(),
-          types: any(named: 'types'),
-        ),
-      ).thenAnswer((_) async => []);
-      when(
-        () => persistenceLogic.createLink(
-          fromId: any(named: 'fromId'),
-          toId: any(named: 'toId'),
-          linkType: any(named: 'linkType'),
-        ),
-      ).thenAnswer((invocation) async {
-        if (invocation.namedArguments[#toId] == 'census') {
-          throw StateError('database is locked');
-        }
-        return true;
-      });
-
-      final bench = AgentTestBench(
-        identity: makeTestIdentity(agentId: 'agent-card'),
-        confirmationService: service,
-        updateNotifications: notifier,
-        suggestions: UnifiedSuggestionList(
-          open: [
-            makeLinkPending('census'),
-            makeLinkPending('relay', title: 'Repair the relay'),
-          ],
-          activity: const [],
-        ),
-        extraOverrides: linkSuggestionOverrides(
-          persistenceLogic: persistenceLogic,
-          journalDb: journalDb,
-        ),
-      );
-
-      await tester.pumpWidget(bench.build());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.text('Confirm all'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      verify(
-        () => persistenceLogic.createLink(
-          fromId: AgentTestBench.taskId,
-          toId: 'relay',
-          linkType: EntryLinkType.followsUp,
-        ),
-      ).called(1);
-      verifyNever(() => service.confirmAll(any()));
-      expect(find.text('Failed to apply change'), findsOneWidget);
-      final notified =
-          verify(() => notifier.notify(captureAny())).captured.single
-              as Set<String>;
-      expect(notified, {'agent-card'});
     });
 
     testWidgets('tap-confirm dispatches confirmItem with the correct args', (

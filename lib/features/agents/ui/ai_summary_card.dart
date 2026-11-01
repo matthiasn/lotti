@@ -19,9 +19,9 @@ import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/agent_maintenance_section.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/backfill_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_report_layout.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/companion_stage_page.dart';
-import 'package:lotti/features/agents/ui/ai_summary_card/mechanical_suggestion_actions.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/summary_read_aloud_button.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
@@ -415,41 +415,21 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final logger = ref.read(domainLoggerProvider);
     final messages = context.messages;
 
-    // Mechanical suggestions — a backfill job to queue, a link to write — are
-    // decided one by one, outside the agent's change sets. Every other row
-    // belongs to a persisted change set.
-    final mechanical = pending.where((s) => s.isMechanical).toList();
+    // Backfill suggestions are queued, one job each; the queue runs them in
+    // turn. Every other row belongs to a persisted change set.
+    for (final s in pending.where((s) => s.backfill != null)) {
+      confirmBackfillSuggestion(ref, s);
+    }
     final distinctSets = <String, ChangeSetEntity>{
       for (final s in pending)
-        if (!s.isMechanical) s.changeSet.id: s.changeSet,
+        if (s.backfill == null) s.changeSet.id: s.changeSet,
     };
-    // The card's own agent is always notified, so a batch of mechanical rows
-    // alone — no change set behind them — still refreshes the list, and a
-    // row whose write failed comes back.
     final agentIds = <String>{
-      widget.identity.agentId,
       for (final cs in distinctSets.values) cs.agentId,
     };
 
     var anyFailed = false;
     try {
-      // Each mechanical row is decided on its own: one write that throws must
-      // not stop the rows after it, nor the change sets.
-      for (final s in mechanical) {
-        try {
-          final result = await confirmMechanicalSuggestion(ref, s);
-          if (result?.success != true) anyFailed = true;
-        } catch (e, stackTrace) {
-          anyFailed = true;
-          logger.error(
-            LogDomain.agentWorkflow,
-            e,
-            stackTrace: stackTrace,
-            subDomain: 'AiSummaryCard',
-            message: 'confirming a mechanical suggestion failed',
-          );
-        }
-      }
       for (final cs in distinctSets.values) {
         final results = await service.confirmAll(cs);
         if (results.any((r) => !r.success)) anyFailed = true;

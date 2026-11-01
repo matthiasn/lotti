@@ -1,16 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/link_suggestions/related_task_finder.dart';
+import 'package:lotti/features/ai/repository/related_task_finder.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
-import 'link_suggestion_fixtures.dart';
 
-final Task _current = linkTask('current', 'Recount the emperor penguins');
-final Task _census = linkTask('census', 'Colony census export');
-final Task _relay = linkTask('relay', 'Repair the radio relay');
+Task _task(String id, String title) =>
+    TestTaskFactory.create(id: id, title: title);
+
+final Task _current = _task('current', 'Recount the emperor penguins');
+final Task _census = _task('census', 'Colony census export');
+final Task _relay = _task('relay', 'Repair the radio relay');
 
 void main() {
   late MockJournalDb db;

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/workflow/related_task_lookup.dart';
-import 'package:lotti/features/ai/link_suggestions/related_task_finder.dart';
+import 'package:lotti/features/ai/repository/related_task_finder.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:mocktail/mocktail.dart';
 

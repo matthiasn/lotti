@@ -32,15 +32,6 @@ abstract final class EmbeddingContentExtractor {
   /// - The entity has no meaningful text content
   /// - The extracted text is shorter than [kMinEmbeddingTextLength]
   static String? extractText(JournalEntity entity) {
-    final text = plainTextOf(entity);
-    if (text == null || text.length < kMinEmbeddingTextLength) return null;
-    return text;
-  }
-
-  /// The trimmed plain text [extractText] would embed, at any length — for
-  /// readers of the text that are not embedding it, to whom a short entry
-  /// still says something. `null` for an ineligible entity type.
-  static String? plainTextOf(JournalEntity entity) {
     final raw = switch (entity) {
       JournalEntry(:final entryText) => entryText?.plainText,
       Task(:final data, :final entryText) => _taskText(data, entryText),
@@ -49,7 +40,12 @@ abstract final class EmbeddingContentExtractor {
       AiResponseEntry(:final entryText) => entryText?.plainText,
       _ => null,
     };
-    return raw?.trim();
+
+    if (raw == null || raw.trim().length < kMinEmbeddingTextLength) {
+      return null;
+    }
+
+    return raw.trim();
   }
 
   /// Returns the entity type string for the embeddings DB, or `null` if
