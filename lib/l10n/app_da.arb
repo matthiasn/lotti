@@ -1586,7 +1586,7 @@
   "categoryAiDefaultsTitle": "AI-standardindstillinger",
   "categoryAutomaticAgentWakesDescription": "Assistenten i denne kategori starter automatisk, når en opgave ændres. Gælder for nye opgaver; eksisterende beholder deres egen indstilling.",
   "categoryAutomaticAgentWakesLabel": "Væk assistenten automatisk",
-  "categoryAutomaticInferenceDescription": "Transskriber ny lyd og analysér nye billeder i denne kategori automatisk",
+  "categoryAutomaticInferenceDescription": "Transskriber ny lyd, analysér nye billeder og opsummer pull requests i denne kategori automatisk",
   "categoryAutomaticInferenceLabel": "Automatisk inferens",
   "categoryCreationError": "Ikke i stand til at oprette kategori. Prøv venligst igen.",
   "categoryDayPlanDescription": "Gør denne kategori tilgængelig for valg i dagsplanen",

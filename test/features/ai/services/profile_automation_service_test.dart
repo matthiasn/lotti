@@ -492,30 +492,6 @@ void main() {
         expect(automationLookupTaskIds, ['task-1']);
       });
 
-      // Settings asks this without a task in hand, to decide whether the
-      // category switch has anything to control.
-      group('hasTranscriptionFallback', () {
-        test('is true when the Settings default can transcribe', () async {
-          when(
-            () => mockResolver.resolveTranscriptionProfile(),
-          ).thenAnswer((_) async => makeProfile(withTranscription: true));
-
-          expect(await service.hasTranscriptionFallback(), isTrue);
-        });
-
-        test('is false when no profile can transcribe, even with speech '
-            'models configured', () async {
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [makeModel()]);
-
-          expect(await service.hasTranscriptionFallback(), isFalse);
-          verifyNever(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          );
-        });
-      });
-
       // An unwired lookup must fail closed: an environment that cannot answer
       // "did the user opt in?" has not been told yes.
       test('an unwired lookup denies automation', () async {
@@ -1363,15 +1339,6 @@ void main() {
         expect(loggedLines(), isEmpty);
       });
 
-      test('the settings fallback probe records nothing', () async {
-        when(
-          () => mockResolver.resolveTranscriptionProfile(),
-        ).thenAnswer((_) async => makeProfile(withTranscription: true));
-
-        expect(await service.hasTranscriptionFallback(), isTrue);
-        expect(loggedLines(), isEmpty);
-      });
-
       test('the service works without a logger', () async {
         final loggerless = ProfileAutomationService(
           resolver: mockResolver,
@@ -1905,7 +1872,6 @@ void main() {
           'configured', () async {
         stubProfileFor(null);
 
-        expect(await service.hasTranscriptionFallback(), isTrue);
         expect(
           await service.canTranscribeOnRequest(subjectId: 'goal-1'),
           isTrue,

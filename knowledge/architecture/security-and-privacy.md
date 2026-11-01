@@ -5,7 +5,7 @@ description: What is encrypted, what is not, where secrets live, and what leaves
 resource: ../..
 tags: [architecture, security, privacy, encryption, secure-storage]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-03T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T21:00:00Z }
 stale_after: 2027-01-11
 sources:
   - id: secure-storage
@@ -190,8 +190,9 @@ governed by explicit configuration rather than a default:
 - Providers and models are configured by the user; nothing is preconfigured
   with a vendor key.
 - **Ollama and other local endpoints keep inference on-device entirely.**
-- Automatic inference — transcribing new audio, analysing new images without a
-  user gesture — is gated behind a category's `automaticInferenceEnabled` flag,
+- Automatic inference — transcribing new audio, analysing new images,
+  summarising pull requests without a user gesture — is gated behind a
+  category's `automaticInferenceEnabled` flag,
   which is nullable and treated as *off* when absent. Selecting an inference
   profile is deliberately **not** sufficient to start spending tokens.
 

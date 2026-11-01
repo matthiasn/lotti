@@ -3198,7 +3198,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Nieuwe audio automatisch transcriberen en nieuwe afbeeldingen in deze categorie analyseren';
+      'Nieuwe audio automatisch transcriberen, nieuwe afbeeldingen analyseren en pull requests in deze categorie samenvatten';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatische inferentie';

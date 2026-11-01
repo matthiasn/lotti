@@ -3211,7 +3211,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten';
+      'Neue Audioaufnahmen und Bilder in dieser Kategorie automatisch auswerten und Pull-Requests zusammenfassen';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatische Inferenz';

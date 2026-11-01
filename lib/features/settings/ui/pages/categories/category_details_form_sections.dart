@@ -125,11 +125,12 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
 
   /// Explicit consent to run inference in this category without a gesture.
   ///
-  /// Only rendered when there is something to consent to — the selected
-  /// profile carries automated skills, or the Settings default profile could
-  /// transcribe a recording the category's profile does not. While that resolves, and whenever automation is impossible,
-  /// the row is absent rather than shown disabled: an off switch the user
-  /// cannot act on reads as a broken control.
+  /// Rendered when there is something to consent to
+  /// ([categoryAutomationAvailableProvider]: transcription, analysis or pull
+  /// request summaries could run), and always while it is on, so automation
+  /// consented to earlier can be switched off whatever is configured now.
+  /// Otherwise the row is absent rather than shown disabled: an off switch
+  /// the user cannot act on reads as a broken control.
   Widget _buildAutomaticInferenceSwitch(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
@@ -141,7 +142,9 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
             )
             .value ??
         false;
-    if (!available) return const SizedBox.shrink();
+    if (!available && !category.automaticInferenceEnabledEffective) {
+      return const SizedBox.shrink();
+    }
 
     return SettingsSwitchRow(
       title: context.messages.categoryAutomaticInferenceLabel,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
@@ -416,32 +417,37 @@ void main() {
       );
     });
 
+    // A fixed day whose 90-day window holds no daylight-saving change: on the
+    // real clock the range spans one for part of each year and comes out an
+    // hour — and so, by `inDays`, a day — longer.
     testWidgets('a quick range rewrites both dates', (tester) async {
-      await pumpPage(tester);
+      await withClock(Clock.fixed(DateTime(2026, 8, 13, 10, 30)), () async {
+        await pumpPage(tester);
 
-      final before = tester
-          .widgetList<DateTimeField>(find.byType(DateTimeField))
-          .first
-          .dateTime!;
-
-      await tester.tap(find.text('Last 90 days'));
-      await tester.pumpAndSettle();
-
-      final after = tester
-          .widgetList<DateTimeField>(find.byType(DateTimeField))
-          .first
-          .dateTime!;
-
-      expect(after.isBefore(before), isTrue);
-      expect(
-        tester
+        final before = tester
             .widgetList<DateTimeField>(find.byType(DateTimeField))
-            .last
-            .dateTime!
-            .difference(after)
-            .inDays,
-        90,
-      );
+            .first
+            .dateTime!;
+
+        await tester.tap(find.text('Last 90 days'));
+        await tester.pumpAndSettle();
+
+        final after = tester
+            .widgetList<DateTimeField>(find.byType(DateTimeField))
+            .first
+            .dateTime!;
+
+        expect(after.isBefore(before), isTrue);
+        expect(
+          tester
+              .widgetList<DateTimeField>(find.byType(DateTimeField))
+              .last
+              .dateTime!
+              .difference(after)
+              .inDays,
+          90,
+        );
+      });
     });
 
     testWidgets('all three quick ranges are offered', (tester) async {

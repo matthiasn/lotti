@@ -1585,7 +1585,7 @@
   "categoryAiDefaultsTitle": "Padrões de IA",
   "categoryAutomaticAgentWakesDescription": "Permite que o assistente desta categoria seja executado automaticamente quando uma tarefa muda. Aplica-se a tarefas novas; as existentes mantêm a sua própria definição.",
   "categoryAutomaticAgentWakesLabel": "Ativar o assistente automaticamente",
-  "categoryAutomaticInferenceDescription": "Transcrever novo áudio e analisar novas imagens nesta categoria automaticamente",
+  "categoryAutomaticInferenceDescription": "Transcrever novo áudio, analisar novas imagens e resumir pull requests nesta categoria automaticamente",
   "categoryAutomaticInferenceLabel": "Inferência automática",
   "categoryCreationError": "Falha ao criar categoria. Por favor, tente novamente.",
   "categoryDayPlanDescription": "Disponibilize esta categoria para seleção no plano diário",

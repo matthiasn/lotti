@@ -2114,7 +2114,7 @@
   "categoryAiDefaultsTitle": "AI defaults",
   "categoryAutomaticAgentWakesDescription": "Let the assistant in this category update itself when a task changes. Applies to new tasks; existing ones keep their own setting.",
   "categoryAutomaticAgentWakesLabel": "Wake the assistant automatically",
-  "categoryAutomaticInferenceDescription": "Transcribe new audio and analyze new images in this category automatically",
+  "categoryAutomaticInferenceDescription": "Transcribe new audio, analyze new images and summarize pull requests in this category automatically",
   "categoryAutomaticInferenceLabel": "Automatic inference",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",

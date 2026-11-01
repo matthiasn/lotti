@@ -1586,7 +1586,7 @@
   "categoryAiDefaultsTitle": "AI-standardinställningar",
   "categoryAutomaticAgentWakesDescription": "Assistenten i den här kategorin startar automatiskt när en uppgift ändras. Gäller nya uppgifter; befintliga behåller sin egen inställning.",
   "categoryAutomaticAgentWakesLabel": "Väck assistenten automatiskt",
-  "categoryAutomaticInferenceDescription": "Transkribera nytt ljud och analysera nya bilder i den här kategorin automatiskt",
+  "categoryAutomaticInferenceDescription": "Transkribera nytt ljud, analysera nya bilder och sammanfatta pull requests i den här kategorin automatiskt",
   "categoryAutomaticInferenceLabel": "Automatisk inferens",
   "categoryCreationError": "Misslyckades med att skapa kategori. Försök igen, tack.",
   "categoryDayPlanDescription": "Gör denna kategori tillgänglig för val i dagsplanen",

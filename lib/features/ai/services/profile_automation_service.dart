@@ -514,25 +514,11 @@ class ProfileAutomationService {
   /// the same chain [tryTranscribe] already ends on, exposed so the manual
   /// path can end on it too.
   ///
-  /// Unlike [hasTranscriptionFallback] this runs as [_CallIntent.run]: it
-  /// precedes real inference, so its decline belongs in the log.
+  /// Runs as [_CallIntent.run]: it precedes real inference, so its decline
+  /// belongs in the log.
   Future<AutomationResult> resolveTranscriptionFallback({
     String? categoryId,
   }) => _tryTranscriptionFallbacks(_CallIntent.run, categoryId: categoryId);
-
-  /// Whether anything could transcribe without an automated skill: the
-  /// Settings default profile owns a transcription slot.
-  ///
-  /// Settings needs this without a subject in hand, so the category's
-  /// automation switch has something to control even when the category has
-  /// no profile selected.
-  ///
-  /// Runs as a [_CallIntent.probe] — settings asks this to decide whether to
-  /// render a switch, not to transcribe anything.
-  Future<bool> hasTranscriptionFallback() async {
-    final result = await _tryTranscriptionFallbacks(_CallIntent.probe);
-    return result.handled;
-  }
 
   /// Transcription when no automated skill owns it, in a fixed order:
   ///

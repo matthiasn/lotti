@@ -1586,7 +1586,7 @@
   "categoryAiDefaultsTitle": "Predefinizioni dell'IA",
   "categoryAutomaticAgentWakesDescription": "L'assistente di questa categoria si avvia automaticamente quando un'attività cambia. Vale per le nuove attività; quelle esistenti mantengono la propria impostazione.",
   "categoryAutomaticAgentWakesLabel": "Attiva l'assistente automaticamente",
-  "categoryAutomaticInferenceDescription": "Trascrivi i nuovi audio e analizza le nuove immagini di questa categoria automaticamente",
+  "categoryAutomaticInferenceDescription": "Trascrivi i nuovi audio, analizza le nuove immagini e riassumi le pull request di questa categoria automaticamente",
   "categoryAutomaticInferenceLabel": "Inferenza automatica",
   "categoryCreationError": "Non è riuscito a creare la categoria. Si prega di riprovare.",
   "categoryDayPlanDescription": "Rendere questa categoria disponibile per la selezione nel piano diurno",

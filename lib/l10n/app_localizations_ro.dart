@@ -3234,7 +3234,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcrie automat audio nou și analizează imaginile noi din această categorie';
+      'Transcrie automat audio nou, analizează imaginile noi și rezumă pull requesturile din această categorie';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Inferență automată';

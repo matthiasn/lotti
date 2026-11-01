@@ -86,19 +86,25 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
 
 /// Whether a category's automatic-inference switch has anything to control.
 ///
-/// Keyed by the category's `defaultProfileId` (nullable). True when that
-/// profile carries at least one `automate: true` skill assignment — the
-/// "profile is set to automatic" case — or when the transcription fallback
-/// could run for a recording in the category: that profile's own
-/// transcription slot, or the Settings default's. Showing the switch in that
-/// second case lets users control recording automation even when no skill
-/// is set to automatic, or no profile is on the category at all.
+/// Keyed by the category's `defaultProfileId` (nullable). The switch governs
+/// every inference that runs in the category without a gesture: transcribing
+/// and analysing new entries, and summarising its tasks' pull requests. So it
+/// has something to control when any of them could run:
+///
+/// - that profile carries an `automate: true` skill assignment;
+/// - that profile resolves — its thinking model summarises pull requests,
+///   and its transcription slot, if any, transcribes recordings;
+/// - the device's Settings default resolves, which both fall back to.
+///
+/// The form also shows the switch whenever it is on, so automation that was
+/// consented to can always be switched off again.
 final FutureProviderFamily<bool, String?> categoryAutomationAvailableProvider =
     FutureProvider.family<bool, String?>(
       categoryAutomationAvailable,
       name: 'categoryAutomationAvailableProvider',
     );
 Future<bool> categoryAutomationAvailable(Ref ref, String? profileId) async {
+  final profiles = ref.watch(profileResolverProvider);
   if (profileId != null) {
     final config = await ref
         .watch(aiConfigRepositoryProvider)
@@ -107,17 +113,9 @@ Future<bool> categoryAutomationAvailable(Ref ref, String? profileId) async {
         config.skillAssignments.any((assignment) => assignment.automate)) {
       return true;
     }
-    // The fallback asks the category's profile first: a transcription slot
-    // that resolves is automation the switch controls.
-    final resolved = await ref
-        .watch(profileResolverProvider)
-        .resolveByProfileId(profileId);
-    if (resolved?.transcriptionModelId != null &&
-        resolved?.transcriptionProvider != null) {
-      return true;
-    }
+    if (await profiles.resolveByProfileId(profileId) != null) return true;
   }
-  return ref.watch(profileAutomationServiceProvider).hasTranscriptionFallback();
+  return await profiles.resolveDefaultProfile() != null;
 }
 
 final profileAutomationServiceProvider = Provider<ProfileAutomationService>(

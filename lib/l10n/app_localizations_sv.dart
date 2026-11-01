@@ -3192,7 +3192,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transkribera nytt ljud och analysera nya bilder i den här kategorin automatiskt';
+      'Transkribera nytt ljud, analysera nya bilder och sammanfatta pull requests i den här kategorin automatiskt';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatisk inferens';

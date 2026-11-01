@@ -3171,7 +3171,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe new audio and analyze new images in this category automatically';
+      'Transcribe new audio, analyze new images and summarize pull requests in this category automatically';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatic inference';
@@ -17886,7 +17886,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transcribe new audio and analyse new images in this category automatically';
+      'Transcribe new audio, analyse new images and summarise pull requests in this category automatically';
 
   @override
   String get categoryCreationError =>

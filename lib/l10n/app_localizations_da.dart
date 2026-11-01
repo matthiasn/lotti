@@ -3183,7 +3183,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get categoryAutomaticInferenceDescription =>
-      'Transskriber ny lyd og analysér nye billeder i denne kategori automatisk';
+      'Transskriber ny lyd, analysér nye billeder og opsummer pull requests i denne kategori automatisk';
 
   @override
   String get categoryAutomaticInferenceLabel => 'Automatisk inferens';

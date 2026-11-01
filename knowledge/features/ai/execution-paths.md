@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T21:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: runner
@@ -229,10 +229,12 @@ automatic-updates switch (null reads as on) in `AutomaticPromptTrigger` once
 `tryTranscribe` declines; switched off, the decline is recorded as a visible
 failed transcription through `recordTranscriptionDecline`.
 
-Because the fallback needs no profile, the settings switch is offered whenever
-*either* the selected profile carries automated skills *or* the fallback could
-run (`categoryAutomationAvailableProvider`). This keeps recording automation
-controllable even when no profile is configured.
+The settings switch is offered whenever anything it governs could run
+(`categoryAutomationAvailableProvider`): the category's profile carries
+automated skills, that profile resolves (its transcription slot transcribes,
+its thinking model summarises the category's pull requests), or the Settings
+default resolves. It is also offered whenever it is on, so automation
+consented to earlier can always be switched off.
 
 Past the gate the automatic branch is intentionally strict:
 
@@ -269,8 +271,8 @@ run at all.
 Two rules keep these lines trustworthy:
 
 - **Only the run paths write.** `hasAutomatedSkillType` and
-  `hasTranscriptionFallback` are capability probes evaluated during a
-  widget build or on a settings screen, so they walk the same resolution with
+  `canTranscribeOnRequest` are capability probes evaluated during a
+  widget build, so they walk the same resolution with
   `_CallIntent.probe` and log nothing. Otherwise rendering a checkbox would
   manufacture a `resolved` record, and every rebuild would repeat the declines
   until the decision belonging to the actual recording was buried. Nothing is
