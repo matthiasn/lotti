@@ -5,8 +5,8 @@ description: Five typed link semantics stored as one row each, presented as one 
 resource: ../../../lib/features/tasks/repository/task_dependency_resolver.dart
 tags: [tasks, links, dependencies, adr-0042, adr-0106]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-26T21:00:00Z }
-stale_after: 2027-01-25
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: entry-link
     resource: ../../../lib/classes/entry_link.dart
@@ -190,6 +190,13 @@ before persisting.
 Spoken relationships ("this task is blocked by X", "this supersedes Y") become
 **user-confirmable proposals**, never direct writes — see
 [task agents](../agents/task-agents.md) for the validation and apply pipeline.
+
+Written ones do too, without the agent: a sentence in a task's notes or log
+that speaks of other work is matched by meaning to the task it most likely
+means and offered as a `link_task` row in the same list, read in the same
+directed vocabulary and applied by the same `TaskLinkHandler` — see
+[task link suggestions](../ai/task-link-suggestions.md). A pair that already
+holds any link is never suggested.
 
 ## Where it surfaces
 

@@ -7,6 +7,8 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/classes/ai/ai_config.dart';
+import 'package:lotti/classes/directed_relation.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -17,11 +19,15 @@ import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_queue.dart';
+import 'package:lotti/features/ai/link_suggestions/prior_work_mention.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion_providers.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/tts/state/tts_audio_player.dart';
 import 'package:lotti/features/tts/state/tts_engine_provider.dart';
 import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_ui/material_ui.dart';
@@ -327,6 +333,55 @@ List<Override> backfillOverrides({
   inferenceBackfillQueueProvider.overrideWith(() => queue),
   inferenceBackfillDismissalsProvider.overrideWith(
     () => dismissals ?? RecordingBackfillDismissals(),
+  ),
+];
+
+/// A suggestion, found in the bench task's notes, to link it to [targetId].
+PendingSuggestion makeLinkPending(
+  String targetId, {
+  String title = 'Colony census export',
+  DirectedRelation relation = const DirectedRelation(EntryLinkType.followsUp),
+}) => PendingSuggestion.link(
+  suggestion: TaskLinkSuggestion(
+    sourceTaskId: AgentTestBench.taskId,
+    targetTaskId: targetId,
+    targetTitle: title,
+    relation: relation,
+    distance: 0.3,
+    mention: PriorWorkMention(
+      sourceId: 'entry-1',
+      sentence: 'Follow-up to the census export.',
+      relation: relation,
+      query: 'the census export',
+    ),
+    mentionedAt: DateTime(2024, 3, 15, 9, 30),
+  ),
+  agentId: 'agent-001',
+);
+
+/// Records what the card dismisses, touching no settings database.
+class RecordingLinkDismissals extends TaskLinkSuggestionDismissals {
+  final dismissed = <TaskLinkSuggestion>[];
+
+  @override
+  Future<Set<String>> build() async => const {};
+
+  @override
+  Future<void> dismiss(TaskLinkSuggestion suggestion) async =>
+      dismissed.add(suggestion);
+}
+
+/// Overrides that route a link suggestion's write into [persistenceLogic]
+/// (read through [journalDb]) and its dismissal into [dismissals].
+List<Override> linkSuggestionOverrides({
+  required MockPersistenceLogic persistenceLogic,
+  required MockJournalDb journalDb,
+  RecordingLinkDismissals? dismissals,
+}) => [
+  persistenceLogicProvider.overrideWithValue(persistenceLogic),
+  journalDbProvider.overrideWithValue(journalDb),
+  taskLinkSuggestionDismissalsProvider.overrideWith(
+    () => dismissals ?? RecordingLinkDismissals(),
   ),
 ];
 

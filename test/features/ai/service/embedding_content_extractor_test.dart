@@ -330,4 +330,58 @@ void main() {
       );
     });
   });
+
+  group('EmbeddingContentExtractor.plainTextOf', () {
+    test('keeps text too short to embed, trimmed', () {
+      final entry = JournalEntry(
+        meta: hMeta(),
+        entryText: const EntryText(plainText: '  $hShortText \n'),
+      );
+
+      expect(EmbeddingContentExtractor.extractText(entry), isNull);
+      expect(EmbeddingContentExtractor.plainTextOf(entry), hShortText);
+    });
+
+    test('reads an audio entry without text by its first transcript', () {
+      final audio = JournalAudio(
+        meta: hMeta(),
+        data: AudioData(
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          audioFile: 'a.aac',
+          audioDirectory: '/audio/',
+          duration: Duration.zero,
+          transcripts: [
+            AudioTranscript(
+              created: DateTime(2024, 3, 15),
+              library: 'test',
+              model: 'test',
+              detectedLanguage: 'en',
+              transcript: ' Same as last time. ',
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        EmbeddingContentExtractor.plainTextOf(audio),
+        'Same as last time.',
+      );
+    });
+
+    test('is null for an ineligible entity type', () {
+      final image = JournalImage(
+        meta: hMeta(),
+        data: ImageData(
+          imageId: 'img-1',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images',
+          capturedAt: DateTime(2024, 3, 15),
+        ),
+        entryText: const EntryText(plainText: hLongText),
+      );
+
+      expect(EmbeddingContentExtractor.plainTextOf(image), isNull);
+    });
+  });
 }

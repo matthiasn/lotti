@@ -9,6 +9,7 @@ conversation state and embeddings. It does not own agent lifecycles.
 * [Provider routing](provider-routing.md) - the routing table, per-provider catalogs and quirks, audio transcoding, Gemini thinking, local HTTP transcription.
 * [Embedded speech recognition](embedded-speech.md) - sherpa model downloads, background decoding, cancellation, and native packaging.
 * [Inference backfill suggestions](inference-backfill.md) - images and recordings that never got their analysis, transcript or summary, offered one suggestion each and run through a sequential queue.
+* [Task link suggestions](task-link-suggestions.md) - sentences in a task's notes or log that speak of other work, matched by meaning to the task they mean, offered as links the user accepts or dismisses.
 * [Batch transcription](batch-transcription.md) - the shared transcription service used by agent voice input and Daily OS, including model discovery and usage attribution.
 * [Conversations and tool calling](conversations-and-tools.md) - the reusable multi-turn loop.
 * [Seeding and config lifecycle](seeding-and-lifecycle.md) - gated seeds, tombstones, migration-safe upgrades.

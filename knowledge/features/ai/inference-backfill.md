@@ -5,8 +5,8 @@ description: How a task's images and recordings that never got their analysis, t
 resource: ../../../lib/features/ai/backfill
 tags: [ai, backfill, image-analysis, transcription, audio-summary, suggestions, agents]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-20T12:00:00Z }
-stale_after: 2026-12-26
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: rule
     resource: ../../../lib/features/ai/backfill/inference_backfill.dart
@@ -33,9 +33,13 @@ sources:
     title: AiSummaryCard Confirm all
     last_modified: 2026-10-19
   - id: backfill-actions
-    resource: ../../../lib/features/agents/ui/ai_summary_card/backfill_actions.dart
-    title: confirmBackfillSuggestion and dismissBackfillSuggestion
-    last_modified: 2026-10-20
+    resource: ../../../lib/features/agents/ui/ai_summary_card/mechanical_suggestion_actions.dart
+    title: confirmBackfillSuggestion, dismissBackfillSuggestion and the mechanical dispatch
+    last_modified: 2026-11-01
+  - id: key-set
+    resource: ../../../lib/features/ai/state/device_local_key_set.dart
+    title: DeviceLocalKeySet, the device-local dismissal store
+    last_modified: 2026-11-01
   - id: gate
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: hasAutomatedSkillType, the try* resolvers and the transcription fallback
@@ -161,7 +165,8 @@ what writes its text. It misses its summary at any length unless a summary
 already exists, in which case the empty text is the user's.
 
 `unifiedSuggestionListProvider` appends the rows after the agent's own
-proposals. A task without an agent shows neither.
+proposals and the task's [link suggestions](task-link-suggestions.md). A task
+without an agent shows none of them.
 
 # The suggestion lifecycle
 
@@ -199,10 +204,13 @@ candidate, and that is what routes the row:
 - **Confirm** → `confirmBackfillSuggestion` → `InferenceBackfillQueue.enqueue`.
   Never `ChangeSetConfirmationService`.
 - **Reject** → `dismissBackfillSuggestion` → `InferenceBackfillDismissals`, a
-  device-local list in `SettingsDb`. A dismissal is a reading preference, not a
+  device-local list in `SettingsDb` (a `DeviceLocalKeySet`, the store link
+  suggestion dismissals use too). A dismissal is a reading preference, not a
   change to the entry, so it rides on no synced entity.
 - **Confirm all** → every backfill row is enqueued; the persisted change sets
-  beside them go to `confirmAll` as before. The button appears once the list
+  beside them go to `confirmAll` as before. The row and *Confirm all* reach
+  both through `confirmMechanicalSuggestion`, the dispatch shared with link
+  suggestions. The button appears once the list
   holds more than one row.
 
 `InferenceBackfillQueue` runs jobs **one at a time, in acceptance order** — fifteen

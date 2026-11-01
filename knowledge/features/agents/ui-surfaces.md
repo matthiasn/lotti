@@ -5,8 +5,8 @@ description: The AI summary card and its proposal choreography, the internals pa
 resource: ../../../lib/features/agents/ui
 tags: [agents, ui, motion, accessibility]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T12:00:00Z }
-stale_after: 2027-01-05
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-02-01
 sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
@@ -131,13 +131,17 @@ Contents:
 - **Proposed changes** — rows from `unifiedSuggestionListProvider`, each a
   `PendingSuggestion`, confirmable or rejectable by tap or swipe (`> 70px` →
   confirm, `< -70px` → reject; in between snaps back). Change-set confirms
-  route through `ChangeSetConfirmationService`; backfill rows go to
-  `confirmBackfillSuggestion` / `dismissBackfillSuggestion`, and a host may
-  supply its own `onConfirm` / `onReject`. *Confirm all* batches `confirmAll` over
-  distinct change sets. The list ends with the task's
-  [inference backfill suggestions](../ai/inference-backfill.md) — mechanical
-  rows with no change set behind them, which confirm into the backfill queue,
-  reject into a device-local dismissal, and are all queued by *Confirm all*.
+  route through `ChangeSetConfirmationService`; mechanical rows
+  (`PendingSuggestion.isMechanical`) go to `confirmMechanicalSuggestion` /
+  `dismissMechanicalSuggestion`, and a host may supply its own `onConfirm` /
+  `onReject`. *Confirm all* decides each mechanical row in turn and batches
+  `confirmAll` over distinct change sets. After the agent's proposals come the
+  task's [link suggestions](../ai/task-link-suggestions.md) — `link_task` rows
+  that write the link through `TaskLinkHandler` on accept and hide the pair on
+  this device on reject — and then its
+  [inference backfill suggestions](../ai/inference-backfill.md), which confirm
+  into the backfill queue and reject into a device-local dismissal. Neither
+  kind has a persisted change set behind it.
 - **`History · N`** — lazily expands resolved ledger entries with
   `Confirmed` / `Dismissed` tags; dismissed and retracted entries are struck
   through and dimmed, confirmed ones are not. It is a section of its

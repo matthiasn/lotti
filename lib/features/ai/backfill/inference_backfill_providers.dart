@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:clock/clock.dart';
 
@@ -10,6 +9,7 @@ import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_detector.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_queue.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/device_local_key_set.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -117,39 +117,15 @@ class InferenceBackfillScanController
 /// Settings key holding the dismissed suggestion keys, as a JSON list.
 const inferenceBackfillDismissedKey = 'INFERENCE_BACKFILL_DISMISSED';
 
-/// Backfill suggestions the user dismissed on this device.
-///
-/// Device-local, like the rest of `SettingsDb`: a dismissal is a reading
-/// preference for the list, not a change to the entry, so it rides on no
-/// synced entity. Without it a dismissed suggestion would come straight
-/// back on the next scan.
-class InferenceBackfillDismissals extends AsyncNotifier<Set<String>> {
+/// Backfill suggestions the user dismissed on this device. Without it a
+/// dismissed suggestion would come straight back on the next scan.
+class InferenceBackfillDismissals extends DeviceLocalKeySet {
   @override
-  Future<Set<String>> build() async {
-    final raw = await ref
-        .read(settingsDbProvider)
-        .itemByKey(inferenceBackfillDismissedKey);
-    if (raw == null) return const {};
-    try {
-      return (jsonDecode(raw) as List<dynamic>).whereType<String>().toSet();
-    } on FormatException {
-      return const {};
-    }
-  }
+  String get settingsKey => inferenceBackfillDismissedKey;
 
   /// Hides [candidate] from the list on this device for good.
-  Future<void> dismiss(InferenceBackfillCandidate candidate) async {
-    final current = state.value ?? await future;
-    if (current.contains(candidate.key)) return;
-    final next = {...current, candidate.key};
-    state = AsyncData(next);
-    await ref
-        .read(settingsDbProvider)
-        .saveSettingsItem(
-          inferenceBackfillDismissedKey,
-          jsonEncode(next.toList()..sort()),
-        );
-  }
+  Future<void> dismiss(InferenceBackfillCandidate candidate) =>
+      addKey(candidate.key);
 }
 
 final inferenceBackfillDismissalsProvider =

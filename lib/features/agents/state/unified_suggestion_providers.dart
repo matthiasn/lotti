@@ -6,9 +6,12 @@ import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 
 /// One pending proposal in the unified suggestion list.
@@ -27,6 +30,13 @@ import 'package:lotti/providers/agent_repository_providers.dart';
 /// the row renders and animates like every other proposal. Confirming or
 /// rejecting it goes to the backfill queue and dismissals instead of
 /// `ChangeSetConfirmationService`.
+///
+/// A [link] suggestion is the other mechanical kind: a task the task's own
+/// notes or log speak of, found by meaning. It is an ordinary `link_task`
+/// row — the sentence it reads, the "Add" kind — on the same kind of
+/// stand-in set; confirming it writes the link through the same handler a
+/// confirmed agent `link_task` proposal uses, and rejecting it hides the
+/// pair on this device.
 class PendingSuggestion {
   const PendingSuggestion({
     required this.changeSet,
@@ -34,6 +44,7 @@ class PendingSuggestion {
     required this.item,
     required this.fingerprint,
     this.backfill,
+    this.link,
   });
 
   /// A suggestion to run the inference [candidate] is missing.
@@ -71,6 +82,48 @@ class PendingSuggestion {
     );
   }
 
+  /// A suggestion to link the task to the one [suggestion] found.
+  ///
+  /// Its args are a `link_task` proposal's, plus the target's title so the
+  /// row reads the relation in the reader's language. The title also keeps
+  /// its fingerprint apart from an agent proposal of the same link, which
+  /// [unifiedSuggestionList] hides it behind anyway.
+  factory PendingSuggestion.link({
+    required TaskLinkSuggestion suggestion,
+    required String agentId,
+  }) {
+    final item = ChangeItem(
+      toolName: TaskAgentToolNames.linkTask,
+      args: {
+        'relation': suggestion.relation.wireName,
+        'targetTaskId': suggestion.targetTaskId,
+        'targetTitle': suggestion.targetTitle,
+      },
+      // Fallback text only: the row re-derives the localized sentence from
+      // the relation and the title.
+      humanSummary:
+          'Link: this task ${suggestion.relation.englishPhrase} '
+          '"${suggestion.targetTitle}"',
+    );
+    return PendingSuggestion(
+      changeSet: ChangeSetEntity(
+        id: 'link-suggestion:${suggestion.key}',
+        agentId: agentId,
+        taskId: suggestion.sourceTaskId,
+        threadId: 'link-suggestion',
+        runKey: 'link-suggestion',
+        status: ChangeSetStatus.pending,
+        items: [item],
+        createdAt: suggestion.mentionedAt,
+        vectorClock: null,
+      ),
+      itemIndex: 0,
+      item: item,
+      fingerprint: ChangeItem.fingerprint(item),
+      link: suggestion,
+    );
+  }
+
   final ChangeSetEntity changeSet;
   final int itemIndex;
   final ChangeItem item;
@@ -78,6 +131,14 @@ class PendingSuggestion {
 
   /// The missing inference this suggestion runs; null for an agent proposal.
   final InferenceBackfillCandidate? backfill;
+
+  /// The link this suggestion writes; null for an agent proposal.
+  final TaskLinkSuggestion? link;
+
+  /// Whether this is a mechanical suggestion — [backfill] or [link] — rather
+  /// than a proposal persisted in the agent's change set. A mechanical one
+  /// is decided outside `ChangeSetConfirmationService`.
+  bool get isMechanical => backfill != null || link != null;
 }
 
 /// What the consolidated `AiSummaryCard` renders for a single task.
@@ -115,9 +176,11 @@ class UnifiedSuggestionList {
 /// `ChangeSetConfirmationService` contract) and the proposal ledger (so
 /// the activity strip can show recently-resolved / retracted items).
 ///
-/// The open list ends with the task's backfill suggestions
-/// ([inferenceBackfillSuggestionsProvider]), one per entry missing
-/// inference, after the agent's own proposals.
+/// After the agent's own proposals come the task's link suggestions
+/// ([taskLinkSuggestionsProvider]) — except one for a task an open agent
+/// proposal already links, which would be the same decision twice — and
+/// then its backfill suggestions ([inferenceBackfillSuggestionsProvider]),
+/// one per entry missing inference.
 final FutureProviderFamily<UnifiedSuggestionList, String>
 unifiedSuggestionListProvider = FutureProvider.autoDispose
     .family<UnifiedSuggestionList, String>(
@@ -136,6 +199,7 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
 
   ref.watch(agentUpdateStreamProvider(agent.agentId));
   final backfill = ref.watch(inferenceBackfillSuggestionsProvider(taskId));
+  final links = ref.watch(taskLinkSuggestionsProvider(taskId));
 
   final repo = ref.watch(agentRepositoryProvider);
   final ledger = await repo.getProposalLedger(agent.agentId, taskId: taskId);
@@ -165,6 +229,11 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   }
   open.sort((a, b) => b.changeSet.createdAt.compareTo(a.changeSet.createdAt));
   final visibleOpen = hideSupersededTimeEntryEdits(open);
+  final proposedLinkTargets = {
+    for (final s in visibleOpen)
+      if (s.item.toolName == TaskAgentToolNames.linkTask)
+        if (s.item.args['targetTaskId'] case final String target) target,
+  };
 
   // Dedupe the activity strip by fingerprint — the repository ledger
   // deliberately emits one entry per decision event so the LLM prompt
@@ -182,6 +251,9 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
   return UnifiedSuggestionList(
     open: [
       ...visibleOpen,
+      for (final link in links)
+        if (!proposedLinkTargets.contains(link.targetTaskId))
+          PendingSuggestion.link(suggestion: link, agentId: agent.agentId),
       for (final candidate in backfill)
         PendingSuggestion.backfill(
           candidate: candidate,

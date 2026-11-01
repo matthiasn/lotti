@@ -5,12 +5,17 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/classes/agents/proposal_ledger.dart';
+import 'package:lotti/classes/directed_relation.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill_providers.dart';
+import 'package:lotti/features/ai/link_suggestions/prior_work_mention.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion_providers.dart';
 import 'package:lotti/providers/agent_repository_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -35,6 +40,7 @@ void main() {
     required AgentIdentityEntity? agent,
     required ProposalLedger ledger,
     List<InferenceBackfillCandidate> backfill = const [],
+    List<TaskLinkSuggestion> links = const [],
   }) {
     when(
       () => mockRepo.getProposalLedger(
@@ -52,6 +58,7 @@ void main() {
         inferenceBackfillSuggestionsProvider(
           'task-abc',
         ).overrideWith((ref) => backfill),
+        taskLinkSuggestionsProvider('task-abc').overrideWith((ref) => links),
       ]),
     );
     addTearDown(container.dispose);
@@ -77,6 +84,9 @@ void main() {
             agentRepositoryProvider.overrideWithValue(generatedRepo),
             updateNotificationsProvider.overrideWithValue(notifications),
             inferenceBackfillSuggestionsProvider(
+              'task-abc',
+            ).overrideWith((ref) => const []),
+            taskLinkSuggestionsProvider(
               'task-abc',
             ).overrideWith((ref) => const []),
           ]),
@@ -825,6 +835,141 @@ void main() {
         agent: null,
         ledger: const ProposalLedger.empty(),
         backfill: [image],
+      );
+
+      expect((await read(container)).open, isEmpty);
+    });
+  });
+
+  group('link suggestions', () {
+    TaskLinkSuggestion link(
+      String target, {
+      String relation = 'follows_up_on',
+    }) => TaskLinkSuggestion(
+      sourceTaskId: 'task-abc',
+      targetTaskId: target,
+      targetTitle: 'Census $target',
+      relation: DirectedRelation.fromWireName(relation)!,
+      distance: 0.3,
+      mention: const PriorWorkMention(
+        sourceId: 'entry-1',
+        sentence: 'Follow-up to the census.',
+        relation: DirectedRelation(EntryLinkType.followsUp),
+        query: 'the census',
+      ),
+      mentionedAt: DateTime(2024, 3, 15, 8),
+    );
+
+    Future<UnifiedSuggestionList> read(ProviderContainer container) {
+      final sub = container.listen(
+        unifiedSuggestionListProvider('task-abc'),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+      return container.read(unifiedSuggestionListProvider('task-abc').future);
+    }
+
+    ChangeSetEntity agentSet(String agentId, ChangeItem item) =>
+        makeTestChangeSet(
+          id: 'cs-1',
+          agentId: agentId,
+          taskId: 'task-abc',
+          items: [item],
+        );
+
+    test('follow the agent proposals and precede the backfill, each a '
+        'link_task row on a stand-in set', () async {
+      final agent = makeTestIdentity();
+      final image = InferenceBackfillCandidate(
+        entryId: 'img',
+        kind: InferenceBackfillKind.imageAnalysis,
+        capturedAt: DateTime(2024, 3, 15),
+        createdAt: DateTime(2024, 3, 15),
+      );
+      final census = link('census');
+      final container = build(
+        agent: agent,
+        ledger: ProposalLedger(
+          open: const [],
+          resolved: const [],
+          pendingSets: [
+            agentSet(
+              agent.agentId,
+              const ChangeItem(
+                toolName: 'set_task_title',
+                args: {'title': 'Hello'},
+                humanSummary: 'Rename task',
+              ),
+            ),
+          ],
+        ),
+        links: [census],
+        backfill: [image],
+      );
+
+      final open = (await read(container)).open;
+
+      expect(open.map((s) => s.link), [null, census, null]);
+      expect(open.last.backfill, image);
+      final row = open[1];
+      expect(row.isMechanical, isTrue);
+      expect(open.first.isMechanical, isFalse);
+      expect(row.item.toolName, TaskAgentToolNames.linkTask);
+      expect(row.item.args, {
+        'relation': 'follows_up_on',
+        'targetTaskId': 'census',
+        'targetTitle': 'Census census',
+      });
+      expect(
+        row.item.humanSummary,
+        'Link: this task follows up on "Census census"',
+      );
+      expect(row.changeSet.id, 'link-suggestion:task-abc|census');
+      expect(row.changeSet.agentId, agent.agentId);
+      expect(row.changeSet.taskId, 'task-abc');
+      expect(row.changeSet.createdAt, DateTime(2024, 3, 15, 8));
+      expect(row.changeSet.items, [row.item]);
+      expect(row.fingerprint, ChangeItem.fingerprint(row.item));
+    });
+
+    test('a task an open agent proposal already links is not suggested '
+        'again', () async {
+      final agent = makeTestIdentity();
+      final container = build(
+        agent: agent,
+        ledger: ProposalLedger(
+          open: const [],
+          resolved: const [],
+          pendingSets: [
+            agentSet(
+              agent.agentId,
+              const ChangeItem(
+                toolName: TaskAgentToolNames.linkTask,
+                args: {'relation': 'blocks', 'targetTaskId': 'census'},
+                humanSummary: 'Link: this task blocks "Census"',
+              ),
+            ),
+          ],
+        ),
+        links: [
+          link('census'),
+          link('relay', relation: 'relates_to'),
+        ],
+      );
+
+      final open = (await read(container)).open;
+
+      expect(
+        open.map((s) => (s.link?.targetTaskId, s.item.args['relation'])),
+        [(null, 'blocks'), ('relay', 'relates_to')],
+      );
+    });
+
+    test('are not shown on a task without an agent', () async {
+      final container = build(
+        agent: null,
+        ledger: const ProposalLedger.empty(),
+        links: [link('census')],
       );
 
       expect((await read(container)).open, isEmpty);

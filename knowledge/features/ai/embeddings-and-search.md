@@ -117,6 +117,10 @@ beside the full-text search on every query and list what it adds after the
 word matches, under a "Related by meaning" heading (ADR 0149); there is no mode
 switch. That page side is
 [browse, search and linking](../journal/browse-and-linking.md#one-search-the-words-then-the-meaning).
+The same `searchRelatedTasks` also serves
+[task link suggestions](task-link-suggestions.md), which search the sentences
+of a task's notes and log that speak of other work, and keep only tasks within
+a measured distance cutoff.
 
 # Constraints
 

@@ -38,6 +38,11 @@ one.
   that never got their analysis, transcript or summary are offered back as one
   suggestion each, in the task's proposed changes, when its area has automatic
   inference switched on.
+- **Suggests links a task's notes already imply.** When a note or log entry
+  speaks of other work — *blocked by …*, *follow-up to …*, *same problem as
+  last week* — the task it most likely means is found by meaning, on the
+  device, and offered as a link in the task's proposed changes. Nothing is
+  linked until the user accepts it.
 - **Shows what was used.** Every AI result records which model produced it and
   what it cost.
 
@@ -61,6 +66,7 @@ lib/features/ai/
 ├── model/          # AiConfig variants
 ├── repository/     # config persistence, provider routing, vector search
 ├── backfill/       # suggestions for inference a task's media never got
+├── link_suggestions/  # links a task's notes and log mention, found by meaning
 ├── services/       # skill execution, profile automation
 ├── skills/         # the built-in skill catalog (code, not data)
 ├── conversation/   # multi-turn loop and tool calling

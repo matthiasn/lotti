@@ -1,10 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
+import 'package:lotti/features/ai/link_suggestions/task_link_suggestion_providers.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_de.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -13,6 +17,8 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../test_data/change_set_factories.dart';
 import 'test_bench.dart';
@@ -21,6 +27,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(makeTestChangeSet());
     registerFallbackValue(<String>{});
     registerFallbackValue(StackTrace.empty);
@@ -155,6 +162,151 @@ void main() {
 
       expect(dismissals.dismissed.map((c) => c.entryId), ['img-1']);
       expect(queue.queued, isEmpty);
+      verifyNever(
+        () => service.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      );
+      expect(find.byType(ProposalRow), findsNothing);
+    });
+  });
+
+  group('AiSummaryCard – link suggestion rows', () {
+    late MockChangeSetConfirmationService service;
+    late MockPersistenceLogic persistenceLogic;
+    late MockJournalDb journalDb;
+    late RecordingLinkDismissals dismissals;
+
+    setUp(() {
+      service = MockChangeSetConfirmationService();
+      persistenceLogic = MockPersistenceLogic();
+      journalDb = MockJournalDb();
+      dismissals = RecordingLinkDismissals();
+      when(() => journalDb.journalEntityById('census')).thenAnswer(
+        (_) async => TestTaskFactory.create(
+          id: 'census',
+          title: 'Colony census export',
+        ),
+      );
+      when(
+        () => journalDb.typedLinksForTaskIds(
+          any(),
+          types: any(named: 'types'),
+        ),
+      ).thenAnswer((_) async => []);
+    });
+
+    void stubCreateLink({required bool created}) => when(
+      () => persistenceLogic.createLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+        linkType: any(named: 'linkType'),
+      ),
+    ).thenAnswer((_) async => created);
+
+    Future<void> pumpRow(WidgetTester tester) async {
+      final bench = AgentTestBench(
+        mediaQueryData: const MediaQueryData(
+          size: Size(900, 800),
+          disableAnimations: true,
+        ),
+        confirmationService: service,
+        updateNotifications: MockUpdateNotifications(),
+        suggestions: UnifiedSuggestionList(
+          open: [makeLinkPending('census')],
+          activity: const [],
+        ),
+        extraOverrides: linkSuggestionOverrides(
+          persistenceLogic: persistenceLogic,
+          journalDb: journalDb,
+          dismissals: dismissals,
+        ),
+      );
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> tapAndSettle(WidgetTester tester, IconData icon) async {
+      await tester.tap(find.byIcon(icon));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    Set<String> accepted(WidgetTester tester) => ProviderScope.containerOf(
+      tester.element(find.byType(AiSummaryCard)),
+    ).read(taskLinkSuggestionAcceptedProvider);
+
+    testWidgets("reads as an ordinary link proposal, in the reader's "
+        'language', (tester) async {
+      await pumpRow(tester);
+
+      expect(
+        find.text('Add · This task follows up on "Colony census export"'),
+        findsOneWidget,
+      );
+      verifyNever(
+        () => persistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+    });
+
+    testWidgets('confirming writes the link, in its canonical direction, '
+        'and leaves the change-set service alone', (tester) async {
+      stubCreateLink(created: true);
+      await pumpRow(tester);
+
+      await tapAndSettle(tester, LottiIcons.confirm);
+
+      verify(
+        () => persistenceLogic.createLink(
+          fromId: AgentTestBench.taskId,
+          toId: 'census',
+          linkType: EntryLinkType.followsUp,
+        ),
+      ).called(1);
+      verifyNever(() => service.confirmItem(any(), any()));
+      expect(accepted(tester), {'${AgentTestBench.taskId}|census'});
+      expect(find.byType(ProposalRow), findsNothing);
+    });
+
+    testWidgets('a link that cannot be written keeps the row and says so', (
+      tester,
+    ) async {
+      stubCreateLink(created: false);
+      await pumpRow(tester);
+
+      await tapAndSettle(tester, LottiIcons.confirm);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(accepted(tester), isEmpty);
+      expect(find.byType(ProposalRow), findsOneWidget);
+      expect(
+        find.text(AppLocalizationsEn().changeSetConfirmError),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('rejecting hides the pair on this device and writes no '
+        'link', (tester) async {
+      await pumpRow(tester);
+
+      await tapAndSettle(tester, LottiIcons.close);
+
+      expect(dismissals.dismissed.map((s) => s.targetTaskId), ['census']);
+      verifyNever(
+        () => persistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
       verifyNever(
         () => service.rejectItem(
           any(),
