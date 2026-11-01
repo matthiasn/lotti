@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/tasks/state/task_preview_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_preview_modal.dart';
@@ -103,6 +104,18 @@ void main() {
 
     expect(find.text('No summary yet.'), findsOneWidget);
     expect(find.text('Open task'), findsOneWidget);
+  });
+
+  testWidgets('Open task keeps its own width, at the trailing edge', (
+    tester,
+  ) async {
+    await open(tester, () async => _preview(tldr: 'Counted.'));
+
+    final content = tester.getRect(find.byType(TaskPreviewContent));
+    final button = tester.getRect(find.byType(DesignSystemButton));
+
+    expect(button.width, lessThan(content.width / 2));
+    expect(button.right, moreOrLessEquals(content.right, epsilon: 0.5));
   });
 
   testWidgets('Open task closes the preview and stacks the task over the '

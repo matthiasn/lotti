@@ -130,10 +130,15 @@ class _OpenTaskButton extends StatelessWidget {
 
   final VoidCallback onPressed;
 
+  /// Its own width, at the trailing edge: the task's title is what the
+  /// preview is about, and a full-width button would outweigh it.
   @override
-  Widget build(BuildContext context) => DesignSystemButton(
-    label: context.messages.taskPreviewOpenTask,
-    fullWidth: true,
-    onPressed: onPressed,
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.centerEnd,
+    child: DesignSystemButton(
+      label: context.messages.taskPreviewOpenTask,
+      size: DesignSystemButtonSize.medium,
+      onPressed: onPressed,
+    ),
   );
 }
