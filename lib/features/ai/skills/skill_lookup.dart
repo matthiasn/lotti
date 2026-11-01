@@ -14,11 +14,10 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 /// `ai_config.sqlite`: installs carrying those rows got them from an earlier
 /// release, and a fresh install has none. Every assignment on every profile
 /// then resolves to `null`, so each automated capability the profile owns is
-/// silently skipped — and transcription in particular degrades to
-/// `ProfileAutomationService`'s direct fallback, a provider-ranked search over
-/// every configured audio model that never consults the subject's category or
-/// profile at all. The symptom is a category pinned to one provider quietly
-/// transcribing through a different one.
+/// silently skipped — and transcription in particular degrades to the
+/// transcription profile's fallback (the Settings default) even when the
+/// subject's own profile automates it. The symptom is a category pinned to
+/// one provider quietly transcribing through a different one.
 ///
 /// Returns `null` when neither source knows [skillId], or when a stored config
 /// with that id turns out not to be a skill.

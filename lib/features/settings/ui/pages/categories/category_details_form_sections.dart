@@ -126,8 +126,8 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
   /// Explicit consent to run inference in this category without a gesture.
   ///
   /// Only rendered when there is something to consent to — the selected
-  /// profile carries automated skills, or the direct transcription fallback
-  /// could run. While that resolves, and whenever automation is impossible,
+  /// profile carries automated skills, or the Settings default profile could
+  /// transcribe a recording the category's profile does not. While that resolves, and whenever automation is impossible,
   /// the row is absent rather than shown disabled: an off switch the user
   /// cannot act on reads as a broken control.
   Widget _buildAutomaticInferenceSwitch(CategoryDefinition category) {

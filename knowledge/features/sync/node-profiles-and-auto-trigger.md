@@ -151,7 +151,8 @@ contract:
     early-return anyway).
 12. Find the profile's automated transcription `SkillAssignment` — `automate:
     true` and `skill.skillType == transcription`. Skip if none: **there is no
-    fallback** to the rank-ordered cloud-capable scan. Also skip if the profile
+    fallback** to the Settings default a local recording falls back to. Also
+    skip if the profile
     owns more than one such skill, since their context policies could differ
     silently.
 13. Build `ResolvedProfile` via `ProfileResolver.resolveByProfileId` plus
@@ -175,9 +176,9 @@ contract:
     `WakeInitiator.automation` and returns `true`.
 
 **`AutomaticPromptTrigger` is deliberately not on this path.** Its
-`ProfileAutomationService.tryTranscribe` re-enters the rank-ordered fallback that
-includes cloud STT providers (Mistral, OpenAI, Alibaba Qwen), which would
-silently break the local-only contract for synced audio.
+`ProfileAutomationService.tryTranscribe` falls back to the Settings default
+profile, whose transcription slot may be a cloud provider, which would silently
+break the local-only contract for synced audio.
 
 # UI surfaces
 

@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
-import 'package:lotti/features/ai/speech/sherpa_model_repository.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/providers/service_providers.dart'
     show domainLoggerProvider, journalDbProvider;
@@ -118,8 +117,6 @@ final profileAutomationServiceProvider = Provider<ProfileAutomationService>(
 );
 ProfileAutomationService profileAutomationService(Ref ref) {
   return ProfileAutomationService(
-    isEmbeddedModelInstalled: (id) =>
-        ref.read(sherpaModelRepositoryProvider).isAvailable(id),
     resolver: ref.watch(profileAutomationResolverProvider),
     aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
     categoryAutomationLookup: (subjectId) async {

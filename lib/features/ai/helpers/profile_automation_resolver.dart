@@ -99,17 +99,43 @@ class ProfileAutomationResolver {
   /// model picked by provider type behind their back. A profile that
   /// resolves but names no transcription model is passed over like a
   /// missing one: it cannot transcribe either.
+  ///
+  /// Logs which of the two won, by sanitized id, so a recording that
+  /// transcribed through an unexpected model can be traced from a log export.
   Future<ResolvedProfile?> resolveTranscriptionProfile({
     String? categoryId,
   }) async {
+    final category = categoryId == null
+        ? 'no category'
+        : 'category ${DomainLogger.sanitizeId(categoryId)}';
     if (categoryId != null) {
       final categoryProfile = _transcribing(
         await resolveForCategory(categoryId),
       );
-      if (categoryProfile != null) return categoryProfile;
+      if (categoryProfile != null) {
+        _logTranscriptionProfile(
+          'transcription profile for $category: the category profile '
+          '${DomainLogger.sanitizeId(categoryProfile.profileId ?? '')}',
+        );
+        return categoryProfile;
+      }
     }
-    return _transcribing(await resolveDefaultProfile());
+    final defaultProfile = _transcribing(await resolveDefaultProfile());
+    _logTranscriptionProfile(
+      defaultProfile == null
+          ? 'no transcription profile for $category: neither it nor the '
+                'Settings default owns a transcription slot'
+          : 'transcription profile for $category: the Settings default '
+                '${DomainLogger.sanitizeId(defaultProfile.profileId ?? '')}',
+    );
+    return defaultProfile;
   }
+
+  void _logTranscriptionProfile(String message) => _domainLogger.log(
+    LogDomain.ai,
+    message,
+    subDomain: _logTag,
+  );
 
   /// The category [subjectId] is filed under, or null when it has none or
   /// no lookup is wired.

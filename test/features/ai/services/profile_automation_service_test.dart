@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -154,51 +153,6 @@ class _GeneratedAutomationServiceScenario {
         'modelSlotPresent: $modelSlotPresent, '
         'assignmentSpecs: $assignmentSpecs)';
   }
-}
-
-/// A generated set of direct-transcription fallback candidates plus the host
-/// platform flag, used to property-test `_fallbackCandidateRank` ordering
-/// through the public `tryTranscribe` fallback path.
-class _GeneratedFallbackRankScenario {
-  const _GeneratedFallbackRankScenario({
-    required this.providerTypes,
-    required this.isMacOS,
-  });
-
-  final List<InferenceProviderType> providerTypes;
-  final bool isMacOS;
-
-  String providerIdAt(int index) => 'rank-provider-$index';
-
-  String modelIdAt(int index) => 'rank-model-$index';
-
-  String providerModelIdAt(int index) => 'synthetic-stt-model-$index';
-
-  @override
-  String toString() {
-    return '_GeneratedFallbackRankScenario('
-        'isMacOS: $isMacOS, providerTypes: $providerTypes)';
-  }
-}
-
-extension _AnyGeneratedFallbackRankScenario on glados.Any {
-  glados.Generator<InferenceProviderType> get inferenceProviderType =>
-      glados.AnyUtils(this).choose(InferenceProviderType.values);
-
-  glados.Generator<_GeneratedFallbackRankScenario> get fallbackRankScenario =>
-      glados.CombinableAny(this).combine2(
-        glados.ListAnys(
-          this,
-        ).listWithLengthInRange(1, 5, inferenceProviderType),
-        glados.AnyUtils(this).choose([false, true]),
-        (
-          List<InferenceProviderType> providerTypes,
-          bool isMacOS,
-        ) => _GeneratedFallbackRankScenario(
-          providerTypes: providerTypes,
-          isMacOS: isMacOS,
-        ),
-      );
 }
 
 extension _AnyGeneratedAutomationServiceScenario on glados.Any {
@@ -440,55 +394,13 @@ void main() {
         as AiConfigModel;
   }
 
-  for (final installed in [true, false, null]) {
-    test(
-      'embedded fallback requires device-local availability ($installed)',
-      () async {
-        final embedded = makeProvider(
-          id: 'sherpa',
-          type: InferenceProviderType.sherpa,
-        );
-        final model = makeModel(
-          providerId: embedded.id,
-          providerModelId: 'tiny',
-        );
-        when(
-          () => mockResolver.resolveForSubject('task-1'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [model]);
-        when(
-          () => mockAiConfig.getConfigById(embedded.id),
-        ).thenAnswer((_) async => embedded);
-        final subject = ProfileAutomationService(
-          resolver: mockResolver,
-          aiConfigRepository: mockAiConfig,
-          categoryAutomationLookup: (_) async => true,
-          isEmbeddedModelInstalled: installed == null
-              ? null
-              : (id) async {
-                  expect(id, 'tiny');
-                  return installed;
-                },
-        );
-        final result = await subject.tryTranscribe(subjectId: 'task-1');
-        expect(result.handled, installed ?? false);
-        if (installed ?? false) {
-          expect(result.resolvedProfile?.transcriptionProvider, embedded);
-        }
-      },
-    );
-  }
-
   group('ProfileAutomationService', () {
     // The category switch is the only place the user consents to inference
     // running without a gesture. Selecting a profile is not consent: seeded
     // profiles arrive with `automate: true` assignments already set.
     group('category automation gate', () {
-      /// A profile that would otherwise transcribe automatically, plus a
-      /// configured speech-to-text model so the direct fallback is available
-      /// too — both paths must stay shut while the switch is off.
+      /// A profile that would otherwise transcribe automatically — the path
+      /// that must stay shut while the switch is off.
       void stubFullyAutomatedEnvironment() {
         const assignment = SkillAssignment(
           skillId: 'skill-transcribe',
@@ -536,22 +448,26 @@ void main() {
         },
       );
 
-      // The direct fallback is the path that used to transcribe with no
-      // profile, no assignment, and no opt-in at all.
-      test('direct transcription fallback is gated too', () async {
+      // The transcription profile fallback transcribes with no automated
+      // assignment, so without the gate it would run with no opt-in at all.
+      test('the transcription profile fallback is gated too', () async {
         categoryAllowsAutomation = false;
         when(
           () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [makeModel()]);
+          () => mockResolver.resolveTranscriptionProfile(
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => makeProfile(withTranscription: true));
 
         final result = await service.tryTranscribe(subjectId: 'task-1');
 
         expect(result.handled, isFalse);
         verifyNever(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          () => mockResolver.resolveTranscriptionProfile(
+            categoryId: any(named: 'categoryId'),
+          ),
         );
       });
 
@@ -579,30 +495,24 @@ void main() {
       // Settings asks this without a task in hand, to decide whether the
       // category switch has anything to control.
       group('hasTranscriptionFallback', () {
-        test(
-          'is true when a configured provider owns a speech model',
-          () async {
-            when(
-              () => mockAiConfig.getConfigsByType(AiConfigType.model),
-            ).thenAnswer((_) async => [makeModel()]);
-            when(
-              () => mockAiConfig.getConfigById('provider-mlx'),
-            ).thenAnswer((_) async => makeProvider());
+        test('is true when the Settings default can transcribe', () async {
+          when(
+            () => mockResolver.resolveTranscriptionProfile(),
+          ).thenAnswer((_) async => makeProfile(withTranscription: true));
 
-            expect(await service.hasTranscriptionFallback(), isTrue);
-          },
-        );
+          expect(await service.hasTranscriptionFallback(), isTrue);
+        });
 
-        test('is false when no model can turn speech into text', () async {
+        test('is false when no profile can transcribe, even with speech '
+            'models configured', () async {
           when(
             () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer(
-            (_) async => [
-              makeModel(inputModalities: const [Modality.text]),
-            ],
-          );
+          ).thenAnswer((_) async => [makeModel()]);
 
           expect(await service.hasTranscriptionFallback(), isFalse);
+          verifyNever(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          );
         });
       });
 
@@ -722,8 +632,8 @@ void main() {
       // the store answers `null` for them on a device that never got the
       // legacy seed rows. Resolving assignments through the store alone then
       // dropped every one of them, the profile matched nothing, and
-      // transcription fell through to the direct fallback — a provider-ranked
-      // search that ignores the subject's profile completely.
+      // transcription fell through to a fallback that ignored the subject's
+      // own profile.
       test(
         'matches a built-in skill the config store has no row for',
         () async {
@@ -794,7 +704,9 @@ void main() {
           expect(result.handled, isFalse);
           verifyNever(() => mockResolver.resolveForSubject(any()));
           verifyNever(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+            () => mockResolver.resolveTranscriptionProfile(
+              categoryId: any(named: 'categoryId'),
+            ),
           );
         },
       );
@@ -834,71 +746,6 @@ void main() {
 
         expect(result.handled, isFalse);
       });
-
-      test(
-        'does not fall back to cloud transcription providers with no API key',
-        () async {
-          final provider = makeProvider(
-            id: 'provider-openai',
-            name: 'OpenAI',
-            type: InferenceProviderType.openAi,
-          );
-          final model = makeModel(
-            id: 'model-whisper',
-            name: 'Whisper',
-            providerId: provider.id,
-          );
-
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [model]);
-          when(
-            () => mockAiConfig.getConfigById(provider.id),
-          ).thenAnswer((_) async => provider);
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isFalse);
-        },
-      );
-
-      test(
-        'sorts same-rank direct transcription fallbacks by model name',
-        () async {
-          final provider = makeProvider();
-          final betaModel = makeModel(
-            id: 'model-beta',
-            name: 'Beta Whisper model',
-            providerModelId: 'whisper-small',
-          );
-          final alphaModel = makeModel(
-            id: 'model-alpha',
-            name: 'Alpha Whisper model',
-            providerModelId: 'whisper-large',
-          );
-
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [betaModel, alphaModel]);
-          when(
-            () => mockAiConfig.getConfigById(provider.id),
-          ).thenAnswer((_) async => provider);
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isTrue);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            'whisper-large',
-          );
-        },
-      );
 
       test('returns not-handled when no matching skill type', () async {
         const assignment = SkillAssignment(
@@ -1426,59 +1273,13 @@ void main() {
         expect(line, isNot(contains('secret-suffix')));
       });
 
-      // The direct fallback is the second half of transcription and used to
-      // decline without saying anything, so a configured-but-unusable speech
-      // model looked identical to no configuration at all.
-      test(
-        'the direct fallback says when no speech model is configured',
-        () async {
-          when(
-            () => mockResolver.resolveForSubject('task-1'),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer(
-            (_) async => [
-              makeModel(inputModalities: const [Modality.text]),
-            ],
-          );
-
-          final result = await service.tryTranscribe(subjectId: 'task-1');
-
-          expect(result.handled, isFalse);
-          expect(
-            loggedLines(),
-            contains(
-              allOf(
-                startsWith('directFallback:'),
-                contains('no speech-to-text model is configured'),
-              ),
-            ),
-          );
-        },
-      );
-
-      test('the direct fallback tallies why each speech model lost', () async {
+      // The transcription profile is the second half of transcription; when
+      // nothing can transcribe the decline says so instead of staying silent.
+      test('the transcription profile fallback says when nothing can '
+          'transcribe', () async {
         when(
           () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer(
-          (_) async => [
-            makeModel(id: 'model-orphan', providerId: 'provider-gone'),
-            makeModel(id: 'model-keyless', providerId: 'provider-openai'),
-          ],
-        );
-        when(
-          () => mockAiConfig.getConfigById('provider-gone'),
-        ).thenAnswer((_) async => null);
-        when(() => mockAiConfig.getConfigById('provider-openai')).thenAnswer(
-          (_) async => makeProvider(
-            id: 'provider-openai',
-            type: InferenceProviderType.openAi,
-          ),
-        );
 
         final result = await service.tryTranscribe(subjectId: 'task-1');
 
@@ -1487,37 +1288,31 @@ void main() {
           loggedLines(),
           contains(
             allOf(
-              startsWith('directFallback:'),
-              contains(
-                'all 2 configured speech-to-text model(s) were rejected',
-              ),
-              contains('1 without a resolvable provider'),
-              contains('1 missing an API key'),
+              startsWith('transcriptionProfile:'),
+              contains('nothing transcribes'),
             ),
           ),
         );
       });
 
-      // `providerModelId` and `name` are free-text fields, so they can carry
-      // private hostnames or filesystem paths into an exportable log.
-      test('the direct fallback logs no user-entered model text', () async {
+      test('the transcription profile is named by sanitized id only', () async {
         when(
           () => mockResolver.resolveForSubject('task-1'),
         ).thenAnswer((_) async => null);
         when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          () => mockResolver.resolveTranscriptionProfile(
+            categoryId: any(named: 'categoryId'),
+          ),
         ).thenAnswer(
-          (_) async => [
-            makeModel(
-              id: 'model-abcdef-secret-suffix',
-              name: 'internal-box.corp.example',
-              providerModelId: '/home/someone/models/private-asr',
-            ),
-          ],
+          (_) async => ResolvedProfile(
+            profileId: 'profile-abcdef-secret-suffix',
+            profileName: 'internal-box.corp.example',
+            thinkingModelId: 'thinking',
+            thinkingProvider: testInferenceProvider(),
+            transcriptionModelId: '/home/someone/models/private-asr',
+            transcriptionProvider: testInferenceProvider(),
+          ),
         );
-        when(
-          () => mockAiConfig.getConfigById('provider-mlx'),
-        ).thenAnswer((_) async => makeProvider());
 
         final result = await service.tryTranscribe(subjectId: 'task-1');
 
@@ -1525,8 +1320,7 @@ void main() {
         final line = loggedLines().singleWhere(
           (l) => l.startsWith('resolved:'),
         );
-        expect(line, contains('[id:model-]'));
-        expect(line, contains('whisper'));
+        expect(line, contains(DomainLogger.sanitizeId('profile-abcdef')));
         expect(line, isNot(contains('secret-suffix')));
         expect(line, isNot(contains('private-asr')));
         expect(line, isNot(contains('internal-box')));
@@ -1571,11 +1365,8 @@ void main() {
 
       test('the settings fallback probe records nothing', () async {
         when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [makeModel()]);
-        when(
-          () => mockAiConfig.getConfigById('provider-mlx'),
-        ).thenAnswer((_) async => makeProvider());
+          () => mockResolver.resolveTranscriptionProfile(),
+        ).thenAnswer((_) async => makeProfile(withTranscription: true));
 
         expect(await service.hasTranscriptionFallback(), isTrue);
         expect(loggedLines(), isEmpty);
@@ -1863,118 +1654,43 @@ void main() {
       );
 
       test(
-        'the direct transcription fallback still runs when nothing inherits '
-        'the capability',
+        'the transcription profile still runs when nothing inherits the '
+        'capability',
         () async {
+          final fallback = makeProfile(withTranscription: true);
           when(
             () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => handPickedModelRoute());
           when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [makeModel()]);
-          when(
-            () => mockAiConfig.getConfigById('provider-mlx'),
-          ).thenAnswer((_) async => makeProvider());
+            () => mockResolver.resolveTranscriptionProfile(
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => fallback);
 
           final result = await service.tryTranscribe(subjectId: 'task-1');
 
           expect(result.handled, isTrue);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            'whisper-1',
-          );
+          expect(result.resolvedProfile, same(fallback));
         },
       );
 
       test(
         'the manual path can reach the fallback without a task at all',
         () async {
+          final fallback = makeProfile(withTranscription: true);
           when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [makeModel()]);
-          when(
-            () => mockAiConfig.getConfigById('provider-mlx'),
-          ).thenAnswer((_) async => makeProvider());
+            () => mockResolver.resolveTranscriptionProfile(),
+          ).thenAnswer((_) async => fallback);
 
-          // A goal check-in belongs to no task and no category, so the walk
-          // that starts from a task id cannot be asked at all — this is the
-          // entry point that lets it transcribe anyway.
+          // A recording that belongs to no task cannot be asked about from a
+          // task id — this is the entry point that lets it transcribe anyway.
           final result = await service.resolveTranscriptionFallback();
 
           expect(result.handled, isTrue);
-          expect(
-            result.resolvedProfile!.transcriptionModelId,
-            'whisper-1',
-          );
+          expect(result.resolvedProfile, same(fallback));
           expect(result.skill!.id, skillTranscribeContextId);
-          // With no Settings default nothing post-processes: the thinking
-          // slot holds the speech-to-text model itself.
-          expect(result.resolvedProfile!.audioPostProcessingDisabled, isTrue);
           // No task was involved, so the consent gate was never consulted.
           verifyNever(() => mockResolver.resolveForSubject(any()));
-        },
-      );
-
-      test(
-        "the fallback's transcript is post-processed on the Settings default "
-        "profile's post-processing route, since no profile of its own names "
-        'one',
-        () async {
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [makeModel()]);
-          when(
-            () => mockAiConfig.getConfigById('provider-mlx'),
-          ).thenAnswer((_) async => makeProvider());
-          final editor = testAiModel(
-            id: 'editor-row',
-            providerModelId: 'editor-native',
-          ).copyWith(supportsFunctionCalling: true);
-          final editorProvider = testInferenceProvider(id: 'editor-provider');
-          when(() => mockResolver.resolveDefaultProfile()).thenAnswer(
-            (_) async => ResolvedProfile(
-              thinkingModelId: 'thinking-native',
-              thinkingProvider: testInferenceProvider(),
-              audioPostProcessingModelId: editor.providerModelId,
-              audioPostProcessingProvider: editorProvider,
-              audioPostProcessingModel: editor,
-            ),
-          );
-
-          final profile =
-              (await service.resolveTranscriptionFallback()).resolvedProfile!;
-
-          expect(profile.transcriptionModelId, 'whisper-1');
-          expect(profile.effectiveAudioPostProcessingModelId, 'editor-native');
-          expect(profile.effectiveAudioPostProcessingModel, editor);
-          expect(profile.effectiveAudioPostProcessingProvider, editorProvider);
-          expect(profile.audioPostProcessingModelUnavailable, isFalse);
-          expect(profile.audioPostProcessingDisabled, isFalse);
-        },
-      );
-
-      test(
-        'a Settings default whose post-processing model is unavailable makes '
-        "the fallback's step fail visibly too",
-        () async {
-          when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [makeModel()]);
-          when(
-            () => mockAiConfig.getConfigById('provider-mlx'),
-          ).thenAnswer((_) async => makeProvider());
-          when(() => mockResolver.resolveDefaultProfile()).thenAnswer(
-            (_) async => ResolvedProfile(
-              thinkingModelId: 'thinking-native',
-              thinkingProvider: testInferenceProvider(),
-              audioPostProcessingModelUnavailable: true,
-            ),
-          );
-
-          final profile =
-              (await service.resolveTranscriptionFallback()).resolvedProfile!;
-
-          expect(profile.audioPostProcessingModelUnavailable, isTrue);
         },
       );
     });
@@ -2038,9 +1754,6 @@ void main() {
           () => localResolver.resolveAutomationFallbacks(any()),
         ).thenAnswer((_) async => const <ResolvedProfile>[]);
         when(
-          () => localAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => const <AiConfig>[]);
-        when(
           () => localAiConfig.getConfigById(any()),
         ).thenAnswer((invocation) async {
           final skillId = invocation.positionalArguments.single as String;
@@ -2095,126 +1808,11 @@ void main() {
       tags: 'glados',
     );
 
-    glados.Glados(
-      glados.any.fallbackRankScenario,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'direct transcription fallback ranking honours the platform-aware order',
-      (scenario) async {
-        // A process-global flag: the last generated scenario would otherwise
-        // leak into every file sharing this isolate (platform_test asserts
-        // the flags still describe the host).
-        final wasMacOS = platform.isMacOS;
-        platform.isMacOS = scenario.isMacOS;
-        addTearDown(() => platform.isMacOS = wasMacOS);
-
-        final localResolver = MockProfileAutomationResolver();
-        when(
-          localResolver.resolveDefaultProfile,
-        ).thenAnswer((_) async => null);
-        when(
-          () => localResolver.categoryOfSubject(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => localResolver.resolveTranscriptionProfile(
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-        final localAiConfig = MockAiConfigRepository();
-        final localService = ProfileAutomationService(
-          resolver: localResolver,
-          aiConfigRepository: localAiConfig,
-          // Generated scenarios cover behaviour past the consent gate.
-          categoryAutomationLookup: (_) async => true,
-          isEmbeddedModelInstalled: (_) async => true,
-        );
-
-        final providers = <AiConfigInferenceProvider>[];
-        final models = <AiConfigModel>[];
-        for (var index = 0; index < scenario.providerTypes.length; index++) {
-          // A non-empty API key keeps every candidate past the missing-key
-          // filter regardless of provider type, so the surviving set equals
-          // the generated set and the test exercises pure ranking.
-          providers.add(
-            makeProvider(
-              id: scenario.providerIdAt(index),
-              name: 'Provider $index',
-              type: scenario.providerTypes[index],
-              apiKey: 'sk-key-$index',
-            ),
-          );
-          models.add(
-            makeModel(
-              id: scenario.modelIdAt(index),
-              name: 'Model $index',
-              providerModelId: scenario.providerModelIdAt(index),
-              providerId: scenario.providerIdAt(index),
-            ),
-          );
-        }
-
-        when(
-          () => localResolver.resolveForSubject('rank-task'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => localResolver.resolveAutomationFallbacks(any()),
-        ).thenAnswer((_) async => const <ResolvedProfile>[]);
-        when(
-          () => localAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => models);
-        for (final provider in providers) {
-          when(
-            () => localAiConfig.getConfigById(provider.id),
-          ).thenAnswer((_) async => provider);
-        }
-
-        final result = await localService.tryTranscribe(subjectId: 'rank-task');
-
-        // At least one valid STT candidate always exists, so a model is always
-        // selected.
-        expect(result.handled, isTrue, reason: '$scenario');
-        final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
-        final winnerType = winnerProvider.inferenceProviderType;
-
-        if (scenario.providerTypes.contains(InferenceProviderType.sherpa)) {
-          expect(winnerType, InferenceProviderType.sherpa, reason: '$scenario');
-        } else if (scenario.providerTypes.contains(
-          InferenceProviderType.mistral,
-        )) {
-          expect(
-            winnerType,
-            InferenceProviderType.mistral,
-            reason: '$scenario',
-          );
-        } else if (scenario.providerTypes.contains(
-          InferenceProviderType.melious,
-        )) {
-          expect(
-            winnerType,
-            InferenceProviderType.melious,
-            reason: '$scenario',
-          );
-        }
-
-        // The ranking is deterministic: a second resolution selects the same
-        // model id for the identical candidate set.
-        final secondResult = await localService.tryTranscribe(
-          subjectId: 'rank-task',
-        );
-        expect(
-          secondResult.resolvedProfile!.transcriptionModelId,
-          result.resolvedProfile!.transcriptionModelId,
-          reason: 'Fallback selection must be deterministic. $scenario',
-        );
-      },
-      tags: 'glados',
-    );
-
     // A recording whose subject automates no transcription — every goal
-    // check-in — used to go straight to the direct model fallback, which
-    // ranks models by provider type and picks the on-device engine first.
-    // The category's profile and the Settings default come before it now.
-    group('transcription profile before the direct model fallback', () {
+    // check-in — used to go to a model fallback that ranked models by
+    // provider type and picked the on-device engine first. The category's
+    // profile and the Settings default are now the whole chain.
+    group('the transcription profile fallback', () {
       // The subject's agent owns no profile; the tests that need one say so.
       setUp(() {
         when(
@@ -2222,7 +1820,7 @@ void main() {
         ).thenAnswer((_) async => null);
       });
 
-      // A speech-to-text model the direct fallback would pick if asked.
+      // A configured speech-to-text model that no profile names: never used.
       void stubDirectCandidate() {
         when(
           () => mockAiConfig.getConfigsByType(AiConfigType.model),
@@ -2353,15 +1951,26 @@ void main() {
       );
 
       test(
-        'with no profile that can transcribe, the direct model fallback is '
-        'still the last step',
+        'with no profile that can transcribe, nothing transcribes — a '
+        'configured speech model no profile names is never picked',
         () async {
           stubDirectCandidate();
 
-          final result = await service.tryTranscribe(subjectId: 'goal-1');
-
-          expect(result.handled, isTrue);
-          expect(result.resolvedProfile!.transcriptionModelId, 'whisper-1');
+          expect(
+            (await service.tryTranscribe(subjectId: 'goal-1')).handled,
+            isFalse,
+          );
+          expect(
+            (await service.requestTranscription(subjectId: 'goal-1')).handled,
+            isFalse,
+          );
+          expect(
+            (await service.resolveTranscriptionFallback()).handled,
+            isFalse,
+          );
+          verifyNever(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          );
         },
       );
     });
@@ -2407,20 +2016,16 @@ void main() {
       });
 
       test(
-        'returns true when direct transcription fallback is available',
+        'returns true when the transcription profile fallback can run',
         () async {
-          final provider = makeProvider();
-          final model = makeModel();
-
           when(
             () => mockResolver.resolveForSubject('task-1'),
           ).thenAnswer((_) async => null);
           when(
-            () => mockAiConfig.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [model]);
-          when(
-            () => mockAiConfig.getConfigById(provider.id),
-          ).thenAnswer((_) async => provider);
+            () => mockResolver.resolveTranscriptionProfile(
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => makeProfile(withTranscription: true));
 
           final result = await service.hasAutomatedSkillType(
             subjectId: 'task-1',

@@ -32,7 +32,6 @@ class ResolvedProfile {
     this.audioPostProcessingProvider,
     this.audioPostProcessingModel,
     this.audioPostProcessingModelUnavailable = false,
-    this.audioPostProcessingDisabled = false,
     this.imageGenerationModelId,
     this.imageGenerationProvider,
     this.imageGenerationModel,
@@ -127,12 +126,6 @@ class ResolvedProfile {
   /// user chose it over.
   final bool audioPostProcessingModelUnavailable;
 
-  /// Nothing post-processes this profile's transcripts: it stands in for no
-  /// profile at all (the direct speech-to-text fallback with no Settings
-  /// default), so its thinking slot is no model to fall back to. Unlike
-  /// [audioPostProcessingModelUnavailable], no step is scheduled to fail.
-  final bool audioPostProcessingDisabled;
-
   String get effectiveAudioPostProcessingModelId =>
       audioPostProcessingModelId ?? thinkingModelId;
   AiConfigInferenceProvider get effectiveAudioPostProcessingProvider =>
@@ -142,14 +135,11 @@ class ResolvedProfile {
 
   /// The route that corrects a transcript against the speech dictionary —
   /// the post-processing slot, or the thinking model it falls back to — when
-  /// that model can call the correction tool. Null when nothing
-  /// post-processes this profile, when its configured slot does not resolve
-  /// on this device, or when the model cannot call tools.
+  /// that model can call the correction tool. Null when its configured slot
+  /// does not resolve on this device, or when the model cannot call tools.
   ({AiConfigInferenceProvider provider, AiConfigModel model})?
   get transcriptCorrectionRoute {
-    if (audioPostProcessingDisabled || audioPostProcessingModelUnavailable) {
-      return null;
-    }
+    if (audioPostProcessingModelUnavailable) return null;
     final model = effectiveAudioPostProcessingModel;
     if (model == null || !model.supportsFunctionCalling) return null;
     return (provider: effectiveAudioPostProcessingProvider, model: model);
@@ -235,7 +225,6 @@ class ResolvedProfile {
       audioPostProcessingProvider: audioPostProcessingProvider,
       audioPostProcessingModel: audioPostProcessingModel,
       audioPostProcessingModelUnavailable: audioPostProcessingModelUnavailable,
-      audioPostProcessingDisabled: audioPostProcessingDisabled,
       imageGenerationModelId: imageGenerationModelId,
       imageGenerationProvider: imageGenerationProvider,
       imageGenerationModel: imageGenerationModel,
@@ -278,7 +267,6 @@ class ResolvedProfile {
           audioPostProcessingModel == other.audioPostProcessingModel &&
           audioPostProcessingModelUnavailable ==
               other.audioPostProcessingModelUnavailable &&
-          audioPostProcessingDisabled == other.audioPostProcessingDisabled &&
           imageGenerationModelId == other.imageGenerationModelId &&
           imageGenerationProvider == other.imageGenerationProvider &&
           imageGenerationModel == other.imageGenerationModel &&
@@ -313,7 +301,6 @@ class ResolvedProfile {
     audioPostProcessingProvider,
     audioPostProcessingModel,
     audioPostProcessingModelUnavailable,
-    audioPostProcessingDisabled,
     imageGenerationModelId,
     imageGenerationProvider,
     imageGenerationModel,

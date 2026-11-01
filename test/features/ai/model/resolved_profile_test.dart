@@ -24,7 +24,6 @@ void main() {
         ResolvedProfile withSlot(
           AiConfigModel? model, {
           bool unavailable = false,
-          bool disabled = false,
         }) => ResolvedProfile(
           thinkingModelId: 'thinking',
           thinkingProvider: provider1,
@@ -33,7 +32,6 @@ void main() {
           audioPostProcessingProvider: model == null ? null : provider2,
           audioPostProcessingModel: model,
           audioPostProcessingModelUnavailable: unavailable,
-          audioPostProcessingDisabled: disabled,
         );
 
         final ownSlot = withSlot(caller).transcriptCorrectionRoute!;
@@ -45,10 +43,6 @@ void main() {
         expect(withSlot(mute).transcriptCorrectionRoute, isNull);
         expect(
           withSlot(caller, unavailable: true).transcriptCorrectionRoute,
-          isNull,
-        );
-        expect(
-          withSlot(caller, disabled: true).transcriptCorrectionRoute,
           isNull,
         );
         expect(
@@ -187,22 +181,9 @@ void main() {
           isTrue,
         );
 
-        final disabled = ResolvedProfile(
-          thinkingModelId: thinking.providerModelId,
-          thinkingProvider: provider1,
-          thinkingModel: thinking,
-          audioPostProcessingDisabled: true,
-        );
-        expect(
-          disabled
-              .withThinkingRoute(model: override, provider: provider1)
-              .audioPostProcessingDisabled,
-          isTrue,
-        );
         final variants = <ResolvedProfile>{
           unset,
           set,
-          disabled,
           ResolvedProfile(
             thinkingModelId: thinking.providerModelId,
             thinkingProvider: provider1,
@@ -234,7 +215,7 @@ void main() {
             audioPostProcessingModelUnavailable: true,
           ),
         };
-        expect(variants, hasLength(7));
+        expect(variants, hasLength(6));
         expect(
           set.hashCode,
           ResolvedProfile(

@@ -5,7 +5,7 @@ description: Provider-gated profile seeds, why deletion needed a tombstone, how 
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle, sync, tombstone, last-writer-wins]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T20:00:00Z }
 stale_after: 2027-01-31
 sources:
   - id: seeding
@@ -109,9 +109,8 @@ failing:
 - `ProfileAutomationService` matches nothing, and transcription falls through
   to the [transcription profile](profile-resolution.md#the-transcription-profile)
   — the category's profile, else the Settings default, by their transcription
-  slot — and only when neither owns one, to its **direct fallback**: a
-  rank-ordered search across every configured audio model that never reads the
-  subject's category or profile.
+  slot — even when the subject's own profile automates it. A category pinned
+  to one provider then transcribes through the default's.
 - `SyncedAudioInferenceDispatcher` has no fallback by design, so synced audio
   transcribes nothing at all.
 
