@@ -283,6 +283,14 @@ engine first: minutes per recording on a model nobody chose,
 while the Settings default named a fast one. Chat dictation in goals and
 People ran on discovery, which picks the seeded Melious Whisper.
 
+The rule itself logs nothing, because render-time probes ask it on every
+rebuild. Each run path logs, by sanitized id, the profile it transcribes
+through and the category it resolved for. That is
+`ProfileAutomationService`'s `resolved:` line (run intent only),
+`CheckInTranscriptionService`'s `transcribing … through profile …` line, and
+subject dictation's `dictation about … through profile …` line. Together they
+answer "which model heard this recording?" from a log export.
+
 # No model outside a profile
 
 When neither the category nor the Settings default owns a transcription

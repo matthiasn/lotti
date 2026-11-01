@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -701,14 +700,8 @@ void main() {
 
         expect(result, same(category));
         verifyNever(() => mockProfileResolver.resolveDefaultProfile());
-        expect(
-          logged,
-          contains(
-            'transcription profile for category '
-            '${DomainLogger.sanitizeId('people')}: the category profile '
-            '${DomainLogger.sanitizeId('people-profile')}',
-          ),
-        );
+        // Silent: render-time probes ask this on every rebuild.
+        expect(logged, isEmpty);
       },
     );
 
@@ -725,12 +718,7 @@ void main() {
         ).resolveTranscriptionProfile(categoryId: 'goals');
 
         expect(result, same(fallback));
-        expect(
-          logged.last,
-          'transcription profile for category '
-          '${DomainLogger.sanitizeId('goals')}: the Settings default '
-          '${DomainLogger.sanitizeId('default')}',
-        );
+        expect(logged, isEmpty);
       },
     );
 
@@ -766,11 +754,7 @@ void main() {
           });
 
           expect(await withCategories().resolveTranscriptionProfile(), isNull);
-          expect(
-            logged.last,
-            'no transcription profile for no category: neither it nor the '
-            'Settings default owns a transcription slot',
-          );
+          expect(logged, isEmpty);
         },
       );
     }

@@ -100,42 +100,22 @@ class ProfileAutomationResolver {
   /// resolves but names no transcription model is passed over like a
   /// missing one: it cannot transcribe either.
   ///
-  /// Logs which of the two won, by sanitized id, so a recording that
-  /// transcribed through an unexpected model can be traced from a log export.
+  /// Silent: render-time probes ask it on every rebuild. The run paths that
+  /// act on its answer log which profile they transcribe through.
   Future<ResolvedProfile?> resolveTranscriptionProfile({
     String? categoryId,
   }) async {
-    final category = categoryId == null
-        ? 'no category'
-        : 'category ${DomainLogger.sanitizeId(categoryId)}';
-    if (categoryId != null) {
+    final categoryProfileId = categoryId == null
+        ? null
+        : await _categoryProfileLookup?.call(categoryId);
+    if (categoryProfileId != null) {
       final categoryProfile = _transcribing(
-        await resolveForCategory(categoryId),
+        await _profileResolver.resolveByProfileId(categoryProfileId),
       );
-      if (categoryProfile != null) {
-        _logTranscriptionProfile(
-          'transcription profile for $category: the category profile '
-          '${DomainLogger.sanitizeId(categoryProfile.profileId ?? '')}',
-        );
-        return categoryProfile;
-      }
+      if (categoryProfile != null) return categoryProfile;
     }
-    final defaultProfile = _transcribing(await resolveDefaultProfile());
-    _logTranscriptionProfile(
-      defaultProfile == null
-          ? 'no transcription profile for $category: neither it nor the '
-                'Settings default owns a transcription slot'
-          : 'transcription profile for $category: the Settings default '
-                '${DomainLogger.sanitizeId(defaultProfile.profileId ?? '')}',
-    );
-    return defaultProfile;
+    return _transcribing(await resolveDefaultProfile());
   }
-
-  void _logTranscriptionProfile(String message) => _domainLogger.log(
-    LogDomain.ai,
-    message,
-    subDomain: _logTag,
-  );
 
   /// The category [subjectId] is filed under, or null when it has none or
   /// no lookup is wired.

@@ -556,8 +556,8 @@ class ProfileAutomationService {
     final skill = findBuiltInSkill(skillTranscribeContextId)!;
     if (profile == null) {
       _logSkip(
-        'neither the category profile nor the Settings default owns a '
-        'transcription slot — nothing transcribes',
+        'neither the profile of ${_categoryLabel(categoryId)} nor the '
+        'Settings default owns a transcription slot — nothing transcribes',
         subDomain: 'transcriptionProfile',
         intent: intent,
       );
@@ -565,7 +565,8 @@ class ProfileAutomationService {
     }
     _logRun(
       'no automated skill owns transcription — using the transcription '
-      'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')}',
+      'slot of profile ${DomainLogger.sanitizeId(profile.profileId ?? '')} '
+      'for ${_categoryLabel(categoryId)}',
       intent: intent,
     );
     return AutomationResult(
@@ -575,6 +576,10 @@ class ProfileAutomationService {
       skillAssignment: _fallbackTranscriptionAssignment,
     );
   }
+
+  static String _categoryLabel(String? categoryId) => categoryId == null
+      ? 'no category'
+      : 'category ${DomainLogger.sanitizeId(categoryId)}';
 
   /// Checks whether the resolved profile has a model slot populated for
   /// the given skill type.

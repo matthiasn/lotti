@@ -1869,7 +1869,8 @@ void main() {
             contains(
               'resolved: no automated skill owns transcription — using the '
               'transcription slot of profile '
-              '${DomainLogger.sanitizeId('')}',
+              '${DomainLogger.sanitizeId('')} for category '
+              '${DomainLogger.sanitizeId('goals')}',
             ),
           );
         },
