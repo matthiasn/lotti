@@ -72,6 +72,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   _PreparedSpeech? _prepared;
   File? _file;
   _SpeechKey? _fileKey;
+  Future<bool> Function()? _fileGate;
   TtsAudioPlayer? _player;
   final DomainLogger? _injectedLogger;
   // Captured in build: cleanup can finish after provider disposal, when ref is
@@ -268,6 +269,7 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
       }
       _file = file;
       _fileKey = key;
+      _fileGate = canPlay;
       final allowed = canPlay == null || await canPlay();
       if (!current() || !allowed) {
         if (identical(_file, file)) _file = null;
@@ -366,7 +368,9 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
   void _listenToPlayer(TtsAudioPlayer player) {
     _cancelPlayerSubscriptions();
-    _completedSub = player.completedStream.listen((_) => _onPlaybackFinished());
+    _completedSub = player.completedStream.listen((_) async {
+      await _onPlaybackFinished();
+    });
     _positionSub = player.positionStream.listen((position) {
       if (state.status == TtsPlaybackStatus.playing) {
         state = state.copyWith(position: position);
@@ -381,20 +385,40 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
 
   /// The utterance played to its end: its clip is kept as the prepared
   /// result for its key, so the same words, voice and language play again at
-  /// once. Anything else spoken or prepared, a discard, and disposal delete
-  /// it, as they do any prepared audio; a stop deletes a clip still playing.
-  void _onPlaybackFinished() {
+  /// once — but only while the caller's `canPlay` still allows it, asked
+  /// again now, and only if nothing else started meanwhile. An owner that
+  /// lost access or let go of the utterance (its gate says no) never leaves
+  /// a clip behind, however its own cleanup and this completion interleave.
+  /// Anything else spoken or prepared, a discard, and disposal delete a kept
+  /// clip, as they do any prepared audio; a stop deletes a clip still playing.
+  Future<void> _onPlaybackFinished() async {
     final file = _file;
     final key = _fileKey;
-    if (file != null && key != null && ref.mounted) {
-      _file = null;
+    final gate = _fileGate;
+    _file = null;
+    _onPlaybackEnded();
+    if (file == null) return;
+    final generation = _generation;
+    final slot = _prepared;
+    var keep = key != null && ref.mounted;
+    if (keep && gate != null) {
+      try {
+        keep = await gate();
+      } on Object {
+        keep = false;
+      }
+    }
+    if (keep &&
+        ref.mounted &&
+        generation == _generation &&
+        identical(_prepared, slot)) {
       discardPrepared();
-      _prepared = _PreparedSpeech(key)
+      _prepared = _PreparedSpeech(key!)
         ..file = file
         ..done.complete();
+    } else {
+      await _deleteFile(file);
     }
-    // Deletes whatever was not kept.
-    _onPlaybackEnded();
   }
 
   /// The key of an utterance: on a cloud route, its voice is the route's or
@@ -419,6 +443,8 @@ class TtsPlaybackController extends Notifier<TtsPlaybackState> {
   );
 
   void _onPlaybackEnded() {
+    _fileKey = null;
+    _fileGate = null;
     _cancelPlayerSubscriptions();
     final file = _file;
     _file = null;

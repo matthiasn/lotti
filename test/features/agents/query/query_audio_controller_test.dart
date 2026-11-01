@@ -224,6 +224,63 @@ void main() {
       verifyNever(file.delete);
     });
 
+    test('is deleted when it finishes just as the chat lets go', () async {
+      final file = clip();
+      bench.engine = FakeTtsEngine(output: file);
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
+      // The completion is already queued when the last listener goes.
+      bench.speechPlayer.complete();
+      subscription.close();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+    });
+
+    test("another answer drops the last one's clip, even when the voice "
+        'refuses the new one', () async {
+      final file = clip();
+      final local = bench.profile;
+      // No on-device voice on this platform: the cloud reads the first
+      // answer, then the profile switches to the local voice.
+      bench
+        ..engine = FakeTtsEngine(supported: false)
+        ..profile = cloudProfile()
+        ..cloud.output = file;
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer',
+      );
+      bench.speechPlayer.complete();
+      await pumpEventQueue();
+      verifyNever(file.delete);
+
+      bench
+        ..profile = local
+        ..addEvent(
+          'question-next',
+          const QueryChatEventData.question(text: 'And now?'),
+        )
+        ..addEvent(
+          'answer-next',
+          const QueryChatEventData.answer(
+            questionId: 'question-next',
+            text: 'The feeder is ready.',
+            coverage: QueryCoverage(),
+          ),
+        );
+      bench.history.add(bench.snapshot());
+      container.invalidate(queryProfileProvider(key.home));
+      await pumpEventQueue();
+      await controller.speakAnswer(
+        fallbackLanguageCode: 'en',
+        answerId: 'answer-next',
+      );
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+    });
+
     test('is deleted when the chat stops, though nothing is playing', () async {
       final file = clip();
       bench.engine = FakeTtsEngine(output: file);

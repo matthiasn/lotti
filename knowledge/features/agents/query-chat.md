@@ -916,7 +916,10 @@ An answer that played to its end stays with the voice as its replay clip, so
 playing it again starts at once; the chat discards that clip itself on every
 stop and detach (leaving or switching the chat, lost visibility, lockdown, the
 private flag, recording, disabling TTS), because nothing is playing then for a
-source-specific voice stop to reach.
+source-specific voice stop to reach, and whenever it reads another answer —
+the voice may refuse the new one before replacing the clip itself. A clip is
+only kept while the chat's access check still passes at completion, so one
+finishing just as the chat detaches is deleted too.
 The shared TTS controller serializes native synthesis and owns temporary-file
 cleanup, including late results from cancelled work. No prepared audio enters
 chat persistence or sync.

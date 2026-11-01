@@ -511,7 +511,12 @@ class QueryAudioController extends Notifier<QueryAudioState> {
               fallbackLanguageCode,
         );
         run.check();
-        _ttsSourceId = _spokenSourceId = _answerSourceId(answerId);
+        final source = _answerSourceId(answerId);
+        // Another answer's kept clip goes now: the voice may refuse this
+        // one before it would replace that clip itself, and from here on
+        // this chat's stop and detach name the new answer.
+        if (_spokenSourceId != source) _discardSpoken();
+        _ttsSourceId = _spokenSourceId = source;
         await _tts!.speak(
           sourceId: _ttsSourceId!,
           text: answer.text,

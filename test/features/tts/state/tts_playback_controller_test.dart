@@ -873,6 +873,34 @@ void main() {
       verify(file.delete).called(1);
     });
 
+    test('a clip its caller no longer allows when it ends is deleted, not '
+        'kept', () async {
+      final file = preparedFile();
+      final engine = FakeTtsEngine(output: file);
+      final player = FakeTtsAudioPlayer();
+      addTearDown(player.dispose);
+      final h = harness(engine: engine, player: player);
+      final controller = controllerOf(h.container);
+      var allowed = true;
+      Future<void> speak() => controller.speak(
+        sourceId: 'chat',
+        text: 'Private answer',
+        canPlay: () async => allowed,
+      );
+
+      await speak();
+      // Access is lost while it plays; the owner's cleanup may run before or
+      // after the completion, and either way nothing is left behind.
+      allowed = false;
+      player.complete();
+      await pumpEventQueue();
+      verify(file.delete).called(1);
+
+      allowed = true;
+      await speak();
+      expect(engine.calls, hasLength(2));
+    });
+
     test('other words, or disposal, delete the kept clip', () async {
       final kept = preparedFile();
       final next = MockIoFile();
