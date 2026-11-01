@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.76]
+
+### Added
+
+- **The companion has a place of her own.** She opens over the app as a large
+  panel on a computer — your chats beside the one you are in — and full screen
+  on a phone.
+- **Point her at the right categories.** Chips under her header narrow what she
+  answers from, per chat.
+- **Her voice can be muted.** Settings › Companion › Her voice: turn off
+  "Answer spoken questions aloud" and she answers in writing.
+
+### Changed
+
+- **She talks like herself.** Her answers take on the sass you picked for her:
+  warm, cheeky or sassy.
+- **Reduced motion keeps her still.** With reduced motion on, the companion
+  holds still instead of breathing and blinking.
+
+### Fixed
+
+- **The companion's legs stay still when she bounces for joy.** Her happy
+  bounce used to go through her hips, so her legs kept squashing and
+  stretching several times a second. Now only her upper body — shoulders,
+  arms and head — bobs, while her feet, legs and the hem of her dress stay
+  where they stand.
+
 ## [1.1.75]
 
 ### Added

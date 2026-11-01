@@ -40,6 +40,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.1.76" date="2026-11-01">
+      <description>
+        <p>Added: the companion has a place of her own. She opens over the app as a large panel on a computer - your chats beside the one you are in - and full screen on a phone.</p>
+        <p>Added: point her at the right categories. Chips under her header narrow what she answers from, per chat.</p>
+        <p>Added: her voice can be muted. Settings, Companion, Her voice: turn off "Answer spoken questions aloud" and she answers in writing.</p>
+        <p>Changed: she talks like herself. Her answers take on the sass you picked for her: warm, cheeky or sassy.</p>
+        <p>Changed: reduced motion keeps her still. With reduced motion on, the companion holds still instead of breathing and blinking.</p>
+        <p>Fixed: the companion's legs stay still when she bounces for joy. Her happy bounce used to go through her hips, so her legs kept squashing and stretching several times a second. Now only her upper body - shoulders, arms and head - bobs, while her feet, legs and the hem of her dress stay where they stand.</p>
+      </description>
+    </release>
     <release version="1.1.75" date="2026-11-01">
       <description>
         <p>Added: the companion answers aloud. Ask her a question by voice and she speaks her answer, her lips moving with the words; a typed question still gets a written answer. She listens while you talk and thinks while she works; tap her to stop her. Starting to talk stops her voice, so she is never recorded.</p>
