@@ -284,7 +284,13 @@ Future<void> _attachEmbeddingVectorsSync(EmbeddingStore store) async {
       reportContent: (reportId) async {
         if (!getIt.isRegistered<AgentRepository>()) return null;
         final report = await getIt<AgentRepository>().getEntity(reportId);
-        return report is AgentReportEntity ? report.content : null;
+        return report is AgentReportEntity
+            ? (
+                content: report.content,
+                tldr: report.tldr,
+                oneLiner: report.oneLiner,
+              )
+            : null;
       },
     ),
     flagChanges: journalDb.watchConfigFlags(),

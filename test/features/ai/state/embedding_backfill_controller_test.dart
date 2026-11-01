@@ -150,7 +150,7 @@ void main() {
 
     // Default: no labels (needed for label resolver)
     when(
-      () => mockJournalDb.getAllLabelDefinitions(),
+      () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
     ).thenAnswer((_) async => []);
 
     container = ProviderContainer(
@@ -754,7 +754,9 @@ void main() {
       _stubEntity(mockJournalDb, task);
 
       // Stub label definitions
-      when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+      when(
+        () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
+      ).thenAnswer(
         (_) async => [
           LabelDefinition(
             id: 'label-1',
@@ -800,7 +802,9 @@ void main() {
       _stubEntityIds(mockJournalDb, ['task-1']);
       _stubEntity(mockJournalDb, task);
 
-      when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+      when(
+        () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
+      ).thenAnswer(
         (_) async => [
           LabelDefinition(
             id: 'label-1',

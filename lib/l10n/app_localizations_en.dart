@@ -2990,6 +2990,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Embeddings';
 
   @override
+  String get backfillRecordsEmbeddingVectorsHeld =>
+      'Embeddings waiting for their entry';
+
+  @override
   String get backfillRecordsEntryLinks => 'Entry links';
 
   @override

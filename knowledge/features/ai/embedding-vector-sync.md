@@ -23,11 +23,11 @@ sources:
   - id: receiver
     resource: ../../../lib/features/ai/embedding_sync/embedding_sync_receiver.dart
     title: EmbeddingSyncReceiver, the merge and the hash check
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: held
     resource: ../../../lib/features/ai/embedding_sync/held_embedding_versions.dart
     title: HeldEmbeddingVersions, the persisted hold
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: payload
     resource: ../../../lib/features/ai/embedding_sync/embedding_vectors_payload.dart
     title: The vectors attachment format
@@ -35,11 +35,15 @@ sources:
   - id: processor
     resource: ../../../lib/features/ai/service/embedding_processor.dart
     title: EmbeddingProcessor, which writes every version
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
+  - id: service
+    resource: ../../../lib/features/ai/service/embedding_service.dart
+    title: EmbeddingService and its start-time re-embed of tasks with private labels
+    last_modified: 2026-11-01
   - id: vectors-sync
     resource: ../../../lib/features/sync/embedding_vectors/embedding_vectors_sync.dart
     title: EmbeddingVectorsSync, sync's half of the register
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: apply
     resource: ../../../lib/features/sync/matrix/sync_event_processor_embedding_vectors.dart
     title: The apply arm and its receipts
@@ -160,8 +164,25 @@ stateDiagram-v2
   Candidate --> Stored: own text hashes the same
   Candidate --> Discarded: the entry moved past the source clock
   Candidate --> Held: text not here yet
-  Held --> Merged: entry, report or label applied, or the queue drained
+  Held --> Merged: entry, report or label applied, the queue drained, or the pipeline attached
 ```
+
+- **The text both sides hash is built the same way on every device.** A
+  task's text names its labels — private ones too, whatever the device's
+  privacy toggle says (`EmbeddingProcessor.buildLabelResolver` reads
+  `getAllLabelDefinitionsIncludingPrivate`). It once followed the toggle, so
+  a device hiding private items hashed a task with a private label
+  differently from one showing them: the receiver held the version for good
+  — same entry clock, so never discarded — with its receipt recorded, and
+  showed fewer embeddings than its peer while reporting nothing missing.
+  `EmbeddingService.start` re-embeds every task that carries a private label
+  (`JournalDb.taskIdsWithPrivateLabels`) in its first batch that finds
+  embeddings on and the model downloaded; the content hash skips those
+  already embedded from that text.
+- **An agent report's text is its one-liner, TLDR and body**
+  (`EmbeddingContentExtractor.extractAgentReportText`). A receiver also
+  accepts a version hashed from the body alone, as writers before
+  whole-report embedding made them.
 
 - **The tie-break reads only the two versions:** the larger source clock
   under `VectorClock.compareCanonically`, then a tombstone over live vectors of
@@ -176,8 +197,14 @@ stateDiagram-v2
   waits on. A report also waits for its task, whose category decides the
   shard it is stored in. They are re-checked from `onJournalEntityApplied`,
   `onAgentEntityApplied` (reports live in the agent database),
-  `onEntityDefinitionApplied` (a label's name is part of a task's text), and
-  every time the inbound queue drains.
+  `onEntityDefinitionApplied` (a label's name is part of a task's text),
+  every time the inbound queue drains, and when the pipeline attaches — a
+  new build may hash a held version's text the way its sender did.
+- **Holds are shown, not counted missing.** Their receipts are recorded, so
+  the sequence log never asks for them, and a deep backfill only delivers
+  them to the hold again. Sync health lists their number under the
+  embeddings (`watchHeldCount`), the gap between this device's count and a
+  peer's.
 
 # Removals
 

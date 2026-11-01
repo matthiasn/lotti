@@ -357,16 +357,25 @@ class _Ledger extends StatelessWidget {
 /// numbers a deep backfill makes equal, so two devices in sync show the same
 /// ones here — unlike the tracked counters. The counts update on their own
 /// while shown, so the card has no refresh action.
+///
+/// Under the embeddings, the versions this device received but holds until
+/// its own text matches, when there are any: their receipts are recorded,
+/// so they never count as missing, and they are what a lower embedding
+/// count than a peer's is made of.
 class RecordCountsCard extends StatelessWidget {
   const RecordCountsCard({
     required this.counts,
     required this.isLoading,
+    this.heldEmbeddingVersions = 0,
     super.key,
   });
 
   /// Null while loading, or where no sync stack runs.
   final Map<SyncSequencePayloadType, int>? counts;
   final bool isLoading;
+
+  /// Embedding versions held until their text arrives.
+  final int heldEmbeddingVersions;
 
   @override
   Widget build(BuildContext context) {
@@ -431,12 +440,20 @@ class RecordCountsCard extends StatelessWidget {
             )
           else
             for (final MapEntry(key: type, value: label) in labels.entries)
-              if (counts[type] case final count?)
+              if (counts[type] case final count?) ...[
                 _LedgerRow(
                   label: label,
                   value: count,
                   color: tokens.colors.text.highEmphasis,
                 ),
+                if (type == SyncSequencePayloadType.embeddingVectors &&
+                    heldEmbeddingVersions > 0)
+                  _LedgerRow(
+                    label: messages.backfillRecordsEmbeddingVectorsHeld,
+                    value: heldEmbeddingVersions,
+                    color: tokens.colors.alert.warning.ink,
+                  ),
+              ],
         ],
       ),
     );

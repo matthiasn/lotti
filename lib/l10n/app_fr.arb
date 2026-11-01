@@ -1300,6 +1300,7 @@
   "backfillRecordsConsumptionEvents": "Événements d'utilisation de l'IA",
   "backfillRecordsDefinitions": "Définitions de réglages",
   "backfillRecordsEmbeddingVectors": "Embeddings",
+  "backfillRecordsEmbeddingVectorsHeld": "Embeddings en attente de leur entrée",
   "backfillRecordsEntryLinks": "Liens entre entrées",
   "backfillRecordsHint": "Suppressions comprises. Des appareils synchronisés affichent ici les mêmes chiffres ; les compteurs suivis peuvent différer entre eux.",
   "backfillRecordsJournal": "Entrées du journal",

@@ -45,6 +45,13 @@ EmbeddingRegister _register(
   originatingHostId: vc == null ? '' : host,
 );
 
+/// A sink whose re-check of held versions finds nothing to do.
+MockSyncedEmbeddingSink _quietSink() {
+  final sink = MockSyncedEmbeddingSink();
+  when(sink.recheckAll).thenAnswer((_) async {});
+  return sink;
+}
+
 void main() {
   late Directory docs;
   late MockVectorClockService vcService;
@@ -104,7 +111,7 @@ void main() {
   Future<void> attach({SyncedEmbeddingSink? sink}) => vectors.attach(
     store: store,
     modelId: _model,
-    sink: sink ?? MockSyncedEmbeddingSink(),
+    sink: sink ?? _quietSink(),
   );
 
   File fileOf(SyncEmbeddingVectors message) => File(
@@ -449,7 +456,7 @@ void main() {
         await vectors.attach(
           store: refusing,
           modelId: _model,
-          sink: MockSyncedEmbeddingSink(),
+          sink: _quietSink(),
         );
 
         await expectLater(vectors.sendCurrent('r1|$_model'), throwsStateError);
@@ -502,7 +509,7 @@ void main() {
       await vectors.attach(
         store: store,
         modelId: _model,
-        sink: MockSyncedEmbeddingSink(),
+        sink: _quietSink(),
         flagChanges: flagChanges.stream,
       );
       expect(rounds, 0);
@@ -595,9 +602,9 @@ void main() {
     test(
       're-checks held versions each time the queue drains after work',
       () async {
-        final sink = MockSyncedEmbeddingSink();
-        when(sink.recheckAll).thenAnswer((_) async {});
+        final sink = _quietSink();
         await attach(sink: sink);
+        verify(sink.recheckAll).called(1);
         final depth = StreamController<QueueDepthSignal>();
         addTearDown(depth.close);
         vectors.watchInboundQueue(depth.stream);
@@ -615,9 +622,9 @@ void main() {
     );
 
     test('a re-check that fails is logged', () async {
-      final sink = MockSyncedEmbeddingSink();
-      when(sink.recheckAll).thenThrow(StateError('store closed'));
+      final sink = _quietSink();
       await attach(sink: sink);
+      when(sink.recheckAll).thenThrow(StateError('store closed'));
       final depth = StreamController<QueueDepthSignal>();
       addTearDown(depth.close);
       vectors.watchInboundQueue(depth.stream);
@@ -637,6 +644,57 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'attaching re-checks the held versions before the catch-up runs',
+      () async {
+        final calls = <String>[];
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) async => calls.add('recheck'));
+        vectors.catchUpRound = () async => calls.add('catch-up');
+
+        await attach(sink: sink);
+
+        expect(calls, ['recheck', 'catch-up']);
+      },
+    );
+
+    test(
+      'a re-check at attach that fails is logged, and the catch-up still runs',
+      () async {
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenThrow(StateError('store closed'));
+        var rounds = 0;
+        vectors.catchUpRound = () async => rounds++;
+
+        await attach(sink: sink);
+
+        verify(
+          () => logger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'embeddingVectors',
+            message: 'held embedding versions could not be re-checked',
+          ),
+        ).called(1);
+        expect(rounds, 1);
+        expect(vectors.sink, same(sink));
+      },
+    );
+
+    test(
+      "the held version count is the sink's, and 0 without the pipeline",
+      () async {
+        expect(await vectors.watchHeldVersionCount().toList(), [0]);
+
+        final sink = _quietSink();
+        when(sink.watchHeldCount).thenAnswer((_) => Stream.value(14));
+        await attach(sink: sink);
+
+        expect(await vectors.watchHeldVersionCount().toList(), [14]);
+      },
+    );
 
     test('a drain without the pipeline re-checks nothing', () async {
       final depth = StreamController<QueueDepthSignal>();

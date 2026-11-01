@@ -545,6 +545,8 @@ void main() {
     required String subtype,
     required EmbeddingStore embeddingStore,
     required OnDeviceEmbeddingRepository embeddingRepository,
+    String? tldr,
+    String? oneLiner,
   }) {
     _stubEntity(
       mockJournalDb,
@@ -555,7 +557,9 @@ void main() {
     );
     return EmbeddingProcessor.processAgentReport(
       reportId: reportId,
-      reportContent: reportContent,
+      content: reportContent,
+      tldr: tldr,
+      oneLiner: oneLiner,
       taskId: taskId,
       subtype: subtype,
       journalDb: mockJournalDb,
@@ -1227,6 +1231,68 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'embeds the one-liner, TLDR and body together, so the task is found by '
+      'any of them',
+      () async {
+        const body = 'The detailed report body about the migration.';
+        const tldr = 'Migration done, rollout tomorrow 🚀';
+        const oneLiner = 'Rollout tomorrow';
+        const whole = '$oneLiner\n\n$tldr\n\n$body';
+
+        final result = await processAgentReport(
+          reportId: 'report-1',
+          reportContent: body,
+          tldr: tldr,
+          oneLiner: oneLiner,
+          taskId: 'task-1',
+          categoryId: 'cat-1',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        expect(result, isTrue);
+        verify(() => mockEmbeddingRepo.embedDocument(whole)).called(1);
+        verify(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
+            entityId: 'report-1',
+            entityType: kEntityTypeAgentReport,
+            modelId: _modelId,
+            contentHash: _hashOf(whole),
+            embeddings: any(named: 'embeddings'),
+            categoryId: 'cat-1',
+            taskId: 'task-1',
+            subtype: 'current',
+            register: any(named: 'register'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a short body is embedded when its TLDR makes it long enough',
+      () async {
+        final result = await processAgentReport(
+          reportId: 'report-1',
+          reportContent: 'Too short',
+          tldr: 'But the TLDR says plenty',
+          taskId: 'task-1',
+          categoryId: 'cat-1',
+          subtype: 'current',
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockEmbeddingRepo.embedDocument(
+            'But the TLDR says plenty\n\nToo short',
+          ),
+        ).called(1);
+      },
+    );
+
     test('returns false when content is too short', () async {
       final result = await processAgentReport(
         reportId: 'report-1',
@@ -1655,7 +1721,7 @@ void main() {
         // The agent's report reads the task's category and embeds…
         final report = EmbeddingProcessor.processAgentReport(
           reportId: 'report-1',
-          reportContent: 'An agent report with plenty of content to embed.',
+          content: 'An agent report with plenty of content to embed.',
           taskId: 'task-1',
           subtype: 'current',
           journalDb: mockJournalDb,
@@ -2022,7 +2088,7 @@ void main() {
         ).thenAnswer((_) async => null);
         Future<void> report(String id) => EmbeddingProcessor.processAgentReport(
           reportId: id,
-          reportContent: 'An agent report with plenty of content: $id',
+          content: 'An agent report with plenty of content: $id',
           taskId: 'task-1',
           subtype: 'current',
           journalDb: mockJournalDb,

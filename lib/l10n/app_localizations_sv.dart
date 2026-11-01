@@ -3011,6 +3011,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Inbäddningar';
 
   @override
+  String get backfillRecordsEmbeddingVectorsHeld =>
+      'Inbäddningar som väntar på sin post';
+
+  @override
   String get backfillRecordsEntryLinks => 'Länkar mellan poster';
 
   @override

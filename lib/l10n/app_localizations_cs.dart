@@ -3034,6 +3034,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Vektory';
 
   @override
+  String get backfillRecordsEmbeddingVectorsHeld =>
+      'Vektory čekající na svůj záznam';
+
+  @override
   String get backfillRecordsEntryLinks => 'Odkazy mezi záznamy';
 
   @override

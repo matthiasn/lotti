@@ -77,6 +77,27 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     );
   }
 
+  /// The ids of the live tasks that carry a live private label, whatever
+  /// this device's privacy toggle says: the tasks whose embedding text
+  /// depended on that toggle before label names were read regardless of it.
+  Future<List<String>> taskIdsWithPrivateLabels() async {
+    final rows = await customSelect(
+      '''
+      SELECT DISTINCT l.journal_id AS id
+      FROM labeled l
+      INNER JOIN label_definitions d ON d.id = l.label_id
+      INNER JOIN journal j ON j.id = l.journal_id
+      WHERE d.private = TRUE
+        AND d.deleted = FALSE
+        AND j.deleted = FALSE
+        AND j.task = TRUE
+      ORDER BY l.journal_id
+      ''',
+      readsFrom: {labeled, labelDefinitions, journal},
+    ).get();
+    return [for (final row in rows) row.read<String>('id')];
+  }
+
   /// Snapshot version of label usage statistics for prompt construction or
   /// one-off queries.
   ///

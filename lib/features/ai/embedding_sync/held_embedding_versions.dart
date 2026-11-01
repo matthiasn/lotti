@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -69,6 +70,7 @@ class HeldEmbeddingVersions {
 
   final File _file;
   final Map<String, HeldEmbeddingVersion> _held;
+  final StreamController<int> _counts = StreamController<int>.broadcast();
 
   /// The last write, so writes land one after another, each with the
   /// snapshot taken when it was asked for: two writes never share the
@@ -81,15 +83,33 @@ class HeldEmbeddingVersions {
   /// The version held of register [registerId], or `null`.
   HeldEmbeddingVersion? operator [](String registerId) => _held[registerId];
 
+  /// How many versions are held now, then again after every change: what
+  /// Sync health shows, since a held version's receipt is recorded and the
+  /// sequence log never reports it missing.
+  Stream<int> watchCount() {
+    StreamSubscription<int>? changes;
+    late final StreamController<int> controller;
+    controller = StreamController<int>(
+      onListen: () {
+        controller.add(_held.length);
+        changes = _counts.stream.listen(controller.add);
+      },
+      onCancel: () => changes?.cancel(),
+    );
+    return controller.stream;
+  }
+
   /// Holds [version], replacing what was held of its register.
   Future<void> put(HeldEmbeddingVersion version) async {
     _held[version.register.id] = version;
+    _counts.add(_held.length);
     await _persist();
   }
 
   /// Drops what is held of [registerId]; a no-op when nothing is.
   Future<void> remove(String registerId) async {
     if (_held.remove(registerId) == null) return;
+    _counts.add(_held.length);
     await _persist();
   }
 

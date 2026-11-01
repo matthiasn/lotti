@@ -103,17 +103,7 @@ class EmbeddingVectorsSync implements EmbeddingShare {
       _queueHadWork = false;
       final sink = _sink;
       if (sink == null) return;
-      try {
-        await sink.recheckAll();
-      } on Object catch (error, stackTrace) {
-        _domainLogger.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: _subDomain,
-          message: 'held embedding versions could not be re-checked',
-        );
-      }
+      await _recheckHeld(sink);
     });
   }
 
@@ -128,7 +118,10 @@ class EmbeddingVectorsSync implements EmbeddingShare {
   /// Connects the embedding pipeline: its [store], the [modelId] it embeds
   /// with, and the [sink] that receives versions.
   ///
-  /// Then, and whenever [flagChanges] fires, it runs the [catchUp].
+  /// It re-checks the versions held from before — a new build may hash
+  /// their text the way their sender did, and nothing else would look at
+  /// them until the inbound queue next drains — then, and whenever
+  /// [flagChanges] fires, it runs the [catchUp].
   Future<void> attach({
     required EmbeddingStore store,
     required String modelId,
@@ -140,8 +133,30 @@ class EmbeddingVectorsSync implements EmbeddingShare {
     _modelId = modelId;
     _sink = sink;
     _flagSubscription = flagChanges?.listen((_) async => catchUp());
+    await _recheckHeld(sink);
     await catchUp();
   }
+
+  /// Re-checks every version [sink] holds, logging a failure: a held
+  /// version waits for the next check either way.
+  Future<void> _recheckHeld(SyncedEmbeddingSink sink) async {
+    try {
+      await sink.recheckAll();
+    } on Object catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'held embedding versions could not be re-checked',
+      );
+    }
+  }
+
+  /// How many received versions this device holds until their text
+  /// arrives, then after every change; `0` without the pipeline.
+  Stream<int> watchHeldVersionCount() =>
+      _sink?.watchHeldCount() ?? Stream.value(0);
 
   /// Disconnects the pipeline, which is being disposed.
   Future<void> detach() async {

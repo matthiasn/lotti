@@ -110,6 +110,25 @@ abstract final class EmbeddingContentExtractor {
     return result;
   }
 
+  /// The text an agent report is embedded from: its one-liner, its TLDR and
+  /// its body, each trimmed, empty ones left out, a blank line between them —
+  /// so a task is found by anything its report says, not only by the body.
+  ///
+  /// The one composition both sides of vector sync use: the writer embeds
+  /// it, a receiver hashes its own copy of the report with it. Returns
+  /// `null` when the text is shorter than [kMinEmbeddingTextLength].
+  static String? extractAgentReportText({
+    required String content,
+    String? tldr,
+    String? oneLiner,
+  }) {
+    final text = [oneLiner, tldr, content]
+        .map((part) => part?.trim() ?? '')
+        .where((part) => part.isNotEmpty)
+        .join('\n\n');
+    return text.length < kMinEmbeddingTextLength ? null : text;
+  }
+
   /// Returns the first transcript text from audio data, or `null`.
   static String? _firstTranscript(AudioData data) {
     final transcripts = data.transcripts;

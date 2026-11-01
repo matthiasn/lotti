@@ -70,13 +70,45 @@ class EmbeddingService {
     aiResponseNotification,
   };
 
-  /// Starts listening to local update notifications.
+  /// Starts listening to local update notifications, and queues the tasks
+  /// that carry a private label (see [_queuePrivateLabelledTasks]) as the
+  /// first batch that finds embeddings on and the model downloaded.
   ///
   /// Idempotent — calling while already started is a no-op.
   void start() {
     if (_subscription != null) return;
     _stopped = false;
     _subscription = updateNotifications.localUpdateStream.listen(_onBatch);
+    _privateLabelledTasksDue = true;
+    _enqueue(const {});
+  }
+
+  /// Whether the tasks that carry a private label still need queueing in
+  /// this run of the service.
+  bool _privateLabelledTasksDue = false;
+
+  /// Adds every task that carries a private label to the pending batch.
+  ///
+  /// A device hiding private items used to leave those labels out of a
+  /// task's text, so its vectors hashed differently from a peer's, and the
+  /// peer held them for good. Every device now builds the text with them;
+  /// this re-embeds the tasks embedded the old way, and the content hash
+  /// skips the rest without a model call. A failed query is logged and not
+  /// retried before the next start; a [stop] while it runs queues nothing.
+  Future<void> _queuePrivateLabelledTasks() async {
+    _privateLabelledTasksDue = false;
+    try {
+      final ids = await journalDb.taskIdsWithPrivateLabels();
+      if (!_stopped) _pendingEntityIds.addAll(ids);
+    } on Object catch (e, stackTrace) {
+      _domainLogger.error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'Failed to queue the tasks that carry private labels',
+      );
+    }
   }
 
   /// Stops listening, clears pending and retry work, and awaits any in-flight
@@ -159,6 +191,7 @@ class EmbeddingService {
         _pendingEntityIds.clear();
         return;
       }
+      if (_privateLabelledTasksDue) await _queuePrivateLabelledTasks();
 
       // Cache label definitions for the batch to avoid one DB query per entity.
       // Best-effort: label resolution failures should not block core embeddings.

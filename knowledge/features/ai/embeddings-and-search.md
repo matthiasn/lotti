@@ -11,11 +11,11 @@ sources:
   - id: embedding-service
     resource: ../../../lib/features/ai/service/embedding_service.dart
     title: EmbeddingService
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: processor
     resource: ../../../lib/features/ai/service/embedding_processor.dart
     title: EmbeddingProcessor and its per-entity lock
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: backfill
     resource: ../../../lib/features/ai/state/embedding_backfill_controller.dart
     title: EmbeddingBackfillController
@@ -55,7 +55,7 @@ sources:
   - id: report-writer
     resource: ../../../lib/features/agents/workflow/task_agent_persistence_helpers.dart
     title: The task agent's report embedding
-    last_modified: 2026-10-30
+    last_modified: 2026-11-01
   - id: gemma-tokenizer
     resource: ../../../lib/features/ai/on_device_embedding/gemma_tokenizer.dart
     title: GemmaTokenizer, EmbeddingGemma's tokenizer in Dart
@@ -147,7 +147,13 @@ switch. That page side is
   chunks; a removal is a tombstone. See
   [embedding vectors sync](embedding-vector-sync.md).
 - Tasks can be embedded with **label-enriched** text, not just raw title and
-  body.
+  body. Private labels are named whatever the device's privacy toggle says,
+  so every device builds the same text.
+- **An agent report is embedded whole**: its one-liner, TLDR and body, a
+  blank line apart (`EmbeddingContentExtractor.extractAgentReportText`), so a
+  task is found by anything its current report says. Only the task agent's
+  wake embeds a report, as it writes it; reports written before this keep
+  the body-only vectors until the task's next report.
 - **A task has at most one report in the index.** Once a new report is
   embedded, every other report embedded for its task is deleted
   (`EmbeddingStore.agentReportIdsForTask`), not just the one it replaced: a

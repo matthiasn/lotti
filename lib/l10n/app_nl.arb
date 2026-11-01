@@ -1521,6 +1521,7 @@
   "backfillRecordsConsumptionEvents": "AI-gebruiksgebeurtenissen",
   "backfillRecordsDefinitions": "Instellingsdefinities",
   "backfillRecordsEmbeddingVectors": "Inbeddingen",
+  "backfillRecordsEmbeddingVectorsHeld": "Inbeddingen die op hun item wachten",
   "backfillRecordsEntryLinks": "Koppelingen tussen items",
   "backfillRecordsHint": "Inclusief verwijderde. Gesynchroniseerde apparaten tonen hier dezelfde aantallen; de bijgehouden tellers kunnen tussen hen verschillen.",
   "backfillRecordsJournal": "Dagboekitems",

@@ -5082,6 +5082,12 @@ abstract class AppLocalizations {
   /// **'Embeddings'**
   String get backfillRecordsEmbeddingVectors;
 
+  /// No description provided for @backfillRecordsEmbeddingVectorsHeld.
+  ///
+  /// In en, this message translates to:
+  /// **'Embeddings waiting for their entry'**
+  String get backfillRecordsEmbeddingVectorsHeld;
+
   /// No description provided for @backfillRecordsEntryLinks.
   ///
   /// In en, this message translates to:

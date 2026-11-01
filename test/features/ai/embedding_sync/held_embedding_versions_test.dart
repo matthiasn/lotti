@@ -56,6 +56,45 @@ void main() {
     expect(e2.labelIds, ['l1', 'l2']);
   });
 
+  test(
+    'watchCount starts at the reopened count and follows every change, '
+    'never a no-op removal',
+    () async {
+      await (await HeldEmbeddingVersions.open(path)).put(_held('e1', 1));
+      final held = await HeldEmbeddingVersions.open(path);
+      final counts = <int>[];
+      final subscription = held.watchCount().listen(counts.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      await held.put(_held('e2', 1));
+      await held.put(_held('e2', 2));
+      await held.remove('e1|m');
+      await held.remove('e1|m');
+      await pumpEventQueue();
+
+      expect(counts, [1, 2, 2, 1]);
+    },
+  );
+
+  test('two watchers each see the count from when they listen', () async {
+    final held = await HeldEmbeddingVersions.open(path);
+    final first = <int>[];
+    final firstSubscription = held.watchCount().listen(first.add);
+    addTearDown(firstSubscription.cancel);
+    await held.put(_held('e1', 1));
+    final second = <int>[];
+    final secondSubscription = held.watchCount().listen(second.add);
+    addTearDown(secondSubscription.cancel);
+    await pumpEventQueue();
+
+    await held.remove('e1|m');
+    await pumpEventQueue();
+
+    expect(first, [0, 1, 0]);
+    expect(second, [1, 0]);
+  });
+
   test('put replaces what is held of the register, remove drops it', () async {
     final held = await HeldEmbeddingVersions.open(path);
     await held.put(_held('e1', 1));

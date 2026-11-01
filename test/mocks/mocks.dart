@@ -354,6 +354,24 @@ class MockJournalDb extends Mock implements JournalDb {
     return Future<bool>.value(false);
   }
 
+  /// Unstubbed, no task carries a private label — so every
+  /// `EmbeddingService.start` behind a mocked database queues nothing at
+  /// start instead of failing on a null `Future`.
+  @override
+  Future<List<String>> taskIdsWithPrivateLabels() {
+    try {
+      final result = super.noSuchMethod(
+        Invocation.method(#taskIdsWithPrivateLabels, []),
+      );
+      if (result is Future<List<String>>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return Future<List<String>>.value(const <String>[]);
+  }
+
   /// Unstubbed, no version of the link is stored — so every
   /// `PersistenceLogic.createLink` behind a mocked database (and every entry
   /// created with a `linkedId`) mints a fresh link instead of failing on a

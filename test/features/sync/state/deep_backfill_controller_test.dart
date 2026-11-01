@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
@@ -105,6 +106,41 @@ void main() {
     verify(
       () => service.runRound(onProgress: any(named: 'onProgress')),
     ).called(1);
+  });
+
+  group('heldEmbeddingVersionsCountProvider', () {
+    test('is 0 without the sync half of the embedding register', () async {
+      final scoped = ProviderContainer(
+        overrides: [embeddingVectorsSyncProvider.overrideWithValue(null)],
+      );
+      addTearDown(scoped.dispose);
+      scoped.listen(heldEmbeddingVersionsCountProvider, (_, _) {});
+
+      expect(await scoped.read(heldEmbeddingVersionsCountProvider.future), 0);
+    });
+
+    test('follows the held version count as it changes', () async {
+      final vectors = MockEmbeddingVectorsSync();
+      final counts = StreamController<int>();
+      when(vectors.watchHeldVersionCount).thenAnswer((_) => counts.stream);
+      final scoped = ProviderContainer(
+        overrides: [embeddingVectorsSyncProvider.overrideWithValue(vectors)],
+      );
+      addTearDown(scoped.dispose);
+      final seen = <int>[];
+      scoped.listen(
+        heldEmbeddingVersionsCountProvider,
+        (_, next) => next.whenData(seen.add),
+      );
+
+      counts
+        ..add(14)
+        ..add(0);
+      await counts.close();
+      await pumpEventQueue();
+
+      expect(seen, [14, 0]);
+    });
   });
 
   group('deepBackfillRecordCountsProvider', () {

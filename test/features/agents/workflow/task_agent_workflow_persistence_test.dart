@@ -2477,9 +2477,16 @@ not describe task configuration or tool activity as progress.
             ),
           );
 
-          verify(
-            () => mockEmbeddingRepository.embedDocument(any()),
-          ).called(1);
+          // The whole report is embedded, so the task is found by its
+          // one-liner and TLDR as much as by its body.
+          expect(
+            verify(
+              () => mockEmbeddingRepository.embedDocument(captureAny()),
+            ).captured.single,
+            'Implementation done, release next\n\n'
+            'Implementation is done and release is next.\n\n'
+            '# Report\nThis report has enough content to embed.',
+          );
           expect(newReportId, isNotNull);
           expect(
             deleted,
