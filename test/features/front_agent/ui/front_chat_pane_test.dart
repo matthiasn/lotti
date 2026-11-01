@@ -742,6 +742,17 @@ void main() {
                 doorId: 'd:door:1',
                 record: settled(1, const FrontDoorTaskCreated(taskId: 't-1')),
               ),
+              FrontDoorEntry(
+                doorId: 'd:door:2',
+                record: settled(
+                  2,
+                  const FrontDoorProjectCreated(projectId: 'p-1'),
+                ),
+              ),
+              FrontDoorEntry(
+                doorId: 'd:door:3',
+                record: settled(3, const FrontDoorDayPlanned()),
+              ),
             ],
           },
         ),
@@ -751,8 +762,18 @@ void main() {
       await tester.pump();
       await tester.tap(find.byKey(const ValueKey('front-door-open-1')));
       await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-2')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('front-door-open-3')));
+      await tester.pump();
 
-      expect(paths, ['/journal/e-1', '/tasks/t-1']);
+      // The day it planned is the Daily OS day surface.
+      expect(paths, [
+        '/journal/e-1',
+        '/tasks/t-1',
+        '/projects/p-1',
+        '/calendar',
+      ]);
     });
   });
 

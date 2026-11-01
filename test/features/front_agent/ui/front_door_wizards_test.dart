@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,6 +116,38 @@ void main() {
     expect(planned, isFalse);
   });
 
+  testWidgets('a surface gone before the plan is read opens nothing and '
+      'plans nothing', (tester) async {
+    final read = Completer<DraftPlan?>();
+    bool? planned;
+    await tester.pumpWidget(
+      makeTestableWidget(
+        Consumer(
+          builder: (context, ref, _) => Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                final plan = ref.read(frontDayPlannerProvider);
+                planned = await plan(context, 'Move the count');
+              },
+              child: const Text('plan'),
+            ),
+          ),
+        ),
+        overrides: [dayAgentProvider.overrideWithValue(_SlowPlan(read))],
+      ),
+    );
+    await tester.tap(find.text('plan'));
+    await tester.pump();
+
+    // The surface closes while today's plan is still being read.
+    await tester.pumpWidget(const SizedBox.shrink());
+    read.complete(null);
+    await tester.pump();
+
+    expect(planned, isFalse);
+    expect(find.byType(CaptureModalContent), findsNothing);
+  });
+
   testWidgets('the project opener shows the project form titled with the '
       'words, and a form closed makes no project', (tester) async {
     // The form resolves categories through the locator.
@@ -159,4 +193,14 @@ void main() {
     expect(done, isTrue);
     expect(created, isNull);
   });
+}
+
+/// A day agent still reading today's plan when the surface goes away.
+class _SlowPlan extends MockDayAgent {
+  _SlowPlan(this._read);
+
+  final Completer<DraftPlan?> _read;
+
+  @override
+  Future<DraftPlan?> currentPlanForDate(DateTime date) => _read.future;
 }
