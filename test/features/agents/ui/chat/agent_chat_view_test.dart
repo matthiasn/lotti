@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
+import 'package:lotti/features/ai/util/inference_provider_resolver.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -1203,6 +1204,11 @@ void main() {
 
     testWidgets('tapping the mic starts recording', (tester) async {
       var startCalled = false;
+      late IdleCallbackController recorder;
+      Future<ResolvedInferenceProvider> resolveTarget() async =>
+          throw UnimplementedError();
+      Future<String> correct(String words, ResolvedInferenceProvider _) async =>
+          words;
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(
@@ -1214,6 +1220,8 @@ void main() {
               onDraftChanged: (_) {},
               onSend: () {},
               onRetry: () {},
+              resolveTranscriptionTarget: resolveTarget,
+              correctTranscript: correct,
             ),
           ),
           overrides: [
@@ -1221,7 +1229,7 @@ void main() {
               'goal-1',
             ).overrideWith((ref) async => const []),
             chatRecorderControllerProvider.overrideWith(
-              () => IdleCallbackController(
+              () => recorder = IdleCallbackController(
                 onStartCalled: () => startCalled = true,
               ),
             ),
@@ -1234,6 +1242,9 @@ void main() {
       await tester.pump();
 
       expect(startCalled, isTrue);
+      // The host's route and its correction belong to the take it starts.
+      expect(recorder.lastTranscriptionTargetResolver, same(resolveTarget));
+      expect(recorder.lastTranscriptCorrector, same(correct));
     });
 
     testWidgets('shows waveform and cancel/stop while recording', (

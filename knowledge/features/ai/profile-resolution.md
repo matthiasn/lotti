@@ -5,8 +5,8 @@ description: Which profile drives a run, the optional Chat, audio post-processin
 resource: ../../../lib/features/ai/util/profile_resolver.dart
 tags: [ai, profiles, resolution, pinning, privacy]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-28T09:00:00Z }
-stale_after: 2026-12-26
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-01-31
 sources:
   - id: device-default
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
@@ -31,15 +31,19 @@ sources:
   - id: automation-resolver
     resource: ../../../lib/features/ai/helpers/profile_automation_resolver.dart
     title: ProfileAutomationResolver — the skill path's entry points
-    last_modified: 2026-10-08
+    last_modified: 2026-11-01
   - id: trigger
     resource: ../../../lib/features/ai/state/skill_trigger_providers.dart
     title: triggerSkillProvider
-    last_modified: 2026-10-08
+    last_modified: 2026-11-01
   - id: automation-service
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
-    title: The direct transcription fallback
-    last_modified: 2026-10-08
+    title: The transcription fallbacks — profile first, then the direct model
+    last_modified: 2026-11-01
+  - id: subject-dictation
+    resource: ../../../lib/features/ai/state/subject_dictation_providers.dart
+    title: subjectDictationProvider — chat dictation on the subject's transcription profile
+    last_modified: 2026-11-01
   - id: slot-resolution
     resource: ../../../lib/features/ai/util/inference_provider_resolver.dart
     title: Slot and legacy provider resolution
@@ -57,6 +61,8 @@ sources:
 | `resolveForCategory(categoryId)` | Standalone entries with no parent task. Reads `CategoryDefinition.defaultProfileId` and resolves it directly |
 | `resolveAutomationFallbacks(subjectId)` | The ordered, de-duplicated profiles a subject *inherits*: its own `profileId`, then its category's current `defaultProfileId`. Used only by `ProfileAutomationService` — see [execution paths](execution-paths.md) |
 | `resolveDefaultProfile()` | The device's Settings default profile. Used for recording summaries no task or category reaches, and for the post-processing route of the direct transcription fallback |
+| `resolveTranscriptionProfile({categoryId})` | The profile a recording without a task transcribes through: the category's `defaultProfileId` when it owns a transcription slot, else the Settings default when it does, else null. The one rule goal and People recordings, their chats' dictation and the automation fallback all follow — see [the transcription profile](#the-transcription-profile) |
+| `categoryOfSubject(subjectId)` | The category a subject (task, project, person, goal entry) is filed under, for the rule above |
 
 The resolver reads agents and their templates through two ports the AI
 feature declares in `profile_automation_providers.dart`:
@@ -73,8 +79,9 @@ calls `resolveForSubject`; otherwise it looks up the entry, reads its
 `categoryId`, and calls `resolveForCategory`. An entry with neither declines
 the skill, except transcription and recording summaries. A transcription that
 resolves no transcription slot falls back to
-`ProfileAutomationService.resolveDirectTranscription`; a recording summary that
-resolves no profile falls back to `resolveDefaultProfile`. Skills whose
+`ProfileAutomationService.resolveTranscriptionFallback` — the Settings
+default's transcription slot, then the direct model fallback; a recording
+summary that resolves no profile falls back to `resolveDefaultProfile`. Skills whose
 `contextPolicy` is `fullTask` are hidden from the popup for entries without task
 context, except `Summarize Recording`, and the provider declines them without a
 task except for transcription and audio-summary skills.
@@ -106,7 +113,7 @@ flowchart TD
   CategoryProfile --> Result
 
   Result --> NeedsStt{"Transcription without a transcription slot?"}
-  NeedsStt -->|yes| Direct["ProfileAutomationService.resolveDirectTranscription()"]
+  NeedsStt -->|yes| Direct["resolveTranscriptionFallback(): Settings default's slot, then direct model fallback"]
   NeedsStt -->|no| NeedsDefault{"Audio summary without a profile?"}
   NeedsDefault -->|yes| Default["resolveDefaultProfile()"]
   NeedsDefault -->|no| Runnable
@@ -231,14 +238,58 @@ This is deliberate sync hygiene: an orphaned duplicate row from another device
 must not abort an agent wake when a valid provider/model pair is still configured
 locally.
 
+# The transcription profile
+
+A recording that belongs to no task — a goal's check-in, a person's check-in,
+a voice note filed in a category — transcribes through the profile
+`ProfileAutomationResolver.resolveTranscriptionProfile` picks, in a strict
+order:
+
+```mermaid
+flowchart TD
+  Start["resolveTranscriptionProfile(categoryId)"] --> HasCat{"categoryId set?"}
+  HasCat -->|yes| Cat["resolveForCategory(categoryId)"]
+  Cat --> CatSlot{"Transcription model and provider?"}
+  CatSlot -->|yes| UseCat["The category's profile"]
+  CatSlot -->|no| Def
+  HasCat -->|no| Def["resolveDefaultProfile()"]
+  Def --> DefSlot{"Transcription model and provider?"}
+  DefSlot -->|yes| UseDef["The Settings default"]
+  DefSlot -->|no| None["null: nothing can transcribe"]
+```
+
+No model is named in code: the slot's provider and model, and the
+post-processing route that follows, come from whichever profile wins. Who asks:
+
+- **`ProfileAutomationService`**, whenever no automated skill owns
+  transcription for a subject (`tryTranscribe`, `requestTranscription`, the
+  probes) or the manual popup's profile has no slot
+  (`resolveTranscriptionFallback`). The subject's category comes from
+  `categoryOfSubject`. The winning profile runs the built-in
+  `Transcribe (Task Context)` skill with an automated assignment.
+- **`CheckInTranscriptionService`** for every People check-in and capture,
+  with the person's category.
+- **`subjectDictationProvider`** (`lib/features/ai/state/subject_dictation_providers.dart`)
+  for dictation into a goal's or a person's agent chat and a goal's charter
+  sheet: its `resolveTarget` hands the chat recorder the slot's route, and its
+  `correct` runs the dictionary correction on the profile's
+  `ResolvedProfile.transcriptCorrectionRoute` when a speech-to-text engine
+  heard the words — the step a check-in's recording gets. Those surfaces never
+  reach `AudioTranscriptionService.discoverTarget`.
+
+Before this order existed, a goal check-in whose category automated nothing
+went straight to the direct model fallback below, whose provider ranking put
+the on-device engine first: minutes per recording on a model nobody chose,
+while the Settings default named a fast one. Chat dictation in goals and
+People ran on discovery, which picks the seeded Melious Whisper.
+
 # The direct transcription fallback
 
-Transcription has a fallback in `ProfileAutomationService`, reached by the
-automatic path, by gesture-requested transcription, and by the manual popup via
-`resolveDirectTranscription`:
-it first tries the profile automation path, then scans configured audio-to-text
-model rows when no profile handles transcription. The fallback builds an
-**ephemeral** `ResolvedProfile` around the selected model and the built-in
+The last step of `ProfileAutomationService._tryTranscriptionFallbacks`,
+reached only when neither the category nor the Settings default profile can
+transcribe — a device whose profiles name no transcription model at all. It
+scans configured audio-to-text model rows and builds an **ephemeral**
+`ResolvedProfile` around the selected model and the built-in
 `Transcribe (Task Context)` skill — it does not persist a profile.
 
 Candidate ranking prefers installed sherpa models, then Mistral, Melious,

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
@@ -93,6 +94,10 @@ class RelationshipChatPane extends ConsumerWidget {
     }
 
     final composer = ref.watch(relationshipChatControllerProvider(agentId));
+    // Spoken words go through the profile the person's recordings use —
+    // their category's, else the Settings default — never a discovered
+    // model, and are corrected like a check-in's.
+    final dictation = ref.watch(subjectDictationProvider(relationshipId));
     final controller = ref.read(
       relationshipChatControllerProvider(agentId).notifier,
     );
@@ -122,6 +127,8 @@ class RelationshipChatPane extends ConsumerWidget {
       onDraftChanged: controller.updateDraft,
       onSend: controller.send,
       onRetry: controller.retry,
+      resolveTranscriptionTarget: dictation.resolveTarget,
+      correctTranscript: dictation.correct,
       attachmentBuilder: (context, message) {
         if (message.role != AgentChatRole.agent || message.runKey == null) {
           return null;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -12,9 +13,11 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/dashboards/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
@@ -126,6 +129,8 @@ void main() {
               vectorClock: null,
             )
             as AgentIdentityEntity;
+    final goals = MockGoalRepository();
+    when(() => goals.goalIdForAgent('goal-1')).thenReturn('goal-entry-1');
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const Scaffold(body: GoalAgentChatPane(agentId: 'goal-1')),
@@ -140,6 +145,7 @@ void main() {
           agentChatProjectionProvider(
             'goal-1',
           ).overrideWith((ref) async => const []),
+          goalRepositoryProvider.overrideWithValue(goals),
         ],
       ),
     );
@@ -149,6 +155,15 @@ void main() {
     expect(find.text('Juno'), findsOneWidget);
     expect(find.text('Not enough data'), findsNothing);
     expect(find.text('On track'), findsNothing);
+
+    // Spoken words go through the goal's transcription profile, corrected
+    // like its check-ins — never through a discovered model.
+    final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
+    final dictation = ProviderScope.containerOf(
+      tester.element(find.byType(AgentChatView)),
+    ).read(goalDictationProvider('goal-1'))!;
+    expect(view.resolveTranscriptionTarget, same(dictation.resolveTarget));
+    expect(view.correctTranscript, same(dictation.correct));
   });
 
   testWidgets('user turns get a receipt, nothing, or an offer card depending '

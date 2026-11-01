@@ -779,6 +779,68 @@ void main() {
       verifyNever(() => service.transcribeStream(any(), target: target));
     });
 
+    test('a correction rewrites the words its route heard, and is told '
+        'which route that was', () async {
+      final heardBy = <ResolvedInferenceProvider>[];
+      await controller.start(
+        resolveTranscriptionTarget: () async => target,
+        correctTranscript: (transcript, route) async {
+          heardBy.add(route);
+          return '$transcript, corrected';
+        },
+      );
+      await controller.stopAndTranscribe();
+
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'Category model result, corrected',
+      );
+      expect(heardBy, [target]);
+    });
+
+    test('a correction that throws keeps the words as heard', () async {
+      await controller.start(
+        resolveTranscriptionTarget: () async => target,
+        correctTranscript: (_, _) async => throw StateError('offline'),
+      );
+      await controller.stopAndTranscribe();
+
+      final state = container.read(chatRecorderControllerProvider);
+      expect(state.transcript, 'Category model result');
+      expect(state.error, isNull);
+    });
+
+    test('no correction runs on discovered words, nor on silence', () async {
+      var corrections = 0;
+      Future<String> count(
+        String transcript,
+        ResolvedInferenceProvider _,
+      ) async {
+        corrections++;
+        return transcript;
+      }
+
+      // Without an explicit route there is no profile to correct with.
+      await controller.start(correctTranscript: count);
+      await controller.stopAndTranscribe();
+      expect(
+        container.read(chatRecorderControllerProvider).transcript,
+        'Automatic model result',
+      );
+      controller.clearResult();
+
+      when(
+        () => service.transcribeStream(any(), target: target),
+      ).thenAnswer((_) => Stream.value('  '));
+      await controller.start(
+        resolveTranscriptionTarget: () async => target,
+        correctTranscript: count,
+      );
+      await controller.stopAndTranscribe();
+
+      expect(corrections, 0);
+    });
+
     test(
       'later unscoped recording does not retain the previous target',
       () async {

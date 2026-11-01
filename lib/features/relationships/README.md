@@ -107,7 +107,9 @@ cards render in place of the text. Each recording then sits under the note
 as its own entry-to-be, with its words once they arrive, and is saved as one
 of the check-in's entries — never merged into the note, so nothing typed is
 replaced. Voice capture records against the person and transcribes with the
-system default profile. Save does not wait for the words: a few words or a
+profile of the person's category, or the system default profile when the
+category has none that can transcribe; dictating into the person's chat does
+the same. Save does not wait for the words: a few words or a
 recording are enough, and words still on their way land on the recording
 after the check-in is saved. A recording whose words never came can be asked
 for again without recording again, or left out. When the words say when it

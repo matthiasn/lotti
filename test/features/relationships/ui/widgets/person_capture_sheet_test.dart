@@ -54,7 +54,8 @@ class _FakeFiler implements PersonCaptureFiler {
 /// A transcription service whose probe fails.
 class _ThrowingProbe extends StubCheckInTranscriptionService {
   @override
-  Future<bool> canTranscribe() async => throw StateError('profile store gone');
+  Future<bool> canTranscribe({required String relationshipId}) async =>
+      throw StateError('profile store gone');
 }
 
 void main() {
@@ -486,6 +487,9 @@ void main() {
       await stop(tester);
 
       expect(find.text(copy), findsOneWidget);
+      // The probe asked about this person, so their category's profile is
+      // the one that answers.
+      expect(transcription.probedPeople, ['pip']);
       verify(
         () => timeline.addToTimeline(personId: 'pip', entryId: 'audio-1'),
       ).called(1);

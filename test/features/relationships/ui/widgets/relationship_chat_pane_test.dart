@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_config.dart';
 import 'package:lotti/classes/agents/agent_constants.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/ai/state/subject_dictation_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/relationships/repository/relationship_repository.dart';
@@ -121,6 +123,21 @@ void main() {
       reason: 'the header says what the agent can see before the user asks',
     );
     expect(find.byType(AgentChatView), findsOneWidget);
+  });
+
+  // Spoken words go through the person's transcription profile, corrected
+  // like a check-in's — never through a discovered model.
+  testWidgets("the composer dictates through the person's profile", (
+    tester,
+  ) async {
+    await pumpPane(tester);
+
+    final view = tester.widget<AgentChatView>(find.byType(AgentChatView));
+    final dictation = ProviderScope.containerOf(
+      tester.element(find.byType(AgentChatView)),
+    ).read(subjectDictationProvider(relationshipId));
+    expect(view.resolveTranscriptionTarget, same(dictation.resolveTarget));
+    expect(view.correctTranscript, same(dictation.correct));
   });
 
   // The agent carries the person's name, but the person is not the one

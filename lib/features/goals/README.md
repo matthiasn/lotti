@@ -137,6 +137,10 @@ a goal whose check-ins are the point — a journal, whether measured by
 check-in time or ticked off as a habit — they are compacted for what they
 say rather than that they happened, and a transcript landing after its
 recording refreshes the report minutes later (ADR 0143).
+A spoken check-in is filed in the goal's category and transcribes through
+that category's profile, or the system default profile when the category has
+none that can transcribe — the same rule a person's check-ins follow, and the
+one dictating into the goal's chat or its charter uses.
 The goal form's "I'll answer what you tell me" switch says which goals those
 are; left alone, it follows whether the goal measures check-in time
 (ADR 0151).

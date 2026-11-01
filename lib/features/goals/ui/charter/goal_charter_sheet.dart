@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/spinners/design_system_s
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -130,7 +131,11 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
       _ownsRecording = true;
       _error = null;
     });
-    _recorder.start();
+    final dictation = ref.read(goalDictationProvider(widget.agentId));
+    _recorder.start(
+      resolveTranscriptionTarget: dictation?.resolveTarget,
+      correctTranscript: dictation?.correct,
+    );
   }
 
   void _changed() => setState(() => _error = null);

@@ -22,6 +22,16 @@ export 'package:lotti/features/agents/ui/chat/chat_recorder_state.dart';
 typedef ChatTranscriptionTargetResolver =
     Future<ResolvedInferenceProvider> Function();
 
+/// Post-processes a finished transcript before it is handed back: the
+/// correction the caller's profile names for the route that heard the words,
+/// [heardBy]. A correction that fails keeps the words as heard — the
+/// recorder never loses a transcript to it.
+typedef ChatTranscriptCorrector =
+    Future<String> Function(
+      String transcript,
+      ResolvedInferenceProvider heardBy,
+    );
+
 /// Drives the shared AI voice-input recorder — record to a temp `.m4a` file,
 /// then batch-transcribe — exposing a single [ChatRecorderState] to the UI.
 ///
@@ -83,6 +93,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   bool _isStarting = false;
   Future<void>? _startFuture;
   ChatTranscriptionTargetResolver? _resolveTranscriptionTarget;
+  ChatTranscriptCorrector? _correctTranscript;
   int _operationId = 0; // Incremented for each new operation to prevent races
   Future<void>? _disposeFuture;
   Future<void>? _cleanupFuture;
@@ -146,11 +157,14 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   /// [stopAndTranscribe]. No-op unless idle; records an error message if a
   /// start is already in flight. On any failure the partial recording is
   /// cleaned up. An optional [resolveTranscriptionTarget] belongs to this
-  /// recording and resolves the caller's current route when recording stops.
+  /// recording and resolves the caller's current route when recording stops;
+  /// an optional [correctTranscript], used only with that route, then
+  /// post-processes the words before they are handed back.
   /// Startup retains local resources until all awaits pass the operation gate;
   /// cancellation/disposal wait for an abandoned startup to release them.
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
+    ChatTranscriptCorrector? correctTranscript,
   }) async {
     if (!ref.mounted ||
         _disposeFuture != null ||
@@ -218,6 +232,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       _tempDir = tempDir;
       _filePath = filePath;
       _resolveTranscriptionTarget = resolveTranscriptionTarget;
+      _correctTranscript = correctTranscript;
       transferred = true;
 
       final startedAt = _nowMillisProvider();
@@ -314,6 +329,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     final currentOpId = _operationId;
     final filePath = _filePath;
     final resolveTarget = _resolveTranscriptionTarget;
+    final correct = _correctTranscript;
     final ampSub = _ampSub;
     ChatRecorderState? completed;
 
@@ -345,6 +361,7 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         filePath,
         currentOpId,
         resolveTarget,
+        correct,
       );
       if (currentOpId == _operationId && ref.mounted) {
         completed = state.copyWith(
@@ -429,11 +446,14 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
   }
 
-  // Transcribes audio with streaming updates to partialTranscript
+  // Transcribes audio with streaming updates to partialTranscript, then
+  // post-processes the finished words when the take carries a [correct]ion
+  // for its explicit route.
   Future<String> _transcribe(
     String filePath,
     int operationId,
     ChatTranscriptionTargetResolver? resolveTarget,
+    ChatTranscriptCorrector? correct,
   ) async {
     final buffer = StringBuffer();
     var chunkCount = 0;
@@ -470,7 +490,23 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       'totalLen=${buffer.length}',
       subDomain: 'transcribe',
     );
-    return buffer.toString();
+    final heard = buffer.toString();
+    if (correct == null || target == null || heard.trim().isEmpty) {
+      return heard;
+    }
+    if (!ref.mounted || operationId != _operationId) return heard;
+    try {
+      return await correct(heard, target);
+    } catch (e, s) {
+      _logger.error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'transcribe.correct',
+        message: 'Transcript correction failed; keeping the words as heard',
+      );
+      return heard;
+    }
   }
 
   /// Maps the raw dBFS [ChatRecorderState.amplitudeHistory] to the 0.05..1.0

@@ -46,14 +46,21 @@ class StubCheckInTranscriptionService implements CheckInTranscriptionService {
   /// The person each transcript was asked for, in call order.
   final transcribePeople = <String>[];
 
+  /// The person each `canTranscribe` / `route` probe was for, in call order.
+  final probedPeople = <String>[];
+
   @override
-  Future<bool> canTranscribe() async {
+  Future<bool> canTranscribe({required String relationshipId}) async {
+    probedPeople.add(relationshipId);
     await preflightGate?.future;
     return canTranscribeResult;
   }
 
   @override
-  Future<CheckInTranscriptionRoute?> route() async {
+  Future<CheckInTranscriptionRoute?> route({
+    required String relationshipId,
+  }) async {
+    probedPeople.add(relationshipId);
     if (routeThrows) throw StateError('profile store closed');
     return routeResult;
   }

@@ -635,4 +635,117 @@ void main() {
       verifyNever(() => mockProfileResolver.resolveByProfileId(any()));
     });
   });
+
+  // The rule Goals and People recordings both transcribe by: the category's
+  // profile, else the Settings default — whichever owns a transcription slot.
+  group('resolveTranscriptionProfile', () {
+    ResolvedProfile transcribing(String id, {bool model = true}) =>
+        ResolvedProfile(
+          profileId: id,
+          thinkingModelId: 'thinking-$id',
+          thinkingProvider: testInferenceProvider(),
+          transcriptionModelId: model ? 'transcription-$id' : null,
+          transcriptionProvider: testInferenceProvider(id: 'audio-$id'),
+        );
+
+    ProfileAutomationResolver withCategories({
+      Map<String, String> categoryProfiles = const {},
+      SubjectCategoryLookup? subjectCategoryLookup,
+    }) => ProfileAutomationResolver(
+      subjectAgentLookup: mockTaskAgentService.getTaskAgentForTask,
+      templateService: mockTemplateService,
+      profileResolver: mockProfileResolver,
+      domainLogger: MockDomainLogger(),
+      categoryProfileLookup: (categoryId) async => categoryProfiles[categoryId],
+      subjectCategoryLookup: subjectCategoryLookup,
+    );
+
+    void stubDefault(ResolvedProfile? profile) => when(
+      () => mockProfileResolver.resolveDefaultProfile(),
+    ).thenAnswer((_) async => profile);
+
+    void stubProfile(String id, ResolvedProfile? profile) => when(
+      () => mockProfileResolver.resolveByProfileId(id),
+    ).thenAnswer((_) async => profile);
+
+    test(
+      "the category's profile wins, and the default is never asked",
+      () async {
+        final category = transcribing('people-profile');
+        stubProfile('people-profile', category);
+        stubDefault(transcribing('default'));
+
+        final result = await withCategories(
+          categoryProfiles: {'people': 'people-profile'},
+        ).resolveTranscriptionProfile(categoryId: 'people');
+
+        expect(result, same(category));
+        verifyNever(() => mockProfileResolver.resolveDefaultProfile());
+      },
+    );
+
+    test(
+      'a category profile that names no transcription model falls to the '
+      'Settings default',
+      () async {
+        final fallback = transcribing('default');
+        stubProfile('goals-profile', transcribing('goals', model: false));
+        stubDefault(fallback);
+
+        final result = await withCategories(
+          categoryProfiles: {'goals': 'goals-profile'},
+        ).resolveTranscriptionProfile(categoryId: 'goals');
+
+        expect(result, same(fallback));
+      },
+    );
+
+    test(
+      'a category without a profile, and no category at all, both fall to '
+      'the Settings default',
+      () async {
+        final fallback = transcribing('default');
+        stubDefault(fallback);
+        final resolver = withCategories();
+
+        expect(
+          await resolver.resolveTranscriptionProfile(categoryId: 'bare'),
+          same(fallback),
+        );
+        expect(await resolver.resolveTranscriptionProfile(), same(fallback));
+        verifyNever(() => mockProfileResolver.resolveByProfileId(any()));
+      },
+    );
+
+    for (final missing in ['profile', 'model', 'provider']) {
+      test(
+        'nothing transcribes when the default has no $missing',
+        () async {
+          stubDefault(switch (missing) {
+            'profile' => null,
+            'model' => transcribing('default', model: false),
+            _ => ResolvedProfile(
+              thinkingModelId: 'thinking',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'transcription',
+            ),
+          });
+
+          expect(await withCategories().resolveTranscriptionProfile(), isNull);
+        },
+      );
+    }
+
+    test('categoryOfSubject reads the wired lookup, and is null without '
+        'one', () async {
+      final wired = withCategories(
+        subjectCategoryLookup: (subjectId) async =>
+            subjectId == 'goal-1' ? 'goals' : null,
+      );
+
+      expect(await wired.categoryOfSubject('goal-1'), 'goals');
+      expect(await wired.categoryOfSubject('other'), isNull);
+      expect(await resolver.categoryOfSubject('goal-1'), isNull);
+    });
+  });
 }

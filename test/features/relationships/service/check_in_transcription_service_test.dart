@@ -78,7 +78,7 @@ class _Run {
 void main() {
   late MockJournalDb journalDb;
   late MockRelationshipRepository relationships;
-  late MockProfileResolver resolver;
+  late MockProfileAutomationResolver resolver;
   late ResolvedProfile defaultProfile;
   late MockSkillInferenceRunner runner;
   late MockDomainLogger logger;
@@ -162,9 +162,19 @@ void main() {
         transcriptionProvider: provider ? testInferenceProvider() : null,
       );
 
-  void stubDefault(ResolvedProfile? value) {
-    when(() => resolver.resolveDefaultProfile()).thenAnswer((_) async => value);
+  /// What [ProfileAutomationResolver.resolveTranscriptionProfile] answers —
+  /// for any category; which category was asked is verified where it matters.
+  void stubResolved(ResolvedProfile? value) {
+    when(
+      () => resolver.resolveTranscriptionProfile(
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => value);
   }
+
+  void verifyResolvedFor(String? categoryId, {int times = 1}) => verify(
+    () => resolver.resolveTranscriptionProfile(categoryId: categoryId),
+  ).called(times);
 
   setUp(() {
     logger = MockDomainLogger();
@@ -173,7 +183,7 @@ void main() {
     when(
       () => relationships.touchCheckInsHolding(any()),
     ).thenAnswer((_) async {});
-    resolver = MockProfileResolver();
+    resolver = MockProfileAutomationResolver();
     defaultProfile = profile();
     runner = MockSkillInferenceRunner();
     when(
@@ -187,7 +197,7 @@ void main() {
         knownTerms: any(named: 'knownTerms'),
       ),
     ).thenAnswer((_) async {});
-    stubDefault(defaultProfile);
+    stubResolved(defaultProfile);
     stubEntity(audioWith(null));
     when(
       () => journalDb.journalEntityById(personId),
@@ -368,7 +378,7 @@ void main() {
       final container = ProviderContainer(
         overrides: withServiceOverrides([
           journalDbProvider.overrideWithValue(journalDb),
-          profileResolverProvider.overrideWithValue(resolver),
+          profileAutomationResolverProvider.overrideWithValue(resolver),
           skillInferenceRunnerProvider.overrideWithValue(runner),
           relationshipRepositoryProvider.overrideWithValue(relationships),
         ]),
@@ -378,18 +388,37 @@ void main() {
       expect(
         await container
             .read(checkInTranscriptionServiceProvider)
-            .canTranscribe(),
+            .canTranscribe(relationshipId: personId),
         isTrue,
       );
     });
   });
 
-  group('system default profile routing', () {
+  group('profile routing', () {
     test(
-      'runs only the selected default transcription slot, as a manual request',
+      "asks for the person's category's transcription profile — a person "
+      'filed under a category is never sent past it to the default',
+      () {
+        when(() => journalDb.journalEntityById(personId)).thenAnswer(
+          (_) async => testRelationship.copyWith(
+            meta: testRelationship.meta.copyWith(categoryId: 'people'),
+          ),
+        );
+
+        withRun((run) {
+          verifyResolvedFor('people');
+          verifyNoMoreInteractions(resolver);
+        });
+      },
+    );
+
+    test(
+      'runs only the resolved transcription slot, as a manual request',
       () {
         withRun((run) {
-          verify(() => resolver.resolveDefaultProfile()).called(1);
+          // The person cannot be read here, so no category is asked for and
+          // the resolver falls to the Settings default.
+          verifyResolvedFor(null);
           verifyNoMoreInteractions(resolver);
           final request =
               verify(
@@ -469,9 +498,15 @@ void main() {
         ).captured;
         expect(captured.single, isEmpty);
         expect(run.isDone, isFalse, reason: 'the transcript is still coming');
+        // An unreadable person is filed under no category: the default
+        // still transcribes.
+        verifyResolvedFor(null);
       });
       verifyLoggedError<StateError>(
         'Could not read known terms for ${DomainLogger.sanitizeId(personId)}',
+      );
+      verifyLoggedError<StateError>(
+        'Could not read the category of ${DomainLogger.sanitizeId(personId)}',
       );
     });
 
@@ -614,7 +649,7 @@ void main() {
     // Without this the sheet spins for the full five minutes over a
     // configuration problem that was known in milliseconds.
     test('resolves immediately when no model can be resolved', () {
-      stubDefault(null);
+      stubResolved(null);
 
       withRun((run) {
         expect(run.isDone, isTrue);
@@ -624,9 +659,11 @@ void main() {
     });
 
     test('resolves immediately when resolving the request throws', () {
-      when(() => resolver.resolveDefaultProfile()).thenAnswer(
-        (_) async => throw Exception('profile unavailable'),
-      );
+      when(
+        () => resolver.resolveTranscriptionProfile(
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => throw Exception('profile unavailable'));
 
       withRun((run) {
         expect(run.isDone, isTrue);
@@ -714,38 +751,30 @@ void main() {
     });
 
     test(
-      'uses the selected default even without automated skill assignments',
+      'uses the resolved profile even without automated skill assignments',
       () async {
-        expect(await service.canTranscribe(), isTrue);
-        verify(() => resolver.resolveDefaultProfile()).called(1);
+        expect(await service.canTranscribe(relationshipId: personId), isTrue);
+        verifyResolvedFor(null);
         verifyNoMoreInteractions(resolver);
       },
     );
 
-    for (final missing in ['profile', 'model', 'provider']) {
-      test(
-        'missing default $missing refuses capture and never tries another route',
-        () async {
-          stubDefault(
-            missing == 'profile'
-                ? null
-                : profile(
-                    model: missing != 'model',
-                    provider: missing != 'provider',
-                  ),
-          );
-          expect(await service.canTranscribe(), isFalse);
-          withRun((run) {
-            expect(run.isDone, isTrue);
-            expect(run.result, isNull);
-            expect(run.hasListener, isFalse);
-          });
-          verifyZeroInteractions(runner);
-          verify(() => resolver.resolveDefaultProfile()).called(2);
-          verifyNoMoreInteractions(resolver);
-        },
-      );
-    }
+    // Which profiles can transcribe at all is the resolver's rule
+    // (`resolveTranscriptionProfile` passes over a slot without a model or
+    // provider); here only its "nothing" answer matters.
+    test('no transcription profile refuses capture and never tries another '
+        'route', () async {
+      stubResolved(null);
+      expect(await service.canTranscribe(relationshipId: personId), isFalse);
+      withRun((run) {
+        expect(run.isDone, isTrue);
+        expect(run.result, isNull);
+        expect(run.hasListener, isFalse);
+      });
+      verifyZeroInteractions(runner);
+      verifyResolvedFor(null, times: 2);
+      verifyNoMoreInteractions(resolver);
+    });
   });
 
   group('route', () {
@@ -765,7 +794,7 @@ void main() {
     test(
       'names the model and the provider the words would come from',
       () async {
-        stubDefault(
+        stubResolved(
           ResolvedProfile(
             thinkingModelId: 'thinking-model',
             thinkingProvider: testInferenceProvider(),
@@ -774,7 +803,7 @@ void main() {
             transcriptionModel: testAiModel(),
           ),
         );
-        expect(await service.route(), (
+        expect(await service.route(relationshipId: personId), (
           model: 'Test Model',
           provider: 'Gemini',
         ));
@@ -783,7 +812,7 @@ void main() {
 
     for (final missing in ['profile', 'model', 'provider']) {
       test('is nothing when the default $missing is missing', () async {
-        stubDefault(
+        stubResolved(
           missing == 'profile'
               ? null
               : profile(
@@ -791,13 +820,13 @@ void main() {
                   provider: missing != 'provider',
                 ),
         );
-        expect(await service.route(), isNull);
+        expect(await service.route(relationshipId: personId), isNull);
       });
     }
 
     test('is nothing when the slot has an id but no resolved model', () async {
-      stubDefault(profile());
-      expect(await service.route(), isNull);
+      stubResolved(profile());
+      expect(await service.route(relationshipId: personId), isNull);
     });
   });
 

@@ -242,19 +242,21 @@ final triggerSkillProvider = FutureProvider.autoDispose
             }
           }
 
-          // Transcription has one more place to go, and it is the one that
-          // matters for an entry belonging to no task and no category — a goal
-          // check-in, a standalone voice note. The direct fallback picks a
-          // configured speech-to-text model without a profile, which is
-          // exactly the situation those recordings are in. Without it the
-          // manual popup, the timeline's Retry and the automatic path all
-          // declined the same recording for the same invisible reason.
+          // Transcription has more places to go, and they are the ones that
+          // matter for an entry whose task or category profile cannot
+          // transcribe — a goal check-in, a standalone voice note: the
+          // Settings default profile's transcription slot, and only when it
+          // has none, the direct fallback that picks a configured
+          // speech-to-text model without a profile. The category was asked
+          // above already. Without these the manual popup, the timeline's
+          // Retry and the automatic path all declined the same recording for
+          // the same invisible reason.
           if (isTranscription &&
               (resolvedProfile == null ||
                   resolvedProfile.transcriptionModelId == null)) {
             final fallback = await ref
                 .read(profileAutomationServiceProvider)
-                .resolveDirectTranscription();
+                .resolveTranscriptionFallback();
             if (fallback.handled) {
               resolvedProfile = fallback.resolvedProfile;
             }

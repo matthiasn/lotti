@@ -5,8 +5,8 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5.5, at: 2026-10-31T12:00:00Z }
-stale_after: 2027-01-05
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-01-31
 sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
@@ -162,7 +162,9 @@ flowchart TD
   Match -->|ambiguous| Walked{"Transcription?"}
   Match2 -->|no match or ambiguous| Walked
   Walked -->|no| Stop
-  Walked -->|yes| Fallback["Direct model fallback<br/>(also behind the gate)"]
+  Walked -->|yes| TxProfile["Transcription profile: category's, else Settings default<br/>(also behind the gate)"]
+  TxProfile --> Runner
+  TxProfile -->|neither owns a slot| Fallback["Direct model fallback"]
   Fallback --> Runner
   Fallback -->|no usable model| Stop
 
@@ -171,7 +173,7 @@ flowchart TD
   LinkTask -->|no task| ResolveCategory["ProfileAutomationResolver.resolveForCategory()<br/>when the entry has a category"]
   ResolveDirect --> Runner
   ResolveCategory --> Runner
-  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveDirectTranscription()<br/>(no gate)"]
+  ResolveDirect -->|transcription without a transcription slot| DirectFallback["resolveTranscriptionFallback()<br/>Settings default, then direct model (no gate)"]
   ResolveCategory -->|transcription without a transcription slot| DirectFallback
   ResolveDirect -->|audio summary without a profile| DefaultProfile["resolveDefaultProfile()"]
   ResolveCategory -->|audio summary without a profile| DefaultProfile
@@ -199,14 +201,17 @@ is nullable and an absent value means **off** — including for categories that
 already had a profile before the switch existed — so no install starts spending
 tokens on its own after an upgrade.
 
-**On the automatic path the direct transcription fallback sits behind the same
-gate.** That path synthesises a profile-shaped result from a configured
-speech-to-text model without consulting the subject's profiles at all, so
-leaving it ungated would have preserved exactly the behaviour the switch is
-meant to make explicit. The gesture paths — `requestTranscription`,
-`canTranscribeOnRequest` and `resolveDirectTranscription`, which
+**On the automatic path the transcription fallbacks sit behind the same
+gate.** When no automated skill owns transcription, the service takes the
+[transcription profile](profile-resolution.md#the-transcription-profile) — the
+subject's category's profile, else the Settings default, whichever owns a
+transcription slot — and only when neither can, the direct model fallback,
+which synthesises a profile-shaped result from a configured speech-to-text
+model. Leaving either ungated would have preserved exactly the behaviour the
+switch is meant to make explicit. The gesture paths — `requestTranscription`,
+`canTranscribeOnRequest` and `resolveTranscriptionFallback`, which
 `triggerSkillProvider` uses when no profile owns a transcription slot — reach
-the same fallback without the gate, because a gesture is its own consent.
+the same chain without the gate, because a gesture is its own consent.
 
 [Inference backfill](inference-backfill.md#the-consent-gate) asks the same
 question twice: when it offers a suggestion, through `hasAutomatedSkillType`,
@@ -258,8 +263,8 @@ rejected a recording or an image:
 | `categoryGate` | the category's `automaticInferenceEnabled` is off, or no lookup is wired |
 | `profileResolution` | no profile resolved, or the whole walk finished without a match (reports how many profiles it tried) |
 | `skillMatch` | an assignment's skill config is missing, the profile's model slot for that type is empty or unresolvable, or two skills of the same type made it ambiguous |
-| `directFallback` | the profile walk found nothing **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key; an embedded sherpa model not installed on this device is rejected without a tally) |
-| `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, or names the direct fallback model by sanitized config id and provider type |
+| `directFallback` | the profile walk found nothing, neither the category's profile nor the Settings default owns a transcription slot, **and** the direct transcription fallback could not run either — no speech-to-text model is configured at all, or every configured one was rejected (tallied by unresolvable provider vs. missing API key; an embedded sherpa model not installed on this device is rejected without a tally) |
+| `resolved` | it *did* run — names the skill and whether it came from the subject-linked or an inherited profile, names the transcription profile by sanitized id when no automated skill owned the run, or names the direct fallback model by sanitized config id and provider type |
 
 `resolved` is not decoration: a run against the wrong profile is as opaque as no
 run at all.
@@ -267,7 +272,7 @@ run at all.
 Two rules keep these lines trustworthy:
 
 - **Only the run paths write.** `hasAutomatedSkillType` and
-  `hasDirectTranscriptionFallback` are capability probes evaluated during a
+  `hasTranscriptionFallback` are capability probes evaluated during a
   widget build or on a settings screen, so they walk the same resolution with
   `_CallIntent.probe` and log nothing. Otherwise rendering a checkbox would
   manufacture a `resolved` record, and every rebuild would repeat the declines

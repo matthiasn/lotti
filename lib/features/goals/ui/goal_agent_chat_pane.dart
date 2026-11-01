@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/model/goal_measurable_record_offer.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
+import 'package:lotti/features/goals/state/goal_dictation_provider.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/features/goals/ui/goal_record_offer_card.dart';
 import 'package:lotti/features/goals/ui/unified/unified_goal_status.dart';
@@ -32,6 +33,7 @@ class GoalAgentChatPane extends ConsumerWidget {
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
     final health = healthAsync.value;
     final composer = ref.watch(goalChatControllerProvider(agentId));
+    final dictation = ref.watch(goalDictationProvider(agentId));
     final controller = ref.read(goalChatControllerProvider(agentId).notifier);
     final measurables = ref.watch(measurableDataTypesStreamProvider).value;
     final captureDecisions = ref
@@ -175,6 +177,8 @@ class GoalAgentChatPane extends ConsumerWidget {
             onSend: controller.send,
             onRetry: controller.retry,
             attachmentBuilder: attachmentBuilder,
+            resolveTranscriptionTarget: dictation?.resolveTarget,
+            correctTranscript: dictation?.correct,
           ),
         ),
       ],

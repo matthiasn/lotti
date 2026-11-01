@@ -5,8 +5,8 @@ description: One synced entry per term, limited to categories, carrying the spel
 resource: ../../../lib/features/speech_dictionary
 tags: [speech, dictionary, transcription, correction, whisper, sync, migration]
 status: draft
-generated: { by: claude-code/opus-5.5, at: 2026-10-06T23:45:00Z }
-stale_after: 2027-01-06
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T12:00:00Z }
+stale_after: 2027-01-31
 sources:
   - id: entity
     resource: ../../../lib/classes/entity_definitions.dart
@@ -196,7 +196,10 @@ corrected against the dictionary alone and summarized on its own.
 
 Daily OS capture, onboarding and chat voice input transcribe through
 `AudioTranscriptionService` and take the words back rather than leaving them
-on a recording, so the summary above never runs for them. They get the
+on a recording, so the summary above never runs for them. Dictation into a
+goal's or a person's chat, and a goal's charter sheet, also gets the model
+correction: `subjectDictationProvider` corrects a speech-to-text engine's
+words on the subject profile's post-processing model, like their check-ins. They get the
 dictionary there: its entries as the engine's vocabulary hint, a correction of
 each chunk by sound and spelling, and — for a Daily OS capture heard by a
 speech-to-text engine — the same quoted-edit correction as a model call of

@@ -472,7 +472,7 @@ class _CheckInCaptureFormState extends ConsumerState<CheckInCaptureForm> {
       // appeared.
       final (relationship, canTranscribe) = await (
         repository.getRelationshipById(widget.relationshipId),
-        transcription.canTranscribe(),
+        transcription.canTranscribe(relationshipId: widget.relationshipId),
       ).wait.timeout(const Duration(seconds: 15));
       if (!mounted) return;
       if (!canTranscribe) {

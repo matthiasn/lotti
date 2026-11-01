@@ -1131,6 +1131,9 @@ void main() {
       await startDictation(tester);
 
       expect(recorder.recordCalls, isEmpty, reason: 'no recording wasted');
+      // Asked about this person, so their category's profile is the one
+      // that answers.
+      expect(stubTranscription.probedPeople, ['rel-001']);
       expect(inlineRecorder, findsNothing);
       expect(find.text('No transcription model set up'), findsOneWidget);
       expect(

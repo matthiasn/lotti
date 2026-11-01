@@ -88,6 +88,40 @@ class ProfileAutomationResolver {
   Future<ResolvedProfile?> resolveDefaultProfile() =>
       _profileResolver.resolveDefaultProfile();
 
+  /// The profile a recording filed under [categoryId] transcribes through:
+  /// the category's default profile when it owns a transcription slot, else
+  /// the device's Settings default when that one does. Null when neither
+  /// can transcribe.
+  ///
+  /// The one rule every recording without a task follows — a goal's
+  /// check-in, a person's, a voice note in a category — so the model and its
+  /// settings always come from a profile the user configured, never from a
+  /// model picked by provider type behind their back. A profile that
+  /// resolves but names no transcription model is passed over like a
+  /// missing one: it cannot transcribe either.
+  Future<ResolvedProfile?> resolveTranscriptionProfile({
+    String? categoryId,
+  }) async {
+    if (categoryId != null) {
+      final categoryProfile = _transcribing(
+        await resolveForCategory(categoryId),
+      );
+      if (categoryProfile != null) return categoryProfile;
+    }
+    return _transcribing(await resolveDefaultProfile());
+  }
+
+  /// The category [subjectId] is filed under, or null when it has none or
+  /// no lookup is wired.
+  Future<String?> categoryOfSubject(String subjectId) async =>
+      _subjectCategoryLookup?.call(subjectId);
+
+  static ResolvedProfile? _transcribing(ResolvedProfile? profile) =>
+      profile?.transcriptionModelId == null ||
+          profile?.transcriptionProvider == null
+      ? null
+      : profile;
+
   /// Resolves the profile for the given [subjectId]'s agent.
   ///
   /// Resolution order:
