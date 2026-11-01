@@ -498,6 +498,11 @@ void main() {
       expect(find.text('Ctrl+Enter to save'), findsNothing);
       expect(tester.getSemantics(save).hint, 'Add a few words to save');
       final barBefore = tester.getRect(save);
+      // Save keeps its own width on the trailing edge — stretched across the
+      // bar it read as a banner, not a button.
+      final bar = tester.getRect(find.byType(CheckInStickyActions));
+      expect(barBefore.width, lessThan(bar.width / 2));
+      expect(barBefore.center.dx, greaterThan(bar.center.dx));
 
       await type(tester, 'One line.');
       expect(saveEnabled(tester), isTrue);

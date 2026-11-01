@@ -131,6 +131,7 @@ class IdleCallbackController extends ChatRecorderController {
   final VoidCallback? onStartCalled;
   ChatTranscriptionTargetResolver? lastTranscriptionTargetResolver;
   ChatTranscriptCorrector? lastTranscriptCorrector;
+  ChatDictionaryCategoryResolver? lastDictionaryCategoryResolver;
 
   @override
   ChatRecorderState build() {
@@ -144,9 +145,11 @@ class IdleCallbackController extends ChatRecorderController {
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
     ChatTranscriptCorrector? correctTranscript,
+    ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     lastTranscriptionTargetResolver = resolveTranscriptionTarget;
     lastTranscriptCorrector = correctTranscript;
+    lastDictionaryCategoryResolver = resolveDictionaryCategory;
     onStartCalled?.call();
   }
 }
@@ -162,15 +165,18 @@ class StartableTranscriptController extends TranscriptEmittingController {
   /// The route and correction the last take was started with.
   ChatTranscriptionTargetResolver? lastTranscriptionTargetResolver;
   ChatTranscriptCorrector? lastTranscriptCorrector;
+  ChatDictionaryCategoryResolver? lastDictionaryCategoryResolver;
 
   @override
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
     ChatTranscriptCorrector? correctTranscript,
+    ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     startCalls++;
     lastTranscriptionTargetResolver = resolveTranscriptionTarget;
     lastTranscriptCorrector = correctTranscript;
+    lastDictionaryCategoryResolver = resolveDictionaryCategory;
     emitRecording();
   }
 

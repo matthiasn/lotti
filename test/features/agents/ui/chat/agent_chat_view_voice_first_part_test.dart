@@ -33,6 +33,7 @@ class _Recorder extends ChatRecorderController {
   Future<void> start({
     ChatTranscriptionTargetResolver? resolveTranscriptionTarget,
     ChatTranscriptCorrector? correctTranscript,
+    ChatDictionaryCategoryResolver? resolveDictionaryCategory,
   }) async {
     starts++;
     state = state.copyWith(status: ChatRecorderStatus.recording);

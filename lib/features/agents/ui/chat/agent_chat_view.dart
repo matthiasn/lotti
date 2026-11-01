@@ -342,6 +342,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               voiceFirst: widget.voiceFirst,
               resolveTranscriptionTarget: widget.resolveTranscriptionTarget,
               correctTranscript: widget.correctTranscript,
+              resolveDictionaryCategory: widget.resolveDictionaryCategory,
             ),
         ],
       ),

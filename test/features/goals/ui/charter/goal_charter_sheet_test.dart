@@ -322,12 +322,16 @@ void main() {
       // never a discovered model.
       final dictation = ProviderScope.containerOf(
         tester.element(find.byType(GoalCharterForm)),
-      ).read(goalDictationProvider('agent-1'))!;
+      ).read(goalDictationProvider('agent-1'));
       expect(
         recorder.lastTranscriptionTargetResolver,
         same(dictation.resolveTarget),
       );
       expect(recorder.lastTranscriptCorrector, same(dictation.correct));
+      expect(
+        recorder.lastDictionaryCategoryResolver,
+        same(dictation.dictionaryCategory),
+      );
     });
 
     testWidgets('a transcript is added after what is written, never '

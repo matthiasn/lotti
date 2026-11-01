@@ -133,8 +133,9 @@ class _GoalCharterFormState extends ConsumerState<GoalCharterForm> {
     });
     final dictation = ref.read(goalDictationProvider(widget.agentId));
     _recorder.start(
-      resolveTranscriptionTarget: dictation?.resolveTarget,
-      correctTranscript: dictation?.correct,
+      resolveTranscriptionTarget: dictation.resolveTarget,
+      correctTranscript: dictation.correct,
+      resolveDictionaryCategory: dictation.dictionaryCategory,
     );
   }
 
