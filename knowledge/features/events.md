@@ -323,6 +323,12 @@ flowchart LR
   for each one dropped. A write that did not land raises
   `eventsPeopleSaveFailed` above the bar; the row re-reads either way, so it
   shows what was stored.
+- **Suggested.** Name someone in a note or a voice memo and the event
+  agent can suggest adding them: it looks them up among the People with
+  `list_people` and proposes `suggest_person`, a row under the recap to
+  confirm or dismiss — confirming writes the same link the chip would (see
+  [project and event agents](agents/project-and-event-agents.md#suggesting-who-was-there)).
+  A dismissed person is not suggested for that event again.
 - **Recap.** `EventAgentContextBuilder` lists the people first in the
   linked-entries digest (see
   [project and event agents](agents/project-and-event-agents.md#event-agents)),

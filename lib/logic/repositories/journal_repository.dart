@@ -755,6 +755,12 @@ class JournalRepository {
     return _journalDb.getBulkLinkedEntities(fromIds);
   }
 
+  /// Everyone on the People page — the live relationships, through the
+  /// private-entry filter, so a reader never learns of a private person while
+  /// private entries are hidden.
+  Future<List<RelationshipEntry>> getRelationships() =>
+      _journalDb.getRelationships();
+
   /// Returns all JournalImage entries linked to the given task.
   ///
   /// This is a convenience method that filters the linked entities

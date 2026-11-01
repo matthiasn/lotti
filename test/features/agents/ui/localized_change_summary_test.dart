@@ -627,6 +627,20 @@ void main() {
         );
       },
     );
+
+    test('a person suggestion names the person, or says someone', () {
+      expect(
+        summary(EventAgentToolNames.suggestPerson, {
+          'personId': 'pip',
+          'personName': ' Pip Penguin ',
+        }),
+        'Add Pip Penguin to who was there',
+      );
+      expect(
+        summary(EventAgentToolNames.suggestPerson, {'personId': 'pip'}),
+        'Add someone to who was there',
+      );
+    });
   });
 
   group('exploded checklist items', () {

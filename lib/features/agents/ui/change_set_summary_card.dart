@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart'
         eventPendingChangeSetsProvider,
         selfTargetedPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -78,44 +79,49 @@ class ChangeSetSummaryCard extends ConsumerWidget {
     // The card pops between empty (SizedBox.shrink) and a full proposals stack,
     // and shrinks as items are confirmed/rejected. Animate the height change so
     // the event/goal detail content below it eases instead of snapping.
-    // Width is pinned full so only the height animates.
+    // Width is pinned full so only the height animates. With animations off
+    // there is no AnimatedSize at all: a zero duration still restarts its
+    // controller from inside its own layout when the proposals arrive after a
+    // loading frame, which the framework rejects.
+    final body = SizedBox(
+      width: double.infinity,
+      child: changeSetsAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
+        // A transient background reload error must not vanish
+        // established, still-actionable proposals; the error branch is
+        // for a first load without data.
+        skipError: true,
+        data: (entities) {
+          final changeSets = entities.whereType<ChangeSetEntity>().toList();
+          if (changeSets.isEmpty) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Column(
+              children: [
+                for (final changeSet in changeSets)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ChangeSetCard(
+                      changeSet: changeSet,
+                      confirmationProvider: _confirmationProvider,
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+        error: (_, _) => const SizedBox.shrink(),
+        loading: () => const SizedBox.shrink(),
+      ),
+    );
+    if (reduceMotion) return body;
     return AnimatedSize(
       alignment: Alignment.topCenter,
-      duration: reduceMotion ? Duration.zero : MotionDurations.medium2,
+      duration: MotionDurations.medium2,
       curve: MotionCurves.emphasizedDecelerate,
-      child: SizedBox(
-        width: double.infinity,
-        child: changeSetsAsync.when(
-          skipLoadingOnReload: true,
-          skipLoadingOnRefresh: true,
-          // A transient background reload error must not vanish
-          // established, still-actionable proposals; the error branch is
-          // for a first load without data.
-          skipError: true,
-          data: (entities) {
-            final changeSets = entities.whereType<ChangeSetEntity>().toList();
-            if (changeSets.isEmpty) return const SizedBox.shrink();
-
-            return Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Column(
-                children: [
-                  for (final changeSet in changeSets)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _ChangeSetCard(
-                        changeSet: changeSet,
-                        confirmationProvider: _confirmationProvider,
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-          error: (_, _) => const SizedBox.shrink(),
-          loading: () => const SizedBox.shrink(),
-        ),
-      ),
+      child: body,
     );
   }
 }
@@ -381,6 +387,31 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     );
   }
 
+  /// The line under a proposal: why it is proposed where the proposal says,
+  /// never the raw tool id where a reader faces it.
+  ///
+  /// Goal and event proposals face non-technical review — a tool id there
+  /// would leak the wire vocabulary into every locale. (Literal spelling for
+  /// goals: features/agents must not import goals.) A person suggestion shows
+  /// the words that named them, a follow-up its notes, and either shows
+  /// nothing without them. Other proposals keep the tool id.
+  String? _subtitle(BuildContext context) {
+    String? quoted(Object? value) =>
+        value is String && value.trim().isNotEmpty ? value.trim() : null;
+    return switch (_item.toolName) {
+      'propose_goal_revision' ||
+      'propose_goal_revision_v2' => context.messages.agentToolGoalRevisionLabel,
+      EventAgentToolNames.suggestPerson => switch (quoted(
+        _item.args[EventAgentPersonToolArgs.mention],
+      )) {
+        final mention? => '“$mention”',
+        null => null,
+      },
+      EventAgentToolNames.suggestFollowUpTask => quoted(_item.args['notes']),
+      _ => _item.toolName,
+    };
+  }
+
   Widget _buildPendingTile(BuildContext context) {
     if (_item.toolName == TaskAgentToolNames.createTimeEntry) {
       return _buildTimeEntryTile(context);
@@ -400,18 +431,15 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
             _item.humanSummary,
         style: context.textTheme.bodyMedium,
       ),
-      subtitle: Text(
-        // Goal proposals face non-technical review — a raw tool id would
-        // leak the wire vocabulary into every locale. (Literal spelling:
-        // features/agents must not import goals.)
-        (_item.toolName == 'propose_goal_revision' ||
-                _item.toolName == 'propose_goal_revision_v2')
-            ? context.messages.agentToolGoalRevisionLabel
-            : _item.toolName,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: context.colorScheme.onSurfaceVariant,
+      subtitle: switch (_subtitle(context)) {
+        final subtitle? => Text(
+          subtitle,
+          style: context.textTheme.bodySmall?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
         ),
-      ),
+        null => null,
+      },
       trailing: _busy
           ? const SizedBox(
               width: 20,

@@ -278,7 +278,10 @@ Each is independent and sized for one pull request.
 As planned, on the existing person → event `RelationshipLink`: the reverse
 read (`personTimelineLinkSources`, `getPeopleOn`), a *People* row of avatar
 chips under the recap, the shared `showPersonPicker`, a diffing
-`setPeopleOn`, and the people at the top of the event agent's digest. Still
+`setPeopleOn`, and the people at the top of the event agent's digest. Then,
+as with task suggestions, the event agent suggests the people its notes and
+voice memos name: `list_people` (the People, through the private filter) and
+the deferred `suggest_person`, confirmed or dismissed under the recap. Still
 open from this step: the relationship agent's facts renderer lists only
 *upcoming* meetings, so past shared events do not yet reach it.
 

@@ -1090,6 +1090,15 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Een vervolgtaak voorstellen';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return '$name toevoegen aan wie erbij waren';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed =>
+      'Iemand toevoegen aan wie erbij waren';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Tijdregistratie $range: \"$summary\"';
   }

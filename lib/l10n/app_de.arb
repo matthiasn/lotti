@@ -460,6 +460,8 @@
   "agentSummarySetStatus": "Status auf {status} setzen",
   "agentSummarySetTitle": "Titel auf „{title}“ setzen",
   "agentSummarySuggestFollowUpTask": "Eine Folgeaufgabe vorschlagen",
+  "agentSummarySuggestPerson": "{name} zu „Wer war dabei“ hinzufügen",
+  "agentSummarySuggestPersonUnnamed": "Jemanden zu „Wer war dabei“ hinzufügen",
   "agentSummaryTimeEntry": "Zeiteintrag {range}: „{summary}“",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "ab {start}",

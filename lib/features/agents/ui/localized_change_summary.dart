@@ -100,6 +100,7 @@ String? localizedChangeSummary(
   ),
 
   EventAgentToolNames.suggestFollowUpTask => _suggestFollowUp(messages, args),
+  EventAgentToolNames.suggestPerson => _suggestPerson(messages, args),
 
   // Batch tools reach the row already exploded into singular items, each
   // carrying the model's own element as its args.
@@ -477,6 +478,15 @@ String _suggestFollowUp(AppLocalizations messages, Map<String, dynamic> args) {
   return title is String && title.trim().isNotEmpty
       ? messages.agentSummaryFollowUpTask(title.trim())
       : messages.agentSummarySuggestFollowUpTask;
+}
+
+/// The sentence for a person suggestion, naming them as the strategy found
+/// them when it queued the row.
+String _suggestPerson(AppLocalizations messages, Map<String, dynamic> args) {
+  final name = args[EventAgentPersonToolArgs.personName];
+  return name is String && name.trim().isNotEmpty
+      ? messages.agentSummarySuggestPerson(name.trim())
+      : messages.agentSummarySuggestPersonUnnamed;
 }
 
 /// The wall-clock `HH:mm` for a time-entry argument.

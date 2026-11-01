@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -15,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../relationships/helpers/test_people.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -309,6 +311,178 @@ void main() {
         categoryId: any(named: 'categoryId'),
       ),
     );
+  });
+
+  group('suggest_person', () {
+    final pip = makeTestPerson(id: 'pip', title: 'Pip Penguin');
+
+    void stubEntities({JournalEntity? person}) {
+      when(
+        () => mockJournalRepository.getJournalEntityById(eventId),
+      ).thenAnswer((_) async => eventEntity);
+      when(
+        () => mockJournalRepository.getJournalEntityById('pip'),
+      ).thenAnswer((_) async => person);
+    }
+
+    Future<ToolExecutionResult> accept() => dispatcher.dispatch(
+      EventAgentToolNames.suggestPerson,
+      {'personId': 'pip', 'personName': 'Pip Penguin'},
+      eventId,
+    );
+
+    test("puts the event on the person's timeline", () async {
+      stubEntities(person: pip);
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: 'pip',
+          toId: eventId,
+          linkType: EntryLinkType.relationship,
+        ),
+      ).thenAnswer((_) async => true);
+
+      final result = await accept();
+
+      expect(result.success, isTrue);
+      expect(result.output, 'Added Pip Penguin to the event');
+      expect(result.mutatedEntityId, eventId);
+    });
+
+    test('logs the link under the event-person subdomain', () async {
+      final logger = MockDomainLogger();
+      final logging = EventToolDispatcher(
+        journalDb: mockJournalDb,
+        journalRepository: mockJournalRepository,
+        persistenceLogic: mockPersistenceLogic,
+        entitiesCacheService: mockCache,
+        domainLogger: logger,
+      );
+      stubEntities(person: pip);
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await logging.dispatch(
+        EventAgentToolNames.suggestPerson,
+        const {'personId': 'pip'},
+        eventId,
+      );
+
+      verify(
+        () => logger.log(
+          LogDomain.agentRuntime,
+          any(that: contains('linked person')),
+          subDomain: 'event-person',
+        ),
+      ).called(1);
+    });
+
+    test('a link already there counts as done', () async {
+      stubEntities(person: pip);
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.linksBetween(
+          'pip',
+          eventId,
+          type: 'RelationshipLink',
+        ),
+      ).thenAnswer(
+        (_) async => [
+          EntryLink.relationship(
+            id: 'l',
+            fromId: 'pip',
+            toId: eventId,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      expect((await accept()).success, isTrue);
+    });
+
+    test('fails, retryably, when the link cannot be written', () async {
+      stubEntities(person: pip);
+      when(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.linksBetween(
+          any(),
+          any(),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Person link failed');
+    });
+
+    test('refuses while the person is gone, linking nothing', () async {
+      stubEntities(
+        person: pip.copyWith(meta: pip.meta.copyWith(deletedAt: now)),
+      );
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Person missing or deleted; not linked');
+      verifyNever(
+        () => mockPersistenceLogic.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+        ),
+      );
+    });
+
+    test('refuses an id that is not a person', () async {
+      stubEntities(person: eventEntity);
+
+      expect((await accept()).success, isFalse);
+    });
+
+    test('refuses while the event is gone', () async {
+      when(
+        () => mockJournalRepository.getJournalEntityById(eventId),
+      ).thenAnswer((_) async => null);
+
+      final result = await accept();
+
+      expect(result.success, isFalse);
+      expect(
+        result.errorMessage,
+        'Event missing or deleted; person not linked',
+      );
+    });
+
+    test('refuses a missing person id', () async {
+      final result = await dispatcher.dispatch(
+        EventAgentToolNames.suggestPerson,
+        const {'personId': ' '},
+        eventId,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, 'Missing personId');
+    });
   });
 
   group('a confirmed proposal (ADR 0075)', () {

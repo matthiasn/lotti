@@ -1086,6 +1086,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Foreslå en opfølgningsopgave';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return 'Tilføj $name til dem, der var med';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed =>
+      'Tilføj en person til dem, der var med';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Tidsregistrering $range: \"$summary\"';
   }

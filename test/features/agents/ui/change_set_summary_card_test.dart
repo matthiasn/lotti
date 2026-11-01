@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
@@ -5,6 +7,7 @@ import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/providers/update_notifications_providers.dart';
@@ -76,6 +79,156 @@ void main() {
 
       expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       expect(find.text('Proposed changes'), findsNothing);
+    });
+
+    testWidgets("a person suggestion reads in the reader's language and "
+        'confirms like any other', (tester) async {
+      final changeSet = makeTestChangeSet(
+        taskId: 'event-001',
+        items: const [
+          ChangeItem(
+            toolName: EventAgentToolNames.suggestPerson,
+            args: {
+              'personId': 'pip',
+              'personName': 'Pip Penguin',
+              'mention': 'Pip brought the sardines',
+            },
+            humanSummary: 'Add Pip Penguin to the event',
+          ),
+        ],
+      );
+      when(
+        () => mockConfirmationService.confirmItem(any(), any()),
+      ).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+
+      await pumpEventCard(tester, changeSets: [changeSet]);
+
+      // Rendered from the args, not the English summary stored at wake time.
+      expect(find.text('Add Pip Penguin to who was there'), findsOneWidget);
+      expect(find.text('Add Pip Penguin to the event'), findsNothing);
+      // Under it, the words that named them — never the wire tool id.
+      expect(find.text('“Pip brought the sardines”'), findsOneWidget);
+      expect(find.text(EventAgentToolNames.suggestPerson), findsNothing);
+
+      await tester.drag(
+        find.text('Add Pip Penguin to who was there'),
+        const Offset(300, 0),
+      );
+      await _pumpUi(tester);
+
+      verify(() => mockConfirmationService.confirmItem(changeSet, 0)).called(1);
+    });
+
+    testWidgets('an event follow-up shows its notes, never its tool id; '
+        'a bare one shows nothing under it', (tester) async {
+      await pumpEventCard(
+        tester,
+        changeSets: [
+          makeTestChangeSet(
+            taskId: 'event-001',
+            items: const [
+              ChangeItem(
+                toolName: EventAgentToolNames.suggestFollowUpTask,
+                args: {
+                  'title': 'Share the album',
+                  'notes': 'Everyone asked for the photos',
+                },
+                humanSummary: 'Follow-up task: Share the album',
+              ),
+              ChangeItem(
+                toolName: EventAgentToolNames.suggestPerson,
+                args: {'personId': 'pip', 'personName': 'Pip Penguin'},
+                humanSummary: 'Add Pip Penguin to the event',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      expect(find.text('Everyone asked for the photos'), findsOneWidget);
+      expect(find.text(EventAgentToolNames.suggestFollowUpTask), findsNothing);
+      expect(find.text(EventAgentToolNames.suggestPerson), findsNothing);
+      final personTile = tester.widget<ListTile>(
+        find.ancestor(
+          of: find.text('Add Pip Penguin to who was there'),
+          matching: find.byType(ListTile),
+        ),
+      );
+      expect(personTile.subtitle, isNull);
+    });
+
+    testWidgets('a first load that fails renders nothing', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ChangeSetSummaryCard.event(eventId: 'event-001'),
+          overrides: [
+            eventPendingChangeSetsProvider(
+              'event-001',
+            ).overrideWith((ref) => throw StateError('db down')),
+            eventChangeSetConfirmationServiceProvider.overrideWithValue(
+              mockConfirmationService,
+            ),
+            updateNotificationsProvider.overrideWithValue(
+              mockUpdateNotifications,
+            ),
+            domainLoggerProvider.overrideWithValue(mockLogger),
+          ],
+        ),
+      );
+      await _pumpUi(tester);
+
+      expect(find.text('Proposed changes'), findsNothing);
+      expect(
+        tester.getSize(find.byType(ChangeSetSummaryCard)).height,
+        0,
+      );
+    });
+
+    testWidgets('under reduced motion, proposals landing after a loading '
+        'frame swap in without an animated resize', (tester) async {
+      final pending = Completer<List<AgentDomainEntity>>();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const MediaQuery(
+            data: MediaQueryData(disableAnimations: true),
+            child: ChangeSetSummaryCard.event(eventId: 'event-001'),
+          ),
+          overrides: [
+            eventPendingChangeSetsProvider(
+              'event-001',
+            ).overrideWith((ref) => pending.future),
+            eventChangeSetConfirmationServiceProvider.overrideWithValue(
+              mockConfirmationService,
+            ),
+            updateNotificationsProvider.overrideWithValue(
+              mockUpdateNotifications,
+            ),
+            domainLoggerProvider.overrideWithValue(mockLogger),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      pending.complete([
+        makeTestChangeSet(
+          taskId: 'event-001',
+          items: const [
+            ChangeItem(
+              toolName: EventAgentToolNames.suggestPerson,
+              args: {'personId': 'pip', 'personName': 'Pip Penguin'},
+              humanSummary: 'Add Pip Penguin to the event',
+            ),
+          ],
+        ),
+      ]);
+      await tester.pump();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AnimatedSize), findsNothing);
+      expect(find.text('Add Pip Penguin to who was there'), findsOneWidget);
     });
 
     testWidgets('swipe right confirms via the confirmation service', (

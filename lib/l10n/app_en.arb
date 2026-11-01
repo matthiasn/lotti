@@ -669,6 +669,17 @@
     }
   },
   "agentSummarySuggestFollowUpTask": "Suggest a follow-up task",
+  "agentSummarySuggestPerson": "Add {name} to who was there",
+  "@agentSummarySuggestPerson": {
+    "description": "A suggestion row on an event: the event agent proposes adding this person, named in the event's notes or voice memos, to who was there.",
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "agentSummarySuggestPersonUnnamed": "Add someone to who was there",
+  "@agentSummarySuggestPersonUnnamed": {
+    "description": "A person suggestion row on an event whose person name is missing."
+  },
   "agentSummaryTimeEntry": "Time entry {range}: \"{summary}\"",
   "@agentSummaryTimeEntry": {
     "placeholders": {

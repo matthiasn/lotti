@@ -1100,6 +1100,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propuneți o sarcină ulterioară';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return 'Adăugați pe $name la cei prezenți';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed =>
+      'Adăugați pe cineva la cei prezenți';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Înregistrare de timp $range: „$summary”';
   }

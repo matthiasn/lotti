@@ -8,20 +8,28 @@ import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_observations.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
+import 'package:lotti/features/agents/workflow/event_people_directory.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// [ConversationStrategy] implementation for the Event Agent.
 ///
-/// Two tools are handled immediately and locally:
+/// Three tools are handled immediately and locally:
 /// - `update_report` — accumulates the event recap (oneLiner / tldr / content).
 /// - `record_observations` — accumulates private observation notes.
+/// - `list_people` — answers from the [EventPeopleDirectory] [loadPeople]
+///   reads, once per wake.
 ///
-/// One tool is **deferred** (accumulated for user accept/reject, not applied
-/// in-conversation):
-/// - `suggest_follow_up_task` — see [eventDeferredTools]; surfaced as a pending
-///   change set and applied by `EventToolDispatcher` only on accept.
+/// Two tools are **deferred** (accumulated for user accept/reject, not
+/// applied in-conversation) — see [eventDeferredTools]; each is surfaced as a
+/// pending change set and applied by `EventToolDispatcher` only on accept:
+/// - `suggest_follow_up_task`.
+/// - `suggest_person` — checked against the directory before it is queued:
+///   an id the directory does not know, or a person already with the event,
+///   already suggested or dismissed, is refused back to the model, so no
+///   such row ever reaches the user. A queued suggestion carries the
+///   person's name for the row.
 ///
 /// There is deliberately no rating/cover tool — those are human-only. Each
 /// message is persisted to `agent.sqlite` as an [AgentMessageEntity], mirroring
@@ -34,7 +42,12 @@ class EventAgentStrategy extends ConversationStrategy
     required this.agentId,
     required this.threadId,
     required this.runKey,
+    required this.loadPeople,
   });
+
+  /// Reads who the user keeps and where each stands for this event. Called
+  /// at most once per wake, the first time a people tool needs it.
+  final Future<EventPeopleDirectory> Function() loadPeople;
 
   /// Sync-aware write service for persisting messages.
   @override
@@ -62,6 +75,11 @@ class EventAgentStrategy extends ConversationStrategy
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
   final _deferredItems = <Map<String, dynamic>>[];
+  Future<EventPeopleDirectory>? _people;
+
+  /// People suggested earlier in this wake — not yet in the directory, which
+  /// was read before them.
+  final _suggestedThisWake = <String>{};
 
   @override
   Future<ConversationAction> processToolCalls({
@@ -108,6 +126,16 @@ class EventAgentStrategy extends ConversationStrategy
 
       if (toolName == EventAgentToolNames.recordObservations) {
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+
+      if (toolName == EventAgentToolNames.listPeople) {
+        await _handleListPeople(args, call.id, manager);
+        continue;
+      }
+
+      if (toolName == EventAgentToolNames.suggestPerson) {
+        await _handleSuggestPerson(args, call.id, manager);
         continue;
       }
 
@@ -258,6 +286,107 @@ class EventAgentStrategy extends ConversationStrategy
   }
 
   // ── Error helpers ──────────────────────────────────────────────────────────
+
+  // ── People ─────────────────────────────────────────────────────────────────
+
+  Future<EventPeopleDirectory> _directory() => _people ??= loadPeople();
+
+  Future<void> _handleListPeople(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final EventPeopleDirectory people;
+    try {
+      people = await _directory();
+    } catch (e) {
+      // A failed read is retried on the next call rather than cached.
+      _people = null;
+      await _rejectToolCall(
+        callId: callId,
+        toolName: EventAgentToolNames.listPeople,
+        errorMsg: 'Error: the people could not be read (${e.runtimeType}).',
+        manager: manager,
+      );
+      return;
+    }
+    final query = args[EventAgentPersonToolArgs.query];
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: people.render(query: query is String ? query : null),
+    );
+    await recordToolResultMessage(toolName: EventAgentToolNames.listPeople);
+  }
+
+  Future<void> _handleSuggestPerson(
+    Map<String, dynamic> args,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    Future<void> refuse(String errorMsg) => _rejectToolCall(
+      callId: callId,
+      toolName: EventAgentToolNames.suggestPerson,
+      errorMsg: errorMsg,
+      manager: manager,
+    );
+
+    final idValue = args[EventAgentPersonToolArgs.personId];
+    final personId = idValue is String ? idValue.trim() : '';
+    if (personId.isEmpty) {
+      await refuse(
+        'Error: "personId" is required — use an id from '
+        '`list_people`.',
+      );
+      return;
+    }
+
+    final EventPeopleDirectory people;
+    try {
+      people = await _directory();
+    } catch (e) {
+      _people = null;
+      await refuse('Error: the people could not be read (${e.runtimeType}).');
+      return;
+    }
+
+    final person = people.byId(personId);
+    if (person == null) {
+      await refuse(
+        'Error: no person has the id "$personId" — use an id '
+        'exactly as `list_people` gave it.',
+      );
+      return;
+    }
+    final refusal = _suggestedThisWake.contains(personId)
+        ? 'already suggested in this wake'
+        : switch (people.standingOf(personId)) {
+            EventPersonStanding.withEvent => 'already with this event',
+            EventPersonStanding.suggested =>
+              'already suggested, awaiting the user',
+            EventPersonStanding.dismissed =>
+              'dismissed by the user for this event — do not suggest again',
+            EventPersonStanding.open => null,
+          };
+    if (refusal != null) {
+      await refuse('Not suggested: ${person.name} is $refusal.');
+      return;
+    }
+
+    _suggestedThisWake.add(personId);
+    _deferredItems.add({
+      'toolName': EventAgentToolNames.suggestPerson,
+      'args': {
+        ...args,
+        EventAgentPersonToolArgs.personId: personId,
+        EventAgentPersonToolArgs.personName: person.name,
+      },
+    });
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: 'Queued the suggestion to add ${person.name} for user review.',
+    );
+    await recordToolResultMessage(toolName: EventAgentToolNames.suggestPerson);
+  }
 
   Future<void> _rejectToolCall({
     required String callId,

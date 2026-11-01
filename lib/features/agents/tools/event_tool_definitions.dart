@@ -13,6 +13,20 @@ abstract final class EventAgentToolNames {
   static const updateReport = 'update_report';
   static const recordObservations = 'record_observations';
   static const suggestFollowUpTask = 'suggest_follow_up_task';
+  static const listPeople = 'list_people';
+  static const suggestPerson = 'suggest_person';
+}
+
+/// Wire argument names for `list_people` and `suggest_person`.
+abstract final class EventAgentPersonToolArgs {
+  static const query = 'query';
+  static const personId = 'personId';
+  static const mention = 'mention';
+
+  /// Added by the strategy when it queues a suggestion — the person's name
+  /// as the directory knew it, for the row the user confirms. Never sent by
+  /// the model.
+  static const personName = 'personName';
 }
 
 /// Wire argument names for the event agent's `update_report` call.
@@ -24,11 +38,13 @@ abstract final class EventAgentReportToolArgs {
   static const required = <String>[oneLiner, tldr, content];
 }
 
-/// All tools available to the Event Agent (v1: narrate-only).
+/// All tools available to the Event Agent.
 ///
-/// Rating and cover selection are human-only and are deliberately absent — the
-/// event agent has no tool that can touch them. Status / follow-up write
-/// actions arrive later as deferred (accept/reject) tools.
+/// Narrating (`update_report`, `record_observations`), one read
+/// (`list_people`), and two deferred proposals the user confirms or dismisses
+/// (`suggest_follow_up_task`, `suggest_person`). Rating and cover selection
+/// are human-only and are deliberately absent — the event agent has no tool
+/// that can touch them.
 final eventAgentTools = <AgentToolDefinition>[
   const AgentToolDefinition(
     name: EventAgentToolNames.updateReport,
@@ -78,6 +94,52 @@ final eventAgentTools = <AgentToolDefinition>[
     ),
   ),
   const AgentToolDefinition(
+    name: EventAgentToolNames.listPeople,
+    description:
+        'List the people the user keeps on their People page: one line per '
+        'person with their id, name and nickname, and whether they are '
+        'already with this event, already suggested, or dismissed for it. '
+        'Call it when a note, voice memo or photo caption names someone, to '
+        'see whether that is a person the user keeps. Pass "query" to narrow '
+        'the list to names or nicknames containing it.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        EventAgentPersonToolArgs.query: {
+          'type': 'string',
+          'description':
+              'Optional: only people whose name or nickname contains this.',
+        },
+      },
+    },
+  ),
+  const AgentToolDefinition(
+    name: EventAgentToolNames.suggestPerson,
+    description:
+        'Suggest adding a person the user keeps to this event, because the '
+        "event's notes, voice memos or photo captions show they were there. "
+        'Use an id from `list_people`. This is a deferred tool — the user '
+        'confirms or dismisses it, and only on confirm is the person linked '
+        'to the event (and the event put on their timeline). Only suggest '
+        'someone the event clearly names as present; never suggest someone '
+        'already with the event, already suggested, or dismissed.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        EventAgentPersonToolArgs.personId: {
+          'type': 'string',
+          'description': "The person's id, exactly as `list_people` gave it.",
+        },
+        EventAgentPersonToolArgs.mention: {
+          'type': 'string',
+          'description':
+              'The words in the event that name them, quoted briefly.',
+        },
+      },
+      'required': [EventAgentPersonToolArgs.personId],
+    },
+  ),
+  const AgentToolDefinition(
     name: EventAgentToolNames.suggestFollowUpTask,
     description:
         'Propose a concrete follow-up task the event implies (send a '
@@ -106,4 +168,5 @@ final eventAgentTools = <AgentToolDefinition>[
 /// applied (surfaced as accept/reject suggestions).
 const eventDeferredTools = <String>{
   EventAgentToolNames.suggestFollowUpTask,
+  EventAgentToolNames.suggestPerson,
 };

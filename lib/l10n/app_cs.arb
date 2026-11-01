@@ -467,6 +467,8 @@
   "agentSummarySetStatus": "Nastavit stav na {status}",
   "agentSummarySetTitle": "Nastavit název na „{title}“",
   "agentSummarySuggestFollowUpTask": "Navrhnout navazující úkol",
+  "agentSummarySuggestPerson": "Přidat {name} k těm, kdo tam byli",
+  "agentSummarySuggestPersonUnnamed": "Přidat někoho k těm, kdo tam byli",
   "agentSummaryTimeEntry": "Časový záznam {range}: „{summary}“",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "od {start}",

@@ -1091,6 +1091,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSummarySuggestFollowUpTask => 'Navrhnout navazující úkol';
 
   @override
+  String agentSummarySuggestPerson(Object name) {
+    return 'Přidat $name k těm, kdo tam byli';
+  }
+
+  @override
+  String get agentSummarySuggestPersonUnnamed =>
+      'Přidat někoho k těm, kdo tam byli';
+
+  @override
   String agentSummaryTimeEntry(Object range, Object summary) {
     return 'Časový záznam $range: „$summary“';
   }

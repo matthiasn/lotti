@@ -460,6 +460,8 @@
   "agentSummarySetStatus": "Poner el estado en {status}",
   "agentSummarySetTitle": "Poner el título en «{title}»",
   "agentSummarySuggestFollowUpTask": "Proponer una tarea de seguimiento",
+  "agentSummarySuggestPerson": "Añadir a {name} a quién estuvo",
+  "agentSummarySuggestPersonUnnamed": "Añadir a alguien a quién estuvo",
   "agentSummaryTimeEntry": "Registro de tiempo {range}: «{summary}»",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "desde {start}",

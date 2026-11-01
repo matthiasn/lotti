@@ -126,8 +126,9 @@ selfTargetedPendingChangeSetsProvider = FutureProvider.autoDispose
     });
 
 /// Event-scoped confirmation service. Confirmed event-agent proposals
-/// (currently just `suggest_follow_up_task`) are applied via
-/// [EventToolDispatcher]; rejection only records the decision.
+/// (`suggest_follow_up_task`, `suggest_person`) are applied via
+/// [EventToolDispatcher]; rejection only records the decision — which is
+/// what keeps a dismissed person from being suggested for the event again.
 final eventChangeSetConfirmationServiceProvider =
     Provider<ChangeSetConfirmationService>((ref) {
       final logger = ref.watch(domainLoggerProvider);

@@ -460,6 +460,8 @@
   "agentSummarySetStatus": "Setați starea la {status}",
   "agentSummarySetTitle": "Setați titlul la „{title}”",
   "agentSummarySuggestFollowUpTask": "Propuneți o sarcină ulterioară",
+  "agentSummarySuggestPerson": "Adăugați pe {name} la cei prezenți",
+  "agentSummarySuggestPersonUnnamed": "Adăugați pe cineva la cei prezenți",
   "agentSummaryTimeEntry": "Înregistrare de timp {range}: „{summary}”",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "de la {start}",

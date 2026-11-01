@@ -486,6 +486,8 @@
   "agentSummarySetStatus": "Sätt status till {status}",
   "agentSummarySetTitle": "Sätt titeln till ”{title}”",
   "agentSummarySuggestFollowUpTask": "Föreslå en uppföljningsuppgift",
+  "agentSummarySuggestPerson": "Lägg till {name} bland dem som var där",
+  "agentSummarySuggestPersonUnnamed": "Lägg till någon bland dem som var där",
   "agentSummaryTimeEntry": "Tidspost {range}: ”{summary}”",
   "agentSummaryTimeRangeBetween": "{start}–{end}",
   "agentSummaryTimeRangeFrom": "från {start}",

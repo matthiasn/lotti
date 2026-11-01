@@ -605,7 +605,55 @@ the agent, so the recap can name them.
 ## Tools
 
 Immediate local, reusing the task agent's scope-agnostic contract:
-`update_report` (`oneLiner` / `tldr` / `content`), `record_observations`.
+`update_report` (`oneLiner` / `tldr` / `content`), `record_observations` — and
+one read of its own, `list_people`.
+
+### Suggesting who was there
+
+When the event's notes, voice-memo transcripts or photo captions name
+someone, the agent calls `list_people`: the [`EventPeopleDirectory`](../../../lib/features/agents/workflow/event_people_directory.dart),
+read once per wake — everyone on the People page through the private filter,
+one line each with id, name and nickname, and where each stands for this
+event. **The agent does the matching**; the directory only says who exists.
+For each person the event shows was there it calls `suggest_person`.
+
+```mermaid
+sequenceDiagram
+    participant M as Model
+    participant S as EventAgentStrategy
+    participant D as EventPeopleDirectory
+    participant U as Event page
+    participant X as EventToolDispatcher
+    M->>S: list_people(query?)
+    S->>D: load (once per wake)
+    D-->>M: "- pip: Pip Penguin (called \"Pip\")", standings
+    M->>S: suggest_person(personId, mention)
+    S->>D: byId + standingOf
+    alt unknown, with the event, suggested, dismissed, or twice this wake
+        S-->>M: refused — nothing queued
+    else open
+        S->>S: queue with personName
+        S-->>U: pending ChangeSet row
+        U->>X: confirm
+        X->>X: ensureLink(person → event, RelationshipLink)
+    end
+```
+
+The strategy checks every `suggest_person` against the directory before
+queuing it, so an id the model made up, or a person already with the event
+(their live `RelationshipLink`), already suggested (a pending item of this
+agent's change sets for the event), or dismissed (a rejected
+`ChangeDecision` for the event) never reaches the user — a dismissal is
+never re-proposed. A queued suggestion carries the person's name for the row,
+which renders "Add Pip Penguin to who was there" in the reader's language, with
+the quoted words that named them under it. On confirm, `EventToolDispatcher`
+writes the person → event `RelationshipLink` through `ensureLink`, so two
+devices confirming, or a re-run after a crash, write one link; it refuses
+while the event or the person is gone. The link is the one the event page's
+People row reads and writes ([events](../events.md#who-it-was-with)), so the
+person appears there and the event on their timeline.
+
+### Follow-ups
 
 Deferred: `suggest_follow_up_task` — proposes a concrete follow-up the event
 implies. It accumulates as a pending `ChangeSet` keyed by the event id, surfaces
