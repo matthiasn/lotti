@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/ui/chat/chat_recorder_error_message.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/utils/device_datetime.dart';
 import 'package:lotti/widgets/markdown/agent_markdown_view.dart';
 import 'package:material_ui/material_ui.dart';
 
+part 'agent_chat_view_collapsible_markdown_part.dart';
 part 'agent_chat_view_transcription_progress_state_part.dart';
 part 'agent_chat_view_voice_first_part.dart';
 
@@ -249,7 +251,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                                       ),
                                       child: divider,
                                     ),
-                                    SizedBox(height: tokens.spacing.step2),
+                                    SizedBox(height: tokens.spacing.step3),
                                   ],
                                   _MessageBubble(
                                     key: ValueKey(
@@ -321,6 +323,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           ?widget.footer,
           if (widget.composerEnabled)
             _ChatComposer(
+              header: widget.composerHeader,
               availableHeight: constraints.maxHeight,
               controller: _controller,
               hintText:

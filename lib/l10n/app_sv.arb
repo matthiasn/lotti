@@ -3221,6 +3221,8 @@
   "frontChatPrevious7Days": "Senaste 7 dagarna",
   "frontChatResponding": "Letar efter den som vet…",
   "frontChatRowMenuHint": "Chattåtgärder",
+  "frontChatScopeAll": "Allt",
+  "frontChatScopeLabel": "Svar från",
   "frontChatSearchChats": "Sök i chattar",
   "frontChatTitle": "Följeslagare",
   "frontChatYesterday": "Igår",

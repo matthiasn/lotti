@@ -45,6 +45,7 @@ class DesignSystemChip extends StatefulWidget {
     this.showRemove = false,
     this.selected = false,
     this.outlined = false,
+    this.quietSelection = false,
     this.size = DesignSystemChipSize.compact,
     this.semanticsLabel,
     this.forcedState,
@@ -78,6 +79,11 @@ class DesignSystemChip extends StatefulWidget {
 
   /// Quiet filter treatment: an outline at rest, with the same selected fill.
   final bool outlined;
+
+  /// A chosen chip in neutral ink: the pressed-strength neutral fill and the
+  /// resting outline, never the accent — for a choice that sits beside the
+  /// surface's one accented control and must not compete with it.
+  final bool quietSelection;
 
   /// Visual/tap-target size. Defaults to the compact chip used in dense filter
   /// rows; `touch` is for primary picker choices inside modal sheets.
@@ -117,12 +123,13 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
     final variantSpec = _ChipVariantSpec.fromTokens(
       tokens: tokens,
       visualState: visualState,
+      quietSelection: widget.quietSelection,
     );
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
       side: widget.outlined
           ? BorderSide(
-              color: widget.selected
+              color: widget.selected && !widget.quietSelection
                   ? tokens.colors.interactive.enabled
                   : tokens.colors.decorative.level01,
             )
@@ -158,7 +165,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
               selected:
                   widget.selected ||
                   widget.forcedState == DesignSystemChipVisualState.activated,
-              label: widget.semanticsLabel ?? widget.label,
+              // The visible words speak for themselves; a caller's own label
+              // replaces them. Both at once read every chip out twice.
+              label: widget.semanticsLabel,
               excludeSemantics: widget.semanticsLabel != null,
               child: _ChipContent(
                 label: widget.label,
@@ -369,12 +378,16 @@ class _ChipVariantSpec {
   factory _ChipVariantSpec.fromTokens({
     required DsTokens tokens,
     required DesignSystemChipVisualState visualState,
+    bool quietSelection = false,
   }) {
     final backgroundColor = switch (visualState) {
       DesignSystemChipVisualState.idle => tokens.colors.surface.enabled,
       DesignSystemChipVisualState.hover => tokens.colors.surface.hover,
       DesignSystemChipVisualState.pressed => tokens.colors.surface.focusPressed,
-      DesignSystemChipVisualState.activated => tokens.colors.surface.active,
+      DesignSystemChipVisualState.activated =>
+        quietSelection
+            ? tokens.colors.surface.focusPressed
+            : tokens.colors.surface.active,
     };
 
     return _ChipVariantSpec(

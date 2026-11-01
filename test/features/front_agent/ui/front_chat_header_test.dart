@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/companion/ui/companion_speaker.dart';
@@ -478,19 +479,110 @@ void main() {
       expect(find.byKey(FrontChatHeaderKeys.inbox), findsNothing);
     });
 
-    testWidgets('a dot on the way to the list says something waits', (
+    testWidgets('its count on the way to the list says what waits', (
       tester,
     ) async {
       await pumpHeader(tester, thread: waiting(2));
 
+      // After the word, never over it, on its line.
       final dot = tester.getRect(find.byKey(FrontChatHeaderKeys.inbox));
       final list = tester.getRect(find.byKey(FrontChatHeaderKeys.chats));
-      expect(list.overlaps(dot), isTrue);
+      expect(dot.left, greaterThanOrEqualTo(list.right));
+      expect(dot.center.dy, closeTo(list.center.dy, 1));
+      expect(
+        find.descendant(
+          of: find.byKey(FrontChatHeaderKeys.chats),
+          matching: find.text('Chats'),
+        ),
+        findsOne,
+      );
       expect(
         tester
             .widget<DesignSystemBadge>(find.byKey(FrontChatHeaderKeys.inbox))
             .semanticLabel,
         'Inbox 2',
+      );
+      // The count itself, as the list's Inbox row shows it.
+      expect(
+        find.descendant(
+          of: find.byKey(FrontChatHeaderKeys.inbox),
+          matching: find.text('2'),
+        ),
+        findsOne,
+      );
+    });
+    testWidgets('a tap on the count opens the list too', (tester) async {
+      await pumpHeader(tester, thread: waiting(2));
+      final listOpen =
+          ProviderScope.containerOf(
+            tester.element(find.byType(FrontChatHeader)),
+          ).listen(
+            frontConversationListOpenProvider,
+            (_, _) {},
+          );
+      addTearDown(listOpen.close);
+
+      await tester.tap(find.byKey(FrontChatHeaderKeys.inbox));
+      await tester.pump();
+      expect(listOpen.read(), isTrue);
+    });
+  });
+
+  group('the hero', () {
+    final census = FrontConversationIndex(
+      conversations: [
+        FrontConversation(
+          id: 'c-1',
+          title: 'Plan the census',
+          lastActivity: DateTime(2026, 10, 31, 9),
+          archived: false,
+        ),
+      ],
+    );
+    FrontChatThread asked(String question) => FrontChatThread(
+      messages: [
+        AgentChatMessage(
+          id: 'u1',
+          role: AgentChatRole.user,
+          text: question,
+          createdAt: DateTime(2026, 10, 31, 9),
+        ),
+      ],
+    );
+
+    testWidgets('a title that only repeats the first question is left out: '
+        'she leads alone', (tester) async {
+      await pumpHeader(
+        tester,
+        conversations: census,
+        thread: asked('Plan the census\nand the nests'),
+      );
+
+      expect(find.byKey(FrontChatHeroKeys.title), findsNothing);
+      expect(find.byKey(FrontChatHeroKeys.figure), findsOne);
+    });
+
+    testWidgets('a title of its own shows, a step above the thread', (
+      tester,
+    ) async {
+      await pumpHeader(
+        tester,
+        conversations: census,
+        thread: asked('How many hatchlings?'),
+      );
+
+      final title = tester.widget<Text>(find.byKey(FrontChatHeroKeys.title));
+      expect(title.data, 'Plan the census');
+      expect(
+        title.style?.fontSize,
+        tester
+            .element(find.byKey(FrontChatHeroKeys.title))
+            .designTokens
+            .typography
+            .styles
+            .heading
+            .heading3
+            .fontSize,
       );
     });
   });

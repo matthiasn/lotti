@@ -6950,6 +6950,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get frontChatRowMenuHint => 'Chathandlinger';
 
   @override
+  String get frontChatScopeAll => 'Alle';
+
+  @override
+  String get frontChatScopeLabel => 'Svar fra';
+
+  @override
   String get frontChatSearchChats => 'Søg i chats';
 
   @override

@@ -3221,6 +3221,8 @@
   "frontChatPrevious7Days": "Ultimi 7 giorni",
   "frontChatResponding": "Sta cercando chi lo sa…",
   "frontChatRowMenuHint": "Azioni della chat",
+  "frontChatScopeAll": "Tutto",
+  "frontChatScopeLabel": "Risposte da",
   "frontChatSearchChats": "Cerca nelle chat",
   "frontChatTitle": "Compagna",
   "frontChatYesterday": "Ieri",

@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/agents/ui/chat/waveform_bars.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:material_ui/material_ui.dart';
@@ -254,7 +256,16 @@ void main() {
         'focused, and holds for the session', (tester) async {
       final recorder = await pumpView(tester);
       expect(find.byKey(const Key('agent-chat-talk')), findsOne);
-      expect(find.text('Tap to talk'), findsOne);
+      // The disc says what it does as its label and tooltip; under it only
+      // the one quiet way to type.
+      expect(find.text('Tap to talk'), findsNothing);
+      expect(find.bySemanticsLabel('Tap to talk'), findsOne);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Tooltip && w.message == 'Tap to talk',
+        ),
+        findsOne,
+      );
       expect(find.byType(TextField), findsNothing);
 
       await tester.tap(find.byKey(const Key('agent-chat-talk')));
@@ -263,6 +274,15 @@ void main() {
       await recorder.cancel();
       await tester.pump();
 
+      // A way round the disc at caption tier, never a second button.
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('agent-chat-type-instead')),
+            )
+            .size,
+        DesignSystemButtonSize.dense,
+      );
       await tester.tap(find.byKey(const Key('agent-chat-type-instead')));
       await tester.pump();
       final field = tester.widget<TextField>(find.byType(TextField));
@@ -275,6 +295,64 @@ void main() {
       expect(container.read(agentChatPrefersTypingProvider), isTrue);
     });
 
+    testWidgets('on a desktop a key typed at rest starts typing with it', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpView(tester);
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyH, character: 'h');
+      await tester.pump();
+
+      expect(draft, 'h');
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AgentChatView)),
+      );
+      expect(container.read(agentChatPrefersTypingProvider), isTrue);
+    });
+
+    testWidgets('on a desktop a shortcut chord never starts typing', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await pumpView(tester);
+      await tester.pump();
+
+      for (final modifier in [
+        LogicalKeyboardKey.controlLeft,
+        LogicalKeyboardKey.metaLeft,
+        LogicalKeyboardKey.altLeft,
+      ]) {
+        await tester.sendKeyDownEvent(modifier);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyH, character: 'h');
+        await tester.sendKeyUpEvent(modifier);
+        await tester.pump();
+      }
+
+      expect(draft, isEmpty);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AgentChatView)),
+      );
+      expect(container.read(agentChatPrefersTypingProvider), isFalse);
+    });
+
+    testWidgets('on a phone a key at rest does nothing — the disc leads', (
+      tester,
+    ) async {
+      await pumpView(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyH, character: 'h');
+      await tester.pump();
+
+      expect(draft, isEmpty);
+    });
+
     testWidgets('while listening the disc is a pill carrying what it hears; '
         'a tap sends, Cancel discards', (tester) async {
       final recorder = await pumpView(
@@ -282,18 +360,25 @@ void main() {
         status: ChatRecorderStatus.recording,
       );
 
-      // The waveform says it is listening: no line under it says so too,
-      // but its place is kept and screen readers hear it on the pill.
+      // The waveform says it is listening: no line says so too, and screen
+      // readers hear it on the pill. The pill ends in what a tap does.
       expect(find.text('Listening — tap when done'), findsNothing);
+      expect(find.text('Transcribing…'), findsNothing);
       expect(find.bySemanticsLabel('Listening — tap when done'), findsOne);
-      final line = tester.widget<Visibility>(
-        find.ancestor(
-          of: find.text('Transcribing…'),
-          matching: find.byType(Visibility),
-        ),
+      expect(
+        find
+                .descendant(
+                  of: find.byKey(const Key('agent-chat-talk-stop')),
+                  matching: find.byIcon(LottiIcons.arrowUp),
+                )
+                .evaluate()
+                .isNotEmpty ||
+            tester
+                    .widget<Icon>(find.byKey(const Key('agent-chat-talk-stop')))
+                    .icon ==
+                LottiIcons.arrowUp,
+        isTrue,
       );
-      expect(line.visible, isFalse);
-      expect(line.maintainSize, isTrue);
       // The talk disc's own teal, stretched into a pill.
       final pill = tester.widget<Material>(
         find.byKey(const Key('agent-chat-talk')),
@@ -386,24 +471,40 @@ void main() {
     });
 
     testWidgets('while transcribing the pill holds the words and takes no '
-        'tap', (tester) async {
+        'tap, and Cancel still lets the turn go', (tester) async {
+      final semantics = tester.ensureSemantics();
       final recorder = await pumpView(
         tester,
         status: ChatRecorderStatus.processing,
       );
 
-      expect(find.text('Transcribing…'), findsOne);
+      // The wait is the pill's spinner, said to screen readers in words.
+      expect(find.bySemanticsLabel('Transcribing…'), findsOne);
       expect(find.byKey(const Key('agent-chat-talk-waveform')), findsOne);
-      expect(find.byKey(const Key('agent-chat-talk-transcribing')), findsOne);
-      expect(find.byKey(const Key('agent-chat-talk-stop')), findsNothing);
-      // Cancel's slot is kept, so the composer keeps its height, but it
-      // takes no tap.
       expect(
-        find.byKey(const Key('agent-chat-talk-cancel')).hitTestable(),
-        findsNothing,
+        tester
+            .widget(find.byKey(const Key('agent-chat-talk-transcribing')))
+            .runtimeType,
+        DesignSystemSpinner,
       );
+      expect(find.byKey(const Key('agent-chat-talk-stop')), findsNothing);
       await tester.tap(find.byKey(const Key('agent-chat-talk')));
       expect(recorder.stops, 0);
+
+      // A stalled turn always has its way out, as quiet as "Type instead".
+      expect(
+        tester
+            .widget<DesignSystemButton>(
+              find.byKey(const Key('agent-chat-talk-cancel')),
+            )
+            .size,
+        DesignSystemButtonSize.dense,
+      );
+      await tester.tap(
+        find.byKey(const Key('agent-chat-talk-cancel')).hitTestable(),
+      );
+      expect(recorder.cancels, 1);
+      semantics.dispose();
     });
 
     testWidgets('a host that asks hears a transcript went out spoken', (

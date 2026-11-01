@@ -2876,6 +2876,8 @@
   "frontChatPrevious7Days": "7 derniers jours",
   "frontChatResponding": "Elle cherche qui sait…",
   "frontChatRowMenuHint": "Actions du chat",
+  "frontChatScopeAll": "Tout",
+  "frontChatScopeLabel": "Réponses tirées de",
   "frontChatSearchChats": "Rechercher dans les chats",
   "frontChatTitle": "Compagne",
   "frontChatYesterday": "Hier",

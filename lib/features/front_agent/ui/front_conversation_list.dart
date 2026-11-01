@@ -5,7 +5,6 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -44,7 +43,12 @@ abstract final class FrontConversationListKeys {
 /// pill — the search field's width — and their text, the section labels and
 /// the new-conversation action share one left edge.
 class FrontConversationList extends ConsumerStatefulWidget {
-  const FrontConversationList({super.key});
+  const FrontConversationList({this.beside = false, super.key});
+
+  /// Beside the open conversation (a desktop window), whose header carries
+  /// that conversation's menu: its row keeps its time then, and shows its
+  /// menu on hover or focus like any other.
+  final bool beside;
 
   @override
   ConsumerState<FrontConversationList> createState() =>
@@ -118,13 +122,23 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     final rowSize = _rowSize(context);
     // Labels sit on the row text's own edge.
     final textInset = DesignSystemListItem.contentInset(tokens, rowSize);
+    // One time column for the whole list, as wide as its widest time: every
+    // preview then ends on the same line, whatever its own time says.
+    final timeWidth = _timeWidth(context, [
+      for (final c in [...live, if (showArchived) ...archived])
+        _when(context, c.lastActivity, now),
+    ]);
 
-    Widget row(FrontConversation c, {bool divider = false}) => _ConversationRow(
+    final rounded = BorderRadius.circular(tokens.radii.m);
+
+    Widget row(FrontConversation c) => _ConversationRow(
       key: FrontConversationListKeys.row(c.id),
       conversation: c,
       now: now,
-      divider: divider,
+      timeWidth: timeWidth,
+      borderRadius: rounded,
       selected: !inboxOnly && c.id == activeId,
+      pinMenu: !widget.beside,
       menu: actions.menuItems(c),
       onOpen: () {
         controller.openConversation(c.id);
@@ -132,36 +146,30 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
       },
     );
 
-    // A group: its name over a card that holds its conversations, hairlines
-    // between them — so the grouping is the shape, not a faint label.
+    // A group: its name over its conversations, flat. The name in the
+    // accent splits the days — the rows stay neutral, so the open row's
+    // fill is still the one strong surface in the list.
     Widget group(String? label, List<FrontConversation> rows) => Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step5),
+      padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (label != null)
             Padding(
-              // A step below the row titles, on their text's edge: the card
-              // does the grouping, the label only names it.
+              // Snug over its rows, on their text's edge.
               padding: EdgeInsets.only(
                 left: textInset,
                 right: textInset,
-                bottom: tokens.spacing.step2,
+                bottom: tokens.spacing.step1,
               ),
               child: Text(
                 label,
                 style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+                  color: tokens.colors.interactive.enabled,
                 ),
               ),
             ),
-          DesignSystemGroupedList(
-            padding: EdgeInsets.zero,
-            children: [
-              for (final (i, c) in rows.indexed)
-                row(c, divider: i < rows.length - 1),
-            ],
-          ),
+          for (final c in rows) row(c),
         ],
       ),
     );
@@ -172,8 +180,6 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
     for (final c in live) {
       sections.putIfAbsent(_Recency.of(c.lastActivity, now), () => []).add(c);
     }
-    final rounded = BorderRadius.circular(tokens.radii.m);
-
     // The thread's own gutter: the pills, the search and the divider line
     // up with the bubbles' edges.
     return ListView(
@@ -283,8 +289,6 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
             }),
           ),
         ],
-        // A pause: the tools above, the history below.
-        SizedBox(height: tokens.spacing.step5),
         // A search is one group of what matched; otherwise the recency groups.
         if (searching && live.isNotEmpty) group(null, live),
         if (!searching)
@@ -380,16 +384,17 @@ enum _Recency {
   };
 }
 
-/// A row's label style, a step larger on a phone's touch-sized rows so the
-/// list reads at the size of the thread behind it.
-TextStyle _labelStyle(BuildContext context) {
-  final styles = context.designTokens.typography.styles.body;
-  return _rowSize(context) == DesignSystemListItemSize.medium
-      ? styles.bodyMedium
-      : styles.bodySmall;
-}
+/// A destination row's label style (New chat, Inbox, Search): the size of a
+/// conversation's title, never larger, so the list's own items lead.
+TextStyle _labelStyle(BuildContext context) =>
+    context.designTokens.typography.styles.body.bodySmall;
 
 /// Rows are touch-sized on a phone and compact on a wide window.
+/// A conversation's row on every layout: its two lines make it a full
+/// target already, so it takes the denser padding.
+const DesignSystemListItemSize _conversationRowSize =
+    DesignSystemListItemSize.small;
+
 DesignSystemListItemSize _rowSize(BuildContext context) =>
     isDesktopLayout(context)
     ? DesignSystemListItemSize.small
@@ -413,14 +418,6 @@ class _TrailingSlot extends StatelessWidget {
         .clamp(0.0, DesignSystemContextMenuButton.extent(tokens));
   }
 
-  /// How far the slot's centre sits from a row's right edge.
-  static double centreFromEnd(BuildContext context) =>
-      DesignSystemListItem.contentInset(
-        context.designTokens,
-        _rowSize(context),
-      ) +
-      widthOf(context) / 2;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -435,6 +432,48 @@ class _TrailingSlot extends StatelessWidget {
             ),
     );
   }
+}
+
+/// The height one line of [style] takes as text lays out here — with the
+/// text scaler — so a control can sit on that line.
+double _lineHeight(BuildContext context, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: 'Hg', style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
+
+/// The style a row's time is set in.
+/// In tabular figures, so the column lines up digit for digit.
+TextStyle _timeStyle(BuildContext context) => context
+    .designTokens
+    .typography
+    .styles
+    .others
+    .caption
+    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+/// The width the widest of [times] takes as it lays out here — with the
+/// text scaler — so every row's time column is that wide.
+double _timeWidth(BuildContext context, Iterable<String> times) {
+  var widest = 0.0;
+  for (final time in times) {
+    final painter = TextPainter(
+      text: TextSpan(text: time, style: _timeStyle(context)),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    if (painter.width > widest) widest = painter.width;
+    painter.dispose();
+  }
+  // Rounded up: a fraction short would wrap the widest one.
+  return widest.ceilToDouble();
 }
 
 /// When a conversation last moved, as a chat list says it: the time today
@@ -460,19 +499,28 @@ class _ConversationRow extends StatefulWidget {
   const _ConversationRow({
     required this.conversation,
     required this.now,
-    required this.divider,
+    required this.timeWidth,
+    required this.borderRadius,
     required this.selected,
     required this.menu,
     required this.onOpen,
+    this.pinMenu = true,
     super.key,
   });
 
   final FrontConversation conversation;
   final DateTime now;
 
-  /// A hairline under it, to the next row of its group.
-  final bool divider;
+  /// The list's time column: the widest time any row shows.
+  final double timeWidth;
+
+  /// The row's own corners, for its fill.
+  final BorderRadius borderRadius;
   final bool selected;
+
+  /// Whether the open row shows its menu at rest — not beside the open
+  /// conversation, whose header already carries it.
+  final bool pinMenu;
   final List<DesignSystemContextMenuItem> menu;
   final VoidCallback onOpen;
 
@@ -527,44 +575,80 @@ class _ConversationRowState extends State<_ConversationRow> {
     final tokens = context.designTokens;
     // The menu is on the open row, and on any row hovered or focused; the
     // rest of the list stays words.
-    final showMenu = widget.selected || _hovered || _focused;
+    final showMenu =
+        (widget.selected && widget.pinMenu) || _hovered || _focused;
     final extent = DesignSystemContextMenuButton.extent(tokens);
     final conversation = widget.conversation;
     final preview = conversation.preview?.trim();
+    final when = _when(context, conversation.lastActivity, widget.now);
+    // On the open row's fill, the second line is as bright as the title:
+    // dim text never sits on the brightest neutral.
+    final quiet = tokens.typography.styles.body.bodySmall.copyWith(
+      color: widget.selected
+          ? tokens.colors.text.highEmphasis
+          : tokens.colors.text.mediumEmphasis,
+    );
     final row = DesignSystemListItem(
-      // The title leads; when it last moved trails it on the same line.
-      titleContent: Row(
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
+      // The title on the whole width — two lines before it is cut, so no
+      // title is left mid-word — and under it where the conversation got
+      // to, her last answer, with when it moved at the line's end. While the
+      // menu shows, it takes the time's place; the time keeps its room, so
+      // nothing reflows.
+      titleContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            // Two lines before it is cut, so no title is left mid-word.
-            child: Text(
-              conversation.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              // An archived one is quieter in tone as well as marked —
-              // unless it is the open one, whose fill never carries dim text.
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: conversation.archived && !widget.selected
-                    ? tokens.colors.text.mediumEmphasis
-                    : tokens.colors.text.highEmphasis,
-              ),
+          Text(
+            conversation.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            // An archived one is quieter in tone as well as marked — unless
+            // it is the open one, whose fill never carries dim text.
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: conversation.archived && !widget.selected
+                  ? tokens.colors.text.mediumEmphasis
+                  : tokens.colors.text.highEmphasis,
             ),
           ),
-          SizedBox(width: tokens.spacing.step3),
-          Text(
-            _when(context, conversation.lastActivity, widget.now),
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
+          SizedBox(height: tokens.spacing.step1),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  (preview?.isNotEmpty ?? false) ? preview! : '',
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: quiet,
+                ),
+              ),
+              // Room for the fade to finish before the time begins.
+              SizedBox(width: tokens.spacing.step4),
+              Visibility(
+                visible: !showMenu,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: SizedBox(
+                  width: widget.timeWidth,
+                  child: Text(
+                    when,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: _timeStyle(context).copyWith(
+                      color: widget.selected
+                          ? tokens.colors.text.highEmphasis
+                          : tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      // Where it got to: her last answer, one line.
-      subtitle: (preview?.isNotEmpty ?? false) ? preview : null,
-      subtitleEmphasis: tokens.colors.text.mediumEmphasis,
-      showDivider: widget.divider,
+      size: _conversationRowSize,
+      borderRadius: widget.borderRadius,
       // The open one is the brightest neutral in the list; a hovered one
       // takes a quieter fill, so the two never look alike.
       activated: widget.selected,
@@ -581,14 +665,6 @@ class _ConversationRowState extends State<_ConversationRow> {
       onTap: widget.onOpen,
       onHoverChanged: (value) => setState(() => _hovered = value),
       onFocusChanged: (value) => setState(() => _focused = value),
-      // The column the menu is laid over, reserved only while it shows,
-      // so a row at rest gives its words the full width.
-      trailing: showMenu
-          ? Padding(
-              padding: EdgeInsets.only(left: tokens.spacing.step2),
-              child: const _TrailingSlot(),
-            )
-          : null,
     );
     return Semantics(
       selected: widget.selected,
@@ -603,11 +679,27 @@ class _ConversationRowState extends State<_ConversationRow> {
           ),
           // Over the row, inside its bounds, so the whole target answers:
           // a near miss opens the menu, never the conversation.
+          // On the preview line, at its end: in the very place of the time it
+          // stands in for.
           Positioned(
-            top: 0,
-            bottom: 0,
-            right: _TrailingSlot.centreFromEnd(context) - extent / 2,
+            // Centred on the preview line: the row's bottom inset plus half
+            // that line's own height, as its text lays out.
+            bottom:
+                DesignSystemListItem.verticalInset(
+                  tokens,
+                  _conversationRowSize,
+                ) +
+                _lineHeight(context, quiet) / 2 +
+                tokens.spacing.step2 -
+                extent / 2,
+            right:
+                DesignSystemListItem.contentInset(
+                  tokens,
+                  _conversationRowSize,
+                ) -
+                extent / 4,
             width: extent,
+            height: extent,
             child: Center(
               child: Visibility(
                 visible: showMenu,

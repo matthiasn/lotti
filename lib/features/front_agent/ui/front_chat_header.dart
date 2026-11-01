@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu.dart';
 import 'package:lotti/features/design_system/components/context_menus/design_system_context_menu_button.dart';
@@ -109,41 +110,50 @@ class FrontChatHeader extends ConsumerWidget {
             frontAllChatsThreadProvider.select((t) => t.value?.inboxCount),
           ) ??
           0;
+      final openList = ref
+          .read(frontConversationListOpenProvider.notifier)
+          .toggle;
       row = [
         // Beside the list these live in it: the way to it, a new
         // conversation, the inbox.
         if (!listBeside) ...[
           // The way to the list sits where the list's own back arrow does,
           // so the two pages share one leading rail.
-          // While something waits on the user in any conversation, a quiet
-          // dot on the way to the list — where the inbox is — rather than a
-          // chip taking the title's width.
-          Stack(
-            clipBehavior: Clip.none,
+          // While something waits on the user in any conversation, its count
+          // on the way to the list — where the inbox is — rather than a chip
+          // taking the title's width.
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              DesignSystemIconAction(
+              // Said in a word as well as the glyph: three lines alone do
+              // not tell anyone that their other chats live there. Its
+              // glyph on the thread's own edge.
+              DesignSystemButton(
                 key: FrontChatHeaderKeys.chats,
-                tooltip: messages.queryChats,
-                onPressed: ref
-                    .read(frontConversationListOpenProvider.notifier)
-                    .toggle,
-                icon: LottiIcons.menu,
+                label: messages.queryChats,
+                variant: DesignSystemButtonVariant.quiet,
+                leadingIcon: LottiIcons.menu,
+                alignsLabelToLeadingEdge: true,
+                onPressed: openList,
               ),
+              // After the word, never over it: "Chats ②" reads as one
+              // thing, and a tap on the count opens the list as well.
               if (inboxCount > 0)
-                Positioned(
-                  top: tokens.spacing.step2,
-                  right: tokens.spacing.step2,
-                  child: IgnorePointer(
-                    child: DesignSystemBadge.dot(
-                      key: FrontChatHeaderKeys.inbox,
-                      // The tone query chat marks "waiting on you" with.
-                      tone: DesignSystemBadgeTone.warning,
-                      semanticLabel: messages.frontChatInboxChip(inboxCount),
-                    ),
+                GestureDetector(
+                  onTap: openList,
+                  child: DesignSystemBadge.number(
+                    key: FrontChatHeaderKeys.inbox,
+                    value: '$inboxCount',
+                    // The tone query chat marks "waiting on you" with.
+                    tone: DesignSystemBadgeTone.warning,
+                    semanticLabel: messages.frontChatInboxChip(inboxCount),
                   ),
                 ),
             ],
           ),
+          // A step before the next control, so the count reads as the
+          // word's, never the pencil's.
+          SizedBox(width: tokens.spacing.step3),
           // Beside the list, as ChatGPT groups them: the ways to another
           // conversation lead, so the pencil never reads as "rename this".
           DesignSystemIconAction(

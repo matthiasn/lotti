@@ -2876,6 +2876,8 @@
   "frontChatPrevious7Days": "Letzte 7 Tage",
   "frontChatResponding": "Sucht, wer es weiß…",
   "frontChatRowMenuHint": "Chat-Aktionen",
+  "frontChatScopeAll": "Alle",
+  "frontChatScopeLabel": "Antworten aus",
   "frontChatSearchChats": "Chats durchsuchen",
   "frontChatTitle": "Begleiterin",
   "frontChatYesterday": "Gestern",

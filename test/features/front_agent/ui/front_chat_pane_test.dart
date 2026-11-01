@@ -8,6 +8,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/query/query_source_access.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/chat/chat_recorder_controller.dart';
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
@@ -84,6 +85,7 @@ void main() {
     VoidCallback? onClose,
     QueryAccessSnapshot? journalAccess,
     FrontConversationIndex? conversations,
+    ChatRecorderController Function()? recorder,
   }) async {
     // The project creation resolves categories through the locator.
     final cache = MockEntitiesCacheService();
@@ -148,6 +150,8 @@ void main() {
                     : ConsumptionTotals.empty,
               ),
             ),
+            if (recorder != null)
+              chatRecorderControllerProvider.overrideWith(recorder),
           ],
         ),
       );
@@ -459,6 +463,33 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(scrolled.read(), isFalse);
+  });
+
+  testWidgets('what is being said stays with its conversation: leaving it '
+      'for another lets the recording go', (tester) async {
+    final recording = _Recording();
+    await pumpPane(tester, recorder: () => recording);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(FrontChatHeader)),
+    );
+
+    await withClock(Clock.fixed(now), () async {
+      container.read(frontPickedConversationProvider.notifier).picked = 'c-2';
+      await tester.pump();
+      await tester.pump();
+    });
+
+    expect(recording.cancels, 1);
+  });
+
+  testWidgets('a recording made as the surface opens is kept while its '
+      'conversation resolves — only leaving one lets it go', (tester) async {
+    final recording = _Recording();
+    await pumpPane(tester, recorder: () => recording);
+
+    // The first conversation resolved during the pump: nothing was left.
+    expect(recording.cancels, 0);
+    expect(find.byKey(const Key('agent-chat-talk-cancel')), findsOne);
   });
 
   testWidgets('the header close hands back to the host', (tester) async {
@@ -852,4 +883,21 @@ void main() {
       expect(find.text('Create Project'), findsOneWidget);
     });
   });
+}
+
+/// A recorder in the middle of listening, counting the cancels it gets.
+class _Recording extends ChatRecorderController {
+  int cancels = 0;
+
+  @override
+  ChatRecorderState build() => const ChatRecorderState(
+    status: ChatRecorderStatus.recording,
+    amplitudeHistory: [],
+  );
+
+  @override
+  Future<void> cancel() async {
+    cancels++;
+    state = const ChatRecorderState.initial();
+  }
 }

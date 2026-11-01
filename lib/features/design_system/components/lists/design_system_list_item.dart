@@ -78,6 +78,11 @@ class DesignSystemListItem extends StatefulWidget {
       _ListItemSpec.fromTokens(tokens, size).horizontalPadding +
       tokens.spacing.step1;
 
+  /// How far a row of [size] keeps its content from its top and bottom
+  /// edges, so a control laid over the row can line up with its last line.
+  static double verticalInset(DsTokens tokens, DesignSystemListItemSize size) =>
+      _ListItemSpec.fromTokens(tokens, size).verticalPadding;
+
   final String? title;
   final String? subtitle;
   final Widget? titleContent;

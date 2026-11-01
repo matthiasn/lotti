@@ -2883,6 +2883,8 @@
   "frontChatPrevious7Days": "Posledních 7 dní",
   "frontChatResponding": "Hledá, kdo to ví…",
   "frontChatRowMenuHint": "Akce chatu",
+  "frontChatScopeAll": "Vše",
+  "frontChatScopeLabel": "Odpovědi z",
   "frontChatSearchChats": "Hledat v chatech",
   "frontChatTitle": "Společnice",
   "frontChatYesterday": "Včera",

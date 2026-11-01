@@ -2876,6 +2876,8 @@
   "frontChatPrevious7Days": "Ultimele 7 zile",
   "frontChatResponding": "Caută cine știe…",
   "frontChatRowMenuHint": "Acțiunile conversației",
+  "frontChatScopeAll": "Toate",
+  "frontChatScopeLabel": "Răspunsuri din",
   "frontChatSearchChats": "Căutați în conversații",
   "frontChatTitle": "Însoțitoare",
   "frontChatYesterday": "Ieri",

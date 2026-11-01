@@ -3220,6 +3220,8 @@
   "frontChatPrevious7Days": "Últimos 7 dias",
   "frontChatResponding": "A procurar quem sabe…",
   "frontChatRowMenuHint": "Ações do chat",
+  "frontChatScopeAll": "Tudo",
+  "frontChatScopeLabel": "Respostas de",
   "frontChatSearchChats": "Procurar nos chats",
   "frontChatTitle": "Companheira",
   "frontChatYesterday": "Ontem",

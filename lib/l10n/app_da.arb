@@ -3221,6 +3221,8 @@
   "frontChatPrevious7Days": "Seneste 7 dage",
   "frontChatResponding": "Finder den, der ved det…",
   "frontChatRowMenuHint": "Chathandlinger",
+  "frontChatScopeAll": "Alle",
+  "frontChatScopeLabel": "Svar fra",
   "frontChatSearchChats": "Søg i chats",
   "frontChatTitle": "Ledsager",
   "frontChatYesterday": "I går",

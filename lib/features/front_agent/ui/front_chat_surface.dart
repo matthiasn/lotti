@@ -29,8 +29,9 @@ Future<void> showFrontChat(BuildContext context) => showDialog<void>(
 class FrontChatSurface extends StatelessWidget {
   const FrontChatSurface({super.key});
 
-  /// The share of the panel the list beside the conversation takes.
-  static const double listShare = 1 / 3;
+  /// The share of the panel the list beside the conversation takes: room
+  /// for a preview that says something, the conversation keeping the rest.
+  static const double listShare = 0.38;
 
   @override
   Widget build(BuildContext context) {

@@ -62,7 +62,7 @@ class FrontConversationService {
       conversationOfTurn[turn.id] = id;
       final text = payload.content['text'];
       if (text is String && text.trim().isNotEmpty) {
-        firstText.putIfAbsent(id, () => _titleOf(text));
+        firstText.putIfAbsent(id, () => titleOf(text));
       }
       // Local: a synced turn can carry UTC, and the surface sorts days by
       // the user's calendar.
@@ -145,7 +145,7 @@ class FrontConversationService {
             case final AgentMessagePayloadEntity payload)
           if (payload.content['text'] ?? payload.content['question']
               case final String text when text.trim().isNotEmpty)
-            id: _titleOf(text),
+            id: titleOf(text),
     };
   }
 
@@ -193,7 +193,7 @@ class FrontConversationService {
   }
 
   /// A title from the first question: its first line, bounded.
-  static String _titleOf(String text) =>
+  static String titleOf(String text) =>
       _bounded(text.trim().split('\n').first.trim());
 
   static String _bounded(String value) => value.length <= maxTitleLength

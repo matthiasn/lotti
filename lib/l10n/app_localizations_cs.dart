@@ -7027,6 +7027,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get frontChatRowMenuHint => 'Akce chatu';
 
   @override
+  String get frontChatScopeAll => 'Vše';
+
+  @override
+  String get frontChatScopeLabel => 'Odpovědi z';
+
+  @override
   String get frontChatSearchChats => 'Hledat v chatech';
 
   @override

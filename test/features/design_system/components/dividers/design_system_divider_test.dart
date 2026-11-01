@@ -8,7 +8,8 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemDivider', () {
-    testWidgets('renders the labeled horizontal variant from tokens', (
+    testWidgets('renders the labeled horizontal variant from tokens, in '
+        'sentence case — never all caps', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -23,7 +24,8 @@ void main() {
         ),
       );
 
-      final label = tester.widget<Text>(find.text('DIVIDER LABEL'));
+      final label = tester.widget<Text>(find.text('Divider label'));
+      expect(find.text('DIVIDER LABEL'), findsNothing);
       final lines = find.byWidgetPredicate(
         (widget) =>
             widget is ColoredBox &&
@@ -31,7 +33,7 @@ void main() {
       );
 
       expect(lines, findsNWidgets(2));
-      expect(label.style?.fontSize, dsTokensLight.typography.size.overline);
+      expect(label.style?.fontSize, dsTokensLight.typography.size.caption);
       expect(label.style?.color, dsTokensLight.colors.text.mediumEmphasis);
     });
 
@@ -121,7 +123,7 @@ void main() {
 
           expect(ruleColors(tester), [Colors.red, Colors.red]);
           expect(
-            tester.widget<Text>(find.text('SECTION')).style?.color,
+            tester.widget<Text>(find.text('Section')).style?.color,
             dsTokensLight.colors.text.mediumEmphasis,
           );
         },

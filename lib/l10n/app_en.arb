@@ -4107,6 +4107,8 @@
   "frontChatPrevious7Days": "Previous 7 days",
   "frontChatResponding": "Finding who knows…",
   "frontChatRowMenuHint": "Chat actions",
+  "frontChatScopeAll": "All",
+  "frontChatScopeLabel": "Answers from",
   "frontChatSearchChats": "Search chats",
   "frontChatTitle": "Companion",
   "frontChatYesterday": "Yesterday",

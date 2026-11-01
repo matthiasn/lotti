@@ -7036,6 +7036,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get frontChatRowMenuHint => 'Azioni della chat';
 
   @override
+  String get frontChatScopeAll => 'Tutto';
+
+  @override
+  String get frontChatScopeLabel => 'Risposte da';
+
+  @override
   String get frontChatSearchChats => 'Cerca nelle chat';
 
   @override
