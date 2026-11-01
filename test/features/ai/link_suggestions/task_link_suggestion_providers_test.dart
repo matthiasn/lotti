@@ -339,6 +339,7 @@ void main() {
       () => search.searchRelatedTasks(
         query: any(named: 'query'),
         k: any(named: 'k'),
+        categoryIds: any(named: 'categoryIds'),
       ),
     ).thenAnswer(
       (_) async => VectorSearchResult(entities: [], elapsed: Duration.zero),
@@ -364,6 +365,7 @@ void main() {
       () => search.searchRelatedTasks(
         query: 'the census export',
         k: any(named: 'k'),
+        categoryIds: any(named: 'categoryIds'),
       ),
     ).called(1);
   });

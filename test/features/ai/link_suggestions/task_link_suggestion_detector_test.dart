@@ -55,6 +55,7 @@ class _Bench {
       () => search.searchRelatedTasks(
         query: any(named: 'query'),
         k: any(named: 'k'),
+        categoryIds: any(named: 'categoryIds'),
       ),
     ).thenAnswer((invocation) async {
       final query = invocation.namedArguments[#query] as String;
@@ -92,6 +93,7 @@ class _Bench {
     () => search.searchRelatedTasks(
       query: captureAny(named: 'query'),
       k: any(named: 'k'),
+      categoryIds: any(named: 'categoryIds'),
     ),
   ).captured.cast<String>();
 }
@@ -319,6 +321,7 @@ void main() {
         () => bench.search.searchRelatedTasks(
           query: any(named: 'query'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       );
       expect(second.suggestions.single.targetTitle, 'Census export, renamed');
@@ -340,6 +343,7 @@ void main() {
       () => bench.search.searchRelatedTasks(
         query: any(named: 'query'),
         k: any(named: 'k'),
+        categoryIds: any(named: 'categoryIds'),
       ),
     ).thenAnswer(result);
     answer((_) async => VectorSearchResult.notSearched());
@@ -411,6 +415,7 @@ void main() {
         () => bench.search.searchRelatedTasks(
           query: any(named: 'query'),
           k: any(named: 'k'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenThrow(Exception('store closed'));
 
@@ -424,7 +429,7 @@ void main() {
           any<Object>(),
           errorType: any(named: 'errorType'),
           stackTrace: any(named: 'stackTrace'),
-          subDomain: 'TaskLinkSuggestionDetector',
+          subDomain: 'RelatedTaskFinder',
           message: 'Related-task search failed',
         ),
       ).called(1);
