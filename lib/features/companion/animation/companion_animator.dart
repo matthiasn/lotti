@@ -225,9 +225,10 @@ class CompanionAnimator {
       gaze = Offset.lerp(gaze, Offset(faceGaze.$1, faceGaze.$2), fe)!;
     }
     final bounceEnv = s['bounce']!.step(g.bounce + mood.bounce, dt);
-    // Up and down three times a second, smoothly: an |sin| bob reversed
-    // with a jolt at every landing.
-    final bounce = -bounceEnv * 0.5 * (1 - math.cos(2 * math.pi * 3.2 * t));
+    // Up and down three times a second, smoothly — an |sin| bob reversed
+    // with a jolt at every landing — and in the upper body only: through the
+    // hips, a bob bent and stretched her legs three times a second.
+    final bounce = bounceEnv * 0.5 * (1 - math.cos(2 * math.pi * 3.2 * t));
     _breathPhase += dt * 2 * math.pi / 4 * mood.breathRate;
     if (t >= _nextFlick) {
       _flickStart = t;
@@ -245,7 +246,8 @@ class CompanionAnimator {
     final pulse = _blinkAmount();
 
     final pose = CompanionPose(
-      pelvis: Offset(pelvisX, bounce + 0.8 * noise1(t * 0.6, 4)),
+      pelvis: Offset(pelvisX, 0.8 * noise1(t * 0.6, 4)),
+      lift: bounce,
       lean: s['lean']!.step(g.lean + 0.012 * noise1(t * 0.3, 2), dt),
       breath: math.sin(_breathPhase),
       headRoll: s['roll']!.step(
@@ -325,6 +327,7 @@ class CompanionAnimator {
 CompanionPose _withTrail(CompanionPose p, Offset hairLag, double hemLag) =>
     CompanionPose(
       pelvis: p.pelvis,
+      lift: p.lift,
       lean: p.lean,
       breath: p.breath,
       headRoll: p.headRoll,

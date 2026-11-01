@@ -31,6 +31,28 @@ List<CompanionPose> _run(
 Duration _s(double t) => Duration(microseconds: (t * 1e6).round());
 
 void main() {
+  test('a bounce of joy lifts her upper body, not her hips', () {
+    final poses = _run(
+      CompanionAnimator()..play(GestureName.celebrate),
+      1.5,
+      mood: CompanionMood.delighted,
+    );
+    final lifts = poses.map((p) => p.lift);
+    final hips = poses.map((p) => p.pelvis.dy);
+    // Up to most of a celebration's bounce and back to the floor of it,
+    // smoothly three times a second...
+    expect(lifts.reduce((a, b) => a > b ? a : b), greaterThan(3));
+    expect(lifts.reduce((a, b) => a < b ? a : b), lessThan(0.5));
+    // ...while the hips only drift with her slow sway.
+    expect(
+      hips.reduce((a, b) => a > b ? a : b) -
+          hips.reduce((a, b) => a < b ? a : b),
+      lessThan(1.6),
+    );
+    // Standing calm, nothing lifts.
+    expect(_run(CompanionAnimator(), 1).every((p) => p.lift == 0), isTrue);
+  });
+
   test('she breathes and blinks on her own while idle', () {
     final poses = _run(CompanionAnimator(), 8);
     final breaths = poses.map((p) => p.breath);

@@ -24,6 +24,29 @@ final ({double along, double out}) _restKnee = () {
   );
 }();
 
+/// The torso frame with its upper part raised by [lift]: a point rises by
+/// the share of the lift its height gives it, nothing at the hem and below,
+/// all of it at the neck and above. Her dress stretches a little, her hips
+/// and legs, which hang from the pelvis itself, never move.
+class _LiftedTorso extends Affine {
+  const _LiftedTorso(super.origin, super.angle, this.lift);
+
+  final double lift;
+
+  /// The dress's hem and the neck, in the torso frame.
+  static const _hem = 103.0;
+  static const _neck = -128.0;
+
+  double _raise(double y) =>
+      lift == 0 ? y : y - lift * clampUnit((_hem - y) / (_hem - _neck));
+
+  @override
+  Offset call(double x, double y) => super.call(x, _raise(y));
+
+  @override
+  Offset of(Offset p) => super.of(Offset(p.dx, _raise(p.dy)));
+}
+
 /// A pose resolved into the frames the painters draw in: the torso's, the
 /// head's, and each arm's joints.
 class RigFrame {
@@ -32,7 +55,7 @@ class RigFrame {
       pose.pelvis.dx,
       pelvisY + pose.pelvis.dy - pose.breath * 0.6,
     );
-    final torso = Affine(pelvis, pose.lean);
+    final torso = _LiftedTorso(pelvis, pose.lean, pose.lift);
     final headAngle = pose.lean * 1.4 + pose.headRoll;
     final pivot = torso(0, -128 - pose.breath * 0.8);
     final centre =

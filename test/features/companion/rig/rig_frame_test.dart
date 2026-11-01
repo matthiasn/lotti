@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/companion/animation/companion_animator.dart';
 import 'package:lotti/features/companion/model/companion_gesture.dart';
@@ -59,44 +61,50 @@ void main() {
       }
     });
 
+    test('a lift raises her upper body by its height above the hem, and '
+        'leaves her hips and legs where they stand', () {
+      final still = RigFrame(const CompanionPose());
+      final lifted = RigFrame(const CompanionPose(lift: 5));
+      // The hem stays, the neck rises by all of it, the waist by part.
+      expect(lifted.torso(0, 103), still.torso(0, 103));
+      expect(
+        lifted.torso(0, -128).dy,
+        closeTo(still.torso(0, -128).dy - 5, 1e-9),
+      );
+      final waist = still.torso(0, 0).dy - lifted.torso(0, 0).dy;
+      expect(waist, inExclusiveRange(1, 4));
+      expect(lifted.head.origin.dy, closeTo(still.head.origin.dy - 5, 1e-9));
+      for (final side in [-1, 1]) {
+        expect(lifted.hip(side), still.hip(side));
+        expect(lifted.knee(side), still.knee(side));
+      }
+    });
+
     // The gate the dancing_cats rig keeps for its own joints: sampled frame
-    // by frame, a bounce must not turn into knees pumping sideways.
-    test('a bounce keeps her knees steady sideways', () {
+    // by frame, a bounce of joy moves her upper body and never her legs.
+    test('a bounce lifts her upper body and leaves her knees still', () {
       final animator = CompanionAnimator()..play(GestureName.celebrate);
-      final minX = <int, double>{-1: double.infinity, 1: double.infinity};
-      final maxX = <int, double>{
-        -1: double.negativeInfinity,
-        1: double.negativeInfinity,
-      };
-      var worstStep = 0.0;
-      var minY = double.infinity;
-      var maxY = double.negativeInfinity;
-      Map<int, double>? last;
+      final knees = <Offset>[];
+      final heads = <double>[];
       for (var i = 0; i < 90; i++) {
         final f = RigFrame(
           animator.step(1 / 60, mood: CompanionMood.delighted),
         );
-        final now = {
-          for (final s in [-1, 1]) s: f.knee(s).dx,
-        };
-        for (final s in [-1, 1]) {
-          minX[s] = now[s]! < minX[s]! ? now[s]! : minX[s]!;
-          maxX[s] = now[s]! > maxX[s]! ? now[s]! : maxX[s]!;
-          if (last != null) {
-            final step = (now[s]! - last[s]!).abs();
-            if (step > worstStep) worstStep = step;
-          }
-        }
-        minY = f.pelvis.dy < minY ? f.pelvis.dy : minY;
-        maxY = f.pelvis.dy > maxY ? f.pelvis.dy : maxY;
-        last = now;
+        knees.add(f.knee(1));
+        heads.add(f.head.origin.dy);
       }
+      double range(Iterable<double> v) =>
+          v.reduce(math.max) - v.reduce(math.min);
       // She does bounce...
-      expect(maxY - minY, greaterThan(3));
-      for (final s in [-1, 1]) {
-        expect(maxX[s]! - minX[s]!, lessThan(3), reason: 'side $s');
+      expect(range(heads), greaterThan(3));
+      // ...and her knees only drift with her slow sway and breath.
+      expect(range(knees.map((k) => k.dx)), lessThan(1));
+      expect(range(knees.map((k) => k.dy)), lessThan(1));
+      var worst = 0.0;
+      for (var i = 1; i < knees.length; i++) {
+        worst = math.max(worst, (knees[i] - knees[i - 1]).distance);
       }
-      expect(worstStep, lessThan(0.2));
+      expect(worst, lessThan(0.05));
     });
   });
 

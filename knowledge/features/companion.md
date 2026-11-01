@@ -215,17 +215,23 @@ it is allowed, which hangs; hands on the hips need it out. A `GestureArm`'s
 `elbow` names the direction the upper arm would rather take, and the solver
 weighs its choices against that instead of the hang, inside the same rules.
 
-**Her knees hold their place when she bounces.** A gesture's and a mood's
-`bounce` add (a praise reaction such as `delighted` with `celebrate` reaches
-5) and lift the pelvis smoothly, `(1 − cos)/2` three times a second; an `|sin|`
-bob jolted at every landing. The feet stay planted, so the legs take up the
-bob. She faces us, so a bending knee goes towards us: `RigFrame.knee` keeps
-each knee where the standing leg's solved knee sits — as far down the
-hip-to-ankle line and as far out from it — and a bob foreshortens the leg.
-Solving the knee afresh each frame, with the legs this close to straight
-(153 units of leg, 146 of reach), swung the knees 14 units sideways for a
-6-unit bob, which read as shaking legs; `rig_frame_test` gates that,
-frame by frame, as the dancing_cats rig gates its joints.
+**A bounce of joy is in her upper body; her legs stay still.** A gesture's
+and a mood's `bounce` add (a praise reaction such as `delighted` with
+`celebrate` reaches 5) and become `CompanionPose.lift`, smoothly
+`(1 − cos)/2` three times a second; an `|sin|` bob jolted at every landing.
+The lift raises the torso frame by its height above the hem (`RigFrame`'s
+lifted torso): her shoulders, arms, neck and head by all of it, her dress
+by less the lower it reaches, the hem not at all. Her hips, knees and feet
+hang from the pelvis itself and never move with it. A bob through the
+pelvis, with the feet planted, had to go through the legs: solved afresh
+each frame near full extension (153 units of leg, 146 of reach) it swung
+the knees 14 units sideways, and with the knees held in place it squashed
+and stretched the legs three times a second instead — both read as wrong.
+`RigFrame.knee` still keeps each knee where the standing leg's solved knee
+sits, as far down the hip-to-ankle line and as far out from it, so her slow
+sway leans the legs without bending them. `rig_frame_test` gates it frame by
+frame, as the dancing_cats rig gates its joints: through a celebration her
+head bobs and her knees stay put.
 
 `CompanionController` is the owner's handle: `play`, `blink` and `time`
 reach the attached view's animator, and are no-ops while detached. Swapping
