@@ -3016,6 +3016,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Inbeddingen';
 
   @override
+  String get backfillRecordsEmbeddingVectorsHeld => 'Wachtende inbeddingen';
+
+  @override
   String get backfillRecordsEntryLinks => 'Koppelingen tussen items';
 
   @override

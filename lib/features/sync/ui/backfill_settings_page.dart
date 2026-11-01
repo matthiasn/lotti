@@ -126,6 +126,8 @@ class _RecordCountsSection extends ConsumerWidget {
     return RecordCountsCard(
       counts: recordCounts.value,
       isLoading: recordCounts.isLoading,
+      heldEmbeddingVersions:
+          ref.watch(heldEmbeddingVersionsCountProvider).value ?? 0,
     );
   }
 }

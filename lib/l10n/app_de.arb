@@ -1300,6 +1300,7 @@
   "backfillRecordsConsumptionEvents": "KI-Nutzungsereignisse",
   "backfillRecordsDefinitions": "Einstellungsdefinitionen",
   "backfillRecordsEmbeddingVectors": "Einbettungen",
+  "backfillRecordsEmbeddingVectorsHeld": "Wartende Einbettungen",
   "backfillRecordsEntryLinks": "Eintragsverknüpfungen",
   "backfillRecordsHint": "Gelöschte eingeschlossen. Synchrone Geräte zeigen hier dieselben Zahlen; die erfassten Zähler können sich zwischen ihnen unterscheiden.",
   "backfillRecordsJournal": "Journaleinträge",

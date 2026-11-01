@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/vector_clock.dart';
+import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_register.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -13,9 +15,29 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
 import 'package:lotti/utils/consts.dart';
 
+/// The fields of an agent report its embedding is made from.
+typedef AgentReportText = ({String content, String? tldr, String? oneLiner});
+
 /// Reads the text of agent report [reportId] from the agent database, or
 /// `null` when this device does not hold it.
-typedef ReportContentReader = Future<String?> Function(String reportId);
+typedef ReportContentReader =
+    Future<AgentReportText?> Function(String reportId);
+
+/// The [ReportContentReader] over the agent database: [repository] is
+/// resolved per read, since the database may open after the pipeline, and
+/// `null` reads as a report not held yet.
+///
+/// The repository is built from the database, never looked up as a service:
+/// none is registered, and a reader that waited for one held every report
+/// vector a peer shared for good.
+ReportContentReader agentReportTextReader(
+  AgentRepository? Function() repository,
+) => (reportId) async {
+  final report = await repository()?.getEntity(reportId);
+  return report is AgentReportEntity
+      ? (content: report.content, tldr: report.tldr, oneLiner: report.oneLiner)
+      : null;
+};
 
 /// Reads a config flag.
 typedef EmbeddingFlagReader = Future<bool> Function(String flag);
@@ -23,7 +45,7 @@ typedef EmbeddingFlagReader = Future<bool> Function(String flag);
 /// What this device's own copy of an entry says about a version.
 typedef _LocalText = ({
   bool exists,
-  String? contentHash,
+  Set<String> contentHashes,
   VectorClock? vectorClock,
   String categoryId,
   List<String> labelIds,
@@ -46,7 +68,9 @@ typedef _LocalText = ({
 /// 3. **Validation.** The attachment must decode to finite vectors of
 ///    [kEmbeddingDimensions]; anything else is dropped.
 /// 4. **The hash check.** The version is stored, with the sender's chunks,
-///    only when this device's own text hashes to its `contentHash`.
+///    only when this device's own text hashes to its `contentHash` — for a
+///    report, its whole text, or its body alone as writers before
+///    whole-report embedding hashed it.
 ///    Otherwise it is held ([HeldEmbeddingVersions]) until the entry, the
 ///    report or a task's label arrives — or discarded once the entry has
 ///    moved past the version's source clock.
@@ -103,6 +127,9 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
 
   @override
   Future<void> recheckAll() => _recheck((_) => true);
+
+  @override
+  Stream<int> watchHeldCount() => _held.watchCount();
 
   static String _lockKey(EmbeddingRegister register) =>
       register.taskId.isNotEmpty ? register.taskId : register.entityId;
@@ -187,7 +214,7 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     List<Float32List> chunks,
   ) async {
     final local = await _localText(candidate);
-    if (local.exists && local.contentHash == candidate.contentHash) {
+    if (local.exists && local.contentHashes.contains(candidate.contentHash)) {
       await _store.replaceEntityEmbeddings(
         entityId: candidate.entityId,
         entityType: candidate.entityType,
@@ -235,10 +262,15 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     }
   }
 
-  /// Re-runs the merge for every held version [matches] selects.
+  /// Re-runs the merge for every held version [matches] selects, writing the
+  /// holds file once for the whole pass ([HeldEmbeddingVersions.batch]).
   Future<void> _recheck(bool Function(HeldEmbeddingVersion) matches) async {
     final due = _held.all.where(matches).toList();
     if (due.isEmpty || !await _accepting) return;
+    await _held.batch(() => _recheckEach(due));
+  }
+
+  Future<void> _recheckEach(List<HeldEmbeddingVersion> due) async {
     for (final held in due) {
       final register = held.register;
       await EmbeddingProcessor.runExclusive(_lockKey(register), () async {
@@ -261,18 +293,27 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
   /// clock, its category and, for a task, its labels.
   Future<_LocalText> _localText(EmbeddingRegister candidate) async {
     if (candidate.entityType == kEntityTypeAgentReport) {
-      final content = await _reportContent(candidate.entityId);
-      if (content == null) return _missing;
-      final text = content.trim();
+      final report = await _reportContent(candidate.entityId);
+      if (report == null) return _missing;
       // Its task decides the shard; stored before the task arrives, the
       // report would stay in the default one.
       final task = await _journalDb.journalEntityById(candidate.taskId);
       if (task == null) return _missing;
+      final text = EmbeddingContentExtractor.extractAgentReportText(
+        content: report.content,
+        tldr: report.tldr,
+        oneLiner: report.oneLiner,
+      );
+      // A writer from before the whole report was embedded hashed the body
+      // alone; its vectors still describe this report.
+      final body = report.content.trim();
       return (
         exists: true,
-        contentHash: text.length < kMinEmbeddingTextLength
-            ? null
-            : EmbeddingContentExtractor.contentHash(text),
+        contentHashes: {
+          if (text != null) EmbeddingContentExtractor.contentHash(text),
+          if (body.length >= kMinEmbeddingTextLength)
+            EmbeddingContentExtractor.contentHash(body),
+        },
         vectorClock: null,
         categoryId: task.meta.categoryId ?? '',
         labelIds: const <String>[],
@@ -287,9 +328,9 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
     );
     return (
       exists: true,
-      contentHash: text == null
-          ? null
-          : EmbeddingContentExtractor.contentHash(text),
+      contentHashes: {
+        if (text != null) EmbeddingContentExtractor.contentHash(text),
+      },
       vectorClock: entity.meta.vectorClock,
       categoryId: entity.meta.categoryId ?? '',
       labelIds: entity is Task ? [...?entity.meta.labelIds] : const <String>[],
@@ -298,7 +339,7 @@ class EmbeddingSyncReceiver implements SyncedEmbeddingSink {
 
   static const _LocalText _missing = (
     exists: false,
-    contentHash: null,
+    contentHashes: <String>{},
     vectorClock: null,
     categoryId: '',
     labelIds: <String>[],

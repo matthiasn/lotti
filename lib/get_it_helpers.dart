@@ -280,12 +280,11 @@ Future<void> _attachEmbeddingVectorsSync(EmbeddingStore store) async {
       journalDb: journalDb,
       held: held,
       readFlag: journalDb.getConfigFlag,
-      // Resolved per read: the agent runtime may start after the pipeline.
-      reportContent: (reportId) async {
-        if (!getIt.isRegistered<AgentRepository>()) return null;
-        final report = await getIt<AgentRepository>().getEntity(reportId);
-        return report is AgentReportEntity ? report.content : null;
-      },
+      reportContent: agentReportTextReader(
+        () => getIt.isRegistered<AgentDatabase>()
+            ? AgentRepository(getIt<AgentDatabase>())
+            : null,
+      ),
     ),
     flagChanges: journalDb.watchConfigFlags(),
   );

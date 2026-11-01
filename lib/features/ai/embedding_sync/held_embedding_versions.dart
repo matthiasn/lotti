@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -69,6 +70,7 @@ class HeldEmbeddingVersions {
 
   final File _file;
   final Map<String, HeldEmbeddingVersion> _held;
+  final StreamController<int> _counts = StreamController<int>.broadcast();
 
   /// The last write, so writes land one after another, each with the
   /// snapshot taken when it was asked for: two writes never share the
@@ -81,16 +83,65 @@ class HeldEmbeddingVersions {
   /// The version held of register [registerId], or `null`.
   HeldEmbeddingVersion? operator [](String registerId) => _held[registerId];
 
+  /// How many versions are held now, then again after every change: what
+  /// Sync health shows, since a held version's receipt is recorded and the
+  /// sequence log never reports it missing.
+  Stream<int> watchCount() {
+    StreamSubscription<int>? changes;
+    late final StreamController<int> controller;
+    controller = StreamController<int>(
+      onListen: () {
+        controller.add(_held.length);
+        changes = _counts.stream.listen(controller.add);
+      },
+      onCancel: () => changes?.cancel(),
+    );
+    return controller.stream;
+  }
+
   /// Holds [version], replacing what was held of its register.
   Future<void> put(HeldEmbeddingVersion version) async {
     _held[version.register.id] = version;
-    await _persist();
+    _counts.add(_held.length);
+    await _persistUnlessBatched();
   }
 
   /// Drops what is held of [registerId]; a no-op when nothing is.
   Future<void> remove(String registerId) async {
     if (_held.remove(registerId) == null) return;
-    await _persist();
+    _counts.add(_held.length);
+    await _persistUnlessBatched();
+  }
+
+  /// Runs [body], writing the file once at its end for every [put] and
+  /// [remove] made inside it, instead of once each: a re-check of every
+  /// held version would otherwise rewrite the whole file per version.
+  ///
+  /// Only the changes [body] makes are deferred. Another caller's change
+  /// meanwhile — a version the apply path holds, its receipt already
+  /// recorded — is written at once, with every change made so far. A crash
+  /// before the end leaves the file as it was, which a later re-check
+  /// settles again.
+  Future<T> batch<T>(Future<T> Function() body) async {
+    try {
+      return await runZoned(body, zoneValues: {_batchKey: this});
+    } finally {
+      if (_batchDirty) {
+        _batchDirty = false;
+        await _persist();
+      }
+    }
+  }
+
+  static final Object _batchKey = Object();
+  bool _batchDirty = false;
+
+  Future<void> _persistUnlessBatched() {
+    if (identical(Zone.current[_batchKey], this)) {
+      _batchDirty = true;
+      return Future.value();
+    }
+    return _persist();
   }
 
   Future<void> _persist() {

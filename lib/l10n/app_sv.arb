@@ -1522,6 +1522,7 @@
   "backfillRecordsConsumptionEvents": "AI-användningshändelser",
   "backfillRecordsDefinitions": "Inställningsdefinitioner",
   "backfillRecordsEmbeddingVectors": "Inbäddningar",
+  "backfillRecordsEmbeddingVectorsHeld": "Väntande inbäddningar",
   "backfillRecordsEntryLinks": "Länkar mellan poster",
   "backfillRecordsHint": "Raderade ingår. Synkroniserade enheter visar samma siffror här; spårade räknare kan skilja sig mellan dem.",
   "backfillRecordsJournal": "Journalposter",

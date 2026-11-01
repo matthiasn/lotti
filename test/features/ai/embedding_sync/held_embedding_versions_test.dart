@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,88 @@ void main() {
     expect(e2.register, _held('e2', 4).register);
     expect(e2.payload, '{"dims":768}');
     expect(e2.labelIds, ['l1', 'l2']);
+  });
+
+  test(
+    'watchCount starts at the reopened count and follows every change, '
+    'never a no-op removal',
+    () async {
+      await (await HeldEmbeddingVersions.open(path)).put(_held('e1', 1));
+      final held = await HeldEmbeddingVersions.open(path);
+      final counts = <int>[];
+      final subscription = held.watchCount().listen(counts.add);
+      addTearDown(subscription.cancel);
+      await pumpEventQueue();
+
+      await held.put(_held('e2', 1));
+      await held.put(_held('e2', 2));
+      await held.remove('e1|m');
+      await held.remove('e1|m');
+      await pumpEventQueue();
+
+      expect(counts, [1, 2, 2, 1]);
+    },
+  );
+
+  test('two watchers each see the count from when they listen', () async {
+    final held = await HeldEmbeddingVersions.open(path);
+    final first = <int>[];
+    final firstSubscription = held.watchCount().listen(first.add);
+    addTearDown(firstSubscription.cancel);
+    await held.put(_held('e1', 1));
+    final second = <int>[];
+    final secondSubscription = held.watchCount().listen(second.add);
+    addTearDown(secondSubscription.cancel);
+    await pumpEventQueue();
+
+    await held.remove('e1|m');
+    await pumpEventQueue();
+
+    expect(first, [0, 1, 0]);
+    expect(second, [1, 0]);
+  });
+
+  test(
+    'a batch writes its changes once, at its end; a change from outside it '
+    'is written at once',
+    () async {
+      final held = await HeldEmbeddingVersions.open(path);
+      await held.put(_held('e1', 1));
+      Future<List<String>> onDisk() async => (await HeldEmbeddingVersions.open(
+        path,
+      )).all.map((h) => h.register.id).toList();
+
+      await held.batch(() async {
+        await held.remove('e1|m');
+        await held.put(_held('e2', 1));
+        expect(await onDisk(), ['e1|m'], reason: 'deferred inside the batch');
+
+        // The apply path, outside the batch's zone, writes at once — with
+        // every change made so far.
+        await Zone.root.run(() => held.put(_held('e3', 1)));
+        expect(await onDisk(), ['e2|m', 'e3|m']);
+
+        await held.remove('e3|m');
+        expect(await onDisk(), ['e2|m', 'e3|m']);
+      });
+
+      expect(await onDisk(), ['e2|m']);
+    },
+  );
+
+  test('a batch that throws still writes what it changed', () async {
+    final held = await HeldEmbeddingVersions.open(path);
+    await held.put(_held('e1', 1));
+
+    await expectLater(
+      held.batch(() async {
+        await held.remove('e1|m');
+        throw StateError('merge failed');
+      }),
+      throwsStateError,
+    );
+
+    expect((await HeldEmbeddingVersions.open(path)).all, isEmpty);
   });
 
   test('put replaces what is held of the register, remove drops it', () async {

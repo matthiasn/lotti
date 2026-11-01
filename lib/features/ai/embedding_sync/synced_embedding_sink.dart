@@ -40,6 +40,12 @@ abstract interface class SyncedEmbeddingSink {
   Future<void> onEntityDefinitionApplied(String definitionId);
 
   /// Re-checks every held version: the backstop for a dependency no hook
-  /// names, run when the inbound queue drains.
+  /// names, run when the inbound queue drains and when the pipeline
+  /// attaches.
   Future<void> recheckAll();
+
+  /// How many versions are held now, then after every change. Their
+  /// receipts are recorded, so this is the only place a version that
+  /// arrived but could not be stored shows.
+  Stream<int> watchHeldCount();
 }

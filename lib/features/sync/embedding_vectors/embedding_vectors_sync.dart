@@ -103,32 +103,31 @@ class EmbeddingVectorsSync implements EmbeddingShare {
       _queueHadWork = false;
       final sink = _sink;
       if (sink == null) return;
-      try {
-        await sink.recheckAll();
-      } on Object catch (error, stackTrace) {
-        _domainLogger.error(
-          LogDomain.sync,
-          error,
-          stackTrace: stackTrace,
-          subDomain: _subDomain,
-          message: 'held embedding versions could not be re-checked',
-        );
-      }
+      await _recheckHeld(sink);
     });
   }
 
-  /// Stops watching the inbound queue.
+  /// Stops watching the inbound queue and the flags, once every re-check
+  /// they started has finished: cancelling a subscription does not wait for
+  /// a listener already running.
   Future<void> dispose() async {
     await _depthSubscription?.cancel();
     _depthSubscription = null;
     await _flagSubscription?.cancel();
     _flagSubscription = null;
+    await _rechecks;
   }
 
   /// Connects the embedding pipeline: its [store], the [modelId] it embeds
   /// with, and the [sink] that receives versions.
   ///
-  /// Then, and whenever [flagChanges] fires, it runs the [catchUp].
+  /// It starts a re-check of the versions held from before — a new build
+  /// may hash their text the way their sender did, and nothing else would
+  /// look at them until the inbound queue next drains — without waiting for
+  /// it: the app is starting, and the holds may be many. [detach] and
+  /// [dispose] wait for it, as for every re-check. Then it runs the
+  /// [catchUp], and whenever [flagChanges] fires, a re-check (holds wait
+  /// while a flag is off) and the catch-up again.
   Future<void> attach({
     required EmbeddingStore store,
     required String modelId,
@@ -139,17 +138,64 @@ class EmbeddingVectorsSync implements EmbeddingShare {
     _store = store;
     _modelId = modelId;
     _sink = sink;
-    _flagSubscription = flagChanges?.listen((_) async => catchUp());
+    _flagSubscription = flagChanges?.listen((_) async {
+      await _recheckHeld(sink);
+      await catchUp();
+    });
+    _startRecheck(sink);
     await catchUp();
   }
 
-  /// Disconnects the pipeline, which is being disposed.
+  /// Every re-check started so far, as one future: what [detach] and
+  /// [dispose] wait for before the store goes. A finished link lets go of
+  /// what it waited on, so the chain does not grow.
+  Future<void> _rechecks = Future.value();
+
+  /// Starts a re-check of every version [sink] holds, tracked in
+  /// [_rechecks].
+  void _startRecheck(SyncedEmbeddingSink sink) {
+    _rechecks = Future.wait([_rechecks, _runRecheck(sink)]);
+  }
+
+  /// Starts a re-check and waits for it, and for any still running.
+  Future<void> _recheckHeld(SyncedEmbeddingSink sink) {
+    _startRecheck(sink);
+    return _rechecks;
+  }
+
+  /// Re-checks every version [sink] holds, logging a failure: a held
+  /// version waits for the next check either way. Never throws.
+  Future<void> _runRecheck(SyncedEmbeddingSink sink) async {
+    try {
+      await sink.recheckAll();
+    } on Object catch (error, stackTrace) {
+      _domainLogger.error(
+        LogDomain.sync,
+        error,
+        stackTrace: stackTrace,
+        subDomain: _subDomain,
+        message: 'held embedding versions could not be re-checked',
+      );
+    }
+  }
+
+  /// How many received versions this device holds until their text
+  /// arrives, then after every change; `0` without the pipeline.
+  Stream<int> watchHeldVersionCount() =>
+      _sink?.watchHeldCount() ?? Stream.value(0);
+
+  /// Disconnects the pipeline, which is being disposed, once every re-check
+  /// running — each reads and writes its store — has finished.
+  ///
+  /// The sink goes first: a queue drain starts a re-check only while one is
+  /// attached, so none can start while this waits.
   Future<void> detach() async {
     await _flagSubscription?.cancel();
     _flagSubscription = null;
+    _sink = null;
+    await _rechecks;
     _store = null;
     _modelId = null;
-    _sink = null;
   }
 
   /// Makes up, once per model and device, for the versions this device

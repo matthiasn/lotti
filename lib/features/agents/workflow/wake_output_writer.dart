@@ -18,12 +18,14 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 /// Report details captured inside the wake transaction and returned to the
-/// caller for post-commit embedding. Carries the freshly written report's id
-/// and content, the task it belongs to, and the report this one supersedes (if
-/// any) so the embedding pipeline can replace the prior vector.
+/// caller for post-commit embedding. Carries the freshly written report's id,
+/// its body, TLDR and one-liner as stored, and the task it belongs to, so the
+/// embedding pipeline embeds the whole report and replaces the prior vector.
 typedef WakeReportToEmbed = ({
   String reportId,
   String reportContent,
+  String? reportTldr,
+  String? reportOneLiner,
   String taskId,
 });
 
@@ -190,6 +192,8 @@ class WakeOutputWriter {
         reportToEmbed = (
           reportId: persistedReportId,
           reportContent: sanitizedContent,
+          reportTldr: sanitizedTldr,
+          reportOneLiner: sanitizedOneLiner,
           taskId: taskId,
         );
       }

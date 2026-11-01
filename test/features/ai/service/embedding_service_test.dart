@@ -419,7 +419,7 @@ void main() {
 
     // Default: no labels (needed for label resolver)
     when(
-      () => mockJournalDb.getAllLabelDefinitions(),
+      () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
     ).thenAnswer((_) async => []);
   });
 
@@ -1091,7 +1091,7 @@ void main() {
             () => generatedEmbeddingRepo.modelId,
           ).thenReturn(_modelId);
           when(
-            generatedJournalDb.getAllLabelDefinitions,
+            generatedJournalDb.getAllLabelDefinitionsIncludingPrivate,
           ).thenAnswer((_) async {
             actual.labelLookups += 1;
             if (scenario.labelResolverThrows) {
@@ -1162,8 +1162,13 @@ void main() {
             async.flushMicrotasks();
           }
 
-          void expectProcessedBatch(List<String> entityIds) {
-            if (entityIds.isEmpty) return;
+          void expectProcessedBatch(
+            List<String> entityIds, {
+            bool atStart = false,
+          }) {
+            // A start runs a batch of its own, for the tasks that carry a
+            // private label (none here): every other batch needs ids.
+            if (entityIds.isEmpty && !atStart) return;
 
             expected.flagChecks += 1;
             if (scenario.flagThrows || !scenario.embeddingsEnabled) {
@@ -1215,7 +1220,9 @@ void main() {
               if (operation.startsService) {
                 if (!stoppedOnce) {
                   generatedService.start();
+                  if (!started) expectProcessedBatch(const [], atStart: true);
                   started = true;
+                  async.flushMicrotasks();
                 }
                 continue;
               }
@@ -1296,74 +1303,81 @@ void main() {
   group('EmbeddingService label resolver', () {
     final fixedDate = DateTime(2024, 3, 15);
 
-    test('builds label resolver from getAllLabelDefinitions', () {
-      fakeAsync((async) {
-        // Stub labels
-        when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
-            LabelDefinition(
-              id: 'label-1',
-              name: 'security',
-              color: '#FF0000',
+    test(
+      'builds label resolver from getAllLabelDefinitionsIncludingPrivate',
+      () {
+        fakeAsync((async) {
+          // Stub labels
+          when(
+            () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
+          ).thenAnswer(
+            (_) async => [
+              LabelDefinition(
+                id: 'label-1',
+                name: 'security',
+                color: '#FF0000',
+                createdAt: fixedDate,
+                updatedAt: fixedDate,
+                vectorClock: null,
+              ),
+              LabelDefinition(
+                id: 'label-2',
+                name: 'backend',
+                color: '#00FF00',
+                createdAt: fixedDate,
+                updatedAt: fixedDate,
+                vectorClock: null,
+              ),
+            ],
+          );
+
+          final task = Task(
+            meta: Metadata(
+              id: _entityId,
               createdAt: fixedDate,
               updatedAt: fixedDate,
-              vectorClock: null,
+              dateFrom: fixedDate,
+              dateTo: fixedDate,
+              labelIds: ['label-1', 'label-2'],
             ),
-            LabelDefinition(
-              id: 'label-2',
-              name: 'backend',
-              color: '#00FF00',
-              createdAt: fixedDate,
-              updatedAt: fixedDate,
-              vectorClock: null,
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-id',
+                createdAt: fixedDate,
+                utcOffset: 0,
+              ),
+              title: 'Fix auth bug',
+              statusHistory: [],
+              dateFrom: fixedDate,
+              dateTo: fixedDate,
             ),
-          ],
-        );
+            entryText: const EntryText(plainText: _longText),
+          );
+          stubEntity(task);
+          stubEmbedding();
 
-        final task = Task(
-          meta: Metadata(
-            id: _entityId,
-            createdAt: fixedDate,
-            updatedAt: fixedDate,
-            dateFrom: fixedDate,
-            dateTo: fixedDate,
-            labelIds: ['label-1', 'label-2'],
-          ),
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 'status-id',
-              createdAt: fixedDate,
-              utcOffset: 0,
-            ),
-            title: 'Fix auth bug',
-            statusHistory: [],
-            dateFrom: fixedDate,
-            dateTo: fixedDate,
-          ),
-          entryText: const EntryText(plainText: _longText),
-        );
-        stubEntity(task);
-        stubEmbedding();
+          service.start();
+          sendAndProcess(async, {_entityId, taskNotification});
 
-        service.start();
-        sendAndProcess(async, {_entityId, taskNotification});
+          // Verify that the enriched template (with labels) was used
+          final captured = verify(
+            () => mockEmbeddingRepo.embedDocument(captureAny()),
+          ).captured;
 
-        // Verify that the enriched template (with labels) was used
-        final captured = verify(
-          () => mockEmbeddingRepo.embedDocument(captureAny()),
-        ).captured;
+          final embeddedText = captured.first as String;
+          expect(embeddedText, contains('Labels: security, backend'));
+          expect(embeddedText, startsWith('Fix auth bug'));
 
-        final embeddedText = captured.first as String;
-        expect(embeddedText, contains('Labels: security, backend'));
-        expect(embeddedText, startsWith('Fix auth bug'));
-
-        stopInZone(async);
-      });
-    });
+          stopInZone(async);
+        });
+      },
+    );
 
     test('excludes deleted labels from resolver', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+        when(
+          () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
+        ).thenAnswer(
           (_) async => [
             LabelDefinition(
               id: 'label-1',
@@ -1440,6 +1454,157 @@ void main() {
         verify(
           () => mockEmbeddingRepo.embedDocument(_longText),
         ).called(1);
+
+        stopInZone(async);
+      });
+    });
+  });
+
+  group('EmbeddingService tasks with private labels at start', () {
+    final fixedDate = DateTime(2024, 3, 15);
+
+    Task labelledTask() => Task(
+      meta: Metadata(
+        id: _entityId,
+        createdAt: fixedDate,
+        updatedAt: fixedDate,
+        dateFrom: fixedDate,
+        dateTo: fixedDate,
+        labelIds: const ['label-private'],
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-id',
+          createdAt: fixedDate,
+          utcOffset: 0,
+        ),
+        title: 'Plan the team offsite',
+        statusHistory: const [],
+        dateFrom: fixedDate,
+        dateTo: fixedDate,
+      ),
+    );
+
+    setUp(() {
+      when(
+        () => mockJournalDb.getAllLabelDefinitionsIncludingPrivate(),
+      ).thenAnswer(
+        (_) async => [
+          LabelDefinition(
+            id: 'label-private',
+            name: 'personal',
+            color: '#FF0000',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            vectorClock: null,
+            private: true,
+          ),
+        ],
+      );
+    });
+
+    test('start re-embeds them, naming the private label, unprompted', () {
+      fakeAsync((async) {
+        when(
+          () => mockJournalDb.taskIdsWithPrivateLabels(),
+        ).thenAnswer((_) async => [_entityId]);
+        stubEntity(labelledTask());
+        stubEmbedding();
+
+        service.start();
+        async.flushMicrotasks();
+
+        verify(
+          () => mockEmbeddingRepo.embedDocument(
+            'Plan the team offsite\nLabels: personal',
+          ),
+        ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
+    test(
+      'with embeddings off at start, the first batch that finds them on '
+      'queues the tasks, once',
+      () {
+        fakeAsync((async) {
+          var enabled = false;
+          when(
+            () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+          ).thenAnswer((_) async => enabled);
+          when(
+            () => mockJournalDb.taskIdsWithPrivateLabels(),
+          ).thenAnswer((_) async => ['bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee']);
+          stubEntity(labelledTask());
+          stubEmbedding();
+
+          service.start();
+          async.flushMicrotasks();
+          verifyNever(() => mockJournalDb.taskIdsWithPrivateLabels());
+
+          enabled = true;
+          sendAndProcess(async, {_entityId, taskNotification});
+          sendAndProcess(async, {_entityId, taskNotification});
+
+          verify(() => mockJournalDb.taskIdsWithPrivateLabels()).called(1);
+          verify(
+            () => mockJournalDb.journalEntityById(
+              'bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee',
+            ),
+          ).called(1);
+
+          stopInZone(async);
+        });
+      },
+    );
+
+    test('a stop before the query returns queues nothing', () {
+      fakeAsync((async) {
+        final ids = Completer<List<String>>();
+        when(
+          () => mockJournalDb.taskIdsWithPrivateLabels(),
+        ).thenAnswer((_) => ids.future);
+        stubEntity(labelledTask());
+        stubEmbedding();
+
+        service.start();
+        stopInZone(async);
+        ids.complete([_entityId]);
+        async.flushMicrotasks();
+
+        verifyNever(() => mockJournalDb.journalEntityById(any()));
+        verifyNever(() => mockEmbeddingRepo.embedDocument(any()));
+      });
+    });
+
+    test('a query that fails is logged, and notifications still embed', () {
+      fakeAsync((async) {
+        when(
+          () => mockJournalDb.taskIdsWithPrivateLabels(),
+        ).thenAnswer((_) => Future.error(StateError('db closed')));
+        stubEntity(
+          JournalEntry(
+            meta: _meta(),
+            entryText: const EntryText(plainText: _longText),
+          ),
+        );
+        stubEmbedding();
+
+        service.start();
+        async.flushMicrotasks();
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'EmbeddingService',
+            message: 'Failed to queue the tasks that carry private labels',
+          ),
+        ).called(1);
+
+        sendAndProcess(async, {_entityId, textEntryNotification});
+        verify(() => mockEmbeddingRepo.embedDocument(_longText)).called(1);
 
         stopInZone(async);
       });

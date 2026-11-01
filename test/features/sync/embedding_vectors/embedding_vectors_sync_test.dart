@@ -45,6 +45,13 @@ EmbeddingRegister _register(
   originatingHostId: vc == null ? '' : host,
 );
 
+/// A sink whose re-check of held versions finds nothing to do.
+MockSyncedEmbeddingSink _quietSink() {
+  final sink = MockSyncedEmbeddingSink();
+  when(sink.recheckAll).thenAnswer((_) async {});
+  return sink;
+}
+
 void main() {
   late Directory docs;
   late MockVectorClockService vcService;
@@ -104,7 +111,7 @@ void main() {
   Future<void> attach({SyncedEmbeddingSink? sink}) => vectors.attach(
     store: store,
     modelId: _model,
-    sink: sink ?? MockSyncedEmbeddingSink(),
+    sink: sink ?? _quietSink(),
   );
 
   File fileOf(SyncEmbeddingVectors message) => File(
@@ -449,7 +456,7 @@ void main() {
         await vectors.attach(
           store: refusing,
           modelId: _model,
-          sink: MockSyncedEmbeddingSink(),
+          sink: _quietSink(),
         );
 
         await expectLater(vectors.sendCurrent('r1|$_model'), throwsStateError);
@@ -502,7 +509,7 @@ void main() {
       await vectors.attach(
         store: store,
         modelId: _model,
-        sink: MockSyncedEmbeddingSink(),
+        sink: _quietSink(),
         flagChanges: flagChanges.stream,
       );
       expect(rounds, 0);
@@ -595,9 +602,9 @@ void main() {
     test(
       're-checks held versions each time the queue drains after work',
       () async {
-        final sink = MockSyncedEmbeddingSink();
-        when(sink.recheckAll).thenAnswer((_) async {});
+        final sink = _quietSink();
         await attach(sink: sink);
+        verify(sink.recheckAll).called(1);
         final depth = StreamController<QueueDepthSignal>();
         addTearDown(depth.close);
         vectors.watchInboundQueue(depth.stream);
@@ -615,9 +622,9 @@ void main() {
     );
 
     test('a re-check that fails is logged', () async {
-      final sink = MockSyncedEmbeddingSink();
-      when(sink.recheckAll).thenThrow(StateError('store closed'));
+      final sink = _quietSink();
       await attach(sink: sink);
+      when(sink.recheckAll).thenThrow(StateError('store closed'));
       final depth = StreamController<QueueDepthSignal>();
       addTearDown(depth.close);
       vectors.watchInboundQueue(depth.stream);
@@ -637,6 +644,177 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'attaching re-checks the held versions before the catch-up runs',
+      () async {
+        final calls = <String>[];
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) async => calls.add('recheck'));
+        vectors.catchUpRound = () async => calls.add('catch-up');
+
+        await attach(sink: sink);
+
+        expect(calls, ['recheck', 'catch-up']);
+      },
+    );
+
+    test(
+      'attaching does not wait for the re-check, and detaching does',
+      () async {
+        final recheck = Completer<void>();
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) => recheck.future);
+        var rounds = 0;
+        vectors.catchUpRound = () async => rounds++;
+
+        await attach(sink: sink);
+        expect(rounds, 1, reason: 'the catch-up ran while the re-check runs');
+
+        var detached = false;
+        final detach = vectors.detach().then((_) => detached = true);
+        await pumpEventQueue();
+        expect(detached, isFalse);
+        expect(vectors.isAttached, isTrue);
+
+        recheck.complete();
+        await detach;
+        expect(vectors.isAttached, isFalse);
+      },
+    );
+
+    test(
+      'detaching waits for a re-check a flag change started, and disposing '
+      'for one a queue drain started',
+      () async {
+        var gate = Completer<void>();
+        final sink = MockSyncedEmbeddingSink();
+        var calls = 0;
+        when(sink.recheckAll).thenAnswer((_) {
+          calls++;
+          // The attach re-check finishes at once; later ones wait.
+          return calls == 1 ? Future.value() : gate.future;
+        });
+        final flagChanges = StreamController<void>();
+        addTearDown(flagChanges.close);
+        await vectors.attach(
+          store: store,
+          modelId: _model,
+          sink: sink,
+          flagChanges: flagChanges.stream,
+        );
+
+        flagChanges.add(null);
+        await pumpEventQueue();
+        var detached = false;
+        final detach = vectors.detach().then((_) => detached = true);
+        await pumpEventQueue();
+        expect(detached, isFalse, reason: 'the flag re-check still runs');
+        gate.complete();
+        await detach;
+
+        gate = Completer<void>();
+        await attach(sink: sink);
+        final depth = StreamController<QueueDepthSignal>();
+        addTearDown(depth.close);
+        vectors.watchInboundQueue(depth.stream);
+        depth
+          ..add(const QueueDepthSignal(total: 1))
+          ..add(const QueueDepthSignal(total: 0));
+        await pumpEventQueue();
+        var disposed = false;
+        final dispose = vectors.dispose().then((_) => disposed = true);
+        await pumpEventQueue();
+        expect(disposed, isFalse, reason: 'the drain re-check still runs');
+        gate.complete();
+        await dispose;
+      },
+    );
+
+    test('a queue drain while detaching starts no re-check', () async {
+      final gate = Completer<void>();
+      final sink = MockSyncedEmbeddingSink();
+      when(sink.recheckAll).thenAnswer((_) => gate.future);
+      await attach(sink: sink);
+      final depth = StreamController<QueueDepthSignal>();
+      addTearDown(depth.close);
+      vectors.watchInboundQueue(depth.stream);
+
+      final detach = vectors.detach();
+      await pumpEventQueue();
+      depth
+        ..add(const QueueDepthSignal(total: 1))
+        ..add(const QueueDepthSignal(total: 0));
+      await pumpEventQueue();
+
+      verify(sink.recheckAll).called(1); // the attach re-check only
+      gate.complete();
+      await detach;
+      expect(vectors.isAttached, isFalse);
+    });
+
+    test(
+      'a flag change re-checks the held versions, then runs the catch-up',
+      () async {
+        final calls = <String>[];
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenAnswer((_) async => calls.add('recheck'));
+        final flagChanges = StreamController<void>();
+        addTearDown(flagChanges.close);
+        flags[syncEmbeddingsFlag] = false;
+        vectors.catchUpRound = () async => calls.add('catch-up');
+        await vectors.attach(
+          store: store,
+          modelId: _model,
+          sink: sink,
+          flagChanges: flagChanges.stream,
+        );
+        expect(calls, ['recheck'], reason: 'nothing to catch up while off');
+
+        flags[syncEmbeddingsFlag] = true;
+        flagChanges.add(null);
+        await pumpEventQueue();
+
+        expect(calls, ['recheck', 'recheck', 'catch-up']);
+      },
+    );
+
+    test(
+      'a re-check at attach that fails is logged, and the catch-up still runs',
+      () async {
+        final sink = MockSyncedEmbeddingSink();
+        when(sink.recheckAll).thenThrow(StateError('store closed'));
+        var rounds = 0;
+        vectors.catchUpRound = () async => rounds++;
+
+        await attach(sink: sink);
+
+        verify(
+          () => logger.error(
+            any(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'embeddingVectors',
+            message: 'held embedding versions could not be re-checked',
+          ),
+        ).called(1);
+        expect(rounds, 1);
+        expect(vectors.sink, same(sink));
+      },
+    );
+
+    test(
+      "the held version count is the sink's, and 0 without the pipeline",
+      () async {
+        expect(await vectors.watchHeldVersionCount().toList(), [0]);
+
+        final sink = _quietSink();
+        when(sink.watchHeldCount).thenAnswer((_) => Stream.value(14));
+        await attach(sink: sink);
+
+        expect(await vectors.watchHeldVersionCount().toList(), [14]);
+      },
+    );
 
     test('a drain without the pipeline re-checks nothing', () async {
       final depth = StreamController<QueueDepthSignal>();

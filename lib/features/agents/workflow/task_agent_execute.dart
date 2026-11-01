@@ -553,6 +553,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           _embedAgentReport(
             reportId: embed.reportId,
             reportContent: embed.reportContent,
+            reportTldr: embed.reportTldr,
+            reportOneLiner: embed.reportOneLiner,
             taskId: embed.taskId,
           ),
         );

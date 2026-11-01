@@ -1522,6 +1522,7 @@
   "backfillRecordsConsumptionEvents": "Eventi di utilizzo dell'IA",
   "backfillRecordsDefinitions": "Definizioni delle impostazioni",
   "backfillRecordsEmbeddingVectors": "Vettori di embedding",
+  "backfillRecordsEmbeddingVectorsHeld": "Vettori in attesa",
   "backfillRecordsEntryLinks": "Collegamenti tra voci",
   "backfillRecordsHint": "Eliminazioni incluse. I dispositivi sincronizzati mostrano qui gli stessi numeri; i contatori tracciati possono differire tra loro.",
   "backfillRecordsJournal": "Voci del diario",

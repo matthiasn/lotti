@@ -1235,6 +1235,88 @@ void main() {
       );
     });
 
+    group('taskIdsWithPrivateLabels -', () {
+      test(
+        'lists live tasks carrying a live private label, whatever the '
+        'private flag says',
+        () async {
+          final date = DateTime(2024, 11, 8);
+          LabelDefinition label(
+            String id, {
+            bool private = false,
+            DateTime? deletedAt,
+          }) => LabelDefinition(
+            id: id,
+            createdAt: date,
+            updatedAt: date,
+            name: id,
+            color: '#aabbcc',
+            vectorClock: null,
+            private: private,
+            deletedAt: deletedAt,
+          );
+          await db!.upsertLabelDefinition(label('lbl-pub'));
+          await db!.upsertLabelDefinition(label('lbl-priv', private: true));
+          await db!.upsertLabelDefinition(
+            label('lbl-priv-gone', private: true, deletedAt: date),
+          );
+          final status = TaskStatus.open(
+            id: 'status',
+            createdAt: date,
+            utcOffset: 0,
+          );
+          Future<void> task(
+            String id,
+            List<String> labelIds, {
+            bool deleted = false,
+          }) async {
+            final entry = buildTaskEntry(
+              id: id,
+              timestamp: date,
+              status: status,
+            );
+            await db!.upsertJournalDbEntity(
+              toDbEntity(
+                entry.copyWith(
+                  meta: entry.meta.copyWith(
+                    deletedAt: deleted ? date : null,
+                  ),
+                ),
+              ),
+            );
+            for (final labelId in labelIds) {
+              await db!.insertLabel(id, labelId);
+            }
+          }
+
+          await task('task-b-private', ['lbl-pub', 'lbl-priv']);
+          await task('task-a-private', ['lbl-priv']);
+          await task('task-public', ['lbl-pub']);
+          await task('task-deleted-label', ['lbl-priv-gone']);
+          await task('task-deleted', ['lbl-priv'], deleted: true);
+          final entry = buildJournalEntry(
+            id: 'entry-private',
+            timestamp: date,
+            text: 'Not a task',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(entry));
+          await db!.insertLabel('entry-private', 'lbl-priv');
+
+          expect(await db!.taskIdsWithPrivateLabels(), [
+            'task-a-private',
+            'task-b-private',
+          ]);
+
+          final flag = await db!.getConfigFlagByName(privateFlag);
+          await db!.upsertConfigFlag(flag!.copyWith(status: false));
+          expect(await db!.taskIdsWithPrivateLabels(), [
+            'task-a-private',
+            'task-b-private',
+          ]);
+        },
+      );
+    });
+
     group('Label reconciliation -', () {
       test('addLabeled mirrors metadata labelIds changes', () async {
         // Ensure label definitions exist to satisfy the labeled.label_id FK

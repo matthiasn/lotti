@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/deep_backfill_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/sync_service.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -236,6 +237,32 @@ void main() {
         tester.getTopLeft(find.byType(RecordCountsCard)).dy,
         lessThan(tester.getTopLeft(find.byType(StatusRow)).dy),
       );
+    });
+
+    testWidgets('show the embedding versions this device holds', (
+      tester,
+    ) async {
+      when(
+        () => deepBackfill.recordCounts(only: any(named: 'only')),
+      ).thenAnswer(
+        (_) async => {SyncSequencePayloadType.embeddingVectors: 18389},
+      );
+
+      await pumpBody(
+        tester,
+        overrides: [
+          heldEmbeddingVersionsCountProvider.overrideWith(
+            (ref) => Stream.value(14),
+          ),
+        ],
+      );
+
+      expect(find.text('18,389'), findsOneWidget);
+      expect(
+        find.text(messagesOf(tester).backfillRecordsEmbeddingVectorsHeld),
+        findsOneWidget,
+      );
+      expect(find.text('14'), findsOneWidget);
     });
 
     testWidgets('re-count once a synced table changes while shown, and stop '

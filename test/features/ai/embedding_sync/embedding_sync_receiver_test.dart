@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -71,14 +72,19 @@ Task _task(String id, String title, {required List<String> labelIds}) => Task(
   ),
 );
 
-LabelDefinition _label(String id, String name) => LabelDefinition(
-  id: id,
-  createdAt: _date,
-  updatedAt: _date,
-  name: name,
-  color: '#000000',
-  vectorClock: null,
-);
+LabelDefinition _label(String id, String name, {bool private = false}) =>
+    LabelDefinition(
+      id: id,
+      createdAt: _date,
+      updatedAt: _date,
+      name: name,
+      color: '#000000',
+      vectorClock: null,
+      private: private,
+    );
+
+AgentReportText _report(String content, {String? tldr, String? oneLiner}) =>
+    (content: content, tldr: tldr, oneLiner: oneLiner);
 
 EmbeddingRegister _version({
   required String entityId,
@@ -111,7 +117,7 @@ class _Device {
   final store = InMemoryEmbeddingStore();
   final journal = <String, JournalEntity>{};
   final labels = <LabelDefinition>[];
-  final reports = <String, String>{};
+  final reports = <String, AgentReportText>{};
   final flags = <String, bool>{
     enableEmbeddingsFlag: true,
     syncEmbeddingsFlag: true,
@@ -125,7 +131,16 @@ class _Device {
     when(() => journalDb.journalEntityById(any())).thenAnswer(
       (i) async => journal[i.positionalArguments.first as String],
     );
-    when(journalDb.getAllLabelDefinitions).thenAnswer((_) async => labels);
+    when(
+      journalDb.getAllLabelDefinitionsIncludingPrivate,
+    ).thenAnswer((_) async => labels);
+    // This device hides private items: the toggle-aware read leaves them out.
+    when(journalDb.getAllLabelDefinitions).thenAnswer(
+      (_) async => [
+        for (final label in labels)
+          if (!(label.private ?? false)) label,
+      ],
+    );
     held = await HeldEmbeddingVersions.open(holdPath);
     receiver = EmbeddingSyncReceiver(
       store: store,
@@ -168,6 +183,57 @@ void main() {
     await d.open();
     return d;
   }
+
+  group('agentReportTextReader', () {
+    test('reads the body, TLDR and one-liner of a report', () async {
+      final repository = MockAgentRepository();
+      when(() => repository.getEntity('r1')).thenAnswer(
+        (_) async => AgentDomainEntity.agentReport(
+          id: 'r1',
+          agentId: 'agent-1',
+          scope: 'current',
+          createdAt: _date,
+          vectorClock: null,
+          content: 'The body',
+          tldr: 'The TLDR',
+          oneLiner: 'The one-liner',
+        ),
+      );
+
+      final read = agentReportTextReader(() => repository);
+
+      expect(await read('r1'), (
+        content: 'The body',
+        tldr: 'The TLDR',
+        oneLiner: 'The one-liner',
+      ));
+    });
+
+    test(
+      'reads nothing for another entity, a missing one, or no database',
+      () async {
+        final repository = MockAgentRepository();
+        when(() => repository.getEntity('head')).thenAnswer(
+          (_) async => AgentDomainEntity.agentReportHead(
+            id: 'head',
+            agentId: 'agent-1',
+            scope: 'current',
+            reportId: 'r1',
+            updatedAt: _date,
+            vectorClock: null,
+          ),
+        );
+        when(
+          () => repository.getEntity('gone'),
+        ).thenAnswer((_) async => null);
+
+        final read = agentReportTextReader(() => repository);
+        expect(await read('head'), isNull);
+        expect(await read('gone'), isNull);
+        expect(await agentReportTextReader(() => null)('r1'), isNull);
+      },
+    );
+  });
 
   group('merge', () {
     test(
@@ -560,7 +626,7 @@ void main() {
         );
         expect(d.held.all, hasLength(1));
 
-        d.reports['r1'] = '  $content  ';
+        d.reports['r1'] = _report('  $content  ');
         await d.receiver.onAgentEntityApplied('r1');
 
         expect(d.store.chunks['r1']!.categoryId, 'work');
@@ -575,7 +641,7 @@ void main() {
       () async {
         final d = await device();
         const content = 'The agent report about the task progress';
-        d.reports['r1'] = content;
+        d.reports['r1'] = _report(content);
         await d.receive(
           _version(
             entityId: 'r1',
@@ -626,6 +692,135 @@ void main() {
         expect(d.store.chunks.keys, ['t1']);
       },
     );
+
+    test(
+      'a task vector naming a private label is stored on a device that hides '
+      'private items',
+      () async {
+        // The sender showed private items and named the label; this device
+        // hides them. Its text must still name the label, or the version
+        // waits for good with its receipt recorded.
+        final d = await device();
+        const title = 'Plan the surprise for the team';
+        d.labels.add(_label('l1', 'personal', private: true));
+        d.journal['t1'] = _task('t1', title, labelIds: const ['l1']);
+        final text = EmbeddingContentExtractor.extractTaskText(
+          title: title,
+          labelNames: const ['personal'],
+        )!;
+
+        await d.receive(
+          _version(
+            entityId: 't1',
+            text: text,
+            vc: {'a': 1},
+            entityType: kEntityTypeTask,
+          ),
+        );
+
+        expect(d.store.registers['t1']!.contentHash, _hash(text));
+        expect(d.held.all, isEmpty);
+      },
+    );
+
+    test(
+      'a report vector made from the whole report is stored when this '
+      "device's report says the same",
+      () async {
+        final d = await device();
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        final local = _report(
+          'The detailed body of the report.',
+          tldr: 'Shipping is blocked on review.',
+          oneLiner: 'Blocked on review',
+        );
+        d.reports['r1'] = local;
+        final whole = EmbeddingContentExtractor.extractAgentReportText(
+          content: local.content,
+          tldr: local.tldr,
+          oneLiner: local.oneLiner,
+        )!;
+
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: whole,
+            vc: {'a': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+
+        expect(d.store.registers['r1']!.contentHash, _hash(whole));
+        expect(d.held.all, isEmpty);
+      },
+    );
+
+    test(
+      'a report vector an older writer made from the body alone is still '
+      'stored',
+      () async {
+        final d = await device();
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        const body = 'The detailed body of the report.';
+        d.reports['r1'] = _report(
+          body,
+          tldr: 'Shipping is blocked on review.',
+          oneLiner: 'Blocked on review',
+        );
+
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: body,
+            vc: {'a': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+
+        expect(d.store.registers['r1']!.contentHash, _hash(body));
+        expect(d.held.all, isEmpty);
+      },
+    );
+
+    test(
+      'a report vector of a text this device does not hold is held',
+      () async {
+        final d = await device();
+        d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
+        d.reports['r1'] = _report('The detailed body of the report.');
+
+        await d.receive(
+          _version(
+            entityId: 'r1',
+            text: 'Another report text entirely, not this one',
+            vc: {'a': 1},
+            entityType: kEntityTypeAgentReport,
+            taskId: 't1',
+          ),
+        );
+
+        expect(d.store.registers, isEmpty);
+        expect(d.held.all.single.register.entityId, 'r1');
+      },
+    );
+
+    test('watchHeldCount reports each hold and each release', () async {
+      final d = await device();
+      final counts = <int>[];
+      final subscription = d.receiver.watchHeldCount().listen(counts.add);
+      addTearDown(subscription.cancel);
+      const text = 'The entry text as the sender wrote it';
+
+      await d.receive(_version(entityId: 'e1', text: text, vc: {'a': 1}));
+      d.journal['e1'] = _entry('e1', text);
+      await d.receiver.onJournalEntityApplied('e1');
+      await pumpEventQueue();
+
+      expect(counts, [0, 1, 0]);
+      expect(d.store.chunks.keys, ['e1']);
+    });
 
     test(
       'a held version is discarded once the entry has moved past its source',
@@ -824,8 +1019,8 @@ void main() {
           final d = await device();
           d.journal['t1'] = _task('t1', 'The task', labelIds: const []);
           d.reports
-            ..['r1'] = r1Text
-            ..['r2'] = r2Text;
+            ..['r1'] = _report(r1Text)
+            ..['r2'] = _report(r2Text);
           await d.receive(report('r2', r2Text, 2));
           for (final version in order) {
             await d.receive(version);

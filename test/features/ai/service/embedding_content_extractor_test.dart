@@ -291,4 +291,43 @@ void main() {
       });
     });
   });
+
+  group('EmbeddingContentExtractor.extractAgentReportText', () {
+    test('joins one-liner, TLDR and body, trimmed, a blank line apart', () {
+      expect(
+        EmbeddingContentExtractor.extractAgentReportText(
+          content: '  ## Status\nWaiting on the review.  ',
+          tldr: ' Blocked on review 🚧 ',
+          oneLiner: '  Review pending ',
+        ),
+        'Review pending\n\nBlocked on review 🚧\n\n## Status\nWaiting on the '
+        'review.',
+      );
+    });
+
+    test('leaves out a missing or blank one-liner and TLDR', () {
+      const body = 'The whole report body, long enough.';
+      expect(
+        EmbeddingContentExtractor.extractAgentReportText(
+          content: body,
+          tldr: '   ',
+        ),
+        body,
+      );
+    });
+
+    test('counts the TLDR and one-liner towards the minimum length', () {
+      expect(
+        EmbeddingContentExtractor.extractAgentReportText(content: 'Short'),
+        isNull,
+      );
+      expect(
+        EmbeddingContentExtractor.extractAgentReportText(
+          content: 'Short',
+          tldr: 'A TLDR that says more',
+        ),
+        'A TLDR that says more\n\nShort',
+      );
+    });
+  });
 }

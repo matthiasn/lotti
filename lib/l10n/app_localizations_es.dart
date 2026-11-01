@@ -3030,6 +3030,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillRecordsEmbeddingVectors => 'Incrustaciones';
 
   @override
+  String get backfillRecordsEmbeddingVectorsHeld => 'Incrustaciones en espera';
+
+  @override
   String get backfillRecordsEntryLinks => 'Enlaces entre entradas';
 
   @override

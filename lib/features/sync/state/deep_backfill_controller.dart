@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/deep_backfill/deep_backfill_service.dart';
+import 'package:lotti/features/sync/embedding_vectors/embedding_vectors_sync.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/get_it.dart';
 
@@ -31,6 +32,19 @@ deepBackfillRecordCountsProvider =
         return poller.counts;
       },
       name: 'deepBackfillRecordCountsProvider',
+    );
+
+/// Embedding versions this device received but holds until its own text
+/// hashes the same — the entry, report or label is not here yet, or differs.
+/// Their receipts are recorded, so the sequence log never counts them
+/// missing; a count that stays above zero is why this device shows fewer
+/// embeddings than its peers. `0` without the embedding pipeline.
+final StreamProvider<int> heldEmbeddingVersionsCountProvider =
+    StreamProvider.autoDispose<int>(
+      (ref) =>
+          ref.watch(embeddingVectorsSyncProvider)?.watchHeldVersionCount() ??
+          Stream.value(0),
+      name: 'heldEmbeddingVersionsCountProvider',
     );
 
 /// Counts every type at once, then every

@@ -199,12 +199,15 @@ abstract final class EmbeddingProcessor {
   /// Builds a [LabelNameResolver] backed by a cached snapshot of all label
   /// definitions from [journalDb].
   ///
-  /// Filters out deleted labels. The snapshot is taken once and reused for
+  /// Filters out deleted labels, and keeps private ones whatever this
+  /// device's privacy toggle says: the names are part of a task's text, and
+  /// that text must hash the same on every device, or a peer holds the
+  /// vectors it receives for good. The snapshot is taken once and reused for
   /// all subsequent lookups, making this efficient for batch processing.
   static Future<LabelNameResolver> buildLabelResolver(
     JournalDb journalDb,
   ) async {
-    final allLabels = await journalDb.getAllLabelDefinitions();
+    final allLabels = await journalDb.getAllLabelDefinitionsIncludingPrivate();
     final labelMap = <String, String>{};
     for (final label in allLabels) {
       if (label.deletedAt == null) {
@@ -242,7 +245,10 @@ abstract final class EmbeddingProcessor {
   /// Processes an agent report for embedding generation.
   ///
   /// Agent reports live in the agent database (not the journal), so this
-  /// method accepts the report content directly rather than looking it up.
+  /// method accepts the report's fields directly rather than looking them
+  /// up. It embeds the one-liner, the TLDR and the body together
+  /// ([EmbeddingContentExtractor.extractAgentReportText]), so a task is found
+  /// by its whole report.
   /// The report is stored in the category of its task [taskId], read from
   /// [journalDb] (the default shard when the task is gone).
   ///
@@ -269,15 +275,21 @@ abstract final class EmbeddingProcessor {
   /// skipped (too short, unchanged content hash, etc.).
   static Future<bool> processAgentReport({
     required String reportId,
-    required String reportContent,
+    required String content,
     required String taskId,
     required String subtype,
     required JournalDb journalDb,
     required EmbeddingStore embeddingStore,
     required OnDeviceEmbeddingRepository embeddingRepository,
+    String? tldr,
+    String? oneLiner,
   }) => _serialized(taskId, () async {
-    final text = reportContent.trim();
-    if (text.length < kMinEmbeddingTextLength) return false;
+    final text = EmbeddingContentExtractor.extractAgentReportText(
+      content: content,
+      tldr: tldr,
+      oneLiner: oneLiner,
+    );
+    if (text == null) return false;
 
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = await embeddingStore.getContentHash(reportId);

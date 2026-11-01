@@ -396,10 +396,13 @@ void main() {
       expect(head.id, 'head-existing');
       expect(head.reportId, 'report-new');
 
-      // Result carries what the embedding needs: the new report and its task.
+      // Result carries what the embedding needs: the new report — body, TLDR
+      // and one-liner, as stored — and its task.
       expect(result, isNotNull);
       expect(result!.reportId, 'report-new');
       expect(result.reportContent, '# Status\nAll good.');
+      expect(result.reportTldr, 'all good');
+      expect(result.reportOneLiner, 'ok');
       expect(result.taskId, _taskId);
     });
 

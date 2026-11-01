@@ -385,6 +385,7 @@ void main() {
       WidgetTester tester,
       Map<SyncSequencePayloadType, int>? counts, {
       bool isLoading = false,
+      int heldEmbeddingVersions = 0,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -392,6 +393,7 @@ void main() {
             child: RecordCountsCard(
               counts: counts,
               isLoading: isLoading,
+              heldEmbeddingVersions: heldEmbeddingVersions,
             ),
           ),
         ),
@@ -464,7 +466,68 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('17'), findsOneWidget);
+      expect(
+        find.text(context.messages.backfillRecordsEmbeddingVectorsHeld),
+        findsNothing,
+        reason: 'nothing held, nothing to explain',
+      );
     });
+
+    testWidgets(
+      'shows the held embedding versions right under the embeddings, in the '
+      'warning tone',
+      (tester) async {
+        await pumpCounts(
+          tester,
+          const {
+            SyncSequencePayloadType.embeddingVectors: 18389,
+            SyncSequencePayloadType.aiConfig: 9,
+          },
+          heldEmbeddingVersions: 14,
+        );
+
+        final context = tester.element(find.byType(RecordCountsCard));
+        final embeddings = find.text(
+          context.messages.backfillRecordsEmbeddingVectors,
+        );
+        final held = find.text(
+          context.messages.backfillRecordsEmbeddingVectorsHeld,
+        );
+        final aiSettings = find.text(context.messages.backfillRecordsAiConfigs);
+        expect(held, findsOneWidget);
+        expect(
+          tester.getTopLeft(held).dy,
+          greaterThan(tester.getTopLeft(embeddings).dy),
+        );
+        expect(
+          tester.getTopLeft(aiSettings).dy,
+          lessThan(tester.getTopLeft(embeddings).dy),
+          reason: 'the held row follows the embeddings, not the other types',
+        );
+        final count = tester.widget<Text>(find.text('14'));
+        expect(
+          count.style?.color,
+          context.designTokens.colors.alert.warning.ink,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows no held row while the embeddings themselves are not counted',
+      (tester) async {
+        await pumpCounts(
+          tester,
+          const {SyncSequencePayloadType.journalEntity: 3},
+          heldEmbeddingVersions: 14,
+        );
+
+        final context = tester.element(find.byType(RecordCountsCard));
+        expect(
+          find.text(context.messages.backfillRecordsEmbeddingVectorsHeld),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('counts AI settings on a row of their own, after the '
         'definitions', (tester) async {

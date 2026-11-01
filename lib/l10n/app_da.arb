@@ -1522,6 +1522,7 @@
   "backfillRecordsConsumptionEvents": "AI-forbrugshændelser",
   "backfillRecordsDefinitions": "Indstillingsdefinitioner",
   "backfillRecordsEmbeddingVectors": "Indlejringer",
+  "backfillRecordsEmbeddingVectorsHeld": "Ventende indlejringer",
   "backfillRecordsEntryLinks": "Links mellem poster",
   "backfillRecordsHint": "Inklusive slettede. Enheder, der er synkroniseret, viser de samme tal her; sporede tællere kan variere mellem dem.",
   "backfillRecordsJournal": "Journalposter",

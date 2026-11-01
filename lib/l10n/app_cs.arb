@@ -1307,6 +1307,7 @@
   "backfillRecordsConsumptionEvents": "Události využití AI",
   "backfillRecordsDefinitions": "Definice nastavení",
   "backfillRecordsEmbeddingVectors": "Vektory",
+  "backfillRecordsEmbeddingVectorsHeld": "Čekající vektory",
   "backfillRecordsEntryLinks": "Odkazy mezi záznamy",
   "backfillRecordsHint": "Včetně smazaných. Synchronizovaná zařízení tu ukazují stejná čísla; sledované čítače se mezi nimi mohou lišit.",
   "backfillRecordsJournal": "Záznamy deníku",

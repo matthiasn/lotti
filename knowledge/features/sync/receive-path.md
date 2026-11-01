@@ -5,8 +5,8 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: claude-code/fable-5.1, at: 2026-10-24T12:00:00Z }
-stale_after: 2027-01-03
+generated: { by: claude-code/opus-5.5, at: 2026-11-01T19:30:00Z }
+stale_after: 2027-02-01
 sources:
   - id: descriptor-recovery
     resource: ../../../lib/features/sync/matrix/sync_event_processor_descriptor_cache.dart
@@ -70,8 +70,8 @@ sources:
     last_modified: 2026-10-02
   - id: record-counts-poller
     resource: ../../../lib/features/sync/state/deep_backfill_controller.dart
-    title: Change-driven record counts on the Sync health page
-    last_modified: 2026-10-02
+    title: Change-driven record counts and held embedding versions on the Sync health page
+    last_modified: 2026-11-01
   - id: backfill-stats-controller
     resource: ../../../lib/features/sync/state/backfill_stats_controller.dart
     title: Sync health stats refresh, paused off screen
@@ -686,6 +686,15 @@ the page:
       Paused --> Disposed: page gone
       Disposed --> [*]
   ```
+- `heldEmbeddingVersionsCountProvider` adds, under the embeddings count, the
+  embedding versions this device received but holds until its own text
+  hashes the same (`HeldEmbeddingVersions.watchCount`, through
+  `EmbeddingVectorsSync.watchHeldVersionCount`), in the warning tone and only
+  while there are any. A held version's receipt is recorded, so the sequence
+  log never reports it missing, and a deep backfill only delivers it to the
+  hold again: this row is the one place a lower embedding count than a
+  peer's is explained
+  ([embedding vector sync](../ai/embedding-vector-sync.md#receiving)).
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
   one-shot `depthSnapshot()`) and publishes the latest signal through a
   `ValueListenable`: its subtree builds once, and only the status row

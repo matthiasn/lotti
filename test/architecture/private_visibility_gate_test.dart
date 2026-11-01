@@ -91,6 +91,10 @@ const _ungatedDeclarations = <String, String>{
       'outbound sync payloads, tombstones included',
   'lib/database/database_journal_queries.dart:streamEntriesWithVectorClock':
       'sequence-log population walks every row for sync',
+  'lib/database/database_definitions.dart:taskIdsWithPrivateLabels':
+      'task ids the embedding service re-embeds at start: their text must '
+      'hash the same on every device whatever its privacy toggle says; '
+      'no row content leaves it',
   'lib/features/sync/deep_backfill/deep_backfill_stores.dart:mediaSizes':
       'a deep-backfill round sizes the file of every image and audio entry '
       'it advertises, private ones included; only lengths leave the device',
