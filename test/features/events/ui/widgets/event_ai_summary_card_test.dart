@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
+import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
@@ -50,6 +51,8 @@ void main() {
     AgentDomainEntity? agent,
     FutureOr<AgentDomainEntity?> Function()? report,
     bool inferenceDisabled = false,
+    AgentDomainEntity? state,
+    AgentDomainEntity? template,
     MockEventAgentService? service,
   }) => <Override>[
     // Resolved synchronously, so a data-state test does not transit a
@@ -57,7 +60,7 @@ void main() {
     eventAgentProvider(eventId).overrideWith((ref) => agent),
     agentReportProvider(agentId).overrideWith((ref) => report?.call()),
     agentIsRunningProvider(agentId).overrideWith((ref) => Stream.value(false)),
-    agentStateProvider(agentId).overrideWith((ref) => null),
+    agentStateProvider(agentId).overrideWith((ref) => state),
     taskAgentResolvedSetupProvider(agentId).overrideWith(
       (ref) => inferenceDisabled
           ? const ResolvedAgentSetup(
@@ -65,7 +68,7 @@ void main() {
             )
           : resolvedSetup,
     ),
-    templateForAgentProvider(agentId).overrideWith((ref) => null),
+    templateForAgentProvider(agentId).overrideWith((ref) => template),
     // The internals panel resolves the agent through these.
     agentIdentityProvider(agentId).overrideWith((ref) => agent),
     taskAgentSetupOptionsProvider.overrideWith(
@@ -264,6 +267,69 @@ void main() {
       );
       expect(strip.inferenceAvailable, isFalse);
       expect(strip.onRunNow, isNull);
+    });
+
+    testWidgets("the agent's template names the card, unless it is blank", (
+      tester,
+    ) async {
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(
+          agent: agentIdentity,
+          report: () => makeTestReport(agentId: agentId, tldr: 'recap'),
+          template: makeTestTemplate(
+            displayName: '  Trip chronicler  ',
+            kind: AgentTemplateKind.eventAgent,
+          ),
+        ),
+      );
+      expect(
+        tester.widget<TldrHeader>(find.byType(TldrHeader)).agentName,
+        'Trip chronicler',
+      );
+
+      // A fresh scope, so the next tree's overrides are its own.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(
+          agent: agentIdentity,
+          report: () => makeTestReport(agentId: agentId, tldr: 'recap'),
+          template: makeTestTemplate(
+            displayName: '   ',
+            kind: AgentTemplateKind.eventAgent,
+          ),
+        ),
+      );
+      expect(
+        tester.widget<TldrHeader>(find.byType(TldrHeader)).agentName,
+        'Event Agent',
+      );
+    });
+
+    testWidgets('a recap behind a newer change reads as out of date', (
+      tester,
+    ) async {
+      final state = makeTestState(agentId: agentId).copyWith(
+        reportFreshAt: DateTime(2026, 7, 16, 20),
+        reportStaleAt: DateTime(2026, 7, 16, 21),
+      );
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(
+          agent: agentIdentity,
+          report: () => makeTestReport(agentId: agentId, tldr: 'recap'),
+          state: state,
+        ),
+      );
+
+      expect(
+        tester
+            .widget<AgentAutomationRow>(find.byType(AgentAutomationRow))
+            .isStale,
+        isTrue,
+      );
+      expect(find.text('Out of date'), findsOneWidget);
     });
 
     testWidgets("the agent's name opens this agent's internals", (
