@@ -130,6 +130,111 @@ void main() {
       });
     });
 
+    group('getRecentTaskTitlesForProjects -', () {
+      final base = DateTime(2024, 11, 3, 9);
+
+      Future<void> seedTask(
+        String id,
+        String projectId, {
+        required int minutesAfter,
+        bool private = false,
+      }) async {
+        final at = base.add(Duration(minutes: minutesAfter));
+        await db!.upsertJournalDbEntity(
+          toDbEntity(
+            buildTaskEntry(
+              id: id,
+              title: 'Title $id',
+              timestamp: at,
+              status: TaskStatus.open(
+                id: 'ts-$id',
+                createdAt: at,
+                utcOffset: 0,
+              ),
+              categoryId: 'cat-titles',
+              privateFlag: private,
+            ),
+          ),
+        );
+        await _seedProjectId(db!, id, projectId);
+      }
+
+      Future<void> showPrivate({required bool show}) => db!.upsertConfigFlag(
+        ConfigFlag(
+          name: 'private',
+          description: 'Show private entries?',
+          status: show,
+        ),
+      );
+
+      test('returns nothing for no projects or a zero cap', () async {
+        await seedTask('t1', 'proj-a', minutesAfter: 0);
+
+        expect(
+          await db!.getRecentTaskTitlesForProjects({}, limitPerProject: 5),
+          isEmpty,
+        );
+        expect(
+          await db!.getRecentTaskTitlesForProjects(
+            {'proj-a'},
+            limitPerProject: 0,
+          ),
+          isEmpty,
+        );
+      });
+
+      test('caps each project at its newest titles, newest first', () async {
+        for (var i = 0; i < 5; i++) {
+          await seedTask('a$i', 'proj-a', minutesAfter: i);
+        }
+        await seedTask('b0', 'proj-b', minutesAfter: 0);
+        await seedTask('c0', 'proj-c', minutesAfter: 0);
+
+        final titles = await db!.getRecentTaskTitlesForProjects(
+          {'proj-a', 'proj-b', 'proj-missing'},
+          limitPerProject: 3,
+        );
+
+        expect(titles, {
+          'proj-a': ['Title a4', 'Title a3', 'Title a2'],
+          'proj-b': ['Title b0'],
+        });
+      });
+
+      test('skips deleted tasks and, behind the private gate, private '
+          'ones', () async {
+        await seedTask('live', 'proj-a', minutesAfter: 0);
+        await seedTask('gone', 'proj-a', minutesAfter: 1);
+        await seedTask('secret', 'proj-a', minutesAfter: 2, private: true);
+        await db!.customStatement(
+          'UPDATE journal SET deleted = 1 WHERE id = ?',
+          ['gone'],
+        );
+
+        await showPrivate(show: false);
+        expect(
+          await db!.getRecentTaskTitlesForProjects(
+            {'proj-a'},
+            limitPerProject: 10,
+          ),
+          {
+            'proj-a': ['Title live'],
+          },
+        );
+
+        await showPrivate(show: true);
+        expect(
+          await db!.getRecentTaskTitlesForProjects(
+            {'proj-a'},
+            limitPerProject: 10,
+          ),
+          {
+            'proj-a': ['Title secret', 'Title live'],
+          },
+        );
+      });
+    });
+
     group('getProjectIdsForTaskIds chunking -', () {
       test(
         'resolves project ids across the 500-id chunk boundary',

@@ -92,8 +92,11 @@ void main() {
       () => repository.getProjectsForCategory(_categoryId),
     ).thenAnswer((_) async => [work, home]);
     when(
-      () => repository.getTasksForProject(any()),
-    ).thenAnswer((_) async => const []);
+      () => repository.getRecentTaskTitlesForProjects(
+        any(),
+        limitPerProject: any(named: 'limitPerProject'),
+      ),
+    ).thenAnswer((_) async => const {});
     when(
       () => repository.getProjectForTask(_taskId),
     ).thenAnswer((_) async => null);
@@ -218,13 +221,20 @@ void main() {
     test(
       'learns a project from the titles of the tasks already in it',
       () async {
-        when(() => repository.getTasksForProject('home')).thenAnswer(
-          (_) async => [
-            makeTestTask(title: 'Order mulch', createdAt: _created),
-            makeTestTask(title: 'Prune roses', createdAt: _created),
-            makeTestTask(title: 'Water roses', createdAt: _created),
-            makeTestTask(title: 'Order seeds', createdAt: _created),
-          ],
+        when(
+          () => repository.getRecentTaskTitlesForProjects(
+            {'work', 'home'},
+            limitPerProject: maxHistoryTitlesPerProject,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'home': [
+              'Order mulch',
+              'Prune roses',
+              'Water roses',
+              'Order seeds',
+            ],
+          },
         );
         final container = makeContainer(
           task: _task(title: 'Order roses fertilizer'),

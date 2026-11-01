@@ -93,25 +93,25 @@ Future<ProjectSuggestionIndex> buildProjectSuggestionIndex(
           (project.meta.private ?? false) == scope.private)
         project,
   ];
-  final histories = await Future.wait([
-    for (final project in suggestible)
-      repository.getTasksForProject(project.meta.id),
-  ]);
+  // One title-only query for every project, capped per project in SQL: the
+  // cost of opening an unassigned task stays bounded however long the
+  // projects' histories grow.
+  final histories = suggestible.isEmpty
+      ? const <String, List<String>>{}
+      : await repository.getRecentTaskTitlesForProjects(
+          {for (final project in suggestible) project.meta.id},
+          limitPerProject: maxHistoryTitlesPerProject,
+        );
 
-  final candidates = <ProjectMatchCandidate>[];
-  for (final (index, project) in suggestible.indexed) {
-    candidates.add(
+  final candidates = [
+    for (final project in suggestible)
       ProjectMatchCandidate(
         projectId: project.meta.id,
         title: project.data.title,
         description: project.entryText?.plainText ?? '',
-        taskTitles: [
-          for (final task in histories[index].take(maxHistoryTitlesPerProject))
-            task.data.title,
-        ],
+        taskTitles: histories[project.meta.id] ?? const [],
       ),
-    );
-  }
+  ];
   return ProjectSuggestionIndex(
     matcher: ProjectSuggestionMatcher(candidates),
     titles: {

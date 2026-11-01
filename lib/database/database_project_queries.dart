@@ -202,6 +202,67 @@ mixin _JournalDbProjectQueries
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
+  /// The titles of the [limitPerProject] most recent live tasks of each of
+  /// [projectIds], newest first, keyed by project id — a project with no
+  /// visible tasks is absent.
+  ///
+  /// Title-only and bounded in SQL: the title is read with `json_extract`
+  /// and a window function caps each project's rows, so neither the row
+  /// count nor the decoding grows with a project's history — unlike
+  /// [getTasksForProject], which decodes every task in full. Honors the
+  /// private gate, so a hidden task lends no words.
+  Future<Map<String, List<String>>> getRecentTaskTitlesForProjects(
+    Set<String> projectIds, {
+    required int limitPerProject,
+  }) async {
+    if (projectIds.isEmpty || limitPerProject <= 0) return const {};
+    final privateStatuses = await _visiblePrivateStatuses();
+    final privatePlaceholders = List.filled(
+      privateStatuses.length,
+      '?',
+    ).join(', ');
+    final idList = projectIds.toList()..sort();
+    final titles = <String, List<String>>{};
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final chunk = idList.sublist(
+        i,
+        (i + _sqliteInListChunk).clamp(0, idList.length),
+      );
+      final rows = await customSelect(
+        '''
+      SELECT project_id, title FROM (
+        SELECT
+          project_id,
+          json_extract(serialized, '\$.data.title') AS title,
+          ROW_NUMBER() OVER (
+            PARTITION BY project_id ORDER BY date_from DESC, id
+          ) AS position
+        FROM journal
+        WHERE project_id IN (${List.filled(chunk.length, '?').join(', ')})
+          AND deleted = FALSE
+          AND type = 'Task'
+          AND task = 1
+          AND private IN ($privatePlaceholders)
+      )
+      WHERE position <= ? AND title IS NOT NULL
+      ORDER BY project_id, position
+      ''',
+        variables: [
+          for (final id in chunk) Variable<String>(id),
+          for (final status in privateStatuses) Variable<bool>(status),
+          Variable<int>(limitPerProject),
+        ],
+        readsFrom: {journal},
+      ).get();
+      for (final row in rows) {
+        titles
+            .putIfAbsent(row.read<String>('project_id'), () => [])
+            .add(row.read<String>('title'));
+      }
+    }
+    return titles;
+  }
+
   // Microtask-coalescing state for `getProjectForTask`. The
   // `projectForTaskProvider` Riverpod `FutureProvider.autoDispose.family`
   // mounts one provider per visible task row, so a task list fans out one

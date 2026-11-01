@@ -93,6 +93,17 @@ class ProjectRepository {
     return _journalDb.getTasksForProject(projectId);
   }
 
+  /// The titles of each project's [limitPerProject] most recent visible
+  /// tasks, read and bounded in SQL. See
+  /// [JournalDb.getRecentTaskTitlesForProjects].
+  Future<Map<String, List<String>>> getRecentTaskTitlesForProjects(
+    Set<String> projectIds, {
+    required int limitPerProject,
+  }) => _journalDb.getRecentTaskTitlesForProjects(
+    projectIds,
+    limitPerProject: limitPerProject,
+  );
+
   /// Returns the project a task belongs to, or null if unlinked.
   ///
   /// Honors the private gate: a project hidden by it resolves to null. That is
@@ -410,9 +421,30 @@ class ProjectRepository {
         taskId: taskId,
       );
     }
+    return _linkUnlinkedTask(projectId: projectId, taskId: taskId);
+  }
 
-    // No existing link — just create the new project link.
-    //
+  /// Files a task that is in no project under [projectId]; `false` when the
+  /// task is in one — including one another device filed it under since the
+  /// caller last looked. Unlike [linkTaskToProject] it never moves a task, so
+  /// an offer to *add* an unassigned task cannot take it out of a project.
+  /// The write transaction re-reads the task's link, so a link that lands
+  /// after this check still wins.
+  Future<bool> linkUnassignedTaskToProject({
+    required String projectId,
+    required String taskId,
+  }) async {
+    final liveLinks = await _journalDb.getLiveProjectLinksForTask(taskId);
+    if (liveLinks.isNotEmpty) return false;
+    return _linkUnlinkedTask(projectId: projectId, taskId: taskId);
+  }
+
+  /// Creates the project link of a task that has none, refusing inside the
+  /// transaction if one appeared meanwhile.
+  Future<bool> _linkUnlinkedTask({
+    required String projectId,
+    required String taskId,
+  }) {
     // Wrapped in a VC scope: if [upsertEntryLink] returns 0 (no-op / unchanged
     // row) the scope releases, the burn handler broadcasts a proactive
     // `SyncBackfillResponse(unresolvable=true)`, and peers close the gap on

@@ -91,7 +91,7 @@ class _TaskProjectSuggestionActionState
     try {
       linked = await ref
           .read(projectRepositoryProvider)
-          .linkTaskToProject(
+          .linkUnassignedTaskToProject(
             projectId: suggestion.projectId,
             taskId: widget.taskId,
           );
@@ -99,8 +99,10 @@ class _TaskProjectSuggestionActionState
       linked = false;
     }
     if (linked || !mounted) return;
-    // The write was refused — the task changed category or privacy since the
-    // suggestion was computed. Say so, and give the offer back.
+    // The write was refused — since the suggestion was computed, the task
+    // changed category or privacy, or another device filed it under a
+    // project, which an offer to *add* it must not undo. Say so, and give
+    // the offer back.
     setState(() => _settledProjectId = null);
     context.showToast(
       tone: DesignSystemToastTone.error,

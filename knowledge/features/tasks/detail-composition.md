@@ -352,7 +352,7 @@ flowchart TD
   I["projectSuggestionIndexProvider<br/>(category, privacy)"] --> S
   D["taskProjectSuggestionDismissalsProvider(taskId)"] --> S
   PC["projectsForCategoryProvider"] --> I
-  R["ProjectRepository.getTasksForProject<br/>(≤ 200 titles per project)"] --> I
+  R["ProjectRepository.getRecentTaskTitlesForProjects<br/>(one query, ≤ 200 titles per project)"] --> I
   S -->|"no category, has a project,<br/>no clear match, best match dismissed,<br/>or linked behind the private gate"| N[null: nothing rendered]
   S --> O["TaskProjectSuggestion(projectId, projectTitle)"]
 ```
@@ -382,7 +382,10 @@ flowchart TD
   project the private gate hides is not unassigned.
 
 **Accept and dismiss.** A tap on the offer calls
-`ProjectRepository.linkTaskToProject`; the link's own notification makes
+`ProjectRepository.linkUnassignedTaskToProject`, not the picker's
+`linkTaskToProject`: it refuses a task that is already in a project — one sync
+filed it under after the offer was computed — instead of moving it, and its
+write transaction re-reads the link. The link's own notification makes
 `projectForTaskProvider` re-read and the crumb names the project. A refused or
 failed write shows the picker's `projectPickerUpdateFailed` toast and gives
 the offer back. Dismiss records the project in

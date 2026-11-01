@@ -1700,6 +1700,99 @@ void main() {
     );
   });
 
+  group('linkUnassignedTaskToProject', () {
+    final otherProjectLink = EntryLink.project(
+      id: 'link-other',
+      fromId: 'project-other',
+      toId: 'task-001',
+      createdAt: testDate,
+      updatedAt: testDate,
+      vectorClock: null,
+    );
+
+    setUp(() {
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+    });
+
+    test('links a task that is in no project', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.linkUnassignedTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isTrue);
+      final link =
+          verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+              as EntryLink;
+      expect((link.fromId, link.toId), ('project-001', 'task-001'));
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+
+    test('refuses a task already in another project instead of moving '
+        'it', () async {
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => otherProjectLink);
+
+      final result = await repository.linkUnassignedTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockDb.upsertEntryLink(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+
+    test('refuses when another device files the task between the check and '
+        'the write', () async {
+      var reads = 0;
+      when(() => mockDb.getProjectLinkForTask('task-001')).thenAnswer(
+        (_) async => reads++ == 0 ? null : otherProjectLink,
+      );
+
+      final result = await repository.linkUnassignedTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      expect(reads, greaterThan(1));
+      verifyNever(() => mockDb.upsertEntryLink(any()));
+    });
+  });
+
+  test('getRecentTaskTitlesForProjects reads the bounded titles', () async {
+    when(
+      () => mockDb.getRecentTaskTitlesForProjects(
+        {'project-001'},
+        limitPerProject: 7,
+      ),
+    ).thenAnswer(
+      (_) async => {
+        'project-001': ['Draft agenda'],
+      },
+    );
+
+    expect(
+      await repository.getRecentTaskTitlesForProjects(
+        {'project-001'},
+        limitPerProject: 7,
+      ),
+      {
+        'project-001': ['Draft agenda'],
+      },
+    );
+  });
+
   group('unlinkTaskFromProject', () {
     test(
       'conditional cleanup removes only a currently mismatched membership',

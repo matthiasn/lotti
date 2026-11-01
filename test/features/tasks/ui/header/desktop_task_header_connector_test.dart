@@ -1737,8 +1737,11 @@ void main() {
         () => projectRepo.getProjectsForCategory('cat-1'),
       ).thenAnswer((_) async => [work, home]);
       when(
-        () => projectRepo.getTasksForProject(any()),
-      ).thenAnswer((_) async => const []);
+        () => projectRepo.getRecentTaskTitlesForProjects(
+          any(),
+          limitPerProject: any(named: 'limitPerProject'),
+        ),
+      ).thenAnswer((_) async => const {});
       when(
         () => projectRepo.getProjectForTask('task-1'),
       ).thenAnswer((_) async => null);
@@ -1782,7 +1785,7 @@ void main() {
       'the project instead of offering it',
       (tester) async {
         when(
-          () => projectRepo.linkTaskToProject(
+          () => projectRepo.linkUnassignedTaskToProject(
             projectId: 'work',
             taskId: 'task-1',
           ),
@@ -1800,7 +1803,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         verify(
-          () => projectRepo.linkTaskToProject(
+          () => projectRepo.linkUnassignedTaskToProject(
             projectId: 'work',
             taskId: 'task-1',
           ),
@@ -1823,7 +1826,7 @@ void main() {
         expect(offer(), findsNothing);
         expect(find.text('No project'), findsOneWidget);
         verifyNever(
-          () => projectRepo.linkTaskToProject(
+          () => projectRepo.linkUnassignedTaskToProject(
             projectId: any(named: 'projectId'),
             taskId: any(named: 'taskId'),
           ),

@@ -48,7 +48,7 @@ void main() {
 
   void stubLink(Future<bool> Function() answer) {
     when(
-      () => repository.linkTaskToProject(
+      () => repository.linkUnassignedTaskToProject(
         projectId: any(named: 'projectId'),
         taskId: any(named: 'taskId'),
       ),
@@ -119,7 +119,10 @@ void main() {
     await tester.pump();
 
     verify(
-      () => repository.linkTaskToProject(projectId: 'work', taskId: _taskId),
+      () => repository.linkUnassignedTaskToProject(
+        projectId: 'work',
+        taskId: _taskId,
+      ),
     ).called(1);
     expect(offer(), findsNothing);
 
@@ -164,7 +167,7 @@ void main() {
 
     expect(offer(), findsNothing);
     verifyNever(
-      () => repository.linkTaskToProject(
+      () => repository.linkUnassignedTaskToProject(
         projectId: any(named: 'projectId'),
         taskId: any(named: 'taskId'),
       ),
