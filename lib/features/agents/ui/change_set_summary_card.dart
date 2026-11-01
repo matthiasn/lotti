@@ -4,12 +4,8 @@ import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart'
-    show
-        eventChangeSetConfirmationServiceProvider,
-        eventPendingChangeSetsProvider,
-        selfTargetedPendingChangeSetsProvider;
+    show selfTargetedPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -23,57 +19,34 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Whether the card surfaces an event agent's or a goal agent's proposals.
-enum _ChangeSetScope { event, goal }
-
-/// Displays pending change sets for an event agent or a self-targeted (goal)
-/// agent, allowing the user to confirm or reject individual items via swipe
-/// gestures or buttons.
+/// Displays pending change sets for a self-targeted (goal) agent, allowing
+/// the user to confirm or reject individual items via swipe gestures or
+/// buttons.
 ///
 /// Renders nothing when no pending change sets exist. Task-level
-/// suggestions are rendered by `AiSummaryCard`, and project recommendations
-/// by `ProjectRecommendationsPanel`; both go through their own surfaces.
+/// suggestions are rendered by `AiSummaryCard`, an event agent's inside its
+/// recap card (`EventSuggestionsBand`), and project recommendations by
+/// `ProjectRecommendationsPanel`; each goes through its own surface.
 class ChangeSetSummaryCard extends ConsumerWidget {
-  const ChangeSetSummaryCard.event({
-    required String eventId,
-    super.key,
-  }) : _targetId = eventId,
-       _scope = _ChangeSetScope.event,
-       _customConfirmationProvider = null;
-
   /// Self-targeted agents (goal agents today): the pending sets are the
   /// agent's OWN proposals (`taskId == agentId`). The confirmation
   /// service is passed in because the owning feature defines it — this
   /// file must not import feature plug-ins (the runtime-registry
   /// direction: `features/agents` never imports goals).
   const ChangeSetSummaryCard.selfTargeted({
-    required String agentId,
-    required Provider<ChangeSetConfirmationService> confirmationProvider,
+    required this._agentId,
+    required this._confirmationProvider,
     super.key,
-  }) : _targetId = agentId,
-       _scope = _ChangeSetScope.goal,
-       _customConfirmationProvider = confirmationProvider;
+  });
 
-  final String _targetId;
-  final _ChangeSetScope _scope;
-  final Provider<ChangeSetConfirmationService>? _customConfirmationProvider;
-
-  Provider<ChangeSetConfirmationService> get _confirmationProvider =>
-      switch (_scope) {
-        _ChangeSetScope.event => eventChangeSetConfirmationServiceProvider,
-        _ChangeSetScope.goal => _customConfirmationProvider!,
-      };
+  final String _agentId;
+  final Provider<ChangeSetConfirmationService> _confirmationProvider;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final changeSetsAsync = switch (_scope) {
-      _ChangeSetScope.event => ref.watch(
-        eventPendingChangeSetsProvider(_targetId),
-      ),
-      _ChangeSetScope.goal => ref.watch(
-        selfTargetedPendingChangeSetsProvider(_targetId),
-      ),
-    };
+    final changeSetsAsync = ref.watch(
+      selfTargetedPendingChangeSetsProvider(_agentId),
+    );
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     // The card pops between empty (SizedBox.shrink) and a full proposals stack,
@@ -387,31 +360,6 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     );
   }
 
-  /// The line under a proposal: why it is proposed where the proposal says,
-  /// never the raw tool id where a reader faces it.
-  ///
-  /// Goal and event proposals face non-technical review — a tool id there
-  /// would leak the wire vocabulary into every locale. (Literal spelling for
-  /// goals: features/agents must not import goals.) A person suggestion shows
-  /// the words that named them, a follow-up its notes, and either shows
-  /// nothing without them. Other proposals keep the tool id.
-  String? _subtitle(BuildContext context) {
-    String? quoted(Object? value) =>
-        value is String && value.trim().isNotEmpty ? value.trim() : null;
-    return switch (_item.toolName) {
-      'propose_goal_revision' ||
-      'propose_goal_revision_v2' => context.messages.agentToolGoalRevisionLabel,
-      EventAgentToolNames.suggestPerson => switch (quoted(
-        _item.args[EventAgentPersonToolArgs.mention],
-      )) {
-        final mention? => '“$mention”',
-        null => null,
-      },
-      EventAgentToolNames.suggestFollowUpTask => quoted(_item.args['notes']),
-      _ => _item.toolName,
-    };
-  }
-
   Widget _buildPendingTile(BuildContext context) {
     if (_item.toolName == TaskAgentToolNames.createTimeEntry) {
       return _buildTimeEntryTile(context);
@@ -431,15 +379,18 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
             _item.humanSummary,
         style: context.textTheme.bodyMedium,
       ),
-      subtitle: switch (_subtitle(context)) {
-        final subtitle? => Text(
-          subtitle,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
+      subtitle: Text(
+        // Goal proposals face non-technical review — a raw tool id would
+        // leak the wire vocabulary into every locale. (Literal spelling:
+        // features/agents must not import goals.)
+        (_item.toolName == 'propose_goal_revision' ||
+                _item.toolName == 'propose_goal_revision_v2')
+            ? context.messages.agentToolGoalRevisionLabel
+            : _item.toolName,
+        style: context.textTheme.bodySmall?.copyWith(
+          color: context.colorScheme.onSurfaceVariant,
         ),
-        null => null,
-      },
+      ),
       trailing: _busy
           ? const SizedBox(
               width: 20,

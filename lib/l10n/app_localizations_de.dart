@@ -1100,12 +1100,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return '$name zu „Wer war dabei“ hinzufügen';
+    return '$name war dabei';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Jemanden zu „Wer war dabei“ hinzufügen';
+  String get agentSummarySuggestPersonUnnamed => 'Jemand war dabei';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

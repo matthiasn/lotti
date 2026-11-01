@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/ai/backfill/inference_backfill.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:material_ui/material_ui.dart';
@@ -39,7 +40,10 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
   }
   switch (toolName) {
     case 'create_and_link_task':
+    case EventAgentToolNames.suggestFollowUpTask:
       return ProposalKind.task;
+    case EventAgentToolNames.suggestPerson:
+      return ProposalKind.add;
     case TaskAgentToolNames.addMultipleChecklistItems:
     case TaskAgentToolNames.addChecklistItem:
     case TaskAgentToolNames.createFollowUpTask:

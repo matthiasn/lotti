@@ -1087,12 +1087,11 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return 'Tilføj $name til dem, der var med';
+    return '$name var med';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Tilføj en person til dem, der var med';
+  String get agentSummarySuggestPersonUnnamed => 'Nogen var med';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

@@ -1099,12 +1099,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return 'Añadir a $name a quién estuvo';
+    return '$name estuvo allí';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Añadir a alguien a quién estuvo';
+  String get agentSummarySuggestPersonUnnamed => 'Alguien estuvo allí';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

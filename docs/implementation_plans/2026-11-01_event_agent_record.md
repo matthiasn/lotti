@@ -35,7 +35,7 @@ timeline Goals and People share (`DesignSystemTimelineRow`).
 | `EventStarRating` | `lib/features/events/ui/widgets/event_star_rating.dart` | 0–5 stars, per-star hover, half stars on long press | — |
 | `EventAiSummaryCard` | `lib/features/events/ui/widgets/event_ai_summary_card.dart` | The agent's TLDR, *Read more*, *Update now*; awaiting/error states | The task agent's card: `AgentSummaryCardSurface`, `TldrHeader`, `TldrBody`, compact `AgentAutomationRow` |
 | `EventPassiveSummaryCard` | `lib/features/events/ui/widgets/event_passive_summary_card.dart` | The event note when no agent is attached | Plain section card with a plain `TldrHeader` |
-| `ChangeSetSummaryCard.event` | `lib/features/agents/ui/change_set_summary_card.dart` | Accept/reject the agent's follow-up-task proposals | Shared with tasks |
+| `EventSuggestionsBand` | `lib/features/events/ui/widgets/event_suggestions_band.dart` | Accept/reject the agent's proposals (follow-ups, people) inside its card | The task card's `ProposalsSection`/`ProposalRow` |
 | `EventPhotoGrid` + gallery viewer | `lib/features/events/ui/widgets/event_photo_gallery.dart` | Flat photo wall; full-screen viewer with Set cover | Events only |
 | `EventTimeline` + `EventTimelinePhotoBand` | `lib/features/events/ui/widgets/event_timeline.dart` | Linked photos, notes, recordings and recorded time as rows | The goal and person row: `DesignSystemTimelineRow`, `DesignSystemTimelineTile`, `DsTieredText`, `FoldedWords`, `RecordingPlayback` + `RecordingTranscript`; the photo band is the event's own footer |
 | `EntryActionBar` | `lib/features/journal/ui/widgets/entry_action_bar.dart` | Sticky bar: Add a task · record · Add sheet | Same bar as the entry page; stays |

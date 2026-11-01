@@ -1101,12 +1101,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return 'Adăugați pe $name la cei prezenți';
+    return '$name a fost acolo';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Adăugați pe cineva la cei prezenți';
+  String get agentSummarySuggestPersonUnnamed => 'Cineva a fost acolo';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

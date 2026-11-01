@@ -1909,16 +1909,16 @@ abstract class AppLocalizations {
   /// **'Suggest a follow-up task'**
   String get agentSummarySuggestFollowUpTask;
 
-  /// A suggestion row on an event: the event agent proposes adding this person, named in the event's notes or voice memos, to who was there.
+  /// A suggestion row on an event, after its Add kind chip: the event agent proposes this person, named in the event's notes or voice memos, as one who was there.
   ///
   /// In en, this message translates to:
-  /// **'Add {name} to who was there'**
+  /// **'{name} was there'**
   String agentSummarySuggestPerson(Object name);
 
   /// A person suggestion row on an event whose person name is missing.
   ///
   /// In en, this message translates to:
-  /// **'Add someone to who was there'**
+  /// **'Someone was there'**
   String get agentSummarySuggestPersonUnnamed;
 
   /// No description provided for @agentSummaryTimeEntry.

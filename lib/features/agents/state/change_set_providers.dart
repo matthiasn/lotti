@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
@@ -93,24 +94,49 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
       return deduplicateChangeSets(sets);
     });
 
-/// Fetches pending (and partially resolved) change sets for a given event.
-final FutureProviderFamily<List<AgentDomainEntity>, String>
-eventPendingChangeSetsProvider = FutureProvider.autoDispose
-    .family<List<AgentDomainEntity>, String>((ref, eventId) async {
+/// The event agent's proposals for an event, in the task card's shape: the
+/// open rows (one per pending item, a repeat of the same proposal shown once)
+/// and the resolved ledger for the history band. Empty without an agent.
+///
+/// Read from the proposal ledger, as the task and relationship rows are, so
+/// the event card renders them with the same `ProposalsSection` and
+/// `ProposalRow`. Event-targeted change sets keep their event id in the
+/// historical `taskId` field, as project-targeted ones do.
+final FutureProviderFamily<UnifiedSuggestionList, String>
+eventSuggestionListProvider = FutureProvider.autoDispose
+    .family<UnifiedSuggestionList, String>((ref, eventId) async {
       final agent = await ref.watch(eventAgentProvider(eventId).future);
       final identity = agent?.mapOrNull(agent: (a) => a);
-      if (identity == null) return [];
+      if (identity == null) return const UnifiedSuggestionList.empty();
 
       ref.watch(agentUpdateStreamProvider(identity.agentId));
 
-      final repo = ref.watch(agentRepositoryProvider);
-      // Event-targeted change sets persist their target entity ID in the
-      // historical `taskId` field, same as project-targeted sets.
-      final sets = await repo.getPendingChangeSets(
-        identity.agentId,
-        taskId: eventId,
+      final ledger = await ref
+          .watch(agentRepositoryProvider)
+          .getProposalLedger(identity.agentId, taskId: eventId);
+      final seen = <String>{};
+      final open = <PendingSuggestion>[];
+      for (final set in ledger.pendingSets) {
+        for (var index = 0; index < set.items.length; index++) {
+          final item = set.items[index];
+          if (item.status != ChangeItemStatus.pending) continue;
+          final fingerprint = ChangeItem.fingerprint(item);
+          if (!seen.add(fingerprint)) continue;
+          open.add(
+            PendingSuggestion(
+              changeSet: set,
+              itemIndex: index,
+              item: item,
+              fingerprint: fingerprint,
+            ),
+          );
+        }
+      }
+      return UnifiedSuggestionList(
+        open: open,
+        activity: ledger.resolved,
+        agentName: identity.displayName,
       );
-      return deduplicateChangeSets(sets);
     });
 
 /// Pending change sets an agent targets at ITSELF (`taskId == agentId`) —

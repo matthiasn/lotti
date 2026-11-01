@@ -7,6 +7,7 @@ import 'package:lotti/classes/agents/agent_constants.dart';
 import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/agents/change_set.dart';
+import 'package:lotti/classes/agents/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/project_proposal_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
@@ -473,216 +474,116 @@ void main() {
     }
   });
 
-  group('eventPendingChangeSetsProvider', () {
-    test('returns empty list when no agent exists for event', () async {
+  group('eventSuggestionListProvider', () {
+    test('is empty, reading no ledger, when the event has no agent', () async {
       final container = createEventAgentContainer(
         eventId: 'event-001',
-        listenTo: eventPendingChangeSetsProvider('event-001'),
+        listenTo: eventSuggestionListProvider('event-001'),
       );
 
       final result = await container.read(
-        eventPendingChangeSetsProvider('event-001').future,
+        eventSuggestionListProvider('event-001').future,
       );
 
-      expect(result, isEmpty);
+      expect(result.open, isEmpty);
+      expect(result.activity, isEmpty);
       verifyNever(
-        () => mockRepository.getPendingChangeSets(
+        () => mockRepository.getProposalLedger(
           any(),
           taskId: any(named: 'taskId'),
         ),
       );
     });
 
-    test(
-      'returns empty list when event agent is not an identity entity',
-      () async {
-        final container = createEventAgentContainer(
-          eventId: 'event-001',
-          agent: makeTestState(),
-          listenTo: eventPendingChangeSetsProvider('event-001'),
-        );
-
-        final result = await container.read(
-          eventPendingChangeSetsProvider('event-001').future,
-        );
-
-        expect(result, isEmpty);
-        verifyNever(
-          () => mockRepository.getPendingChangeSets(
-            any(),
-            taskId: any(named: 'taskId'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'fetches event change sets keyed on the event id (the taskId field)',
-      () async {
-        final agent = makeTestIdentity();
-        final changeSet = makeTestChangeSet(
-          agentId: agent.agentId,
-          taskId: 'event-001',
-        );
-
-        when(
-          () => mockRepository.getPendingChangeSets(
-            agent.agentId,
-            taskId: 'event-001',
-          ),
-        ).thenAnswer((_) async => [changeSet]);
-
-        final updateController = StreamController<Set<String>>.broadcast();
-        addTearDown(updateController.close);
-
-        final container = createEventAgentContainer(
-          eventId: 'event-001',
-          agent: agent,
-          updateController: updateController,
-          listenTo: eventPendingChangeSetsProvider('event-001'),
-        );
-
-        final result = await container.read(
-          eventPendingChangeSetsProvider('event-001').future,
-        );
-
-        expect(result, hasLength(1));
-        expect(result.single, isA<ChangeSetEntity>());
-        expect((result.single as ChangeSetEntity).taskId, 'event-001');
-
-        verify(
-          () => mockRepository.getPendingChangeSets(
-            agent.agentId,
-            taskId: 'event-001',
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'deduplicates duplicate pending change sets, keeping the newest',
-      () async {
-        final agent = makeTestIdentity();
-        // Same single pending item in both sets => identical fingerprint, so
-        // the dedup must collapse them down to the newer of the two.
-        const followUp = ChangeItem(
-          toolName: 'suggest_follow_up_task',
-          args: {'title': 'Send the recap'},
-          humanSummary: 'Suggest follow-up task',
-        );
-        final older = makeTestChangeSet(
-          id: 'cs-older',
-          agentId: agent.agentId,
-          taskId: 'event-001',
-          items: const [followUp],
-          createdAt: DateTime(2026, 3, 15, 9),
-        );
-        final newer = makeTestChangeSet(
-          id: 'cs-newer',
-          agentId: agent.agentId,
-          taskId: 'event-001',
-          items: const [followUp],
-          createdAt: DateTime(2026, 3, 15, 10),
-        );
-        // A resolved set (no pending items) is keyed by its own id, so it must
-        // survive dedup alongside the surviving duplicate.
-        final resolved = makeTestChangeSet(
-          id: 'cs-resolved',
-          agentId: agent.agentId,
-          taskId: 'event-001',
-          status: ChangeSetStatus.resolved,
-          items: const [
-            ChangeItem(
-              toolName: 'suggest_follow_up_task',
-              args: {'title': 'Already handled'},
-              humanSummary: 'Resolved follow-up',
-              status: ChangeItemStatus.confirmed,
-            ),
-          ],
-          createdAt: DateTime(2026, 3, 15, 8),
-        );
-
-        when(
-          () => mockRepository.getPendingChangeSets(
-            agent.agentId,
-            taskId: 'event-001',
-          ),
-        ).thenAnswer((_) async => [older, newer, resolved]);
-
-        final updateController = StreamController<Set<String>>.broadcast();
-        addTearDown(updateController.close);
-
-        final container = createEventAgentContainer(
-          eventId: 'event-001',
-          agent: agent,
-          updateController: updateController,
-          listenTo: eventPendingChangeSetsProvider('event-001'),
-        );
-
-        final result = await container.read(
-          eventPendingChangeSetsProvider('event-001').future,
-        );
-
-        final ids = result.map((e) => e.id).toSet();
-        expect(result, hasLength(2));
-        expect(ids, containsAll(<String>['cs-newer', 'cs-resolved']));
-        expect(ids, isNot(contains('cs-older')));
-      },
-    );
-
-    test('keeps change sets with distinct fingerprints intact', () async {
-      final agent = makeTestIdentity();
-      final estimateSet = makeTestChangeSet(
-        id: 'cs-estimate',
-        agentId: agent.agentId,
-        taskId: 'event-001',
-        items: const [
-          ChangeItem(
-            toolName: 'update_task_estimate',
-            args: {'minutes': 30},
-            humanSummary: 'Set estimate',
-          ),
-        ],
+    test('is empty when the event agent is not an identity entity', () async {
+      final container = createEventAgentContainer(
+        eventId: 'event-001',
+        agent: makeTestState(),
+        listenTo: eventSuggestionListProvider('event-001'),
       );
-      final followUpSet = makeTestChangeSet(
-        id: 'cs-follow-up',
+
+      final result = await container.read(
+        eventSuggestionListProvider('event-001').future,
+      );
+
+      expect(result.open, isEmpty);
+      verifyNever(
+        () => mockRepository.getProposalLedger(
+          any(),
+          taskId: any(named: 'taskId'),
+        ),
+      );
+    });
+
+    test('reads the ledger keyed on the event id: pending items become rows, '
+        'a repeat shows once, the resolved ones are the history', () async {
+      final agent = makeTestIdentity(displayName: 'Gala recap');
+      const person = ChangeItem(
+        toolName: 'suggest_person',
+        args: {'personId': 'pip', 'personName': 'Pip Penguin'},
+        humanSummary: 'Add Pip Penguin to the event',
+      );
+      final first = makeTestChangeSet(
+        id: 'cs-1',
         agentId: agent.agentId,
         taskId: 'event-001',
         items: const [
+          person,
           ChangeItem(
             toolName: 'suggest_follow_up_task',
-            args: {'title': 'Draft summary'},
-            humanSummary: 'Suggest follow-up',
+            args: {'title': 'Share the album'},
+            humanSummary: 'Follow-up task: Share the album',
+            status: ChangeItemStatus.confirmed,
           ),
         ],
       );
-
+      // The same suggestion again from a later wake: shown once.
+      final repeat = makeTestChangeSet(
+        id: 'cs-2',
+        agentId: agent.agentId,
+        taskId: 'event-001',
+        items: const [person],
+      );
+      final resolved = makeLedgerEntry(
+        changeSetId: 'cs-1',
+        itemIndex: 1,
+        toolName: 'suggest_follow_up_task',
+        status: ChangeItemStatus.confirmed,
+      );
       when(
-        () => mockRepository.getPendingChangeSets(
+        () => mockRepository.getProposalLedger(
           agent.agentId,
           taskId: 'event-001',
         ),
-      ).thenAnswer((_) async => [estimateSet, followUpSet]);
+      ).thenAnswer(
+        (_) async => ProposalLedger(
+          open: const [],
+          resolved: [resolved],
+          pendingSets: [first, repeat],
+        ),
+      );
 
       final updateController = StreamController<Set<String>>.broadcast();
       addTearDown(updateController.close);
-
       final container = createEventAgentContainer(
         eventId: 'event-001',
         agent: agent,
         updateController: updateController,
-        listenTo: eventPendingChangeSetsProvider('event-001'),
+        listenTo: eventSuggestionListProvider('event-001'),
       );
 
       final result = await container.read(
-        eventPendingChangeSetsProvider('event-001').future,
+        eventSuggestionListProvider('event-001').future,
       );
 
-      // Distinct fingerprints => both sets survive dedup untouched.
-      expect(result.map((e) => e.id).toSet(), <String>{
-        'cs-estimate',
-        'cs-follow-up',
-      });
+      expect(result.open, hasLength(1));
+      final row = result.open.single;
+      expect(row.changeSet.id, 'cs-1');
+      expect(row.itemIndex, 0);
+      expect(row.item.toolName, 'suggest_person');
+      expect(row.fingerprint, ChangeItem.fingerprint(person));
+      expect(result.activity, [resolved]);
+      expect(result.agentName, 'Gala recap');
     });
   });
 

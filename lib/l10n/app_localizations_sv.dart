@@ -1095,12 +1095,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return 'Lägg till $name bland dem som var där';
+    return '$name var där';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Lägg till någon bland dem som var där';
+  String get agentSummarySuggestPersonUnnamed => 'Någon var där';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

@@ -669,14 +669,14 @@
     }
   },
   "agentSummarySuggestFollowUpTask": "Suggest a follow-up task",
-  "agentSummarySuggestPerson": "Add {name} to who was there",
+  "agentSummarySuggestPerson": "{name} was there",
   "@agentSummarySuggestPerson": {
-    "description": "A suggestion row on an event: the event agent proposes adding this person, named in the event's notes or voice memos, to who was there.",
+    "description": "A suggestion row on an event, after its Add kind chip: the event agent proposes this person, named in the event's notes or voice memos, as one who was there.",
     "placeholders": {
       "name": {}
     }
   },
-  "agentSummarySuggestPersonUnnamed": "Add someone to who was there",
+  "agentSummarySuggestPersonUnnamed": "Someone was there",
   "@agentSummarySuggestPersonUnnamed": {
     "description": "A person suggestion row on an event whose person name is missing."
   },

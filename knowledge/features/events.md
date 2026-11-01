@@ -183,7 +183,13 @@ stands in for it.
 radius, with no shadow — in the task card's reading order: `TldrHeader` (the
 agent's name opens `AgentInternalsPanel`), `TldrBody` with *Read more* for the
 full recap, then the compact `AgentAutomationRow` whose *Update now* re-wakes
-the agent through `EventAgentService.triggerReanalysis`. Before the first recap
+the agent through `EventAgentService.triggerReanalysis`. The agent's open
+proposals follow inside the same surface: `EventSuggestionsBand` reads
+`eventSuggestionListProvider` (pending items deduped, the proposal ledger as
+history) and renders the task card's `ProposalsSection` and `ProposalRow` —
+kind chip, sentence, the words it came from, ✕/✓ and *Confirm all* — through
+the event's `ChangeSetConfirmationService`; the history shows only with
+*Read more*. Before the first recap
 the body is the awaiting hint; a failed load says so instead; a first load in
 flight shows the header alone. Without an agent, the passive summary (the
 event note or the newest linked AI response) sits on the plain
@@ -325,8 +331,8 @@ flowchart LR
   shows what was stored.
 - **Suggested.** Name someone in a note or a voice memo and the event
   agent can suggest adding them: it looks them up among the People with
-  `list_people` and proposes `suggest_person`, a row under the recap to
-  confirm or dismiss — confirming writes the same link the chip would (see
+  `list_people` and proposes `suggest_person`, a row inside the agent's
+  card to confirm or dismiss — confirming writes the same link the chip would (see
   [project and event agents](agents/project-and-event-agents.md#suggesting-who-was-there)).
   A dismissed person is not suggested for that event again.
 - **Recap.** `EventAgentContextBuilder` lists the people first in the

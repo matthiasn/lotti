@@ -634,11 +634,11 @@ void main() {
           'personId': 'pip',
           'personName': ' Pip Penguin ',
         }),
-        'Add Pip Penguin to who was there',
+        'Pip Penguin was there',
       );
       expect(
         summary(EventAgentToolNames.suggestPerson, {'personId': 'pip'}),
-        'Add someone to who was there',
+        'Someone was there',
       );
     });
   });

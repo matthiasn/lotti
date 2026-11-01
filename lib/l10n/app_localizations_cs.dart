@@ -1092,12 +1092,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentSummarySuggestPerson(Object name) {
-    return 'Přidat $name k těm, kdo tam byli';
+    return '$name tam byl/a';
   }
 
   @override
-  String get agentSummarySuggestPersonUnnamed =>
-      'Přidat někoho k těm, kdo tam byli';
+  String get agentSummarySuggestPersonUnnamed => 'Někdo tam byl';
 
   @override
   String agentSummaryTimeEntry(Object range, Object summary) {

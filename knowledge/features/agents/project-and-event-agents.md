@@ -645,7 +645,7 @@ queuing it, so an id the model made up, or a person already with the event
 agent's change sets for the event), or dismissed (a rejected
 `ChangeDecision` for the event) never reaches the user — a dismissal is
 never re-proposed. A queued suggestion carries the person's name for the row,
-which renders "Add Pip Penguin to who was there" in the reader's language, with
+which renders "Add · Pip Penguin was there" in the reader's language, with
 the quoted words that named them under it. On confirm, `EventToolDispatcher`
 writes the person → event `RelationshipLink` through `ensureLink`, so two
 devices confirming, or a re-run after a crash, write one link; it refuses
@@ -657,7 +657,7 @@ person appears there and the event on their timeline.
 
 Deferred: `suggest_follow_up_task` — proposes a concrete follow-up the event
 implies. It accumulates as a pending `ChangeSet` keyed by the event id, surfaces
-on the detail page as an accept/reject row, and on accept is applied by
+inside the event agent's card as a ✓/✕ row, and on accept is applied by
 `EventToolDispatcher`, which creates a follow-up task linked to the event and
 inheriting its category and default profile. Rejection only records the decision.
 
