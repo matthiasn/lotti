@@ -148,6 +148,11 @@ void main() {
     TaskAgentToolNames.resolveAttentionRequest,
     TaskAgentToolNames.getCategoryProjects,
     TaskAgentToolNames.setTaskProject,
+  ];
+
+  /// The pull request tools: withheld on every wake, flag or not, when the
+  /// task gives them nothing to work on.
+  const pullRequestToolNames = <String>[
     TaskAgentToolNames.getUnlinkedPullRequests,
     TaskAgentToolNames.linkPullRequest,
     TaskAgentToolNames.refreshPullRequests,
@@ -157,12 +162,16 @@ void main() {
     test('advertises every gated tool when narrowToolSurface is off', () async {
       // The shipped wake: nothing about the task is true — no checklist, no
       // timer, no labels, no proposals, no claims — and it still gets the
-      // whole registry, including `update_report` on the opening turn.
+      // whole registry, including `update_report` on the opening turn. Only
+      // the pull request tools are gone: the task has no repository.
       final bench = createTaskAgentWorkflowTestBench();
 
       final perTurn = await exposedToolNamesPerTurn(bench);
 
       expect(perTurn.first.handedOver, containsAll(gatedToolNames));
+      for (final name in pullRequestToolNames) {
+        expect(perTurn.first.handedOver, isNot(contains(name)));
+      }
       expect(
         perTurn.first.handedOver,
         contains(TaskAgentToolNames.updateReport),
@@ -374,29 +383,68 @@ void main() {
       },
     );
 
-    test(
-      'withholds the list and link tools without a repository and token, '
-      'or unwired',
-      () async {
-        for (final links in [_Links(canList: false), null]) {
-          final bench = createTaskAgentWorkflowTestBench(
-            narrowToolSurface: true,
-            pullRequestLinks: links,
-          );
+    test('offers the pull request tools with the flag off once the task has '
+        'a repository and a linked pull request', () async {
+      final bench = createTaskAgentWorkflowTestBench(
+        pullRequestLinks: _Links(canList: true),
+      );
+      when(() => bench.mockJournalDb.getLinkedEntities(taskId)).thenAnswer(
+        (_) async => <JournalEntity>[
+          prEntry(clock: {'a': 1}, snapshot: prSnapshot()),
+        ],
+      );
 
-          final perTurn = await exposedToolNamesPerTurn(bench);
+      final perTurn = await exposedToolNamesPerTurn(bench);
 
-          expect(
-            perTurn.first.handedOver,
-            isNot(contains(TaskAgentToolNames.getUnlinkedPullRequests)),
-          );
-          expect(
-            perTurn.first.handedOver,
-            isNot(contains(TaskAgentToolNames.linkPullRequest)),
-          );
-        }
-      },
-    );
+      expect(perTurn.first.handedOver, containsAll(pullRequestToolNames));
+    });
+
+    for (final narrowToolSurface in [false, true]) {
+      test(
+        'withholds the list and link tools without a repository and token, '
+        'or unwired (narrowToolSurface: $narrowToolSurface)',
+        () async {
+          for (final links in [_Links(canList: false), null]) {
+            final bench = createTaskAgentWorkflowTestBench(
+              narrowToolSurface: narrowToolSurface,
+              pullRequestLinks: links,
+            );
+
+            final perTurn = await exposedToolNamesPerTurn(bench);
+
+            expect(
+              perTurn.first.handedOver,
+              isNot(contains(TaskAgentToolNames.getUnlinkedPullRequests)),
+            );
+            expect(
+              perTurn.first.handedOver,
+              isNot(contains(TaskAgentToolNames.linkPullRequest)),
+            );
+          }
+        },
+      );
+    }
+
+    test('withholds refresh_pull_requests when the links cannot be read, and '
+        'the wake goes on', () async {
+      final bench = createTaskAgentWorkflowTestBench(
+        pullRequestLinks: _Links(canList: true),
+      );
+      when(
+        () => bench.mockJournalDb.getLinkedEntities(taskId),
+      ).thenThrow(Exception('links unreadable'));
+
+      final perTurn = await exposedToolNamesPerTurn(bench);
+
+      expect(
+        perTurn.first.handedOver,
+        isNot(contains(TaskAgentToolNames.refreshPullRequests)),
+      );
+      expect(
+        perTurn.first.handedOver,
+        contains(TaskAgentToolNames.getUnlinkedPullRequests),
+      );
+    });
 
     test('withholds the list and link tools when the check throws, and the '
         'wake goes on', () async {
