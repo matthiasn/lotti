@@ -6944,9 +6944,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsRecapUnavailable => 'Rezumatul nu a putut fi încărcat.';
 
   @override
-  String get eventsRegenerateSummary => 'Regenerează rezumatul';
-
-  @override
   String get eventsSearchHint => 'Căutați evenimente';
 
   @override

@@ -6839,9 +6839,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get eventsRecapUnavailable => 'Kunde inte ladda sammanfattningen.';
 
   @override
-  String get eventsRegenerateSummary => 'Regenereringssammanfattning';
-
-  @override
   String get eventsSearchHint => 'Sök evenemang';
 
   @override

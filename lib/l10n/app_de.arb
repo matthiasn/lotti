@@ -2838,7 +2838,6 @@
   "eventsRatingStarLabel": "{starIndex} von {totalStars} Sternen vergeben",
   "eventsRecapAwaitingContent": "Füge ein Foto oder eine Notiz hinzu, dann erscheint hier die Zusammenfassung.",
   "eventsRecapUnavailable": "Die Zusammenfassung konnte nicht geladen werden.",
-  "eventsRegenerateSummary": "Zusammenfassung neu erstellen",
   "eventsSearchHint": "Ereignisse suchen",
   "eventsSectionUpcoming": "Bevorstehend",
   "eventsStatusCancelled": "Abgesagt",

@@ -496,14 +496,11 @@ void main() {
       );
 
       testWidgets(
-        'isEnhanced draws the two-layer shadow instead of the standard one',
+        'draws one soft, close shadow — no spread, no deep drop',
         (tester) async {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
-              const ModernBaseCard(
-                isEnhanced: true,
-                child: Text('Enhanced'),
-              ),
+              const ModernBaseCard(child: Text('Card')),
               theme: ThemeData.dark(),
             ),
           );
@@ -513,39 +510,31 @@ void main() {
             find.byType(Container).first,
           );
           final decoration = container.decoration! as BoxDecoration;
-          // The enhanced treatment layers two shadows; the standard card
-          // draws exactly one.
-          expect(decoration.boxShadow, hasLength(2));
+          final shadow = decoration.boxShadow!.single;
+          // A spread shadow pushed far down read as a grey slab under the
+          // card; the one shadow left sits close and never spreads.
+          expect(shadow.spreadRadius, 0);
+          expect(shadow.offset.dy, lessThanOrEqualTo(1));
+          expect(shadow.blurRadius, lessThanOrEqualTo(4));
         },
       );
 
-      testWidgets(
-        'EnhancedModernCard wraps ModernBaseCard with the enhanced treatment '
-        'and forwards taps',
-        (tester) async {
-          var tapped = 0;
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              EnhancedModernCard(
-                onTap: () => tapped++,
-                child: const Text('Enhanced wrapper'),
-              ),
-              theme: ThemeData.dark(),
+      testWidgets('customShadows replaces the default shadow', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const ModernBaseCard(
+              customShadows: [],
+              child: Text('Flat'),
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          final baseCard = tester.widget<ModernBaseCard>(
-            find.byType(ModernBaseCard),
-          );
-          expect(baseCard.isEnhanced, isTrue);
-          expect(baseCard.gradient, isNotNull);
-
-          await tester.tap(find.text('Enhanced wrapper'));
-          await tester.pump();
-          expect(tapped, 1);
-        },
-      );
+        final container = tester.widget<Container>(
+          find.byType(Container).first,
+        );
+        expect((container.decoration! as BoxDecoration).boxShadow, isEmpty);
+      });
 
       testWidgets(
         'unselected card renders under a theme without design tokens',

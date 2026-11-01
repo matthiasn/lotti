@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
+import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
@@ -162,7 +164,9 @@ void main() {
       expect(find.text('Ongoing'), findsOneWidget);
     });
 
-    testWidgets('renders the meta line and AI summary card', (tester) async {
+    testWidgets('renders the meta line and the passive summary', (
+      tester,
+    ) async {
       await pumpEventScreen(
         tester,
         EventDetailView(data: buildEventDetailData()),
@@ -174,7 +178,6 @@ void main() {
         find.text('A surprise 30th for Anna on the rooftop.'),
         findsOneWidget,
       );
-      expect(find.byIcon(LottiIcons.refresh), findsOneWidget);
     });
 
     testWidgets('renders all three timeline entry kinds', (tester) async {
@@ -692,25 +695,48 @@ void main() {
       expect(changes, 1);
     });
 
-    testWidgets('wires the back and regenerate callbacks', (tester) async {
+    testWidgets('wires the back callback', (tester) async {
       var back = false;
-      var regen = false;
 
       await pumpEventScreen(
         tester,
         EventDetailView(
           data: buildEventDetailData(),
           onBack: () => back = true,
-          onRegenerateSummary: () => regen = true,
         ),
         size: _tallMobile,
       );
 
       await tester.tap(find.byIcon(LottiIcons.back));
-      await tester.tap(find.byIcon(LottiIcons.refresh));
 
       expect(back, isTrue);
-      expect(regen, isTrue);
+    });
+
+    testWidgets('the passive summary sits on the flat section card, with no '
+        'refresh it cannot honour', (tester) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallMobile,
+      );
+
+      final card = find.byType(EventPassiveSummaryCard);
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.text('A surprise 30th for Anna on the rooftop.'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: card,
+          matching: find.byType(DesignSystemSectionCard),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(LottiIcons.refresh), findsNothing);
     });
 
     testWidgets('shows no row chevron when timeline rows are not openable', (

@@ -4066,7 +4066,6 @@
   },
   "eventsRecapAwaitingContent": "Add a photo or note and the recap will appear here.",
   "eventsRecapUnavailable": "Couldn't load the recap.",
-  "eventsRegenerateSummary": "Regenerate summary",
   "eventsSearchHint": "Search events",
   "eventsSectionUpcoming": "Upcoming",
   "eventsStatusCancelled": "Cancelled",

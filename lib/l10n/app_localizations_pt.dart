@@ -6901,9 +6901,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível carregar a recapitulação.';
 
   @override
-  String get eventsRegenerateSummary => 'Regenerar resumo';
-
-  @override
   String get eventsSearchHint => 'Pesquisar eventos';
 
   @override

@@ -82,7 +82,8 @@ class _AboutBodyState extends ConsumerState<AboutBody> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // App Info Card
-                EnhancedModernCard(
+                ModernBaseCard(
+                  gradient: GradientThemes.primaryGradient(context),
                   child: Padding(
                     padding: const EdgeInsets.all(
                       SpacingConstants.enhancedSmallFontSize,

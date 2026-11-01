@@ -6804,9 +6804,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsRecapUnavailable => 'Couldn\'t load the recap.';
 
   @override
-  String get eventsRegenerateSummary => 'Regenerate summary';
-
-  @override
   String get eventsSearchHint => 'Search events';
 
   @override

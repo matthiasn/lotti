@@ -4,13 +4,13 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
+import 'package:lotti/features/events/ui/widgets/event_passive_summary_card.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_star_rating.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_timeline_beat.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/timeline/timeline_models.dart';
 import 'package:lotti/widgets/timeline/timeline_view.dart';
 import 'package:material_ui/material_ui.dart';
@@ -46,7 +46,6 @@ class EventDetailView extends StatelessWidget {
     this.onChangeCover,
     this.onSetCover,
     this.onDelete,
-    this.onRegenerateSummary,
     this.onOpenTimelineEntry,
     this.onOpenTask,
     this.aiSummaryCard,
@@ -87,8 +86,6 @@ class EventDetailView extends StatelessWidget {
 
   /// Deletes the event (offered in the overflow menu).
   final VoidCallback? onDelete;
-
-  final VoidCallback? onRegenerateSummary;
 
   /// Opens a timeline beat's source journal entry. When null, the rows render
   /// as static (and drop the trailing "open" chevron) so the affordance always
@@ -235,7 +232,7 @@ class EventDetailView extends StatelessWidget {
       if (aiSummaryCard != null)
         aiSummaryCard!
       else if (data.summary != null)
-        _SummaryCard(summary: data.summary!, onRegenerate: onRegenerateSummary),
+        EventPassiveSummaryCard(summary: data.summary!),
       // A flat, scannable photo wall (distinct from the narrative timeline).
       if (data.photos.isNotEmpty) ...[
         _SectionHeader(

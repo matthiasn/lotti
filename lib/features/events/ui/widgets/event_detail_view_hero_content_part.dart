@@ -540,56 +540,6 @@ class _HeroMenuButton extends StatelessWidget {
   }
 }
 
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.summary, this.onRegenerate});
-
-  final String summary;
-  final VoidCallback? onRegenerate;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final cs = context.colorScheme;
-    final styles = tokens.typography.styles;
-
-    return ModernBaseCard(
-      isEnhanced: true,
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(LottiIcons.aiSpark, size: 16, color: cs.primary),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                context.messages.eventsSummaryTitle,
-                style: styles.subtitle.subtitle2.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: onRegenerate,
-                visualDensity: VisualDensity.compact,
-                iconSize: 18,
-                color: cs.onSurfaceVariant,
-                tooltip: context.messages.eventsRegenerateSummary,
-                icon: const Icon(LottiIcons.refresh),
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            summary,
-            style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.count});
 

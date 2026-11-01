@@ -6831,9 +6831,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get eventsRecapUnavailable => 'Kunne ikke indlæse recapet.';
 
   @override
-  String get eventsRegenerateSummary => 'Regenereringsresumé';
-
-  @override
   String get eventsSearchHint => 'Søg i begivenheder';
 
   @override
