@@ -426,8 +426,11 @@ rather than writing them: the pane calls `frontDayPlannerProvider`
 at once when today has a plan, `DayPlanningCreate` with them typed into the
 capture when it has none. The plan changes only when the user accepts its
 proposed changes there; a planning that ends in a plan settles the door
-(`markDayPlanned` → `FrontDoorDayPlanned`, whose *Open* goes to the day),
-and one closed leaves it waiting. Undoing it is the Daily OS's own revert.
+on that day (`FrontChatController.planDay` → `markDayPlanned` →
+`FrontDoorDayPlanned(day)`, whose *Open* selects that day on the Daily OS
+surface before going there), and one closed leaves it waiting. The door is
+busy from the tap until the planning closes, so a second tap opens no
+second planning; *New project…* (`newProject`) is held the same way. Undoing it is the Daily OS's own revert.
 **New project…** opens the project form titled with the words
 (`frontNewProjectProvider`); a project it creates settles the item
 (`markProjectCreated` → `FrontDoorProjectCreated`, *Open* goes to the
