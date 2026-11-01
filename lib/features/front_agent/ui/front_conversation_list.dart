@@ -146,26 +146,26 @@ class _FrontConversationListState extends ConsumerState<FrontConversationList> {
       },
     );
 
-    // A group: its name over its conversations, flat — the label and the
-    // gap before it do the grouping, so the open row's fill is the one
-    // strong surface in the list.
+    // A group: its name over its conversations, flat. The name in the
+    // accent splits the days — the rows stay neutral, so the open row's
+    // fill is still the one strong surface in the list.
     Widget group(String? label, List<FrontConversation> rows) => Padding(
-      padding: EdgeInsets.only(top: tokens.spacing.step5),
+      padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (label != null)
             Padding(
-              // A step below the row titles, on their text's edge.
+              // Snug over its rows, on their text's edge.
               padding: EdgeInsets.only(
                 left: textInset,
                 right: textInset,
-                bottom: tokens.spacing.step2,
+                bottom: tokens.spacing.step1,
               ),
               child: Text(
                 label,
                 style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+                  color: tokens.colors.interactive.enabled,
                 ),
               ),
             ),
@@ -390,6 +390,11 @@ TextStyle _labelStyle(BuildContext context) =>
     context.designTokens.typography.styles.body.bodySmall;
 
 /// Rows are touch-sized on a phone and compact on a wide window.
+/// A conversation's row on every layout: its two lines make it a full
+/// target already, so it takes the denser padding.
+const DesignSystemListItemSize _conversationRowSize =
+    DesignSystemListItemSize.small;
+
 DesignSystemListItemSize _rowSize(BuildContext context) =>
     isDesktopLayout(context)
     ? DesignSystemListItemSize.small
@@ -642,6 +647,7 @@ class _ConversationRowState extends State<_ConversationRow> {
           ),
         ],
       ),
+      size: _conversationRowSize,
       borderRadius: widget.borderRadius,
       // The open one is the brightest neutral in the list; a hovered one
       // takes a quieter fill, so the two never look alike.
@@ -679,12 +685,18 @@ class _ConversationRowState extends State<_ConversationRow> {
             // Centred on the preview line: the row's bottom inset plus half
             // that line's own height, as its text lays out.
             bottom:
-                DesignSystemListItem.verticalInset(tokens, _rowSize(context)) +
+                DesignSystemListItem.verticalInset(
+                  tokens,
+                  _conversationRowSize,
+                ) +
                 _lineHeight(context, quiet) / 2 +
                 tokens.spacing.step2 -
                 extent / 2,
             right:
-                DesignSystemListItem.contentInset(tokens, _rowSize(context)) -
+                DesignSystemListItem.contentInset(
+                  tokens,
+                  _conversationRowSize,
+                ) -
                 extent / 4,
             width: extent,
             height: extent,

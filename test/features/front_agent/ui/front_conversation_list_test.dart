@@ -280,8 +280,10 @@ void main() {
     expect(rotaTexts.first, 'Feeding rota');
   });
 
-  testWidgets('the groups are flat: a label over its rows, no card and no '
-      'hairlines, each row rounded for its own fill', (tester) async {
+  testWidgets('the groups are flat: a label in the accent over its rows, no '
+      'card and no hairlines, each row dense and rounded for its own fill', (
+    tester,
+  ) async {
     await pumpList(tester);
     expect(find.byType(DesignSystemGroupedList), findsNothing);
     final rows = tester.widgetList<DesignSystemListItem>(
@@ -292,6 +294,20 @@ void main() {
     );
     expect(rows.single.showDivider, isFalse);
     expect(rows.single.borderRadius, isNotNull);
+    expect(rows.single.size, DesignSystemListItemSize.small);
+
+    // The day is said in the accent, so the days split at a glance.
+    final accent = tester
+        .element(find.byType(FrontConversationList))
+        .designTokens
+        .colors
+        .interactive
+        .enabled;
+    final days = tester.widgetList<Text>(
+      find.textContaining(RegExp(r'^(Today|Yesterday|Previous 7 days|Older)$')),
+    );
+    expect(days, isNotEmpty);
+    expect(days.map((t) => t.style!.color), everyElement(accent));
   });
 
   testWidgets('every time sits in one column, so every preview ends on the '
