@@ -3,6 +3,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/agents/agent_repository.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -39,6 +40,7 @@ class TaskToolDispatcher {
     this.agentRepository,
     this.syncService,
     this.requestingAgentId,
+    this.pullRequestLinks,
   });
 
   final JournalDb journalDb;
@@ -53,6 +55,9 @@ class TaskToolDispatcher {
   final AgentRepository? agentRepository;
   final AgentSyncService? syncService;
   final String? requestingAgentId;
+
+  /// Links a confirmed `link_pull_request`; null where GitHub is not wired.
+  final PullRequestLinkSource? pullRequestLinks;
 
   /// Human confirmation supplies this receipt separately from untrusted args.
   Future<ToolExecutionResult> dispatchApproved(
@@ -272,6 +277,9 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.setTaskProject:
         return handleSetTaskProject(taskEntity, normalizedArgs);
+
+      case TaskAgentToolNames.linkPullRequest:
+        return handleLinkPullRequest(taskId, normalizedArgs);
 
       case TaskAgentToolNames.createTimeEntry:
         return handleCreateTimeEntry(normalizedArgs, taskId, effect: effect);

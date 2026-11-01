@@ -1825,6 +1825,12 @@ abstract class AppLocalizations {
   /// **'Change the target to {value}'**
   String agentSummaryGoalRevisionTarget(String value);
 
+  /// No description provided for @agentSummaryLinkPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Link pull request #{number} \"{title}\"'**
+  String agentSummaryLinkPullRequest(String number, String title);
+
   /// No description provided for @agentSummaryMigrateItem.
   ///
   /// In en, this message translates to:

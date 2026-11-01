@@ -148,6 +148,18 @@ sources:
     resource: ../../../lib/features/agents/workflow/task_project_options.dart
     title: TaskProjectOption — the category's projects, read and matched for the agent
     last_modified: 2026-10-31
+  - id: pull-request-tools
+    resource: ../../../lib/features/agents/tools/task_pull_request_tool_definitions.dart
+    title: get_unlinked_pull_requests, link_pull_request and refresh_pull_requests
+    last_modified: 2026-11-01
+  - id: pull-request-candidates
+    resource: ../../../lib/features/agents/workflow/task_pull_request_candidates.dart
+    title: rankPullRequestsForTask — unlinked pull requests ranked against the task
+    last_modified: 2026-11-01
+  - id: pull-request-link-source
+    resource: ../../../lib/features/agents/model/pull_request_link_source.dart
+    title: PullRequestLinkSource — the port the github feature implements
+    last_modified: 2026-11-01
   - id: staged-exposure
     resource: ../../../lib/features/agents/tools/task_agent_staged_tool_exposure.dart
     title: TaskAgentStagedToolExposure — withhold update_report from turn one
@@ -468,7 +480,10 @@ These context details are load-bearing:
   stores notifies the UI only and cannot wake the agent again. No section
   on a device without a GitHub token or without linked pull requests; a
   failure is logged and
-  leaves it out. See [GitHub pull requests](../github.md).
+  leaves it out. `refresh_pull_requests` reads the section again mid-wake, and
+  `get_unlinked_pull_requests` finds pull requests to link (see
+  [Pull request tools](#pull-request-tools)). See
+  [GitHub pull requests](../github.md).
 - **Report existence is explicit on every wake.** A missing report requires an
   initial publication. With an existing report, the context asks for a new or
   corrected task fact before republishing: repeated status, different wording,
@@ -742,6 +757,8 @@ of the payload.
 | `retract_suggestions` | the proposal ledger holds no open proposals |
 | `resolve_attention_request` | this agent holds no active attention claim on the task |
 | `get_category_projects`, `set_task_project` | the task's category has no projects, or the workflow has no `ProjectRepository` |
+| `get_unlinked_pull_requests`, `link_pull_request` | the task's category names no GitHub repository, this device holds no token, or the workflow has no `PullRequestLinkSource` (`canListFor`, local reads only) |
+| `refresh_pull_requests` | the task links no pull request, or the workflow has no `PullRequestContextSource`. A merged one keeps it offered: the wake's own refresh may have timed out and shown it as not refreshed, then stored it as merged in the background before the facts were read |
 
 Tools with no precondition — `set_task_title`, `update_task_estimate`,
 `update_task_due_date`, `update_task_priority`, `set_task_status`,
@@ -784,9 +801,10 @@ default.
 
 ## Locally short-circuited tools
 
-Five tools are short-circuited **locally** in `TaskAgentStrategy` and never reach
-`AgentToolExecutor`: `update_report`, `record_observations`,
-`get_related_task_details`, `get_category_projects`, `retract_suggestions`.
+Seven tools are short-circuited **locally** in `TaskAgentStrategy` and never
+reach `AgentToolExecutor`: `update_report`, `record_observations`,
+`get_related_task_details`, `get_category_projects`,
+`get_unlinked_pull_requests`, `refresh_pull_requests`, `retract_suggestions`.
 
 Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatcher`:
 
@@ -800,8 +818,8 @@ Two run immediately but route through `AgentToolExecutor` → `TaskToolDispatche
 `update_task_estimate`, `update_task_due_date`, `update_task_priority`,
 `set_task_status`, `set_task_language`, `add_multiple_checklist_items`,
 `update_checklist_items`, `assign_task_labels`, `create_follow_up_task`,
-`link_task`, `set_task_project`, `migrate_checklist_items`,
-`create_time_entry`, `update_time_entry`.
+`link_task`, `set_task_project`, `link_pull_request`,
+`migrate_checklist_items`, `create_time_entry`, `update_time_entry`.
 
 `update_time_entry` is also exempt from the one-call-per-wake rule that stops a
 small model burning its turns on one tool: each call names one entry, so the
@@ -923,6 +941,74 @@ sequenceDiagram
   S->>B: addItem(projectId, projectTitle)
   U->>D: confirm
   D->>P: linkTaskToProject
+```
+
+## Pull request tools
+
+The agent finds the pull request that implements its task, and reads its linked
+ones again when one may have merged. Agents rank below the github feature, so
+the agent depends on two ports and the composition root (`app_bootstrap.dart`)
+wires the github implementations: `PullRequestLinkSource`
+(`lib/features/agents/model/pull_request_link_source.dart`, implemented by
+`PullRequestLinkSuggestions`) and the existing `PullRequestContextSource`.
+
+- `get_unlinked_pull_requests {}` is **read-only**. It lists the open pull
+  requests of the task's category repository that no task holds — the picker's
+  list, `PullRequestService.openPullRequests` — and ranks them against the
+  task's title and description in `rankPullRequestsForTask`
+  (`task_pull_request_candidates.dart`): the task terms each shares, a term
+  weighted by where it appears (title 3, branch or label 2, description 1) and
+  by its rarity across the listed pull requests (`ln(1 + n / df)`). Matching
+  runs on the device: GitHub is sent the repository and nothing of the task.
+  The ranking only orders and annotates — the response lists the ten best,
+  zero-scored ones included, with title, branch, labels, author, age and a
+  300-character description excerpt, so a task written in another language
+  than its pull request still finds it through the model's own judgement. The
+  listing is memoised for the wake, so the read and every proposal share one
+  GitHub request.
+- `link_pull_request {number}` is **deferred** and single-use per wake. It is
+  validated fail-closed at queue time against that listing: a number outside
+  it is linked by now, closed or invented. The queued args carry `owner`,
+  `repo`, `number` and `title`, so the link needs no listing at confirmation
+  and the review row reads "Link pull request #7 “Count igloos”" in the
+  reader's language. On confirmation `TaskToolDispatcher` calls
+  `PullRequestLinkSource.link`, which goes through `PullRequestService.link`
+  like the picker: the pull request is read from GitHub, and one another task
+  took meanwhile is refused rather than linked twice
+  (`specs/tla/PullRequestAssignment.tla`). One this task holds already counts
+  as done. The query chat's planner does not offer it: its context carries no
+  listing.
+- `refresh_pull_requests {}` is **read-only**. The wake already starts with
+  every linked pull request refreshed, at most eight seconds each; this reads
+  them again mid-wake — for one that merged since, or whose refresh then timed
+  out and so showed as not refreshed. It answers with the same
+  `## Pull Requests` section through `PullRequestContextSource.refreshOpenFor`:
+  one stored as merged is shown as stored and current without asking GitHub
+  (a merge is final), and for each one merged or closed the answer waits until
+  its summary is settled (`PullRequestService.settleSummary`, at most ninety
+  seconds), so the agent decides checklist changes from what the pull request
+  did, under the section's own rules.
+
+```mermaid
+sequenceDiagram
+  participant M as Model
+  participant S as TaskAgentStrategy
+  participant L as PullRequestLinkSource
+  participant G as GitHub
+  participant U as User
+  participant D as TaskToolDispatcher
+  M->>S: get_unlinked_pull_requests
+  S->>L: unlinkedFor(task), once per wake
+  L->>G: GET pulls (repository only)
+  L-->>S: open pull requests no task holds
+  S->>S: rank against the task's title and description
+  S-->>M: JSON: ten best, with shared terms
+  M->>S: link_pull_request {number}
+  S->>S: number in the listing?
+  S->>S: queue owner, repo, number, title
+  U->>D: confirm
+  D->>L: link
+  L->>G: read the pull request, check holders again
 ```
 
 ## `get_related_task_details` is disabled

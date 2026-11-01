@@ -1002,6 +1002,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Link pull request #$number \"$title\"';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Migrate to follow-up: \"$title\"';
   }

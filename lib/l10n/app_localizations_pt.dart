@@ -1017,6 +1017,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Vincular a pull request #$number \"$title\"';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Mover para a tarefa de acompanhamento: \"$title\"';
   }

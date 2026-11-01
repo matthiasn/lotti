@@ -6,6 +6,7 @@ import 'package:lotti/classes/agents/agent_domain_entity.dart';
 import 'package:lotti/classes/agents/agent_enums.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_project_options.dart';
+import 'package:lotti/features/agents/workflow/task_pull_request_candidates.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -173,6 +175,8 @@ ChatCompletionMessageToolCall _toolCall({
   Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
   Future<Set<String>> Function()? resolveExistingTaskRelations,
   Future<List<TaskProjectOption>> Function()? resolveCategoryProjects,
+  Future<TaskPullRequestListing> Function()? resolveUnlinkedPullRequests,
+  Future<String> Function()? refreshLinkedPullRequests,
   Future<void> Function()? flushChangeSet,
   TaskAgentStagedToolExposure? stagedToolExposure,
   DomainLogger? domainLogger,
@@ -220,6 +224,8 @@ ChatCompletionMessageToolCall _toolCall({
     resolveLinkableTaskTitle: resolveLinkableTaskTitle,
     resolveExistingTaskRelations: resolveExistingTaskRelations,
     resolveCategoryProjects: resolveCategoryProjects,
+    resolveUnlinkedPullRequests: resolveUnlinkedPullRequests,
+    refreshLinkedPullRequests: refreshLinkedPullRequests,
     flushChangeSet: flushChangeSet,
     stagedToolExposure: stagedToolExposure,
   );
@@ -2753,6 +2759,307 @@ void main() {
           expect(
             responseTo('call-2'),
             startsWith('ERROR: set_task_project was already called'),
+          );
+        });
+      });
+    });
+
+    group('pull request tools', () {
+      UnlinkedPullRequest pr(int number, String title) => UnlinkedPullRequest(
+        owner: 'penguin',
+        repo: 'colony',
+        number: number,
+        title: title,
+        createdAt: DateTime.utc(2026, 10, 30),
+      );
+
+      final listing = TaskPullRequestListing(
+        repository: 'penguin/colony',
+        candidates: rankPullRequestsForTask(
+          taskText: 'Count the igloos',
+          pullRequests: [pr(7, 'Count igloos'), pr(8, 'Waddle faster')],
+        ),
+      );
+
+      ChatCompletionMessageToolCall call(
+        String name,
+        Map<String, dynamic> args, {
+        String id = 'call-1',
+      }) => _toolCall(id: id, name: name, args: args);
+
+      var listings = 0;
+
+      ({TaskAgentStrategy strategy, ChangeSetBuilder builder}) bench({
+        Future<TaskPullRequestListing> Function()? resolveUnlinked,
+        Future<String> Function()? refresh,
+      }) {
+        listings = 0;
+        return _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveUnlinkedPullRequests: resolveUnlinked,
+          refreshLinkedPullRequests: refresh,
+          executeToolHandler: (toolName, _, _) =>
+              fail('$toolName must not execute during the wake'),
+        );
+      }
+
+      Future<TaskPullRequestListing> listed() async {
+        listings++;
+        return listing;
+      }
+
+      String responseTo(String callId) =>
+          verify(
+                () => mockManager.addToolResponse(
+                  toolCallId: callId,
+                  response: captureAny(named: 'response'),
+                ),
+              ).captured.single
+              as String;
+
+      group('get_unlinked_pull_requests', () {
+        test('answers with the ranked listing, proposing nothing', () async {
+          final b = bench(resolveUnlinked: listed);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('get_unlinked_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          final json = jsonDecode(responseTo('call-1')) as Map;
+          expect(json['repository'], 'penguin/colony');
+          expect(
+            (json['pullRequests'] as List).map((p) => (p as Map)['number']),
+            [7, 8],
+          );
+          expect(b.builder.items, isEmpty);
+        });
+
+        test('reports an error when the listing throws', () async {
+          final b = bench(resolveUnlinked: () async => throw Exception('x'));
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('get_unlinked_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            startsWith('Error: the pull requests could not be read'),
+          );
+        });
+
+        test('reports that the tool is unavailable when unwired', () async {
+          await bench().strategy.processToolCalls(
+            toolCalls: [call('get_unlinked_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            'Error: get_unlinked_pull_requests is not available.',
+          );
+        });
+      });
+
+      group('refresh_pull_requests', () {
+        test('answers with the refreshed section', () async {
+          final b = bench(refresh: () async => '## Pull Requests\n- merged');
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('refresh_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          expect(responseTo('call-1'), '## Pull Requests\n- merged');
+          expect(b.builder.items, isEmpty);
+        });
+
+        test('says so when the task has no pull request left', () async {
+          final b = bench(refresh: () async => '  ');
+
+          await b.strategy.processToolCalls(
+            toolCalls: [call('refresh_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            'The task has no linked pull request to refresh.',
+          );
+        });
+
+        test('reports that the tool is unavailable when unwired', () async {
+          await bench().strategy.processToolCalls(
+            toolCalls: [call('refresh_pull_requests', {})],
+            manager: mockManager,
+          );
+
+          expect(
+            responseTo('call-1'),
+            'Error: refresh_pull_requests is not available.',
+          );
+        });
+      });
+
+      group('link_pull_request', () {
+        test('queues a confirmable proposal carrying the repository and '
+            'title, reading the listing once per wake', () async {
+          final b = bench(resolveUnlinked: listed);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('get_unlinked_pull_requests', {}),
+              call('link_pull_request', {'number': 7}, id: 'call-2'),
+            ],
+            manager: mockManager,
+          );
+
+          final item = b.builder.items.single;
+          expect(item.toolName, 'link_pull_request');
+          expect(item.args, {
+            'owner': 'penguin',
+            'repo': 'colony',
+            'number': 7,
+            'title': 'Count igloos',
+          });
+          expect(
+            item.humanSummary,
+            'Link pull request penguin/colony#7 "Count igloos"',
+          );
+          expect(
+            responseTo('call-2'),
+            startsWith('OK — link_pull_request proposal recorded'),
+          );
+          // The bench resolver is not memoised; the wake's is. Each call
+          // reads it — the workflow test pins the single GitHub read.
+          expect(listings, 2);
+        });
+
+        for (final number in [7.0, '7', '#7']) {
+          test('reads $number as pull request 7', () async {
+            final b = bench(resolveUnlinked: listed);
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('link_pull_request', {'number': number}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(b.builder.items.single.args['number'], 7);
+          });
+        }
+
+        test('refuses a number not in the listing as linked, closed or '
+            'invented', () async {
+          final b = bench(resolveUnlinked: listed);
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('link_pull_request', {'number': 99}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            startsWith('ERROR: #99 is not an unlinked open pull request'),
+          );
+        });
+
+        for (final bad in <Object?>[null, 0, -3, 7.5, 'seven', true]) {
+          test('refuses a number of $bad', () async {
+            final b = bench(resolveUnlinked: listed);
+
+            await b.strategy.processToolCalls(
+              toolCalls: [
+                call('link_pull_request', {'number': bad}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(b.builder.items, isEmpty);
+            expect(
+              responseTo('call-1'),
+              startsWith('ERROR: link_pull_request requires an integer'),
+            );
+            expect(listings, 0);
+          });
+        }
+
+        test(
+          'reports a proposal the builder already holds as skipped',
+          () async {
+            final builder = ChangeSetBuilder(
+              agentId: agentId,
+              taskId: taskId,
+              threadId: 'thread-001',
+              runKey: 'run-key-001',
+            );
+            await builder.addItem(
+              toolName: 'link_pull_request',
+              args: const {
+                'owner': 'penguin',
+                'repo': 'colony',
+                'number': 7,
+                'title': 'Count igloos',
+              },
+              humanSummary: 'Link pull request penguin/colony#7 "Count igloos"',
+            );
+            final strategy = _createStrategy(
+              executor: mockExecutor,
+              syncService: mockSyncService,
+              builder: builder,
+              resolveUnlinkedPullRequests: listed,
+            ).strategy;
+
+            await strategy.processToolCalls(
+              toolCalls: [
+                call('link_pull_request', {'number': 7}),
+              ],
+              manager: mockManager,
+            );
+
+            expect(builder.items, hasLength(1));
+            expect(responseTo('call-1'), startsWith('Skipped: '));
+          },
+        );
+
+        test('refuses when the listing cannot be read', () async {
+          final b = bench(resolveUnlinked: () async => throw Exception('x'));
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('link_pull_request', {'number': 7}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            startsWith('ERROR: the pull requests could not be read'),
+          );
+        });
+
+        test('refuses when unwired', () async {
+          final b = bench();
+
+          await b.strategy.processToolCalls(
+            toolCalls: [
+              call('link_pull_request', {'number': 7}),
+            ],
+            manager: mockManager,
+          );
+
+          expect(b.builder.items, isEmpty);
+          expect(
+            responseTo('call-1'),
+            'ERROR: link_pull_request is not available. No proposal was '
+            'queued.',
           );
         });
       });

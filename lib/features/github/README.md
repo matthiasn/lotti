@@ -20,7 +20,11 @@ items are done.
   and the context then says the status could not be refreshed.
 - **Grounds checklist suggestions** in a pull request that was just refreshed.
   The agent proposes them through the existing checklist tool and the user
-  confirms each one.
+  confirms each one. It can read its pull requests again mid-wake, waiting for
+  a just-merged one's summary.
+- **Lets the task agent suggest a link**: it reads the open pull requests no
+  task holds, matches them against the task on the device, and proposes the
+  one that implements it — linked once the user confirms, exactly as a pick.
 - **Summarises each pull request** in two tiers with the task agent's model,
   in the task's language: a one-liner under its title in the task, and a
   TL;DR that the contexts and its details show — never in the journal feed. Automatically where the task's category allows automatic
@@ -74,6 +78,7 @@ lib/features/github/
   repository/pull_request_repository.dart link, unlink, track, persist an observation, summaries
   service/pull_request_image_attacher.dart a description's image recorded on the task
   service/pull_request_image_fetcher.dart  a description's images, fetched once each
+  service/pull_request_link_suggestions.dart the task agent's unlinked pull requests and links
   service/pull_request_service.dart       link a pasted pull request, refresh one
   service/pull_request_summarizer.dart    the one-liner and TL;DR of a pull request
   service/pull_request_summary_tool.dart  the tool a summary is published through

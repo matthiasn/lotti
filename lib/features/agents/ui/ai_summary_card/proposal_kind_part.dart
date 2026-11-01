@@ -47,6 +47,7 @@ ProposalKind resolveKind(String toolName, Map<String, dynamic> args) {
     case TaskAgentToolNames.migrateChecklistItems:
     case TaskAgentToolNames.migrateChecklistItem:
     case TaskAgentToolNames.linkTask:
+    case TaskAgentToolNames.linkPullRequest:
       return ProposalKind.add;
     case TaskAgentToolNames.updateChecklistItems:
     case TaskAgentToolNames.updateChecklistItem:

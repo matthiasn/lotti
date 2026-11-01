@@ -10,6 +10,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
@@ -513,10 +514,12 @@ typedef TaskAgentWorkflowTestBench = ({
 /// shipped wake.
 ///
 /// [projectRepository] wires the project tools; without one the wake has no
-/// projects to offer.
+/// projects to offer. [pullRequestLinks] likewise wires the tools that list
+/// and link unlinked pull requests.
 TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
   bool narrowToolSurface = false,
   ProjectRepository? projectRepository,
+  PullRequestLinkSource? pullRequestLinks,
 }) {
   const agentId = taskAgentTestAgentId;
   final testTemplate = taskAgentTestTemplate;
@@ -697,6 +700,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
     templateService: mockTemplateService,
     pullRequestContextService: mockPullRequestContextService,
     projectRepository: projectRepository,
+    pullRequestLinks: pullRequestLinks,
     narrowToolSurface: narrowToolSurface,
     domainLogger: DomainLogger(loggingService: LoggingService())
       ..enabledDomains.add(LogDomain.agentWorkflow),

@@ -104,6 +104,31 @@ void main() {
       );
     });
 
+    test('hides exactly the list and link tools without a repository', () {
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(
+          visibleTaskAgentToolNames(
+            const TaskAgentWakeFacts(hasPullRequestRepository: false),
+          ),
+        ),
+        {
+          TaskAgentToolNames.getUnlinkedPullRequests,
+          TaskAgentToolNames.linkPullRequest,
+        },
+      );
+    });
+
+    test('hides exactly the refresh tool without a linked pull request', () {
+      expect(
+        visibleTaskAgentToolNames(TaskAgentWakeFacts.permissive).difference(
+          visibleTaskAgentToolNames(
+            const TaskAgentWakeFacts(hasLinkedPullRequests: false),
+          ),
+        ),
+        {TaskAgentToolNames.refreshPullRequests},
+      );
+    });
+
     test('always offers the field tools that have no precondition', () {
       final visible = visibleTaskAgentToolNames(
         const TaskAgentWakeFacts(

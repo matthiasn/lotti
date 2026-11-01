@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 /// - [taskChecklistTools] — checklist items and follow-up task splitting.
 /// - [taskLinkTools] — typed relationships to other tasks.
 /// - [taskProjectTools] — the project the task belongs to.
+/// - [taskPullRequestTools] — the pull requests linked to the task.
 /// - [taskTimeTools] — time entries and running timers.
 /// - [taskPlanningTools] — attention, reporting, and observations.
 final taskAgentToolList = <AgentToolDefinition>[
@@ -15,6 +16,7 @@ final taskAgentToolList = <AgentToolDefinition>[
   ...taskChecklistTools,
   ...taskLinkTools,
   ...taskProjectTools,
+  ...taskPullRequestTools,
   ...taskTimeTools,
   ...taskPlanningTools,
 ];

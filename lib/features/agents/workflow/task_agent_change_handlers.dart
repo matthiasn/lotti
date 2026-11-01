@@ -46,6 +46,12 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
       return _queueSetTaskProjectProposal(csBuilder, args);
     }
 
+    // link_pull_request likewise: the number must be one of this wake's
+    // unlinked pull requests.
+    if (toolName == TaskAgentToolNames.linkPullRequest) {
+      return _queueLinkPullRequestProposal(csBuilder, args);
+    }
+
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
@@ -340,6 +346,77 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Do NOT call $tool again.${_remainingDeferredToolHint(tool)}';
   }
 
+  /// Validates and queues a `link_pull_request` proposal.
+  ///
+  /// Fail-closed: the number must name one of the unlinked pull requests
+  /// `get_unlinked_pull_requests` listed this wake — the listing is memoised,
+  /// so this asks GitHub nothing new. A number outside it is linked by now,
+  /// closed or invented, and the apply path could only refuse it. The queued
+  /// args carry the repository, so the link needs no listing when the user
+  /// confirms, and the title, so the review row can name the pull request.
+  Future<String> _queueLinkPullRequestProposal(
+    ChangeSetBuilder csBuilder,
+    Map<String, dynamic> args,
+  ) async {
+    const tool = TaskAgentToolNames.linkPullRequest;
+    final rawNumber = args['number'];
+    final number = switch (rawNumber) {
+      final int n => n,
+      final num n when n == n.roundToDouble() => n.toInt(),
+      final String s => int.tryParse(s.trim().replaceFirst('#', '')),
+      _ => null,
+    };
+    if (number == null || number <= 0) {
+      return 'ERROR: $tool requires an integer "number" from '
+          '${TaskAgentToolNames.getUnlinkedPullRequests}. No proposal was '
+          'queued.';
+    }
+    final resolve = resolveUnlinkedPullRequests;
+    if (resolve == null) {
+      return 'ERROR: $tool is not available. No proposal was queued.';
+    }
+    final TaskPullRequestListing listing;
+    try {
+      listing = await resolve();
+    } catch (_) {
+      return 'ERROR: the pull requests could not be read, so #$number '
+          'cannot be checked. No proposal was queued.';
+    }
+    final candidate = listing.byNumber(number);
+    if (candidate == null) {
+      return 'ERROR: #$number is not an unlinked open pull request of this '
+          "task's repository. Call "
+          '${TaskAgentToolNames.getUnlinkedPullRequests} and use a number it '
+          'returns; do not invent numbers. No proposal was queued.';
+    }
+
+    final pr = candidate.pullRequest;
+    final canonicalArgs = <String, dynamic>{
+      'owner': pr.owner,
+      'repo': pr.repo,
+      'number': pr.number,
+      'title': pr.title,
+    };
+    final addRedundancy = await csBuilder.addItem(
+      toolName: tool,
+      args: canonicalArgs,
+      humanSummary: _generateHumanSummary(tool, canonicalArgs),
+    );
+    if (addRedundancy != null) {
+      return 'Skipped: $addRedundancy';
+    }
+
+    _domainLogger.log(
+      LogDomain.agentWorkflow,
+      'Deferred tool $tool to change set '
+      '(${csBuilder.items.length} items total)',
+      subDomain: 'TaskAgentStrategy',
+    );
+
+    return 'OK — $tool proposal recorded successfully. '
+        'Do NOT call $tool again.${_remainingDeferredToolHint(tool)}';
+  }
+
   /// The stable identity of one stored relationship, for redundancy checks:
   /// canonical `fromId|toId|<linked_entries.type>`.
   ///
@@ -463,6 +540,9 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Set language to "${args['languageCode'] ?? '?'}"',
       TaskAgentToolNames.setTaskProject =>
         'Move to project "${args['projectTitle'] ?? args['projectId'] ?? '?'}"',
+      TaskAgentToolNames.linkPullRequest =>
+        'Link pull request ${args['owner'] ?? '?'}/${args['repo'] ?? '?'}'
+            '#${args['number'] ?? '?'} "${args['title'] ?? ''}"',
       TaskAgentToolNames.createFollowUpTask => () {
         final rawRelation = args['relation'];
         final relation = rawRelation is String

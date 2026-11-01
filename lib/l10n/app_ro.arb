@@ -446,6 +446,7 @@
   "agentSummaryGoalRevisionPeriod": "Schimbați perioada la {value}",
   "agentSummaryGoalRevisionScope": "se aplică la {value}",
   "agentSummaryGoalRevisionTarget": "Schimbați ținta la {value}",
+  "agentSummaryLinkPullRequest": "Legați pull request-ul #{number} „{title}”",
   "agentSummaryMigrateItem": "Mutați în sarcina ulterioară: „{title}”",
   "agentSummaryRecommendNextSteps": "Recomandați pașii următori",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{Recomandați 1 pas următor} few{Recomandați {count} pași următori} other{Recomandați {count} de pași următori}}",

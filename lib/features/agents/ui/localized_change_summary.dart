@@ -73,6 +73,7 @@ String? localizedChangeSummary(
   TaskAgentToolNames.createFollowUpTask => _followUp(messages, args),
   TaskAgentToolNames.linkTask => _link(messages, args),
   TaskAgentToolNames.setTaskProject => _project(messages, args),
+  TaskAgentToolNames.linkPullRequest => _pullRequest(messages, args),
   TaskAgentToolNames.createTimeEntry => _createTimeEntry(messages, args),
   // The retired running-timer update carried only `summary` (plus a
   // `timerId` this sentence never names), so a proposal persisted under it
@@ -403,6 +404,19 @@ String? _project(AppLocalizations messages, Map<String, dynamic> args) {
   final title = args['projectTitle'];
   if (title is! String || title.trim().isEmpty) return null;
   return messages.agentSummarySetProject(title.trim());
+}
+
+/// A pull request proposal names its pull request by number and title. One
+/// without a number has no readable subject, so it keeps its persisted
+/// summary.
+String? _pullRequest(AppLocalizations messages, Map<String, dynamic> args) {
+  final number = args['number'];
+  if (number is! int) return null;
+  final title = args['title'];
+  return messages.agentSummaryLinkPullRequest(
+    '$number',
+    title is String ? title.trim() : '',
+  );
 }
 
 /// Presence and validity of `endTime` are separate facts, exactly as they are

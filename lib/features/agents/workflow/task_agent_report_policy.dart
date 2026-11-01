@@ -338,6 +338,7 @@ A report already exists. Before publishing, identify a new or corrected task fac
           TaskAgentToolNames.assignTaskLabels,
           TaskAgentToolNames.setTaskLanguage,
           TaskAgentToolNames.setTaskProject,
+          TaskAgentToolNames.linkPullRequest,
         }.contains(name),
       );
 }

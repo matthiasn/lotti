@@ -492,6 +492,22 @@ $projectCueRule
 Do the same when the task clearly belongs to a different project than its
 own. The user confirms the move.
 
+## Pull Requests
+
+When the task is being worked on and no linked pull request covers that work
+yet, call `get_unlinked_pull_requests` to read the open pull requests of the
+task's repository that no task is linked to, best keyword match first. When
+one clearly implements this task — its title, branch or description describes
+the task's work, in whatever language — propose it with `link_pull_request`
+and its number. The user confirms the link. Shared words alone are not a
+match; propose nothing when none clearly fits.
+
+When a linked pull request is open, or marked not refreshed, call
+`refresh_pull_requests` once to read it again: it may have merged since the
+wake started. The answer is the Pull Requests section, current, with a merged
+pull request's summary of what it did. Decide checklist changes from that
+answer, under the same rules as the section the wake started with.
+
 ## Linked Tasks
 
 When this task links to or from other tasks, the wake payload includes a

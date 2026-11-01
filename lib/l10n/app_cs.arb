@@ -453,6 +453,7 @@
   "agentSummaryGoalRevisionPeriod": "Změnit období na {value}",
   "agentSummaryGoalRevisionScope": "platí pro {value}",
   "agentSummaryGoalRevisionTarget": "Změnit cíl na {value}",
+  "agentSummaryLinkPullRequest": "Propojit pull request #{number} „{title}“",
   "agentSummaryMigrateItem": "Přesunout do navazujícího úkolu: „{title}“",
   "agentSummaryRecommendNextSteps": "Doporučit další kroky",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{Doporučit 1 další krok} few{Doporučit {count} další kroky} other{Doporučit {count} dalších kroků}}",

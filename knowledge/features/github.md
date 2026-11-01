@@ -80,6 +80,9 @@ sources:
   - id: details
     resource: ../../lib/features/github/ui/pull_request_details_modal.dart
     title: PullRequestDetails — a pull request's summary, description and way to GitHub
+  - id: link-suggestions
+    resource: ../../lib/features/github/service/pull_request_link_suggestions.dart
+    title: PullRequestLinkSuggestions — the task agent's unlinked pull requests and confirmed links
 ---
 
 A task can link the GitHub pull requests that implement it. Lotti fetches
@@ -97,6 +100,7 @@ the client, linking by URL or from the picker, a pull request serving a
 second task only once the user confirms it, a
 category's repository, the refresh, the task's card and each pull
 request's details, the pull requests in coding prompts and task-agent wakes,
+the task agent suggesting an unlinked pull request that matches its task,
 and a two-tier summary of each — a one-liner in the task, a TL;DR in its
 contexts, where a merged or closed one is shown in brief. Nothing is behind a config flag: a task shows the
 feature once the user turns pull request tracking on for it, which is
@@ -674,10 +678,40 @@ vanishing from the context.
   proposed through `add_multiple_checklist_items` when missing, checked only
   once the pull request is merged — so the task cannot close on work that
   never reached the base branch.
+- **The agent's own refresh.** `refresh_pull_requests` reads the task's
+  pull requests again mid-wake (`PullRequestContextService.refreshOpenFor`),
+  for one that merged after the wake started or whose refresh then timed out.
+  A pull request stored as merged is not read again — a merge is final, so it
+  is current as stored — and for each one merged or closed the answer waits,
+  at most ninety seconds, until its summary is settled
+  (`PullRequestService.settleSummary` → `PullRequestSummarizer.summarizeAfterRunning`,
+  which first waits out the attempt the refresh started, then summarises
+  whatever content is still without one, under the usual consent and
+  cool-down). The agent then decides checklist changes from what the pull
+  request did rather than from its title.
 - **The next prompt and alignment.** Each coding prompt is built from the
   refreshed pull requests and the checklist as they stand, so it covers what
   remains and names mismatches. Recording which items a prompt targeted, to
   compare them with what was done by the next one, is still design.
+
+# Suggested by the task agent
+
+Linking by hand is the picker or a paste; the task agent can also find the
+pull request for its task. `PullRequestLinkSuggestions` implements the agent
+feature's `PullRequestLinkSource` port
+(`lib/features/agents/model/pull_request_link_source.dart`), bound in
+`appFeatureWiringOverrides()` the same way as the context source. The agent's
+`get_unlinked_pull_requests` lists the picker's pull requests — open, of the
+task's category repository, held by no task (`openPullRequests`), with the
+description, labels and branch the list response carries anyway, so no
+request is added — and ranks them against the task on the device; GitHub is
+sent the repository only. A `link_pull_request` the agent proposes is a change
+set item the user confirms, and the confirmed link is `PullRequestService.link`,
+exactly as a pick: read from GitHub, then checked against the holders again,
+so one another task took meanwhile is refused rather than linked to both. The
+tools are offered only while the task's repository and a token are known
+(`canListFor`, local reads). The ranking and the agent's side are in
+[task agents](agents/task-agents.md#pull-request-tools).
 
 A refresh during a wake runs inside the wake's agent-execution zone, and
 `updateDbEntity` routes the notification of a write made there through

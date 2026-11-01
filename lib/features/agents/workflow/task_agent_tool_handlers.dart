@@ -223,6 +223,64 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
   }
 
+  /// Handles the read-only pull request tools: `get_unlinked_pull_requests`
+  /// answers with the task's unlinked pull requests, ranked against it, and
+  /// `refresh_pull_requests` with its linked ones read from GitHub again.
+  /// A read that throws answers with a sentence, and the wake goes on.
+  Future<void> _handlePullRequestRead(
+    String toolName,
+    String callId,
+    ConversationManager manager,
+  ) async {
+    final read = switch (toolName) {
+      TaskAgentToolNames.getUnlinkedPullRequests =>
+        switch (resolveUnlinkedPullRequests) {
+          final resolve? => () async => renderTaskPullRequestListing(
+            await resolve(),
+          ),
+          null => null,
+        },
+      _ => switch (refreshLinkedPullRequests) {
+        final refresh? => () async {
+          final section = await refresh();
+          return section.trim().isEmpty
+              ? 'The task has no linked pull request to refresh.'
+              : section;
+        },
+        null => null,
+      },
+    };
+    String? errorMessage;
+    String? response;
+    if (read == null) {
+      errorMessage = 'Error: $toolName is not available.';
+    } else {
+      try {
+        response = await read();
+      } catch (error, stackTrace) {
+        _domainLogger.error(
+          LogDomain.agentWorkflow,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'TaskAgentStrategy',
+          message: '$toolName failed',
+        );
+        errorMessage =
+            'Error: the pull requests could not be read right now. Propose '
+            'nothing from them.';
+      }
+    }
+
+    manager.addToolResponse(
+      toolCallId: callId,
+      response: errorMessage ?? response!,
+    );
+    await _recordToolResultMessage(
+      toolName: toolName,
+      errorMessage: errorMessage,
+    );
+  }
+
   /// Handles the `retract_suggestions` tool call: parses the proposals
   /// array, dispatches each retraction to [SuggestionRetractionService],
   /// and feeds a per-entry outcome report back to the LLM.

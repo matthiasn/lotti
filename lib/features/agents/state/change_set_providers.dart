@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/project_recommendation_service.dar
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/state/pull_request_link_source_provider.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
@@ -269,6 +270,7 @@ TaskToolDispatcher taskToolDispatcher(Ref ref) => TaskToolDispatcher(
   projectRepository: ref.watch(projectRepositoryProvider),
   agentRepository: ref.watch(agentRepositoryProvider),
   syncService: ref.watch(agentSyncServiceProvider),
+  pullRequestLinks: ref.watch(pullRequestLinkSourceProvider),
 );
 
 /// Project-scoped confirmation service for confirmed project-agent proposals.

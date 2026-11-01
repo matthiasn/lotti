@@ -13,6 +13,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/pull_request_link_source.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
@@ -1494,6 +1495,115 @@ void main() {
         );
       });
 
+      group('pull request tools through the workflow-wired resolvers', () {
+        late _CountingLinks links;
+        late MockPullRequestContextService contextService;
+
+        setUp(() {
+          links = _CountingLinks();
+          final bench = createTaskAgentWorkflowTestBench(
+            pullRequestLinks: links,
+          );
+          mockAgentRepository = bench.mockAgentRepository;
+          mockSyncService = bench.mockSyncService;
+          mockConversationRepository = bench.mockConversationRepository;
+          mockAiInputRepository = bench.mockAiInputRepository;
+          mockAiConfigRepository = bench.mockAiConfigRepository;
+          mockJournalDb = bench.mockJournalDb;
+          mockConversationManager = bench.mockConversationManager;
+          mockJournalRepository = bench.mockJournalRepository;
+          mockChecklistRepository = bench.mockChecklistRepository;
+          mockLabelsRepository = bench.mockLabelsRepository;
+          contextService = bench.mockPullRequestContextService;
+          workflow = bench.workflow;
+        });
+
+        /// Runs one turn making [calls] in order, as the model would.
+        Future<List<String>> turn(
+          List<(String name, String arguments)> calls,
+        ) async {
+          stubFullExecutePathLocal();
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => taskWithCategory);
+          final responses = <String>[];
+          when(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          ).thenAnswer((invocation) {
+            responses.add(invocation.namedArguments[#response] as String);
+          });
+          var dispatched = false;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (dispatched) return null;
+                dispatched = true;
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      for (final (index, (name, arguments)) in calls.indexed)
+                        ChatCompletionMessageToolCall(
+                          id: 'tc-$index',
+                          type: ChatCompletionMessageToolCallType.function,
+                          function: ChatCompletionMessageFunctionCall(
+                            name: name,
+                            arguments: arguments,
+                          ),
+                        ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+          return responses;
+        }
+
+        test('the listing and the proposal it backs ask GitHub once', () async {
+          final responses = await turn([
+            ('get_unlinked_pull_requests', '{}'),
+            ('link_pull_request', '{"number": 7}'),
+          ]);
+
+          expect(links.listed, 1);
+          final listing = jsonDecode(responses.first) as Map<String, dynamic>;
+          expect(listing['repository'], 'penguin/colony');
+          expect(responses[1], startsWith('OK — link_pull_request proposal'));
+        });
+
+        test(
+          'refresh_pull_requests answers with the refreshed section',
+          () async {
+            when(
+              () => contextService.refreshOpenFor(taskId),
+            ).thenAnswer((_) async => '## Pull Requests\n- merged');
+
+            final responses = await turn([('refresh_pull_requests', '{}')]);
+
+            expect(responses.single, '## Pull Requests\n- merged');
+            verify(() => contextService.refreshOpenFor(taskId)).called(1);
+          },
+        );
+      });
+
       group('link_task through the workflow-wired resolvers', () {
         /// A live task on the other end of the proposed relationship.
         final linkTargetTask = Task(
@@ -1727,4 +1837,36 @@ void main() {
       );
     });
   });
+}
+
+/// A link source listing two pull requests of penguin/colony, counting how
+/// often GitHub would be asked.
+class _CountingLinks implements PullRequestLinkSource {
+  int listed = 0;
+
+  @override
+  Future<bool> canListFor(String taskId) async => true;
+
+  @override
+  Future<UnlinkedPullRequestsResult> unlinkedFor(String taskId) async {
+    listed++;
+    return UnlinkedPullRequestsListed('penguin/colony', [
+      for (final (number, title) in [(7, 'Count igloos'), (8, 'Waddle')])
+        UnlinkedPullRequest(
+          owner: 'penguin',
+          repo: 'colony',
+          number: number,
+          title: title,
+          createdAt: DateTime.utc(2026, 10, 30),
+        ),
+    ]);
+  }
+
+  @override
+  Future<PullRequestLinkConfirmation> link({
+    required String taskId,
+    required String owner,
+    required String repo,
+    required int number,
+  }) => throw UnimplementedError();
 }

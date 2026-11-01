@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/ai_response_type.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/github/github_repository.dart';
 import 'package:lotti/classes/github/pull_request_ref.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/pull_request_data.dart';
@@ -12,6 +13,20 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/repositories/journal_repository.dart';
 import 'package:lotti/logic/write_on_stored.dart';
 import 'package:uuid/uuid.dart';
+
+/// The GitHub repository task [taskId] works in: its category's, read from
+/// [db] now. Null when the task has no category, or the category names no
+/// repository.
+Future<GitHubRepository?> readTaskGitHubRepository(
+  JournalDb db,
+  String taskId,
+) async {
+  final task = await db.journalEntityById(taskId);
+  final categoryId = task?.meta.categoryId;
+  if (categoryId == null) return null;
+  final repository = (await db.getCategoryById(categoryId))?.githubRepository;
+  return repository == null ? null : parseGitHubRepository(repository);
+}
 
 /// The pull request entries of tasks: linking, unlinking, and storing what
 /// a refresh observed.
@@ -48,6 +63,10 @@ class PullRequestRepository {
         (stored) => stored.copyWith(tracksPullRequests: true),
       ))?.data.tracksPullRequests ??
       false;
+
+  /// The repository task [taskId] works in ([readTaskGitHubRepository]).
+  Future<GitHubRepository?> repositoryOfTask(String taskId) =>
+      readTaskGitHubRepository(_db, taskId);
 
   /// Entry [entryId] as stored now, or null once it is unlinked.
   Future<PullRequestEntry?> liveEntry(String entryId) async {

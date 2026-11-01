@@ -1008,6 +1008,11 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentSummaryLinkPullRequest(String number, String title) {
+    return 'Knyt pull request #$number \"$title\"';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Flyt til opfølgningsopgave: \"$title\"';
   }

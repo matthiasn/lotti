@@ -446,6 +446,7 @@
   "agentSummaryGoalRevisionPeriod": "Zeitraum auf {value} ändern",
   "agentSummaryGoalRevisionScope": "gilt für {value}",
   "agentSummaryGoalRevisionTarget": "Zielwert auf {value} ändern",
+  "agentSummaryLinkPullRequest": "Pull-Request #{number} „{title}“ verknüpfen",
   "agentSummaryMigrateItem": "In die Folgeaufgabe verschieben: „{title}“",
   "agentSummaryRecommendNextSteps": "Nächste Schritte vorschlagen",
   "agentSummaryRecommendNextStepsCount": "{count, plural, =1{1 nächsten Schritt vorschlagen} other{{count} nächste Schritte vorschlagen}}",

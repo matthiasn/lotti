@@ -17,7 +17,8 @@ applied until the user confirms it.
 - **Proposes changes instead of making them.** Add checklist items, set a due
   date, adjust priority or status, assign labels, log a work session, relate the
   task to another ("this is blocked by X", "this supersedes Y"), move it into
-  one of its category's projects after reading each project's summary, or spin
+  one of its category's projects after reading each project's summary, link the
+  open pull request that implements it, or spin
   off a follow-up task carrying such a relationship — each arrives as a row the
   user can accept, dismiss, or swipe away. *Confirm all* takes the whole batch
   at once.
