@@ -6844,6 +6844,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get entryTypeLabelWorkoutEntry => 'Treino';
 
   @override
+  String get eventAgentAssignHint =>
+      'Escreve uma recapitulação a partir das fotos e notas do evento com IA integrada.';
+
+  @override
   String get eventNameLabel => 'Evento:';
 
   @override

@@ -623,3 +623,13 @@ it through the event subscription.
 event is created in a category whose `Category.defaultEventTemplateId` is set.
 This is independent of the task agents' `defaultTemplateId`, so enabling task
 agents does not implicitly spawn event agents.
+
+An event without an agent — created before its category had a default, or in a
+category without one — gets one by hand from the recap card's *Assign Agent*
+row (`AssignAgentCta.event` in
+`lib/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart`), the same
+row and picker a task without an agent offers. `assignableAgentTemplates`
+offers the category's event-agent templates, or every event-agent template
+when the category scopes none; the picked template and profile go to
+`createEventAgent` with the default content gate, so the creation wake runs at
+once on an event that already has a photo or note and waits on a bare one.

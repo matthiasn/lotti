@@ -3155,6 +3155,7 @@
   "entryTypeLabelSurveyEntry": "Pesquisa",
   "entryTypeLabelTask": "Tarefa",
   "entryTypeLabelWorkoutEntry": "Treino",
+  "eventAgentAssignHint": "Escreve uma recapitulação a partir das fotos e notas do evento com IA integrada.",
   "eventNameLabel": "Evento:",
   "eventsAddCoverPhoto": "Adicionar foto de capa",
   "eventsChangeCover": "Alterar capa",

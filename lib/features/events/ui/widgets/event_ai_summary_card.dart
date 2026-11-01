@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
@@ -25,8 +26,10 @@ import 'package:material_ui/material_ui.dart';
 /// with *Update now*, which re-wakes the agent. Before the first recap the
 /// body is the awaiting hint; a report that fails to load says so instead.
 ///
-/// With no event agent attached it falls back to [fallbackSummary] on the
-/// plain [EventPassiveSummaryCard], and renders nothing when there is neither.
+/// With no event agent attached it shows [fallbackSummary] on the plain
+/// [EventPassiveSummaryCard], when there is one, above the same *Assign Agent*
+/// row a task without an agent offers — so an event created before its
+/// category had a default event agent can still be given one.
 ///
 /// The event's **rating and cover are never shown or touched here** — the agent
 /// has no authority over them, so this card never surfaces or edits them.
@@ -44,19 +47,30 @@ class EventAiSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final agent = ref
-        .watch(eventAgentProvider(eventId))
-        .value
-        ?.mapOrNull(agent: (a) => a);
+    final agentAsync = ref.watch(eventAgentProvider(eventId));
+    final agent = agentAsync.value?.mapOrNull(agent: (a) => a);
+    if (agent != null) return _EventAgentRecapCard(identity: agent);
 
-    if (agent == null) {
-      final fallback = fallbackSummary?.trim();
-      if (fallback == null || fallback.isEmpty) {
-        return const SizedBox.shrink();
-      }
-      return EventPassiveSummaryCard(summary: fallback);
+    final fallback = fallbackSummary?.trim();
+    final passive = fallback == null || fallback.isEmpty
+        ? null
+        : EventPassiveSummaryCard(summary: fallback);
+    // Only a lookup that settled on "no agent" offers one: while it loads or
+    // after it failed, the event may well have an agent, and an offer that
+    // vanishes a frame later is noise.
+    if (!agentAsync.hasValue || agentAsync.hasError) {
+      return passive ?? const SizedBox.shrink();
     }
-    return _EventAgentRecapCard(identity: agent);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (passive != null) ...[
+          passive,
+          SizedBox(height: context.designTokens.spacing.step3),
+        ],
+        AssignAgentCta.event(eventId: eventId),
+      ],
+    );
   }
 }
 

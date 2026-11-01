@@ -2825,6 +2825,7 @@
   "entryTypeLabelSurveyEntry": "Encuesta",
   "entryTypeLabelTask": "Tarea",
   "entryTypeLabelWorkoutEntry": "Entrenamiento",
+  "eventAgentAssignHint": "Escribe un resumen a partir de las fotos y notas del evento con la IA integrada.",
   "eventNameLabel": "Evento:",
   "eventsAddCoverPhoto": "Añadir foto de portada",
   "eventsChangeCover": "Cambiar portada",

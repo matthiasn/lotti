@@ -6819,6 +6819,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get entryTypeLabelWorkoutEntry => 'Training';
 
   @override
+  String get eventAgentAssignHint =>
+      'Schreibt mit eingebauter KI eine Zusammenfassung aus den Fotos und Notizen des Ereignisses.';
+
+  @override
   String get eventNameLabel => 'Ereignis:';
 
   @override

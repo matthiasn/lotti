@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_automation_row.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/agents/ui/widgets/ai_card_chrome.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -51,6 +52,7 @@ void main() {
   /// only states what it is about.
   List<Override> agentOverrides({
     AgentDomainEntity? agent,
+    FutureOr<AgentDomainEntity?> Function()? lookup,
     FutureOr<AgentDomainEntity?> Function()? report,
     bool inferenceDisabled = false,
     AgentDomainEntity? state,
@@ -58,8 +60,11 @@ void main() {
     MockEventAgentService? service,
   }) => <Override>[
     // Resolved synchronously, so a data-state test does not transit a
-    // loading frame (the loading and error states have their own tests).
-    eventAgentProvider(eventId).overrideWith((ref) => agent),
+    // loading frame (the loading and error states have their own tests,
+    // which pass [lookup]).
+    eventAgentProvider(
+      eventId,
+    ).overrideWith((ref) => lookup != null ? lookup() : agent),
     agentReportProvider(agentId).overrideWith((ref) => report?.call()),
     agentIsRunningProvider(agentId).overrideWith((ref) => Stream.value(false)),
     agentStateProvider(agentId).overrideWith((ref) => state),
@@ -117,13 +122,60 @@ void main() {
       // wrote, and no trigger for an agent that is not there.
       expect(tester.widget<TldrHeader>(find.byType(TldrHeader)).plain, isTrue);
       expect(find.byType(AgentAutomationRow), findsNothing);
+      // The offer to assign one sits below the passive summary.
+      final cta = tester.widget<AssignAgentCta>(find.byType(AssignAgentCta));
+      expect(cta.kind, AgentTemplateKind.eventAgent);
+      expect(cta.subjectId, eventId);
+      expect(
+        tester.getTopLeft(find.byType(AssignAgentCta)).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byType(EventPassiveSummaryCard)).dy,
+        ),
+      );
     });
 
-    testWidgets('renders nothing when there is no fallback', (tester) async {
+    testWidgets('without a fallback the assign offer stands alone', (
+      tester,
+    ) async {
       await pumpCard(tester, overrides: agentOverrides(), fallbackSummary: ' ');
 
       expect(find.byType(EventPassiveSummaryCard), findsNothing);
       expect(find.byType(TldrHeader), findsNothing);
+      expect(find.text('Assign Agent'), findsOneWidget);
+      expect(
+        find.text(
+          "Writes a recap from the event's photos and notes with built-in AI.",
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no offer while the agent lookup is still loading', (
+      tester,
+    ) async {
+      final pending = Completer<AgentDomainEntity?>();
+      addTearDown(() => pending.complete(null));
+
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(lookup: () => pending.future),
+        fallbackSummary: 'A passive summary from a linked note.',
+      );
+
+      expect(find.byType(EventPassiveSummaryCard), findsOneWidget);
+      expect(find.byType(AssignAgentCta), findsNothing);
+    });
+
+    testWidgets('no offer when the agent lookup failed', (tester) async {
+      await pumpCard(
+        tester,
+        overrides: agentOverrides(
+          lookup: () => Future.error(StateError('db closed')),
+        ),
+      );
+
+      expect(find.byType(AssignAgentCta), findsNothing);
+      expect(find.byType(EventPassiveSummaryCard), findsNothing);
     });
   });
 

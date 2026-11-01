@@ -3156,6 +3156,7 @@
   "entryTypeLabelSurveyEntry": "Indagine",
   "entryTypeLabelTask": "Compiti",
   "entryTypeLabelWorkoutEntry": "Lavorazione",
+  "eventAgentAssignHint": "Scrive un recap dalle foto e dalle note dell'evento con l'IA integrata.",
   "eventNameLabel": "Evento:",
   "eventsAddCoverPhoto": "Aggiungi foto di copertina",
   "eventsChangeCover": "Cambia la copertina",
