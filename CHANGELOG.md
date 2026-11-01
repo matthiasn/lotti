@@ -4,6 +4,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.77]
+
+### Changed
+
+- **The companion's composer is calmer and clearer.** The category chips now
+  sit in the composer after "Answers from", with "All" to clear them; a chosen
+  chip is filled and checked. "Type instead" and "Cancel" are quieter, and
+  while you speak, the pill ends in a send arrow.
+- **Your chats with her are easier to scan.** The list is denser, without
+  boxes: each day is named in the accent colour, each row shows the start of
+  her last answer, and the times line up in one column. On a phone the way to
+  the list says "Chats", with the inbox count beside it.
+- **Labelled dividers stop shouting.** A divider's label, such as "Today" in
+  a chat, is now written in sentence case instead of capitals.
+- **On a computer, start typing to her right away.** The first key you type
+  opens the text field with it; shortcuts never do.
+
+### Fixed
+
+- **Goal check-ins took minutes to transcribe, or never did, on a model you
+  never picked.** When a goal's category set up no automatic transcription,
+  its spoken check-ins skipped your inference profiles altogether and went to
+  whichever speech model ranked first — the on-device one when installed,
+  which could take minutes or fail. They now use the goal's category profile,
+  and your default inference profile when the category has none that can
+  transcribe.
+- **People check-ins ignored the person's category.** Spoken check-ins about a
+  person always used the default profile. They now use the profile of the
+  person's category first, like goals, and fall back to the default.
+- **Dictating into a goal's or a person's chat used a different model.** Voice
+  input in those chats, and in a goal's "About this goal" sheet, picked its own
+  speech model instead of the one in your profiles. It now uses the same
+  profile as the check-ins, and a speech-to-text model's words get the same
+  speech-dictionary correction afterwards.
+- **A stuck transcription can be cancelled.** Cancel stays available while
+  your words are being written down, not only while you speak.
+- **Leaving a chat while speaking no longer posts there later.** Opening
+  another chat, or the list, cancels the recording.
+- **Screen readers read each chip once.** Chips across the app were announced
+  twice.
+
 ## [1.1.76]
 
 ### Added
